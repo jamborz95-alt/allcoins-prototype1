@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101326">
+<title>ALLCOINS — прототип</title>
+<style>
+:root{color-scheme:dark;--bg:#101326;--panel:#1b2038;--muted:#a8afcc;--gold:#ffd166;--green:#64e6a5;--line:#343b5c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#242b50,#101326 58%);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f6f7ff;min-height:100vh}
+.app{max-width:520px;margin:auto;padding:18px 15px 96px}.top{display:flex;justify-content:space-between;align-items:center;margin:6px 0 18px}.brand{font-weight:900;letter-spacing:2px;font-size:22px}.brand span{color:var(--gold)}.pill{border:1px solid var(--line);border-radius:30px;padding:8px 11px;color:var(--muted);font-size:12px}
+.balance{background:linear-gradient(135deg,#343a69,#1d2342);border:1px solid #4b5484;border-radius:22px;padding:20px;margin-bottom:14px}.small{color:var(--muted);font-size:13px}.amount{font-size:35px;font-weight:850;margin:5px 0;color:var(--gold)}.energyrow{display:flex;justify-content:space-between;align-items:center;margin:17px 0 8px}.bar{height:9px;border-radius:10px;background:#0d1020;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#64e6a5,#b6ffbd);width:100%;transition:width .2s}
+.card{background:rgba(27,32,56,.94);border:1px solid var(--line);border-radius:20px;padding:17px;margin:13px 0}.section{font-size:19px;font-weight:800;margin:3px 0 12px}.muted{color:var(--muted);font-size:13px;line-height:1.45}
+.coinarea{text-align:center;padding:18px 0 8px}.coin{width:170px;height:170px;border-radius:50%;border:7px solid #ffe5a0;background:radial-gradient(circle at 35% 25%,#fff0b2,#ffbf35 54%,#cc7e11);box-shadow:0 0 0 9px #ffcf4c20,0 14px 35px #0006;display:inline-flex;align-items:center;justify-content:center;color:#5c3600;font-size:54px;font-weight:1000;cursor:pointer;user-select:none;transition:transform .08s}.coin:active{transform:scale(.94)}button{border:0;border-radius:13px;padding:12px 14px;font-size:14px;font-weight:750;cursor:pointer;background:var(--gold);color:#252039}button.secondary{background:#303756;color:#f5f6ff;border:1px solid #454d70}button:disabled{opacity:.45}.row{display:flex;gap:9px}.row>*{flex:1}.game{display:flex;justify-content:space-between;align-items:center;gap:12px}.game strong{display:block;margin-bottom:4px}.tag{font-size:11px;border-radius:20px;background:#2d3654;padding:5px 8px;color:#cdd5ff;white-space:nowrap}.nav{position:fixed;bottom:0;left:0;right:0;background:#111528f2;backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:center;padding:9px 5px max(10px,env(safe-area-inset-bottom));z-index:3}.nav button{background:transparent;color:var(--muted);flex:1;max-width:130px;padding:8px 3px;font-size:12px}.nav button.active{color:var(--gold);background:#292b45}.view{display:none}.view.active{display:block}input,select{width:100%;background:#11162a;color:white;border:1px solid var(--line);border-radius:12px;padding:12px;margin:6px 0 12px;font-size:15px}.notice{margin-top:12px;padding:10px;border-radius:12px;background:#172c2b;color:#9ef2c7;font-size:13px;display:none}.list{display:grid;gap:9px}.room{border:1px solid var(--line);background:#151a30;padding:12px;border-radius:13px;display:flex;justify-content:space-between;align-items:center}.footer{font-size:11px;color:#8189a9;text-align:center;margin:20px 0}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top"><div class="brand">ALL<span>COINS</span></div><div class="pill">DEMO · прототип</div></header>
+<section class="balance"><div class="small">ТВОЙ БАЛАНС</div><div class="amount"><span id="balance">10000</span> <span style="font-size:15px">AC</span></div><div class="energyrow"><span class="small">⚡ Энергия</span><strong><span id="energy">100</span> / 100</strong></div><div class="bar"><div class="fill" id="energybar"></div></div></section>
+<div id="home" class="view active">
+<section class="card"><div class="section">Зарабатывай Allcoins</div><div class="muted">Нажимай на монету: каждый клик даёт 100 AC и тратит 1 единицу энергии.</div><div class="coinarea"><button class="coin" id="coin" aria-label="Нажать монету">AC</button><p id="tapmsg" class="muted">Нажми на монету, чтобы начать</p></div><div class="row"><button class="secondary" id="ad">▶ Получить энергию за рекламу</button><button class="secondary" id="restore">＋ Восстановить</button></div><div class="notice" id="homenotice"></div></section>
+<section class="card"><div class="section">Игры</div><div class="game"><div><strong>🃏 Дурак Онлайн</strong><div class="muted">Комнаты на 2–6 игроков</div></div><button class="secondary" onclick="show('games')">Играть</button></div><hr style="border:0;border-top:1px solid var(--line);margin:15px 0"><div class="game"><div><strong>🎱 Лото Онлайн</strong><div class="muted">Создай розыгрыш и купи билет</div></div><button class="secondary" onclick="show('games')">Открыть</button></div></section>
+</div>
+<div id="games" class="view">
+<section class="card"><div class="section">🃏 Дурак Онлайн</div><div class="muted">Демо-комнаты. Ставки здесь виртуальные и не выводятся.</div><label class="small">Количество игроков</label><select id="players"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><label class="small">Ставка на игрока (AC)</label><select id="stake"><option>100</option><option>500</option><option>1000</option><option>5000</option></select><button id="create" style="width:100%">＋ Создать комнату</button><div class="notice" id="gamemsg"></div><div class="section" style="margin-top:18px">Доступные комнаты</div><div id="rooms" class="list"><div class="room"><div><strong>Комната #104</strong><div class="muted">2 игрока · ставка 100 AC</div></div><button class="secondary join">Войти</button></div></div></section>
+<section class="card"><div class="section">🎱 Лото Онлайн</div><label class="small">Ставка за билет (AC)</label><select id="lotstake"><option>100</option><option>250</option><option>500</option><option>1000</option></select><button id="ticket" style="width:100%">Купить билет</button><p id="lotmsg" class="muted">Билеты и розыгрыш имитируются для демонстрации.</p></section>
+</div>
+<div id="withdraw" class="view">
+<section class="card"><div class="section">Вывод средств</div><p class="muted">В демонстрационной версии реальные выплаты не выполняются. Не вводи здесь платёжные данные.</p><label class="small">Сумма в AC</label><input id="withdrawamount" type="number" min="1000" value="1000"><label class="small">Способ (демо)</label><select id="method"><option>USDT (демо)</option><option>Банковская карта (демо)</option></select><button id="withdrawbtn" style="width:100%">Создать тестовую заявку</button><div class="notice" id="withdrawmsg"></div></section>
+</div>
+<div id="profile" class="view">
+<section class="card"><div class="section">Профиль</div><div class="game"><span class="muted">Пользователь</span><strong>Гость #0001</strong></div><hr style="border:0;border-top:1px solid var(--line);margin:13px 0"><div class="game"><span class="muted">Баланс</span><strong><span id="profilebalance">10000</span> AC</strong></div><div class="game" style="margin-top:12px"><span class="muted">Статус</span><span class="tag">Локальный прототип</span></div><p class="muted" style="margin-top:18px">Прогресс хранится только в этой вкладке. Telegram-вход и сервер ещё не подключены.</p><button class="secondary" id="reset" style="width:100%">Сбросить демо</button></section>
+</div>
+<div class="footer">ALLCOINS · Демонстрационная версия · AC не имеют денежной стоимости</div>
+</div>
+<nav class="nav"><button class="active" data-view="home">⌂<br>Главная</button><button data-view="games">♠<br>Игры</button><button data-view="withdraw">↗<br>Вывод</button><button data-view="profile">☺<br>Профиль</button></nav>
+<script>
+let balance=10000,energy=100,rooms=104,tickets=0;
+const $=id=>document.getElementById(id);
+function render(){$('balance').textContent=balance;$('profilebalance').textContent=balance;$('energy').textContent=energy;$('energybar').style.width=energy+'%'}
+function notice(id,msg){$(id).textContent=msg;$(id).style.display='block'}
+function show(view){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===view));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));window.scrollTo(0,0)}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
+$('coin').onclick=()=>{if(energy<1){$('tapmsg').textContent='Энергия закончилась — восстанови её ниже.';return}energy--;balance+=100;$('tapmsg').textContent='+100 AC · осталось энергии: '+energy;render()};
+$('ad').onclick=()=>{energy=100;render();notice('homenotice','Демо: просмотр рекламы имитирован. Энергия восстановлена.')};
+$('restore').onclick=()=>{energy=Math.min(100,energy+20);render();notice('homenotice','В демо восстановлено 20 единиц энергии (не более 100).')};
+$('create').onclick=()=>{let n=+$('players').value,s=+$('stake').value;let el=document.createElement('div');el.className='room';el.innerHTML='<div><strong>Комната #'+(++rooms)+'</strong><div class="muted">'+n+' игрока · ставка '+s+' AC</div></div><button class="secondary join">Войти</button>';$('rooms').prepend(el);notice('gamemsg','Комната создана (демо).');bindJoin(el.querySelector('.join'))};
+function bindJoin(btn){btn.onclick=()=>notice('gamemsg','Ты вошёл в демо-комнату. Реальная игра и соперники пока не подключены.')};document.querySelectorAll('.join').forEach(bindJoin);
+$('ticket').onclick=()=>{let s=+$('lotstake').value;if(balance<s){$('lotmsg').textContent='Недостаточно AC для билета.';return}balance-=s;tickets++;render();$('lotmsg').textContent='Билет #'+tickets+' куплен за '+s+' AC (демо). Розыгрыш не проводится.'};
+$('withdrawbtn').onclick=()=>{let a=+$('withdrawamount').value;if(a<1000){notice('withdrawmsg','Минимальная тестовая сумма — 1000 AC.');return}if(a>balance){notice('withdrawmsg','Недостаточно AC.');return}notice('withdrawmsg','Тестовая заявка создана. Реального вывода нет; баланс не списан.')};
+$('reset').onclick=()=>{balance=10000;energy=100;rooms=104;tickets=0;$('rooms').innerHTML='<div class="room"><div><strong>Комната #104</strong><div class="muted">2 игрока · ставка 100 AC</div></div><button class="secondary join">Войти</button></div>';bindJoin($('rooms').querySelector('.join'));render();notice('homenotice','Демо сброшено.')};
+render();
+</script>
+</body></html>
