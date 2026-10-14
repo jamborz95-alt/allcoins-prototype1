@@ -402,16 +402,22 @@ $("restoreButton").onclick = async () => {
 
   try {
     const result = await apiRequest("/api/restore-energy");
+
     if (result.ok && result.player) {
       state.energy = Number(result.player.energy);
       state.balance = Number(result.player.balance);
       showStatus("homeStatus", "Энергия восстановлена.");
+    } else if (result.ok && result.energy !== undefined) {
+      state.energy = Number(result.energy);
+      state.balance = Number(result.balance ?? state.balance);
+      showStatus("homeStatus", "Энергия восстановлена.");
     } else {
-      showStatus("homeStatus", "Не удалось восстановить энергию.");
+      showStatus("homeStatus", "Сервер не подтвердил восстановление энергии.");
     }
   } catch (error) {
     showStatus("homeStatus", "Ошибка соединения с сервером.");
   }
+
   render();
 };
 
