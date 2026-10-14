@@ -461,10 +461,35 @@ $("restoreButton").onclick = async () => {
   render();
 };
 
-$("dailyButton").onclick = () => {
-  state.balance += 500;
-  showStatus("homeStatus", "Демо-бонус: +500 AC");
-  render();
+$("dailyButton").onclick = async () => {
+  if (!state.user) {
+    showStatus("homeStatus", "Открой приложение через Telegram.");
+    return;
+  }
+
+  showStatus("homeStatus", "Проверяем ежедневный бонус...");
+
+  try {
+    const result = await apiRequest("/api/daily-bonus");
+
+    if (result.player) {
+      state.balance = Number(result.player.balance);
+      state.energy = Number(result.player.energy);
+    }
+
+    if (result.ok) {
+      showStatus("homeStatus", "Ежедневный бонус: +500 AC!");
+    } else {
+      showStatus(
+        "homeStatus",
+        result.error || "Бонус пока недоступен."
+      );
+    }
+
+    render();
+  } catch (error) {
+    showStatus("homeStatus", "Ошибка связи с сервером. Попробуй ещё раз.");
+  }
 };
 
 $("createRoom").onclick = () => {
