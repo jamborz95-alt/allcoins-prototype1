@@ -89,7 +89,27 @@
       font-size: 30px;
       border: 7px solid #b4ff7840;
     }
-    .tap-button:active { transform: scale(.96); }
+    .tap-button {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: transform 0.12s ease;
+}
+
+.tap-button:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 40px #37d99a30;
+}
+
+.tap-button:focus,
+.tap-button:focus-visible {
+  outline: none;
+}
     .full { width: 100%; }
     .secondary {
       background: #26344e;
