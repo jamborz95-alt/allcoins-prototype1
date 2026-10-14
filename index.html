@@ -380,13 +380,16 @@ async function login() {
   }
 }
 
+  let tapPending = false;
+
 $("tapButton").onclick = async () => {
+  if (tapPending) return;
+
   if (state.energy <= 0) {
     showStatus("homeStatus", "Энергия закончилась. Восстанови её.");
     return;
   }
 
-  // Локальная демонстрация работает даже вне Telegram.
   if (!state.user) {
     state.energy -= 1;
     state.balance += 100;
@@ -395,19 +398,36 @@ $("tapButton").onclick = async () => {
     return;
   }
 
+  tapPending = true;
+
+  const oldBalance = state.balance;
+  const oldEnergy = state.energy;
+
+  state.balance += 100;
+  state.energy -= 1;
+  showStatus("homeStatus", "+100 AC");
+  render();
+
   try {
     const result = await apiRequest("/api/tap");
+
     if (result.ok && result.player) {
       state.balance = Number(result.player.balance);
       state.energy = Number(result.player.energy);
       showStatus("homeStatus", "+100 AC");
     } else {
-      showStatus("homeStatus", "Не удалось выполнить нажатие.");
+      state.balance = oldBalance;
+      state.energy = oldEnergy;
+      showStatus("homeStatus", "Сервер не подтвердил нажатие.");
     }
   } catch (error) {
-    showStatus("homeStatus", "Ошибка соединения с сервером.");
+    state.balance = oldBalance;
+    state.energy = oldEnergy;
+    showStatus("homeStatus", "Нет связи с сервером. Попробуй ещё раз.");
+  } finally {
+    tapPending = false;
+    render();
   }
-  render();
 };
 
 $("restoreButton").onclick = async () => {
