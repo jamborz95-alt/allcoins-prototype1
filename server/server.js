@@ -267,6 +267,11 @@ async function startServer() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+        `);
+
+    await pool.query(`
+      ALTER TABLE players
+      ADD COLUMN IF NOT EXISTS daily_bonus_at TIMESTAMPTZ
     `);
 
     console.log("Players table is ready");
@@ -282,4 +287,4 @@ async function startServer() {
   }
 }
 
-startServer();
+startServer();  
