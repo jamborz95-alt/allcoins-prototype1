@@ -255,7 +255,74 @@ app.post("/api/restore-energy", async (req, res) => {
     });
   }
 });
+// Ежедневный бонус +500 AC, один раз в 24 часа
+app.post("/api/daily-bonus", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
 
+    if (!user) {
+      return res.status(401).json({
+        ok: false,
+        error: "Telegram authentication failed"
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE players
+       SET balance = balance + 500,
+           daily_bonus_at = NOW(),
+           updated_at = NOW()
+       WHERE telegram_id = $1
+         AND (
+           daily_bonus_at IS NULL
+           OR daily_bonus_at <= NOW() - INTERVAL '24 hours'
+         )
+       RETURNING balance, energy, daily_bonus_at`,
+      [String(user.id)]
+    );
+
+    if (result.rowCount === 0) {
+      const playerResult = await pool.query(
+        `SELECT balance, energy
+         FROM players
+         WHERE telegram_id = $1`,
+        [String(user.id)]
+      );
+
+      if (playerResult.rowCount === 0) {
+        return res.status(404).json({
+          ok: false,
+          error: "Player not found"
+        });
+      }
+
+      return res.json({
+        ok: false,
+        error: "Бонус уже получен. Возвращайся через 24 часа.",
+        player: {
+          balance: Number(playerResult.rows[0].balance),
+          energy: playerResult.rows[0].energy
+        }
+      });
+    }
+
+    return res.json({
+      ok: true,
+      player: {
+        balance: Number(result.rows[0].balance),
+        energy: result.rows[0].energy,
+        dailyBonusAt: result.rows[0].daily_bonus_at
+      }
+    });
+  } catch (error) {
+    console.error("Daily bonus error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Server error"
+    });
+  }
+});
 async function startServer() {
   try {
     await pool.query(`
