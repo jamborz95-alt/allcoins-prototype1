@@ -196,10 +196,12 @@ app.post("/api/tap", async (req, res) => {
       });
     }
 
-    res.json({
+        res.json({
       ok: true,
-      balance: Number(result.rows[0].balance),
-      energy: result.rows[0].energy
+      player: {
+        balance: Number(result.rows[0].balance),
+        energy: result.rows[0].energy
+      }
     });
   } catch (error) {
     console.error("Tap error:", error.message);
