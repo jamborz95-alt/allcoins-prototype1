@@ -362,4 +362,111 @@ async function login() {
 
 $("tapButton").onclick = async () => {
   if (state.energy <= 0) {
+    showStatus("homeStatus", "Энергия закончилась. Восстанови её.");
+    return;
+  }
 
+  // Локальная демонстрация работает даже вне Telegram.
+  if (!state.user) {
+    state.energy -= 1;
+    state.balance += 100;
+    showStatus("homeStatus", "+100 AC · Демо-режим");
+    render();
+    return;
+  }
+
+  try {
+    const result = await apiRequest("/api/tap");
+    if (result.ok && result.player) {
+      state.balance = Number(result.player.balance);
+      state.energy = Number(result.player.energy);
+      showStatus("homeStatus", "+100 AC");
+    } else {
+      showStatus("homeStatus", "Не удалось выполнить нажатие.");
+    }
+  } catch (error) {
+    showStatus("homeStatus", "Ошибка соединения с сервером.");
+  }
+  render();
+};
+
+$("restoreButton").onclick = async () => {
+  if (state.energy >= 100) return;
+
+  if (!state.user) {
+    state.energy = 100;
+    showStatus("homeStatus", "Энергия восстановлена в демо-режиме.");
+    render();
+    return;
+  }
+
+  try {
+    const result = await apiRequest("/api/restore-energy");
+    if (result.ok && result.player) {
+      state.energy = Number(result.player.energy);
+      state.balance = Number(result.player.balance);
+      showStatus("homeStatus", "Энергия восстановлена.");
+    } else {
+      showStatus("homeStatus", "Не удалось восстановить энергию.");
+    }
+  } catch (error) {
+    showStatus("homeStatus", "Ошибка соединения с сервером.");
+  }
+  render();
+};
+
+$("dailyButton").onclick = () => {
+  state.balance += 500;
+  showStatus("homeStatus", "Демо-бонус: +500 AC");
+  render();
+};
+
+$("createRoom").onclick = () => {
+  const players = Number($("players").value);
+  const stake = Number($("durakStake").value);
+
+  if (state.balance < stake) {
+    alert("Недостаточно AC для этой демонстрационной ставки.");
+    return;
+  }
+
+  state.rooms.push({ players, stake });
+  showStatus("lottoStatus", "Демо-комната создана.");
+  render();
+};
+
+$("buyTicket").onclick = () => {
+  const stake = Number($("lottoStake").value);
+
+  if (state.balance < stake) {
+    showStatus("lottoStatus", "Недостаточно AC.");
+    return;
+  }
+
+  state.balance -= stake;
+  state.tickets += 1;
+  showStatus("lottoStatus", "Демо-билет куплен. Реального розыгрыша нет.");
+  render();
+};
+
+$("withdrawInfo").onclick = () => {
+  showStatus("withdrawStatus", "Система реальных выплат пока не подключена.");
+};
+
+$("loginButton").onclick = login;
+
+document.querySelectorAll(".nav button").forEach(button => {
+  button.onclick = () => {
+    document.querySelectorAll(".nav button").forEach(item => item.classList.remove("active"));
+    button.classList.add("active");
+
+    document.querySelectorAll("section").forEach(section => section.classList.add("hidden"));
+    $(button.dataset.page).classList.remove("hidden");
+  };
+});
+
+render();
+login();
+</script>
+</body>
+</html>
