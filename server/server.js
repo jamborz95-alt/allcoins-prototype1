@@ -24,8 +24,7 @@ const pool = new Pool({
 app.get("/", (req, res) => {
   res.json({
     app: "ALLCOINS",
-    status: "running",
-    message: "Allcoins server is ready"
+    status: "running"
   });
 });
 
@@ -40,7 +39,7 @@ app.get("/api/health", async (req, res) => {
       version: "1.0.0"
     });
   } catch (error) {
-    console.error("Database check failed:", error.message);
+    console.error("Health check failed:", error.message);
 
     res.status(500).json({
       ok: false,
@@ -50,7 +49,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-app.post("/api/setup", async (req, res) => {
+async function startServer() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS players (
@@ -63,22 +62,17 @@ app.post("/api/setup", async (req, res) => {
       )
     `);
 
-    res.json({
-      ok: true,
-      message: "Players table is ready"
+    console.log("Players table is ready");
+
+    const PORT = process.env.PORT || 3000;
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Allcoins server started on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Database setup failed:", error.message);
-
-    res.status(500).json({
-      ok: false,
-      message: "Database setup failed"
-    });
+    console.error("Server startup failed:", error.message);
+    process.exit(1);
   }
-});
+}
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Allcoins server started on port ${PORT}`);
-});
+startServer();
