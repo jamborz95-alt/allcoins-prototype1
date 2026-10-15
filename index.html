@@ -439,11 +439,41 @@ info.innerHTML =
   " игроков · " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
-    button.textContent = "Войти";
-    button.onclick = () => {
-      showStatus("lottoStatus", "Это демо-комната. Мультиплеер пока не подключён.");
-      alert("Комната создана для демонстрации. Онлайн-игра пока не подключена.");
-    };
+button.textContent = "Войти";
+
+button.onclick = async () => {
+  if (!state.user || !tg?.initData) {
+    alert("Сначала войди через Telegram.");
+    return;
+  }
+
+  if (!room.id) {
+    alert("У этой комнаты нет серверного номера. Обнови список комнат.");
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    const result = await apiRequest("/api/durak/rooms/join", {
+      roomId: room.id
+    });
+
+    if (!result.ok) {
+      throw new Error(result.error || "Не удалось войти в комнату.");
+    }
+
+    alert(
+      "Ты вошёл в комнату!\n" +
+      "Название: " + room.name + "\n" +
+      "Ставка: " + room.stake + " AC"
+    );
+  } catch (error) {
+    alert("Ошибка входа: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+};
 
     
     div.append(info, button);
