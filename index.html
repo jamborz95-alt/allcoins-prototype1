@@ -736,6 +736,7 @@ async function loadDurakRooms() {
       playersCount: Number(room.players_count),
       stake: Number(room.stake),
       status: room.status
+      isOwner: room.is_owner
     }));
 
     render();
