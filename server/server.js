@@ -622,7 +622,8 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     for (let i = deck.length - 1; i > 0; i--) {
       const j = crypto.randomInt(i + 1);
       [deck[i], deck[j]] = [deck[j], deck[i]];
-    } const updateResult = await pool.query(
+    } 
+    const updateResult = await pool.query(
       `UPDATE durak_rooms
        SET status = 'playing'
        WHERE id = $1 AND status = 'waiting'
