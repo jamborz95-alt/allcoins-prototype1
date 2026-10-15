@@ -602,7 +602,27 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       });
     }
 
-    const updateResult = await pool.query(
+       // Создание колоды для Дурака
+    const suits = ["♠", "♥", "♦", "♣"];
+    const ranks = ["6", "7", "8", "9", "10", "В", "Д", "К", "Т"];
+
+    const deck = [];
+
+    for (const suit of suits) {
+      for (const rank of ranks) {
+        deck.push({
+          suit,
+          rank,
+          id: `${rank}${suit}`
+        });
+      }
+    }
+
+    // Перемешивание колоды
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(i + 1);
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    } const updateResult = await pool.query(
       `UPDATE durak_rooms
        SET status = 'playing'
        WHERE id = $1 AND status = 'waiting'
