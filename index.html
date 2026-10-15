@@ -328,10 +328,10 @@ function render() {
     div.className = "room";
 
     const info = document.createElement("div");
-    info.innerHTML =
-      "<b>Комната #" + (index + 1) + "</b><br>" +
-      "<span class='muted small'>" + room.players +
-      " игроков · " + room.stake + " AC</span>";
+info.innerHTML =
+  "<b>" + (room.name || ("Комната #" + (index + 1))) + "</b><br>" +
+  "<span class='muted small'>" + room.players +
+  " игроков · " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
     button.textContent = "Войти";
@@ -524,10 +524,14 @@ $("createRoom").onclick = () => {
     return;
   }
 
-  state.rooms.push({
-    players: players,
-    stake: stake
-  });
+  const roomName =
+  $("roomName").value.trim() || "Комната ALLCOINS";
+
+state.rooms.push({
+  name: roomName,
+  players: players,
+  stake: stake
+});
 
   showStatus("lottoStatus", "Демо-комната создана.");
   render();
