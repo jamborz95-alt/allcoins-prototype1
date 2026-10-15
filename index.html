@@ -385,7 +385,7 @@ const $ = id => document.getElementById(id);
 // Сохранение данных ALLCOINS
 function saveGame() {
   try {
-    localStorage.setItem("allcoinsSavedState", JSON.stringify({
+    const data = {
       balance: state.balance,
       energy: state.energy,
       tickets: state.tickets,
@@ -393,11 +393,18 @@ function saveGame() {
       lottoRooms: state.lottoRooms || [],
       lottoRoomTickets: state.lottoRoomTickets || {},
       selectedLottoRoomId: state.selectedLottoRoomId ?? null
-    }));
+    };
+
+    localStorage.setItem("allcoinsSavedState", JSON.stringify(data));
   } catch (error) {
     console.log("Не удалось сохранить игру");
   }
-  }
+}
+
+function showStatus(id, message) {
+  const element = $(id);
+  if (element) element.textContent = message;
+}
 function showStatus(id, message) {
   const element = $(id);
   if (element) element.textContent = message;
