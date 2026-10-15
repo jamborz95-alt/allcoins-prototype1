@@ -468,7 +468,8 @@ $("restoreButton").onclick = async () => {
       alert("Не удалось восстановить энергию.");
     }
   } catch (error) {
-    alert("Реклама не завершена. Попробуй ещё раз.");
+    alert("Ошибка AdsGram: " + JSON.stringify(error));
+  }
   } finally {
     $("restoreButton").disabled = false;
   }
