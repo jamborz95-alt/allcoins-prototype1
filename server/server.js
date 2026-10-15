@@ -647,6 +647,26 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     // Определяем козырь
     const trumpCard = deck[deck.length - 1];
     const trumpSuit = trumpCard.suit;
+        // Сохраняем состояние игры
+    const gameState = {
+      players: gamePlayers,
+      deck,
+      trumpCard,
+      trumpSuit,
+      table: [],
+      currentPlayerIndex: 0,
+      status: "playing"
+    };
+
+    await pool.query(
+      `INSERT INTO durak_games (room_id, game_state, updated_at)
+       VALUES ($1, $2::jsonb, NOW())
+       ON CONFLICT (room_id)
+       DO UPDATE SET
+         game_state = EXCLUDED.game_state,
+         updated_at = NOW()`,
+      [roomId, JSON.stringify(gameState)]
+    );
     const updateResult = await pool.query(
       `UPDATE durak_rooms
        SET status = 'playing'
