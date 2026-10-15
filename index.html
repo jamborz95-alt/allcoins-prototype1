@@ -515,16 +515,58 @@ $("dailyButton").onclick = async () => {
 };
 
 $("createRoom").onclick = () => {
+  const nameInput = $("roomName");
+  const name = nameInput.value.trim();
   const players = Number($("players").value);
   const stake = Number($("durakStake").value);
+
+  if (!name) {
+    alert("Введи название комнаты!");
+    nameInput.focus();
+    return;
+  }
 
   if (state.balance < stake) {
     alert("Недостаточно AC для этой демонстрационной ставки.");
     return;
   }
 
-  state.rooms.push({ players, stake });
-  showStatus("lottoStatus", "Демо-комната создана.");
+  const room = {
+    id: Date.now(),
+    name,
+    players,
+    stake
+  };
+
+  state.rooms.push(room);
+
+  const roomsList = $("roomsList");
+  const card = document.createElement("div");
+
+  card.className = "card";
+  card.style.marginTop = "12px";
+
+  const title = document.createElement("h3");
+  title.textContent = "🃏 " + room.name;
+
+  const info = document.createElement("p");
+  info.textContent =
+    "Игроков: " + room.players +
+    " | Ставка: " + room.stake + " AC";
+
+  const status = document.createElement("p");
+  status.className = "muted";
+  status.textContent = "Комната создана. Ожидание игроков.";
+
+  card.appendChild(title);
+  card.appendChild(info);
+  card.appendChild(status);
+
+  roomsList.appendChild(card);
+
+  showStatus("homeStatus", "Комната «" + room.name + "» создана!");
+  nameInput.value = "";
+
   render();
 };
 
