@@ -605,18 +605,132 @@ state.rooms.push({
   render();
 };
 
-$("buyTicket").onclick = () => {
+// Данные комнат Лото
+if (!state.lottoRooms) state.lottoRooms = [];
+if (!state.lottoRoomTickets) state.lottoRoomTickets = {};
+if (state.selectedLottoRoomId === undefined) {
+  state.selectedLottoRoomId = null;
+}
+
+// Создание комнаты Лото
+$("createLottoRoom").onclick = () => {
+  const name = $("lottoRoomName").value.trim() || "Комната Лото";
+  const players = Number($("lottoPlayers").value);
   const stake = Number($("lottoStake").value);
 
-  if (state.balance < stake) {
+  if (!Number.isInteger(players) || players < 2 || players > 1000) {
+    alert("Количество игроков должно быть от 2 до 1000.");
+    return;
+  }
+
+  if (!Number.isSafeInteger(stake) || stake < 1) {
+    alert("Цена билета должна быть целым числом больше нуля.");
+    return;
+  }
+
+  const room = {
+    id: String(Date.now()),
+    name: name,
+    players: players,
+    stake: stake
+  };
+
+  state.lottoRooms.push(room);
+  state.lottoRoomTickets[room.id] = 0;
+  state.selectedLottoRoomId = room.id;
+
+  renderLottoRooms();
+
+  showStatus("lottoStatus", "Комната Лото создана!");
+};
+
+// Отображение комнат
+function renderLottoRooms() {
+  const list = $("lottoRoomsList");
+  list.textContent = "";
+
+  state.lottoRooms.forEach((room) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const title = document.createElement("h4");
+    title.textContent = room.name;
+
+    const info = document.createElement("p");
+    info.textContent =
+      "Вместимость: " + room.players +
+      " игроков | Билет: " + room.stake + " AC";
+
+    const button = document.createElement("button");
+    button.className = "full";
+
+    button.textContent =
+      state.selectedLottoRoomId === room.id
+        ? "✓ Комната выбрана"
+        : "Выбрать комнату";
+
+    button.onclick = () => {
+      state.selectedLottoRoomId = room.id;
+      renderLottoRooms();
+
+      showStatus("lottoStatus", "Выбрана комната: " + room.name);
+    };
+
+    card.appendChild(title);
+    card.appendChild(info);
+    card.appendChild(button);
+    list.appendChild(card);
+  });
+
+  updateLottoTicketCount();
+}
+
+// Количество билетов в выбранной комнате
+function updateLottoTicketCount() {
+  const room = state.lottoRooms.find(
+    item => item.id === state.selectedLottoRoomId
+  );
+
+  $("myLottoTickets").textContent = room
+    ? (state.lottoRoomTickets[room.id] || 0)
+    : 0;
+}
+
+// Покупка билета
+$("buyTicket").onclick = () => {
+  const room = state.lottoRooms.find(
+    item => item.id === state.selectedLottoRoomId
+  );
+
+  if (!room) {
+    showStatus("lottoStatus", "Сначала создай или выбери комнату.");
+    return;
+  }
+
+  const bought = state.lottoRoomTickets[room.id] || 0;
+
+  if (bought >= 3) {
+    showStatus("lottoStatus", "Максимум 3 билета в одной комнате!");
+    return;
+  }
+
+  if (state.balance < room.stake) {
     showStatus("lottoStatus", "Недостаточно AC.");
     return;
   }
 
-  state.balance -= stake;
-  state.tickets += 1;
-  showStatus("lottoStatus", "Демо-билет куплен. Реального розыгрыша нет.");
+  state.balance -= room.stake;
+  state.lottoRoomTickets[room.id] = bought + 1;
+  state.tickets = (state.tickets || 0) + 1;
+
   render();
+  renderLottoRooms();
+
+  showStatus(
+    "lottoStatus",
+    "Билет куплен за " + room.stake + " AC. Билетов в комнате: " +
+    state.lottoRoomTickets[room.id] + " из 3."
+  );
 };
 
 $("withdrawInfo").onclick = () => {
