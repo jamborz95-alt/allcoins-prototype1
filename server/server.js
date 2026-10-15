@@ -697,6 +697,90 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     });
   }
 });
+// Получение состояния игры Дурак Онлайн
+app.post("/api/durak/game", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Необходимо войти через Telegram"
+      });
+    }
+
+    const roomId = req.body?.roomId;
+
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный номер комнаты"
+      });
+    }
+
+    // Проверяем, что игрок состоит в комнате
+    const playerResult = await pool.query(
+      `SELECT telegram_id
+       FROM durak_room_players
+       WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, String(user.id)]
+    );
+
+    if (playerResult.rows.length === 0) {
+      return res.status(403).json({
+        ok: false,
+        error: "Ты не состоишь в этой комнате"
+      });
+    }
+
+    // Получаем состояние игры
+    const gameResult = await pool.query(
+      `SELECT game_state
+       FROM durak_games
+       WHERE room_id = $1`,
+      [roomId]
+    );
+
+    if (gameResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Игра ещё не подготовлена"
+      });
+    }
+
+    const gameState = gameResult.rows[0].game_state;
+
+    // Возвращаем игроку только его карты
+    const me = gameState.players.find(
+      (player) => player.telegramId === String(user.id)
+    );
+
+    if (!me) {
+      return res.status(404).json({
+        ok: false,
+        error: "Карты игрока не найдены"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      roomId: String(roomId),
+      hand: me.hand,
+      trumpSuit: gameState.trumpSuit,
+      trumpCard: gameState.trumpCard,
+      table: gameState.table,
+      cardsLeft: gameState.deck.length,
+      status: gameState.status
+    });
+  } catch (error) {
+    console.error("Get Durak game error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось загрузить игру"
+    });
+  }
+});
 async function startServer() {
   try {
     await pool.query(`
