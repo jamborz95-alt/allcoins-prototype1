@@ -479,7 +479,7 @@ button.onclick = async () => {
     
     div.append(info, button);
 
-if (room.isOwner) {
+if (room.isOwner === true) {
   const startButton = document.createElement("button");
   startButton.textContent = "▶ Начать игру";
   startButton.className = "secondary";
