@@ -475,13 +475,12 @@ $("restoreButton").onclick = async () => {
     } else {
       alert("Не удалось восстановить энергию.");
     }
-  } catch (error) {
+    } catch (error) {
     alert("Ошибка AdsGram: " + JSON.stringify(error));
-  }
   } finally {
     $("restoreButton").disabled = false;
   }
-};  
+}; 
 
 $("dailyButton").onclick = async () => {
   if (!state.user) {
