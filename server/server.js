@@ -683,6 +683,16 @@ async function startServer() {
     `);
 
     console.log("Durak rooms tables are ready");
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS durak_games (
+    room_id BIGINT PRIMARY KEY
+      REFERENCES durak_rooms(id) ON DELETE CASCADE,
+    game_state JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`);
+
+console.log("Durak games table is ready");
     const port = process.env.PORT || 3000;
 
     app.listen(port, "0.0.0.0", () => {
