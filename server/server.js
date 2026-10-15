@@ -533,6 +533,102 @@ app.post("/api/durak/rooms/join", async (req, res) => {
       error: "Не удалось присоединиться к комнате"
     });
   }
+});// Начало игры Дурак Онлайн
+app.post("/api/durak/rooms/start", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Необходимо войти через Telegram"
+      });
+    }
+
+    const roomId = req.body?.roomId;
+
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный номер комнаты"
+      });
+    }
+
+    const roomResult = await pool.query(
+      `SELECT id, name, owner_telegram_id, max_players, status
+       FROM durak_rooms
+       WHERE id = $1`,
+      [roomId]
+    );
+
+    if (roomResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Комната не найдена"
+      });
+    }
+
+    const room = roomResult.rows[0];
+
+    if (String(room.owner_telegram_id) !== String(user.id)) {
+      return res.status(403).json({
+        ok: false,
+        error: "Начать игру может только создатель комнаты"
+      });
+    }
+
+    if (room.status !== "waiting") {
+      return res.status(400).json({
+        ok: false,
+        error: "Игра уже началась или завершена"
+      });
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::INTEGER AS total
+       FROM durak_room_players
+       WHERE room_id = $1`,
+      [roomId]
+    );
+
+    const total = countResult.rows[0].total;
+
+    if (total < 2) {
+      return res.status(400).json({
+        ok: false,
+        error: "Для начала игры нужны минимум 2 игрока"
+      });
+    }
+
+    const updateResult = await pool.query(
+      `UPDATE durak_rooms
+       SET status = 'playing'
+       WHERE id = $1 AND status = 'waiting'
+       RETURNING id, name, max_players, status`,
+      [roomId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(409).json({
+        ok: false,
+        error: "Не удалось запустить игру"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: "Игра началась!",
+      room: updateResult.rows[0],
+      playersCount: total
+    });
+  } catch (error) {
+    console.error("Start Durak game error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось начать игру"
+    });
+  }
 });
 async function startServer() {
   try {
