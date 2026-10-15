@@ -238,14 +238,59 @@
     </div>
     <div class="card">
       <h3>🎱 Лото Онлайн</h3>
-      <p class="muted">Купи демонстрационный билет за выбранное количество AC.</p>
-      <label class="muted">Стоимость билета</label>
-      <select id="lottoStake">
-        <option value="100">100 AC</option>
-        <option value="500">500 AC</option>
-        <option value="1000">1000 AC</option>
-      </select>
-      <button class="full" id="buyTicket">Купить билет</button>
+
+<p class="muted">
+  Создавай комнаты Лото и приглашай игроков.
+</p>
+
+<label class="muted">Название комнаты</label>
+<input
+  type="text"
+  id="lottoRoomName"
+  maxlength="30"
+  placeholder="Например, Большое лото"
+>
+
+<label class="muted">Количество игроков (от 2 до 1000)</label>
+<input
+  type="number"
+  id="lottoPlayers"
+  value="10"
+  min="2"
+  max="1000"
+  step="1"
+>
+
+<label class="muted">Цена одного билета (AC)</label>
+<input
+  type="number"
+  id="lottoStake"
+  value="100"
+  min="1"
+  step="1"
+  placeholder="Введи цену билета"
+>
+
+<button class="full" id="createLottoRoom">
+  ＋ Создать комнату Лото
+</button>
+
+<div id="lottoRoomsList"></div>
+
+<div class="status" id="lottoStatus"></div>
+
+<p>
+  Всего билетов: <b id="tickets">0</b>
+</p>
+
+<p>
+  Мои билеты в выбранной комнате:
+  <b id="myLottoTickets">0</b> / 3
+</p>
+
+<button class="full" id="buyTicket">
+  🎟️ Купить билет
+</button>
       <p>Твои билеты: <b id="tickets">0</b></p>
       <div class="status" id="lottoStatus"></div>
     </div>
