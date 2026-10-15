@@ -427,14 +427,6 @@ app.post("/api/durak/rooms/list", async (req, res) => {
    LIMIT 100`,
   [String(user.id)]
 ); 
-        COUNT(p.telegram_id)::INTEGER AS players_count
-      FROM durak_rooms r
-      LEFT JOIN durak_room_players p ON p.room_id = r.id
-      WHERE r.status = 'waiting'
-      GROUP BY r.id
-      ORDER BY r.created_at DESC
-      LIMIT 100
-    `);
 
     return res.json({
       ok: true,
