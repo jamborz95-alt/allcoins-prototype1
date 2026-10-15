@@ -587,23 +587,7 @@ $("createRoom").onclick = () => {
   render();
 };
 
-  if (state.balance < stake) {
-    alert("Недостаточно AC.");
-    return;
-  }
-
-  const roomName =
-  $("roomName").value.trim() || "Комната ALLCOINS";
-
-state.rooms.push({
-  name: roomName,
-  players: players,
-  stake: stake
-});
-
-  showStatus("lottoStatus", "Демо-комната создана.");
-  render();
-};
+  
 
 // Данные комнат Лото
 if (!state.lottoRooms) state.lottoRooms = [];
