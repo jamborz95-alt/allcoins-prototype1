@@ -684,7 +684,33 @@ $("createRoom").onclick = async () => {
 };
 
   
+// Загрузка комнат Дурак Онлайн с сервера
+async function loadDurakRooms() {
+  if (!tg?.initData) {
+    return;
+  }
 
+  try {
+    const result = await apiRequest("/api/durak/rooms/list", {});
+
+    if (!result.ok || !Array.isArray(result.rooms)) {
+      return;
+    }
+
+    state.rooms = result.rooms.map(room => ({
+      id: room.id,
+      name: room.name,
+      players: Number(room.max_players),
+      playersCount: Number(room.players_count),
+      stake: Number(room.stake),
+      status: room.status
+    }));
+
+    render();
+  } catch (error) {
+    console.log("Не удалось загрузить комнаты Дурак Онлайн:", error.message);
+  }
+      }
 // Данные комнат Лото
 if (!state.lottoRooms) state.lottoRooms = [];
 if (!state.lottoRoomTickets) state.lottoRoomTickets = {};
@@ -834,7 +860,7 @@ window.onerror = function(message) {
 };
 
 render();
-login();
+login().then(() => loadDurakRooms());
 </script>
 </body>
 </html>
