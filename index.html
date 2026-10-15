@@ -291,8 +291,6 @@
 <button class="full" id="buyTicket">
   🎟️ Купить билет
 </button>
-      <p>Твои билеты: <b id="tickets">0</b></p>
-      <div class="status" id="lottoStatus"></div>
     </div>
     <div class="notice">Игры пока демонстрационные: онлайн-соперники, реальные розыгрыши и ставки между игроками ещё не подключены.</div>
   </section>
@@ -732,6 +730,10 @@ document.querySelectorAll(".nav button").forEach(button => {
     $(button.dataset.page).classList.remove("hidden");
   };
 });
+
+window.onerror = function(message) {
+  alert("ОШИБКА ALLCOINS: " + message);
+};
 
 render();
 login();
