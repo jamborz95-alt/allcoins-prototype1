@@ -528,9 +528,10 @@ async function apiRequest(path, data = {}) {
     })
   });
 
-  if (!response.ok) {
-    throw new Error("Ошибка сервера: " + response.status);
-  }
+if (!response.ok) {
+  const errorText = await response.text();
+  throw new Error("Ошибка сервера " + response.status + ": " + errorText);
+}  
 
   return response.json();
 }
