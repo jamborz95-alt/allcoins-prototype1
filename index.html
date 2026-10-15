@@ -622,29 +622,65 @@ $("dailyButton").onclick = async () => {
   }
 };
 
-$("createRoom").onclick = () => {
+$("createRoom").onclick = async () => {
   const players = Number($("players").value);
   const stake = Number($("durakStake").value);
-  const roomName = $("roomName").value.trim() || "Комната ALLCOINS";
+  const roomName =
+    $("roomName").value.trim() || "Комната ALLCOINS";
+
+  if (!Number.isInteger(players) || players < 2 || players > 6) {
+    alert("Количество игроков должно быть от 2 до 6.");
+    return;
+  }
 
   if (!Number.isSafeInteger(stake) || stake < 1) {
-    alert("Введи целую ставку AC больше нуля.");
+    alert("Ставка должна быть целым числом больше нуля.");
     return;
   }
 
-  if (state.balance < stake) {
-    alert("Недостаточно AC.");
+  if (!state.user || !tg?.initData) {
+    alert("Открой ALLCOINS через Telegram и войди в профиль.");
     return;
   }
 
-  state.rooms.push({
-    name: roomName,
-    players: players,
-    stake: stake
-  });
+  const button = $("createRoom");
+  button.disabled = true;
 
-  showStatus("lottoStatus", "Демо-комната создана.");
-  render();
+  try {
+    const result = await apiRequest("/api/durak/rooms", {
+      name: roomName,
+      maxPlayers: players,
+      stake: stake
+    });
+
+    if (!result.ok || !result.room) {
+      throw new Error(result.error || "Не удалось создать комнату.");
+    }
+
+    const room = result.room;
+
+    state.rooms.push({
+      id: room.id,
+      name: room.name,
+      players: Number(room.max_players),
+      stake: Number(room.stake)
+    });
+
+    render();
+
+    showStatus("lottoStatus", "Комната создана на сервере!");
+
+    alert(
+      "Комната создана!\n" +
+      "Название: " + room.name + "\n" +
+      "Количество игроков: " + room.max_players + "\n" +
+      "Ставка: " + room.stake + " AC"
+    );
+  } catch (error) {
+    alert("Ошибка создания комнаты: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
 };
 
   
