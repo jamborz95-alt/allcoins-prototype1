@@ -435,8 +435,9 @@ function render() {
     const info = document.createElement("div");
 info.innerHTML =
   "<b>" + (room.name || ("Комната #" + (index + 1))) + "</b><br>" +
-  "<span class='muted small'>" + room.players +
-  " игроков · " + room.stake + " AC</span>";
+  "<span class='muted small'>" +
+  (room.playersCount ?? 1) + " из " + room.players +
+  " игроков · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
@@ -518,6 +519,7 @@ async function login() {
       state.energy = Number(result.player.energy ?? state.energy);
       showStatus("profileStatus", "Вход через Telegram выполнен.");
       render();
+      await loadDurakRooms();
     } else {
       showStatus("profileStatus", "Сервер не подтвердил вход.");
     }
@@ -737,10 +739,10 @@ async function loadDurakRooms() {
     }));
 
     render();
-  } catch (error) {
+    } catch (error) {
     console.log("Не удалось загрузить комнаты Дурак Онлайн:", error.message);
   }
-      }
+}
 // Данные комнат Лото
 if (!state.lottoRooms) state.lottoRooms = [];
 if (!state.lottoRoomTickets) state.lottoRoomTickets = {};
