@@ -440,7 +440,7 @@ $("tapButton").onclick = async () => {
 };
 
 $("restoreButton").onclick = async () => {
-  if (energy >= 100) {
+  if (state.energy >= 100) {
     alert("Энергия уже полная!");
     return;
   }
@@ -462,12 +462,14 @@ $("restoreButton").onclick = async () => {
     const result = await apiRequest("/api/restore-energy");
 
     if (result.ok) {
-      energy = result.energy ?? result.player?.energy ?? 100;
+      state.energy = Number(
+        result.energy ?? result.player?.energy ?? 100
+      );
 
       if (result.balance !== undefined) {
-        balance = result.balance;
+        state.balance = Number(result.balance);
       } else if (result.player?.balance !== undefined) {
-        balance = result.player.balance;
+        state.balance = Number(result.player.balance);
       }
 
       render();
@@ -475,12 +477,12 @@ $("restoreButton").onclick = async () => {
     } else {
       alert("Не удалось восстановить энергию.");
     }
-    } catch (error) {
-    alert("Ошибка AdsGram: " + JSON.stringify(error));
+  } catch (error) {
+    alert("Ошибка восстановления энергии. Попробуй позже.");
   } finally {
-    $("restoreButton").disabled = false;
+    $("restoreButton").disabled = state.energy >= 100;
   }
-}; 
+};
 
 $("dailyButton").onclick = async () => {
   if (!state.user) {
