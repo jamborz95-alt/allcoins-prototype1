@@ -681,10 +681,19 @@ async function startServer() {
         PRIMARY KEY (room_id, telegram_id)
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS durak_games (
+        room_id BIGINT PRIMARY KEY
+          REFERENCES durak_rooms(id) ON DELETE CASCADE,
+        game_state JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
 
-    console.log("Durak rooms tables are ready");
-  await pool.query(`
-  CREATE TABLE IF NOT EXISTS durak_games (
+    console.log("Durak games table is ready");
+
+    const port = process.env.PORT || 3000;
+    
     room_id BIGINT PRIMARY KEY
       REFERENCES durak_rooms(id) ON DELETE CASCADE,
     game_state JSONB NOT NULL DEFAULT '{}'::jsonb,
