@@ -398,6 +398,47 @@ if (!user || !user.id) {
       error: "Server error"
     });
   }
+});// Получение списка комнат Дурак Онлайн
+app.post("/api/durak/rooms/list", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Telegram authentication failed"
+      });
+    }
+
+    const result = await pool.query(`
+      SELECT
+        r.id,
+        r.name,
+        r.max_players,
+        r.stake,
+        r.status,
+        COUNT(p.telegram_id)::INTEGER AS players_count
+      FROM durak_rooms r
+      LEFT JOIN durak_room_players p ON p.room_id = r.id
+      WHERE r.status = 'waiting'
+      GROUP BY r.id
+      ORDER BY r.created_at DESC
+      LIMIT 100
+    `);
+
+    return res.json({
+      ok: true,
+      rooms: result.rows
+    });
+
+  } catch (error) {
+    console.error("Get Durak rooms error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось загрузить комнаты"
+    });
+  }
 });async function startServer() {
   try {
     await pool.query(`
