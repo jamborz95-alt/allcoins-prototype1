@@ -727,11 +727,14 @@ $("createRoom").onclick = async () => {
     const room = result.room;
 
     state.rooms.push({
-      id: room.id,
-      name: room.name,
-      players: Number(room.max_players),
-      stake: Number(room.stake)
-    });
+  id: room.id,
+  name: room.name,
+  players: Number(room.max_players),
+  playersCount: 1,
+  stake: Number(room.stake),
+  status: "waiting",
+  isOwner: true
+});
 
     render();
 
