@@ -342,9 +342,62 @@ let state = {
   rooms: [],
   user: null
 };
+  // Загрузка сохранённых данных ALLCOINS
+try {
+  const saved = localStorage.getItem("allcoinsSavedState");
+
+  if (saved) {
+    const data = JSON.parse(saved);
+
+    if (Number.isFinite(data.balance)) {
+      state.balance = data.balance;
+    }
+
+    if (Number.isFinite(data.energy)) {
+      state.energy = Math.max(0, Math.min(100, data.energy));
+    }
+
+    if (Number.isFinite(data.tickets)) {
+      state.tickets = data.tickets;
+    }
+
+    if (Array.isArray(data.rooms)) {
+      state.rooms = data.rooms;
+    }
+
+    if (Array.isArray(data.lottoRooms)) {
+      state.lottoRooms = data.lottoRooms;
+    }
+
+    if (data.lottoRoomTickets && typeof data.lottoRoomTickets === "object") {
+      state.lottoRoomTickets = data.lottoRoomTickets;
+    }
+
+    if (data.selectedLottoRoomId !== undefined) {
+      state.selectedLottoRoomId = data.selectedLottoRoomId;
+    }
+  }
+} catch (error) {
+  console.log("Не удалось загрузить сохранение");
+}
 
 const $ = id => document.getElementById(id);
-
+// Сохранение данных ALLCOINS
+function saveGame() {
+  try {
+    localStorage.setItem("allcoinsSavedState", JSON.stringify({
+      balance: state.balance,
+      energy: state.energy,
+      tickets: state.tickets,
+      rooms: state.rooms,
+      lottoRooms: state.lottoRooms || [],
+      lottoRoomTickets: state.lottoRoomTickets || {},
+      selectedLottoRoomId: state.selectedLottoRoomId ?? null
+    }));
+  } catch (error) {
+    console.log("Не удалось сохранить игру");
+  }
+  }
 function showStatus(id, message) {
   const element = $(id);
   if (element) element.textContent = message;
@@ -385,11 +438,13 @@ info.innerHTML =
       alert("Комната создана для демонстрации. Онлайн-игра пока не подключена.");
     };
 
+    
     div.append(info, button);
     $("roomsList").appendChild(div);
   });
-}
 
+  saveGame();
+}
 async function apiRequest(path, data = {}) {
   const response = await fetch(API + path, {
     method: "POST",
