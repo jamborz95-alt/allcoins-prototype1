@@ -323,7 +323,82 @@ app.post("/api/daily-bonus", async (req, res) => {
     });
   }
 });
-async function startServer() {
+// Создание комнаты Дурак Онлайн
+app.post("/api/durak/rooms", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+if (!user || !user.id) {
+  return res.status(401).json({
+    ok: false,
+    error: "Telegram authentication failed"
+  });
+}
+
+    const name = String(req.body.name || "Комната Дурак").trim().slice(0, 50);
+    const maxPlayers = Number(req.body.maxPlayers);
+    const stake = Number(req.body.stake);
+
+    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
+      return res.status(400).json({
+        ok: false,
+        error: "Количество игроков должно быть от 2 до 6"
+      });
+    }
+
+    if (!Number.isSafeInteger(stake) || stake < 1) {
+      return res.status(400).json({
+        ok: false,
+        error: "Ставка должна быть целым числом больше нуля"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT balance FROM players WHERE telegram_id = $1`,
+      [String(user.id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Игрок не найден. Сначала войдите через Telegram."
+      });
+    }
+
+    if (Number(result.rows[0].balance) < stake) {
+      return res.status(400).json({
+        ok: false,
+        error: "Недостаточно AC"
+      });
+    }
+
+    const roomResult = await pool.query(
+      `INSERT INTO durak_rooms
+        (name, owner_telegram_id, max_players, stake)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, max_players, stake, status`,
+      [name, String(user.id), maxPlayers, stake]
+    );
+
+    await pool.query(
+      `INSERT INTO durak_room_players (room_id, telegram_id)
+       VALUES ($1, $2)`,
+      [roomResult.rows[0].id, String(user.id)]
+    );
+
+    return res.json({
+      ok: true,
+      room: roomResult.rows[0]
+    });
+  } catch (error) {
+    console.error("Create Durak room error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Server error"
+    });
+  }
+});async function startServer() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS players (
@@ -342,7 +417,30 @@ async function startServer() {
     `);
 
     console.log("Players table is ready");
+  
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS durak_rooms (
+        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        name TEXT NOT NULL,
+        owner_telegram_id BIGINT NOT NULL,
+        max_players INTEGER NOT NULL CHECK (max_players BETWEEN 2 AND 6),
+        stake BIGINT NOT NULL CHECK (stake > 0),
+        status TEXT NOT NULL DEFAULT 'waiting'
+          CHECK (status IN ('waiting', 'playing', 'finished')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS durak_room_players (
+        room_id BIGINT NOT NULL REFERENCES durak_rooms(id) ON DELETE CASCADE,
+        telegram_id BIGINT NOT NULL,
+        joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (room_id, telegram_id)
+      )
+    `);
+
+    console.log("Durak rooms tables are ready");
     const port = process.env.PORT || 3000;
 
     app.listen(port, "0.0.0.0", () => {
