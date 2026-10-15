@@ -439,7 +439,102 @@ app.post("/api/durak/rooms/list", async (req, res) => {
       error: "Не удалось загрузить комнаты"
     });
   }
-});async function startServer() {
+});
+// Присоединение к комнате Дурак Онлайн
+app.post("/api/durak/rooms/join", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Необходимо войти через Telegram"
+      });
+    }
+
+    const roomId = req.body?.roomId;
+    const telegramId = String(user.id);
+
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный номер комнаты"
+      });
+    }
+
+    const roomResult = await pool.query(
+      `SELECT id, name, max_players, stake, status
+       FROM durak_rooms
+       WHERE id = $1`,
+      [roomId]
+    );
+
+    if (roomResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Комната не найдена"
+      });
+    }
+
+    const room = roomResult.rows[0];
+
+    if (room.status !== "waiting") {
+      return res.status(400).json({
+        ok: false,
+        error: "Комната уже недоступна"
+      });
+    }
+
+    const existing = await pool.query(
+      `SELECT 1
+       FROM durak_room_players
+       WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, telegramId]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.json({
+        ok: true,
+        message: "Ты уже находишься в этой комнате",
+        room
+      });
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::INTEGER AS total
+       FROM durak_room_players
+       WHERE room_id = $1`,
+      [roomId]
+    );
+
+    if (countResult.rows[0].total >= room.max_players) {
+      return res.status(400).json({
+        ok: false,
+        error: "Комната заполнена"
+      });
+    }
+
+    await pool.query(
+      `INSERT INTO durak_room_players (room_id, telegram_id)
+       VALUES ($1, $2)`,
+      [roomId, telegramId]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Ты присоединился к комнате",
+      room
+    });
+  } catch (error) {
+    console.error("Join Durak room error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось присоединиться к комнате"
+    });
+  }
+});
+async function startServer() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS players (
