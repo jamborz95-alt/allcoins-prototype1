@@ -432,35 +432,47 @@ $("tapButton").onclick = async () => {
 };
 
 $("restoreButton").onclick = async () => {
-  if (state.energy >= 100) return;
+  if (energy >= 100) {
+    alert("Энергия уже полная!");
+    return;
+  }
 
-  if (!state.user) {
-    state.energy = 100;
-    showStatus("homeStatus", "Энергия восстановлена в демо-режиме.");
-    render();
+  if (!window.Adsgram) {
+    alert("Реклама ещё не загрузилась. Попробуй позже.");
     return;
   }
 
   try {
+    $("restoreButton").disabled = true;
+
+    const AdController = window.Adsgram.init({
+      blockId: "54021"
+    });
+
+    await AdController.show();
+
     const result = await apiRequest("/api/restore-energy");
 
-    if (result.ok && result.player) {
-      state.energy = Number(result.player.energy);
-      state.balance = Number(result.player.balance);
-      showStatus("homeStatus", "Энергия восстановлена.");
-    } else if (result.ok && result.energy !== undefined) {
-      state.energy = Number(result.energy);
-      state.balance = Number(result.balance ?? state.balance);
-      showStatus("homeStatus", "Энергия восстановлена.");
+    if (result.ok) {
+      energy = result.energy ?? result.player?.energy ?? 100;
+
+      if (result.balance !== undefined) {
+        balance = result.balance;
+      } else if (result.player?.balance !== undefined) {
+        balance = result.player.balance;
+      }
+
+      render();
+      alert("Энергия восстановлена!");
     } else {
-      showStatus("homeStatus", "Сервер не подтвердил восстановление энергии.");
+      alert("Не удалось восстановить энергию.");
     }
   } catch (error) {
-    showStatus("homeStatus", "Ошибка соединения с сервером.");
+    alert("Реклама не завершена. Попробуй ещё раз.");
+  } finally {
+    $("restoreButton").disabled = false;
   }
-
-  render();
-};
+};  
 
 $("dailyButton").onclick = async () => {
   if (!state.user) {
