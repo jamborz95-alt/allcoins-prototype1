@@ -623,6 +623,30 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       const j = crypto.randomInt(i + 1);
       [deck[i], deck[j]] = [deck[j], deck[i]];
     } 
+        // Получаем игроков комнаты
+    const playersResult = await pool.query(
+      `SELECT telegram_id
+       FROM durak_room_players
+       WHERE room_id = $1
+       ORDER BY joined_at ASC`,
+      [roomId]
+    );
+
+    const gamePlayers = playersResult.rows.map((row) => ({
+      telegramId: String(row.telegram_id),
+      hand: []
+    }));
+
+    // Раздаём по 6 карт каждому игроку
+    for (const player of gamePlayers) {
+      for (let i = 0; i < 6; i++) {
+        player.hand.push(deck.pop());
+      }
+    }
+
+    // Определяем козырь
+    const trumpCard = deck[deck.length - 1];
+    const trumpSuit = trumpCard.suit;
     const updateResult = await pool.query(
       `UPDATE durak_rooms
        SET status = 'playing'
