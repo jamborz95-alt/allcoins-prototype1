@@ -923,8 +923,13 @@ document.querySelectorAll(".nav button").forEach(button => {
   };
 });
 
-window.onerror = function(message) {
-  alert("ОШИБКА ALLCOINS: " + message);
+window.onerror = function(message, source, lineno, colno, error) {
+  alert(
+    "ОШИБКА ALLCOINS:\n" +
+    message +
+    "\nСтрока: " + lineno
+  );
+  return false;
 };
 
 render();
