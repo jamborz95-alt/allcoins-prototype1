@@ -478,6 +478,41 @@ button.onclick = async () => {
 
     
     div.append(info, button);
+
+if (room.isOwner) {
+  const startButton = document.createElement("button");
+  startButton.textContent = "▶ Начать игру";
+  startButton.className = "secondary";
+
+  startButton.onclick = async () => {
+    if (!room.id) {
+      alert("Не найден номер комнаты.");
+      return;
+    }
+
+    startButton.disabled = true;
+
+    try {
+      const result = await apiRequest("/api/durak/rooms/start", {
+        roomId: room.id
+      });
+
+      if (!result.ok) {
+        throw new Error(result.error || "Не удалось начать игру.");
+      }
+
+      alert("Игра началась! Игроков в комнате: " + result.playersCount);
+
+      await loadDurakRooms();
+    } catch (error) {
+      alert("Ошибка запуска: " + error.message);
+    } finally {
+      startButton.disabled = false;
+    }
+  };
+
+  div.appendChild(startButton);
+                        }
     $("roomsList").appendChild(div);
   });
 
