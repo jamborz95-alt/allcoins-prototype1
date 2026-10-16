@@ -949,7 +949,75 @@ app.post("/api/durak/action", async (req, res) => {
         attack: card,
         defense: null
       });
+        if (action === "defend") {
+      if (game.table.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "На столе нет карт для защиты"
+        });
+      }
 
+      if (playerIndex !== game.defenderIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Защищаться может только отбивающийся игрок"
+        });
+      }
+
+      if (!cardId) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала выбери карту для защиты"
+        });
+      }
+
+      const cardIndex = player.hand.findIndex(
+        (card) => String(card.id) === String(cardId)
+      );
+
+      if (cardIndex === -1) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой карты нет в твоей руке"
+        });
+      }
+
+      const tableItem = game.table.find(
+        (item) => item.attack && !item.defense
+      );
+
+      if (!tableItem) {
+        return res.status(400).json({
+          ok: false,
+          error: "Нет карт, которые нужно побить"
+        });
+      }
+
+      const card = player.hand[cardIndex];
+      const attackCard = tableItem.attack;
+
+      const ranks = [
+        "6", "7", "8", "9", "10", "J", "Q", "K", "A"
+      ];
+
+      const cardRank = ranks.indexOf(String(card.rank));
+      const attackRank = ranks.indexOf(String(attackCard.rank));
+
+      const canBeat =
+        (card.suit === attackCard.suit &&
+          cardRank > attackRank) ||
+        (card.suit === game.trumpSuit &&
+          attackCard.suit !== game.trumpSuit);
+
+      if (!canBeat) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой картой нельзя побить атакующую карту"
+        });
+      }
+
+      tableItem.defense = player.hand.splice(cardIndex, 1)[0];
+        }
     }
 
     if (action === "take") {
