@@ -928,22 +928,19 @@ app.post("/api/durak/action", async (req, res) => {
       }
 
       if (game.table.length > 0) {
-        const ranksOnTable = game.table.map(
-          (item) => item.attack.rank
-        );
+  const ranksOnTable = game.table.flatMap((item) => [
+    item.attack.rank,
+    ...(item.defense ? [item.defense.rank] : [])
+  ]);
 
-        const hasMatchingRank = player.hand.some(
-          (card) =>
-            ranksOnTable.includes(card.rank) &&
-            String(card.id) !== String(cardId)
-        );
+  const selectedCard = player.hand[cardIndex];
 
-        if (!hasMatchingRank) {
-          return res.status(400).json({
-            ok: false,
-            error: "Можно подкинуть только карту того же достоинства, что уже есть на столе"
-          });
-        }
+  if (!ranksOnTable.includes(selectedCard.rank)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Можно подкинуть только карту достоинства, которое уже есть на столе"
+    });
+  }
       }
 
       const card = player.hand.splice(cardIndex, 1)[0];
