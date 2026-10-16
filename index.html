@@ -548,6 +548,7 @@ if (room.isOwner === true) {
   startButton.className = "secondary";
 
   startButton.onclick = async () => {
+    currentDurakRoomId = room.id;
     if (!room.id) {
       alert("Не найден номер комнаты.");
       return;
