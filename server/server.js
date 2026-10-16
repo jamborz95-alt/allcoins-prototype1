@@ -825,7 +825,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    const gameResult = await pool.query(
+        const gameResult = await pool.query(
       `SELECT game_state
        FROM durak_games
        WHERE room_id = $1`,
@@ -839,9 +839,151 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    return res.status(400).json({
-      ok: false,
-      error: "Игровые правила ещё не подключены. Карты и ход пока не изменены."
+    const game = gameResult.rows[0].game_state;
+
+    if (!game || game.status !== "playing") {
+      return res.status(400).json({
+        ok: false,
+        error: "Игра не активна"
+      });
+    }
+
+    if (!Array.isArray(game.players) ||
+        !Array.isArray(game.table) ||
+        !Array.isArray(game.deck)) {
+      return res.status(500).json({
+        ok: false,
+        error: "Некорректное состояние игры"
+      });
+    }
+
+    const playerIndex = game.players.findIndex(
+      (player) => String(player.telegramId) === String(user.id)
+    );
+
+    if (playerIndex === -1) {
+      return res.status(403).json({
+        ok: false,
+        error: "Игрок не найден в игре"
+      });
+    }
+
+    const player = game.players[playerIndex];
+
+    if (!Array.isArray(player.hand)) {
+      return res.status(500).json({
+        ok: false,
+        error: "Не найдены карты игрока"
+      });
+    }
+
+    if (action === "attack") {
+      if (!cardId) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала выбери карту"
+        });
+      }
+
+      if (playerIndex !== game.currentPlayerIndex) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сейчас ход другого игрока"
+        });
+      }
+
+      const cardIndex = player.hand.findIndex(
+        (card) => String(card.id) === String(cardId)
+      );
+
+      if (cardIndex === -1) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой карты нет в твоей руке"
+        });
+      }
+
+      if (game.table.length > 0) {
+        const ranksOnTable = game.table.map(
+          (item) => item.attack.rank
+        );
+
+        const hasMatchingRank = player.hand.some(
+          (card) =>
+            ranksOnTable.includes(card.rank) &&
+            String(card.id) !== String(cardId)
+        );
+
+        if (!hasMatchingRank) {
+          return res.status(400).json({
+            ok: false,
+            error: "Можно подкинуть только карту того же достоинства, что уже есть на столе"
+          });
+        }
+      }
+
+      const card = player.hand.splice(cardIndex, 1)[0];
+
+      game.table.push({
+        attack: card,
+        defense: null
+      });
+
+      game.currentPlayerIndex =
+        (game.currentPlayerIndex + 1) % game.players.length;
+    }
+
+    if (action === "take") {
+      if (game.table.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "На столе нет карт"
+        });
+      }
+
+      const cardsToTake = [];
+
+      for (const item of game.table) {
+        if (item.attack) cardsToTake.push(item.attack);
+        if (item.defense) cardsToTake.push(item.defense);
+      }
+
+      player.hand.push(...cardsToTake);
+      game.table = [];
+    }
+
+    if (action === "beat") {
+      if (game.table.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "На столе нет карт"
+        });
+      }
+
+      const allBeaten = game.table.every(
+        (item) => item.attack && item.defense
+      );
+
+      if (!allBeaten) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала нужно побить все карты на столе"
+        });
+      }
+
+      game.table = [];
+    }
+
+    await pool.query(
+      `UPDATE durak_games
+       SET game_state = $1
+       WHERE room_id = $2`,
+      [JSON.stringify(game), roomId]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Игровое действие выполнено"
     });
   } catch (error) {
     console.error("Durak action error:", error.message);
