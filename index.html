@@ -557,7 +557,42 @@ if (room.isOwner === true) {
       }
 
       alert("Игра началась! Игроков в комнате: " + result.playersCount);
+            $("durakGame").style.display = "block";
+      $("durakGameStatus").textContent = "Загружаем карты...";
 
+      try {
+        const game = await apiRequest("/api/durak/game", {
+          roomId: room.id
+        });
+
+        if (!game.ok) {
+          throw new Error(game.error || "Не удалось загрузить карты");
+        }
+
+        $("durakTrump").textContent =
+          "Козырь: " + game.trumpSuit;
+
+        $("durakTable").innerHTML = "";
+        $("durakHand").innerHTML = "";
+
+        game.hand.forEach((card) => {
+          const cardElement = document.createElement("div");
+          cardElement.className = "durak-card";
+
+          if (card.suit === "♥" || card.suit === "♦") {
+            cardElement.classList.add("red");
+          }
+
+          cardElement.textContent = card.rank + card.suit;
+          $("durakHand").appendChild(cardElement);
+        });
+
+        $("durakGameStatus").textContent =
+          "Карты розданы! Осталось в колоде: " + game.cardsLeft;
+      } catch (error) {
+        $("durakGameStatus").textContent =
+          "Не удалось загрузить карты: " + error.message;
+      }
       await loadDurakRooms();
     } catch (error) {
       alert("Ошибка запуска: " + error.message);
