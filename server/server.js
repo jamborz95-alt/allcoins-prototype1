@@ -1045,9 +1045,11 @@ app.post("/api/durak/action", async (req, res) => {
         if (item.defense) cardsToTake.push(item.defense);
       }
 
-      player.hand.push(...cardsToTake);
+            player.hand.push(...cardsToTake);
       game.table = [];
-        }
+    }
+
+    if (action === "beat") {
       if (game.table.length === 0) {
         return res.status(400).json({
           ok: false,
