@@ -950,8 +950,6 @@ app.post("/api/durak/action", async (req, res) => {
         defense: null
       });
 
-      game.currentPlayerIndex =
-        (game.currentPlayerIndex + 1) % game.players.length;
     }
 
     if (action === "take") {
