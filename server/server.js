@@ -604,7 +604,9 @@ app.post("/api/durak/rooms/start", async (req, res) => {
 
        // Создание колоды для Дурака
     const suits = ["♠", "♥", "♦", "♣"];
-    const ranks = ["6", "7", "8", "9", "10", "В", "Д", "К", "Т"];
+    const ranks = [
+  "6", "7", "8", "9", "10", "В", "Д", "К", "Т"
+];
 
     const deck = [];
 
