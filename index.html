@@ -683,6 +683,84 @@ async function durakAction(action) {
   } catch (error) {
     alert("Ошибка игры: " + error.message);
   }
+}async function loadDurakGame(roomId) {
+  if (!roomId || !state.user || !tg?.initData) {
+    return;
+  }
+
+  try {
+    const game = await apiRequest("/api/durak/game", {
+      roomId: roomId
+    });
+
+    if (!game.ok) {
+      return;
+    }
+
+    $("durakGame").style.display = "block";
+
+    $("durakTrump").textContent =
+      "Козырь: " + game.trumpSuit;
+
+    $("durakTable").innerHTML = "";
+
+    if (Array.isArray(game.table)) {
+      game.table.forEach((item) => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "durak-card";
+
+        const card = item.card || item;
+
+        cardElement.textContent =
+          (card.rank || "") + (card.suit || "");
+
+        if (card.suit === "♥" || card.suit === "♦") {
+          cardElement.classList.add("red");
+        }
+
+        $("durakTable").appendChild(cardElement);
+      });
+    }
+
+    $("durakHand").innerHTML = "";
+
+    if (Array.isArray(game.hand)) {
+      game.hand.forEach((card) => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "durak-card";
+        cardElement.style.cursor = "pointer";
+
+        cardElement.textContent = card.rank + card.suit;
+
+        if (card.suit === "♥" || card.suit === "♦") {
+          cardElement.classList.add("red");
+        }
+
+        cardElement.onclick = () => {
+          document
+            .querySelectorAll("#durakHand .durak-card")
+            .forEach((element) => {
+              element.style.transform = "translateY(0)";
+              element.style.border = "1px solid #bbbbbb";
+            });
+
+          cardElement.style.transform = "translateY(-10px)";
+          cardElement.style.border = "3px solid #67f5b5";
+
+          selectedDurakCardId = card.id;
+        };
+
+        $("durakHand").appendChild(cardElement);
+      });
+    }
+
+    $("durakGameStatus").textContent =
+      "Игра: " + game.status +
+      " · Карт в колоде: " + game.cardsLeft;
+
+  } catch (error) {
+    console.log("Обновление Дурака:", error.message);
+  }
 }
 async function login() {
   if (tg) {
