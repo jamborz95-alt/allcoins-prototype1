@@ -813,7 +813,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    const allowedActions = ["attack", "take", "beat"];
+    const allowedActions = ["attack", "defend", "take", "beat"];
 
     if (!allowedActions.includes(action)) {
       return res.status(400).json({
@@ -983,7 +983,12 @@ app.post("/api/durak/action", async (req, res) => {
           error: "На столе нет карт"
         });
       }
-
+     if (playerIndex !== game.defenderIndex) {
+  return res.status(403).json({
+    ok: false,
+    error: "Объявить «Бито» может только защищающийся игрок"
+  });
+     }
       const allBeaten = game.table.every(
         (item) => item.attack && item.defense
       );
