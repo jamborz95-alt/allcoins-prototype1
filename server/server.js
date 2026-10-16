@@ -909,11 +909,11 @@ app.post("/api/durak/action", async (req, res) => {
         });
       }
 
-      if (playerIndex !== game.currentPlayerIndex) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сейчас ход другого игрока"
-        });
+      if (playerIndex !== game.attackerIndex) {
+  return res.status(400).json({
+    ok: false,
+    error: "Сейчас ход атакующего игрока"
+  });
       }
 
       const cardIndex = player.hand.findIndex(
