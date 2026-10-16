@@ -959,7 +959,12 @@ app.post("/api/durak/action", async (req, res) => {
           error: "На столе нет карт"
         });
       }
-
+            if (playerIndex !== game.defenderIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Взять карты может только защищающийся игрок"
+        });
+            }
       const cardsToTake = [];
 
       for (const item of game.table) {
