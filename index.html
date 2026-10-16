@@ -589,15 +589,17 @@ if (room.isOwner === true) {
 cardElement.style.cursor = "pointer";
 
 cardElement.onclick = () => {
-  cardElement.classList.toggle("selected");
+  document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
+    element.classList.remove("selected");
+    element.style.transform = "translateY(0)";
+    element.style.border = "1px solid #bbbbbb";
+  });
 
-  if (cardElement.classList.contains("selected")) {
-    cardElement.style.transform = "translateY(-10px)";
-    cardElement.style.border = "3px solid #67f5b5";
-  } else {
-    cardElement.style.transform = "translateY(0)";
-    cardElement.style.border = "1px solid #bbbbbb";
-  }
+  cardElement.classList.add("selected");
+  cardElement.style.transform = "translateY(-10px)";
+  cardElement.style.border = "3px solid #67f5b5";
+
+  selectedDurakCardId = card.id;
 };
           if (card.suit === "♥" || card.suit === "♦") {
             cardElement.classList.add("red");
