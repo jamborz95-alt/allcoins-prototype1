@@ -648,7 +648,37 @@ if (!response.ok) {
 
   return response.json();
 }
+async function durakAction(action) {
+  if (!currentDurakRoomId) {
+    alert("Сначала открой игровую комнату.");
+    return;
+  }
 
+  if (
+    (action === "attack" || action === "defend") &&
+    !selectedDurakCardId
+  ) {
+    alert("Сначала выбери карту.");
+    return;
+  }
+
+  try {
+    const result = await apiRequest("/api/durak/action", {
+      roomId: currentDurakRoomId,
+      action: action,
+      cardId: selectedDurakCardId
+    });
+
+    if (!result.ok) {
+      throw new Error(result.error || "Действие не выполнено.");
+    }
+
+    selectedDurakCardId = null;
+    alert("Действие выполнено!");
+  } catch (error) {
+    alert("Ошибка игры: " + error.message);
+  }
+}
 async function login() {
   if (tg) {
     tg.ready();
