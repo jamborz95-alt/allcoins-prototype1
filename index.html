@@ -773,7 +773,13 @@ async function durakAction(action) {
     console.log("Обновление Дурака:", error.message);
   }
 }
-async function login() {
+// Автоматически обновляем состояние Дурака каждые 2 секунды
+setInterval(() => {
+  if (currentDurakRoomId && state.user && tg?.initData) {
+    loadDurakGame(currentDurakRoomId);
+  }
+}, 2000);
+  async function login() {
   if (tg) {
     tg.ready();
     tg.expand();
