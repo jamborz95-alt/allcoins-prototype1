@@ -1023,19 +1023,21 @@ app.post("/api/durak/action", async (req, res) => {
       tableItem.defense = player.hand.splice(cardIndex, 1)[0];
     }
 
-    if (action === "take") {
+        if (action === "take") {
       if (game.table.length === 0) {
         return res.status(400).json({
           ok: false,
           error: "На столе нет карт"
         });
       }
-            if (playerIndex !== game.defenderIndex) {
+
+      if (playerIndex !== game.defenderIndex) {
         return res.status(403).json({
           ok: false,
           error: "Взять карты может только защищающийся игрок"
         });
-            }
+      }
+
       const cardsToTake = [];
 
       for (const item of game.table) {
@@ -1045,9 +1047,7 @@ app.post("/api/durak/action", async (req, res) => {
 
       player.hand.push(...cardsToTake);
       game.table = [];
-    }
-
-    if (action === "beat") {
+        }
       if (game.table.length === 0) {
         return res.status(400).json({
           ok: false,
