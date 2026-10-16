@@ -529,11 +529,22 @@ button.onclick = async () => {
     });
 
     if (!result.ok) {
-      throw new Error(result.error || "Не удалось войти в комнату.");
-    }
+  throw new Error(result.error || "Не удалось войти в комнату.");
+}
 
-    alert(
-      "Ты вошёл в комнату!\n" +
+currentDurakRoomId = room.id;
+
+$("durakGame").style.display = "block";
+$("durakGameStatus").textContent =
+  "Ты вошёл в комнату. Ожидаем начала игры...";
+
+await loadDurakGame(room.id);
+
+alert(
+  "Ты вошёл в комнату!\n" +
+  "Название: " + room.name + "\n" +
+  "Ставка: " + room.stake + " AC"
+);
       "Название: " + room.name + "\n" +
       "Ставка: " + room.stake + " AC"
     );
