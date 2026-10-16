@@ -916,11 +916,17 @@ async function durakAction(action) {
 
     if (Array.isArray(game.hand)) {
       game.hand.forEach((card) => {
-        const cardElement = document.createElement("div");
+                const cardElement = document.createElement("div");
         cardElement.className = "durak-card";
-        cardElement.style.cursor = "pointer";
+        cardElement.style.cursor = "grab";
 
-        cardElement.textContent = card.rank + card.suit;
+        const rank = card.rank || "";
+        const suit = card.suit || "";
+
+        cardElement.innerHTML = `
+          <span class="card-corner">${rank}<br>${suit}</span>
+          <span class="card-suit">${suit}</span>
+        `;
 
         if (card.suit === "♥" || card.suit === "♦") {
           cardElement.classList.add("red");
