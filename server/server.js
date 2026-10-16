@@ -648,15 +648,15 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     const trumpCard = deck[deck.length - 1];
     const trumpSuit = trumpCard.suit;
         // Сохраняем состояние игры
-    const gameState = {
-      players: gamePlayers,
-      deck,
-      trumpCard,
-      trumpSuit,
-      table: [],
-      currentPlayerIndex: 0,
-      status: "playing"
-    };
+     const gameState = {
+  players: gamePlayers,
+  deck,
+  trumpCard,
+  trumpSuit,
+  table: [],
+  currentPlayerIndex: 0,
+  attackerIndex: 0,
+  defender
 
     await pool.query(
       `INSERT INTO durak_games (room_id, game_state, updated_at)
