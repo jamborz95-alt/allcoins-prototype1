@@ -869,7 +869,20 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     const player = game.players[playerIndex];
-
+    if (
+  !Number.isInteger(game.attackerIndex) ||
+  !Number.isInteger(game.defenderIndex) ||
+  game.attackerIndex < 0 ||
+  game.defenderIndex < 0 ||
+  game.attackerIndex >= game.players.length ||
+  game.defenderIndex >= game.players.length ||
+  game.attackerIndex === game.defenderIndex
+) {
+  return res.status(400).json({
+    ok: false,
+    error: "Некорректное состояние ходов. Создай новую игру."
+  });
+      }
     if (!Array.isArray(player.hand)) {
       return res.status(500).json({
         ok: false,
