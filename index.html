@@ -210,6 +210,174 @@
 #durakGameStatus {
   font-weight: bold;
 }
+ /* ===== ДУРАК ОНЛАЙН: 2D-ИГРОВОЙ СТОЛ ===== */
+
+#durakGame {
+  width: 100%;
+  overflow: hidden;
+}
+
+#durakGame .durak-table {
+  position: relative;
+  width: 100%;
+  min-height: 390px;
+  margin: 15px auto;
+  padding: 18px 10px;
+  border: 7px solid #633b22;
+  border-radius: 48% / 38%;
+  background: radial-gradient(
+    ellipse at center,
+    #238b55 0%,
+    #12663b 65%,
+    #084426 100%
+  );
+  box-shadow:
+    inset 0 0 0 3px #b98a50,
+    inset 0 0 25px rgba(0, 0, 0, 0.35),
+    0 5px 12px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+#durakGame .durak-players {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#durakGame .durak-player {
+  min-width: 75px;
+  max-width: 120px;
+  padding: 7px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+#durakGame .durak-player.active {
+  border-color: #ffe16b;
+  box-shadow: 0 0 10px rgba(255, 225, 107, 0.65);
+}
+
+#durakGame #durakGameStatus {
+  text-align: center;
+}
+
+#durakGame #durakTrump {
+  color: white;
+  text-align: center;
+  margin: 8px 0;
+}
+
+#durakGame #durakTable {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 125px;
+  margin: 12px 0;
+  padding: 10px 4px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+#durakGame #durakHand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 12px 2px;
+  min-height: 120px;
+}
+
+/* Карты */
+
+#durakGame .durak-card {
+  position: relative;
+  flex: 0 0 65px;
+  width: 65px;
+  height: 96px;
+  box-sizing: border-box;
+  border: 1px solid #d7d7d7;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #171717;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+#durakGame .durak-card.red {
+  color: #d82020;
+}
+
+#durakGame .durak-card.selected {
+  transform: translateY(-12px);
+  border: 3px solid #ffcf40;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
+}
+
+#durakGame .durak-card .card-corner {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  font-size: 17px;
+  line-height: 1;
+}
+
+#durakGame .durak-card .card-suit {
+  position: absolute;
+  top: 29px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 31px;
+}
+
+#durakGame .durak-card.dragging {
+  opacity: 0.8;
+  z-index: 100;
+  cursor: grabbing;
+}
+
+#durakGame #durakControls {
+  justify-content: center;
+}
+
+#durakGame #durakControls button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+@media (max-width: 380px) {
+  #durakGame .durak-table {
+    min-height: 350px;
+    padding: 12px 6px;
+  }
+
+  #durakGame .durak-card {
+    flex-basis: 56px;
+    width: 56px;
+    height: 84px;
+  }
+
+  #durakGame #durakHand {
+    gap: 5px;
+  }
+  } 
   </style>
 </head>
 <body>
