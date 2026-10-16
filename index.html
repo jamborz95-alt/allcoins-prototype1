@@ -288,7 +288,11 @@
 
   <h4>Твои карты</h4>
   <div id="durakHand"></div>
-</div>
+<div id="durakControls" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:15px;">
+  <button type="button" id="durakAttack" class="secondary">🃏 Подкинуть</button>
+  <button type="button" id="durakTake" class="secondary">✋ Взять</button>
+  <button type="button" id="durakBeat" class="secondary">✅ Бито</button>
+</div></div>
 
 <div id="roomsList"></div>
     </div>
@@ -579,7 +583,19 @@ if (room.isOwner === true) {
         game.hand.forEach((card) => {
           const cardElement = document.createElement("div");
           cardElement.className = "durak-card";
+cardElement.style.cursor = "pointer";
 
+cardElement.onclick = () => {
+  cardElement.classList.toggle("selected");
+
+  if (cardElement.classList.contains("selected")) {
+    cardElement.style.transform = "translateY(-10px)";
+    cardElement.style.border = "3px solid #67f5b5";
+  } else {
+    cardElement.style.transform = "translateY(0)";
+    cardElement.style.border = "1px solid #bbbbbb";
+  }
+};
           if (card.suit === "♥" || card.suit === "♦") {
             cardElement.classList.add("red");
           }
