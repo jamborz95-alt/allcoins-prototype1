@@ -1080,6 +1080,20 @@ window.onerror = function(message, source, lineno, colno, error) {
 
 render();
 login().then(() => loadDurakRooms());
-</script>
+$("durakAttack").onclick = () => {
+  durakAction("attack");
+};
+
+$("durakDefend").onclick = () => {
+  durakAction("defend");
+};
+
+$("durakTake").onclick = () => {
+  durakAction("take");
+};
+
+$("durakBeat").onclick = () => {
+  durakAction("beat");
+};</script>
 </body>
 </html>
