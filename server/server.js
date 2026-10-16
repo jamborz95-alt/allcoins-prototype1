@@ -1021,7 +1021,6 @@ app.post("/api/durak/action", async (req, res) => {
       }
 
       tableItem.defense = player.hand.splice(cardIndex, 1)[0];
-        }
     }
 
     if (action === "take") {
