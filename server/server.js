@@ -947,11 +947,13 @@ app.post("/api/durak/action", async (req, res) => {
 
       const card = player.hand.splice(cardIndex, 1)[0];
 
-      game.table.push({
+            game.table.push({
         attack: card,
         defense: null
       });
-        if (action === "defend") {
+    }
+
+    if (action === "defend") {
       if (game.table.length === 0) {
         return res.status(400).json({
           ok: false,
