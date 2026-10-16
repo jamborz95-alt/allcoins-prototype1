@@ -656,6 +656,17 @@ app.post("/api/durak/rooms/start", async (req, res) => {
   table: [],
   currentPlayerIndex: 0,
   attackerIndex: 0,
+  defenderIndex: 1,
+  phase: "attack",
+  status: "playing"
+};
+  players: gamePlayers,
+  deck,
+  trumpCard,
+  trumpSuit,
+  table: [],
+  currentPlayerIndex: 0,
+  attackerIndex: 0,
   defender
 
     await pool.query(
