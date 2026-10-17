@@ -2390,6 +2390,31 @@ function showAllcoinsCardPreview() {
     document.body.appendChild(preview);
   }
     }
+// ===== КНОПКА ПРЕДПРОСМОТРА =====
+const previewButton = document.createElement("button");
+
+previewButton.type = "button";
+previewButton.textContent = "🃏 Посмотреть карты ALLCOINS Premium";
+
+previewButton.style.cssText = `
+  display: block;
+  width: 100%;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #d4af37;
+  border-radius: 10px;
+  background: #101010;
+  color: #e5c46b;
+  font-weight: bold;
+`;
+
+previewButton.onclick = showAllcoinsCardPreview;
+
+const gamesSection = document.getElementById("games");
+
+if (gamesSection) {
+  gamesSection.appendChild(previewButton);
+}
 </script>
 </body>
 </html>
