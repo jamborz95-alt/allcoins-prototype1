@@ -1574,7 +1574,10 @@ try {
     $("durakRoomsPanel").style.display = "none";
 
     $("durakGame").style.display = "block";
-    $("durakBoard").style.display = "block";
+$("durakGame").classList.add("durak-fullscreen");
+$("durakRoomActions").style.display = "none";
+$("durakEntry").style.display = "none";
+$("durakBoard").style.display = "block";
 
     await loadDurakGame(startedRoomId);
     return;
