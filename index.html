@@ -1333,10 +1333,16 @@ $("durakEntry").style.display = "none";
         const rank = card.rank || "";
         const suit = card.suit || "";
 
-        cardElement.innerHTML = `
-          <span class="card-corner">${rank}<br>${suit}</span>
-          <span class="card-suit">${suit}</span>
-        `;
+        const newCard = createDurakCardElement(card);
+
+newCard.classList.add("player-card");
+
+newCard.dataset.rank = card.rank || "";
+newCard.dataset.suit = card.suit || "";
+
+newCard.addEventListener("click", () => {
+  // Сохраняем существующий обработчик выбора карты.
+});
 
         if (card.suit === "♥" || card.suit === "♦") {
           cardElement.classList.add("red");
