@@ -1472,7 +1472,210 @@ if (stake > state.balance) {
   }
 };
 
-  
+// ========================================
+// ОЖИДАНИЕ И ГОТОВНОСТЬ ИГРОКОВ В ДУРАКЕ
+// ========================================
+
+let durakWaitingRoom = null;
+
+// Открываем панель ожидания
+async function openDurakWaitingRoom(room) {
+  if (!room || !room.id) {
+    alert("Не удалось определить комнату.");
+    return;
+  }
+
+  durakWaitingRoom = room;
+  currentDurakRoomId = room.id;
+
+  $("durakRoomsPanel").style.display = "none";
+  $("durakWaitingPanel").style.display = "block";
+  $("durakBoard").style.display = "none";
+  $("durakGame").style.display = "none";
+
+  $("durakWaitingRoomName").textContent =
+    room.name || "Комната ALLCOINS";
+
+  $("durakWaitingStatus").textContent =
+    "Загружаем список игроков...";
+
+  await refreshDurakWaitingRoom();
+}
+
+
+// Обновляем список игроков и их готовность
+async function refreshDurakWaitingRoom() {
+  if (!durakWaitingRoom || !durakWaitingRoom.id) {
+    return;
+  }
+
+  try {
+    const result = await apiRequest("/api/durak/rooms/players", {
+      roomId: durakWaitingRoom.id
+    });
+
+    if (!result.ok) {
+      throw new Error(
+        result.error || "Не удалось получить список игроков."
+      );
+    }
+
+    const players = Array.isArray(result.players)
+      ? result.players
+      : [];
+
+    $("durakWaitingCount").textContent =
+      result.playersCount ?? players.length;
+
+    const playersContainer = $("durakWaitingPlayers");
+    playersContainer.innerHTML = "";
+
+    players.forEach((player, index) => {
+      const row = document.createElement("div");
+
+      row.className = "card";
+      row.style.marginTop = "8px";
+
+      const name = document.createElement("b");
+      name.textContent =
+        player.label || player.name || ("Игрок " + (index + 1));
+
+      const status = document.createElement("div");
+      status.style.marginTop = "5px";
+
+      if (player.isOwner) {
+        status.textContent = "👑 Создатель комнаты";
+      } else if (player.isReady) {
+        status.textContent = "✅ Готов к игре";
+      } else {
+        status.textContent = "⏳ Ожидает готовности";
+      }
+
+      row.appendChild(name);
+      row.appendChild(status);
+      playersContainer.appendChild(row);
+    });
+
+    const isOwner = players.some(player => player.isOwner);
+
+    const myPlayer = players.find(player =>
+      player.isOwner
+        ? false
+        : player.isMe === true
+    );
+
+    const readyButton = $("durakReadyButton");
+    const startButton = $("durakStartButton");
+
+    readyButton.style.display =
+      !isOwner && !myPlayer?.isReady ? "block" : "none";
+
+    startButton.style.display =
+      isOwner ? "block" : "none";
+
+    if (isOwner) {
+      $("durakWaitingStatus").textContent =
+        "Ожидай игроков. Когда все гости будут готовы, можно начинать игру.";
+    } else if (myPlayer?.isReady) {
+      $("durakWaitingStatus").textContent =
+        "Ты готов! Ожидаем начала игры создателем комнаты.";
+    } else {
+      $("durakWaitingStatus").textContent =
+        "Нажми «Готов», когда будешь готов играть.";
+    }
+
+  } catch (error) {
+    $("durakWaitingStatus").textContent =
+      "Ошибка загрузки игроков: " + error.message;
+  }
+}
+
+
+// Кнопка «Готов»
+$("durakReadyButton").onclick = async function () {
+  if (!durakWaitingRoom) {
+    alert("Сначала войди в комнату.");
+    return;
+  }
+
+  const button = $("durakReadyButton");
+  button.disabled = true;
+
+  try {
+    const result = await apiRequest("/api/durak/rooms/ready", {
+      roomId: durakWaitingRoom.id
+    });
+
+    if (!result.ok) {
+      throw new Error(
+        result.error || "Не удалось отметить готовность."
+      );
+    }
+
+    $("durakWaitingStatus").textContent =
+      "✅ Готовность отмечена! Ожидаем начала игры.";
+
+    await refreshDurakWaitingRoom();
+
+  } catch (error) {
+    alert("Ошибка готовности: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+};
+
+
+// Кнопка «Начать игру» для создателя
+$("durakStartButton").onclick = async function () {
+  if (!durakWaitingRoom) {
+    alert("Сначала открой свою комнату.");
+    return;
+  }
+
+  const button = $("durakStartButton");
+  button.disabled = true;
+
+  try {
+    const result = await apiRequest("/api/durak/rooms/start", {
+      roomId: durakWaitingRoom.id
+    });
+
+    if (!result.ok) {
+      throw new Error(
+        result.error || "Не удалось начать игру."
+      );
+    }
+
+    $("durakWaitingStatus").textContent =
+      "🎮 Игра начинается! Загружаем карты...";
+
+    $("durakWaitingPanel").style.display = "none";
+    $("durakGame").style.display = "block";
+    $("durakBoard").style.display = "block";
+
+    await loadDurakGame(durakWaitingRoom.id);
+
+    await loadDurakRooms();
+
+  } catch (error) {
+    alert("Ошибка запуска игры: " + error.message);
+    $("durakWaitingStatus").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+};
+
+
+// Возврат к списку комнат
+$("durakLeaveWaiting").onclick = function () {
+  $("durakWaitingPanel").style.display = "none";
+  $("durakRoomsPanel").style.display = "block";
+
+  durakWaitingRoom = null;
+  currentDurakRoomId = null;
+
+  loadDurakRooms();
+};  
 // Загрузка комнат Дурак Онлайн с сервера
 async function loadDurakRooms() {
   if (!tg?.initData) {
