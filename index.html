@@ -1234,6 +1234,9 @@ durakStakeInput.addEventListener("input", () => {
 $("createRoom").onclick = async () => {
   const players = Number($("players").value);
   const stake = Number($("durakStake").value);
+const deck = Number($("durakDeck").value);
+const speed = $("durakSpeed").value;
+const privacy = $("durakPrivacy").value;
   const roomName =
     $("roomName").value.trim() || "Комната ALLCOINS";
 
