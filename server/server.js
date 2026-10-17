@@ -338,7 +338,9 @@ if (!user || !user.id) {
     const name = String(req.body.name || "Комната Дурак").trim().slice(0, 50);
     const maxPlayers = Number(req.body.maxPlayers);
     const stake = Number(req.body.stake);
-
+const deck = Number(req.body.deck ?? 36);
+const speed = req.body.speed === "fast" ? "fast" : "normal";
+const privacy = req.body.privacy === "private" ? "private" : "public";
     if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
       return res.status(400).json({
         ok: false,
