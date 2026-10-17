@@ -1618,14 +1618,24 @@ try {
 
 const isOwner = myPlayer?.isOwner === true;
 
-    const readyButton = $("durakReadyButton");
-    const startButton = $("durakStartButton");
+const readyButton = $("durakReadyButton");
+const startButton = $("durakStartButton");
 
-    readyButton.style.display =
-      !isOwner && !myPlayer?.isReady ? "block" : "none";
+// Обе кнопки занимают одно и то же место.
+// У гостя показывается «Готов».
+// У создателя показывается «Начать игру».
+if (isOwner) {
+  readyButton.style.display = "none";
+  startButton.style.display = "block";
+} else if (myPlayer) {
+  startButton.style.display = "none";
 
-    startButton.style.display =
-      isOwner ? "block" : "none";
+  readyButton.style.display =
+    myPlayer.isReady ? "none" : "block";
+} else {
+  readyButton.style.display = "none";
+  startButton.style.display = "none";
+}
 
     if (isOwner) {
       $("durakWaitingStatus").textContent =
