@@ -791,7 +791,35 @@ app.post("/api/durak/rooms/start", async (req, res) => {
         error: "Для начала игры нужны минимум 2 игрока"
       });
     }
+    // Проверяем готовность всех игроков, кроме создателя
+    const readyResult = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (
+           WHERE p.telegram_id <> r.owner_telegram_id
+         )::INTEGER AS total_guests,
 
+         COUNT(*) FILTER (
+           WHERE p.telegram_id <> r.owner_telegram_id
+             AND p.is_ready = TRUE
+         )::INTEGER AS ready_guests
+
+       FROM durak_room_players p
+       JOIN durak_rooms r ON r.id = p.room_id
+       WHERE p.room_id = $1`,
+      [roomId]
+    );
+
+    const totalGuests = readyResult.rows[0].total_guests;
+    const readyGuests = readyResult.rows[0].ready_guests;
+
+    if (readyGuests < totalGuests) {
+      return res.status(409).json({
+        ok: false,
+        error: "Не все игроки готовы к игре",
+        readyPlayers: readyGuests,
+        totalPlayers: totalGuests
+      });
+    }
        // Создание колоды для Дурака
 const suits = ["♠", "♥", "♦", "♣"];
 
