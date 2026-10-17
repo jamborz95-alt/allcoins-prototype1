@@ -967,6 +967,10 @@ if (room.isOwner === true) {
 
       alert("Игра началась! Игроков в комнате: " + result.playersCount);
             $("durakGame").style.display = "block";
+    $("durakWaitingPanel").style.display = "none";
+$("durakBoard").style.display = "block";
+$("durakCreatePanel").style.display = "none";
+$("durakRoomsPanel").style.display = "none";
       $("durakGameStatus").textContent = "Загружаем карты...";
 
       try {
