@@ -458,6 +458,30 @@
   inputmode="numeric"
   placeholder="Например, 10000000"
 >
+      <div style="margin:16px 0;">
+  <label class="muted">🃏 Колода карт</label>
+  <select id="durakDeck">
+    <option value="24">24 карты</option>
+    <option value="36" selected>36 карт</option>
+    <option value="52">52 карты</option>
+  </select>
+</div>
+
+<div style="margin:16px 0;">
+  <label class="muted">⚡ Скорость игры</label>
+  <select id="durakSpeed">
+    <option value="normal" selected>Обычная</option>
+    <option value="fast">Быстрая</option>
+  </select>
+</div>
+
+<div style="margin:16px 0;">
+  <label class="muted">🔒 Тип комнаты</label>
+  <select id="durakPrivacy">
+    <option value="public" selected>🌍 Открытая</option>
+    <option value="private">🔐 Приватная</option>
+  </select>
+</div>
       <button class="full" id="createRoom">＋ Создать комнату</button>
 
 <div id="durakGame" class="card" style="display:none;">
