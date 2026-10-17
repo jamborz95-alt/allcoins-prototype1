@@ -797,6 +797,54 @@ cardElement.onclick = () => {
 
   selectedDurakCardId = card.id;
 };
+                  let startX = 0;
+        let startY = 0;
+        let isDragging = false;
+
+        cardElement.addEventListener("pointerdown", (event) => {
+          startX = event.clientX;
+          startY = event.clientY;
+          isDragging = false;
+          cardElement.setPointerCapture(event.pointerId);
+        });
+
+        cardElement.addEventListener("pointermove", (event) => {
+          if (!cardElement.hasPointerCapture(event.pointerId)) return;
+
+          const dx = event.clientX - startX;
+          const dy = event.clientY - startY;
+
+          if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+            isDragging = true;
+            cardElement.style.transform =
+              `translate(${dx}px, ${dy}px)`;
+            cardElement.style.zIndex = "100";
+          }
+        });
+
+        cardElement.addEventListener("pointerup", () => {
+          cardElement.style.transform = "";
+          cardElement.style.zIndex = "";
+
+          if (isDragging) {
+            selectedDurakCardId = card.id;
+
+            document
+              .querySelectorAll("#durakHand .durak-card")
+              .forEach((element) => {
+                element.classList.remove("selected");
+              });
+
+            cardElement.classList.add("selected");
+
+            showStatus(
+              "durakGameStatus",
+              "Выбрана карта " + card.rank + card.suit
+            );
+          }
+
+          isDragging = false;
+        });
           if (card.suit === "♥" || card.suit === "♦") {
             cardElement.classList.add("red");
           }
