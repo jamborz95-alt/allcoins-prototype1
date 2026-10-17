@@ -2399,7 +2399,7 @@ const bottomCorner = document.createElement("div");
 
 bottomCorner.style.cssText = `
   position: absolute;
-  right: 6px;
+  right: 5px;
   bottom: 5px;
   display: flex;
   flex-direction: column;
@@ -2408,7 +2408,9 @@ bottomCorner.style.cssText = `
   font-size: 13px;
   font-weight: bold;
   transform: rotate(180deg);
-  z-index: 2;
+  transform-origin: center;
+  z-index: 3;
+  color: inherit;
 `;
 
 const bottomRank = document.createElement("span");
