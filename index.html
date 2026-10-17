@@ -1358,9 +1358,10 @@ function createDurakCardElement(card) {
     cardElement.appendChild(court);
   }
 
-  return cardElement;
+    return cardElement;
 }
-}async function loadDurakGame(roomId) {
+
+async function loadDurakGame(roomId) {
   if (!roomId || !state.user || !tg?.initData) {
     return;
   }
