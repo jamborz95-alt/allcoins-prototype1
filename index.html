@@ -1675,14 +1675,23 @@ $("durakStartButton").onclick = async function () {
 
 // Возврат к списку комнат
 $("durakLeaveWaiting").onclick = function () {
+  // Останавливаем автоматическое обновление списка игроков
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
+
+  // Закрываем комнату ожидания и возвращаем список комнат
   $("durakWaitingPanel").style.display = "none";
   $("durakRoomsPanel").style.display = "block";
 
+  // Сбрасываем текущую комнату
   durakWaitingRoom = null;
   currentDurakRoomId = null;
 
+  // Обновляем список комнат
   loadDurakRooms();
-};  
+};
 // Загрузка комнат Дурак Онлайн с сервера
 async function loadDurakRooms() {
   if (!tg?.initData) {
