@@ -1141,7 +1141,10 @@ async function durakAction(action) {
     }
 
     $("durakGame").style.display = "block";
-
+$("durakWaitingPanel").style.display = "none";
+$("durakBoard").style.display = "block";
+$("durakCreatePanel").style.display = "none";
+$("durakRoomsPanel").style.display = "none";
     $("durakTrump").textContent =
       "Козырь: " + game.trumpSuit;
 
