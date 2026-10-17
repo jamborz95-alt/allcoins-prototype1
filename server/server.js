@@ -617,11 +617,6 @@ app.post("/api/durak/rooms/players", async (req, res) => {
   isReady: player.is_owner || player.is_ready,
   isMe: String(player.telegram_id) === String(user.id)
 }));
-  label: player.is_owner
-    ? "Создатель комнаты"
-    : "Игрок " + (index + 1),
-  isMe: String(player.telegram_id) === String(user.id)
-}));
 
     return res.json({
       ok: true,
