@@ -565,8 +565,7 @@ app.post("/api/durak/rooms/start", async (req, res) => {
         error: "Неверный номер комнаты"
       });
     }
-
-    const roomResult = await pool.query(
+    
      const roomResult = await pool.query(
   `SELECT
      id,
