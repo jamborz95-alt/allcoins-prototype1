@@ -623,14 +623,6 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     }
 
        // Создание колоды для Дурака
-    const suits = ["♠", "♥", "♦", "♣"];
-    const ranks = [
-  "6", "7", "8", "9", "10", "В", "Д", "К", "Т"
-];
-
-    const deck = [];
-
-    // Создание колоды для Дурака
 const suits = ["♠", "♥", "♦", "♣"];
 
 const selectedDeck = Number(room.deck || 36);
@@ -641,7 +633,7 @@ const ranks36 = [
 
 const ranks52 = [
   "2", "3", "4", "5", "6", "7", "8",
-  "9", "10", "В", "Д", "К", "Т", "Т2"
+  "9", "10", "В", "Д", "К", "Туз"
 ];
 
 const ranks = selectedDeck === 52 ? ranks52 : ranks36;
