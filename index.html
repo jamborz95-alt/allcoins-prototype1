@@ -505,6 +505,90 @@
     gap: 5px;
   }
   } 
+ /* ===== ALLCOINS PREMIUM CARDS ===== */
+
+#durakGame .durak-card.premium-card {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  background: linear-gradient(
+    145deg,
+    #fffdf5 0%,
+    #f3ead2 55%,
+    #fffaf0 100%
+  );
+
+  color: #171717;
+  border: 2px solid #d4af37;
+  border-radius: 9px;
+
+  box-shadow:
+    inset 0 0 0 2px #fff8df,
+    0 3px 8px rgba(0, 0, 0, 0.3);
+
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+#durakGame .premium-card .card-corner {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  line-height: 1;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+#durakGame .premium-card .card-rank {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+#durakGame .premium-card .corner-suit {
+  font-size: 12px;
+}
+
+#durakGame .premium-card .card-suit {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 34px;
+  font-weight: 700;
+}
+
+#durakGame .premium-card.red {
+  color: #b51f32;
+}
+
+#durakGame .premium-card:not(.red) {
+  color: #171717;
+}
+
+#durakGame .premium-card .card-court {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+
+  color: #b08a28;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+#durakGame .premium-card.player-card {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+#durakGame .premium-card.table-card {
+  flex-shrink: 0;
+}
   </style>
 </head>
 <body>
