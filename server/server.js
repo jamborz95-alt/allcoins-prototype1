@@ -598,10 +598,11 @@ app.post("/api/durak/rooms/players", async (req, res) => {
     }
 
     const playersResult = await pool.query(
-      `SELECT
-         p.is_ready,
-         (p.telegram_id = r.owner_telegram_id) AS is_owner
-       FROM durak_room_players p
+  `SELECT
+     p.telegram_id,
+     p.is_ready,
+     (p.telegram_id = r.owner_telegram_id) AS is_owner
+   FROM durak_room_players p
        JOIN durak_rooms r ON r.id = p.room_id
        WHERE p.room_id = $1
        ORDER BY p.joined_at`,
