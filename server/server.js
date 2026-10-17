@@ -1139,7 +1139,20 @@ async function startServer() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    await pool.query(`
+      ALTER TABLE durak_rooms
+      ADD COLUMN IF NOT EXISTS deck INTEGER NOT NULL DEFAULT 36
+    `);
 
+    await pool.query(`
+      ALTER TABLE durak_rooms
+      ADD COLUMN IF NOT EXISTS speed TEXT NOT NULL DEFAULT 'normal'
+    `);
+
+    await pool.query(`
+      ALTER TABLE durak_rooms
+      ADD COLUMN IF NOT EXISTS privacy TEXT NOT NULL DEFAULT 'public'
+    `);
     console.log("Durak games table is ready");
 
     const port = process.env.PORT || 3000;
