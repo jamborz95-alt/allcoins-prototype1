@@ -991,7 +991,16 @@ app.post("/api/durak/game", async (req, res) => {
     }
 
     const gameState = gameResult.rows[0].game_state;
-
+console.log("DURAK DEBUG:", {
+  roomId: String(roomId),
+  currentTelegramId: String(user.id),
+  playersInGame: Array.isArray(gameState.players)
+    ? gameState.players.map(player => ({
+        telegramId: String(player.telegramId),
+        cards: Array.isArray(player.hand) ? player.hand.length : "нет массива карт"
+      }))
+    : "список игроков отсутствует"
+});
     // Возвращаем игроку только его карты
     const me = gameState.players.find(
   (player) => String(player.telegramId) === String(user.id)
