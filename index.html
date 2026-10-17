@@ -2300,6 +2300,96 @@ $("refreshDurakRooms").onclick = async () => {
     alert("Не удалось обновить список комнат.");
   }
 };
+// ===== ALLCOINS PREMIUM — ПРЕДПРОСМОТР КАРТ =====
+function showAllcoinsCardPreview() {
+  const oldPreview = document.getElementById("allcoinsCardPreview");
+  if (oldPreview) oldPreview.remove();
+
+  const preview = document.createElement("div");
+  preview.id = "allcoinsCardPreview";
+
+  preview.style.cssText = `
+    position: relative;
+    margin: 16px 0;
+    padding: 16px;
+    background: #101010;
+    color: #e5c46b;
+    border: 1px solid #d4af37;
+    border-radius: 14px;
+  `;
+
+  const title = document.createElement("h3");
+  title.textContent = "◆ ALLCOINS PREMIUM";
+  title.style.cssText =
+    "text-align:center;color:#e5c46b;margin:0 0 14px";
+
+  const subtitle = document.createElement("p");
+  subtitle.textContent = "Предпросмотр дизайна карт";
+  subtitle.style.cssText =
+    "text-align:center;color:#aaa;font-size:13px";
+
+  const row = document.createElement("div");
+  row.style.cssText =
+    "display:flex;justify-content:center;gap:8px;flex-wrap:wrap";
+
+  const suits = [
+    { rank: "A", suit: "♠", red: false },
+    { rank: "K", suit: "♥", red: true },
+    { rank: "Q", suit: "♦", red: true },
+    { rank: "J", suit: "♣", red: false }
+  ];
+
+  suits.forEach(item => {
+    const card = document.createElement("div");
+
+    card.style.cssText = `
+      position:relative;
+      width:64px;
+      height:96px;
+      box-sizing:border-box;
+      border:1.5px solid #d4af37;
+      border-radius:8px;
+      background:linear-gradient(145deg,#181818,#050505,#111111);
+      color:${item.red ? "#d84b55" : "#e5c46b"};
+      font-family:Georgia,serif;
+      box-shadow:inset 0 0 0 1px rgba(212,175,55,.18);
+    `;
+
+    const corner = document.createElement("div");
+    corner.textContent = item.rank;
+    corner.style.cssText =
+      "position:absolute;top:5px;left:6px;font-size:15px;font-weight:bold";
+
+    const suit = document.createElement("div");
+    suit.textContent = item.suit;
+    suit.style.cssText =
+      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px";
+
+    const brand = document.createElement("div");
+    brand.textContent = "AC";
+    brand.style.cssText =
+      "position:absolute;bottom:5px;right:5px;font-size:9px;letter-spacing:1px";
+
+    card.append(corner, suit, brand);
+    row.appendChild(card);
+  });
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "Закрыть предпросмотр";
+  close.style.cssText =
+    "display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #d4af37;border-radius:8px;background:#202020;color:#e5c46b";
+  close.onclick = () => preview.remove();
+
+  preview.append(title, subtitle, row, close);
+
+  const games = document.getElementById("games");
+  if (games) {
+    games.appendChild(preview);
+  } else {
+    document.body.appendChild(preview);
+  }
+    }
 </script>
 </body>
 </html>
