@@ -1475,7 +1475,7 @@ if (stake > state.balance) {
 // ========================================
 
 let durakWaitingRoom = null;
-
+let durakWaitingRefreshTimer = null;
 // Открываем панель ожидания
 async function openDurakWaitingRoom(room) {
   if (!room || !room.id) {
