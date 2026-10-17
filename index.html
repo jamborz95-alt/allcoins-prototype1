@@ -1220,6 +1220,16 @@ setInterval(() => {
     loadDurakGame(currentDurakRoomId);
   }
 }, 2000);
+ // Автоматическое обновление списка комнат Дурак Онлайн
+setInterval(() => {
+  if (
+    state.user &&
+    tg?.initData &&
+    $("durakRoomsPanel").style.display !== "none"
+  ) {
+    loadDurakRooms();
+  }
+}, 5000);
   async function login() {
   if (tg) {
     tg.ready();
