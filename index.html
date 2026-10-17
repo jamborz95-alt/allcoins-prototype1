@@ -581,7 +581,55 @@
     <div id="roomsList"></div>
 
   </div>
+  <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
+  <div id="durakWaitingPanel" class="card" style="display:none;">
 
+    <h3>👥 Ожидание игроков</h3>
+
+    <p class="muted">
+      Название комнаты:
+      <b id="durakWaitingRoomName">Комната ALLCOINS</b>
+    </p>
+
+    <p class="muted">
+      Игроков в комнате:
+      <b id="durakWaitingCount">1</b>
+    </p>
+
+    <div id="durakWaitingPlayers"></div>
+
+    <div class="status" id="durakWaitingStatus">
+      Ожидаем готовности игроков...
+    </div>
+
+    <button
+      type="button"
+      id="durakReadyButton"
+      class="full"
+      style="display:none;"
+    >
+      ✅ Готов
+    </button>
+
+    <button
+      type="button"
+      id="durakStartButton"
+      class="full"
+      style="display:none;"
+    >
+      ▶ Начать игру
+    </button>
+
+    <button
+      type="button"
+      id="durakLeaveWaiting"
+      class="secondary full"
+      style="margin-top:10px;"
+    >
+      ← К списку комнат
+    </button>
+
+  </div>
   <!-- ИГРОВОЙ СТОЛ -->
   <div id="durakBoard" style="display:none;">
 
