@@ -1189,6 +1189,13 @@ async function startServer() {
         PRIMARY KEY (room_id, telegram_id)
       )
     `);
+       // Поле готовности игрока к началу партии
+    await pool.query(`
+      ALTER TABLE durak_room_players
+      ADD COLUMN IF NOT EXISTS is_ready BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+
+    console.log("Durak player readiness column is ready");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_games (
         room_id BIGINT PRIMARY KEY
