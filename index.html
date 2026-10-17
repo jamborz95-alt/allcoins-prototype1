@@ -1266,10 +1266,13 @@ if (stake > state.balance) {
 
   try {
     const result = await apiRequest("/api/durak/rooms", {
-      name: roomName,
-      maxPlayers: players,
-      stake: stake
-    });
+  name: roomName,
+  maxPlayers: players,
+  stake: stake,
+  deck: deck,
+  speed: speed,
+  privacy: privacy
+});
 
     if (!result.ok || !result.room) {
       throw new Error(result.error || "Не удалось создать комнату.");
