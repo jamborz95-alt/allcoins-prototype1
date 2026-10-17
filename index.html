@@ -520,7 +520,30 @@
       <button class="full" id="createRoom">＋ Создать комнату</button>
 
 <div id="durakGame" class="card" style="display:none;">
-  <h3>🃏 Дурак Онлайн — игра</h3>
+
+  <button type="button" id="durakBack" class="secondary durak-back">
+    ← Назад в ALLCOINS
+  </button>
+
+  <h3>🃏 Дурак Онлайн</h3>
+
+  <div class="durak-room-actions">
+    <button type="button" id="durakShowCreate">＋ Создать комнату</button>
+    <button type="button" id="durakShowRooms" class="secondary">
+      🌍 Найти комнату
+    </button>
+  </div>
+
+  <div id="durakCreatePanel" class="card" style="display:none;">
+    <h3>＋ Создание комнаты</h3>
+    <p class="muted">
+      Настрой комнату, выбери ставку и количество игроков.
+    </p>
+  </div>
+
+  <div id="durakRoomsPanel" class="card" style="display:none;">
+    <h3>🌍 Доступные комнаты</h3>
+  </div>
 
   <p id="durakGameStatus" class="muted">
     Ожидание начала игры...
