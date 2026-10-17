@@ -603,17 +603,29 @@
   flex-shrink: 0;
 }
   /* Значение и масть в противоположном углу карты */
+/* Правый нижний угол карты */
 #durakGame .premium-card .card-corner-bottom {
   position: absolute;
   top: auto;
   left: auto;
   right: 5px;
   bottom: 5px;
-
   display: block;
   text-align: center;
   line-height: 1;
   transform: rotate(180deg);
+  z-index: 6;
+}
+
+/* Значение в нижнем углу */
+#durakGame .premium-card .card-corner-bottom .card-rank {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+/* Масть в нижнем углу */
+#durakGame .premium-card .card-corner-bottom .corner-suit {
+  font-size: 12px;
 }
 
 /* Размер значения и масти в нижнем углу */
