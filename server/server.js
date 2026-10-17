@@ -1028,18 +1028,42 @@ app.post("/api/durak/action", async (req, res) => {
       const card = player.hand[cardIndex];
       const attackCard = tableItem.attack;
 
-      const ranks = [
-        "6", "7", "8", "9", "10", "J", "Q", "K", "A"
-      ];
+      const rankOrder = {
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  "10": 10,
+  "В": 11,
+  "J": 11,
+  "Д": 12,
+  "Q": 12,
+  "К": 13,
+  "K": 13,
+  "Т": 14,
+  "Туз": 14,
+  "A": 14
+};
 
-      const cardRank = ranks.indexOf(String(card.rank));
-      const attackRank = ranks.indexOf(String(attackCard.rank));
+const cardRank = rankOrder[String(card.rank)] ?? -1;
+const attackRank = rankOrder[String(attackCard.rank)] ?? -1;
 
-      const canBeat =
-        (card.suit === attackCard.suit &&
-          cardRank > attackRank) ||
-        (card.suit === game.trumpSuit &&
-          attackCard.suit !== game.trumpSuit);
+if (cardRank < 0 || attackRank < 0) {
+  return res.status(400).json({
+    ok: false,
+    error: "Не удалось определить достоинство карты"
+  });
+}
+
+const canBeat =
+  (card.suit === attackCard.suit &&
+    cardRank > attackRank) ||
+  (card.suit === game.trumpSuit &&
+    attackCard.suit !== game.trumpSuit);
 
       if (!canBeat) {
         return res.status(400).json({
