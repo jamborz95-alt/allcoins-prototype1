@@ -1622,6 +1622,64 @@ $("durakTake").onclick = () => {
 
 $("durakBeat").onclick = () => {
   durakAction("beat");
+// ==================================
+// ОТДЕЛЬНЫЙ ЭКРАН ДУРАК ОНЛАЙН
+// ==================================
+
+// Открытие игры на весь экран
+$("openDurak").onclick = () => {
+  const game = $("durakGame");
+
+  game.style.display = "block";
+  game.classList.add("durak-fullscreen");
+
+  $("durakCreatePanel").style.display = "none";
+  $("durakRoomsPanel").style.display = "none";
+  $("durakBoard").style.display = "none";
+};
+
+// Возврат в ALLCOINS
+$("durakBack").onclick = () => {
+  const game = $("durakGame");
+
+  game.classList.remove("durak-fullscreen");
+  game.style.display = "none";
+
+  $("durakCreatePanel").style.display = "none";
+  $("durakRoomsPanel").style.display = "none";
+  $("durakBoard").style.display = "none";
+};
+
+// Открыть создание комнаты
+$("durakShowCreate").onclick = () => {
+  $("durakCreatePanel").style.display = "block";
+  $("durakRoomsPanel").style.display = "none";
+  $("durakBoard").style.display = "none";
+};
+
+// Открыть список комнат
+$("durakShowRooms").onclick = async () => {
+  $("durakCreatePanel").style.display = "none";
+  $("durakRoomsPanel").style.display = "block";
+  $("durakBoard").style.display = "none";
+
+  try {
+    await loadDurakRooms();
+  } catch (error) {
+    console.error("Ошибка загрузки комнат:", error);
+    alert("Не удалось загрузить комнаты. Попробуй обновить список.");
+  }
+};
+
+// Обновить список комнат
+$("refreshDurakRooms").onclick = async () => {
+  try {
+    await loadDurakRooms();
+  } catch (error) {
+    console.error("Ошибка обновления комнат:", error);
+    alert("Не удалось обновить список комнат.");
+  }
+};
 };</script>
 </body>
 </html>
