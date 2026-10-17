@@ -1476,7 +1476,7 @@ if (stake > state.balance) {
 
 let durakWaitingRoom = null;
 let durakWaitingRefreshTimer = null;
-// Открываем панель ожидания
+// Открываем комнату ожидания
 async function openDurakWaitingRoom(room) {
   if (!room || !room.id) {
     alert("Не удалось определить комнату.");
@@ -1497,9 +1497,22 @@ async function openDurakWaitingRoom(room) {
   $("durakWaitingStatus").textContent =
     "Загружаем список игроков...";
 
-  await refreshDurakWaitingRoom();
-}
+  // Останавливаем предыдущий таймер, если он существует
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
 
+  // Сразу загружаем участников
+  await refreshDurakWaitingRoom();
+
+  // Автоматически обновляем список каждые 2 секунды
+  durakWaitingRefreshTimer = setInterval(() => {
+    if (durakWaitingRoom && durakWaitingRoom.id) {
+      refreshDurakWaitingRoom();
+    }
+  }, 2000);
+}
 
 // Обновляем список игроков и их готовность
 async function refreshDurakWaitingRoom() {
