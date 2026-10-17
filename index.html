@@ -1322,49 +1322,35 @@ $("durakEntry").style.display = "none";
       });
     }
 
-    $("durakHand").innerHTML = "";
+   $("durakHand").innerHTML = "";
 
-    if (Array.isArray(game.hand)) {
-      game.hand.forEach((card) => {
-                const cardElement = document.createElement("div");
-        cardElement.className = "durak-card";
-        cardElement.style.cursor = "grab";
+if (Array.isArray(game.hand)) {
+  game.hand.forEach((card) => {
+    const cardElement = createDurakCardElement(card);
 
-        const rank = card.rank || "";
-        const suit = card.suit || "";
+    cardElement.classList.add("player-card");
+    cardElement.style.cursor = "grab";
 
-        const newCard = createDurakCardElement(card);
+    cardElement.dataset.rank = card.rank || "";
+    cardElement.dataset.suit = card.suit || "";
 
-newCard.classList.add("player-card");
+    cardElement.onclick = () => {
+      document
+        .querySelectorAll("#durakHand .durak-card")
+        .forEach((element) => {
+          element.style.transform = "translateY(0)";
+          element.style.border = "";
+        });
 
-newCard.dataset.rank = card.rank || "";
-newCard.dataset.suit = card.suit || "";
+      cardElement.style.transform = "translateY(-10px)";
+      cardElement.style.border = "3px solid #d4af37";
 
-newCard.addEventListener("click", () => {
-  // Сохраняем существующий обработчик выбора карты.
-});
+      selectedDurakCardId = card.id;
+    };
 
-        if (card.suit === "♥" || card.suit === "♦") {
-          cardElement.classList.add("red");
-        }
-
-        cardElement.onclick = () => {
-          document
-            .querySelectorAll("#durakHand .durak-card")
-            .forEach((element) => {
-              element.style.transform = "translateY(0)";
-              element.style.border = "1px solid #bbbbbb";
-            });
-
-          cardElement.style.transform = "translateY(-10px)";
-          cardElement.style.border = "3px solid #67f5b5";
-
-          selectedDurakCardId = card.id;
-        };
-
-        $("durakHand").appendChild(cardElement);
-      });
-    }
+    $("durakHand").appendChild(cardElement);
+  });
+} 
 
     $("durakGameStatus").textContent =
       "Игра: " + game.status +
