@@ -1329,6 +1329,7 @@ function createDurakCardElement(card) {
     cardElement.classList.add("red");
   }
 
+    // Левый верхний угол: значение и масть
   const corner = document.createElement("span");
   corner.className = "card-corner";
 
@@ -1344,12 +1345,30 @@ function createDurakCardElement(card) {
   corner.appendChild(document.createElement("br"));
   corner.appendChild(cornerSuit);
 
+  // Центральная масть
   const center = document.createElement("span");
   center.className = "card-suit";
   center.textContent = suit;
 
+  // Правый нижний угол: значение и масть
+  const oppositeCorner = document.createElement("span");
+  oppositeCorner.className = "card-corner card-corner-bottom";
+
+  const oppositeRank = document.createElement("span");
+  oppositeRank.className = "card-rank";
+  oppositeRank.textContent = rank;
+
+  const oppositeSuit = document.createElement("span");
+  oppositeSuit.className = "corner-suit";
+  oppositeSuit.textContent = suit;
+
+  oppositeCorner.appendChild(oppositeRank);
+  oppositeCorner.appendChild(document.createElement("br"));
+  oppositeCorner.appendChild(oppositeSuit);
+
   cardElement.appendChild(corner);
   cardElement.appendChild(center);
+  cardElement.appendChild(oppositeCorner);
 
   if (["J", "Q", "K"].includes(rank.toUpperCase())) {
     const court = document.createElement("span");
