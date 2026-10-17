@@ -375,12 +375,20 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
     }
 
     const roomResult = await pool.query(
-      `INSERT INTO durak_rooms
-        (name, owner_telegram_id, max_players, stake)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, max_players, stake, status`,
-      [name, String(user.id), maxPlayers, stake]
-    );
+  `INSERT INTO durak_rooms
+    (name, owner_telegram_id, max_players, stake, deck, speed, privacy)
+   VALUES ($1, $2, $3, $4, $5, $6, $7)
+   RETURNING id, name, max_players, stake, deck, speed, privacy, status`,
+  [
+    name,
+    String(user.id),
+    maxPlayers,
+    stake,
+    deck,
+    speed,
+    privacy
+  ]
+);
 
     await pool.query(
       `INSERT INTO durak_room_players (room_id, telegram_id)
