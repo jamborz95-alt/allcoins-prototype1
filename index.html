@@ -1218,10 +1218,15 @@ $("createRoom").onclick = async () => {
     return;
   }
 
-  if (!Number.isSafeInteger(stake) || stake < 1) {
-    alert("Ставка должна быть целым числом больше нуля.");
+if (!Number.isSafeInteger(stake) || stake < 100) {
+    alert("Минимальная ставка — 100 AC. Введи целое число.");
     return;
   }
+
+if (stake > Number(state.balance)) {
+    alert("Недостаточно AC для этой ставки.");
+    return;
+}  
 
   if (!state.user || !tg?.initData) {
     alert("Открой ALLCOINS через Telegram и войди в профиль.");
