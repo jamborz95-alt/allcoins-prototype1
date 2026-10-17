@@ -2361,14 +2361,16 @@ const corner = document.createElement("div");
 corner.style.cssText = `
   position: absolute;
   top: 5px;
-  left: 6px;
+  left: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
   line-height: 1;
-  font-size: 13px;
-  font-weight: bold;
-  z-index: 2;
+  font-size: 14px;
+  font-weight: 900;
+  z-index: 3;
 `;
 
 const cornerRank = document.createElement("span");
