@@ -1714,10 +1714,18 @@ $("durakStartButton").onclick = async function () {
       "🎮 Игра начинается! Загружаем карты...";
 
     $("durakWaitingPanel").style.display = "none";
-    $("durakGame").style.display = "block";
-    $("durakBoard").style.display = "block";
 
-    await loadDurakGame(durakWaitingRoom.id);
+$("durakGame").style.display = "block";
+$("durakGame").classList.add("durak-fullscreen");
+
+$("durakBoard").style.display = "block";
+
+$("durakCreatePanel").style.display = "none";
+$("durakRoomsPanel").style.display = "none";
+$("durakRoomActions").style.display = "none";
+$("durakEntry").style.display = "none";
+
+await loadDurakGame(durakWaitingRoom.id);
 
     await loadDurakRooms();
 
