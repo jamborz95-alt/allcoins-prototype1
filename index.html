@@ -333,59 +333,151 @@
   min-height: 120px;
 }
 
-/* Карты */
+/* ===== РЕАЛИСТИЧНЫЕ КАРТЫ ALLCOINS ===== */
 
 #durakGame .durak-card {
   position: relative;
   flex: 0 0 65px;
   width: 65px;
   height: 96px;
+  padding: 0;
+  overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid #d7d7d7;
+
+  border: 1px solid #d6d0c3;
   border-radius: 8px;
-  background: #fffdf7;
+
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fffdf6 48%,
+    #eeeade 100%
+  );
+
   color: #171717;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-  font-family: Arial, sans-serif;
+
+  box-shadow:
+    0 5px 8px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+
+  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
-  touch-action: none;
+
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
-  cursor: grab;
+
+  cursor: pointer;
+  touch-action: manipulation;
+
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
+
+/* Красные масти */
 
 #durakGame .durak-card.red {
-  color: #d82020;
+  color: #c51f32;
 }
 
-#durakGame .durak-card.selected {
-  transform: translateY(-12px);
-  border: 3px solid #ffcf40;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
-}
+/* Угловое обозначение карты */
 
 #durakGame .durak-card .card-corner {
   position: absolute;
   top: 5px;
   left: 6px;
+
+  display: block;
+  text-align: center;
+
   font-size: 17px;
-  line-height: 1;
+  line-height: 0.95;
+
+  z-index: 2;
 }
+
+/* Большая масть по центру */
 
 #durakGame .durak-card .card-suit {
   position: absolute;
-  top: 29px;
-  left: 0;
+  top: 50%;
+  left: 50%;
+
   width: 100%;
   text-align: center;
+
+  font-size: 36px;
+  line-height: 1;
+
+  transform: translate(-50%, -50%);
+
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Выбранная карта */
+
+#durakGame .durak-card.selected {
+  transform: translateY(-12px);
+
+  border: 2px solid #67f5b5;
+
+  box-shadow:
+    0 9px 15px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(103, 245, 181, 0.25);
+}
+
+/* Карта во время перетаскивания */
+
+#durakGame .durak-card.dragging {
+  opacity: 0.9;
+  z-index: 100;
+  cursor: grabbing;
+
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* Карты, лежащие на столе */
+
+#durakGame #durakTable .durak-card {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 86px;
+}
+
+#durakGame #durakTable .durak-card .card-corner {
+  font-size: 15px;
+}
+
+#durakGame #durakTable .durak-card .card-suit {
   font-size: 31px;
 }
 
-#durakGame .durak-card.dragging {
-  opacity: 0.8;
-  z-index: 100;
-  cursor: grabbing;
+/* Маленькие экраны Android */
+
+@media (max-width: 380px) {
+  #durakGame .durak-card {
+    flex-basis: 54px;
+    width: 54px;
+    height: 81px;
+  }
+
+  #durakGame .durak-card .card-corner {
+    top: 4px;
+    left: 4px;
+    font-size: 15px;
+  }
+
+  #durakGame .durak-card .card-suit {
+    font-size: 30px;
+  }
+
+  #durakGame #durakTable .durak-card {
+    flex-basis: 50px;
+    width: 50px;
+    height: 75px;
+  }
 }
 
 #durakGame #durakControls {
