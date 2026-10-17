@@ -1549,27 +1549,33 @@ async function refreshDurakWaitingRoom() {
     }
 
     const players = Array.isArray(result.players)
-      ? result.players
-      : [];
-const gameResult = await apiRequest("/api/durak/game", {
-  roomId: durakWaitingRoom.id
-});
+  ? result.players
+  : [];
 
-if (gameResult.ok) {
-  const startedRoomId = durakWaitingRoom.id;
+// Проверяем состояние игры, но отсутствие игры не считаем
+// ошибкой, потому что комната может ещё ожидать игроков.
+try {
+  const gameResult = await apiRequest("/api/durak/game", {
+    roomId: durakWaitingRoom.id
+  });
 
-  currentDurakRoomId = startedRoomId;
+  if (gameResult.ok) {
+    const startedRoomId = durakWaitingRoom.id;
 
-  $("durakWaitingPanel").style.display = "none";
-  $("durakCreatePanel").style.display = "none";
-  $("durakRoomsPanel").style.display = "none";
+    currentDurakRoomId = startedRoomId;
 
-  $("durakGame").style.display = "block";
-  $("durakBoard").style.display = "block";
+    $("durakWaitingPanel").style.display = "none";
+    $("durakCreatePanel").style.display = "none";
+    $("durakRoomsPanel").style.display = "none";
 
-  await loadDurakGame(startedRoomId);
+    $("durakGame").style.display = "block";
+    $("durakBoard").style.display = "block";
 
-  return;
+    await loadDurakGame(startedRoomId);
+    return;
+  }
+} catch (gameError) {
+  console.log("Игра ещё не началась:", gameError.message);
 }
     $("durakWaitingCount").textContent =
       result.playersCount ?? players.length;
