@@ -898,7 +898,7 @@ info.innerHTML =
     const button = document.createElement("button");
 button.textContent = "Войти";
 
-button.onclick = async () => {
+    button.onclick = async () => {
   if (!state.user || !tg?.initData) {
     alert("Сначала войди через Telegram.");
     return;
@@ -917,22 +917,20 @@ button.onclick = async () => {
     });
 
     if (!result.ok) {
-  throw new Error(result.error || "Не удалось войти в комнату.");
-}
+      throw new Error(
+        result.error || "Не удалось войти в комнату."
+      );
+    }
 
-currentDurakRoomId = room.id;
+    currentDurakRoomId = room.id;
 
-$("durakGame").style.display = "block";
-$("durakGameStatus").textContent =
-  "Ты вошёл в комнату. Ожидаем начала игры...";
+    await openDurakWaitingRoom(room);
 
-await loadDurakGame(room.id);
-
-alert(
-  "Ты вошёл в комнату!\n" +
-  "Название: " + room.name + "\n" +
-  "Ставка: " + room.stake + " AC"
-);
+    alert(
+      "Ты вошёл в комнату!\n" +
+      "Название: " + room.name + "\n" +
+      "Ставка: " + room.stake + " AC"
+    );
 
   } catch (error) {
     alert("Ошибка входа: " + error.message);
