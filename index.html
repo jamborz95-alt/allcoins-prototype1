@@ -1182,7 +1182,31 @@ $("dailyButton").onclick = async () => {
     showStatus("homeStatus", "Ошибка связи с сервером. Попробуй ещё раз.");
   }
 };
+const durakStakeInput = $("durakStake");
+const durakStakeSlider = $("durakStakeSlider");
+const durakStakeValue = $("durakStakeValue");
 
+durakStakeSlider.addEventListener("input", () => {
+  durakStakeInput.value = durakStakeSlider.value;
+  durakStakeValue.textContent = Number(durakStakeSlider.value).toLocaleString("ru-RU");
+});
+
+durakStakeInput.addEventListener("input", () => {
+  let stake = Number(durakStakeInput.value);
+
+  if (!Number.isFinite(stake) || stake < 100) {
+    durakStakeValue.textContent = "100";
+    return;
+  }
+
+  durakStakeValue.textContent = stake.toLocaleString("ru-RU");
+
+  if (stake <= 1000000) {
+    durakStakeSlider.value = String(
+      Math.max(100, Math.round(stake / 100) * 100)
+    );
+  }
+});
 $("createRoom").onclick = async () => {
   const players = Number($("players").value);
   const stake = Number($("durakStake").value);
