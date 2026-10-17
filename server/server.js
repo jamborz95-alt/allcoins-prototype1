@@ -567,11 +567,21 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     }
 
     const roomResult = await pool.query(
-      `SELECT id, name, owner_telegram_id, max_players, status
-       FROM durak_rooms
-       WHERE id = $1`,
-      [roomId]
-    );
+     const roomResult = await pool.query(
+  `SELECT
+     id,
+     name,
+     owner_telegram_id,
+     max_players,
+     stake,
+     deck,
+     speed,
+     privacy,
+     status
+   FROM durak_rooms
+   WHERE id = $1`,
+  [roomId]
+); 
 
     if (roomResult.rows.length === 0) {
       return res.status(404).json({
