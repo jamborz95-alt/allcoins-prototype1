@@ -1219,14 +1219,15 @@ $("createRoom").onclick = async () => {
   }
 
 if (!Number.isSafeInteger(stake) || stake < 100) {
-    alert("Минимальная ставка — 100 AC. Введи целое число.");
-    return;
-  }
+  alert("Минимальная ставка — 100 AC. Введи целое число.");
+  return;
+}
 
-if (stake > Number(state.balance)) {
-    alert("Недостаточно AC для этой ставки.");
-    return;
-}  
+if (stake > state.balance) {
+  alert("Недостаточно AC для такой ставки. Твой баланс: " +
+    state.balance.toLocaleString("ru-RU") + " AC");
+  return;
+}   
 
   if (!state.user || !tg?.initData) {
     alert("Открой ALLCOINS через Telegram и войди в профиль.");
