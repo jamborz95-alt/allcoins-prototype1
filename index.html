@@ -2355,22 +2355,86 @@ function showAllcoinsCardPreview() {
       box-shadow:inset 0 0 0 1px rgba(212,175,55,.18);
     `;
 
-    const corner = document.createElement("div");
-    corner.textContent = item.rank;
-    corner.style.cssText =
-      "position:absolute;top:5px;left:6px;font-size:15px;font-weight:bold";
+    // Верхний левый угол: значение + масть
+const corner = document.createElement("div");
 
-    const suit = document.createElement("div");
-    suit.textContent = item.suit;
-    suit.style.cssText =
-      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px";
+corner.style.cssText = `
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-size: 13px;
+  font-weight: bold;
+  z-index: 2;
+`;
 
-    const brand = document.createElement("div");
-    brand.textContent = "AC";
-    brand.style.cssText =
-      "position:absolute;bottom:5px;right:5px;font-size:9px;letter-spacing:1px";
+const cornerRank = document.createElement("span");
+cornerRank.textContent = item.rank;
 
-    card.append(corner, suit, brand);
+const cornerSuit = document.createElement("span");
+cornerSuit.textContent = item.suit;
+cornerSuit.style.fontSize = "12px";
+
+corner.append(cornerRank, cornerSuit);
+
+// Центральная масть
+const suit = document.createElement("div");
+suit.textContent = item.suit;
+
+suit.style.cssText = `
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  z-index: 1;
+`;
+
+// Нижний правый угол: значение + масть
+const bottomCorner = document.createElement("div");
+
+bottomCorner.style.cssText = `
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-size: 13px;
+  font-weight: bold;
+  transform: rotate(180deg);
+  z-index: 2;
+`;
+
+const bottomRank = document.createElement("span");
+bottomRank.textContent = item.rank;
+
+const bottomSuit = document.createElement("span");
+bottomSuit.textContent = item.suit;
+bottomSuit.style.fontSize = "12px";
+
+bottomCorner.append(bottomRank, bottomSuit);
+
+// Золотая маркировка ALLCOINS
+const brand = document.createElement("div");
+brand.textContent = "AC";
+brand.style.cssText = `
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 7px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  pointer-events: none;
+`;
+
+card.append(corner, suit, bottomCorner, brand);
     row.appendChild(card);
   });
 
