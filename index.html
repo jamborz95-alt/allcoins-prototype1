@@ -1554,13 +1554,12 @@ async function refreshDurakWaitingRoom() {
       playersContainer.appendChild(row);
     });
 
-    const isOwner = players.some(player => player.isOwner);
+  const isOwner = players.some(player => player.isOwner);
 
-    const myPlayer = players.find(player =>
-      player.isOwner
-        ? false
-        : player.isMe === true
-    );
+// Сервер пока не передаёт isMe,
+// поэтому определяем текущего игрока по Telegram ID,
+// добавив это поле в ответ сервера позже.
+const myPlayer = null;  
 
     const readyButton = $("durakReadyButton");
     const startButton = $("durakStartButton");
