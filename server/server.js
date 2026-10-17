@@ -546,6 +546,177 @@ app.post("/api/durak/rooms/join", async (req, res) => {
     });
   }
 });// Начало игры Дурак Онлайн
+// Получить список игроков комнаты и их готовность
+app.post("/api/durak/rooms/players", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Не удалось проверить Telegram"
+      });
+    }
+
+    const roomId = req.body?.roomId;
+
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный номер комнаты"
+      });
+    }
+
+    const roomResult = await pool.query(
+      `SELECT id, name, owner_telegram_id, max_players, status
+       FROM durak_rooms
+       WHERE id = $1`,
+      [roomId]
+    );
+
+    if (roomResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Комната не найдена"
+      });
+    }
+
+    const room = roomResult.rows[0];
+
+    const playerCheck = await pool.query(
+      `SELECT 1
+       FROM durak_room_players
+       WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, user.id]
+    );
+
+    if (playerCheck.rows.length === 0) {
+      return res.status(403).json({
+        ok: false,
+        error: "Сначала войдите в комнату"
+      });
+    }
+
+    const playersResult = await pool.query(
+      `SELECT
+         p.is_ready,
+         (p.telegram_id = r.owner_telegram_id) AS is_owner
+       FROM durak_room_players p
+       JOIN durak_rooms r ON r.id = p.room_id
+       WHERE p.room_id = $1
+       ORDER BY p.joined_at`,
+      [roomId]
+    );
+
+    const players = playersResult.rows.map((player, index) => ({
+      label: player.is_owner
+        ? "Создатель комнаты"
+        : "Игрок " + (index + 1),
+      isOwner: player.is_owner,
+      isReady: player.is_owner || player.is_ready
+    }));
+
+    return res.json({
+      ok: true,
+      room: {
+        id: room.id,
+        name: room.name,
+        maxPlayers: room.max_players,
+        status: room.status
+      },
+      players,
+      playersCount: players.length
+    });
+  } catch (error) {
+    console.error("Ошибка получения игроков:", error);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось получить список игроков"
+    });
+  }
+});
+
+
+// Отметить игрока как готового
+app.post("/api/durak/rooms/ready", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        ok: false,
+        error: "Не удалось проверить Telegram"
+      });
+    }
+
+    const roomId = req.body?.roomId;
+
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный номер комнаты"
+      });
+    }
+
+    const roomResult = await pool.query(
+      `SELECT id, owner_telegram_id, status
+       FROM durak_rooms
+       WHERE id = $1`,
+      [roomId]
+    );
+
+    if (roomResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Комната не найдена"
+      });
+    }
+
+    const room = roomResult.rows[0];
+
+    if (room.status !== "waiting") {
+      return res.status(400).json({
+        ok: false,
+        error: "Комната уже не ожидает игроков"
+      });
+    }
+
+    if (String(room.owner_telegram_id) === String(user.id)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Создателю комнаты не нужно нажимать «Готов»"
+      });
+    }
+
+    const updateResult = await pool.query(
+      `UPDATE durak_room_players
+       SET is_ready = TRUE
+       WHERE room_id = $1 AND telegram_id = $2
+       RETURNING telegram_id`,
+      [roomId, user.id]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(403).json({
+        ok: false,
+        error: "Сначала войдите в комнату"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: "Вы готовы к игре!"
+    });
+  } catch (error) {
+    console.error("Ошибка готовности игрока:", error);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось отметить готовность"
+    });
+  }
+});
 app.post("/api/durak/rooms/start", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
