@@ -625,7 +625,10 @@ const API = "https://allcoins-server.onrender.com";
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
   const tg = window.Telegram && window.Telegram.WebApp;
-
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
 let state = {
   balance: 10000,
   energy: 100,
