@@ -984,10 +984,34 @@ app.post("/api/durak/game", async (req, res) => {
     );
 
     if (gameResult.rows.length === 0) {
-      return res.status(404).json({
-        ok: false,
-        error: "Игра ещё не подготовлена"
-      });
+  const roomCheck = await pool.query(
+    `SELECT id, status
+     FROM durak_rooms
+     WHERE id = $1`,
+    [roomId]
+  );
+
+  const allGames = await pool.query(
+    `SELECT room_id
+     FROM durak_games
+     ORDER BY updated_at DESC
+     LIMIT 10`
+  );
+
+  console.error("DURAK GAME NOT FOUND:", {
+    requestedRoomId: String(roomId),
+    roomExists: roomCheck.rows.length > 0,
+    roomStatus: roomCheck.rows[0]?.status || null,
+    savedGameRoomIds: allGames.rows.map(
+      row => String(row.room_id)
+    )
+  });
+
+  return res.status(404).json({
+    ok: false,
+    error: "Игра ещё не подготовлена",
+    roomId: String(roomId)
+  });
     }
 
     const gameState = gameResult.rows[0].game_state;
