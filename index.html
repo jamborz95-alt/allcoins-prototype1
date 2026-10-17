@@ -431,14 +431,32 @@
   <option value="5">5 игроков</option>
   <option value="6">6 игроков</option>
       </select>
-      <label class="muted">Ставка AC</label>
+      <label class="muted">💰 Ставка AC</label>
+
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+  <span class="muted">Минимум: 100 AC</span>
+  <b><span id="durakStakeValue">100</span> AC</b>
+</div>
+
+<input
+  type="range"
+  id="durakStakeSlider"
+  min="100"
+  max="1000000"
+  step="100"
+  value="100"
+>
+
+<label class="muted">Или введи любую сумму вручную</label>
+
 <input
   type="number"
   id="durakStake"
   value="100"
-  min="1"
+  min="100"
   step="1"
-  placeholder="Введи любую ставку AC"
+  inputmode="numeric"
+  placeholder="Например, 10000000"
 >
       <button class="full" id="createRoom">＋ Создать комнату</button>
 
