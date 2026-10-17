@@ -447,79 +447,22 @@
 
   <section id="games" class="hidden">
     <div class="section-title">🎮 Развлечения</div>
-    <div class="card">
-      <h3>🃏 Дурак Онлайн</h3>
-      <p class="muted">Создай демонстрационную комнату и выбери количество игроков и ставку.</p>
-      <label class="muted">Название комнаты</label>
-<input
-  type="text"
-  id="roomName"
-  placeholder="Например, Комната ALLCOINS"
-  maxlength="30"
->
-      <label class="muted">Игроков в комнате</label>
-      <select id="players">
-  <option value="1">1 игрок</option>
-  <option value="2" selected>2 игрока</option>
-  <option value="3">3 игрока</option>
-  <option value="4">4 игрока</option>
-  <option value="5">5 игроков</option>
-  <option value="6">6 игроков</option>
-      </select>
-      <label class="muted">💰 Ставка AC</label>
+    <!-- КАРТОЧКА ДУРАКА НА СТРАНИЦЕ ИГРЫ -->
+<div class="card" id="durakEntry">
 
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-  <span class="muted">Минимум: 100 AC</span>
-  <b><span id="durakStakeValue">100</span> AC</b>
+  <h3>🃏 Дурак Онлайн</h3>
+
+  <p class="muted">
+    Создавай комнаты, выбирай ставку AC и играй с другими игроками.
+  </p>
+
+  <button type="button" id="openDurak" class="full">
+    🎮 Открыть Дурак Онлайн
+  </button>
+
 </div>
 
-<input
-  type="range"
-  id="durakStakeSlider"
-  min="100"
-  max="1000000"
-  step="100"
-  value="100"
->
-
-<label class="muted">Или введи любую сумму вручную</label>
-
-<input
-  type="number"
-  id="durakStake"
-  value="100"
-  min="100"
-  step="1"
-  inputmode="numeric"
-  placeholder="Например, 10000000"
->
-      <div style="margin:16px 0;">
-  <label class="muted">🃏 Колода карт</label>
-  <select id="durakDeck">
-    <option value="24">24 карты</option>
-    <option value="36" selected>36 карт</option>
-    <option value="52">52 карты</option>
-  </select>
-</div>
-
-<div style="margin:16px 0;">
-  <label class="muted">⚡ Скорость игры</label>
-  <select id="durakSpeed">
-    <option value="normal" selected>Обычная</option>
-    <option value="fast">Быстрая</option>
-  </select>
-</div>
-
-<div style="margin:16px 0;">
-  <label class="muted">🔒 Тип комнаты</label>
-  <select id="durakPrivacy">
-    <option value="public" selected>🌍 Открытая</option>
-    <option value="private">🔐 Приватная</option>
-  </select>
-</div>
-      <button class="full" id="createRoom">＋ Создать комнату</button>
-
-<!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАК ОНЛАЙН -->
+<!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАКА -->
 <div id="durakGame" class="card" style="display:none;">
 
   <button type="button" id="durakBack" class="secondary durak-back">
@@ -529,6 +472,7 @@
   <h3>🃏 Дурак Онлайн</h3>
 
   <div class="durak-room-actions">
+
     <button type="button" id="durakShowCreate">
       ＋ Создать комнату
     </button>
@@ -536,6 +480,7 @@
     <button type="button" id="durakShowRooms" class="secondary">
       🌍 Найти комнату
     </button>
+
   </div>
 
   <!-- СОЗДАНИЕ КОМНАТЫ -->
@@ -544,6 +489,7 @@
     <h3>＋ Создание комнаты</h3>
 
     <label class="muted">Название комнаты</label>
+
     <input
       type="text"
       id="roomName"
@@ -552,6 +498,7 @@
     >
 
     <label class="muted">Игроков в комнате</label>
+
     <select id="players">
       <option value="2" selected>2 игрока</option>
       <option value="3">3 игрока</option>
@@ -589,6 +536,7 @@
     >
 
     <label class="muted">🃏 Колода карт</label>
+
     <select id="durakDeck">
       <option value="24">24 карты</option>
       <option value="36" selected>36 карт</option>
@@ -596,12 +544,14 @@
     </select>
 
     <label class="muted">⚡ Скорость игры</label>
+
     <select id="durakSpeed">
       <option value="normal" selected>Обычная</option>
       <option value="fast">Быстрая</option>
     </select>
 
     <label class="muted">🔒 Тип комнаты</label>
+
     <select id="durakPrivacy">
       <option value="public" selected>🌍 Открытая</option>
       <option value="private">🔐 Приватная</option>
@@ -615,12 +565,16 @@
 
   </div>
 
-  <!-- ПОИСК КОМНАТ -->
+  <!-- СПИСОК КОМНАТ -->
   <div id="durakRoomsPanel" class="card" style="display:none;">
 
     <h3>🌍 Доступные комнаты</h3>
 
-    <button type="button" id="refreshDurakRooms" class="secondary full">
+    <button
+      type="button"
+      id="refreshDurakRooms"
+      class="secondary full"
+    >
       🔄 Обновить список
     </button>
 
@@ -655,7 +609,10 @@
 
     <div id="durakHand"></div>
 
-    <div id="durakControls" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;">
+    <div
+      id="durakControls"
+      style="display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;"
+    >
 
       <button type="button" id="durakAttack" class="secondary">
         🃏 Подкинуть
@@ -677,12 +634,13 @@
 
   </div>
 
-</div>
+    </div>
+
+
 
 <div class="card">
   <h3>🎱 Лото Онлайн</h3>
-      <h3>🎱 Лото Онлайн</h3>
-
+      
 <p class="muted">
   Создавай комнаты Лото и приглашай игроков.
 </p>
