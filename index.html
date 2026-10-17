@@ -1304,23 +1304,17 @@ $("durakEntry").style.display = "none";
 
     $("durakTable").innerHTML = "";
 
-    if (Array.isArray(game.table)) {
-      game.table.forEach((item) => {
-        const cardElement = document.createElement("div");
-        cardElement.className = "durak-card";
+if (Array.isArray(game.table)) {
+  game.table.forEach((item) => {
+    const card = item.card || item;
 
-        const card = item.card || item;
+    const cardElement = createDurakCardElement(card);
 
-        cardElement.textContent =
-          (card.rank || "") + (card.suit || "");
+    cardElement.classList.add("table-card");
 
-        if (card.suit === "♥" || card.suit === "♦") {
-          cardElement.classList.add("red");
-        }
-
-        $("durakTable").appendChild(cardElement);
-      });
-    }
+    $("durakTable").appendChild(cardElement);
+  });
+}
 
    $("durakHand").innerHTML = "";
 
