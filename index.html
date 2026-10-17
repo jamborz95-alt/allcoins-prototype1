@@ -1230,6 +1230,51 @@ async function durakAction(action) {
   } catch (error) {
     alert("Ошибка игры: " + error.message);
   }
+// ===== ALLCOINS PREMIUM CARD FACTORY =====
+
+function createDurakCardElement(card) {
+  const rank = String(card.rank || "");
+  const suit = String(card.suit || "");
+
+  const cardElement = document.createElement("div");
+
+  cardElement.className = "durak-card premium-card";
+
+  if (suit === "♥" || suit === "♦") {
+    cardElement.classList.add("red");
+  }
+
+  const corner = document.createElement("span");
+  corner.className = "card-corner";
+
+  const rankLabel = document.createElement("span");
+  rankLabel.className = "card-rank";
+  rankLabel.textContent = rank;
+
+  const cornerSuit = document.createElement("span");
+  cornerSuit.className = "corner-suit";
+  cornerSuit.textContent = suit;
+
+  corner.appendChild(rankLabel);
+  corner.appendChild(document.createElement("br"));
+  corner.appendChild(cornerSuit);
+
+  const center = document.createElement("span");
+  center.className = "card-suit";
+  center.textContent = suit;
+
+  cardElement.appendChild(corner);
+  cardElement.appendChild(center);
+
+  if (["J", "Q", "K"].includes(rank.toUpperCase())) {
+    const court = document.createElement("span");
+    court.className = "card-court";
+    court.textContent = rank.toUpperCase();
+    cardElement.appendChild(court);
+  }
+
+  return cardElement;
+}
 }async function loadDurakGame(roomId) {
   if (!roomId || !state.user || !tg?.initData) {
     return;
