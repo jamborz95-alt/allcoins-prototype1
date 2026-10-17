@@ -966,11 +966,19 @@ if (room.isOwner === true) {
       }
 
       alert("Игра началась! Игроков в комнате: " + result.playersCount);
-            $("durakGame").style.display = "block";
-    $("durakWaitingPanel").style.display = "none";
+
+$("durakGame").style.display = "block";
+$("durakGame").classList.add("durak-fullscreen");
+
+$("durakWaitingPanel").style.display = "none";
 $("durakBoard").style.display = "block";
+
 $("durakCreatePanel").style.display = "none";
 $("durakRoomsPanel").style.display = "none";
+$("durakRoomActions").style.display = "none";
+$("durakEntry").style.display = "none";
+
+$("durakGameStatus").textContent = "Загружаем карты...";
       $("durakGameStatus").textContent = "Загружаем карты...";
 
       try {
