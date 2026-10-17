@@ -994,8 +994,8 @@ app.post("/api/durak/game", async (req, res) => {
 
     // Возвращаем игроку только его карты
     const me = gameState.players.find(
-      (player) => player.telegramId === String(user.id)
-    );
+  (player) => String(player.telegramId) === String(user.id)
+);
 
     if (!me) {
       return res.status(404).json({
