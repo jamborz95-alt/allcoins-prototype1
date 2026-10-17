@@ -677,8 +677,15 @@ for (const suit of suits) {
     }
 
     // Определяем козырь
-    const trumpCard = deck[deck.length - 1];
-    const trumpSuit = trumpCard.suit;
+if (deck.length === 0) {
+  return res.status(400).json({
+    ok: false,
+    error: "В колоде недостаточно карт для начала игры"
+  });
+}
+
+const trumpCard = deck[deck.length - 1];
+const trumpSuit = trumpCard.suit;
         // Сохраняем состояние игры
      const gameState = {
   players: gamePlayers,
