@@ -1550,15 +1550,24 @@ const takeButton = $("durakTake");
 const beatButton = $("durakBeat");
 
 if (attackButton) {
-  attackButton.style.display = isAttacker ? "inline-block" : "none";
+  attackButton.style.display =
+    isAttacker && game.phase === "attack"
+      ? "inline-block"
+      : "none";
 }
 
 if (defendButton) {
-  defendButton.style.display = isDefender ? "inline-block" : "none";
+  defendButton.style.display =
+    isDefender && game.phase === "defend"
+      ? "inline-block"
+      : "none";
 }
 
 if (takeButton) {
-  takeButton.style.display = isDefender ? "inline-block" : "none";
+  takeButton.style.display =
+    isDefender && game.phase === "defend"
+      ? "inline-block"
+      : "none";
 }
 
 const allCardsBeaten =
