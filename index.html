@@ -1351,17 +1351,6 @@ cardElement.addEventListener("pointercancel", () => {
   cardElement.style.zIndex = "";
 });
         
-
-            cardElement.classList.add("selected");
-
-            showStatus(
-              "durakGameStatus",
-              "Выбрана карта " + card.rank + card.suit
-            );
-          }
-
-          isDragging = false;
-        });
           if (card.suit === "♥" || card.suit === "♦") {
             cardElement.classList.add("red");
           }
