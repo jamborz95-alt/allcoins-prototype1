@@ -2442,7 +2442,57 @@ brand.style.cssText = `
   opacity: 0.7;
   pointer-events: none;
 `;
+// Классические фигурные карты ALLCOINS
+if (["J", "Q", "K"].includes(item.rank)) {
+  suit.style.display = "none";
 
+  const portrait = document.createElement("div");
+  portrait.style.cssText = `
+    position: absolute;
+    inset: 24px 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d4af37;
+    border-radius: 5px;
+    background: linear-gradient(145deg, #222, #080808);
+    color: ${item.red ? "#d84b55" : "#e5c46b"};
+    text-align: center;
+    z-index: 2;
+    overflow: hidden;
+  `;
+
+  const crown = document.createElement("div");
+  crown.textContent = item.rank === "K" ? "♛" :
+                      item.rank === "Q" ? "♕" : "♔";
+  crown.style.cssText = `
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 3px;
+  `;
+
+  const figure = document.createElement("div");
+  figure.textContent = item.rank === "K" ? "♚" :
+                       item.rank === "Q" ? "♛" : "♞";
+  figure.style.cssText = `
+    font-size: 32px;
+    line-height: 1;
+  `;
+
+  const label = document.createElement("div");
+  label.textContent = item.rank === "K" ? "КОРОЛЬ" :
+                      item.rank === "Q" ? "ДАМА" : "ВАЛЕТ";
+  label.style.cssText = `
+    font-size: 7px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  `;
+
+  portrait.append(crown, figure, label);
+  card.appendChild(portrait);
+}
 card.append(corner, suit, bottomCorner, brand);
     row.appendChild(card);
   });
