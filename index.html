@@ -1352,18 +1352,7 @@ cardElement.addEventListener("pointercancel", () => {
   cardElement.style.transform = "translateY(0)";
   cardElement.style.zIndex = "";
 });
-        cardElement.addEventListener("pointerup", () => {
-          cardElement.style.transform = "";
-          cardElement.style.zIndex = "";
-
-          if (isDragging) {
-            selectedDurakCardId = card.id;
-
-            document
-              .querySelectorAll("#durakHand .durak-card")
-              .forEach((element) => {
-                element.classList.remove("selected");
-              });
+        
 
             cardElement.classList.add("selected");
 
