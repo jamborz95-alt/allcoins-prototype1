@@ -1329,16 +1329,14 @@ cardElement.onclick = () => {
   cardElement.style.border = "1px solid #bbbbbb";
 
   if (targetCard) {
+  const tableCardType = targetCard.dataset.tableCardType;
+
+  if (tableCardType === "attack") {
     selectedDurakCardId = card.id;
+    await durakAction("defend");
+  }
 
-    const isDefendingCard =
-      targetCard.dataset.cardId !== undefined;
-
-    if (isDefendingCard) {
-      await durakAction("defend");
-    }
-
-    return;
+  return;
   }
 
   if (table && target && table.contains(target)) {
