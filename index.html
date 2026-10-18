@@ -1544,12 +1544,14 @@ if (Array.isArray(game.table)) {
 
     pair.className = "durak-table-pair";
 
-    pair.style.display = "flex";
-    pair.style.alignItems = "center";
-    pair.style.justifyContent = "center";
-    pair.style.gap = "8px";
-    pair.style.margin = "5px";
-    pair.style.minHeight = "100px";
+pair.style.position = "relative";
+pair.style.display = "inline-flex";
+pair.style.alignItems = "center";
+pair.style.justifyContent = "center";
+pair.style.width = "110px";
+pair.style.height = "125px";
+pair.style.margin = "8px";
+pair.style.overflow = "visible";
 
     // Карта атаки
     if (item.attack) {
