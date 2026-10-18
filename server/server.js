@@ -1123,7 +1123,7 @@ app.post("/api/durak/action", async (req, res) => {
     ) {
       return res.status(400).json({
         ok: false,
-        error: "Игра не активна или её состояние повреждено"
+        error: "Игра не активна или состояние повреждено"
       });
     }
 
@@ -1187,13 +1187,46 @@ app.post("/api/durak/action", async (req, res) => {
       "A": 14
     };
 
-    function nextActivePlayer(startIndex, excludedIndices = []) {
+    function cardRank(card) {
+      return rankOrder[String(card.rank)] || 0;
+    }
+
+    function cardSuit(card) {
+      return String(card.suit ?? "");
+    }
+
+    function sameRank(a, b) {
+      return cardRank(a) > 0 &&
+        cardRank(a) === cardRank(b);
+    }
+
+    function beatsCard(defense, attack) {
+      const defenseSuit = cardSuit(defense);
+      const attackSuit = cardSuit(attack);
+      const trumpSuit = String(game.trumpSuit ?? "");
+
+      if (defenseSuit === attackSuit) {
+        return cardRank(defense) > cardRank(attack);
+      }
+
+      return (
+        defenseSuit === trumpSuit &&
+        attackSuit !== trumpSuit
+      );
+    }
+
+    function nextActivePlayer(startIndex, excluded = []) {
       for (let step = 1; step <= count; step++) {
         const index = (startIndex + step) % count;
 
-        if (excludedIndices.includes(index)) continue;
+        if (excluded.includes(index)) {
+          continue;
+        }
 
-        if (game.deck.length > 0 || game.players[index].hand.length > 0) {
+        if (
+          game.deck.length > 0 ||
+          game.players[index].hand.length > 0
+        ) {
           return index;
         }
       }
@@ -1202,19 +1235,60 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     function finishIfNeeded() {
-      if (game.deck.length !== 0) return false;
+      if (game.deck.length !== 0) {
+        return false;
+      }
 
-      const stillPlaying = game.players
-        .map((p, index) => ({
-          index,
-          telegramId: String(p.telegramId),
-          cards: p.hand.length
-        }))
-        .filter(p => p.cards > 0);
+      const stillPlaying = game.players.filter(
+        p => p.hand.length > 0
+      );
 
       if (stillPlaying.length <= 1) {
         game.status = "finished";
+        game.phase = "finished";
+        return true;
+      }
 
+      return false;
+    }
+
+    function drawCardsAfterRound() {
+      const order = [];
+
+      if (game.players[attackerIndex]) {
+        order.push(attackerIndex);
+      }
+
+      if (
+        defenderIndex !== attackerIndex &&
+        game.players[defenderIndex]
+      ) {
+        order.push(defenderIndex);
+      }
+
+      for (let i = 1; i < count; i++) {
+        const index = (attackerIndex + i) % count;
+
+        if (!order.includes(index)) {
+          order.push(index);
+        }
+      }
+
+      for (const index of order) {
+        const target = game.players[index];
+
+        while (
+          target.hand.length < 6 &&
+          game.deck.length > 0
+        ) {
+          target.hand.push(game.deck.shift());
+        }
+      }
+    }
+
+    // АТАКА: ходить может только атакующий
+    if (action === "attack") {
+      if (playerIndex !== game.attackerIndex)
 
 
 async function startServer() {
