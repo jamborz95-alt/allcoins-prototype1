@@ -1243,7 +1243,7 @@ $("durakGameStatus").textContent = "Загружаем карты...";
         $("durakHand").innerHTML = "";
 
         game.hand.forEach((card) => {
-          const cardElement = document.createElement("div");
+          const cardElement = createDurakCardElement(card);
           cardElement.className = "durak-card";
 cardElement.style.cursor = "pointer";
 
