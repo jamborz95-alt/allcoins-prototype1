@@ -1429,7 +1429,8 @@ const cardImages = {
   "ТУЗ-♤": "ace-spades.png"
 };
 
-  const imageName = cardImages[rank.toUpperCase() + "-" + suit];
+  console.log("Карта:", rank, suit);
+const imageName = cardImages[rank.toUpperCase() + "-" + suit];
 
   if (imageName) {
     const image = document.createElement("img");
