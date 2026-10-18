@@ -1038,15 +1038,21 @@ console.log("DURAK DEBUG:", {
     }
 
     return res.json({
-      ok: true,
-      roomId: String(roomId),
-      hand: me.hand,
-      trumpSuit: gameState.trumpSuit,
-      trumpCard: gameState.trumpCard,
-      table: gameState.table,
-      cardsLeft: gameState.deck.length,
-      status: gameState.status
-    });
+  ok: true,
+  roomId: String(roomId),
+  hand: me.hand,
+  trumpSuit: gameState.trumpSuit,
+  trumpCard: gameState.trumpCard,
+  table: gameState.table,
+  cardsLeft: gameState.deck.length,
+  status: gameState.status,
+  phase: gameState.phase,
+  attackerIndex: gameState.attackerIndex,
+  defenderIndex: gameState.defenderIndex,
+  playerIndex: gameState.players.findIndex(
+    p => String(p.telegramId) === String(user.id)
+  )
+});
   } catch (error) {
     console.error("Get Durak game error:", error.message);
 
