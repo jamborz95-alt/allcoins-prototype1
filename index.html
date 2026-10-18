@@ -1390,7 +1390,8 @@ async function durakAction(action) {
 function createDurakCardElement(card) {
   const rank = String(card.rank || "");
   const suit = String(card.suit || "");
-
+  const cardElement = document.createElement("div");
+  cardElement.className = "durak-card premium-card";
   // Подбираем готовое изображение для нужной карты
 const cardImages = {
   "К-♠": "king-spades.png",
