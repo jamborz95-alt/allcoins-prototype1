@@ -1562,7 +1562,10 @@ pair.style.overflow = "visible";
       attackCard.style.display = "flex";
       attackCard.style.visibility = "visible";
       attackCard.style.opacity = "1";
-      attackCard.style.position = "relative";
+      attackCard.style.position = "absolute";
+attackCard.style.left = "0";
+attackCard.style.top = "0";
+attackCard.style.zIndex = "1";
 
       pair.appendChild(attackCard);
     }
