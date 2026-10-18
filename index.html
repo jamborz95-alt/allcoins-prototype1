@@ -1244,7 +1244,7 @@ $("durakGameStatus").textContent = "Загружаем карты...";
 
         game.hand.forEach((card) => {
           const cardElement = createDurakCardElement(card);
-          cardElement.className = "durak-card";
+          cardElement.classList.add("player-card");
 cardElement.style.cursor = "pointer";
 
 cardElement.onclick = () => {
