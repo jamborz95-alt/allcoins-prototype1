@@ -1313,7 +1313,45 @@ cardElement.onclick = () => {
             cardElement.style.zIndex = "100";
           }
         });
+        cardElement.addEventListener("pointerup", async (event) => {
+  if (!isDragging) return;
 
+  const target = document.elementFromPoint(
+    event.clientX,
+    event.clientY
+  );
+
+  const table = $("durakTable");
+  const targetCard = target?.closest("#durakTable .durak-card");
+
+  cardElement.style.transform = "translateY(0)";
+  cardElement.style.zIndex = "";
+  cardElement.style.border = "1px solid #bbbbbb";
+
+  if (targetCard) {
+    selectedDurakCardId = card.id;
+
+    const isDefendingCard =
+      targetCard.dataset.cardId !== undefined;
+
+    if (isDefendingCard) {
+      await durakAction("defend");
+    }
+
+    return;
+  }
+
+  if (table && target && table.contains(target)) {
+    selectedDurakCardId = card.id;
+    await durakAction("attack");
+  }
+});
+
+cardElement.addEventListener("pointercancel", () => {
+  isDragging = false;
+  cardElement.style.transform = "translateY(0)";
+  cardElement.style.zIndex = "";
+});
         cardElement.addEventListener("pointerup", () => {
           cardElement.style.transform = "";
           cardElement.style.zIndex = "";
