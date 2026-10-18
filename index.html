@@ -2398,21 +2398,25 @@ window.onerror = function(message, source, lineno, colno, error) {
 
 render();
 login().then(() => loadDurakRooms());
-$("durakAttack").onclick = () => {
-  durakAction("attack");
-};
+const durakAttackButton = $("durakAttack");
+if (durakAttackButton) {
+  durakAttackButton.onclick = () => durakAction("attack");
+}
 
-$("durakDefend").onclick = () => {
-  durakAction("defend");
-};
+const durakDefendButton = $("durakDefend");
+if (durakDefendButton) {
+  durakDefendButton.onclick = () => durakAction("defend");
+}
 
-$("durakTake").onclick = () => {
-  durakAction("take");
-};
+const durakTakeButton = $("durakTake");
+if (durakTakeButton) {
+  durakTakeButton.onclick = () => durakAction("take");
+}
 
-$("durakBeat").onclick = () => {
-  durakAction("beat");
-};
+const durakBeatButton = $("durakBeat");
+if (durakBeatButton) {
+  durakBeatButton.onclick = () => durakAction("beat");
+}
   // ==================================
 // ОТДЕЛЬНЫЙ ЭКРАН ДУРАК ОНЛАЙН
 // ==================================
