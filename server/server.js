@@ -1061,7 +1061,7 @@ app.post("/api/durak/action", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
 
-    if (!user || !user.id) {
+    if (!user?.id) {
       return res.status(401).json({
         ok: false,
         error: "Необходимо войти через Telegram"
@@ -1077,66 +1077,80 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    const allowedActions = ["attack", "defend", "take", "beat"];
-
-    if (!allowedActions.includes(action)) {
+    if (!["attack", "defend", "take", "beat"].includes(action)) {
       return res.status(400).json({
         ok: false,
         error: "Неизвестное действие"
       });
     }
 
-    const playerResult = await pool.query(
+    const membership = await pool.query(
       `SELECT telegram_id
        FROM durak_room_players
        WHERE room_id = $1 AND telegram_id = $2`,
       [roomId, String(user.id)]
     );
 
-    if (playerResult.rows.length === 0) {
+    if (!membership.rows.length) {
       return res.status(403).json({
         ok: false,
         error: "Ты не состоишь в этой комнате"
       });
     }
 
-        const gameResult = await pool.query(
+    const result = await pool.query(
       `SELECT game_state
        FROM durak_games
        WHERE room_id = $1`,
       [roomId]
     );
 
-    if (gameResult.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({
         ok: false,
         error: "Игра ещё не началась"
       });
     }
 
-    const game = gameResult.rows[0].game_state;
+    const game = result.rows[0].game_state;
 
-    if (!game || game.status !== "playing") {
+    if (
+      !game ||
+      game.status !== "playing" ||
+      !Array.isArray(game.players) ||
+      !Array.isArray(game.table) ||
+      !Array.isArray(game.deck)
+    ) {
       return res.status(400).json({
         ok: false,
-        error: "Игра не активна"
+        error: "Игра не активна или её состояние повреждено"
       });
     }
 
-    if (!Array.isArray(game.players) ||
-        !Array.isArray(game.table) ||
-        !Array.isArray(game.deck)) {
-      return res.status(500).json({
+    const count = game.players.length;
+    const attackerIndex = game.attackerIndex;
+    const defenderIndex = game.defenderIndex;
+
+    if (
+      !Number.isInteger(attackerIndex) ||
+      !Number.isInteger(defenderIndex) ||
+      attackerIndex < 0 ||
+      defenderIndex < 0 ||
+      attackerIndex >= count ||
+      defenderIndex >= count ||
+      attackerIndex === defenderIndex
+    ) {
+      return res.status(400).json({
         ok: false,
-        error: "Некорректное состояние игры"
+        error: "Некорректное состояние ходов. Создай новую игру."
       });
     }
 
     const playerIndex = game.players.findIndex(
-      (player) => String(player.telegramId) === String(user.id)
+      p => String(p.telegramId) === String(user.id)
     );
 
-    if (playerIndex === -1) {
+    if (playerIndex < 0) {
       return res.status(403).json({
         ok: false,
         error: "Игрок не найден в игре"
@@ -1144,20 +1158,7 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     const player = game.players[playerIndex];
-    if (
-  !Number.isInteger(game.attackerIndex) ||
-  !Number.isInteger(game.defenderIndex) ||
-  game.attackerIndex < 0 ||
-  game.defenderIndex < 0 ||
-  game.attackerIndex >= game.players.length ||
-  game.defenderIndex >= game.players.length ||
-  game.attackerIndex === game.defenderIndex
-) {
-  return res.status(400).json({
-    ok: false,
-    error: "Некорректное состояние ходов. Создай новую игру."
-  });
-      }
+
     if (!Array.isArray(player.hand)) {
       return res.status(500).json({
         ok: false,
@@ -1165,223 +1166,57 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    if (action === "attack") {
-      if (!cardId) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сначала выбери карту"
-        });
+    const rankOrder = {
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 9,
+      "10": 10,
+      "В": 11,
+      "J": 11,
+      "Д": 12,
+      "Q": 12,
+      "К": 13,
+      "K": 13,
+      "Т": 14,
+      "Туз": 14,
+      "A": 14
+    };
+
+    function nextActivePlayer(startIndex, excludedIndices = []) {
+      for (let step = 1; step <= count; step++) {
+        const index = (startIndex + step) % count;
+
+        if (excludedIndices.includes(index)) continue;
+
+        if (game.deck.length > 0 || game.players[index].hand.length > 0) {
+          return index;
+        }
       }
 
-      if (playerIndex !== game.attackerIndex) {
-  return res.status(400).json({
-    ok: false,
-    error: "Сейчас ход атакующего игрока"
-  });
-      }
-
-      const cardIndex = player.hand.findIndex(
-        (card) => String(card.id) === String(cardId)
-      );
-
-      if (cardIndex === -1) {
-        return res.status(400).json({
-          ok: false,
-          error: "Этой карты нет в твоей руке"
-        });
-      }
-
-      if (game.table.length > 0) {
-  const ranksOnTable = game.table.flatMap((item) => [
-    item.attack.rank,
-    ...(item.defense ? [item.defense.rank] : [])
-  ]);
-
-  const selectedCard = player.hand[cardIndex];
-
-  if (!ranksOnTable.includes(selectedCard.rank)) {
-    return res.status(400).json({
-      ok: false,
-      error: "Можно подкинуть только карту достоинства, которое уже есть на столе"
-    });
-  }
-      }
-
-      const card = player.hand.splice(cardIndex, 1)[0];
-
-            game.table.push({
-        attack: card,
-        defense: null
-      });
+      return startIndex;
     }
 
-    if (action === "defend") {
-      if (game.table.length === 0) {
-        return res.status(400).json({
-          ok: false,
-          error: "На столе нет карт для защиты"
-        });
-      }
+    function finishIfNeeded() {
+      if (game.deck.length !== 0) return false;
 
-      if (playerIndex !== game.defenderIndex) {
-        return res.status(403).json({
-          ok: false,
-          error: "Защищаться может только отбивающийся игрок"
-        });
-      }
+      const stillPlaying = game.players
+        .map((p, index) => ({
+          index,
+          telegramId: String(p.telegramId),
+          cards: p.hand.length
+        }))
+        .filter(p => p.cards > 0);
 
-      if (!cardId) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сначала выбери карту для защиты"
-        });
-      }
+      if (stillPlaying.length <= 1) {
+        game.status = "finished";
 
-      const cardIndex = player.hand.findIndex(
-        (card) => String(card.id) === String(cardId)
-      );
 
-      if (cardIndex === -1) {
-        return res.status(400).json({
-          ok: false,
-          error: "Этой карты нет в твоей руке"
-        });
-      }
 
-      const tableItem = game.table.find(
-        (item) => item.attack && !item.defense
-      );
-
-      if (!tableItem) {
-        return res.status(400).json({
-          ok: false,
-          error: "Нет карт, которые нужно побить"
-        });
-      }
-
-      const card = player.hand[cardIndex];
-      const attackCard = tableItem.attack;
-
-      const rankOrder = {
-  "2": 2,
-  "3": 3,
-  "4": 4,
-  "5": 5,
-  "6": 6,
-  "7": 7,
-  "8": 8,
-  "9": 9,
-  "10": 10,
-  "В": 11,
-  "J": 11,
-  "Д": 12,
-  "Q": 12,
-  "К": 13,
-  "K": 13,
-  "Т": 14,
-  "Туз": 14,
-  "A": 14
-};
-
-const cardRank = rankOrder[String(card.rank)] ?? -1;
-const attackRank = rankOrder[String(attackCard.rank)] ?? -1;
-
-if (cardRank < 0 || attackRank < 0) {
-  return res.status(400).json({
-    ok: false,
-    error: "Не удалось определить достоинство карты"
-  });
-}
-
-const canBeat =
-  (card.suit === attackCard.suit &&
-    cardRank > attackRank) ||
-  (card.suit === game.trumpSuit &&
-    attackCard.suit !== game.trumpSuit);
-
-      if (!canBeat) {
-        return res.status(400).json({
-          ok: false,
-          error: "Этой картой нельзя побить атакующую карту"
-        });
-      }
-
-      tableItem.defense = player.hand.splice(cardIndex, 1)[0];
-    }
-
-        if (action === "take") {
-      if (game.table.length === 0) {
-        return res.status(400).json({
-          ok: false,
-          error: "На столе нет карт"
-        });
-      }
-
-      if (playerIndex !== game.defenderIndex) {
-        return res.status(403).json({
-          ok: false,
-          error: "Взять карты может только защищающийся игрок"
-        });
-      }
-
-      const cardsToTake = [];
-
-      for (const item of game.table) {
-        if (item.attack) cardsToTake.push(item.attack);
-        if (item.defense) cardsToTake.push(item.defense);
-      }
-
-            player.hand.push(...cardsToTake);
-      game.table = [];
-    }
-
-    if (action === "beat") {
-      if (game.table.length === 0) {
-        return res.status(400).json({
-          ok: false,
-          error: "На столе нет карт"
-        });
-      }
-     if (playerIndex !== game.defenderIndex) {
-  return res.status(403).json({
-    ok: false,
-    error: "Объявить «Бито» может только защищающийся игрок"
-  });
-     }
-      const allBeaten = game.table.every(
-        (item) => item.attack && item.defense
-      );
-
-      if (!allBeaten) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сначала нужно побить все карты на столе"
-        });
-      }
-
-      game.table = [];
-    }
-
-    await pool.query(
-      `UPDATE durak_games
-       SET game_state = $1
-       WHERE room_id = $2`,
-      [JSON.stringify(game), roomId]
-    );
-
-    return res.json({
-      ok: true,
-      message: "Игровое действие выполнено"
-    });
-  } catch (error) {
-    console.error("Durak action error:", error.message);
-
-    return res.status(500).json({
-      ok: false,
-      error: "Не удалось выполнить действие"
-    });
-  }
-});
 async function startServer() {
   try {
     await pool.query(`
