@@ -1522,7 +1522,29 @@ async function loadDurakGame(roomId) {
     if (!game.ok) {
       return;
     }
+const isAttacker = game.playerIndex === game.attackerIndex;
+const isDefender = game.playerIndex === game.defenderIndex;
 
+const attackButton = $("durakAttack");
+const defendButton = $("durakDefend");
+const takeButton = $("durakTake");
+const beatButton = $("durakBeat");
+
+if (attackButton) {
+  attackButton.style.display = isAttacker ? "inline-block" : "none";
+}
+
+if (defendButton) {
+  defendButton.style.display = isDefender ? "inline-block" : "none";
+}
+
+if (takeButton) {
+  takeButton.style.display = isDefender ? "inline-block" : "none";
+}
+
+if (beatButton) {
+  beatButton.style.display = isAttacker ? "inline-block" : "none";
+}
     $("durakGame").style.display = "block";
 $("durakGame").classList.add("durak-fullscreen");
 
