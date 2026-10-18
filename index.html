@@ -1393,14 +1393,45 @@ function createDurakCardElement(card) {
   const suit = String(card.suit || "");
 
   const cardElement = document.createElement("div");
-
   cardElement.className = "durak-card premium-card";
 
   if (suit === "♥" || suit === "♦") {
     cardElement.classList.add("red");
   }
 
-    // Левый верхний угол: значение и масть
+  // Подбираем готовое изображение для нужной карты
+  const cardImages = {
+    "K-♠": "king-spades.png",
+    "K-♤": "king-spades.png",
+    "Q-♥": "queen-hearts.png",
+    "Q-♡": "queen-hearts.png",
+    "J-♦": "jack-diamonds.png",
+    "J-♢": "jack-diamonds.png",
+    "A-♠": "ace-spades.png",
+    "A-♤": "ace-spades.png"
+  };
+
+  const imageName = cardImages[rank.toUpperCase() + "-" + suit];
+
+  if (imageName) {
+    const image = document.createElement("img");
+
+    image.src = "cards/" + imageName;
+    image.alt = rank + " " + suit;
+    image.draggable = false;
+
+    image.onerror = () => {
+      image.remove();
+      cardElement.classList.remove("image-card");
+    };
+
+    cardElement.classList.add("image-card");
+    cardElement.appendChild(image);
+
+    return cardElement;
+  }
+
+  // Обычный дизайн для карт, изображения которых пока нет
   const corner = document.createElement("span");
   corner.className = "card-corner";
 
@@ -1416,12 +1447,10 @@ function createDurakCardElement(card) {
   corner.appendChild(document.createElement("br"));
   corner.appendChild(cornerSuit);
 
-  // Центральная масть
   const center = document.createElement("span");
   center.className = "card-suit";
   center.textContent = suit;
 
-  // Правый нижний угол: значение и масть
   const oppositeCorner = document.createElement("span");
   oppositeCorner.className = "card-corner card-corner-bottom";
 
@@ -1448,7 +1477,7 @@ function createDurakCardElement(card) {
     cardElement.appendChild(court);
   }
 
-    return cardElement;
+  return cardElement;
 }
 
 async function loadDurakGame(roomId) {
