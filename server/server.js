@@ -1062,7 +1062,7 @@ console.log("DURAK DEBUG:", {
     });
   }
 });
-// Игровое действие Дурак Онлайн
+// Игровые действия Дурак Онлайн
 app.post("/api/durak/action", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
@@ -1090,6 +1090,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
+    // Проверяем, что игрок находится в комнате
     const membership = await pool.query(
       `SELECT telegram_id
        FROM durak_room_players
@@ -1104,6 +1105,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
+    // Загружаем состояние партии
     const result = await pool.query(
       `SELECT game_state
        FROM durak_games
@@ -1138,6 +1140,7 @@ app.post("/api/durak/action", async (req, res) => {
     const defenderIndex = game.defenderIndex;
 
     if (
+      count < 2 ||
       !Number.isInteger(attackerIndex) ||
       !Number.isInteger(defenderIndex) ||
       attackerIndex < 0 ||
@@ -1194,40 +1197,28 @@ app.post("/api/durak/action", async (req, res) => {
     };
 
     function cardRank(card) {
-      return rankOrder[String(card.rank)] || 0;
-    }
-
-    function cardSuit(card) {
-      return String(card.suit ?? "");
-    }
-
-    function sameRank(a, b) {
-      return cardRank(a) > 0 &&
-        cardRank(a) === cardRank(b);
+      return rankOrder[String(card?.rank)] || 0;
     }
 
     function beatsCard(defense, attack) {
-      const defenseSuit = cardSuit(defense);
-      const attackSuit = cardSuit(attack);
-      const trumpSuit = String(game.trumpSuit ?? "");
+      if (!defense || !attack) return false;
 
-      if (defenseSuit === attackSuit) {
+      const ds = String(defense.suit ?? "");
+      const as = String(attack.suit ?? "");
+      const trump = String(game.trumpSuit ?? "");
+
+      if (ds === as) {
         return cardRank(defense) > cardRank(attack);
       }
 
-      return (
-        defenseSuit === trumpSuit &&
-        attackSuit !== trumpSuit
-      );
+      return ds === trump && as !== trump;
     }
 
     function nextActivePlayer(startIndex, excluded = []) {
       for (let step = 1; step <= count; step++) {
         const index = (startIndex + step) % count;
 
-        if (excluded.includes(index)) {
-          continue;
-        }
+        if (excluded.includes(index)) continue;
 
         if (
           game.deck.length > 0 ||
@@ -1241,9 +1232,7 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     function finishIfNeeded() {
-      if (game.deck.length !== 0) {
-        return false;
-      }
+      if (game.deck.length > 0) return false;
 
       const stillPlaying = game.players.filter(
         p => p.hand.length > 0
@@ -1261,16 +1250,7 @@ app.post("/api/durak/action", async (req, res) => {
     function drawCardsAfterRound() {
       const order = [];
 
-      if (game.players[attackerIndex]) {
-        order.push(attackerIndex);
-      }
-
-      if (
-        defenderIndex !== attackerIndex &&
-        game.players[defenderIndex]
-      ) {
-        order.push(defenderIndex);
-      }
+      order.push(attackerIndex);
 
       for (let i = 1; i < count; i++) {
         const index = (attackerIndex + i) % count;
@@ -1292,9 +1272,246 @@ app.post("/api/durak/action", async (req, res) => {
       }
     }
 
-    // АТАКА: ходить может только атакующий
+    // АТАКА
     if (action === "attack") {
-      if (playerIndex !== game.attackerIndex)
+      if (playerIndex !== game.attackerIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Сейчас ход атакующего игрока"
+        });
+      }
+
+      if (!cardId) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала выбери карту"
+        });
+      }
+
+      const cardIndex = player.hand.findIndex(
+        c => String(c.id) === String(cardId)
+      );
+
+      if (cardIndex < 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой карты нет в твоей руке"
+        });
+      }
+
+      if (game.phase !== "attack" && game.phase !== "defense") {
+        return res.status(400).json({
+          ok: false,
+          error: "Сейчас нельзя атаковать"
+        });
+      }
+
+      if (game.table.some(item => !item.defense)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала защищающийся должен побить открытую карту или взять карты"
+        });
+      }
+
+      const defender = game.players[game.defenderIndex];
+
+      if (game.table.length >= defender.hand.length &&
+          game.table.length > 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "Нельзя подкинуть больше карт, чем у защищающегося игрока"
+        });
+      }
+
+      const selectedCard = player.hand[cardIndex];
+
+      if (game.table.length > 0) {
+        const tableRanks = game.table.flatMap(item => [
+          item.attack?.rank,
+          item.defense?.rank
+        ].filter(Boolean));
+
+        if (!tableRanks.includes(selectedCard.rank)) {
+          return res.status(400).json({
+            ok: false,
+            error: "Можно подкинуть только карту достоинства, уже лежащего на столе"
+          });
+        }
+      }
+
+      const card = player.hand.splice(cardIndex, 1)[0];
+
+      game.table.push({
+        attack: card,
+        defense: null
+      });
+
+      game.phase = "defense";
+    }
+
+    // ЗАЩИТА
+    if (action === "defend") {
+      if (playerIndex !== game.defenderIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Защищаться может только отбивающийся игрок"
+        });
+      }
+
+      if (!cardId) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала выбери карту для защиты"
+        });
+      }
+
+      const tableItem = game.table.find(
+        item => item.attack && !item.defense
+      );
+
+      if (!tableItem) {
+        return res.status(400).json({
+          ok: false,
+          error: "Нет открытой карты для защиты"
+        });
+      }
+
+      const cardIndex = player.hand.findIndex(
+        c => String(c.id) === String(cardId)
+      );
+
+      if (cardIndex < 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой карты нет в твоей руке"
+        });
+      }
+
+      const card = player.hand[cardIndex];
+
+      if (!cardRank(card) || !cardRank(tableItem.attack)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Не удалось определить достоинство карты"
+        });
+      }
+
+      if (!beatsCard(card, tableItem.attack)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой картой нельзя побить атакующую карту"
+        });
+      }
+
+      tableItem.defense = player.hand.splice(cardIndex, 1)[0];
+      game.phase = "attack";
+    }
+
+    // ВЗЯТЬ КАРТЫ
+    if (action === "take") {
+      if (playerIndex !== game.defenderIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Взять карты может только защищающийся игрок"
+        });
+      }
+
+      if (game.table.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "На столе нет карт"
+        });
+      }
+
+      for (const item of game.table) {
+        if (item.attack) player.hand.push(item.attack);
+        if (item.defense) player.hand.push(item.defense);
+      }
+
+      game.table = [];
+
+      drawCardsAfterRound();
+
+      game.attackerIndex = attackerIndex;
+      game.defenderIndex = nextActivePlayer(
+        defenderIndex,
+        [attackerIndex]
+      );
+
+      if (game.defenderIndex === game.attackerIndex) {
+        game.status = "finished";
+        game.phase = "finished";
+      } else {
+        game.phase = "attack";
+        finishIfNeeded();
+      }
+    }
+
+    // ЗАВЕРШИТЬ ОТБИВАНИЕ
+    if (action === "beat") {
+      if (playerIndex !== game.defenderIndex) {
+        return res.status(403).json({
+          ok: false,
+          error: "Объявить «Бито» может только защищающийся игрок"
+        });
+      }
+
+      if (
+        game.table.length === 0 ||
+        !game.table.every(item => item.attack && item.defense)
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error: "Сначала нужно побить все карты на столе"
+        });
+      }
+
+      game.table = [];
+
+      drawCardsAfterRound();
+
+      game.attackerIndex = defenderIndex;
+      game.defenderIndex = nextActivePlayer(
+        game.attackerIndex
+      );
+
+      if (game.defenderIndex === game.attackerIndex) {
+        game.status = "finished";
+        game.phase = "finished";
+      } else {
+        game.phase = "attack";
+        finishIfNeeded();
+      }
+    }
+
+    // Сохраняем состояние партии
+    await pool.query(
+      `UPDATE durak_games
+       SET game_state = $1::jsonb,
+           updated_at = NOW()
+       WHERE room_id = $2`,
+      [JSON.stringify(game), roomId]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Игровое действие выполнено",
+      phase: game.phase,
+      attackerIndex: game.attackerIndex,
+      defenderIndex: game.defenderIndex,
+      status: game.status,
+      table: game.table,
+      cardsLeft: game.deck.length
+    });
+  } catch (error) {
+    console.error("Durak action error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Не удалось выполнить действие"
+    });
+  }
+});
 
 
 async function startServer() {
