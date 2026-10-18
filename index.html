@@ -1540,13 +1540,46 @@ $("durakEntry").style.display = "none";
 
 if (Array.isArray(game.table)) {
   game.table.forEach((item) => {
-    const card = item.card || item;
+    const pair = document.createElement("div");
 
-    const cardElement = createDurakCardElement(card);
+    pair.className = "durak-table-pair";
 
-    cardElement.classList.add("table-card");
+    pair.style.display = "flex";
+    pair.style.alignItems = "center";
+    pair.style.justifyContent = "center";
+    pair.style.gap = "8px";
+    pair.style.margin = "5px";
+    pair.style.minHeight = "100px";
 
-    $("durakTable").appendChild(cardElement);
+    // Карта атаки
+    if (item.attack) {
+      const attackCard = createDurakCardElement(item.attack);
+
+      attackCard.classList.add("table-card");
+
+      attackCard.style.display = "flex";
+      attackCard.style.visibility = "visible";
+      attackCard.style.opacity = "1";
+      attackCard.style.position = "relative";
+
+      pair.appendChild(attackCard);
+    }
+
+    // Карта защиты
+    if (item.defense) {
+      const defenseCard = createDurakCardElement(item.defense);
+
+      defenseCard.classList.add("table-card");
+
+      defenseCard.style.display = "flex";
+      defenseCard.style.visibility = "visible";
+      defenseCard.style.opacity = "1";
+      defenseCard.style.position = "relative";
+
+      pair.appendChild(defenseCard);
+    }
+
+    $("durakTable").appendChild(pair);
   });
 }
 
