@@ -1542,8 +1542,16 @@ if (takeButton) {
   takeButton.style.display = isDefender ? "inline-block" : "none";
 }
 
+const allCardsBeaten =
+  Array.isArray(game.table) &&
+  game.table.length > 0 &&
+  game.table.every(item => item.attack && item.defense);
+
 if (beatButton) {
-  beatButton.style.display = isAttacker ? "inline-block" : "none";
+  beatButton.style.display =
+    isAttacker && allCardsBeaten
+      ? "inline-block"
+      : "none";
 }
     $("durakGame").style.display = "block";
 $("durakGame").classList.add("durak-fullscreen");
