@@ -1391,24 +1391,23 @@ function createDurakCardElement(card) {
   const rank = String(card.rank || "");
   const suit = String(card.suit || "");
 
-  const cardElement = document.createElement("div");
-  cardElement.className = "durak-card premium-card";
-
-  if (suit === "♥" || suit === "♦") {
-    cardElement.classList.add("red");
-  }
-
   // Подбираем готовое изображение для нужной карты
-  const cardImages = {
-    "K-♠": "king-spades.png",
-    "K-♤": "king-spades.png",
-    "Q-♥": "queen-hearts.png",
-    "Q-♡": "queen-hearts.png",
-    "J-♦": "jack-diamonds.png",
-    "J-♢": "jack-diamonds.png",
-    "A-♠": "ace-spades.png",
-    "A-♤": "ace-spades.png"
-  };
+const cardImages = {
+  "К-♠": "king-spades.png",
+  "К-♤": "king-spades.png",
+
+  "Д-♥": "queen-hearts.png",
+  "Д-♡": "queen-hearts.png",
+
+  "В-♦": "jack-diamonds.png",
+  "В-♢": "jack-diamonds.png",
+
+  "Т-♠": "ace-spades.png",
+  "Т-♤": "ace-spades.png",
+
+  "ТУЗ-♠": "ace-spades.png",
+  "ТУЗ-♤": "ace-spades.png"
+};
 
   const imageName = cardImages[rank.toUpperCase() + "-" + suit];
 
