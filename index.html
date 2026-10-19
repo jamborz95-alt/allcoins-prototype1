@@ -1751,11 +1751,13 @@ if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
 
   trumpElement.style.flex = "0 0 58px";
-  trumpElement.style.width = "58px";
-  trumpElement.style.height = "86px";
-  trumpElement.style.minWidth = "58px";
-  trumpElement.style.transform = "none";
-  trumpElement.style.pointerEvents = "none";
+trumpElement.style.width = "58px";
+trumpElement.style.height = "86px";
+trumpElement.style.minWidth = "58px";
+trumpElement.style.transform = "none";
+trumpElement.style.pointerEvents = "none";
+trumpElement.style.position = "relative";
+trumpElement.style.zIndex = "1";
 
   trumpBox.appendChild(trumpElement);
 } else {
