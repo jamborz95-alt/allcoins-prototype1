@@ -1658,6 +1658,14 @@ if (beatButton) {
       ? "inline-block"
       : "none";
 }
+   const turnMessage = $("durakTurnMessage");
+
+if (turnMessage) {
+  turnMessage.style.display =
+    isAttacker && game.phase === "attack"
+      ? "flex"
+      : "none";
+}
     $("durakGame").style.display = "block";
 $("durakGame").classList.add("durak-fullscreen");
 
