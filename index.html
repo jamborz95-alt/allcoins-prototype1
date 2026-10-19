@@ -1728,7 +1728,7 @@ if (Array.isArray(game.hand)) {
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
-
+        durakCardDragging = false;
         cardElement.style.zIndex = "";
         cardElement.style.opacity = "";
         cardElement.style.transition = "";
