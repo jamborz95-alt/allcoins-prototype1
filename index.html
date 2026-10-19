@@ -1676,10 +1676,40 @@ $("durakCreatePanel").style.display = "none";
 $("durakRoomsPanel").style.display = "none";
 $("durakRoomActions").style.display = "none";
 $("durakEntry").style.display = "none";
-    $("durakTrump").textContent =
-      "Козырь: " + game.trumpSuit;
+  // ALLCOINS — отображение козырной карты
+const trumpBox = $("durakTrump");
+trumpBox.innerHTML = "";
 
-    $("durakTable").innerHTML = "";
+const trumpLabel = document.createElement("div");
+trumpLabel.textContent = "КОЗЫРЬ";
+trumpLabel.style.cssText = `
+  color: #d4af37;
+  font-size: 13px;
+  font-weight: 800;
+  margin-right: 10px;
+`;
+
+trumpBox.appendChild(trumpLabel);
+
+if (game.trumpCard) {
+  const trumpElement = createDurakCardElement(game.trumpCard);
+
+  trumpElement.style.flex = "0 0 58px";
+  trumpElement.style.width = "58px";
+  trumpElement.style.height = "86px";
+  trumpElement.style.minWidth = "58px";
+  trumpElement.style.transform = "none";
+  trumpElement.style.pointerEvents = "none";
+
+  trumpBox.appendChild(trumpElement);
+} else {
+  const trumpText = document.createElement("span");
+  trumpText.textContent = game.trumpSuit || "—";
+  trumpText.style.color = "#ffffff";
+  trumpBox.appendChild(trumpText);
+}
+
+$("durakTable").innerHTML = "";  
 
 if (Array.isArray(game.table)) {
   game.table.forEach((item) => {
