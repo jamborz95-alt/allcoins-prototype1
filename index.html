@@ -1692,7 +1692,9 @@ defenseCard.style.zIndex = "2";
 }
 console.log("КАРТЫ В РУКЕ:", game.hand);
 console.log("КАРТЫ НА СТОЛЕ:", game.table);
-   $("durakHand").innerHTML = "";
+ console.log("КАРТЫ ИГРОКА:", game.hand);
+console.log("ДАННЫЕ ИГРЫ:", game);
+    $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
   game.hand.forEach((card) => {
