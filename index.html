@@ -1818,7 +1818,12 @@ if (Array.isArray(game.hand)) {
 }
 // Автоматически обновляем состояние Дурака каждые 2 секунды
 setInterval(() => {
-  if (currentDurakRoomId && state.user && tg?.initData) {
+  if (
+    currentDurakRoomId &&
+    state.user &&
+    tg?.initData &&
+    !durakCardDragging
+  ) {
     loadDurakGame(currentDurakRoomId);
   }
 }, 2000);
