@@ -1579,11 +1579,12 @@ const turnMessage = $("durakTurnMessage");
 if (turnMessage) {
   turnMessage.style.display =
     isAttacker && game.phase === "attack"
-      ? "block"
+      ? "flex"
       : "none";
 
   turnMessage.textContent = "ТВОЙ ХОД";
 }
+
 const attackButton = $("durakAttack");
 const defendButton = $("durakDefend");
 const takeButton = $("durakTake");
