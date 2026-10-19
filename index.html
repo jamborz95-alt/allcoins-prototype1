@@ -1694,7 +1694,13 @@ console.log("КАРТЫ В РУКЕ:", game.hand);
 console.log("КАРТЫ НА СТОЛЕ:", game.table);
  console.log("КАРТЫ ИГРОКА:", game.hand);
 console.log("ДАННЫЕ ИГРЫ:", game);
-    $("durakHand").innerHTML = "";
+    if (!Array.isArray(game.hand) || game.hand.length === 0) {
+  console.log("ОШИБКА: сервер не передал карты игрока", game.hand);
+} else {
+  console.log("КАРТ В РУКЕ:", game.hand.length);
+}
+
+$("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
   game.hand.forEach((card) => {
