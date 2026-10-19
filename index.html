@@ -1709,6 +1709,7 @@ if (Array.isArray(game.hand)) {
 
         if (!dragging && Math.hypot(distanceX, distanceY) > 8) {
           dragging = true;
+        durakCardDragging = true;
           selectedDurakCardId = card.id;
           cardElement.style.zIndex = "1000";
           cardElement.style.opacity = "0.85";
