@@ -1575,10 +1575,10 @@ if (defendButton) {
 
 if (takeButton) {
   takeButton.style.display =
-    isDefender && game.phase === "defend"
+    isDefender && game.phase === "defense"
       ? "inline-block"
       : "none";
-}
+    }
 
 const allCardsBeaten =
   Array.isArray(game.table) &&
