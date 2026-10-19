@@ -498,7 +498,16 @@
     0 9px 15px rgba(0, 0, 0, 0.4),
     0 0 0 2px rgba(103, 245, 181, 0.25);
 }
+/* ALLCOINS — эффект нажатия карты */
 
+@media (hover: none) {
+  #durakGame .durak-card.premium-card:active {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow:
+      0 9px 16px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(212, 175, 55, 0.65);
+  }
+}
 /* Карта во время перетаскивания */
 
 #durakGame .durak-card.dragging {
