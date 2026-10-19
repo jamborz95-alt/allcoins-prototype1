@@ -1448,13 +1448,13 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     // ЗАВЕРШИТЬ ОТБИВАНИЕ
-    if (action === "beat") {
-      if (playerIndex !== game.defenderIndex) {
-        return res.status(403).json({
-          ok: false,
-          error: "Объявить «Бито» может только защищающийся игрок"
-        });
-      }
+if (action === "beat") {
+  if (playerIndex !== game.attackerIndex) {
+    return res.status(403).json({
+      ok: false,
+      error: "Объявить «Бито» может только атакующий игрок"
+    });
+  }
 
       if (
         game.table.length === 0 ||
