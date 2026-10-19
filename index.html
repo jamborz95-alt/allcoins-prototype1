@@ -1691,6 +1691,46 @@ trumpLabel.style.cssText = `
 
 trumpBox.appendChild(trumpLabel);
 
+// Колода ALLCOINS и количество оставшихся карт
+const deckBox = document.createElement("div");
+deckBox.style.cssText = `
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 14px;
+`;
+
+const deckCard = document.createElement("div");
+deckCard.style.cssText = `
+  width: 42px;
+  height: 62px;
+  flex: 0 0 42px;
+  border: 2px solid #d4af37;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #202b48, #101522);
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4af37;
+  font-size: 21px;
+  font-weight: 800;
+`;
+deckCard.textContent = "A";
+
+const deckCount = document.createElement("div");
+deckCount.style.cssText = `
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+`;
+deckCount.textContent = "В колоде: " + (game.cardsLeft ?? 0);
+
+deckBox.appendChild(deckCard);
+deckBox.appendChild(deckCount);
+trumpBox.appendChild(deckBox);
+
 if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
 
