@@ -1551,8 +1551,11 @@ async function loadDurakGame(roomId) {
     if (!game.ok) {
       return;
     }
-const isAttacker = game.playerIndex === game.attackerIndex;
-const isDefender = game.playerIndex === game.defenderIndex;
+const isAttacker =
+  Number(game.playerIndex) === Number(game.attackerIndex);
+
+const isDefender =
+  Number(game.playerIndex) === Number(game.defenderIndex);
 
 const attackButton = $("durakAttack");
 const defendButton = $("durakDefend");
