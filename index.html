@@ -1720,7 +1720,19 @@ deckCard.style.cssText = `
   font-size: 21px;
   font-weight: 800;
 `;
-deckCard.textContent = "A";
+deckCard.textContent = "";
+deckCard.style.background = `
+  repeating-linear-gradient(
+    45deg,
+    #172442,
+    #172442 5px,
+    #263b64 5px,
+    #263b64 10px
+  )
+`;
+deckCard.style.border = "2px solid #d4af37";
+deckCard.style.position = "relative";
+deckCard.style.zIndex = "2";
 
 const deckCount = document.createElement("div");
 deckCount.style.cssText = `
