@@ -305,22 +305,27 @@
 
 #durakGame .durak-table {
   position: relative;
+  isolation: isolate;
   width: 100%;
   min-height: 390px;
-  margin: 15px auto;
-  padding: 18px 10px;
-  border: 7px solid #633b22;
-  border-radius: 48% / 38%;
-  background: radial-gradient(
-    ellipse at center,
-    #238b55 0%,
-    #12663b 65%,
-    #084426 100%
-  );
+  margin: 18px auto;
+  padding: 20px 12px;
+  border: 9px solid #442516;
+  border-radius: 42px;
+  background:
+    radial-gradient(
+      ellipse at 50% 35%,
+      rgba(49, 151, 91, 0.95) 0%,
+      rgba(24, 112, 64, 0.98) 45%,
+      #073c25 100%
+    );
   box-shadow:
-    inset 0 0 0 3px #b98a50,
-    inset 0 0 25px rgba(0, 0, 0, 0.35),
-    0 5px 12px rgba(0, 0, 0, 0.25);
+    inset 0 0 0 3px #d2aa62,
+    inset 0 0 0 6px #79502b,
+    inset 0 12px 25px rgba(255, 255, 255, 0.08),
+    inset 0 -18px 30px rgba(0, 0, 0, 0.35),
+    0 8px 0 #2b170e,
+    0 12px 22px rgba(0, 0, 0, 0.45);
   box-sizing: border-box;
 }
 
