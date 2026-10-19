@@ -1708,20 +1708,20 @@ if (Array.isArray(game.hand)) {
         const distanceY = moveEvent.clientY - startY;
 
         if (!dragging && Math.hypot(distanceX, distanceY) > 8) {
-          dragging = true;
-        durakCardDragging = true;
-          selectedDurakCardId = card.id;
-          cardElement.style.zIndex = "1000";
-          cardElement.style.opacity = "0.85";
-          cardElement.style.transition = "none";
-        }
+  dragging = true;
+  durakCardDragging = true;
+  selectedDurakCardId = card.id;
+  cardElement.style.zIndex = "1000";
+  cardElement.style.opacity = "0.85";
+  cardElement.style.transition = "none";
+}
 
-        if (dragging) {
-          moveEvent.preventDefault();
+if (dragging) {
+  moveEvent.preventDefault();
 
-          cardElement.style.transform =
-            `translate(${distanceX}px, ${distanceY}px) rotate(4deg)`;
-        }
+  cardElement.style.transform =
+    `translate(${distanceX}px, ${distanceY}px) rotate(4deg)`;
+}
       };
 
       const releaseCard = async (upEvent) => {
