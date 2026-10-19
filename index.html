@@ -1690,7 +1690,8 @@ defenseCard.style.zIndex = "2";
     $("durakTable").appendChild(pair);
   });
 }
-
+console.log("КАРТЫ В РУКЕ:", game.hand);
+console.log("КАРТЫ НА СТОЛЕ:", game.table);
    $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
