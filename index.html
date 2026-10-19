@@ -1725,65 +1725,84 @@ if (dragging) {
       };
 
       const releaseCard = async (upEvent) => {
-        document.removeEventListener("pointermove", moveCard);
-        document.removeEventListener("pointerup", releaseCard);
-        document.removeEventListener("pointercancel", cancelCard);
-        durakCardDragging = false;
-        cardElement.style.zIndex = "";
-        cardElement.style.opacity = "";
-        cardElement.style.transition = "";
+  document.removeEventListener("pointermove", moveCard);
+  document.removeEventListener("pointerup", releaseCard);
+  document.removeEventListener("pointercancel", cancelCard);
 
-        if (!dragging) return;
+  durakCardDragging = false;
 
-        cardElement.dataset.dragged = "true";
+  cardElement.style.zIndex = "";
+  cardElement.style.opacity = "";
+  cardElement.style.transition = "";
 
-        const elementUnderPointer = document.elementFromPoint(
-          upEvent.clientX,
-          upEvent.clientY
-        );
+  if (!dragging) return;
 
-        const table = $("durakTable");
+  cardElement.dataset.dragged = "true";
 
-        const droppedOnTable =
-          table &&
-          elementUnderPointer &&
-          (
-            table === elementUnderPointer ||
-            table.contains(elementUnderPointer)
-          );
+  // Возвращаем карту в исходное положение перед проверкой стола
+  cardElement.style.transform = "";
 
-        cardElement.style.transform = "";
-        cardElement.style.border = "";
+  // Определяем элемент под пальцем
+  const elementUnderPointer = document.elementFromPoint(
+    upEvent.clientX,
+    upEvent.clientY
+  );
 
-        if (!droppedOnTable) {
-          return;
-        }
+  const table = $("durakTable");
 
-        selectedDurakCardId = card.id;
+  // Проверяем, отпущена ли карта над игровым столом
+  const droppedOnTable =
+    table &&
+    elementUnderPointer &&
+    (
+      table === elementUnderPointer ||
+      table.contains(elementUnderPointer) ||
+      elementUnderPointer.closest("#durakTable") === table
+    );
 
-        const targetCard = elementUnderPointer.closest(
-          "#durakTable .durak-card"
-        );
+  cardElement.style.border = "";
 
-        const isDefender =
-          Number(game.playerIndex) === Number(game.defenderIndex);
+  if (!droppedOnTable) {
+    return;
+  }
 
-        const isAttacker =
-          Number(game.playerIndex) === Number(game.attackerIndex);
+  selectedDurakCardId = card.id;
 
-        if (
-          isDefender &&
-          game.phase === "defend" &&
-          targetCard
-        ) {
-          await durakAction("defend");
-        } else if (
-          isAttacker &&
-          game.phase === "attack"
-        ) {
-          await durakAction("attack");
-        }
-      };
+  const targetCard = elementUnderPointer.closest(
+    "#durakTable .durak-card"
+  );
+
+  const isDefender =
+    Number(game.playerIndex) === Number(game.defenderIndex);
+
+  const isAttacker =
+    Number(game.playerIndex) === Number(game.attackerIndex);
+
+  // Защита: нужно положить карту на карту атаки
+  if (
+    isDefender &&
+    game.phase === "defend" &&
+    targetCard &&
+    targetCard.dataset.tableCardType === "attack"
+  ) {
+    await durakAction("defend");
+    return;
+  }
+
+  // Атака: карту можно положить на свободное место стола
+  if (
+    isAttacker &&
+    game.phase === "attack"
+  ) {
+    await durakAction("attack");
+    return;
+  }
+
+  showStatus(
+    "durakGameStatus",
+    "Сейчас нельзя положить эту карту. Проверь, чей ход."
+  );
+};
 
       const cancelCard = () => {
         document.removeEventListener("pointermove", moveCard);
