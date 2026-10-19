@@ -1743,29 +1743,54 @@ deckCount.style.cssText = `
 `;
 deckCount.textContent = "В колоде: " + (game.cardsLeft ?? 0);
 
-deckBox.appendChild(deckCard);
-deckBox.appendChild(deckCount);
-trumpBox.appendChild(deckBox);
+// ALLCOINS — колода сверху, козырь под ней
+const deckStack = document.createElement("div");
+
+deckStack.style.cssText = `
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 66px;
+  min-width: 66px;
+  margin: 0 8px;
+`;
+
+deckBox.style.cssText = `
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+`;
+
+deckStack.appendChild(deckCard);
 
 if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
 
   trumpElement.style.flex = "0 0 58px";
-trumpElement.style.width = "58px";
-trumpElement.style.height = "86px";
-trumpElement.style.minWidth = "58px";
-trumpElement.style.transform = "none";
-trumpElement.style.pointerEvents = "none";
-trumpElement.style.position = "relative";
-trumpElement.style.zIndex = "1";
+  trumpElement.style.width = "58px";
+  trumpElement.style.height = "86px";
+  trumpElement.style.minWidth = "58px";
+  trumpElement.style.transform = "none";
+  trumpElement.style.pointerEvents = "none";
+  trumpElement.style.position = "relative";
+  trumpElement.style.zIndex = "1";
+  trumpElement.style.marginTop = "-4px";
 
-  trumpBox.appendChild(trumpElement);
+  deckStack.appendChild(trumpElement);
 } else {
   const trumpText = document.createElement("span");
   trumpText.textContent = game.trumpSuit || "—";
   trumpText.style.color = "#ffffff";
-  trumpBox.appendChild(trumpText);
+  deckStack.appendChild(trumpText);
 }
+
+deckCount.style.marginTop = "5px";
+
+deckStack.appendChild(deckCount);
+trumpBox.appendChild(deckStack);
 
 $("durakTable").innerHTML = "";  
 
