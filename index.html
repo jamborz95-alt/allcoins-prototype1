@@ -1666,15 +1666,23 @@ if (Array.isArray(game.hand)) {
 
     cardElement.classList.add("player-card");
     cardElement.style.cursor = "grab";
+    cardElement.style.touchAction = "none";
+    cardElement.style.userSelect = "none";
 
     cardElement.dataset.rank = card.rank || "";
     cardElement.dataset.suit = card.suit || "";
 
+    // Выбор карты нажатием
     cardElement.onclick = () => {
+      if (cardElement.dataset.dragged === "true") {
+        cardElement.dataset.dragged = "false";
+        return;
+      }
+
       document
         .querySelectorAll("#durakHand .durak-card")
         .forEach((element) => {
-          element.style.transform = "translateY(0)";
+          element.style.transform = "";
           element.style.border = "";
         });
 
@@ -1684,9 +1692,119 @@ if (Array.isArray(game.hand)) {
       selectedDurakCardId = card.id;
     };
 
+    // Перетаскивание карты пальцем
+    cardElement.onpointerdown = (event) => {
+      if (event.button !== 0) return;
+
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let dragging = false;
+
+      cardElement.dataset.dragged = "false";
+
+      const moveCard = (moveEvent) => {
+        const distanceX = moveEvent.clientX - startX;
+        const distanceY = moveEvent.clientY - startY;
+
+        if (!dragging && Math.hypot(distanceX, distanceY) > 8) {
+          dragging = true;
+          selectedDurakCardId = card.id;
+          cardElement.style.zIndex = "1000";
+          cardElement.style.opacity = "0.85";
+          cardElement.style.transition = "none";
+        }
+
+        if (dragging) {
+          moveEvent.preventDefault();
+
+          cardElement.style.transform =
+            `translate(${distanceX}px, ${distanceY}px) rotate(4deg)`;
+        }
+      };
+
+      const releaseCard = async (upEvent) => {
+        document.removeEventListener("pointermove", moveCard);
+        document.removeEventListener("pointerup", releaseCard);
+        document.removeEventListener("pointercancel", cancelCard);
+
+        cardElement.style.zIndex = "";
+        cardElement.style.opacity = "";
+        cardElement.style.transition = "";
+
+        if (!dragging) return;
+
+        cardElement.dataset.dragged = "true";
+
+        const elementUnderPointer = document.elementFromPoint(
+          upEvent.clientX,
+          upEvent.clientY
+        );
+
+        const table = $("durakTable");
+
+        const droppedOnTable =
+          table &&
+          elementUnderPointer &&
+          (
+            table === elementUnderPointer ||
+            table.contains(elementUnderPointer)
+          );
+
+        cardElement.style.transform = "";
+        cardElement.style.border = "";
+
+        if (!droppedOnTable) {
+          return;
+        }
+
+        selectedDurakCardId = card.id;
+
+        const targetCard = elementUnderPointer.closest(
+          "#durakTable .durak-card"
+        );
+
+        const isDefender =
+          Number(game.playerIndex) === Number(game.defenderIndex);
+
+        const isAttacker =
+          Number(game.playerIndex) === Number(game.attackerIndex);
+
+        if (
+          isDefender &&
+          game.phase === "defend" &&
+          targetCard
+        ) {
+          await durakAction("defend");
+        } else if (
+          isAttacker &&
+          game.phase === "attack"
+        ) {
+          await durakAction("attack");
+        }
+      };
+
+      const cancelCard = () => {
+        document.removeEventListener("pointermove", moveCard);
+        document.removeEventListener("pointerup", releaseCard);
+        document.removeEventListener("pointercancel", cancelCard);
+
+        cardElement.style.transform = "";
+        cardElement.style.zIndex = "";
+        cardElement.style.opacity = "";
+        cardElement.style.transition = "";
+      };
+
+      document.addEventListener("pointermove", moveCard, {
+        passive: false
+      });
+
+      document.addEventListener("pointerup", releaseCard);
+      document.addEventListener("pointercancel", cancelCard);
+    };
+
     $("durakHand").appendChild(cardElement);
   });
-} 
+}
 
     $("durakGameStatus").textContent =
       "Игра: " + game.status +
