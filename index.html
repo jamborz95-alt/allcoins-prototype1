@@ -1431,6 +1431,15 @@ async function durakAction(action) {
     alert("Ошибка игры: " + error.message);
   }
 }
+  // Кнопка «Беру»
+$("durakTake").onclick = async () => {
+  await durakAction("take");
+};
+
+// Кнопка «Бито»
+$("durakBeat").onclick = async () => {
+  await durakAction("beat");
+};
   // ===== ALLCOINS PREMIUM CARD FACTORY =====
 
 function createDurakCardElement(card) {
