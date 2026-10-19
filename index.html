@@ -1712,7 +1712,7 @@ if (Array.isArray(game.hand)) {
         const distanceX = moveEvent.clientX - startX;
         const distanceY = moveEvent.clientY - startY;
 
-        if (!dragging && Math.hypot(distanceX, distanceY) > 8) {
+        if (!dragging && Math.hypot(distanceX, distanceY) > 5) {
   dragging = true;
   durakCardDragging = true;
   selectedDurakCardId = card.id;
