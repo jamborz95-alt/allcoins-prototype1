@@ -1425,8 +1425,8 @@ async function durakAction(action) {
       throw new Error(result.error || "Действие не выполнено.");
     }
 
-    selectedDurakCardId = null;
-    alert("Действие выполнено!");
+        selectedDurakCardId = null;
+    await loadDurakGame(currentDurakRoomId);
   } catch (error) {
     alert("Ошибка игры: " + error.message);
   }
