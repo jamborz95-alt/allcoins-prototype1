@@ -11,7 +11,11 @@ const RANK_ORDER = {
 };
 
 export function createDurakDeck(deckSize = 36) {
-  const ranks = Number(deckSize) === 52 ? RANKS_52 : RANKS_36;
+  const size = Number(deckSize);
+  if (size !== 36 && size !== 52) {
+    throw new RangeError("Размер колоды должен быть 36 или 52 карты");
+  }
+  const ranks = size === 52 ? RANKS_52 : RANKS_36;
   return SUITS.flatMap((suit) => ranks.map((rank) => ({
     suit,
     rank,
