@@ -2604,8 +2604,11 @@ if (Array.isArray(game.hand)) {
     cardElement.dataset.rank = card.rank || "";
     cardElement.dataset.suit = card.suit || "";
 
-    // Выбор карты нажатием
+    // Выбор карты нажатием. Во время отправки хода выбор блокируется,
+    // чтобы быстрые повторные касания не меняли выбранную карту.
     cardElement.onclick = () => {
+      if (durakActionInProgress) return;
+
       if (cardElement.dataset.dragged === "true") {
         cardElement.dataset.dragged = "false";
         return;
