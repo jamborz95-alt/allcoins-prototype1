@@ -2765,6 +2765,8 @@ async function loadDurakGame(roomId) {
           playerTag.appendChild(backs);
         }
         playersBox.appendChild(playerTag);
+        // В самой партии игровые места тоже можно двигать пальцем; позиции сохраняются при обновлении стола.
+        setupDurakSeatDragging(playerTag, roomId, seat, playersBox, true);
       });
     }
 
@@ -3710,7 +3712,7 @@ let durakWaitingRefreshTimer = null;
 const durakSeatPositions = Object.create(null);
 let durakSeatDragging = false;
 
-function setupDurakSeatDragging(seat, roomId, seatName, container) {
+function setupDurakSeatDragging(seat, roomId, seatName, container, freeMove = false) {
   if (!seat || !container) return;
   seat.style.touchAction = "none";
   seat.style.cursor = "grab";
@@ -3730,17 +3732,24 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
 
     const move = (moveEvent) => {
       if (moveEvent.pointerId !== event.pointerId) return;
-      let x = Math.max(0.04, Math.min(0.96, (moveEvent.clientX - bounds.left) / bounds.width));
-      let y = Math.max(0.04, Math.min(0.96, (moveEvent.clientY - bounds.top) / bounds.height));
-      // Боковые места остаются в боковых полосах; верхнее и нижнее — вне центральных карт.
-      if (/left/.test(seatName)) x = Math.min(x, 0.10);
-      else if (/right/.test(seatName)) x = Math.max(x, 0.90);
-      else if (seatName === "top") { x = Math.min(x, 0.68); y = Math.min(y, 0.18); }
-      else if (seatName === "bottom") y = Math.max(y, 0.88);
-      if (seatName === "top-right") { x = Math.min(x, 0.58); y = Math.min(y, 0.22); }
-      if (seatName === "top-left") { x = Math.max(x, 0.24); y = Math.min(y, 0.18); }
-      if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.22);
-      if (/bottom/.test(seatName) && seatName !== "bottom") y = Math.max(y, 0.82);
+      const halfWidth = Math.min(0.18, (seat.offsetWidth || 80) / (2 * Math.max(bounds.width, 1)));
+      const halfHeight = Math.min(0.18, (seat.offsetHeight || 48) / (2 * Math.max(bounds.height, 1)));
+      let x = Math.max(halfWidth, Math.min(1 - halfWidth, (moveEvent.clientX - bounds.left) / bounds.width));
+      let y = Math.max(halfHeight, Math.min(1 - halfHeight, (moveEvent.clientY - bounds.top) / bounds.height));
+      // В режиме игрового стола места можно перемещать свободно, не выпуская за границы поля.
+      if (!freeMove) {
+        // В комнате ожидания боковые и верхние места сохраняют свои зоны.
+        if (/left/.test(seatName)) x = Math.min(x, 0.10);
+        else if (/right/.test(seatName)) x = Math.max(x, 0.90);
+        else if (seatName === "top") { x = Math.min(x, 0.68); y = Math.min(y, 0.18); }
+        else if (seatName === "bottom") y = Math.max(y, 0.88);
+        if (seatName === "top-right") { x = Math.min(x, 0.58); y = Math.min(y, 0.22); }
+        if (seatName === "top-left") { x = Math.max(x, 0.24); y = Math.min(y, 0.18); }
+        if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.22);
+        if (/bottom/.test(seatName) && seatName !== "bottom") y = Math.max(y, 0.82);
+      }
+      x = Math.max(halfWidth, Math.min(1 - halfWidth, x));
+      y = Math.max(halfHeight, Math.min(1 - halfHeight, y));
       durakSeatPositions[key] = { x, y };
       seat.style.left = (x * 100) + "%";
       seat.style.top = (y * 100) + "%";
