@@ -2004,7 +2004,16 @@ async function durakAction(action) {
     selectedDurakCardId = null;
     await loadDurakGame(currentDurakRoomId);
   } catch (error) {
-    alert("Ошибка игры: " + error.message);
+    const rawMessage = String(error?.message || "");
+    const shortMessage = rawMessage.length > 180
+      ? rawMessage.slice(0, 177) + "..."
+      : rawMessage;
+    showStatus(
+      "durakGameStatus",
+      "Не удалось выполнить ход. " +
+        (shortMessage || "Проверь соединение и попробуй ещё раз.")
+    );
+    console.warn("Ход в Дураке не выполнен:", error);
   } finally {
     durakActionInProgress = false;
     actionButtons.forEach(button => {
