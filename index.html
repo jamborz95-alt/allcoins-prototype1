@@ -2707,9 +2707,17 @@ if (Array.isArray(game.hand)) {
         cleanup();
       };
 
+      // Если WebView теряет указатель при перетаскивании, возвращаем карту
+      // в руку и обязательно снимаем временные обработчики.
+      const lostPointer = (lostEvent) => {
+        if (lostEvent.pointerId !== pointerId) return;
+        cleanup();
+      };
+
       document.addEventListener("pointermove", moveCard, { passive: false });
       document.addEventListener("pointerup", releaseCard);
       document.addEventListener("pointercancel", cancelCard);
+      cardElement.addEventListener("lostpointercapture", lostPointer, { once: true });
     };
 
     $("durakHand").appendChild(cardElement);
