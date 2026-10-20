@@ -1478,7 +1478,7 @@
   #durakGame #durakTrump > div:nth-child(2) > div:nth-child(2) { left: 0 !important; top: 0 !important; }
   #durakGame #durakTrump > div:nth-child(2) > div:nth-child(3) { left: 28px !important; top: -1px !important; }
   #durakGame #durakTable { padding: 100px 118px 64px 60px !important; min-height: 250px !important; }
-  #durakGame .durak-player[data-seat="top-right"] { left: 58% !important; top: 14% !important; }
+  #durakGame .durak-player[data-seat="top-right"] { left: 58%; top: 14%; }
   #durakGame .durak-player { width: min(21%, 66px) !important; max-width: 66px !important; min-height: 28px !important; padding: 3px 3px !important; border-radius: 6px !important; font-size: 8px !important; line-height: 1.08 !important; }
   #durakGame .durak-player-name { font-size: 8px !important; }
   #durakGame .durak-player-meta { font-size: 7px !important; margin-top: 1px !important; }
@@ -1494,6 +1494,17 @@
   #durakGame .durak-player[data-seat="right-top"] { left: 96%; top: 28%; }
   #durakGame .durak-player[data-seat="right-bottom"] { left: 96%; top: 72%; }
 
+/* ALLCOINS Durak hotfix: player seats stay movable and no longer cover the trump deck. */
+#durakGame .durak-table { position: relative; }
+#durakGame .durak-players { pointer-events: none; }
+#durakGame .durak-player { pointer-events: auto; }
+#durakGame .durak-player[data-seat="top-right"] { left: 82%; top: 30%; right: auto; bottom: auto; }
+#durakGame .durak-player[data-seat="top-left"] { left: 18%; top: 30%; right: auto; bottom: auto; }
+#durakGame #durakTrump { position: absolute; top: 4px; right: 4px; left: auto; bottom: auto; z-index: 4; }
+@media (max-width: 380px) {
+  #durakGame .durak-player[data-seat="top-right"] { left: 82%; top: 31%; }
+  #durakGame .durak-player[data-seat="top-left"] { left: 18%; top: 31%; }
+}
 </style>
 </head>
 <body>
@@ -2676,6 +2687,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 
 let durakGameLoadInProgress = false;
 let durakGameReloadRequested = false;
+let durakGameNotReadyRetries = 0;
 let durakGameReloadRoomId = null;
 
 async function loadDurakGame(roomId) {
@@ -2694,6 +2706,7 @@ async function loadDurakGame(roomId) {
     const game = await apiRequest("/api/durak/game", {
       roomId: roomId
     });
+    durakGameNotReadyRetries = 0;
     if (!game.ok) {
       showStatus(
         "durakGameStatus",
@@ -3361,11 +3374,18 @@ if (Array.isArray(game.hand)) {
 
   } catch (error) {
     console.warn("Обновление Дурака:", error);
-    showStatus(
-      "durakGameStatus",
-      "Не удалось обновить партию. " +
-        String(error?.message || "Проверь соединение и попробуй ещё раз.").slice(0, 160)
-    );
+    const errorMessage = String(error?.message || "Проверь соединение и попробуй ещё раз.");
+    const gameNotReady = /Игра ещё не подготовлена|Игра ещё не началась/i.test(errorMessage);
+    if (gameNotReady && currentDurakRoomId === roomId && durakGameNotReadyRetries < 5) {
+      durakGameNotReadyRetries += 1;
+      showStatus("durakGameStatus", "Комната открыта. Ждём подготовки партии… (" + durakGameNotReadyRetries + "/5)");
+      window.setTimeout(() => {
+        if (currentDurakRoomId === roomId) loadDurakGame(roomId);
+      }, 900);
+    } else {
+      if (gameNotReady) durakGameNotReadyRetries = 0;
+      showStatus("durakGameStatus", "Не удалось обновить партию. " + errorMessage.slice(0, 160));
+    }
   } finally {
     durakGameLoadInProgress = false;
     if (durakGameReloadRequested) {
