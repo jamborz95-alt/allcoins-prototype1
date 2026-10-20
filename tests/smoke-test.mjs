@@ -68,6 +68,7 @@ try {
       }) });
     }
     if (url.pathname === "/api/durak/action") {
+      await new Promise((resolve) => setTimeout(resolve, 120));
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, message: "Ход принят" }) });
     }
     return route.fulfill({ status: 200, contentType: "application/json",
@@ -114,8 +115,19 @@ try {
   assert.equal(apiCalls.some((call) => call.path === "/api/durak/game" && String(call.body.roomId) === "77"), true,
     "game state should be requested from the API");
 
+  // Rapid repeated taps must not submit the same Durak move more than once.
+  const actionsBefore = apiCalls.filter((call) => call.path === "/api/durak/action").length;
+  await page.evaluate(async () => {
+    currentDurakRoomId = "77";
+    selectedDurakCardId = "card-6-hearts";
+    await Promise.all([durakAction("attack"), durakAction("attack")]);
+  });
+  const actionsAfter = apiCalls.filter((call) => call.path === "/api/durak/action").length;
+  assert.equal(actionsAfter - actionsBefore, 1, "duplicate rapid actions should be blocked");
+  assert.equal(await page.locator("#durakHand .durak-card").count(), 6, "hand should re-render after a successful action");
+
   assert.deepEqual(pageErrors, [], "page should not produce JavaScript errors");
-  console.log("PASS: clicker, energy, navigation, Durak player names, bot, card backs, hand, table, turn controls, no page errors");
+  console.log("PASS: clicker, energy, navigation, Durak player names, bot, cards, duplicate-action protection, no page errors");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
