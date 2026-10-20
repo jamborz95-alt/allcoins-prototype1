@@ -25,7 +25,7 @@ test("initial deal conserves every card and leaves the trump at the bottom of th
   const dealt = dealInitialHands(deck, 2, 6);
   assert.equal(dealt.hands.length, 2);
   assert.deepEqual(dealt.hands.map(hand => hand.length), [6, 6]);
-  assert.equal(dealt.deck.length, 25);
+  assert.equal(dealt.deck.length, 24);
   assert.equal(dealt.deck.at(-1).id, dealt.trumpCard.id);
   assert.equal(dealt.trumpSuit, dealt.trumpCard.suit);
   const allCards = [...dealt.hands.flat(), ...dealt.deck];
@@ -37,7 +37,7 @@ test("six players can start with a 52-card deck and retain the trump card", () =
   const deck = createDurakDeck(52);
   const dealt = dealInitialHands(deck, 6, 6);
   assert.deepEqual(dealt.hands.map(hand => hand.length), [6, 6, 6, 6, 6, 6]);
-  assert.equal(dealt.deck.length, 17);
+  assert.equal(dealt.deck.length, 16);
   assert.equal(dealt.deck.at(-1).id, dealt.trumpCard.id);
   assert.equal(new Set([...dealt.hands.flat(), ...dealt.deck].map(card => card.id)).size, 52);
 });
