@@ -1431,14 +1431,31 @@
     position: absolute !important;
     left: 50%;
     top: 50%;
-    width: min(32%, 112px) !important;
+    width: min(25%, 82px) !important;
     min-width: 0 !important;
-    max-width: 112px !important;
+    max-width: 82px !important;
+    min-height: 34px;
     margin: 0 !important;
+    padding: 4px 5px !important;
+    border-radius: 8px !important;
     transform: translate(-50%, -50%);
     pointer-events: auto;
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     z-index: 6;
+    font-size: 9px !important;
+    line-height: 1.12;
+    box-shadow: 0 2px 5px rgba(0,0,0,.22);
+  }
+  #durakGame .durak-player-meta {
+    margin-top: 2px !important;
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+  }
+  #durakGame .durak-player-name {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
   }
   #durakGame .durak-player[data-seat="bottom"] { left: 50%; top: 88%; }
   #durakGame .durak-player[data-seat="top"] { left: 50%; top: 10%; }
