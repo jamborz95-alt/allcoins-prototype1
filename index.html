@@ -276,6 +276,11 @@
 /* ALLCOINS — изображения классических карт */
 /* Плавное движение карт: рука, перетаскивание и сброс на стол */
 #durakGame #durakHand .durak-card {
+  /* Prevent Android WebView from treating a card drag as page scrolling. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
   will-change: transform;
   transform-origin: 50% 80%;
   transition: transform 180ms cubic-bezier(.2,.75,.25,1),
