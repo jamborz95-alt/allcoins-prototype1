@@ -1628,6 +1628,14 @@ if (action === "beat") {
       error: "Не удалось выполнить действие"
     });
   } finally {
+    // Любой ранний ответ до COMMIT должен отменить транзакцию.
+    if (client && transactionOpen) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Durak action cleanup rollback error:", rollbackError.message);
+      }
+    }
     if (client) client.release();
   }
 });
