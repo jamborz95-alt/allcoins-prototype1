@@ -18,6 +18,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const pageErrors = [];
   const apiCalls = [];
+  let mockDurakPhase = "attack";
+  let mockDurakPlayerIndex = 0;
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.route("https://telegram.org/**", (route) => route.fulfill({
@@ -59,8 +61,8 @@ try {
         ],
         trumpSuit: "♥", trumpCard: { id: "trump-8-hearts", rank: "8", suit: "♥" },
         table: [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }],
-        cardsLeft: 24, status: "playing", phase: "attack",
-        attackerIndex: 0, defenderIndex: 1, playerIndex: 0,
+        cardsLeft: 24, status: "playing", phase: mockDurakPhase,
+        attackerIndex: 0, defenderIndex: 1, playerIndex: mockDurakPlayerIndex,
         players: [
           { telegramId: "12345", label: "👤 Тестовый Игрок", cardsCount: 6 },
           { telegramId: "0", label: "🤖 Бот ALLCOINS", cardsCount: 6 }
@@ -112,8 +114,20 @@ try {
   assert.equal(await page.locator("#durakHand .durak-card").count(), 6, "player hand should render six cards");
   assert.equal(await page.locator("#durakTable .table-card").count(), 1, "attack card should render on table");
   assert.equal(await page.locator("#durakTurnMessage").evaluate((el) => el.style.display), "flex", "turn message should be visible for attacker");
+  assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ТВОЯ АТАКА",
+    "attacker should see a clear attack prompt");
   assert.equal(apiCalls.some((call) => call.path === "/api/durak/game" && String(call.body.roomId) === "77"), true,
     "game state should be requested from the API");
+
+  // A defending player should see a defense-specific prompt.
+  mockDurakPhase = "defense";
+  mockDurakPlayerIndex = 1;
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ТВОЯ ЗАЩИТА",
+    "defender should see a clear defense prompt");
+  mockDurakPhase = "attack";
+  mockDurakPlayerIndex = 0;
+  await page.evaluate(async () => { await loadDurakGame("77"); });
 
   // Rapid repeated taps must not submit the same Durak move more than once.
   const actionsBefore = apiCalls.filter((call) => call.path === "/api/durak/action").length;
