@@ -1536,18 +1536,17 @@ if (action === "beat") {
         if (game.attackerIndex === botIndex) {
           if (game.table.some(item => !item.defense)) break;
           const bot = game.players[botIndex];
-          if (!bot.hand.length) {
-            finishIfNeeded();
-            break;
-          }
-
           const defender = game.players[game.defenderIndex];
           const canAddMore = game.table.length < defender.hand.length;
           let candidateIndex = -1;
 
           if (game.table.length === 0) {
+            if (!bot.hand.length) {
+              finishIfNeeded();
+              break;
+            }
             candidateIndex = 0;
-          } else if (canAddMore) {
+          } else if (canAddMore && bot.hand.length > 0) {
             const tableRanks = game.table.flatMap(item =>
               [item.attack?.rank, item.defense?.rank].filter(Boolean)
             );
