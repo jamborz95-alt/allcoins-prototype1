@@ -1121,7 +1121,6 @@ app.post("/api/durak/game", async (req, res) => {
     p => String(p.telegramId) === String(user.id)
   ),
   players: gameState.players.map((p, index) => ({
-    telegramId: String(p.telegramId),
     label: String(p.telegramId) === "0"
       ? "🤖 Бот ALLCOINS"
       : String(p.telegramId) === String(user.id)
