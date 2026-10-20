@@ -993,11 +993,12 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       playersCount: total
     });
   } catch (error) {
-    console.error("Start Durak game error:", error.message);
+    console.error("Start Durak game error:", error);
 
     return res.status(500).json({
       ok: false,
-      error: "Не удалось начать игру"
+      error: "Не удалось начать игру",
+      debugMessage: String(error?.message || error || "Неизвестная ошибка").slice(0, 300)
     });
   }
 });
@@ -1130,11 +1131,12 @@ app.post("/api/durak/game", async (req, res) => {
   }))
 });
   } catch (error) {
-    console.error("Get Durak game error:", error.message);
+    console.error("Get Durak game error:", error);
 
     return res.status(500).json({
       ok: false,
-      error: "Не удалось загрузить игру"
+      error: "Не удалось загрузить игру",
+      debugMessage: String(error?.message || error || "Неизвестная ошибка").slice(0, 300)
     });
   }
 });
