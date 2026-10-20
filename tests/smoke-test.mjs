@@ -110,7 +110,7 @@ try {
   assert.equal(await page.locator("#durakPlayers .durak-card-back").count(), 6, "opponent card backs should render");
   assert.equal(await page.locator("#durakHand .durak-card").count(), 6, "player hand should render six cards");
   assert.equal(await page.locator("#durakTable .table-card").count(), 1, "attack card should render on table");
-  assert.equal(await page.locator("#durakAttack").isVisible(), true, "attack control should be visible for attacker");
+  assert.equal(await page.locator("#durakTurnMessage").evaluate((el) => el.style.display), "flex", "turn message should be visible for attacker");
   assert.equal(apiCalls.some((call) => call.path === "/api/durak/game" && String(call.body.roomId) === "77"), true,
     "game state should be requested from the API");
 
