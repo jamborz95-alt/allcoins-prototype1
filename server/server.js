@@ -1109,7 +1109,15 @@ console.log("DURAK DEBUG:", {
   defenderIndex: gameState.defenderIndex,
   playerIndex: gameState.players.findIndex(
     p => String(p.telegramId) === String(user.id)
-  )
+  ),
+  players: gameState.players.map((p, index) => ({
+    telegramId: String(p.telegramId),
+    label: String(p.telegramId) === "0"
+      ? "🤖 Бот ALLCOINS"
+      : String(p.telegramId) === String(user.id)
+        ? "👤 Ты"
+        : "Игрок " + (index + 1)
+  }))
 });
   } catch (error) {
     console.error("Get Durak game error:", error.message);
