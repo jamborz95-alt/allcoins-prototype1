@@ -1278,6 +1278,11 @@
   border-color: #ffe16b;
   box-shadow: 0 0 0 1px rgba(255,225,107,.35), 0 0 12px rgba(255,225,107,.4);
 }
+#durakGame .durak-player {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 #durakGame .durak-player.durak-seat-empty {
   min-height: 52px;
   border: 1px dashed rgba(230,201,120,.65);
@@ -3577,6 +3582,59 @@ if (stake > state.balance) {
 
 let durakWaitingRoom = null;
 let durakWaitingRefreshTimer = null;
+// Позиции мест храним в памяти, чтобы они не сбрасывались при автообновлении комнаты.
+const durakSeatPositions = Object.create(null);
+
+function setupDurakSeatDragging(seat, roomId, seatName, container) {
+  if (!seat || !container) return;
+  seat.style.touchAction = "none";
+  seat.style.cursor = "grab";
+
+  seat.addEventListener("pointerdown", (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    const bounds = container.getBoundingClientRect();
+    const seatBounds = seat.getBoundingClientRect();
+    const key = String(roomId) + ":" + seatName;
+    const current = durakSeatPositions[key];
+    const startLeft = current ? current.x * bounds.width : seatBounds.left - bounds.left + seatBounds.width / 2;
+    const startTop = current ? current.y * bounds.height : seatBounds.top - bounds.top + seatBounds.height / 2;
+    seat.setPointerCapture?.(event.pointerId);
+    seat.style.cursor = "grabbing";
+    event.preventDefault();
+
+    const move = (moveEvent) => {
+      if (moveEvent.pointerId !== event.pointerId) return;
+      const x = Math.max(0.06, Math.min(0.94, (moveEvent.clientX - bounds.left) / bounds.width));
+      const y = Math.max(0.04, Math.min(0.96, (moveEvent.clientY - bounds.top) / bounds.height));
+      durakSeatPositions[key] = { x, y };
+      seat.style.left = (x * 100) + "%";
+      seat.style.top = (y * 100) + "%";
+      seat.style.right = "auto";
+      seat.style.bottom = "auto";
+      seat.style.transform = "translate(-50%, -50%)";
+    };
+    const finish = (upEvent) => {
+      if (upEvent.pointerId !== event.pointerId) return;
+      seat.style.cursor = "grab";
+      seat.removeEventListener("pointermove", move);
+      seat.removeEventListener("pointerup", finish);
+      seat.removeEventListener("pointercancel", finish);
+    };
+    seat.addEventListener("pointermove", move);
+    seat.addEventListener("pointerup", finish);
+    seat.addEventListener("pointercancel", finish);
+  });
+
+  const saved = durakSeatPositions[String(roomId) + ":" + seatName];
+  if (saved) {
+    seat.style.left = (saved.x * 100) + "%";
+    seat.style.top = (saved.y * 100) + "%";
+    seat.style.right = "auto";
+    seat.style.bottom = "auto";
+    seat.style.transform = "translate(-50%, -50%)";
+  }
+}
+
 // Открываем комнату ожидания
 async function openDurakWaitingRoom(room) {
   if (!room || !room.id) {
@@ -3595,10 +3653,14 @@ async function openDurakWaitingRoom(room) {
   $("durakRoomActions").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "none";
-  // Сразу показываем игровое поле: комната ожидания находится прямо на поле,
-  // а не на отдельном экране. Игроки будут появляться на своих местах.
+  // Все действия комнаты доступны прямо внутри игрового поля.
   $("durakWaitingPanel").style.display = "none";
   $("durakBoard").style.display = "block";
+  const board = $("durakBoard");
+  ["durakWaitingStatus", "durakAddBotButton", "durakReadyButton", "durakStartButton"].forEach((id) => {
+    const control = $(id);
+    if (control && control.parentElement !== board) board.insertBefore(control, $("durakTrump"));
+  });
   $("durakGameStatus").textContent =
     "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
   $("durakTrump").style.display = "none";
@@ -3730,6 +3792,7 @@ $("durakBoard").style.display = "block";
         playerTag.appendChild(emptyMeta);
       }
       playersContainer.appendChild(playerTag);
+      setupDurakSeatDragging(playerTag, durakWaitingRoom.id, seats[seatIndex] || ("seat-" + seatIndex), playersContainer.parentElement);
     }
 
     $("durakGameStatus").textContent =
@@ -3808,6 +3871,7 @@ $("durakAddBotButton").onclick = async function () {
     }
     $("durakWaitingStatus").textContent =
       "🤖 Бот добавлен! Теперь нажми «Начать игру».";
+    $("durakGameStatus").textContent = "🤖 Бот добавлен в комнату. Можно начинать игру.";
     await refreshDurakWaitingRoom();
   } catch (error) {
     alert("Ошибка добавления бота: " + error.message);
