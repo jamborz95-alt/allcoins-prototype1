@@ -1157,6 +1157,9 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     const { roomId, action, cardId } = req.body || {};
+    const requestedCardIds = Array.isArray(req.body?.cardIds)
+      ? [...new Set(req.body.cardIds.map(id => String(id)))]
+      : (cardId != null ? [String(cardId)] : []);
 
     if (!roomId || !/^\d+$/.test(String(roomId))) {
       return res.status(400).json({
@@ -1350,7 +1353,7 @@ app.post("/api/durak/action", async (req, res) => {
       }
     }
 
-    // АТАКА
+    // АТАКА: можно перенести одну карту или сразу несколько карт одного достоинства.
     if (action === "attack") {
       if (playerIndex !== game.attackerIndex) {
         return res.status(403).json({
@@ -1359,21 +1362,10 @@ app.post("/api/durak/action", async (req, res) => {
         });
       }
 
-      if (!cardId) {
+      if (!requestedCardIds.length) {
         return res.status(400).json({
           ok: false,
           error: "Сначала выбери карту"
-        });
-      }
-
-      const cardIndex = player.hand.findIndex(
-        c => String(c.id) === String(cardId)
-      );
-
-      if (cardIndex < 0) {
-        return res.status(400).json({
-          ok: false,
-          error: "Этой карты нет в твоей руке"
         });
       }
 
@@ -1392,38 +1384,58 @@ app.post("/api/durak/action", async (req, res) => {
       }
 
       const defender = game.players[game.defenderIndex];
-
-      if (game.table.length >= defender.hand.length &&
-          game.table.length > 0) {
+      if (!Number.isInteger(game.defenderHandAtRoundStart)) {
+        game.defenderHandAtRoundStart = defender.hand.length;
+      }
+      const attackLimit = Math.max(0, Math.min(
+        game.defenderHandAtRoundStart,
+        game.players[game.defenderIndex].hand.length + game.table.length
+      ));
+      if (game.table.length + requestedCardIds.length > attackLimit) {
         return res.status(400).json({
           ok: false,
-          error: "Нельзя подкинуть больше карт, чем у защищающегося игрока"
+          error: "Нельзя подкинуть больше карт, чем было у защищающегося в начале отбивания"
         });
       }
 
-      const selectedCard = player.hand[cardIndex];
+      const selectedCards = requestedCardIds.map(id =>
+        player.hand.find(card => String(card.id) === id)
+      );
+      if (selectedCards.some(card => !card)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Одна или несколько выбранных карт отсутствуют в твоей руке"
+        });
+      }
+
+      const selectedRank = selectedCards[0]?.rank;
+      if (!selectedRank || selectedCards.some(card => card.rank !== selectedRank)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Одновременно можно атаковать только картами одного достоинства"
+        });
+      }
 
       if (game.table.length > 0) {
         const tableRanks = game.table.flatMap(item => [
           item.attack?.rank,
           item.defense?.rank
         ].filter(Boolean));
-
-        if (!tableRanks.includes(selectedCard.rank)) {
+        if (!tableRanks.includes(selectedRank)) {
           return res.status(400).json({
             ok: false,
-            error: "Можно подкинуть только карту достоинства, уже лежащего на столе"
+            error: "Можно подкинуть только карты достоинства, уже лежащего на столе"
           });
         }
       }
 
-      const card = player.hand.splice(cardIndex, 1)[0];
-
-      game.table.push({
-        attack: card,
-        defense: null
-      });
-
+      // Сохраняем выбранный порядок и убираем карты с руки одним действием.
+      const selectedIds = new Set(requestedCardIds);
+      const cardsToPlay = player.hand.filter(card => selectedIds.has(String(card.id)));
+      player.hand = player.hand.filter(card => !selectedIds.has(String(card.id)));
+      for (const card of cardsToPlay) {
+        game.table.push({ attack: card, defense: null });
+      }
       game.phase = "defense";
     }
 
@@ -1516,6 +1528,7 @@ if (hasUnbeatenCards) {
       }
 
       game.table = [];
+      delete game.defenderHandAtRoundStart;
 
       drawCardsAfterRound();
 
@@ -1553,6 +1566,7 @@ if (action === "beat") {
       }
 
       game.table = [];
+      delete game.defenderHandAtRoundStart;
 
       drawCardsAfterRound();
 
