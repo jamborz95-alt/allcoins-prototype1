@@ -3545,8 +3545,17 @@ if (stake > state.balance) {
     showStatus("durakWaitingStatus", "Комната создана! Ожидаем игроков.");
   } catch (error) {
     const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
-    showStatus("durakGameStatus", "Не удалось создать комнату: " + message);
-    alert("Не удалось создать комнату. " + message);
+    // При ошибке оставляем пользователя на форме создания, а не на скрытом игровом статусе.
+    $("durakGame").style.display = "block";
+    $("durakGame").classList.add("durak-fullscreen");
+    $("durakEntry").style.display = "none";
+    $("durakRoomActions").style.display = "flex";
+    $("durakCreatePanel").style.display = "block";
+    $("durakRoomsPanel").style.display = "none";
+    $("durakWaitingPanel").style.display = "none";
+    $("durakBoard").style.display = "none";
+    showStatus("durakCreateStatus", "Не удалось создать комнату: " + message);
+    console.error("Ошибка создания комнаты ALLCOINS:", error);
   } finally {
     button.disabled = false;
   }
@@ -4123,16 +4132,37 @@ $("durakBack").onclick = () => {
   $("durakBoard").style.display = "none";
 };
 
-// Открыть создание комнаты
+// Открыть создание комнаты, не оставляя активный опрос старой комнаты.
 $("durakShowCreate").onclick = () => {
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
+  durakWaitingRoom = null;
+  currentDurakRoomId = null;
+  $("durakGame").style.display = "block";
+  $("durakGame").classList.add("durak-fullscreen");
+  $("durakEntry").style.display = "none";
+  $("durakRoomActions").style.display = "flex";
   $("durakWaitingPanel").style.display = "none";
   $("durakCreatePanel").style.display = "block";
   $("durakRoomsPanel").style.display = "none";
   $("durakBoard").style.display = "none";
+  $("durakCreateStatus").textContent = "";
 };
 
-// Открыть список комнат
+// Открыть список комнат, не позволяя старому опросу переключать экран.
 $("durakShowRooms").onclick = async () => {
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
+  durakWaitingRoom = null;
+  currentDurakRoomId = null;
+  $("durakGame").style.display = "block";
+  $("durakGame").classList.add("durak-fullscreen");
+  $("durakEntry").style.display = "none";
+  $("durakRoomActions").style.display = "flex";
   $("durakWaitingPanel").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "block";
