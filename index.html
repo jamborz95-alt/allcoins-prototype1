@@ -2983,8 +2983,9 @@ if (Array.isArray(game.hand)) {
           flyer.style.width = originalRect.width + "px";
           flyer.style.height = originalRect.height + "px";
           flyer.style.transition = "none";
-          flyer.style.transform = "translate3d(0,0,0) scale(1)";
+          flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1.045)";
           flyer.style.opacity = "1";
+          flyer.style.willChange = "transform";
           // Копия карты не должна перекрывать стол при проверке drop-цели.
           flyer.style.pointerEvents = "none";
           flyer.setAttribute("aria-hidden", "true");
@@ -2998,9 +2999,11 @@ if (Array.isArray(game.hand)) {
 
         if (dragging && flyer) {
           moveEvent.preventDefault();
-          flyer.style.left = (moveEvent.clientX - offsetX) + "px";
-          flyer.style.top = (moveEvent.clientY - offsetY) + "px";
-          flyer.style.transform = "rotate(3deg) scale(1.035)";
+          // Двигаем копию через GPU-трансформацию: карта остаётся под пальцем
+          // без рывков, слегка наклоняется по направлению движения и приподнимается.
+          const tilt = Math.max(-8, Math.min(8, dx * 0.10));
+          flyer.style.transform =
+            "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.045)";
         }
       };
 
