@@ -184,6 +184,19 @@ try {
   mockDurakPlayerIndex = 0;
   await page.evaluate(async () => { await loadDurakGame("77"); });
 
+  // The visible card and attack button must perform a real UI-driven move.
+  const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
+  await page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]').click();
+  await page.locator("#durakAttack").click();
+  await page.waitForFunction(() => pendingDurakAction === null);
+  const uiMoveCalls = apiCalls.filter((call) => call.path === "/api/durak/action");
+  assert.equal(uiMoveCalls.length, actionsBeforeUiMove + 1,
+    "clicking a card and the visible attack button should submit exactly one move");
+  assert.equal(uiMoveCalls.at(-1).body.action, "attack",
+    "the visible attack button should send the attack action");
+  assert.equal(uiMoveCalls.at(-1).body.cardId, "card-6-hearts",
+    "the selected card should be included in the attack request");
+
   // Rapid repeated taps must not submit the same Durak move more than once.
   const actionsBefore = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   await page.evaluate(async () => {
