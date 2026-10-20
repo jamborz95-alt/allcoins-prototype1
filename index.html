@@ -273,15 +273,21 @@
   box-shadow: 0 3px 7px #00000030;
 }
 
+/* ALLCOINS — изображения классических карт */
 #durakGame .durak-card.premium-card img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
+  object-position: center;
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: 6px;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* ALLCOINS — классическая рамка карт с иллюстрациями */
