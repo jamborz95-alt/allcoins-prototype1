@@ -63,6 +63,11 @@ test("the defender keeps the defense phase while any attack card remains uncover
 });
 
 
+test("bot defense keeps the canonical defense phase while attacks remain uncovered", () => {
+  assert.match(body, /game\.phase = game\.table\.some\(item => item\.attack && !item\.defense\)\s*\? "defense"\s*:\s*"attack"/);
+  assert.doesNotMatch(body, /\? "defend"/);
+});
+
 test("finished Durak games record the last player holding cards as the loser", () => {
   assert.match(body, /function markGameFinished\(\)[\s\S]*?game\.status = "finished"[\s\S]*?playersWithCards = game\.players\.filter\([\s\S]*?game\.loserTelegramId = playersWithCards\.length === 1/);
   assert.match(source, /hasLoser: Boolean\(gameState\.loserTelegramId\)/);
