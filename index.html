@@ -2022,6 +2022,7 @@ async function durakAction(action) {
     button.setAttribute("aria-busy", "true");
   });
 
+  let actionConfirmed = false;
   try {
     const result = await apiRequest("/api/durak/action", {
       roomId: actionRoomId,
@@ -2035,6 +2036,7 @@ async function durakAction(action) {
     }
 
     // Сервер подтвердил действие (включая ответ duplicate:true).
+    actionConfirmed = true;
     pendingDurakAction = null;
 
     const playedCard = actionCardId
@@ -2057,8 +2059,11 @@ async function durakAction(action) {
       : rawMessage;
     showStatus(
       "durakGameStatus",
-      "Не удалось выполнить ход. " +
-        (shortMessage || "Проверь соединение и попробуй ещё раз.")
+      actionConfirmed
+        ? "Ход принят сервером, но не удалось обновить отображение. Открой партию заново. " +
+          (shortMessage || "")
+        : "Не удалось подтвердить ход. Повтори то же действие, чтобы безопасно проверить результат. " +
+          (shortMessage || "Проверь соединение и попробуй ещё раз.")
     );
     console.warn("Ход в Дураке не выполнен:", error);
   } finally {
