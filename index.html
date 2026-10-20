@@ -1207,21 +1207,26 @@
     #durakGame #durakTable { min-height: 125px; }
   }
 
-/* ===== ALLCOINS: игровая зона без стола, игроки вокруг карт ===== */
+/* ===== ALLCOINS: игровая зона без рисунка стола ===== */
 #durakGame .durak-table {
   position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
   min-height: 350px;
-  padding: 4px 2px;
+  margin: 8px auto;
+  padding: 0;
   overflow: visible;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  box-sizing: border-box;
 }
 #durakGame .durak-players {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 5;
   display: block;
   width: 100%;
   height: 100%;
@@ -1232,65 +1237,132 @@
 #durakGame .durak-player {
   position: absolute;
   display: flex;
-  width: 104px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
   min-width: 0;
-  max-width: 34%;
-  padding: 5px 6px;
-  border: 1px solid rgba(230,201,120,.45);
-  border-radius: 10px;
-  background: rgba(5,17,23,.88);
-  box-shadow: 0 3px 8px rgba(0,0,0,.22);
+  max-width: 29%;
+  margin: 0;
+  padding: 5px 4px;
+  border: 1px solid rgba(230,201,120,.55);
+  border-radius: 9px;
+  background: rgba(5,17,23,.92);
+  box-shadow: 0 3px 8px rgba(0,0,0,.24);
   color: #fff;
+  text-align: center;
   font-size: 10px;
+  line-height: 1.15;
+  box-sizing: border-box;
   pointer-events: auto;
+}
+#durakGame .durak-player.active {
+  border-color: #ffe16b;
+  box-shadow: 0 0 0 1px rgba(255,225,107,.35), 0 0 12px rgba(255,225,107,.4);
 }
 #durakGame .durak-player[data-seat="bottom"] { left: 50%; bottom: 0; transform: translateX(-50%); }
 #durakGame .durak-player[data-seat="top"] { left: 50%; top: 0; transform: translateX(-50%); }
-#durakGame .durak-player[data-seat="left"] { left: 0; top: 42%; transform: translateY(-50%); }
-#durakGame .durak-player[data-seat="right"] { right: 0; top: 42%; transform: translateY(-50%); }
-#durakGame .durak-player[data-seat="right-top"] { right: 0; top: 12%; }
-#durakGame .durak-player[data-seat="right-bottom"] { right: 0; bottom: 12%; }
-#durakGame .durak-player[data-seat="left-top"] { left: 0; top: 12%; }
-#durakGame .durak-player[data-seat="left-bottom"] { left: 0; bottom: 12%; }
-#durakGame #durakTable {
-  position: relative;
-  z-index: 1;
-  min-height: 245px;
-  margin: 0;
-  padding: 66px 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
+#durakGame .durak-player[data-seat="left"] { left: 0; top: 43%; transform: translateY(-50%); }
+#durakGame .durak-player[data-seat="right"] { right: 0; top: 43%; transform: translateY(-50%); }
+#durakGame .durak-player[data-seat="right-top"] { right: 0; top: 8%; }
+#durakGame .durak-player[data-seat="right-bottom"] { right: 0; bottom: 8%; }
+#durakGame .durak-player[data-seat="left-top"] { left: 0; top: 8%; }
+#durakGame .durak-player[data-seat="left-bottom"] { left: 0; bottom: 8%; }
 #durakGame .durak-player-name {
   display: block;
   max-width: 100%;
   overflow-wrap: anywhere;
-  white-space: normal;
   font-weight: 800;
-  line-height: 1.2;
 }
 #durakGame .durak-player-meta {
   display: block;
   margin-top: 3px;
   color: #b9d5c6;
   font-size: 9px;
-  line-height: 1.2;
   overflow-wrap: anywhere;
 }
-#durakGame .durak-card-backs { min-height: 28px; padding-top: 4px; }
-#durakGame .durak-card-back { flex-basis: 19px; width: 19px; height: 28px; margin-left: -6px; }
+#durakGame .durak-card-backs {
+  display: flex;
+  justify-content: center;
+  min-height: 24px;
+  padding-top: 4px;
+}
+#durakGame .durak-card-back {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 25px;
+  margin-left: -6px;
+}
+#durakGame .durak-card-back:first-child { margin-left: 0; }
+
+/* Карты в центре: бьющая карта лежит поверх атакующей, без подложки-стола */
+#durakGame #durakTable {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+  min-height: 250px;
+  margin: 0;
+  padding: 72px 74px 64px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+#durakGame #durakTable .durak-table-pair {
+  position: relative;
+  display: block;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 116px;
+  margin: 2px;
+  overflow: visible;
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card {
+  position: absolute !important;
+  display: flex !important;
+  flex: none !important;
+  width: 62px !important;
+  min-width: 62px !important;
+  max-width: 62px !important;
+  height: 92px !important;
+  min-height: 92px !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden;
+  transform-origin: center center;
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+  left: 0 !important;
+  top: 12px !important;
+  z-index: 1;
+  transform: rotate(-5deg);
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+  left: 27px !important;
+  top: 0 !important;
+  z-index: 2;
+  transform: rotate(5deg);
+}
 @media (max-width: 380px) {
   #durakGame .durak-table { min-height: 330px; }
-  #durakGame .durak-player { width: 88px; padding: 4px; font-size: 9px; }
-  #durakGame #durakTable { min-height: 220px; padding: 54px 28px; }
+  #durakGame .durak-player { width: 78px; max-width: 27%; padding: 4px 3px; font-size: 9px; }
+  #durakGame .durak-player-meta { font-size: 8px; }
+  #durakGame #durakTable { min-height: 230px; padding: 58px 64px 54px; gap: 2px; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 78px; width: 78px; height: 104px; }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+    width: 54px !important; min-width: 54px !important; max-width: 54px !important;
+    height: 81px !important; min-height: 81px !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: 23px !important;
+  }
 }
 
 </style>
