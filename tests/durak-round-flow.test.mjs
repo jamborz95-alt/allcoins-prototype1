@@ -39,9 +39,17 @@ test("finished games are persisted under the same locked transaction", () => {
 
 
 test("the bot may throw in a matching rank while the defender still has capacity", () => {
-  assert.match(body, /const canAddMore = game.table.length < defender.hand.length/);
-  assert.match(body, /chooseBotAttackIndex\(bot\.hand, game\.trumpSuit, tableRanks\)/);
+  assert.match(body, /const canAddMore = game.table.length < game.defenderHandAtRoundStart/);
+  assert.match(body, /chooseBotAttackIndex\\(bot\\.hand, game\\.trumpSuit, tableRanks\\)/);
   assert.match(body, /Бот завершает атаку только когда больше не может подкинуть карту/);
+});
+
+test("attack action supports a batch of same-rank cards and respects the round limit", () => {
+  assert.match(body, /const requestedCardIds = Array\\.isArray\\(req\\.body\\?\\.cardIds\\)/);
+  assert.match(body, /selectedCards\\.some\\(card => card\\.rank !== selectedRank\\)/);
+  assert.match(body, /game\\.table\\.length \\+ requestedCardIds\\.length > attackLimit/);
+  assert.match(body, /for \\(const card of cardsToPlay\\) \\{\\s*game\\.table\\.push\\(\\{ attack: card, defense: null \\}\\)/);
+  assert.match(body, /game\\.defenderHandAtRoundStart/);
 });
 
 test("the bot continues defending until no uncovered attack cards remain", () => {
