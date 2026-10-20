@@ -607,12 +607,13 @@
 
 /* Карты, лежащие на столе */
 
-/* Карты на столе — такого же размера, как в руке */
-
-#durakGame #durakTable .durak-card {
-  flex: 0 0 65px;
-  width: 65px;
-  height: 96px;
+/* ALLCOINS — размер карт на столе */
+#durakGame #durakTable .durak-card.table-card {
+  flex: none !important;
+  width: 68px !important;
+  min-width: 68px !important;
+  max-width: 68px !important;
+  height: 100px !important;
 }
 
 #durakGame #durakTable .durak-card .card-corner {
