@@ -187,8 +187,14 @@ try {
   // The visible card and attack button must perform a real UI-driven move.
   const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   await page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]').click();
+  await page.waitForFunction(
+    () => selectedDurakCardId === "card-6-hearts",
+    { timeout: 3000 }
+  );
+  assert.equal(await page.locator("#durakAttack").isVisible(), true,
+    "attack button should be visible during the player's attack turn");
   const uiMoveResponse = page.waitForResponse((response) =>
-    response.url().includes("/api/durak/action")
+    response.url().includes("/api/durak/action"), { timeout: 5000 }
   );
   await page.locator("#durakAttack").click();
   await uiMoveResponse;
