@@ -1547,6 +1547,8 @@ const API = "https://allcoins-server.onrender.com";
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
 let durakActionInProgress = false;
+// Повторяем один и тот же запрос с тем же ID, если ответ сервера потерялся.
+let pendingDurakAction = null;
 let durakCardDragging = false;
   const tg = window.Telegram && window.Telegram.WebApp;
   // Раскрываем приложение в Telegram
@@ -1972,15 +1974,43 @@ async function durakAction(action) {
     return;
   }
 
-  durakActionInProgress = true;
   const actionRoomId = currentDurakRoomId;
-  const actionRequestId = (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function")
-    ? globalThis.crypto.randomUUID()
-    : "durak-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   const actionCardId =
     action === "attack" || action === "defend"
       ? selectedDurakCardId
       : null;
+
+  // Пока результат предыдущего действия неизвестен, нельзя отправлять другой ход.
+  // Повтор той же команды использует прежний ID и не дублирует успешный ход.
+  if (
+    pendingDurakAction &&
+    (
+      pendingDurakAction.roomId !== actionRoomId ||
+      pendingDurakAction.action !== action ||
+      String(pendingDurakAction.cardId || "") !== String(actionCardId || "")
+    )
+  ) {
+    showStatus(
+      "durakGameStatus",
+      "Предыдущий ход ещё не подтверждён. Повтори то же действие, чтобы безопасно проверить результат."
+    );
+    return;
+  }
+
+  if (!pendingDurakAction) {
+    const actionRequestId = (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function")
+      ? globalThis.crypto.randomUUID()
+      : "durak-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    pendingDurakAction = {
+      roomId: actionRoomId,
+      action,
+      cardId: actionCardId,
+      requestId: actionRequestId
+    };
+  }
+
+  const actionRequestId = pendingDurakAction.requestId;
+  durakActionInProgress = true;
   const actionButtons = [
     $("durakAttack"),
     $("durakDefend"),
@@ -2003,6 +2033,9 @@ async function durakAction(action) {
     if (!result.ok) {
       throw new Error(result.error || "Действие не выполнено.");
     }
+
+    // Сервер подтвердил действие (включая ответ duplicate:true).
+    pendingDurakAction = null;
 
     const playedCard = actionCardId
       ? Array.from(document.querySelectorAll("#durakHand .durak-card"))
