@@ -1470,7 +1470,12 @@
 
 
   /* Компактные места по краям; центральные карты не перекрываются квадратами. */
-  #durakGame #durakTrump { min-height: 94px !important; margin: 2px auto 4px !important; padding: 0 4px !important; gap: 4px !important; align-items: center !important; justify-content: center !important; }
+  #durakGame .durak-table { position: relative !important; }
+  #durakGame #durakTrump { position: absolute !important; top: 3px !important; right: 4px !important; left: auto !important; transform: none !important; z-index: 5 !important; display: block !important; width: 112px !important; min-width: 112px !important; height: 92px !important; min-height: 92px !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; pointer-events: none !important; }
+  #durakGame #durakTrump > div:first-child { display: none !important; }
+  #durakGame #durakTrump > div:nth-child(2) { margin: 0 !important; }
+  #durakGame #durakTrump > div:nth-child(2) > div:first-child { left: 0 !important; top: 0 !important; }
+  #durakGame #durakTrump > div:nth-child(2) > div:nth-child(2) { left: 28px !important; top: -1px !important; }
   #durakGame .durak-player { width: min(21%, 66px) !important; max-width: 66px !important; min-height: 28px !important; padding: 3px 3px !important; border-radius: 6px !important; font-size: 8px !important; line-height: 1.08 !important; }
   #durakGame .durak-player-name { font-size: 8px !important; }
   #durakGame .durak-player-meta { font-size: 7px !important; margin-top: 1px !important; }
@@ -1718,9 +1723,9 @@
       Ожидание начала игры...
     </p>
 
-    <div id="durakTrump"></div>
-
     <div class="durak-table">
+
+      <div id="durakTrump"></div>
 
       <div id="durakPlayers" class="durak-players">
         <div class="durak-player active">👤 Ты</div>
@@ -3704,12 +3709,14 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
       if (moveEvent.pointerId !== event.pointerId) return;
       let x = Math.max(0.04, Math.min(0.96, (moveEvent.clientX - bounds.left) / bounds.width));
       let y = Math.max(0.04, Math.min(0.96, (moveEvent.clientY - bounds.top) / bounds.height));
-      // Место можно двигать вдоль края, но нельзя положить его поверх карт.
+      // Боковые места остаются в боковых полосах; верхнее и нижнее — вне центральных карт.
       if (/left/.test(seatName)) x = Math.min(x, 0.10);
       else if (/right/.test(seatName)) x = Math.max(x, 0.90);
-      else if (seatName === "top") y = Math.min(y, 0.12);
+      else if (seatName === "top") { x = Math.min(x, 0.68); y = Math.min(y, 0.18); }
       else if (seatName === "bottom") y = Math.max(y, 0.88);
-      if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.18);
+      if (seatName === "top-right") { x = Math.min(x, 0.64); y = Math.min(y, 0.18); }
+      if (seatName === "top-left") { x = Math.max(x, 0.24); y = Math.min(y, 0.18); }
+      if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.22);
       if (/bottom/.test(seatName) && seatName !== "bottom") y = Math.max(y, 0.82);
       durakSeatPositions[key] = { x, y };
       seat.style.left = (x * 100) + "%";
