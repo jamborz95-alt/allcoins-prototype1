@@ -192,14 +192,16 @@ try {
     selectedDurakCardId = "card-6-hearts";
     await durakAction("attack");
   });
-  assert.ok(pendingDurakAction, "uncertain action should remain pending after a network error");
+  assert.equal(await page.evaluate(() => Boolean(pendingDurakAction)), true,
+    "uncertain action should remain pending after a network error");
   const requestIdAfterFailure = durakActionRequestIds.at(-1);
   await page.evaluate(async () => { await durakAction("attack"); });
   const requestIdAfterRetry = durakActionRequestIds.at(-1);
   assert.ok(requestIdAfterFailure, "action request should include an id");
   assert.equal(requestIdAfterRetry, requestIdAfterFailure,
     "retry after uncertain response must reuse the original action request ID");
-  assert.equal(pendingDurakAction, null, "pending action should clear after server confirmation");
+  assert.equal(await page.evaluate(() => pendingDurakAction), null,
+    "pending action should clear after server confirmation");
 
   mockDurakStatus = "finished";
   mockDurakHasLoser = true;
