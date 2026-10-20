@@ -1083,7 +1083,69 @@
     #durakGame #durakTable { min-height: 100px; }
   }
 
-  </style>
+  
+  /* ALLCOINS mobile polish: keep the hand and table usable on narrow phones */
+  #durakGame #durakHand {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: thin;
+    padding: 16px 8px 10px;
+  }
+  #durakGame #durakHand > .durak-card {
+    flex: 0 0 auto;
+    margin-left: -13px;
+    transform-origin: center bottom;
+    transition: transform 150ms ease, filter 150ms ease;
+  }
+  #durakGame #durakHand > .durak-card:first-child { margin-left: 0; }
+  #durakGame #durakHand > .durak-card.selected {
+    transform: translateY(-10px) !important;
+    filter: drop-shadow(0 0 5px rgba(103,245,181,.65));
+  }
+  #durakGame #durakTable {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    overflow: visible;
+  }
+  #durakGame .durak-table-pair {
+    flex: 0 0 88px;
+    width: 88px;
+    height: 108px;
+    margin: 2px;
+  }
+  #durakGame .durak-flying-card {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    margin: 0 !important;
+    transform-origin: center center;
+    will-change: left, top, transform;
+    box-shadow: 0 12px 28px rgba(0,0,0,.45);
+  }
+  #durakGame .durak-players { align-items: stretch; }
+  #durakGame .durak-player { overflow: hidden; }
+  @media (max-width: 520px) {
+    #durakGame #durakHand > .durak-card { margin-left: -17px; }
+    #durakGame #durakHand > .durak-card:first-child { margin-left: 0; }
+    #durakGame .durak-table-pair {
+      flex-basis: 76px;
+      width: 76px;
+      height: 100px;
+    }
+    #durakGame #durakTable { min-height: 125px; }
+  }
+</style>
 </head>
 <body>
 <div class="app">
