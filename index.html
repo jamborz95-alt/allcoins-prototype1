@@ -2832,7 +2832,16 @@ $("tapButton").onclick = async () => {
 
 $("restoreButton").onclick = async () => {
   if (state.energy >= 100) {
-    alert("Энергия уже полная!");
+    showStatus("homeStatus", "Энергия уже полная!");
+    return;
+  }
+
+  // В демо-режиме восстановление доступно без рекламы и сервера.
+  // Это не выдаёт реальные награды и нужно для проверки прототипа.
+  if (!state.user) {
+    state.energy = 100;
+    showStatus("homeStatus", "Энергия восстановлена · Демо-режим");
+    render();
     return;
   }
 
