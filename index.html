@@ -1778,6 +1778,22 @@ console.log("КАРТЫ В ОТВЕТЕ:", game.hand);
     if (!game.ok) {
       return;
     }
+
+    // Отображаем участников за столом, включая тестового бота.
+    const playersBox = $("durakPlayers");
+    if (playersBox && Array.isArray(game.players)) {
+      playersBox.innerHTML = "";
+      game.players.forEach((player, index) => {
+        const playerTag = document.createElement("div");
+        playerTag.className = "durak-player";
+        playerTag.textContent = player.label || ("Игрок " + (index + 1));
+        if (Number(game.playerIndex) === index) {
+          playerTag.classList.add("active");
+        }
+        playersBox.appendChild(playerTag);
+      });
+    }
+
 const isAttacker =
   Number(game.playerIndex) === Number(game.attackerIndex);
 
