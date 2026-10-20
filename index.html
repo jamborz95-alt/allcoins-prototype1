@@ -2733,6 +2733,9 @@ if (Array.isArray(game.hand)) {
       const cancelCard = (cancelEvent) => {
         if (cancelEvent.pointerId !== pointerId) return;
         cleanup();
+        // Отменённое перетаскивание не должно блокировать следующий обычный тап.
+        cardElement.dataset.dragged = "false";
+        if (selectedDurakCardId === card.id) selectedDurakCardId = null;
       };
 
       // Если WebView теряет указатель при перетаскивании, возвращаем карту
@@ -2740,6 +2743,9 @@ if (Array.isArray(game.hand)) {
       const lostPointer = (lostEvent) => {
         if (lostEvent.pointerId !== pointerId) return;
         cleanup();
+        // После потери указателя разрешаем снова выбрать эту карту тапом.
+        cardElement.dataset.dragged = "false";
+        if (selectedDurakCardId === card.id) selectedDurakCardId = null;
       };
 
       document.addEventListener("pointermove", moveCard, { passive: false });
