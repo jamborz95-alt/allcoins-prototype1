@@ -1604,6 +1604,37 @@ try {
 }
 
 const $ = id => document.getElementById(id);
+
+// Переключение главных разделов ALLCOINS (работает и в демо-режиме).
+function switchAllcoinsPage(pageName) {
+  const validPages = ["home", "games", "withdraw", "profile"];
+  if (!validPages.includes(pageName)) return;
+
+  validPages.forEach((name) => {
+    const section = $(name);
+    if (section) section.classList.toggle("hidden", name !== pageName);
+  });
+
+  document.querySelectorAll(".nav [data-page]").forEach((button) => {
+    const active = button.dataset.page === pageName;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-current", active ? "page" : "false");
+  });
+
+  try {
+    if (typeof tg !== "undefined" && tg && typeof tg.HapticFeedback?.selectionChanged === "function") {
+      tg.HapticFeedback.selectionChanged();
+    }
+  } catch (_) {}
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".nav [data-page]");
+  if (!button) return;
+  event.preventDefault();
+  switchAllcoinsPage(button.dataset.page);
+});
+
 // Сохранение данных ALLCOINS
 function saveGame() {
   try {
