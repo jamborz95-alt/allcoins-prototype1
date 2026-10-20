@@ -2207,6 +2207,10 @@ async function loadDurakGame(roomId) {
       roomId: roomId
     });
     if (!game.ok) {
+      showStatus(
+        "durakGameStatus",
+        game.error || "Не удалось обновить партию. Попробуй ещё раз."
+      );
       return;
     }
 
@@ -2760,7 +2764,12 @@ if (Array.isArray(game.hand)) {
       gameResultLabel + " · Карт в колоде: " + game.cardsLeft;
 
   } catch (error) {
-    console.log("Обновление Дурака:", error.message);
+    console.warn("Обновление Дурака:", error);
+    showStatus(
+      "durakGameStatus",
+      "Не удалось обновить партию. " +
+        String(error?.message || "Проверь соединение и попробуй ещё раз.").slice(0, 160)
+    );
   }
 }
 // Автоматически обновляем состояние Дурака каждые 2 секунды
