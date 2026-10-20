@@ -20,6 +20,7 @@ try {
   const apiCalls = [];
   let mockDurakPhase = "attack";
   let mockDurakPlayerIndex = 0;
+  let mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.route("https://telegram.org/**", (route) => route.fulfill({
@@ -60,7 +61,7 @@ try {
           { id: "card-queen-spades", rank: "Q", suit: "♠" }
         ],
         trumpSuit: "♥", trumpCard: { id: "trump-8-hearts", rank: "8", suit: "♥" },
-        table: [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }],
+        table: mockDurakTable,
         cardsLeft: 24, status: "playing", phase: mockDurakPhase,
         attackerIndex: 0, defenderIndex: 1, playerIndex: mockDurakPlayerIndex,
         players: [
@@ -125,6 +126,23 @@ try {
   await page.evaluate(async () => { await loadDurakGame("77"); });
   assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ТВОЯ ЗАЩИТА",
     "defender should see a clear defense prompt");
+  assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
+    "defender should be able to take an open attack");
+
+  // The defender must still be able to take after covering every current attack,
+  // until the attacker explicitly declares the round beaten.
+  mockDurakTable = [{
+    attack: { id: "table-6-clubs", rank: "6", suit: "♣" },
+    defense: { id: "table-7-clubs", rank: "7", suit: "♣" }
+  }];
+  mockDurakPhase = "attack";
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
+    "defender should still be able to take before the attacker declares beat");
+  assert.equal(await page.locator("#durakDefend").evaluate((el) => el.style.display), "none",
+    "defend button should be hidden when no attack card is uncovered");
+
+  mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   mockDurakPhase = "attack";
   mockDurakPlayerIndex = 0;
   await page.evaluate(async () => { await loadDurakGame("77"); });
