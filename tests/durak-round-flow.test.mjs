@@ -40,7 +40,7 @@ test("finished games are persisted under the same locked transaction", () => {
 
 test("the bot may throw in a matching rank while the defender still has capacity", () => {
   assert.match(body, /const canAddMore = game.table.length < defender.hand.length/);
-  assert.match(body, /bot\.hand\.findIndex\(card => tableRanks\.includes\(card\.rank\)\)/);
+  assert.match(body, /chooseBotAttackIndex\(bot\.hand, game\.trumpSuit, tableRanks\)/);
   assert.match(body, /Бот завершает атаку только когда больше не может подкинуть карту/);
 });
 
