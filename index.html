@@ -1968,8 +1968,6 @@ async function loadDurakGame(roomId) {
     const game = await apiRequest("/api/durak/game", {
       roomId: roomId
     });
-console.log("ОТВЕТ ИГРЫ:", game);
-console.log("КАРТЫ В ОТВЕТЕ:", game.hand);
     if (!game.ok) {
       return;
     }
