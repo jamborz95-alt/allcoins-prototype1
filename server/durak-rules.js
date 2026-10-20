@@ -47,6 +47,30 @@ export function beatsCard(defense, attack, trumpSuit) {
   return defenseSuit === trump && attackSuit !== trump;
 }
 
+// По классическим правилам первым атакует игрок с младшим козырем.
+export function chooseStartingPlayerIndex(hands, trumpSuit) {
+  if (!Array.isArray(hands) || hands.length < 2) {
+    throw new RangeError("Для выбора первого хода нужны минимум 2 игрока");
+  }
+
+  let chosenPlayer = -1;
+  let lowestTrumpRank = Infinity;
+
+  hands.forEach((hand, playerIndex) => {
+    for (const card of Array.isArray(hand) ? hand : []) {
+      if (card?.suit !== trumpSuit) continue;
+      const rank = cardRank(card);
+      if (rank > 0 && rank < lowestTrumpRank) {
+        lowestTrumpRank = rank;
+        chosenPlayer = playerIndex;
+      }
+    }
+  });
+
+  // Если козырей на руках нет, начинает первый присоединившийся игрок.
+  return chosenPlayer >= 0 ? chosenPlayer : 0;
+}
+
 // Бот выбирает недорогие карты и по возможности сохраняет козыри.
 export function chooseBotAttackIndex(hand, trumpSuit, requiredRanks = null) {
   const candidates = hand
