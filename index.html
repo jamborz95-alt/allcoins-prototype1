@@ -2261,12 +2261,22 @@ async function apiRequest(path, data = {}) {
     })
   });
 
-if (!response.ok) {
-  const errorText = await response.text();
-  throw new Error("Ошибка сервера " + response.status + ": " + errorText);
-}  
+const responseText = await response.text();
+  let result;
+  try {
+    result = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    result = { error: responseText || "Пустой ответ сервера" };
+  }
 
-  return response.json();
+  if (!response.ok || result.ok === false) {
+    const message = result.debugMessage
+      ? (result.error || "Ошибка сервера") + " — " + result.debugMessage
+      : (result.error || ("Ошибка сервера " + response.status));
+    throw new Error(message + " (HTTP " + response.status + ")");
+  }
+
+  return result;
 }
 async function durakAction(action, requestedCardIds = null) {
   if (!currentDurakRoomId) {
