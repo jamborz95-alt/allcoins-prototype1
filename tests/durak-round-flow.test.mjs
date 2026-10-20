@@ -28,7 +28,7 @@ test("a defender who cannot beat a card takes the whole table", () => {
 test("the test bot has separate attack and defense behavior", () => {
   assert.match(body, /if \(game\.attackerIndex === botIndex\)/);
   assert.match(body, /if \(game\.defenderIndex === botIndex\)/);
-  assert.match(body, /const defenseIndex = chooseBotDefenseIndex\(bot\.hand, openItem\.attack\)/);
+  assert.match(body, /const defenseIndex = chooseBotDefenseIndex\(bot\.hand, openItem\.attack, game\.trumpSuit\)/);
 });
 
 test("finished games are persisted under the same locked transaction", () => {
