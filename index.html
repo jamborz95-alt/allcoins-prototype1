@@ -2625,6 +2625,9 @@ if (Array.isArray(game.hand)) {
           flyer.style.transition = "none";
           flyer.style.transform = "translate3d(0,0,0) scale(1)";
           flyer.style.opacity = "1";
+          // Копия карты не должна перекрывать стол при проверке drop-цели.
+          flyer.style.pointerEvents = "none";
+          flyer.setAttribute("aria-hidden", "true");
           document.body.appendChild(flyer);
           offsetX = startX - originalRect.left;
           offsetY = startY - originalRect.top;
@@ -2659,7 +2662,12 @@ if (Array.isArray(game.hand)) {
         document.removeEventListener("pointercancel", cancelCard);
         durakCardDragging = false;
 
-        if (!dragging) return;
+        if (!dragging) {
+          cardElement.style.opacity = "";
+          cardElement.style.transition = "";
+          if (flyer) flyer.remove();
+          return;
+        }
         cardElement.dataset.dragged = "true";
 
         const elementUnderPointer = document.elementFromPoint(
