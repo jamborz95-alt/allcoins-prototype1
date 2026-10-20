@@ -82,5 +82,6 @@ test("Durak game state exposes only the requesting player's hand, not opponents'
   assert.match(body, /hand: me\.hand/);
   assert.match(body, /cardsCount: Array\.isArray\(p\.hand\) \? p\.hand\.length : 0/);
   assert.doesNotMatch(body, /hand: p\.hand/);
+  assert.doesNotMatch(body, /telegramId: String\(p\.telegramId\)/);
   assert.doesNotMatch(body, /players: gameState\.players\s*[,}]/);
 });
