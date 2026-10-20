@@ -1592,6 +1592,7 @@
     <label class="muted">Игроков в комнате</label>
 
     <select id="players">
+      <option value="1">1 игрок + бот</option>
       <option value="2" selected>2 игрока</option>
       <option value="3">3 игрока</option>
       <option value="4">4 игрока</option>
@@ -3617,10 +3618,13 @@ const privacy = $("durakPrivacy").value;
   const roomName =
     $("roomName").value.trim() || "Комната ALLCOINS";
 
-  if (!Number.isInteger(players) || players < 2 || players > 6) {
-    alert("Количество игроков должно быть от 2 до 6.");
+  if (!Number.isInteger(players) || players < 1 || players > 6) {
+    alert("Выбери от 1 игрока с ботом до 6 участников.");
     return;
   }
+  const singlePlayerWithBot = players === 1;
+  // Серверная схема поддерживает минимум 2 места: для одиночной игры второе место занимает бот.
+  const roomCapacity = singlePlayerWithBot ? 2 : players;
 
 if (!Number.isSafeInteger(stake) || stake < 100) {
   alert("Минимальная ставка — 100 AC. Введи целое число.");
@@ -3644,7 +3648,7 @@ if (stake > state.balance) {
   try {
     const result = await apiRequest("/api/durak/rooms", {
   name: roomName,
-  maxPlayers: players,
+  maxPlayers: roomCapacity,
   stake: stake,
   deck: deck,
   speed: speed,
@@ -3657,11 +3661,15 @@ if (stake > state.balance) {
 
     const room = result.room;
 
+    if (singlePlayerWithBot) {
+      await apiRequest("/api/durak/rooms/add-bot", { roomId: room.id });
+    }
+
     state.rooms.push({
   id: room.id,
   name: room.name,
   players: Number(room.max_players),
-  playersCount: 1,
+  playersCount: singlePlayerWithBot ? 2 : 1,
   stake: Number(room.stake),
   status: "waiting",
   isOwner: true
@@ -3683,7 +3691,12 @@ if (stake > state.balance) {
       name: room.name || roomName,
       isOwner: true
     });
-    showStatus("durakWaitingStatus", "Комната создана! Ожидаем игроков.");
+    showStatus(
+      "durakWaitingStatus",
+      singlePlayerWithBot
+        ? "Комната создана. Бот ALLCOINS добавлен — можно начинать игру."
+        : "Комната создана! Ожидаем игроков."
+    );
   } catch (error) {
     const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
     // При ошибке оставляем пользователя на форме создания, а не на скрытом игровом статусе.
