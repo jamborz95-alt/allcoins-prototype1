@@ -73,6 +73,11 @@ test("game actions allow only known actions and verify room membership", () => {
   assert.match(body, /await client\.query\("ROLLBACK"\)/);
   assert.match(body, /client\.release\(\)/);
   assert.match(body, /UPDATE durak_games/);
+  assert.match(body, /actionRequestId/);
+  assert.match(body, /processedActionRequestIds\.includes\(actionRequestId\)/,
+    "a previously processed request ID must be detected");
+  assert.match(body, /processedActionRequestIds = \[[\s\S]*?\.slice\(-100\)/,
+    "the server should retain a bounded history of processed request IDs");
 });
 
 
