@@ -47,6 +47,37 @@ export function beatsCard(defense, attack, trumpSuit) {
   return defenseSuit === trump && attackSuit !== trump;
 }
 
+// Бот выбирает недорогие карты и по возможности сохраняет козыри.
+export function chooseBotAttackIndex(hand, trumpSuit, requiredRanks = null) {
+  const candidates = hand
+    .map((card, index) => ({ card, index }))
+    .filter(({ card }) =>
+      !requiredRanks || requiredRanks.includes(card.rank)
+    );
+
+  candidates.sort((a, b) => {
+    const aTrump = a.card.suit === trumpSuit ? 1 : 0;
+    const bTrump = b.card.suit === trumpSuit ? 1 : 0;
+    return aTrump - bTrump || cardRank(a.card) - cardRank(b.card);
+  });
+
+  return candidates[0]?.index ?? -1;
+}
+
+export function chooseBotDefenseIndex(hand, attack, trumpSuit) {
+  const candidates = hand
+    .map((card, index) => ({ card, index }))
+    .filter(({ card }) => beatsCard(card, attack, trumpSuit));
+
+  candidates.sort((a, b) => {
+    const aUsesTrump = a.card.suit === trumpSuit && attack.suit !== trumpSuit ? 1 : 0;
+    const bUsesTrump = b.card.suit === trumpSuit && attack.suit !== trumpSuit ? 1 : 0;
+    return aUsesTrump - bUsesTrump || cardRank(a.card) - cardRank(b.card);
+  });
+
+  return candidates[0]?.index ?? -1;
+}
+
 export function dealInitialHands(deck, playerCount, cardsPerPlayer = 6) {
   if (!Number.isInteger(playerCount) || playerCount < 2) {
     throw new RangeError("Для игры нужны минимум 2 игрока");
