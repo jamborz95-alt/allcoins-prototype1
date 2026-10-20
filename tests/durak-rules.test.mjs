@@ -17,6 +17,25 @@ test("52-card deck has 52 unique cards", () => {
   assert.ok(deck.some(card => card.rank === "Туз" && card.suit === "♣"));
 });
 
+test("deck factory rejects unsupported deck sizes instead of silently using 36 cards", () => {
+  assert.throws(() => createDurakDeck(24), /36 или 52/);
+  assert.throws(() => createDurakDeck(40), /36 или 52/);
+});
+
+test("52-card deck can deal six players and still leave the trump card", () => {
+  const { hands, deck, trumpCard, trumpSuit } = dealInitialHands(createDurakDeck(52), 6, 6);
+  assert.deepEqual(hands.map(hand => hand.length), [6, 6, 6, 6, 6, 6]);
+  assert.equal(deck.length, 16);
+  assert.ok(trumpCard);
+  assert.equal(trumpSuit, trumpCard.suit);
+  const allCards = [...hands.flat(), ...deck].map(card => card.id);
+  assert.equal(new Set(allCards).size, 52);
+});
+
+test("36-card deck cannot deal six players while reserving a trump card", () => {
+  assert.throws(() => dealInitialHands(createDurakDeck(36), 6, 6), /недостаточно карт/);
+});
+
 test("shuffle returns every card exactly once and does not mutate source", () => {
   const deck = createDurakDeck(36);
   const original = deck.map(card => card.id);
