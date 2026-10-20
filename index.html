@@ -558,7 +558,44 @@
       0 0 0 1px rgba(212, 175, 55, 0.65);
   }
 }
-/* Карта во время перетаскивания */
+/* ALLCOINS — окончательное расположение карт на столе */
+#durakGame #durakTable .durak-table-pair {
+  position: relative;
+  display: block;
+  flex: 0 0 100px;
+  width: 100px;
+  height: 125px;
+  margin: 4px;
+  overflow: visible;
+}
+
+#durakGame #durakTable .durak-table-pair .durak-card.table-card {
+  position: absolute !important;
+  display: block !important;
+  flex: none !important;
+  width: 68px !important;
+  min-width: 68px !important;
+  max-width: 68px !important;
+  height: 100px !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#durakGame #durakTable .durak-table-pair
+.durak-card.table-card[data-table-card-type="attack"] {
+  left: 0 !important;
+  top: 0 !important;
+  z-index: 1;
+}
+
+#durakGame #durakTable .durak-table-pair
+.durak-card.table-card[data-table-card-type="defense"] {
+  left: 30px !important;
+  top: -6px !important;
+  z-index: 2;
+}
+    /* Карта во время перетаскивания */
 
 #durakGame .durak-card.dragging {
   opacity: 0.9;
