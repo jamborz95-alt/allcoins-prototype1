@@ -945,7 +945,8 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       attackerIndex: startingPlayerIndex,
       defenderIndex: (startingPlayerIndex + 1) % gamePlayers.length,
       phase: "attack",
-      status: "playing"
+      status: "playing",
+      loserTelegramId: null
     };
 
     // Если младший козырь у тестового бота, он сразу делает первый ход.
@@ -1120,6 +1121,8 @@ console.log("DURAK DEBUG:", {
   table: gameState.table,
   cardsLeft: gameState.deck.length,
   status: gameState.status,
+  hasLoser: Boolean(gameState.loserTelegramId),
+  isLoser: String(gameState.loserTelegramId ?? "") === String(user.id),
   phase: gameState.phase,
   attackerIndex: gameState.attackerIndex,
   defenderIndex: gameState.defenderIndex,
@@ -1284,6 +1287,17 @@ app.post("/api/durak/action", async (req, res) => {
       return startIndex;
     }
 
+    function markGameFinished() {
+      game.status = "finished";
+      game.phase = "finished";
+      const playersWithCards = game.players.filter(
+        p => Array.isArray(p.hand) && p.hand.length > 0
+      );
+      game.loserTelegramId = playersWithCards.length === 1
+        ? String(playersWithCards[0].telegramId)
+        : null;
+    }
+
     function finishIfNeeded() {
       if (game.deck.length > 0) return false;
 
@@ -1292,8 +1306,7 @@ app.post("/api/durak/action", async (req, res) => {
       );
 
       if (stillPlaying.length <= 1) {
-        game.status = "finished";
-        game.phase = "finished";
+        markGameFinished();
         return true;
       }
 
@@ -1501,8 +1514,7 @@ if (hasUnbeatenCards) {
       );
 
       if (game.defenderIndex === game.attackerIndex) {
-        game.status = "finished";
-        game.phase = "finished";
+        markGameFinished();
       } else {
         game.phase = "attack";
         finishIfNeeded();
@@ -1538,8 +1550,7 @@ if (action === "beat") {
       );
 
       if (game.defenderIndex === game.attackerIndex) {
-        game.status = "finished";
-        game.phase = "finished";
+        markGameFinished();
       } else {
         game.phase = "attack";
         finishIfNeeded();
@@ -1584,8 +1595,7 @@ if (action === "beat") {
             game.attackerIndex = game.defenderIndex;
             game.defenderIndex = nextActivePlayer(game.attackerIndex);
             if (game.defenderIndex === game.attackerIndex) {
-              game.status = "finished";
-              game.phase = "finished";
+              markGameFinished();
             } else {
               game.phase = "attack";
               finishIfNeeded();
@@ -1615,8 +1625,7 @@ if (action === "beat") {
             game.attackerIndex = attackerIndex;
             game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
             if (game.defenderIndex === game.attackerIndex) {
-              game.status = "finished";
-              game.phase = "finished";
+              markGameFinished();
             } else {
               game.phase = "attack";
               finishIfNeeded();
