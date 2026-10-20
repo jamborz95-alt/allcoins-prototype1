@@ -1413,6 +1413,44 @@
 #durakGame #durakTable .durak-card[data-table-card-type="attack"] {
   cursor: crosshair;
 }
+
+  /* Исправление посадочных мест: это слой поверх игрового поля, а не обычная сетка. */
+  #durakGame .durak-table { position: relative; }
+  #durakGame .durak-players {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 5 !important;
+    pointer-events: none;
+  }
+  #durakGame .durak-player {
+    position: absolute !important;
+    left: 50%;
+    top: 50%;
+    width: min(32%, 112px) !important;
+    min-width: 0 !important;
+    max-width: 112px !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    touch-action: none;
+    z-index: 6;
+  }
+  #durakGame .durak-player[data-seat="bottom"] { left: 50%; top: 88%; }
+  #durakGame .durak-player[data-seat="top"] { left: 50%; top: 10%; }
+  #durakGame .durak-player[data-seat="left"] { left: 12%; top: 50%; }
+  #durakGame .durak-player[data-seat="right"] { left: 88%; top: 50%; }
+  #durakGame .durak-player[data-seat="top-left"] { left: 16%; top: 12%; }
+  #durakGame .durak-player[data-seat="top-right"] { left: 84%; top: 12%; }
+  #durakGame .durak-player[data-seat="left-top"] { left: 12%; top: 30%; }
+  #durakGame .durak-player[data-seat="left-bottom"] { left: 12%; top: 72%; }
+  #durakGame .durak-player[data-seat="right-top"] { left: 88%; top: 30%; }
+  #durakGame .durak-player[data-seat="right-bottom"] { left: 88%; top: 72%; }
+
 </style>
 </head>
 <body>
@@ -3797,7 +3835,7 @@ $("durakBoard").style.display = "block";
         playerTag.appendChild(emptyMeta);
       }
       playersContainer.appendChild(playerTag);
-      setupDurakSeatDragging(playerTag, durakWaitingRoom.id, seats[seatIndex] || ("seat-" + seatIndex), playersContainer.parentElement);
+      setupDurakSeatDragging(playerTag, durakWaitingRoom.id, seats[seatIndex] || ("seat-" + seatIndex), playersContainer);
     }
     }
 
