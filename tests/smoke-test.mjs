@@ -20,6 +20,9 @@ try {
   const apiCalls = [];
   let mockDurakPhase = "attack";
   let mockDurakPlayerIndex = 0;
+  let mockDurakStatus = "playing";
+  let mockDurakHasLoser = false;
+  let mockDurakIsLoser = false;
   let mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -62,7 +65,8 @@ try {
         ],
         trumpSuit: "♥", trumpCard: { id: "trump-8-hearts", rank: "8", suit: "♥" },
         table: mockDurakTable,
-        cardsLeft: 24, status: "playing", phase: mockDurakPhase,
+        cardsLeft: mockDurakStatus === "finished" ? 0 : 24, status: mockDurakStatus,
+        hasLoser: mockDurakHasLoser, isLoser: mockDurakIsLoser, phase: mockDurakPhase,
         attackerIndex: 0, defenderIndex: 1, playerIndex: mockDurakPlayerIndex,
         players: [
           { telegramId: "12345", label: "👤 Тестовый Игрок", cardsCount: 6 },
@@ -170,6 +174,17 @@ try {
   const actionsAfter = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   assert.equal(actionsAfter - actionsBefore, 1, "duplicate rapid actions should be blocked");
   assert.equal(await page.locator("#durakHand .durak-card").count(), 6, "hand should re-render after a successful action");
+
+  mockDurakStatus = "finished";
+  mockDurakHasLoser = true;
+  mockDurakIsLoser = true;
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.match(await page.locator("#durakGameStatus").innerText(), /Ты проиграл — ДУРАК/,
+    "losing player should see the game result");
+  mockDurakIsLoser = false;
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.match(await page.locator("#durakGameStatus").innerText(), /Победа! Партия завершена/,
+    "winning player should see the game result");
 
   assert.deepEqual(pageErrors, [], "page should not produce JavaScript errors");
   console.log("PASS: clicker, energy, navigation, Durak player names, bot, cards, duplicate-action protection, no page errors");
