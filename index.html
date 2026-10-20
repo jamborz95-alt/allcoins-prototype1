@@ -3528,14 +3528,21 @@ if (stake > state.balance) {
 
     render();
 
-    showStatus("durakGameStatus", "Комната создана на сервере!");
-
-    alert(
-      "Комната создана!\n" +
-      "Название: " + room.name + "\n" +
-      "Количество игроков: " + room.max_players + "\n" +
-      "Ставка: " + room.stake + " AC"
-    );
+    // Остаёмся внутри экрана «Дурак Онлайн» и сразу открываем созданную комнату.
+    // Никакого alert и возврата в ALLCOINS: список игроков обновляется автоматически.
+    $("durakCreatePanel").style.display = "none";
+    $("durakRoomsPanel").style.display = "none";
+    $("durakRoomActions").style.display = "none";
+    $("durakEntry").style.display = "none";
+    $("durakGame").style.display = "block";
+    $("durakGame").classList.add("durak-fullscreen");
+    await openDurakWaitingRoom({
+      ...room,
+      id: room.id,
+      name: room.name || roomName,
+      isOwner: true
+    });
+    showStatus("durakWaitingStatus", "Комната создана! Ожидаем игроков.");
   } catch (error) {
     const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
     showStatus("durakGameStatus", "Не удалось создать комнату: " + message);
@@ -3561,10 +3568,16 @@ async function openDurakWaitingRoom(room) {
   durakWaitingRoom = room;
   currentDurakRoomId = room.id;
 
+  // Панель ожидания находится внутри durakGame, поэтому сам экран игры
+  // нельзя скрывать: иначе созданная комната исчезает.
+  $("durakGame").style.display = "block";
+  $("durakGame").classList.add("durak-fullscreen");
+  $("durakEntry").style.display = "none";
+  $("durakRoomActions").style.display = "none";
+  $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "none";
   $("durakWaitingPanel").style.display = "block";
   $("durakBoard").style.display = "none";
-  $("durakGame").style.display = "none";
 
   $("durakWaitingRoomName").textContent =
     room.name || "Комната ALLCOINS";
@@ -4112,6 +4125,7 @@ $("durakBack").onclick = () => {
 
 // Открыть создание комнаты
 $("durakShowCreate").onclick = () => {
+  $("durakWaitingPanel").style.display = "none";
   $("durakCreatePanel").style.display = "block";
   $("durakRoomsPanel").style.display = "none";
   $("durakBoard").style.display = "none";
@@ -4119,6 +4133,7 @@ $("durakShowCreate").onclick = () => {
 
 // Открыть список комнат
 $("durakShowRooms").onclick = async () => {
+  $("durakWaitingPanel").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "block";
   $("durakBoard").style.display = "none";
