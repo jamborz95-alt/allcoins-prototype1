@@ -28,7 +28,7 @@ test("a defender who cannot beat a card takes the whole table", () => {
 test("the test bot has separate attack and defense behavior", () => {
   assert.match(body, /if \(game\.attackerIndex === botIndex\)/);
   assert.match(body, /if \(game\.defenderIndex === botIndex\)/);
-  assert.match(body, /const defenseIndex = bot\.hand\.findIndex\(card => canBeatCard/);
+  assert.match(body, /const defenseIndex = chooseBotDefenseIndex\(bot\.hand, openItem\.attack\)/);
 });
 
 test("finished games are persisted under the same locked transaction", () => {
@@ -46,4 +46,17 @@ test("the bot may throw in a matching rank while the defender still has capacity
 
 test("the bot closes a fully covered attack when it cannot throw in another card", () => {
   assert.match(body, /if \(game\.table\.length > 0 && game\.table\.every\(item => item\.defense\)[\s\S]*?game\.table = \[\][\s\S]*?drawCardsAfterRound\(\)/);
+});
+
+
+test("the bot prefers non-trump low cards for attacks", () => {
+  assert.match(body, /function chooseBotAttackIndex\(hand, requiredRanks = null\)/);
+  assert.match(body, /aTrump - bTrump \|\| cardRank\(a\.card\) - cardRank\(b\.card\)/);
+  assert.match(body, /candidateIndex = chooseBotAttackIndex\(bot\.hand\)/);
+});
+
+test("the bot chooses the lowest suitable defense and avoids spending trump unnecessarily", () => {
+  assert.match(body, /function chooseBotDefenseIndex\(hand, attack\)/);
+  assert.match(body, /aUsesTrump - bUsesTrump \|\| cardRank\(a\.card\) - cardRank\(b\.card\)/);
+  assert.match(body, /const defenseIndex = chooseBotDefenseIndex\(bot\.hand, openItem\.attack\)/);
 });
