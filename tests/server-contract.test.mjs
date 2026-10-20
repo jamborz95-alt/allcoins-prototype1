@@ -82,6 +82,14 @@ test("game actions allow only known actions and verify room membership", () => {
 });
 
 
+
+test("the client can select same-rank cards and send them as one attack", () => {
+  assert.match(clientSource, /data-group-selected/);
+  assert.match(clientSource, /selectedSameRankCards/);
+  assert.match(clientSource, /cardIds: actionCardIds/);
+  assert.match(clientSource, /groupedCardIds/);
+});
+
 test("Durak game state exposes only the requesting player's hand, not opponents' cards", () => {
   const body = routeBody("/api/durak/game");
   assert.match(body, /const me = gameState\.players\.find\([\s\S]*?String\(player\.telegramId\) === String\(user\.id\)/);
