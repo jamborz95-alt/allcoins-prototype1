@@ -148,6 +148,9 @@ try {
   assert.equal(apiCalls.some((call) => call.path === "/api/durak/game" && String(call.body.roomId) === "77"), true,
     "game state should be requested from the API");
 
+  // Match the active-room state established by the real room-entry flow.
+  await page.evaluate(() => { currentDurakRoomId = "77"; });
+
   // The visible card and attack button must perform a real UI-driven move.
   const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   await page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]').click();
