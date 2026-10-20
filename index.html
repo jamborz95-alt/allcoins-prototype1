@@ -2631,6 +2631,9 @@ if (Array.isArray(game.hand)) {
       event.preventDefault();
 
       const pointerId = event.pointerId;
+      // Приостанавливаем автообновление сразу при касании карты,
+      // чтобы обновление не перерисовало руку до начала движения пальца.
+      durakCardDragging = true;
       try { cardElement.setPointerCapture(pointerId); } catch (_) {}
       const startX = event.clientX;
       const startY = event.clientY;
