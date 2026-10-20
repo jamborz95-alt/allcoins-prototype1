@@ -874,6 +874,183 @@
   }
 }
 
+  /* ===== ALLCOINS: оригинальный онлайн-стол в классическом стиле ===== */
+  #durakGame.durak-fullscreen {
+    background: radial-gradient(ellipse at top, #17243a 0%, #09111f 72%);
+  }
+  #durakGame #durakBoard {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 90px);
+    gap: 8px;
+  }
+  #durakGame #durakGameStatus {
+    margin: 0;
+    padding: 9px 12px;
+    border: 1px solid rgba(218,184,95,.28);
+    border-radius: 12px;
+    background: rgba(8,18,28,.78);
+    color: #e9e4d4;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  #durakGame #durakTrump {
+    min-height: 100px;
+    margin: 0;
+    padding: 5px 8px;
+    border: 1px solid rgba(226,197,120,.2);
+    border-radius: 15px;
+    background: rgba(4,12,20,.35);
+  }
+  #durakGame .durak-table {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1 0 auto;
+    min-height: 310px;
+    padding: 12px 9px;
+    margin: 0;
+    border: 5px solid #654324;
+    border-radius: 38% / 18%;
+    background:
+      radial-gradient(ellipse at center, rgba(58,143,91,.98) 0%, rgba(24,102,64,.99) 65%, #0d4b31 100%);
+    box-shadow:
+      inset 0 0 0 3px #b58b4b,
+      inset 0 0 28px rgba(0,0,0,.35),
+      0 8px 20px rgba(0,0,0,.42);
+    overflow: visible;
+  }
+  #durakGame .durak-table::before {
+    content: "ALLCOINS • DURAK";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    color: rgba(236,226,177,.13);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #durakGame .durak-players {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 0;
+  }
+  #durakGame .durak-player {
+    min-width: 92px;
+    max-width: 46%;
+    padding: 7px 8px 8px;
+    border: 1px solid rgba(230,201,120,.45);
+    border-radius: 13px;
+    background: linear-gradient(180deg, rgba(8,25,29,.96), rgba(4,17,22,.93));
+    box-shadow: 0 3px 8px rgba(0,0,0,.22);
+    color: #fff;
+    font-size: 11px;
+  }
+  #durakGame .durak-player.active {
+    border-color: #ffe18a;
+    box-shadow: 0 0 0 2px rgba(255,225,138,.18), 0 0 15px rgba(255,225,138,.35);
+  }
+  #durakGame .durak-player-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 800;
+  }
+  #durakGame .durak-player-meta {
+    display: block;
+    margin-top: 3px;
+    color: #b9d5c6;
+    font-size: 10px;
+  }
+  #durakGame .durak-card-backs {
+    display: flex;
+    justify-content: center;
+    min-height: 37px;
+    padding-top: 5px;
+    margin: 0 auto;
+  }
+  #durakGame .durak-card-back {
+    position: relative;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 35px;
+    margin-left: -7px;
+    border: 1px solid #e3c778;
+    border-radius: 4px;
+    background:
+      repeating-linear-gradient(45deg,#183354 0 3px,#315783 3px 6px);
+    box-shadow: inset 0 0 0 2px #0c1d35, inset 0 0 0 3px #d8b75d,
+                0 2px 3px rgba(0,0,0,.38);
+  }
+  #durakGame .durak-card-back:first-child { margin-left: 0; }
+  #durakGame .durak-card-back::after {
+    content: "◆";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #f0d78e;
+    font-size: 11px;
+    text-shadow: 0 1px 2px #000;
+  }
+  #durakGame .durak-table-caption {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    color: rgba(255,255,255,.76);
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  #durakGame #durakTable {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 115px;
+    margin: 8px 0;
+    padding: 8px 2px;
+    border: 1px dashed rgba(255,255,255,.17);
+    border-radius: 20px;
+    background: rgba(0,45,26,.12);
+  }
+  #durakGame #durakHand {
+    flex-shrink: 0;
+    min-height: 112px;
+    margin: 0;
+    padding: 13px 4px 8px;
+    border: 1px solid rgba(218,184,95,.22);
+    border-radius: 15px;
+    background: linear-gradient(180deg,rgba(17,30,43,.92),rgba(5,13,23,.96));
+  }
+  #durakGame #durakControls {
+    flex-shrink: 0;
+    margin-top: 5px !important;
+  }
+  #durakGame #durakControls button {
+    flex: 1;
+    min-width: 90px;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.22);
+  }
+  @media (max-width: 380px) {
+    #durakGame .durak-table { min-height: 285px; padding: 9px 5px; }
+    #durakGame .durak-player { min-width: 78px; padding: 6px 5px; }
+    #durakGame .durak-card-back { flex-basis: 20px; width: 20px; height: 30px; margin-left: -6px; }
+    #durakGame #durakTable { min-height: 100px; }
+  }
+
   </style>
 </head>
 <body>
@@ -1116,11 +1293,9 @@
       </div>
 
     
-      <div style="text-align:center;color:white;font-size:13px;">
-  Карты на столе
-</div>
+      <div class="durak-table-caption">ИГРОВОЙ СТОЛ</div>
 
-<div id="durakTable"></div>
+      <div id="durakTable"></div>
 
     </div>
 
@@ -1779,16 +1954,42 @@ console.log("КАРТЫ В ОТВЕТЕ:", game.hand);
       return;
     }
 
-    // Отображаем участников за столом, включая тестового бота.
+    // Участники, ники и рубашки карт соперников.
     const playersBox = $("durakPlayers");
     if (playersBox && Array.isArray(game.players)) {
       playersBox.innerHTML = "";
       game.players.forEach((player, index) => {
         const playerTag = document.createElement("div");
         playerTag.className = "durak-player";
-        playerTag.textContent = player.label || ("Игрок " + (index + 1));
-        if (Number(game.playerIndex) === index) {
-          playerTag.classList.add("active");
+        if (Number(game.playerIndex) === index) playerTag.classList.add("active");
+        if (Number(game.attackerIndex) === index) playerTag.classList.add("attacking");
+        if (Number(game.defenderIndex) === index) playerTag.classList.add("defending");
+
+        const name = document.createElement("span");
+        name.className = "durak-player-name";
+        name.textContent = player.label || ("Игрок " + (index + 1));
+        playerTag.appendChild(name);
+
+        const count = Math.max(0, Number(player.cardsCount) || 0);
+        const meta = document.createElement("span");
+        meta.className = "durak-player-meta";
+        meta.textContent = index === Number(game.playerIndex)
+          ? "ТВОЯ РУКА · " + count + " карт"
+          : (Number(game.attackerIndex) === index
+              ? "АТАКУЕТ · " : Number(game.defenderIndex) === index
+                ? "ЗАЩИЩАЕТСЯ · " : "") + count + " карт";
+        playerTag.appendChild(meta);
+
+        if (index !== Number(game.playerIndex)) {
+          const backs = document.createElement("div");
+          backs.className = "durak-card-backs";
+          const visibleBacks = Math.min(count, 6);
+          for (let i = 0; i < visibleBacks; i++) {
+            const back = document.createElement("span");
+            back.className = "durak-card-back";
+            backs.appendChild(back);
+          }
+          playerTag.appendChild(backs);
         }
         playersBox.appendChild(playerTag);
       });
