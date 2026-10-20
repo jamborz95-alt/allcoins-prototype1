@@ -23,6 +23,8 @@ try {
   let mockDurakStatus = "playing";
   let mockDurakHasLoser = false;
   let mockDurakIsLoser = false;
+  let failNextDurakAction = false;
+  const durakActionRequestIds = [];
   let mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -75,7 +77,16 @@ try {
       }) });
     }
     if (url.pathname === "/api/durak/action") {
+      durakActionRequestIds.push(body.actionRequestId);
       await new Promise((resolve) => setTimeout(resolve, 120));
+      if (failNextDurakAction) {
+        failNextDurakAction = false;
+        return route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: false, error: "Временная ошибка сети" })
+        });
+      }
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, message: "Ход принят" }) });
     }
     return route.fulfill({ status: 200, contentType: "application/json",
@@ -174,6 +185,21 @@ try {
   const actionsAfter = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   assert.equal(actionsAfter - actionsBefore, 1, "duplicate rapid actions should be blocked");
   assert.equal(await page.locator("#durakHand .durak-card").count(), 6, "hand should re-render after a successful action");
+
+  // If the server response is lost, retrying the same move must reuse its request ID.
+  failNextDurakAction = true;
+  await page.evaluate(async () => {
+    selectedDurakCardId = "card-6-hearts";
+    await durakAction("attack");
+  });
+  assert.ok(pendingDurakAction, "uncertain action should remain pending after a network error");
+  const requestIdAfterFailure = durakActionRequestIds.at(-1);
+  await page.evaluate(async () => { await durakAction("attack"); });
+  const requestIdAfterRetry = durakActionRequestIds.at(-1);
+  assert.ok(requestIdAfterFailure, "action request should include an id");
+  assert.equal(requestIdAfterRetry, requestIdAfterFailure,
+    "retry after uncertain response must reuse the original action request ID");
+  assert.equal(pendingDurakAction, null, "pending action should clear after server confirmation");
 
   mockDurakStatus = "finished";
   mockDurakHasLoser = true;
