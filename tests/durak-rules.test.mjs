@@ -20,7 +20,7 @@ test("52-card deck has 52 unique cards", () => {
 test("shuffle returns every card exactly once and does not mutate source", () => {
   const deck = createDurakDeck(36);
   const original = deck.map(card => card.id);
-  const shuffled = shuffleDurakDeck(deck, (max) => max - 1);
+  const shuffled = shuffleDurakDeck(deck, () => 0);
   assert.equal(shuffled.length, 36);
   assert.deepEqual(new Set(shuffled.map(card => card.id)), new Set(original));
   assert.deepEqual(deck.map(card => card.id), original);
