@@ -744,7 +744,34 @@
 #durakGame .premium-card.table-card {
   flex-shrink: 0;
 }
-  /* Значение и масть в противоположном углу карты */
+  /* ALLCOINS — размер карт на игровом столе */
+#durakGame .premium-card.table-card {
+  position: absolute;
+  display: block;
+  width: 68px !important;
+  min-width: 68px !important;
+  max-width: 68px !important;
+  height: 100px !important;
+  flex: 0 0 68px !important;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Атакующая карта */
+#durakGame .premium-card.table-card[data-table-card-type="attack"] {
+  left: 0;
+  top: 0;
+  z-index: 1;
+}
+
+/* Карта, которой отбиваются */
+#durakGame .premium-card.table-card[data-table-card-type="defense"] {
+  left: 26px;
+  top: -8px;
+  z-index: 2;
+}
+    /* Значение и масть в противоположном углу карты */
 /* Правый нижний угол карты */
 #durakGame .premium-card .card-corner-bottom {
   position: absolute;
