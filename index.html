@@ -1447,6 +1447,7 @@
 const API = "https://allcoins-server.onrender.com";
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
+let durakActionInProgress = false;
 let durakCardDragging = false;
   const tg = window.Telegram && window.Telegram.WebApp;
   // Раскрываем приложение в Telegram
@@ -1794,6 +1795,8 @@ async function durakAction(action) {
     return;
   }
 
+  if (durakActionInProgress) return;
+
   if (
     (action === "attack" || action === "defend") &&
     !selectedDurakCardId
@@ -1801,6 +1804,18 @@ async function durakAction(action) {
     alert("Сначала выбери карту.");
     return;
   }
+
+  durakActionInProgress = true;
+  const actionButtons = [
+    $("durakAttack"),
+    $("durakDefend"),
+    $("durakTake"),
+    $("durakBeat")
+  ].filter(Boolean);
+  actionButtons.forEach(button => {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+  });
 
   try {
     const result = await apiRequest("/api/durak/action", {
@@ -1813,10 +1828,16 @@ async function durakAction(action) {
       throw new Error(result.error || "Действие не выполнено.");
     }
 
-        selectedDurakCardId = null;
+    selectedDurakCardId = null;
     await loadDurakGame(currentDurakRoomId);
   } catch (error) {
     alert("Ошибка игры: " + error.message);
+  } finally {
+    durakActionInProgress = false;
+    actionButtons.forEach(button => {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    });
   }
 }
   // Кнопка «Беру»
@@ -2486,7 +2507,8 @@ setInterval(() => {
     currentDurakRoomId &&
     state.user &&
     tg?.initData &&
-    !durakCardDragging
+    !durakCardDragging &&
+    !durakActionInProgress
   ) {
     loadDurakGame(currentDurakRoomId);
   }
