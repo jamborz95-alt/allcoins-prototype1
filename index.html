@@ -2021,14 +2021,16 @@ const isAttacker =
 const isDefender =
   Number(game.playerIndex) === Number(game.defenderIndex);
 const turnMessage = $("durakTurnMessage");
+const isMyAttackTurn = isAttacker && game.phase === "attack";
+const isMyDefenseTurn = isDefender && game.phase === "defense";
 
 if (turnMessage) {
   turnMessage.style.display =
-    isAttacker && game.phase === "attack"
-      ? "flex"
-      : "none";
+    isMyAttackTurn || isMyDefenseTurn ? "flex" : "none";
 
-  turnMessage.textContent = "ТВОЙ ХОД";
+  turnMessage.textContent = isMyDefenseTurn
+    ? "ТВОЯ ЗАЩИТА"
+    : "ТВОЯ АТАКА";
 }
 
 const attackButton = $("durakAttack");
@@ -2494,7 +2496,7 @@ if (dragging) {
 }
 
     $("durakGameStatus").textContent =
-      "Игра: " + game.status +
+      (game.status === "finished" ? "Партия завершена" : "Идёт партия") +
       " · Карт в колоде: " + game.cardsLeft;
 
   } catch (error) {
