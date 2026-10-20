@@ -2207,7 +2207,10 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   });
 }
 
+let durakGameLoadInProgress = false;
+
 async function loadDurakGame(roomId) {
+  if (durakGameLoadInProgress) return;
   if (!roomId) {
     showStatus("durakGameStatus", "Не выбрана комната. Вернись к списку и открой комнату снова.");
     return;
@@ -2217,6 +2220,7 @@ async function loadDurakGame(roomId) {
     return;
   }
 
+  durakGameLoadInProgress = true;
   try {
     const game = await apiRequest("/api/durak/game", {
       roomId: roomId
@@ -2794,6 +2798,8 @@ if (Array.isArray(game.hand)) {
       "Не удалось обновить партию. " +
         String(error?.message || "Проверь соединение и попробуй ещё раз.").slice(0, 160)
     );
+  } finally {
+    durakGameLoadInProgress = false;
   }
 }
 // Автоматически обновляем состояние Дурака каждые 2 секунды
