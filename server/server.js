@@ -1064,34 +1064,61 @@ app.post("/api/durak/game", async (req, res) => {
     );
 
     if (gameResult.rows.length === 0) {
-  const roomCheck = await pool.query(
-    `SELECT id, status
-     FROM durak_rooms
-     WHERE id = $1`,
-    [roomId]
-  );
-
-  const allGames = await pool.query(
-    `SELECT room_id
-     FROM durak_games
-     ORDER BY updated_at DESC
-     LIMIT 10`
-  );
-
-  console.error("DURAK GAME NOT FOUND:", {
-    requestedRoomId: String(roomId),
-    roomExists: roomCheck.rows.length > 0,
-    roomStatus: roomCheck.rows[0]?.status || null,
-    savedGameRoomIds: allGames.rows.map(
-      row => String(row.room_id)
-    )
-  });
-
-  return res.status(404).json({
-    ok: false,
-    error: "Игра ещё не подготовлена",
-    roomId: String(roomId)
-  });
+      // Самовосстановление: если комната уже переведена в playing, но запись
+      // партии потерялась/не успела сохраниться, создаём начальное состояние.
+      const roomCheck = await pool.query(
+        `SELECT id, status, deck FROM durak_rooms WHERE id = $1`,
+        [roomId]
+      );
+      const room = roomCheck.rows[0];
+      if (room && room.status === "playing") {
+        const playersResult = await pool.query(
+          `SELECT telegram_id FROM durak_room_players WHERE room_id = $1 ORDER BY joined_at ASC`,
+          [roomId]
+        );
+        const deckSize = Number(room.deck);
+        if ([36, 52].includes(deckSize) && playersResult.rows.length >= 2 && playersResult.rows.length <= 6) {
+          const shuffled = shuffleDurakDeck(createDurakDeck(deckSize), crypto.randomInt);
+          const dealt = dealInitialHands(shuffled, playersResult.rows.length, 6);
+          const players = playersResult.rows.map((row, index) => ({ telegramId: String(row.telegram_id), hand: dealt.hands[index] }));
+          const starter = chooseStartingPlayerIndex(dealt.hands, dealt.trumpSuit);
+          const repairedState = {
+            players,
+            deck: dealt.deck,
+            trumpCard: dealt.trumpCard,
+            trumpSuit: dealt.trumpSuit,
+            table: [],
+            currentPlayerIndex: starter,
+            attackerIndex: starter,
+            defenderIndex: (starter + 1) % players.length,
+            phase: "attack",
+            status: "playing",
+            loserTelegramId: null
+          };
+          if (String(players[starter]?.telegramId) === "0") {
+            const botIndex = chooseBotAttackIndex(players[starter].hand, dealt.trumpSuit);
+            if (botIndex >= 0) {
+              const botCard = players[starter].hand.splice(botIndex, 1)[0];
+              repairedState.table.push({ attack: botCard, defense: null });
+              repairedState.phase = "defense";
+            }
+          }
+          await pool.query(
+            `INSERT INTO durak_games (room_id, game_state, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (room_id) DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()`,
+            [roomId, JSON.stringify(repairedState)]
+          );
+          gameResult.rows.push({ game_state: repairedState });
+          console.warn("Recovered missing Durak game state for room:", String(roomId));
+        }
+      }
+      if (gameResult.rows.length === 0) {
+        return res.status(404).json({
+          ok: false,
+          error: "Игра ещё не подготовлена",
+          roomId: String(roomId),
+          roomStatus: room?.status || "missing"
+        });
+      }
     }
 
     const gameState = gameResult.rows[0].game_state;
