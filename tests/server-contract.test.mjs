@@ -25,7 +25,7 @@ test("Durak room creation validates Telegram identity, players, and stake", () =
 test("only the room owner can add the test bot while the room is waiting", () => {
   const body = routeBody("/api/durak/rooms/add-bot");
   assert.match(body, /owner_telegram_id/);
-  assert.match(body, /только создателя комнаты/);
+  assert.match(body, /может только создатель комнаты/);
   assert.match(body, /room\.status !== "waiting"/);
   assert.match(body, /🤖 Бот ALLCOINS/);
   assert.match(body, /max_players/);
