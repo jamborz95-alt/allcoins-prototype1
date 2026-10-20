@@ -1591,7 +1591,10 @@ if (action === "beat") {
           if (game.table.some(item => !item.defense)) break;
           const bot = game.players[botIndex];
           const defender = game.players[game.defenderIndex];
-          const canAddMore = game.table.length < defender.hand.length;
+          if (!Number.isInteger(game.defenderHandAtRoundStart)) {
+            game.defenderHandAtRoundStart = defender.hand.length + game.table.length;
+          }
+          const canAddMore = game.table.length < game.defenderHandAtRoundStart;
           let candidateIndex = -1;
 
           if (game.table.length === 0) {
@@ -1617,6 +1620,7 @@ if (action === "beat") {
           // Бот завершает атаку только когда больше не может подкинуть карту.
           if (game.table.length > 0 && game.table.every(item => item.defense)) {
             game.table = [];
+            delete game.defenderHandAtRoundStart;
             drawCardsAfterRound();
             game.attackerIndex = game.defenderIndex;
             game.defenderIndex = nextActivePlayer(game.attackerIndex);
