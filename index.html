@@ -2051,7 +2051,14 @@ async function durakAction(action) {
     }
 
     selectedDurakCardId = null;
-    await loadDurakGame(actionRoomId);
+    // Если автообновление уже загружает партию, запрашиваем ещё одно
+    // обновление после него, чтобы показать подтверждённый ход сразу.
+    if (durakGameLoadInProgress) {
+      durakGameReloadRequested = true;
+      durakGameReloadRoomId = actionRoomId;
+    } else {
+      await loadDurakGame(actionRoomId);
+    }
   } catch (error) {
     const rawMessage = String(error?.message || "");
     const shortMessage = rawMessage.length > 180
@@ -2250,6 +2257,8 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 }
 
 let durakGameLoadInProgress = false;
+let durakGameReloadRequested = false;
+let durakGameReloadRoomId = null;
 
 async function loadDurakGame(roomId) {
   if (durakGameLoadInProgress) return;
@@ -2848,6 +2857,14 @@ if (Array.isArray(game.hand)) {
     );
   } finally {
     durakGameLoadInProgress = false;
+    if (durakGameReloadRequested) {
+      const reloadRoomId = durakGameReloadRoomId;
+      durakGameReloadRequested = false;
+      durakGameReloadRoomId = null;
+      if (reloadRoomId && reloadRoomId === currentDurakRoomId) {
+        window.setTimeout(() => loadDurakGame(reloadRoomId), 0);
+      }
+    }
   }
 }
 // Автоматически обновляем состояние Дурака каждые 2 секунды
