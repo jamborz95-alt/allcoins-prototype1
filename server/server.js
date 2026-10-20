@@ -1550,7 +1550,7 @@ if (action === "beat") {
     // Автоматический ход тестового бота (telegram_id = 0).
     const botIndex = game.players.findIndex(p => String(p.telegramId) === "0");
     if (botIndex >= 0) {
-      for (let botStep = 0; botStep < 3 && game.status === "playing"; botStep++) {
+      for (let botStep = 0; botStep < 12 && game.status === "playing"; botStep++) {
         if (game.attackerIndex === botIndex) {
           if (game.table.some(item => !item.defense)) break;
           const bot = game.players[botIndex];
@@ -1605,6 +1605,8 @@ if (action === "beat") {
             game.phase = game.table.some(item => item.attack && !item.defense)
               ? "defense"
               : "attack";
+            // Продолжаем отбивать остальные открытые атаки в этом же запросе.
+            continue;
           } else {
             for (const item of game.table) {
               if (item.attack) bot.hand.push(item.attack);
