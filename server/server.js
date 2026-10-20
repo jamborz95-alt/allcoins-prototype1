@@ -391,9 +391,9 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
 );
 
     await pool.query(
-      `INSERT INTO durak_room_players (room_id, telegram_id)
-       VALUES ($1, $2)`,
-      [roomResult.rows[0].id, String(user.id)]
+      `INSERT INTO durak_room_players (room_id, telegram_id, display_name)
+       VALUES ($1, $2, $3)`,
+      [roomResult.rows[0].id, String(user.id), user.first_name || user.username || "Игрок"]
     );
 
     return res.json({
@@ -494,10 +494,10 @@ app.post("/api/durak/rooms/add-bot", async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO durak_room_players (room_id, telegram_id, is_ready)
-       VALUES ($1, 0, TRUE)
+      `INSERT INTO durak_room_players (room_id, telegram_id, is_ready, display_name)
+       VALUES ($1, 0, TRUE, '🤖 Бот ALLCOINS')
        ON CONFLICT (room_id, telegram_id)
-       DO UPDATE SET is_ready = TRUE`,
+       DO UPDATE SET is_ready = TRUE, display_name = '🤖 Бот ALLCOINS'`,
       [roomId]
     );
 
@@ -583,9 +583,9 @@ app.post("/api/durak/rooms/join", async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO durak_room_players (room_id, telegram_id)
-       VALUES ($1, $2)`,
-      [roomId, telegramId]
+      `INSERT INTO durak_room_players (room_id, telegram_id, display_name)
+       VALUES ($1, $2, $3)`,
+      [roomId, telegramId, user.first_name || user.username || "Игрок"]
     );
 
     return res.json({
@@ -1095,6 +1095,19 @@ console.log("DURAK DEBUG:", {
       });
     }
 
+    const roomNamesResult = await pool.query(
+      `SELECT telegram_id, display_name
+       FROM durak_room_players
+       WHERE room_id = $1`,
+      [roomId]
+    );
+    const roomNames = new Map(
+      roomNamesResult.rows.map(row => [
+        String(row.telegram_id),
+        row.display_name
+      ])
+    );
+
     return res.json({
   ok: true,
   roomId: String(roomId),
@@ -1115,8 +1128,9 @@ console.log("DURAK DEBUG:", {
     label: String(p.telegramId) === "0"
       ? "🤖 Бот ALLCOINS"
       : String(p.telegramId) === String(user.id)
-        ? "👤 Ты"
-        : "Игрок " + (index + 1)
+        ? "👤 " + (user.first_name || user.username || "Ты")
+        : "👤 " + (roomNames.get(String(p.telegramId)) || "Игрок " + (index + 1)),
+    cardsCount: Array.isArray(p.hand) ? p.hand.length : 0
   }))
 });
   } catch (error) {
@@ -1713,7 +1727,12 @@ async function startServer() {
       ADD COLUMN IF NOT EXISTS is_ready BOOLEAN NOT NULL DEFAULT FALSE
     `);
 
-    console.log("Durak player readiness column is ready");
+    await pool.query(`
+      ALTER TABLE durak_room_players
+      ADD COLUMN IF NOT EXISTS display_name TEXT
+    `);
+
+    console.log("Durak player readiness and display-name columns are ready");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_games (
         room_id BIGINT PRIMARY KEY
