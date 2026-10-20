@@ -49,14 +49,9 @@ test("the bot closes a fully covered attack when it cannot throw in another card
 });
 
 
-test("the bot prefers non-trump low cards for attacks", () => {
-  assert.match(body, /function chooseBotAttackIndex\(hand, requiredRanks = null\)/);
-  assert.match(body, /aTrump - bTrump \|\| cardRank\(a\.card\) - cardRank\(b\.card\)/);
-  assert.match(body, /candidateIndex = chooseBotAttackIndex\(bot\.hand\)/);
-});
-
-test("the bot chooses the lowest suitable defense and avoids spending trump unnecessarily", () => {
-  assert.match(body, /function chooseBotDefenseIndex\(hand, attack\)/);
-  assert.match(body, /aUsesTrump - bUsesTrump \|\| cardRank\(a\.card\) - cardRank\(b\.card\)/);
-  assert.match(body, /const defenseIndex = chooseBotDefenseIndex\(bot\.hand, openItem\.attack\)/);
+test("the production server uses shared tested bot card-selection rules", () => {
+  assert.match(source, /chooseBotAttackIndex, chooseBotDefenseIndex/);
+  assert.match(body, /chooseBotAttackIndex\(bot\.hand, game\.trumpSuit\)/);
+  assert.match(body, /chooseBotAttackIndex\(bot\.hand, game\.trumpSuit, tableRanks\)/);
+  assert.match(body, /chooseBotDefenseIndex\(bot\.hand, openItem\.attack, game\.trumpSuit\)/);
 });
