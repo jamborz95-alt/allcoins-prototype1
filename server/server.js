@@ -948,6 +948,19 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       status: "playing"
     };
 
+    // Если младший козырь у тестового бота, он сразу делает первый ход.
+    if (String(gamePlayers[startingPlayerIndex]?.telegramId) === "0") {
+      const botCardIndex = chooseBotAttackIndex(
+        gamePlayers[startingPlayerIndex].hand,
+        trumpSuit
+      );
+      if (botCardIndex >= 0) {
+        const botCard = gamePlayers[startingPlayerIndex].hand.splice(botCardIndex, 1)[0];
+        gameState.table.push({ attack: botCard, defense: null });
+        gameState.phase = "defense";
+      }
+    }
+
     await pool.query(
       `INSERT INTO durak_games (room_id, game_state, updated_at)
        VALUES ($1, $2::jsonb, NOW())
