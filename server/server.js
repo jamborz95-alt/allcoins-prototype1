@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import pg from "pg";
 import crypto from "node:crypto";
+import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard } from "./durak-rules.js";
 
 const { Pool } = pg;
 const app = express();
@@ -880,39 +881,8 @@ app.post("/api/durak/rooms/start", async (req, res) => {
         totalPlayers: totalGuests
       });
     }
-       // Создание колоды для Дурака
-const suits = ["♠", "♥", "♦", "♣"];
-
-const selectedDeck = Number(room.deck || 36);
-
-const ranks36 = [
-  "6", "7", "8", "9", "10", "В", "Д", "К", "Т"
-];
-
-const ranks52 = [
-  "2", "3", "4", "5", "6", "7", "8",
-  "9", "10", "В", "Д", "К", "Туз"
-];
-
-const ranks = selectedDeck === 52 ? ranks52 : ranks36;
-
-const deck = [];
-
-for (const suit of suits) {
-  for (const rank of ranks) {
-    deck.push({
-      suit,
-      rank,
-      id: `${rank}${suit}`
-    });
-  }
-}
-
-    // Перемешивание колоды
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = crypto.randomInt(i + 1);
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    } 
+       // Создание и перемешивание колоды для Дурака
+const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.randomInt);
         // Получаем игроков комнаты
     const playersResult = await pool.query(
       `SELECT telegram_id
@@ -1255,44 +1225,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    const rankOrder = {
-      "2": 2,
-      "3": 3,
-      "4": 4,
-      "5": 5,
-      "6": 6,
-      "7": 7,
-      "8": 8,
-      "9": 9,
-      "10": 10,
-      "В": 11,
-      "J": 11,
-      "Д": 12,
-      "Q": 12,
-      "К": 13,
-      "K": 13,
-      "Т": 14,
-      "Туз": 14,
-      "A": 14
-    };
-
-    function cardRank(card) {
-      return rankOrder[String(card?.rank)] || 0;
-    }
-
-    function beatsCard(defense, attack) {
-      if (!defense || !attack) return false;
-
-      const ds = String(defense.suit ?? "");
-      const as = String(attack.suit ?? "");
-      const trump = String(game.trumpSuit ?? "");
-
-      if (ds === as) {
-        return cardRank(defense) > cardRank(attack);
-      }
-
-      return ds === trump && as !== trump;
-    }
+    const canBeatCard = (defense, attack) => beatsCard(defense, attack, game.trumpSuit);
 
     function nextActivePlayer(startIndex, excluded = []) {
       for (let step = 1; step <= count; step++) {
@@ -1476,7 +1409,7 @@ app.post("/api/durak/action", async (req, res) => {
         });
       }
 
-      if (!beatsCard(card, tableItem.attack)) {
+      if (!canBeatCard(card, tableItem.attack)) {
         return res.status(400).json({
           ok: false,
           error: "Этой картой нельзя побить атакующую карту"
@@ -1621,7 +1554,7 @@ if (action === "beat") {
           const openItem = game.table.find(item => item.attack && !item.defense);
           if (!openItem) break;
           const bot = game.players[botIndex];
-          const defenseIndex = bot.hand.findIndex(card => beatsCard(card, openItem.attack));
+          const defenseIndex = bot.hand.findIndex(card => canBeatCard(card, openItem.attack));
           if (defenseIndex >= 0) {
             openItem.defense = bot.hand.splice(defenseIndex, 1)[0];
             game.phase = game.table.some(item => item.attack && !item.defense)
