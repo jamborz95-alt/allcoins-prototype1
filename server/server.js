@@ -1204,6 +1204,25 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     const game = result.rows[0].game_state;
+    const actionRequestId = String(req.body?.actionRequestId || "").trim();
+
+    if (actionRequestId && actionRequestId.length > 100) {
+      return res.status(400).json({
+        ok: false,
+        error: "Неверный идентификатор действия"
+      });
+    }
+
+    // Повтор того же запроса после успешного COMMIT не должен применяться повторно.
+    // FOR UPDATE выше сериализует запросы одной комнаты, поэтому второй запрос
+    // увидит сохранённый идентификатор первого.
+    if (actionRequestId && game?.lastActionRequestId === actionRequestId) {
+      return res.json({
+        ok: true,
+        duplicate: true,
+        message: "Это действие уже было обработано"
+      });
+    }
 
     if (
       !game ||
@@ -1627,6 +1646,12 @@ if (action === "beat") {
         }
         break;
       }
+    }
+
+    // Сохраняем идентификатор запроса вместе с состоянием партии.
+    // Повторная доставка того же запроса после COMMIT не повторит игровой ход.
+    if (actionRequestId) {
+      game.lastActionRequestId = actionRequestId;
     }
 
     // Сохраняем состояние партии внутри транзакции.
