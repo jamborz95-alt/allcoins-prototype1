@@ -2064,13 +2064,25 @@ async function durakAction(action) {
     const shortMessage = rawMessage.length > 180
       ? rawMessage.slice(0, 177) + "..."
       : rawMessage;
+    const statusMatch = rawMessage.match(/^Ошибка сервера (\d{3}):/);
+    const responseStatus = statusMatch ? Number(statusMatch[1]) : 0;
+    // Ответ 4xx означает, что сервер отклонил ход и его не нужно повторять
+    // с тем же ID. Сохраняем pending только для сетевых ошибок и 5xx,
+    // когда результат действия может оставаться неизвестным.
+    const actionRejected = responseStatus >= 400 && responseStatus < 500;
+    if (actionRejected) {
+      pendingDurakAction = null;
+    }
     showStatus(
       "durakGameStatus",
       actionConfirmed
         ? "Ход принят сервером, но не удалось обновить отображение. Открой партию заново. " +
           (shortMessage || "")
-        : "Не удалось подтвердить ход. Повтори то же действие, чтобы безопасно проверить результат. " +
-          (shortMessage || "Проверь соединение и попробуй ещё раз.")
+        : actionRejected
+          ? "Сервер отклонил ход. Выбери допустимое действие и попробуй ещё раз. " +
+            (shortMessage || "")
+          : "Не удалось подтвердить ход. Повтори то же действие, чтобы безопасно проверить результат. " +
+            (shortMessage || "Проверь соединение и попробуй ещё раз.")
     );
     console.warn("Ход в Дураке не выполнен:", error);
   } finally {
