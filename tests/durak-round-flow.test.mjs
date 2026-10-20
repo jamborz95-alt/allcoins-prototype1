@@ -55,3 +55,9 @@ test("the production server uses shared tested bot card-selection rules", () => 
   assert.match(body, /chooseBotAttackIndex\(bot\.hand, game\.trumpSuit, tableRanks\)/);
   assert.match(body, /chooseBotDefenseIndex\(bot\.hand, openItem\.attack, game\.trumpSuit\)/);
 });
+
+
+test("the defender keeps the defense phase while any attack card remains uncovered", () => {
+  assert.match(body, /if \(hasUnbeatenCards\)\s*\{\s*game\.phase = "defense";/);
+  assert.doesNotMatch(body, /game\.phase = "defend";/);
+});
