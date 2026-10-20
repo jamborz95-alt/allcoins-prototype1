@@ -47,6 +47,9 @@ test("starting a game checks owner, minimum players, and guest readiness", () =>
   assert.match(body, /Для игры шестью игроками выбери колоду на 52 карты/);
   assert.match(body, /readyGuests < totalGuests/);
   assert.match(body, /createDurakDeck/);
+  assert.match(body, /dealInitialHands\(deck, playersResult\.rows\.length, 6\)/);
+  assert.match(body, /hand: dealt\.hands\[index\]/);
+  assert.match(body, /deck: remainingDeck/);
   assert.match(body, /INSERT INTO durak_games/);
   assert.match(body, /SET status = 'playing'/);
 });
