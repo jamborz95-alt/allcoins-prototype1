@@ -1213,10 +1213,13 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    // Повтор того же запроса после успешного COMMIT не должен применяться повторно.
-    // FOR UPDATE выше сериализует запросы одной комнаты, поэтому второй запрос
-    // увидит сохранённый идентификатор первого.
-    if (actionRequestId && game?.lastActionRequestId === actionRequestId) {
+    // Храним небольшой список последних обработанных запросов, а не только
+    // самый последний: повторная доставка может прийти уже после следующего хода.
+    // FOR UPDATE выше сериализует запросы комнаты.
+    const processedActionRequestIds = Array.isArray(game?.processedActionRequestIds)
+      ? game.processedActionRequestIds
+      : (game?.lastActionRequestId ? [game.lastActionRequestId] : []);
+    if (actionRequestId && processedActionRequestIds.includes(actionRequestId)) {
       return res.json({
         ok: true,
         duplicate: true,
@@ -1648,10 +1651,14 @@ if (action === "beat") {
       }
     }
 
-    // Сохраняем идентификатор запроса вместе с состоянием партии.
-    // Повторная доставка того же запроса после COMMIT не повторит игровой ход.
+    // Сохраняем последние 100 идентификаторов вместе с состоянием партии.
+    // Это защищает и от повторной доставки старого запроса после новых ходов.
     if (actionRequestId) {
-      game.lastActionRequestId = actionRequestId;
+      game.processedActionRequestIds = [
+        ...processedActionRequestIds.filter(id => id !== actionRequestId),
+        actionRequestId
+      ].slice(-100);
+      game.lastActionRequestId = actionRequestId; // совместимость со старым состоянием партии
     }
 
     // Сохраняем состояние партии внутри транзакции.
