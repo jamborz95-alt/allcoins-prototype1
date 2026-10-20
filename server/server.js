@@ -837,10 +837,27 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     }
 
     if (room.status !== "waiting") {
-      return res.status(400).json({
-        ok: false,
-        error: "Игра уже началась или завершена"
-      });
+      // Восстанавливаем комнату, если предыдущий запуск оборвался
+      // и статус сменился на playing, но состояние партии не сохранилось.
+      const savedGame = await pool.query(
+        "SELECT room_id FROM durak_games WHERE room_id = $1",
+        [roomId]
+      );
+
+      if (room.status === "playing" && savedGame.rows.length === 0) {
+        await pool.query(
+          "UPDATE durak_rooms SET status = 'waiting' WHERE id = $1",
+          [roomId]
+        );
+        room.status = "waiting";
+        console.warn("Recovered stuck Durak room without game state:", String(roomId));
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error: "Игра уже началась или завершена",
+          roomId: String(roomId)
+        });
+      }
     }
 
     const countResult = await pool.query(
