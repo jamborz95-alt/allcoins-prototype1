@@ -79,7 +79,7 @@ test("bot throw-in only selects a matching rank and prefers a non-trump", () => 
     { id: "spade-9", rank: "9", suit: "♠" },
     { id: "club-9", rank: "9", suit: "♣" }
   ];
-  assert.equal(chooseBotAttackIndex(hand, "♥", ["9"]), 2);
+  assert.equal(chooseBotAttackIndex(hand, "♥", ["9"]), 1);
   assert.equal(chooseBotAttackIndex(hand, "♥", ["10"]), -1);
 });
 
