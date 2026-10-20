@@ -1730,7 +1730,12 @@ button.textContent = "Войти";
     );
 
   } catch (error) {
-    alert("Ошибка входа: " + error.message);
+    const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
+    showStatus(
+      "durakGameStatus",
+      "Не удалось войти в комнату: " + message
+    );
+    alert("Не удалось войти в комнату. " + message);
   } finally {
     button.disabled = false;
   }
