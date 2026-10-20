@@ -1475,7 +1475,10 @@
   #durakGame #durakTrump > div:first-child { display: none !important; }
   #durakGame #durakTrump > div:nth-child(2) { margin: 0 !important; }
   #durakGame #durakTrump > div:nth-child(2) > div:first-child { left: 0 !important; top: 0 !important; }
-  #durakGame #durakTrump > div:nth-child(2) > div:nth-child(2) { left: 28px !important; top: -1px !important; }
+  #durakGame #durakTrump > div:nth-child(2) > div:nth-child(2) { left: 0 !important; top: 0 !important; }
+  #durakGame #durakTrump > div:nth-child(2) > div:nth-child(3) { left: 28px !important; top: -1px !important; }
+  #durakGame #durakTable { padding: 100px 118px 64px 60px !important; min-height: 250px !important; }
+  #durakGame .durak-player[data-seat="top-right"] { left: 58% !important; top: 14% !important; }
   #durakGame .durak-player { width: min(21%, 66px) !important; max-width: 66px !important; min-height: 28px !important; padding: 3px 3px !important; border-radius: 6px !important; font-size: 8px !important; line-height: 1.08 !important; }
   #durakGame .durak-player-name { font-size: 8px !important; }
   #durakGame .durak-player-meta { font-size: 7px !important; margin-top: 1px !important; }
@@ -3714,7 +3717,7 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
       else if (/right/.test(seatName)) x = Math.max(x, 0.90);
       else if (seatName === "top") { x = Math.min(x, 0.68); y = Math.min(y, 0.18); }
       else if (seatName === "bottom") y = Math.max(y, 0.88);
-      if (seatName === "top-right") { x = Math.min(x, 0.64); y = Math.min(y, 0.18); }
+      if (seatName === "top-right") { x = Math.min(x, 0.58); y = Math.min(y, 0.22); }
       if (seatName === "top-left") { x = Math.max(x, 0.24); y = Math.min(y, 0.18); }
       if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.22);
       if (/bottom/.test(seatName) && seatName !== "bottom") y = Math.max(y, 0.82);
