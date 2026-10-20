@@ -2304,6 +2304,16 @@ async function durakAction(action) {
       await loadDurakGame(actionRoomId);
     }
   } catch (error) {
+    // Если сервер отклонил ход или сеть оборвалась, не оставляем
+    // подвешенную копию карты и скрытую карту в руке.
+    if (durakPendingDragFlyer) {
+      durakPendingDragFlyer.remove();
+      durakPendingDragFlyer = null;
+    }
+    document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
+      element.style.opacity = "";
+      element.style.transition = "";
+    });
     const rawMessage = String(error?.message || "");
     const shortMessage = rawMessage.length > 180
       ? rawMessage.slice(0, 177) + "..."
