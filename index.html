@@ -3610,9 +3610,19 @@ $("openDurak").onclick = () => {
 $("durakBack").onclick = () => {
   const game = $("durakGame");
 
+  // Останавливаем обновление комнаты ожидания и сбрасываем активную партию,
+  // чтобы скрытый экран не продолжал опрашивать сервер.
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
+  durakWaitingRoom = null;
+  currentDurakRoomId = null;
+
   game.classList.remove("durak-fullscreen");
   game.style.display = "none";
 
+  $("durakWaitingPanel").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "none";
   $("durakBoard").style.display = "none";
