@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDurakDeck, beatsCard, cardRank, dealInitialHands, shuffleDurakDeck, chooseBotAttackIndex, chooseBotDefenseIndex } from "../server/durak-rules.js";
+import { createDurakDeck, beatsCard, cardRank, dealInitialHands, shuffleDurakDeck, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex } from "../server/durak-rules.js";
 
 test("a trump beats a non-trump attack", () => {
   assert.equal(beatsCard({ rank: "6", suit: "♥" }, { rank: "Туз", suit: "♠" }, "♥"), true);
@@ -101,4 +101,22 @@ test("bot defense uses the lowest trump that can beat a non-trump attack", () =>
   ];
   const attack = { id: "spade-ace", rank: "Туз", suit: "♠" };
   assert.equal(chooseBotDefenseIndex(hand, attack, "♥"), 1);
+});
+
+
+test("the player with the lowest trump starts the game", () => {
+  const hands = [
+    [{ id: "king-trump", rank: "К", suit: "♥" }],
+    [{ id: "six-trump", rank: "6", suit: "♥" }],
+    [{ id: "seven-trump", rank: "7", suit: "♥" }]
+  ];
+  assert.equal(chooseStartingPlayerIndex(hands, "♥"), 1);
+});
+
+test("if nobody has a trump in hand, the first joined player starts", () => {
+  const hands = [
+    [{ id: "spade-6", rank: "6", suit: "♠" }],
+    [{ id: "club-7", rank: "7", suit: "♣" }]
+  ];
+  assert.equal(chooseStartingPlayerIndex(hands, "♥"), 0);
 });
