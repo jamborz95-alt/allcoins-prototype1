@@ -274,6 +274,35 @@
 }
 
 /* ALLCOINS — изображения классических карт */
+/* Плавное движение карт: рука, перетаскивание и сброс на стол */
+#durakGame #durakHand .durak-card {
+  will-change: transform;
+  transform-origin: 50% 80%;
+  transition: transform 180ms cubic-bezier(.2,.75,.25,1),
+              box-shadow 180ms ease,
+              opacity 160ms ease;
+}
+#durakGame #durakHand .durak-card:active {
+  cursor: grabbing;
+}
+#durakGame #durakHand .durak-card.is-dragging {
+  transition: none !important;
+  z-index: 1000;
+  box-shadow: 0 14px 28px rgba(0,0,0,.35);
+}
+.durak-flying-card {
+  position: fixed !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+  z-index: 20000 !important;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  box-shadow: 0 12px 24px rgba(0,0,0,.35) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #durakGame #durakHand .durak-card { transition: none !important; }
+}
+
 #durakGame .durak-card.premium-card img {
   display: block;
   width: 100%;
@@ -1828,6 +1857,17 @@ async function durakAction(action) {
       throw new Error(result.error || "Действие не выполнено.");
     }
 
+    const playedCard = selectedDurakCardId
+      ? Array.from(document.querySelectorAll("#durakHand .durak-card"))
+          .find(cardElement => cardElement.dataset.cardId === String(selectedDurakCardId))
+      : null;
+    const targetElement = action === "defend"
+      ? $("durakTable").querySelector('.durak-card[data-table-card-type="attack"]')
+      : $("durakTable");
+    if (playedCard && targetElement) {
+      await animateDurakCardToTarget(playedCard, targetElement);
+    }
+
     selectedDurakCardId = null;
     await loadDurakGame(currentDurakRoomId);
   } catch (error) {
@@ -1957,6 +1997,54 @@ const imageName = cardImages[rank.toUpperCase() + "-" + suit];
   }
 
   return cardElement;
+}
+
+// Короткая анимация: карта визуально перелетает из руки на стол.
+function animateDurakCardToTarget(cardElement, targetElement) {
+  if (!cardElement || !targetElement || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return Promise.resolve();
+  }
+
+  const from = cardElement.getBoundingClientRect();
+  const to = targetElement.getBoundingClientRect();
+  if (!from.width || !from.height || !to.width || !to.height) {
+    return Promise.resolve();
+  }
+
+  const flyer = cardElement.cloneNode(true);
+  flyer.classList.add("durak-flying-card");
+  flyer.classList.remove("selected", "is-dragging");
+  flyer.style.left = from.left + "px";
+  flyer.style.top = from.top + "px";
+  flyer.style.width = from.width + "px";
+  flyer.style.height = from.height + "px";
+  flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1)";
+  flyer.style.opacity = "1";
+  document.body.appendChild(flyer);
+
+  // Принудительно фиксируем исходную позицию перед запуском transition.
+  void flyer.getBoundingClientRect();
+
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + Math.min(to.height * 0.42, 46) - (from.top + from.height / 2);
+
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      flyer.removeEventListener("transitionend", finish);
+      flyer.remove();
+      resolve();
+    };
+    flyer.addEventListener("transitionend", finish, { once: true });
+    flyer.style.transition = "transform 340ms cubic-bezier(.18,.72,.22,1), opacity 340ms ease";
+    requestAnimationFrame(() => {
+      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${dx >= 0 ? 5 : -5}deg) scale(.92)`;
+      flyer.style.opacity = ".92";
+    });
+    window.setTimeout(finish, 430);
+  });
 }
 
 async function loadDurakGame(roomId) {
