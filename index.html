@@ -2560,11 +2560,12 @@ if (Array.isArray(game.hand)) {
 
     // Перетаскивание через отдельную копию поверх стола.
     cardElement.onpointerdown = (event) => {
-      if (event.button !== 0 || durakActionInProgress) return;
+      // Касание на Android не блокируется проверкой кнопки мыши.
+      if ((event.pointerType === "mouse" && event.button !== 0) || durakActionInProgress) return;
       event.preventDefault();
 
-      if (event.pointerType === "mouse" && event.button !== 0) return;
       const pointerId = event.pointerId;
+      try { cardElement.setPointerCapture(pointerId); } catch (_) {}
       const startX = event.clientX;
       const startY = event.clientY;
       const originalRect = cardElement.getBoundingClientRect();
