@@ -1463,7 +1463,7 @@ const hasUnbeatenCards = game.table.some(
 );
 
 if (hasUnbeatenCards) {
-  game.phase = "defend";
+  game.phase = "defense";
 } else {
   game.phase = "attack";
 }
