@@ -24,6 +24,7 @@ try {
   let mockDurakHasLoser = false;
   let mockDurakIsLoser = false;
   let failNextDurakAction = false;
+  let rejectNextDurakAction = false;
   const durakActionRequestIds = [];
   let mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -85,6 +86,14 @@ try {
           status: 503,
           contentType: "application/json",
           body: JSON.stringify({ ok: false, error: "Временная ошибка сети" })
+        });
+      }
+      if (rejectNextDurakAction) {
+        rejectNextDurakAction = false;
+        return route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: false, error: "Недопустимый ход" })
         });
       }
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, message: "Ход принят" }) });
@@ -202,6 +211,22 @@ try {
     "retry after uncertain response must reuse the original action request ID");
   assert.equal(await page.evaluate(() => pendingDurakAction), null,
     "pending action should clear after server confirmation");
+
+  // A definitive 4xx rejection must release the pending action so the player
+  // can choose a different move instead of being locked to a rejected request.
+  rejectNextDurakAction = true;
+  await page.evaluate(async () => {
+    selectedDurakCardId = "card-6-hearts";
+    await durakAction("attack");
+  });
+  assert.equal(await page.evaluate(() => pendingDurakAction), null,
+    "a definitively rejected action should not remain pending");
+  const rejectedRequestId = durakActionRequestIds.at(-1);
+  await page.evaluate(async () => { await durakAction("take"); });
+  assert.notEqual(durakActionRequestIds.at(-1), rejectedRequestId,
+    "a new move after a 4xx rejection should receive a fresh request ID");
+  assert.equal(await page.evaluate(() => pendingDurakAction), null,
+    "the replacement move should complete normally");
 
   // A successful action during an active poll must queue a fresh game-state load.
   await page.evaluate(async () => {
