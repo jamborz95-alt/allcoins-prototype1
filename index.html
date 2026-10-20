@@ -3323,23 +3323,28 @@ $("durakStartButton").onclick = async function () {
       );
     }
 
+    const startedRoomId = durakWaitingRoom.id;
+
+    // Останавливаем обновление комнаты ожидания перед переходом к партии.
+    if (durakWaitingRefreshTimer !== null) {
+      clearInterval(durakWaitingRefreshTimer);
+      durakWaitingRefreshTimer = null;
+    }
+
+    currentDurakRoomId = startedRoomId;
     $("durakWaitingStatus").textContent =
       "🎮 Игра начинается! Загружаем карты...";
 
     $("durakWaitingPanel").style.display = "none";
+    $("durakGame").style.display = "block";
+    $("durakGame").classList.add("durak-fullscreen");
+    $("durakBoard").style.display = "block";
+    $("durakCreatePanel").style.display = "none";
+    $("durakRoomsPanel").style.display = "none";
+    $("durakRoomActions").style.display = "none";
+    $("durakEntry").style.display = "none";
 
-$("durakGame").style.display = "block";
-$("durakGame").classList.add("durak-fullscreen");
-
-$("durakBoard").style.display = "block";
-
-$("durakCreatePanel").style.display = "none";
-$("durakRoomsPanel").style.display = "none";
-$("durakRoomActions").style.display = "none";
-$("durakEntry").style.display = "none";
-
-await loadDurakGame(durakWaitingRoom.id);
-
+    await loadDurakGame(startedRoomId);
     await loadDurakRooms();
 
   } catch (error) {
