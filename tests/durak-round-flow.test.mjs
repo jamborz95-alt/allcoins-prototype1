@@ -36,3 +36,14 @@ test("finished games are persisted under the same locked transaction", () => {
   assert.match(body, /UPDATE durak_games[\s\S]*JSON\.stringify\(game\)/);
   assert.match(body, /await client\.query\("COMMIT"\)/);
 });
+
+
+test("the bot may throw in a matching rank while the defender still has capacity", () => {
+  assert.match(body, /const canAddMore = game.table.length < defender.hand.length/);
+  assert.match(body, /bot.hand.findIndex(card => tableRanks.includes(card.rank))/);
+  assert.match(body, /Бот завершает атаку только когда больше не может подкинуть карту/);
+});
+
+test("the bot closes a fully covered attack when it cannot throw in another card", () => {
+  assert.match(body, /if (game.table.length > 0 && game.table.every(item => item.defense))[sS]*?game.table = [][sS]*?drawCardsAfterRound()/);
+});
