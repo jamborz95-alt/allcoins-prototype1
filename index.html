@@ -1802,7 +1802,31 @@ deckBox.style.cssText = `
   gap: 5px;
   margin: 0;
 `;
+// Нижняя карта колоды ALLCOINS
+const deckCardBack = document.createElement("div");
 
+deckCardBack.style.cssText = `
+  position: absolute;
+  top: 5px;
+  left: 4px;
+  width: 48px;
+  height: 68px;
+  border: 2px solid #d4af37;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #182747 0px,
+      #182747 3px,
+      #294779 3px,
+      #294779 6px
+    );
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.35);
+  box-sizing: border-box;
+  z-index: 1;
+`;
+
+deckStack.appendChild(deckCardBack);
 deckStack.appendChild(deckCard);
 
 if (game.trumpCard) {
