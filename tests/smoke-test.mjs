@@ -151,28 +151,24 @@ try {
   // Match the active-room state established by the real room-entry flow.
   await page.evaluate(() => { currentDurakRoomId = "77"; });
 
-  // The visible card and attack button must perform a real UI-driven move.
+  // Drag a card onto the play area to attack; no action button is used.
   const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
-  await page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]').click();
-  await page.waitForFunction(
-    () => selectedDurakCardId === "card-6-hearts",
-    { timeout: 3000 }
-  );
-  assert.equal(await page.locator("#durakAttack").isVisible(), true,
-    "attack button should be visible during the player's attack turn");
-  const uiMoveResponse = page.waitForResponse((response) =>
-    response.url().includes("/api/durak/action"), { timeout: 5000 }
-  );
-  await page.locator("#durakAttack").click();
-  await uiMoveResponse;
+  const attackCard = page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]');
+  const tableTarget = page.locator("#durakTable");
+  const attackBox = await attackCard.boundingBox();
+  const tableBox = await tableTarget.boundingBox();
+  assert.ok(attackBox && tableBox, "hand card and play area should be visible");
+  const attackResponse = page.waitForResponse((response) => response.url().includes("/api/durak/action"), { timeout: 5000 });
+  await page.mouse.move(attackBox.x + attackBox.width / 2, attackBox.y + attackBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(tableBox.x + tableBox.width / 2, tableBox.y + tableBox.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await attackResponse;
   await page.waitForFunction(() => !durakActionInProgress && pendingDurakAction === null);
   const uiMoveCalls = apiCalls.filter((call) => call.path === "/api/durak/action");
-  assert.equal(uiMoveCalls.length, actionsBeforeUiMove + 1,
-    "clicking a card and the visible attack button should submit exactly one move");
-  assert.equal(uiMoveCalls.at(-1).body.action, "attack",
-    "the visible attack button should send the attack action");
-  assert.equal(uiMoveCalls.at(-1).body.cardId, "card-6-hearts",
-    "the selected card should be included in the attack request");
+  assert.equal(uiMoveCalls.length, actionsBeforeUiMove + 1, "dragging a card to the play area submits one move");
+  assert.equal(uiMoveCalls.at(-1).body.action, "attack", "dragging onto the play area sends attack");
+  assert.equal(uiMoveCalls.at(-1).body.cardId, "card-6-hearts", "dragged card ID is sent");
 
   // A defending player should see a defense-specific prompt.
   mockDurakPhase = "defense";
