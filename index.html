@@ -1365,6 +1365,21 @@
   }
 }
 
+
+/* ALLCOINS: атака и защита только движением карт, без отдельных кнопок */
+#durakGame #durakControls #durakAttack,
+#durakGame #durakControls #durakDefend {
+  display: none !important;
+}
+#durakGame #durakHand .durak-card {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+#durakGame #durakTable .durak-card[data-table-card-type="attack"] {
+  cursor: crosshair;
+}
 </style>
 </head>
 <body>
