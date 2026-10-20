@@ -1114,7 +1114,13 @@ console.log("DURAK DEBUG:", {
 });
 // Игровые действия Дурак Онлайн
 app.post("/api/durak/action", async (req, res) => {
+  let client;
+  let transactionOpen = false;
   try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+
     const user = verifyTelegram(req.body?.initData);
 
     if (!user?.id) {
@@ -1141,7 +1147,7 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     // Проверяем, что игрок находится в комнате
-    const membership = await pool.query(
+    const membership = await client.query(
       `SELECT telegram_id
        FROM durak_room_players
        WHERE room_id = $1 AND telegram_id = $2`,
@@ -1156,10 +1162,11 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     // Загружаем состояние партии
-    const result = await pool.query(
+    const result = await client.query(
       `SELECT game_state
        FROM durak_games
-       WHERE room_id = $1`,
+       WHERE room_id = $1
+       FOR UPDATE`,
       [roomId]
     );
 
@@ -1583,14 +1590,17 @@ if (action === "beat") {
       }
     }
 
-    // Сохраняем состояние партии
-    await pool.query(
+    // Сохраняем состояние партии внутри транзакции.
+    await client.query(
       `UPDATE durak_games
        SET game_state = $1::jsonb,
            updated_at = NOW()
        WHERE room_id = $2`,
       [JSON.stringify(game), roomId]
     );
+
+    await client.query("COMMIT");
+    transactionOpen = false;
 
     return res.json({
       ok: true,
@@ -1603,12 +1613,22 @@ if (action === "beat") {
       cardsLeft: game.deck.length
     });
   } catch (error) {
+    if (client && transactionOpen) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Durak action rollback error:", rollbackError.message);
+      }
+      transactionOpen = false;
+    }
     console.error("Durak action error:", error.message);
 
     return res.status(500).json({
       ok: false,
       error: "Не удалось выполнить действие"
     });
+  } finally {
+    if (client) client.release();
   }
 });
 
