@@ -1974,6 +1974,9 @@ async function durakAction(action) {
 
   durakActionInProgress = true;
   const actionRoomId = currentDurakRoomId;
+  const actionRequestId = (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function")
+    ? globalThis.crypto.randomUUID()
+    : "durak-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   const actionCardId =
     action === "attack" || action === "defend"
       ? selectedDurakCardId
@@ -1993,6 +1996,7 @@ async function durakAction(action) {
     const result = await apiRequest("/api/durak/action", {
       roomId: actionRoomId,
       action: action,
+      actionRequestId,
       ...(actionCardId ? { cardId: actionCardId } : {})
     });
 
