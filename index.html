@@ -2686,7 +2686,14 @@ if (Array.isArray(game.hand)) {
         cardElement.style.transform = "";
         if (flyer) flyer.remove();
 
-        if (!droppedOnTable) return;
+        if (!droppedOnTable) {
+          // Не оставляем скрытый выбор карты, если игрок отпустил её вне стола.
+          if (selectedDurakCardId === card.id) {
+            selectedDurakCardId = null;
+          }
+          showStatus("durakGameStatus", "Отпусти карту на игровом столе, чтобы сыграть её.");
+          return;
+        }
 
         selectedDurakCardId = card.id;
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
