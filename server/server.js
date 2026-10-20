@@ -1603,7 +1603,7 @@ if (action === "beat") {
           if (defenseIndex >= 0) {
             openItem.defense = bot.hand.splice(defenseIndex, 1)[0];
             game.phase = game.table.some(item => item.attack && !item.defense)
-              ? "defend"
+              ? "defense"
               : "attack";
           } else {
             for (const item of game.table) {
