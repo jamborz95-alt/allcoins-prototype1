@@ -74,3 +74,13 @@ test("game actions allow only known actions and verify room membership", () => {
   assert.match(body, /client\.release\(\)/);
   assert.match(body, /UPDATE durak_games/);
 });
+
+
+test("Durak game state exposes only the requesting player's hand, not opponents' cards", () => {
+  const body = routeBody("/api/durak/game");
+  assert.match(body, /const me = gameState\.players\.find\([\s\S]*?String\(player\.telegramId\) === String\(user\.id\)/);
+  assert.match(body, /hand: me\.hand/);
+  assert.match(body, /cardsCount: Array\.isArray\(p\.hand\) \? p\.hand\.length : 0/);
+  assert.doesNotMatch(body, /hand: p\.hand/);
+  assert.doesNotMatch(body, /players: gameState\.players\s*[,}]/);
+});
