@@ -1468,6 +1468,24 @@
   #durakGame .durak-player[data-seat="right-top"] { left: 88%; top: 30%; }
   #durakGame .durak-player[data-seat="right-bottom"] { left: 88%; top: 72%; }
 
+
+  /* Компактные места по краям; центральные карты не перекрываются квадратами. */
+  #durakGame #durakTrump { min-height: 94px !important; margin: 2px auto 4px !important; padding: 0 4px !important; gap: 4px !important; align-items: center !important; justify-content: center !important; }
+  #durakGame .durak-player { width: min(21%, 66px) !important; max-width: 66px !important; min-height: 28px !important; padding: 3px 3px !important; border-radius: 6px !important; font-size: 8px !important; line-height: 1.08 !important; }
+  #durakGame .durak-player-name { font-size: 8px !important; }
+  #durakGame .durak-player-meta { font-size: 7px !important; margin-top: 1px !important; }
+  #durakGame .durak-player.durak-seat-empty { min-height: 28px !important; }
+  #durakGame .durak-player[data-seat="bottom"] { left: 50%; top: 96%; }
+  #durakGame .durak-player[data-seat="top"] { left: 50%; top: 4%; }
+  #durakGame .durak-player[data-seat="left"] { left: 4%; top: 50%; }
+  #durakGame .durak-player[data-seat="right"] { left: 96%; top: 50%; }
+  #durakGame .durak-player[data-seat="top-left"] { left: 17%; top: 7%; }
+  #durakGame .durak-player[data-seat="top-right"] { left: 83%; top: 7%; }
+  #durakGame .durak-player[data-seat="left-top"] { left: 4%; top: 28%; }
+  #durakGame .durak-player[data-seat="left-bottom"] { left: 4%; top: 72%; }
+  #durakGame .durak-player[data-seat="right-top"] { left: 96%; top: 28%; }
+  #durakGame .durak-player[data-seat="right-bottom"] { left: 96%; top: 72%; }
+
 </style>
 </head>
 <body>
@@ -2913,14 +2931,14 @@ deckCount.textContent = "В колоде: " + (game.cardsLeft ?? 0);
 const deckStack = document.createElement("div");
 
 deckStack.style.cssText = `
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  width: 66px;
-  min-width: 66px;
-  margin: 0 8px;
-`;
+   display: block;
+   position: relative;
+   flex: 0 0 112px;
+   width: 112px;
+   min-width: 112px;
+   height: 92px;
+   margin: 0;
+ `;
 
 deckBox.style.cssText = `
   display: flex;
@@ -2933,9 +2951,9 @@ deckBox.style.cssText = `
 const deckCardBack = document.createElement("div");
 
 deckCardBack.style.cssText = `
-  position: absolute;
-  top: 5px;
-  left: 4px;
+   position: absolute;
+   top: 0;
+   left: 0;
   width: 48px;
   height: 68px;
   border: 2px solid #d4af37;
@@ -2959,15 +2977,18 @@ deckStack.appendChild(deckCard);
 if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
 
-  trumpElement.style.flex = "0 0 58px";
+  trumpElement.style.flex = "none";
   trumpElement.style.width = "58px";
   trumpElement.style.height = "86px";
   trumpElement.style.minWidth = "58px";
-  trumpElement.style.transform = "none";
+  trumpElement.style.transform = "rotate(90deg)";
+  trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
-  trumpElement.style.position = "relative";
+  trumpElement.style.position = "absolute";
+  trumpElement.style.left = "28px";
+  trumpElement.style.top = "-1px";
   trumpElement.style.zIndex = "1";
-  trumpElement.style.marginTop = "-4px";
+  trumpElement.style.margin = "0";
 
   deckStack.appendChild(trumpElement);
 } else {
@@ -2977,7 +2998,17 @@ if (game.trumpCard) {
   deckStack.appendChild(trumpText);
 }
 
-deckCount.style.marginTop = "5px";
+deckCount.style.cssText = `
+  position: absolute;
+  left: 0;
+  top: 70px;
+  width: 112px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+`;
 
 deckStack.appendChild(deckCount);
 trumpBox.appendChild(deckStack);
@@ -3671,8 +3702,15 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
 
     const move = (moveEvent) => {
       if (moveEvent.pointerId !== event.pointerId) return;
-      const x = Math.max(0.06, Math.min(0.94, (moveEvent.clientX - bounds.left) / bounds.width));
-      const y = Math.max(0.04, Math.min(0.96, (moveEvent.clientY - bounds.top) / bounds.height));
+      let x = Math.max(0.04, Math.min(0.96, (moveEvent.clientX - bounds.left) / bounds.width));
+      let y = Math.max(0.04, Math.min(0.96, (moveEvent.clientY - bounds.top) / bounds.height));
+      // Место можно двигать вдоль края, но нельзя положить его поверх карт.
+      if (/left/.test(seatName)) x = Math.min(x, 0.10);
+      else if (/right/.test(seatName)) x = Math.max(x, 0.90);
+      else if (seatName === "top") y = Math.min(y, 0.12);
+      else if (seatName === "bottom") y = Math.max(y, 0.88);
+      if (/top/.test(seatName) && seatName !== "top") y = Math.min(y, 0.18);
+      if (/bottom/.test(seatName) && seatName !== "bottom") y = Math.max(y, 0.82);
       durakSeatPositions[key] = { x, y };
       seat.style.left = (x * 100) + "%";
       seat.style.top = (y * 100) + "%";
