@@ -452,6 +452,62 @@ app.post("/api/durak/rooms/list", async (req, res) => {
     });
   }
 });
+// Добавить тестового бота в комнату Дурак Онлайн
+app.post("/api/durak/rooms/add-bot", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) {
+      return res.status(401).json({ ok: false, error: "Необходимо войти через Telegram" });
+    }
+
+    const roomId = req.body?.roomId;
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
+      return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+    }
+
+    const roomResult = await pool.query(
+      `SELECT id, owner_telegram_id, max_players, status
+       FROM durak_rooms WHERE id = $1`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    const room = roomResult.rows[0];
+    if (String(room.owner_telegram_id) !== String(user.id)) {
+      return res.status(403).json({ ok: false, error: "Добавить тестового бота может только создатель комнаты" });
+    }
+    if (room.status !== "waiting") {
+      return res.status(400).json({ ok: false, error: "Игра уже началась" });
+    }
+    if (Number(room.max_players) < 2) {
+      return res.status(400).json({ ok: false, error: "Для игры с ботом выбери комнату минимум на 2 игроков" });
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::INTEGER AS total
+       FROM durak_room_players WHERE room_id = $1`,
+      [roomId]
+    );
+    if (countResult.rows[0].total > 1) {
+      return res.status(400).json({ ok: false, error: "В комнате уже есть другой игрок. Бот добавляется только в пустую комнату ожидания." });
+    }
+
+    await pool.query(
+      `INSERT INTO durak_room_players (room_id, telegram_id, is_ready)
+       VALUES ($1, 0, TRUE)
+       ON CONFLICT (room_id, telegram_id)
+       DO UPDATE SET is_ready = TRUE`,
+      [roomId]
+    );
+
+    return res.json({ ok: true, message: "Тестовый бот добавлен", bot: { label: "🤖 Бот ALLCOINS", isReady: true } });
+  } catch (error) {
+    console.error("Add Durak test bot error:", error.message);
+    return res.status(500).json({ ok: false, error: "Не удалось добавить тестового бота" });
+  }
+});
+
 // Присоединение к комнате Дурак Онлайн
 app.post("/api/durak/rooms/join", async (req, res) => {
   try {
@@ -610,9 +666,11 @@ app.post("/api/durak/rooms/players", async (req, res) => {
     );
 
     const players = playersResult.rows.map((player, index) => ({
-  label: player.is_owner
-    ? "Создатель комнаты"
-    : "Игрок " + (index + 1),
+  label: String(player.telegram_id) === "0"
+    ? "🤖 Бот ALLCOINS"
+    : player.is_owner
+      ? "Создатель комнаты"
+      : "Игрок " + (index + 1),
   isOwner: player.is_owner,
   isReady: player.is_owner || player.is_ready,
   isMe: String(player.telegram_id) === String(user.id)
@@ -1490,6 +1548,83 @@ if (action === "beat") {
       } else {
         game.phase = "attack";
         finishIfNeeded();
+      }
+    }
+
+    // Автоматический ход тестового бота (telegram_id = 0).
+    const botIndex = game.players.findIndex(p => String(p.telegramId) === "0");
+    if (botIndex >= 0) {
+      for (let botStep = 0; botStep < 3 && game.status === "playing"; botStep++) {
+        if (game.attackerIndex === botIndex) {
+          const allCovered = game.table.length > 0 &&
+            game.table.every(item => item.attack && item.defense);
+          if (allCovered) {
+            game.table = [];
+            drawCardsAfterRound();
+            game.attackerIndex = game.defenderIndex;
+            game.defenderIndex = nextActivePlayer(game.attackerIndex);
+            if (game.defenderIndex === game.attackerIndex) {
+              game.status = "finished";
+              game.phase = "finished";
+            } else {
+              game.phase = "attack";
+              finishIfNeeded();
+            }
+            continue;
+          }
+          if (game.table.some(item => !item.defense)) break;
+          const bot = game.players[botIndex];
+          if (!bot.hand.length) {
+            finishIfNeeded();
+            break;
+          }
+          let candidateIndex = 0;
+          if (game.table.length > 0) {
+            const tableRanks = game.table.flatMap(item =>
+              [item.attack?.rank, item.defense?.rank].filter(Boolean)
+            );
+            candidateIndex = bot.hand.findIndex(card => tableRanks.includes(card.rank));
+          }
+          if (candidateIndex < 0) {
+            if (game.table.length && game.table.every(item => item.defense)) continue;
+            break;
+          }
+          const botCard = bot.hand.splice(candidateIndex, 1)[0];
+          game.table.push({ attack: botCard, defense: null });
+          game.phase = "defense";
+          break;
+        }
+
+        if (game.defenderIndex === botIndex) {
+          const openItem = game.table.find(item => item.attack && !item.defense);
+          if (!openItem) break;
+          const bot = game.players[botIndex];
+          const defenseIndex = bot.hand.findIndex(card => beatsCard(card, openItem.attack));
+          if (defenseIndex >= 0) {
+            openItem.defense = bot.hand.splice(defenseIndex, 1)[0];
+            game.phase = game.table.some(item => item.attack && !item.defense)
+              ? "defend"
+              : "attack";
+          } else {
+            for (const item of game.table) {
+              if (item.attack) bot.hand.push(item.attack);
+              if (item.defense) bot.hand.push(item.defense);
+            }
+            game.table = [];
+            drawCardsAfterRound();
+            game.attackerIndex = attackerIndex;
+            game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
+            if (game.defenderIndex === game.attackerIndex) {
+              game.status = "finished";
+              game.phase = "finished";
+            } else {
+              game.phase = "attack";
+              finishIfNeeded();
+            }
+          }
+          break;
+        }
+        break;
       }
     }
 
