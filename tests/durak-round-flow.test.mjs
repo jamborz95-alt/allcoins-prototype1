@@ -45,5 +45,5 @@ test("the bot may throw in a matching rank while the defender still has capacity
 });
 
 test("the bot closes a fully covered attack when it cannot throw in another card", () => {
-  assert.match(body, /if (game.table.length > 0 && game.table.every(item => item.defense))[sS]*?game.table = [][sS]*?drawCardsAfterRound()/);
+  assert.match(body, /if \(game\.table\.length > 0 && game\.table\.every\(item => item\.defense\)[\s\S]*?game\.table = \[\][\s\S]*?drawCardsAfterRound\(\)/);
 });
