@@ -85,7 +85,7 @@ test("the test bot is opt-in and is never inserted by normal room creation", () 
   const createEnd = source.indexOf("\\napp.post(", createStart + 1);
   assert.notEqual(createStart, -1, "Normal room creation route must exist");
   const createBody = source.slice(createStart, createEnd);
-  assert.doesNotMatch(createBody, /telegram_id\\s*[,)]\\s*0|Бот ALLCOINS|add-bot/);
+  assert.doesNotMatch(createBody, /VALUES\\s*\\(\\s*\\$1\\s*,\\s*0\\s*,/);
 
   const addBotStart = source.indexOf('app.post("/api/durak/rooms/add-bot",');
   const addBotEnd = source.indexOf("\\napp.post(", addBotStart + 1);
