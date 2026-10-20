@@ -2423,6 +2423,8 @@ if (Array.isArray(game.hand)) {
     cardElement.style.touchAction = "none";
     cardElement.style.userSelect = "none";
 
+    // Идентификатор нужен для поиска карты перед анимацией розыгрыша.
+    cardElement.dataset.cardId = String(card.id);
     cardElement.dataset.rank = card.rank || "";
     cardElement.dataset.suit = card.suit || "";
 
