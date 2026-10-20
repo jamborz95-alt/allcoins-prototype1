@@ -298,8 +298,14 @@
 .durak-flying-card {
   position: fixed !important;
   display: block !important;
+  box-sizing: border-box !important;
   margin: 0 !important;
   padding: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: min(24vw, 112px) !important;
+  max-height: min(34vw, 148px) !important;
+  overflow: hidden !important;
   pointer-events: none !important;
   z-index: 2147483647 !important;
   transform-origin: center center;
@@ -307,6 +313,18 @@
   opacity: 1 !important;
   box-shadow: 0 12px 24px rgba(0,0,0,.38) !important;
 }
+.durak-flying-card img {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #durakGame #durakHand .durak-card { transition: none !important; }
 }
@@ -2502,8 +2520,20 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   flyer.style.position = "fixed";
   flyer.style.left = from.left + "px";
   flyer.style.top = from.top + "px";
-  flyer.style.width = from.width + "px";
-  flyer.style.height = from.height + "px";
+  flyer.style.width = Math.min(from.width, 112) + "px";
+  flyer.style.height = Math.min(from.height, 148) + "px";
+  flyer.style.maxWidth = "min(24vw, 112px)";
+  flyer.style.maxHeight = "min(34vw, 148px)";
+  flyer.style.boxSizing = "border-box";
+  flyer.style.overflow = "hidden";
+  const flyerImage = flyer.querySelector("img");
+  if (flyerImage) {
+    flyerImage.style.width = "100%";
+    flyerImage.style.height = "100%";
+    flyerImage.style.maxWidth = "100%";
+    flyerImage.style.maxHeight = "100%";
+    flyerImage.style.objectFit = "contain";
+  }
   flyer.style.margin = "0";
   flyer.style.opacity = "1";
   flyer.style.pointerEvents = "none";
@@ -3046,8 +3076,24 @@ if (Array.isArray(game.hand)) {
           flyer.classList.remove("selected", "is-dragging", "dragging");
           flyer.style.left = originalRect.left + "px";
           flyer.style.top = originalRect.top + "px";
-          flyer.style.width = originalRect.width + "px";
-          flyer.style.height = originalRect.height + "px";
+          // Зафиксировать реальные размеры карты из руки: клонированный
+          // элемент вне контейнера cards не должен разрастаться по intrinsic size.
+          const flyWidth = Math.min(originalRect.width, 112);
+          const flyHeight = Math.min(originalRect.height, 148);
+          flyer.style.width = flyWidth + "px";
+          flyer.style.height = flyHeight + "px";
+          flyer.style.maxWidth = "min(24vw, 112px)";
+          flyer.style.maxHeight = "min(34vw, 148px)";
+          flyer.style.boxSizing = "border-box";
+          flyer.style.overflow = "hidden";
+          const flyerImage = flyer.querySelector("img");
+          if (flyerImage) {
+            flyerImage.style.width = "100%";
+            flyerImage.style.height = "100%";
+            flyerImage.style.maxWidth = "100%";
+            flyerImage.style.maxHeight = "100%";
+            flyerImage.style.objectFit = "contain";
+          }
           flyer.style.transition = "none";
           flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1.045)";
           flyer.style.opacity = "1";
