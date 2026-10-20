@@ -3584,6 +3584,7 @@ let durakWaitingRoom = null;
 let durakWaitingRefreshTimer = null;
 // Позиции мест храним в памяти, чтобы они не сбрасывались при автообновлении комнаты.
 const durakSeatPositions = Object.create(null);
+let durakSeatDragging = false;
 
 function setupDurakSeatDragging(seat, roomId, seatName, container) {
   if (!seat || !container) return;
@@ -3600,6 +3601,7 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
     const startTop = current ? current.y * bounds.height : seatBounds.top - bounds.top + seatBounds.height / 2;
     seat.setPointerCapture?.(event.pointerId);
     seat.style.cursor = "grabbing";
+    durakSeatDragging = true;
     event.preventDefault();
 
     const move = (moveEvent) => {
@@ -3616,6 +3618,7 @@ function setupDurakSeatDragging(seat, roomId, seatName, container) {
     const finish = (upEvent) => {
       if (upEvent.pointerId !== event.pointerId) return;
       seat.style.cursor = "grab";
+      durakSeatDragging = false;
       seat.removeEventListener("pointermove", move);
       seat.removeEventListener("pointerup", finish);
       seat.removeEventListener("pointercancel", finish);
@@ -3744,7 +3747,9 @@ $("durakBoard").style.display = "block";
   console.log("Игра ещё не началась:", gameError.message);
 }
     // Пока партия не запущена, показываем всех участников прямо вокруг игрового поля.
+    // Не пересоздаём квадраты во время перетаскивания, иначе касание на телефоне оборвётся.
     const playersContainer = $("durakPlayers");
+    if (!durakSeatDragging) {
     playersContainer.innerHTML = "";
     const seatByCount = {
       2: ["bottom", "top"],
@@ -3793,6 +3798,7 @@ $("durakBoard").style.display = "block";
       }
       playersContainer.appendChild(playerTag);
       setupDurakSeatDragging(playerTag, durakWaitingRoom.id, seats[seatIndex] || ("seat-" + seatIndex), playersContainer.parentElement);
+    }
     }
 
     $("durakGameStatus").textContent =
