@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import pg from "pg";
 import crypto from "node:crypto";
-import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex } from "./durak-rules.js";
+import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex } from "./durak-rules.js";
 
 const { Pool } = pg;
 const app = express();
@@ -931,18 +931,22 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
     const trumpCard = dealt.trumpCard;
     const trumpSuit = dealt.trumpSuit;
         // Сохраняем состояние игры
-     const gameState = {
-  players: gamePlayers,
-  deck: remainingDeck,
-  trumpCard,
-  trumpSuit,
-  table: [],
-  currentPlayerIndex: 0,
-  attackerIndex: 0,
-  defenderIndex: 1,
-  phase: "attack",
-  status: "playing"
-};
+     const startingPlayerIndex = chooseStartingPlayerIndex(
+      dealt.hands,
+      dealt.trumpSuit
+    );
+    const gameState = {
+      players: gamePlayers,
+      deck: remainingDeck,
+      trumpCard,
+      trumpSuit,
+      table: [],
+      currentPlayerIndex: startingPlayerIndex,
+      attackerIndex: startingPlayerIndex,
+      defenderIndex: (startingPlayerIndex + 1) % gamePlayers.length,
+      phase: "attack",
+      status: "playing"
+    };
 
     await pool.query(
       `INSERT INTO durak_games (room_id, game_state, updated_at)
