@@ -1278,6 +1278,16 @@
   border-color: #ffe16b;
   box-shadow: 0 0 0 1px rgba(255,225,107,.35), 0 0 12px rgba(255,225,107,.4);
 }
+#durakGame .durak-player.durak-seat-empty {
+  min-height: 52px;
+  border: 1px dashed rgba(230,201,120,.65);
+  background: rgba(5,17,23,.48);
+  color: rgba(255,255,255,.72);
+  box-shadow: none;
+}
+#durakGame .durak-player.durak-seat-empty .durak-player-meta {
+  color: rgba(220,230,225,.62);
+}
 #durakGame .durak-player[data-seat="bottom"] { left: 50%; bottom: 0; transform: translateX(-50%); }
 #durakGame .durak-player[data-seat="top"] { left: 50%; top: 0; transform: translateX(-50%); }
 #durakGame .durak-player[data-seat="left"] { left: 0; top: 43%; transform: translateY(-50%); }
@@ -3674,7 +3684,6 @@ $("durakBoard").style.display = "block";
     // Пока партия не запущена, показываем всех участников прямо вокруг игрового поля.
     const playersContainer = $("durakPlayers");
     playersContainer.innerHTML = "";
-    const seatCount = Math.max(2, Number(durakWaitingRoom.max_players || durakWaitingRoom.maxPlayers || 6));
     const seatByCount = {
       2: ["bottom", "top"],
       3: ["bottom", "right", "left"],
@@ -3682,28 +3691,46 @@ $("durakBoard").style.display = "block";
       5: ["bottom", "right", "top-right", "top-left", "left"],
       6: ["bottom", "right-bottom", "right-top", "top", "left-top", "left-bottom"]
     };
+    const seatCount = Math.min(6, Math.max(2, Number(
+      durakWaitingRoom.max_players || durakWaitingRoom.maxPlayers || 2
+    )));
+    const seats = seatByCount[seatCount];
     const myIndex = Math.max(0, players.findIndex(player => player.isMe === true));
-    const seats = seatByCount[Math.min(6, Math.max(2, players.length))] || seatByCount[6];
-    players.forEach((player, index) => {
+
+    // Показываем все места комнаты, даже если игроки ещё не вошли.
+    for (let seatIndex = 0; seatIndex < seatCount; seatIndex++) {
+      const playerIndex = (myIndex + seatIndex) % seatCount;
+      const player = players[playerIndex];
       const playerTag = document.createElement("div");
       playerTag.className = "durak-player";
-      const relativeSeat = (index - myIndex + players.length) % players.length;
-      playerTag.dataset.seat = (seats[relativeSeat] || "top");
-      if (player.isMe) playerTag.classList.add("active");
+      playerTag.dataset.seat = seats[seatIndex] || "top";
 
-      const name = document.createElement("span");
-      name.className = "durak-player-name";
-      name.textContent = player.isMe
-        ? (player.label || player.name || "Ты")
-        : (player.label || player.name || ("Игрок " + (index + 1)));
-      playerTag.appendChild(name);
+      if (player) {
+        if (player.isMe) playerTag.classList.add("active");
+        const name = document.createElement("span");
+        name.className = "durak-player-name";
+        name.textContent = player.isMe
+          ? (player.label || player.name || "Ты")
+          : (player.label || player.name || ("Игрок " + (playerIndex + 1)));
+        playerTag.appendChild(name);
 
-      const meta = document.createElement("span");
-      meta.className = "durak-player-meta";
-      meta.textContent = player.isOwner ? "👑 Создатель · ждём игроков" : "⏳ Подключён";
-      playerTag.appendChild(meta);
+        const meta = document.createElement("span");
+        meta.className = "durak-player-meta";
+        meta.textContent = player.isOwner ? "👑 Создатель" : "⏳ Подключён";
+        playerTag.appendChild(meta);
+      } else {
+        playerTag.classList.add("durak-seat-empty");
+        const emptyName = document.createElement("span");
+        emptyName.className = "durak-player-name";
+        emptyName.textContent = "＋ Место " + (seatIndex + 1);
+        playerTag.appendChild(emptyName);
+        const emptyMeta = document.createElement("span");
+        emptyMeta.className = "durak-player-meta";
+        emptyMeta.textContent = "Ожидаем игрока";
+        playerTag.appendChild(emptyMeta);
+      }
       playersContainer.appendChild(playerTag);
-    });
+    }
 
     $("durakGameStatus").textContent =
       "🃏 " + (durakWaitingRoom.name || "Комната ALLCOINS") +
