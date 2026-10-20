@@ -1986,12 +1986,7 @@ button.textContent = "Войти";
     currentDurakRoomId = room.id;
 
     await openDurakWaitingRoom(room);
-
-    alert(
-      "Ты вошёл в комнату!\n" +
-      "Название: " + room.name + "\n" +
-      "Ставка: " + room.stake + " AC"
-    );
+    showStatus("durakGameStatus", "Ты вошёл в комнату. Ожидаем остальных игроков.");
 
   } catch (error) {
     const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
@@ -2722,6 +2717,11 @@ $("durakGame").classList.add("durak-fullscreen");
 
 $("durakWaitingPanel").style.display = "none";
 $("durakBoard").style.display = "block";
+$("durakTrump").style.display = "flex";
+$("durakHand").style.display = "";
+const handTitle = $("durakHand").previousElementSibling;
+if (handTitle) handTitle.style.display = "";
+$("durakControls").style.display = "flex";
 
 $("durakCreatePanel").style.display = "none";
 $("durakRoomsPanel").style.display = "none";
@@ -3585,14 +3585,19 @@ async function openDurakWaitingRoom(room) {
   $("durakRoomActions").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "none";
-  $("durakWaitingPanel").style.display = "block";
-  $("durakBoard").style.display = "none";
-
-  $("durakWaitingRoomName").textContent =
-    room.name || "Комната ALLCOINS";
-
-  $("durakWaitingStatus").textContent =
-    "Загружаем список игроков...";
+  // Сразу показываем игровое поле: комната ожидания находится прямо на поле,
+  // а не на отдельном экране. Игроки будут появляться на своих местах.
+  $("durakWaitingPanel").style.display = "none";
+  $("durakBoard").style.display = "block";
+  $("durakGameStatus").textContent =
+    "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
+  $("durakTrump").style.display = "none";
+  $("durakTable").textContent = "Ожидаем игроков...";
+  $("durakHand").style.display = "none";
+  const handTitle = $("durakHand").previousElementSibling;
+  if (handTitle) handTitle.style.display = "none";
+  $("durakControls").style.display = "none";
+  $("durakPlayers").innerHTML = "";
 
   // Останавливаем предыдущий таймер, если он существует
   if (durakWaitingRefreshTimer !== null) {
@@ -3666,37 +3671,48 @@ $("durakBoard").style.display = "block";
 } catch (gameError) {
   console.log("Игра ещё не началась:", gameError.message);
 }
-    $("durakWaitingCount").textContent =
-      result.playersCount ?? players.length;
-
-    const playersContainer = $("durakWaitingPlayers");
+    // Пока партия не запущена, показываем всех участников прямо вокруг игрового поля.
+    const playersContainer = $("durakPlayers");
     playersContainer.innerHTML = "";
-
+    const seatCount = Math.max(2, Number(durakWaitingRoom.max_players || durakWaitingRoom.maxPlayers || 6));
+    const seatByCount = {
+      2: ["bottom", "top"],
+      3: ["bottom", "right", "left"],
+      4: ["bottom", "right", "top", "left"],
+      5: ["bottom", "right", "top-right", "top-left", "left"],
+      6: ["bottom", "right-bottom", "right-top", "top", "left-top", "left-bottom"]
+    };
+    const myIndex = Math.max(0, players.findIndex(player => player.isMe === true));
+    const seats = seatByCount[Math.min(6, Math.max(2, players.length))] || seatByCount[6];
     players.forEach((player, index) => {
-      const row = document.createElement("div");
+      const playerTag = document.createElement("div");
+      playerTag.className = "durak-player";
+      const relativeSeat = (index - myIndex + players.length) % players.length;
+      playerTag.dataset.seat = (seats[relativeSeat] || "top");
+      if (player.isMe) playerTag.classList.add("active");
 
-      row.className = "card";
-      row.style.marginTop = "8px";
+      const name = document.createElement("span");
+      name.className = "durak-player-name";
+      name.textContent = player.isMe
+        ? (player.label || player.name || "Ты")
+        : (player.label || player.name || ("Игрок " + (index + 1)));
+      playerTag.appendChild(name);
 
-      const name = document.createElement("b");
-      name.textContent =
-        player.label || player.name || ("Игрок " + (index + 1));
-
-      const status = document.createElement("div");
-      status.style.marginTop = "5px";
-
-      if (player.isOwner) {
-        status.textContent = "👑 Создатель комнаты";
-      } else if (player.isReady) {
-        status.textContent = "✅ Готов к игре";
-      } else {
-        status.textContent = "⏳ Ожидает готовности";
-      }
-
-      row.appendChild(name);
-      row.appendChild(status);
-      playersContainer.appendChild(row);
+      const meta = document.createElement("span");
+      meta.className = "durak-player-meta";
+      meta.textContent = player.isOwner ? "👑 Создатель · ждём игроков" : "⏳ Подключён";
+      playerTag.appendChild(meta);
+      playersContainer.appendChild(playerTag);
     });
+
+    $("durakGameStatus").textContent =
+      "🃏 " + (durakWaitingRoom.name || "Комната ALLCOINS") +
+      " · Игроков: " + players.length + "/" + (durakWaitingRoom.max_players || durakWaitingRoom.maxPlayers || "?") +
+      " · Ожидаем подключения";
+
+    $("durakTable").textContent = players.length < 2
+      ? "Пригласи друзей — они появятся здесь за игровым полем"
+      : "Игроки на местах · Подготовка к началу партии";
 
   const myPlayer = players.find(player => player.isMe === true);
 
