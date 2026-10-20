@@ -101,7 +101,6 @@ try {
 
   // Render a complete mocked game to test nicknames, card backs, cards and turn controls.
   await page.evaluate(async () => {
-    window.state.user = { telegram_id: "12345", first_name: "Тестовый Игрок" };
     await window.loadDurakGame("77");
   });
   await page.locator("#durakPlayers .durak-player").nth(1).waitFor();
