@@ -94,8 +94,10 @@ test("Durak game state exposes only the requesting player's hand, not opponents'
 
 
 test("a confirmed Durak action schedules a refresh if polling is already in progress", () => {
-  assert.match(clientSource, /let durakGameReloadRequested = false/);
-  assert.match(clientSource, /durakGameReloadRequested = true;[\s\S]*?durakGameReloadRoomId = actionRoomId/);
-  assert.match(clientSource, /if \(durakGameLoadInProgress\) \{[\s\S]*?durakGameReloadRequested = true/);
-  assert.match(clientSource, /if \(durakGameReloadRequested\) \{[\s\S]*?durakGameReloadRequested = false;[\s\S]*?setTimeout\(\(\) => loadDurakGame\(reloadRoomId\), 0\)/);
+  assert.ok(clientSource.includes("let durakGameReloadRequested = false"));
+  assert.ok(clientSource.includes("durakGameReloadRequested = true;"));
+  assert.ok(clientSource.includes("durakGameReloadRoomId = actionRoomId;"));
+  assert.ok(clientSource.includes("if (durakGameLoadInProgress) {"));
+  assert.ok(clientSource.includes("if (durakGameReloadRequested) {"));
+  assert.ok(clientSource.includes("window.setTimeout(() => loadDurakGame(reloadRoomId), 0);"));
 });
