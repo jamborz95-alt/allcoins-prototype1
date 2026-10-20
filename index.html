@@ -2558,6 +2558,8 @@ if (Array.isArray(game.hand)) {
       if (event.button !== 0 || durakActionInProgress) return;
       event.preventDefault();
 
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      const pointerId = event.pointerId;
       const startX = event.clientX;
       const startY = event.clientY;
       const originalRect = cardElement.getBoundingClientRect();
@@ -2567,6 +2569,7 @@ if (Array.isArray(game.hand)) {
       let offsetY = 0;
 
       const moveCard = (moveEvent) => {
+        if (moveEvent.pointerId !== pointerId) return;
         const dx = moveEvent.clientX - startX;
         const dy = moveEvent.clientY - startY;
 
@@ -2613,6 +2616,7 @@ if (Array.isArray(game.hand)) {
       };
 
       const releaseCard = async (upEvent) => {
+        if (upEvent.pointerId !== pointerId) return;
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
@@ -2661,7 +2665,10 @@ if (Array.isArray(game.hand)) {
         showStatus("durakGameStatus", "Сейчас нельзя положить эту карту. Проверь, чей ход.");
       };
 
-      const cancelCard = () => cleanup();
+      const cancelCard = (cancelEvent) => {
+        if (cancelEvent.pointerId !== pointerId) return;
+        cleanup();
+      };
 
       document.addEventListener("pointermove", moveCard, { passive: false });
       document.addEventListener("pointerup", releaseCard);
