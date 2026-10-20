@@ -2020,9 +2020,11 @@ const isAttacker =
 
 const isDefender =
   Number(game.playerIndex) === Number(game.defenderIndex);
+const hasCardsOnTable = Array.isArray(game.table) && game.table.length > 0;
+const hasOpenAttack = hasCardsOnTable && game.table.some(item => item.attack && !item.defense);
 const turnMessage = $("durakTurnMessage");
 const isMyAttackTurn = isAttacker && game.phase === "attack";
-const isMyDefenseTurn = isDefender && game.phase === "defense";
+const isMyDefenseTurn = isDefender && hasCardsOnTable && game.status === "playing";
 
 if (turnMessage) {
   turnMessage.style.display =
@@ -2047,17 +2049,19 @@ if (attackButton) {
 
 if (defendButton) {
   defendButton.style.display =
-    isDefender && game.phase === "defense"
+    isDefender && hasOpenAttack && game.phase === "defense"
       ? "inline-block"
       : "none";
 }
 
 if (takeButton) {
+  // Защищающийся может взять карты, пока атакующий не объявил «Бито»,
+  // даже если все текущие карты уже побиты.
   takeButton.style.display =
-    isDefender && game.phase === "defense"
+    isDefender && hasCardsOnTable && game.status === "playing"
       ? "inline-block"
       : "none";
-    }
+}
 
 const allCardsBeaten =
   Array.isArray(game.table) &&
