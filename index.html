@@ -3255,8 +3255,10 @@ if (isOwner) {
     }
 
   } catch (error) {
+    const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 150);
     $("durakWaitingStatus").textContent =
-      "Ошибка загрузки игроков: " + error.message;
+      "Не удалось обновить комнату. Проверь интернет и попробуй ещё раз. " + message;
+    console.warn("Ошибка обновления комнаты Дурак Онлайн:", error);
   }
 }
 
