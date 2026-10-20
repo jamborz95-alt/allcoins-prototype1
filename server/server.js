@@ -1534,9 +1534,35 @@ if (action === "beat") {
     if (botIndex >= 0) {
       for (let botStep = 0; botStep < 3 && game.status === "playing"; botStep++) {
         if (game.attackerIndex === botIndex) {
-          const allCovered = game.table.length > 0 &&
-            game.table.every(item => item.attack && item.defense);
-          if (allCovered) {
+          if (game.table.some(item => !item.defense)) break;
+          const bot = game.players[botIndex];
+          if (!bot.hand.length) {
+            finishIfNeeded();
+            break;
+          }
+
+          const defender = game.players[game.defenderIndex];
+          const canAddMore = game.table.length < defender.hand.length;
+          let candidateIndex = -1;
+
+          if (game.table.length === 0) {
+            candidateIndex = 0;
+          } else if (canAddMore) {
+            const tableRanks = game.table.flatMap(item =>
+              [item.attack?.rank, item.defense?.rank].filter(Boolean)
+            );
+            candidateIndex = bot.hand.findIndex(card => tableRanks.includes(card.rank));
+          }
+
+          if (candidateIndex >= 0) {
+            const botCard = bot.hand.splice(candidateIndex, 1)[0];
+            game.table.push({ attack: botCard, defense: null });
+            game.phase = "defense";
+            break;
+          }
+
+          // Бот завершает атаку только когда больше не может подкинуть карту.
+          if (game.table.length > 0 && game.table.every(item => item.defense)) {
             game.table = [];
             drawCardsAfterRound();
             game.attackerIndex = game.defenderIndex;
@@ -1550,26 +1576,6 @@ if (action === "beat") {
             }
             continue;
           }
-          if (game.table.some(item => !item.defense)) break;
-          const bot = game.players[botIndex];
-          if (!bot.hand.length) {
-            finishIfNeeded();
-            break;
-          }
-          let candidateIndex = 0;
-          if (game.table.length > 0) {
-            const tableRanks = game.table.flatMap(item =>
-              [item.attack?.rank, item.defense?.rank].filter(Boolean)
-            );
-            candidateIndex = bot.hand.findIndex(card => tableRanks.includes(card.rank));
-          }
-          if (candidateIndex < 0) {
-            if (game.table.length && game.table.every(item => item.defense)) continue;
-            break;
-          }
-          const botCard = bot.hand.splice(candidateIndex, 1)[0];
-          game.table.push({ attack: botCard, defense: null });
-          game.phase = "defense";
           break;
         }
 
