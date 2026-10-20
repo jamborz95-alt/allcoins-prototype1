@@ -142,6 +142,17 @@ try {
   assert.equal(await page.locator("#durakDefend").evaluate((el) => el.style.display), "none",
     "defend button should be hidden when no attack card is uncovered");
 
+  mockDurakTable = [
+    { attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: { id: "table-7-clubs", rank: "7", suit: "♣" } },
+    { attack: { id: "table-8-diamonds", rank: "8", suit: "♦" }, defense: null }
+  ];
+  mockDurakPhase = "defense";
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.notEqual(await page.locator("#durakDefend").evaluate((el) => el.style.display), "none",
+    "defender should be able to defend the next uncovered attack");
+  assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
+    "defender should retain the option to take the full table");
+
   mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   mockDurakPhase = "attack";
   mockDurakPlayerIndex = 0;
