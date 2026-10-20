@@ -181,6 +181,8 @@ try {
   await page.evaluate(async () => { await loadDurakGame("77"); });
   assert.match(await page.locator("#durakGameStatus").innerText(), /Ты проиграл — ДУРАК/,
     "losing player should see the game result");
+  assert.equal(await page.locator("#durakHand .durak-card").first().evaluate((el) => el.style.pointerEvents), "none",
+    "cards should not be interactive after the game ends");
   mockDurakIsLoser = false;
   await page.evaluate(async () => { await loadDurakGame("77"); });
   assert.match(await page.locator("#durakGameStatus").innerText(), /Победа! Партия завершена/,
