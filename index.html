@@ -1701,12 +1701,9 @@ $("durakGameStatus").textContent = "Загружаем карты...";
     cardElement.dataset.cardId = String(card.id);
 cardElement.style.cursor = "pointer";
 
-let suppressNextClick = false;
+let suppressClickUntil = 0;
 cardElement.onclick = () => {
-  if (suppressNextClick) {
-    suppressNextClick = false;
-    return;
-  }
+  if (Date.now() < suppressClickUntil) return;
   document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
     element.classList.remove("selected");
     element.style.transform = "translateY(0)";
@@ -1754,7 +1751,7 @@ cardElement.addEventListener("pointermove", (event) => {
 
   if (!isDragging && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
     isDragging = true;
-    suppressNextClick = true;
+    suppressClickUntil = Date.now() + 350;
     flyer = cardElement.cloneNode(true);
     flyer.classList.add("durak-flying-card");
     flyer.classList.remove("selected", "is-dragging", "dragging");
@@ -1790,7 +1787,7 @@ cardElement.addEventListener("pointerup", async (event) => {
   isDragging = false;
 
   if (!wasDragging) return;
-  suppressNextClick = true;
+  suppressClickUntil = Date.now() + 350;
 
   if (targetCard && targetCard.dataset.tableCardType === "attack") {
     selectedDurakCardId = card.id;
@@ -1807,7 +1804,7 @@ cardElement.addEventListener("pointercancel", (event) => {
   pointerId = null;
   cardStartRect = null;
   isDragging = false;
-  suppressNextClick = true;
+  suppressClickUntil = Date.now() + 350;
 });
 
 if (card.suit === "♥" || card.suit === "♦") {
