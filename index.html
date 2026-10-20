@@ -3060,7 +3060,7 @@ if (stake > state.balance) {
 
     render();
 
-    showStatus("lottoStatus", "Комната создана на сервере!");
+    showStatus("durakGameStatus", "Комната создана на сервере!");
 
     alert(
       "Комната создана!\n" +
@@ -3069,7 +3069,9 @@ if (stake > state.balance) {
       "Ставка: " + room.stake + " AC"
     );
   } catch (error) {
-    alert("Ошибка создания комнаты: " + error.message);
+    const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
+    showStatus("durakGameStatus", "Не удалось создать комнату: " + message);
+    alert("Не удалось создать комнату. " + message);
   } finally {
     button.disabled = false;
   }
