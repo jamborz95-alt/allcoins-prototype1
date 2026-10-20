@@ -2268,8 +2268,11 @@ const isDefender =
 const hasCardsOnTable = Array.isArray(game.table) && game.table.length > 0;
 const hasOpenAttack = hasCardsOnTable && game.table.some(item => item.attack && !item.defense);
 const turnMessage = $("durakTurnMessage");
-const isMyAttackTurn = isAttacker && game.phase === "attack";
-const isMyDefenseTurn = isDefender && hasCardsOnTable && game.status === "playing";
+const gameIsPlaying = game.status === "playing";
+const isMyAttackTurn =
+  gameIsPlaying && isAttacker && game.phase === "attack";
+const isMyDefenseTurn =
+  gameIsPlaying && isDefender && hasCardsOnTable;
 
 if (turnMessage) {
   turnMessage.style.display =
@@ -2287,14 +2290,14 @@ const beatButton = $("durakBeat");
 
 if (attackButton) {
   attackButton.style.display =
-    isAttacker && game.phase === "attack"
+    isMyAttackTurn
       ? "inline-block"
       : "none";
 }
 
 if (defendButton) {
   defendButton.style.display =
-    isDefender && hasOpenAttack && game.phase === "defense"
+    gameIsPlaying && isDefender && hasOpenAttack && game.phase === "defense"
       ? "inline-block"
       : "none";
 }
@@ -2303,7 +2306,7 @@ if (takeButton) {
   // Защищающийся может взять карты, пока атакующий не объявил «Бито»,
   // даже если все текущие карты уже побиты.
   takeButton.style.display =
-    isDefender && hasCardsOnTable && game.status === "playing"
+    gameIsPlaying && isDefender && hasCardsOnTable
       ? "inline-block"
       : "none";
 }
@@ -2315,7 +2318,7 @@ const allCardsBeaten =
 
 if (beatButton) {
   beatButton.style.display =
-    game.status === "playing" && isAttacker && allCardsBeaten
+    gameIsPlaying && isAttacker && allCardsBeaten
       ? "inline-block"
       : "none";
 }
