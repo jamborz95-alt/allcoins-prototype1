@@ -2458,27 +2458,40 @@ const imageName = cardImages[rank.toUpperCase() + "-" + suit];
 
 // Короткая анимация: карта визуально перелетает из руки на стол.
 // Плавная и непрерывная анимация розыгрыша карты.
-function animateDurakCardToTarget(cardElement, targetElement) {
-  if (!cardElement || !targetElement) return Promise.resolve();
+let durakPendingDragFlyer = null;
 
-  const from = cardElement.getBoundingClientRect();
-  const to = targetElement.getBoundingClientRect();
-  if (!from.width || !from.height || !to.width || !to.height) {
+// После отпускания на поле продолжаем движение той же визуальной карты.
+// Не создаём вторую копию из руки: это убирает эффект «назад, затем снова вперёд».
+function animateDurakCardToTarget(cardElement, targetElement) {
+  if (!cardElement || !targetElement) {
+    if (durakPendingDragFlyer) durakPendingDragFlyer.remove();
+    durakPendingDragFlyer = null;
     return Promise.resolve();
   }
 
-  const flyer = cardElement.cloneNode(true);
+  const flyer = durakPendingDragFlyer || cardElement.cloneNode(true);
+  durakPendingDragFlyer = null;
+  const isAlreadyFlying = flyer.classList.contains("durak-flying-card");
+  const from = flyer.getBoundingClientRect();
+  const to = targetElement.getBoundingClientRect();
+  if (!from.width || !from.height || !to.width || !to.height) {
+    if (isAlreadyFlying) flyer.remove();
+    return Promise.resolve();
+  }
+
   flyer.classList.add("durak-flying-card");
   flyer.classList.remove("selected", "is-dragging", "dragging");
+  flyer.style.position = "fixed";
   flyer.style.left = from.left + "px";
   flyer.style.top = from.top + "px";
   flyer.style.width = from.width + "px";
   flyer.style.height = from.height + "px";
   flyer.style.margin = "0";
   flyer.style.opacity = "1";
-  flyer.style.transform = "translate3d(0,0,0) scale(1)";
+  flyer.style.pointerEvents = "none";
+  flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1.045)";
   flyer.style.transition = "none";
-  document.body.appendChild(flyer);
+  if (!isAlreadyFlying) document.body.appendChild(flyer);
   void flyer.getBoundingClientRect();
 
   // Защиту кладём прямо на атакующую карту; атаку — в центр игровой зоны.
@@ -3039,47 +3052,46 @@ if (Array.isArray(game.hand)) {
         );
         const table = $("durakTable");
         const targetCard = elementUnderPointer?.closest("#durakTable .durak-card");
-        const droppedOnTable = table && elementUnderPointer &&
+        const droppedOnTable = !!(table && elementUnderPointer &&
           (table === elementUnderPointer ||
            table.contains(elementUnderPointer) ||
-           elementUnderPointer.closest("#durakTable") === table);
+           elementUnderPointer.closest("#durakTable") === table));
 
-        cardElement.style.opacity = "";
-        cardElement.style.transition = "";
-        cardElement.style.transform = "";
-        if (flyer) flyer.remove();
-
-        if (!droppedOnTable) {
-          // Не оставляем скрытый выбор карты, если игрок отпустил её вне стола.
-          if (selectedDurakCardId === card.id) {
-            selectedDurakCardId = null;
-          }
-          showStatus("durakGameStatus", "Отпусти карту на игровом столе, чтобы сыграть её.");
-          return;
-        }
-
-        selectedDurakCardId = card.id;
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
+        const canDefend = isDefender && game.phase === "defense" &&
+          targetCard && targetCard.dataset.tableCardType === "attack";
+        const canAttack = isAttacker && game.phase === "attack" && droppedOnTable;
 
-        if (
-          isDefender &&
-          game.phase === "defense" &&
-          targetCard &&
-          targetCard.dataset.tableCardType === "attack"
-        ) {
-          await durakAction("defend");
+        if (!canDefend && !canAttack) {
+          cardElement.style.opacity = "";
+          cardElement.style.transition = "";
+          cardElement.style.transform = "";
+          if (flyer) flyer.remove();
+          if (selectedDurakCardId === card.id) selectedDurakCardId = null;
+          showStatus(
+            "durakGameStatus",
+            droppedOnTable
+              ? "Сейчас нельзя положить эту карту. Проверь, чей ход."
+              : "Отпусти карту на игровом поле, чтобы сыграть её."
+          );
           return;
         }
 
-        if (isAttacker && game.phase === "attack") {
-          await durakAction("attack");
-          return;
+        // Оставляем карту в точке отпускания. После подтверждения сервером
+        // она полетит дальше на своё место, не возвращаясь сначала в руку.
+        selectedDurakCardId = card.id;
+        cardElement.style.opacity = "0";
+        cardElement.style.transition = "none";
+        if (flyer) {
+          flyer.style.left = (upEvent.clientX - offsetX) + "px";
+          flyer.style.top = (upEvent.clientY - offsetY) + "px";
+          flyer.style.transform = "rotate(0deg) scale(1.045)";
+          durakPendingDragFlyer = flyer;
         }
 
-        showStatus("durakGameStatus", "Сейчас нельзя положить эту карту. Проверь, чей ход.");
+        await durakAction(canDefend ? "defend" : "attack");
       };
-
       const cancelCard = (cancelEvent) => {
         if (cancelEvent.pointerId !== pointerId) return;
         cleanup();
