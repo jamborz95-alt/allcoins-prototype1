@@ -3383,6 +3383,10 @@ $("durakLeaveWaiting").onclick = function () {
 // Загрузка комнат Дурак Онлайн с сервера
 async function loadDurakRooms() {
   if (!tg?.initData) {
+    showStatus(
+      "durakGameStatus",
+      "Чтобы загружать онлайн-комнаты, открой ALLCOINS внутри Telegram."
+    );
     return;
   }
 
