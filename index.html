@@ -481,17 +481,24 @@
 }
 
 /* Большая масть по центру */
+/* ALLCOINS — крупная классическая масть */
 #durakGame .durak-card .card-suit {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 100%;
   text-align: center;
+
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 36px;
   line-height: 1;
   font-weight: 700;
+
   transform: translate(-50%, -50%);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
 /* Классические чёрные масти */
