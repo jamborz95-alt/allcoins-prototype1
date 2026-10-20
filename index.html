@@ -1065,6 +1065,15 @@
 
     <button
       type="button"
+      id="durakAddBotButton"
+      class="secondary full"
+      style="display:none;margin-bottom:10px;"
+    >
+      🤖 Добавить бота для проверки
+    </button>
+
+    <button
+      type="button"
       id="durakReadyButton"
       class="full"
       style="display:none;"
@@ -2660,6 +2669,13 @@ const isOwner = myPlayer?.isOwner === true;
 
 const readyButton = $("durakReadyButton");
 const startButton = $("durakStartButton");
+const addBotButton = $("durakAddBotButton");
+const hasBot = players.some(player => String(player.label || "").includes("Бот ALLCOINS"));
+
+if (addBotButton) {
+  addBotButton.style.display =
+    isOwner && players.length === 1 && !hasBot ? "block" : "none";
+}
 
 // Обе кнопки занимают одно и то же место.
 // У гостя показывается «Готов».
@@ -2694,6 +2710,31 @@ if (isOwner) {
   }
 }
 
+
+// Добавить одного тестового бота, чтобы играть без второго телефона
+$("durakAddBotButton").onclick = async function () {
+  if (!durakWaitingRoom?.id) {
+    alert("Сначала открой комнату ожидания.");
+    return;
+  }
+  const button = $("durakAddBotButton");
+  button.disabled = true;
+  try {
+    const result = await apiRequest("/api/durak/rooms/add-bot", {
+      roomId: durakWaitingRoom.id
+    });
+    if (!result.ok) {
+      throw new Error(result.error || "Не удалось добавить бота.");
+    }
+    $("durakWaitingStatus").textContent =
+      "🤖 Бот добавлен! Теперь нажми «Начать игру».";
+    await refreshDurakWaitingRoom();
+  } catch (error) {
+    alert("Ошибка добавления бота: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+};
 
 // Кнопка «Готов»
 $("durakReadyButton").onclick = async function () {
