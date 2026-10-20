@@ -75,7 +75,7 @@ test("bot opens with the lowest available non-trump card", () => {
 
 test("bot throw-in only selects a matching rank and prefers a non-trump", () => {
   const hand = [
-    { id: "trump-8", rank: "8", suit: "♥" },
+    { id: "trump-9", rank: "9", suit: "♥" },
     { id: "spade-9", rank: "9", suit: "♠" },
     { id: "club-9", rank: "9", suit: "♣" }
   ];
