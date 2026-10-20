@@ -595,35 +595,38 @@
   } 
  /* ===== ALLCOINS PREMIUM CARDS ===== */
 
+/* ALLCOINS — классические белые карты */
 #durakGame .durak-card.premium-card {
   position: relative;
+  display: block;
+  flex: 0 0 65px;
+  width: 65px;
+  height: 96px;
+  min-width: 65px;
+  padding: 0;
   overflow: hidden;
   box-sizing: border-box;
 
-   /* ALLCOINS — классическая белая карта */
-background: #fffdf8;
-color: #171717;
-border: 1px solid #d5d1c8;
-border-radius: 7px;
-box-shadow:
-  0 4px 7px rgba(0, 0, 0, 0.30),
-  inset 0 0 0 1px rgba(255, 255, 255, 0.9); 
+  background: #fffdf8 !important;
+  color: #171717;
+  border: 1px solid #d5d1c8;
+  border-radius: 7px;
 
-  color: #e5c46b;
-  border: 1.5px solid #d4af37;
-  border-radius: 9px;
+  box-shadow:
+    0 4px 7px rgba(0, 0, 0, 0.30),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9);
 
-    box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.08),
-    0 5px 8px rgba(0, 0, 0, 0.35),
-    0 2px 3px rgba(0, 0, 0, 0.2);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
 
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease;
-
-  font-family: Georgia, "Times New Roman", serif;
 }
 
 #durakGame .premium-card .card-corner {
