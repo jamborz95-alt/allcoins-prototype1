@@ -39,6 +39,10 @@ try {
       return route.fulfill({ status: 200, contentType: "application/json",
         body: JSON.stringify({ ok: true, player: { telegram_id: "12345", first_name: "Тестовый Игрок", balance: 10000, energy: 100 } }) });
     }
+    if (url.pathname === "/api/tap") {
+      return route.fulfill({ status: 200, contentType: "application/json",
+        body: JSON.stringify({ ok: true, player: { telegram_id: "12345", first_name: "Тестовый Игрок", balance: 10100, energy: 99 } }) });
+    }
     if (url.pathname === "/api/durak/rooms/list") {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, rooms: [] }) });
     }
@@ -73,7 +77,7 @@ try {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
   await page.locator("#tapButton").waitFor();
 
-  // Clicker: +100 AC and -1 energy in demo mode.
+  // Clicker: +100 AC and -1 energy with a mocked authenticated API response.
   const initialBalance = Number((await page.locator("#balance").innerText()).replace(/\D/g, ""));
   const initialEnergy = Number((await page.locator("#energy").innerText()).replace(/\D/g, ""));
   await page.locator("#tapButton").click();
