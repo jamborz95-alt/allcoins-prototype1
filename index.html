@@ -453,44 +453,43 @@
     box-shadow 0.16s ease;
 }
 
-/* Красные масти */
+/* ALLCOINS — классические цвета карт */
 
+/* Красные масти */
 #durakGame .durak-card.red {
   color: #c51f32;
 }
 
 /* Угловое обозначение карты */
-
 #durakGame .durak-card .card-corner {
   position: absolute;
   top: 5px;
   left: 6px;
-
   display: block;
   text-align: center;
-
   font-size: 17px;
   line-height: 0.95;
-
+  font-weight: 700;
   z-index: 2;
 }
 
 /* Большая масть по центру */
-
 #durakGame .durak-card .card-suit {
   position: absolute;
   top: 50%;
   left: 50%;
-
   width: 100%;
   text-align: center;
-
   font-size: 36px;
   line-height: 1;
-
+  font-weight: 700;
   transform: translate(-50%, -50%);
-
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Классические чёрные масти */
+#durakGame .durak-card:not(.red) {
+  color: #171717;
 }
 
 /* Выбранная карта */
