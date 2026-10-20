@@ -341,6 +341,12 @@ if (!user || !user.id) {
     const stake = Number(req.body.stake);
 const deck = Number(req.body.deck ?? 36);
 const speed = req.body.speed === "fast" ? "fast" : "normal";
+    if (![36, 52].includes(deck)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Выбери колоду на 36 или 52 карты"
+      });
+    }
 const privacy = req.body.privacy === "private" ? "private" : "public";
     if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
       return res.status(400).json({
@@ -850,6 +856,19 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       return res.status(400).json({
         ok: false,
         error: "Для начала игры нужны минимум 2 игрока"
+      });
+    }
+    const selectedDeck = Number(room.deck);
+    if (![36, 52].includes(selectedDeck)) {
+      return res.status(400).json({
+        ok: false,
+        error: "В комнате выбрана неподдерживаемая колода. Создай новую комнату."
+      });
+    }
+    if (total > 5 && selectedDeck !== 52) {
+      return res.status(400).json({
+        ok: false,
+        error: "Для игры шестью игроками выбери колоду на 52 карты."
       });
     }
     // Проверяем готовность всех игроков, кроме создателя
