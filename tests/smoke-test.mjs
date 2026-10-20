@@ -203,6 +203,22 @@ try {
   assert.equal(await page.evaluate(() => pendingDurakAction), null,
     "pending action should clear after server confirmation");
 
+  // A successful action during an active poll must queue a fresh game-state load.
+  await page.evaluate(async () => {
+    currentDurakRoomId = "77";
+    selectedDurakCardId = "card-6-hearts";
+    durakGameLoadInProgress = true;
+    await durakAction("attack");
+  });
+  assert.equal(await page.evaluate(() => durakGameReloadRequested), true,
+    "confirmed action should queue a refresh when polling is already active");
+  await page.evaluate(async () => {
+    durakGameLoadInProgress = false;
+    durakGameReloadRequested = false;
+    durakGameReloadRoomId = null;
+    await loadDurakGame("77");
+  });
+
   mockDurakStatus = "finished";
   mockDurakHasLoser = true;
   mockDurakIsLoser = true;
