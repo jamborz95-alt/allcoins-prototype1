@@ -61,3 +61,10 @@ test("the defender keeps the defense phase while any attack card remains uncover
   assert.match(body, /if \(hasUnbeatenCards\)\s*\{\s*game\.phase = "defense";/);
   assert.doesNotMatch(body, /game\.phase = "defend";/);
 });
+
+
+test("finished Durak games record the last player holding cards as the loser", () => {
+  assert.match(body, /function markGameFinished\(\)[\s\S]*?game\.status = "finished"[\s\S]*?playersWithCards = game\.players\.filter\([\s\S]*?game\.loserTelegramId = playersWithCards\.length === 1/);
+  assert.match(source, /hasLoser: Boolean\(gameState\.loserTelegramId\)/);
+  assert.match(source, /isLoser: String\(gameState\.loserTelegramId \?\? ""\) === String\(user\.id\)/);
+});
