@@ -1968,6 +1968,11 @@ async function durakAction(action) {
   }
 
   durakActionInProgress = true;
+  const actionRoomId = currentDurakRoomId;
+  const actionCardId =
+    action === "attack" || action === "defend"
+      ? selectedDurakCardId
+      : null;
   const actionButtons = [
     $("durakAttack"),
     $("durakDefend"),
@@ -1981,18 +1986,18 @@ async function durakAction(action) {
 
   try {
     const result = await apiRequest("/api/durak/action", {
-      roomId: currentDurakRoomId,
+      roomId: actionRoomId,
       action: action,
-      cardId: selectedDurakCardId
+      ...(actionCardId ? { cardId: actionCardId } : {})
     });
 
     if (!result.ok) {
       throw new Error(result.error || "Действие не выполнено.");
     }
 
-    const playedCard = selectedDurakCardId
+    const playedCard = actionCardId
       ? Array.from(document.querySelectorAll("#durakHand .durak-card"))
-          .find(cardElement => cardElement.dataset.cardId === String(selectedDurakCardId))
+          .find(cardElement => cardElement.dataset.cardId === String(actionCardId))
       : null;
     const targetElement = action === "defend"
       ? $("durakTable").querySelector('.durak-card[data-table-card-type="attack"]')
@@ -2002,7 +2007,7 @@ async function durakAction(action) {
     }
 
     selectedDurakCardId = null;
-    await loadDurakGame(currentDurakRoomId);
+    await loadDurakGame(actionRoomId);
   } catch (error) {
     const rawMessage = String(error?.message || "");
     const shortMessage = rawMessage.length > 180
