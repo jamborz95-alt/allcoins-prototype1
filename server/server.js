@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import pg from "pg";
 import crypto from "node:crypto";
-import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard } from "./durak-rules.js";
+import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands } from "./durak-rules.js";
 
 const { Pool } = pg;
 const app = express();
@@ -911,32 +911,29 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       [roomId]
     );
 
-    const gamePlayers = playersResult.rows.map((row) => ({
-      telegramId: String(row.telegram_id),
-      hand: []
-    }));
-
-    // Раздаём по 6 карт каждому игроку
-    for (const player of gamePlayers) {
-      for (let i = 0; i < 6; i++) {
-        player.hand.push(deck.pop());
-      }
+    // Раздаём карты через общий проверенный модуль правил.
+    // Он гарантирует, что каждому игроку достанется 6 карт и останется козырь.
+    let dealt;
+    try {
+      dealt = dealInitialHands(deck, playersResult.rows.length, 6);
+    } catch (dealError) {
+      return res.status(400).json({
+        ok: false,
+        error: "В колоде недостаточно карт для начала игры"
+      });
     }
 
-    // Определяем козырь
-if (deck.length === 0) {
-  return res.status(400).json({
-    ok: false,
-    error: "В колоде недостаточно карт для начала игры"
-  });
-}
-
-const trumpCard = deck[deck.length - 1];
-const trumpSuit = trumpCard.suit;
+    const gamePlayers = playersResult.rows.map((row, index) => ({
+      telegramId: String(row.telegram_id),
+      hand: dealt.hands[index]
+    }));
+    const remainingDeck = dealt.deck;
+    const trumpCard = dealt.trumpCard;
+    const trumpSuit = dealt.trumpSuit;
         // Сохраняем состояние игры
      const gameState = {
   players: gamePlayers,
-  deck,
+  deck: remainingDeck,
   trumpCard,
   trumpSuit,
   table: [],
