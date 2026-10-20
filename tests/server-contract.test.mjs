@@ -56,10 +56,10 @@ test("game actions allow only known actions and verify room membership", () => {
   assert.match(body, /Защищаться может только отбивающийся игрок/);
   assert.match(body, /Этой картой нельзя побить атакующую карту/);
   assert.match(body, /Сохраняем состояние партии/);
-  assert.match(body, /SELECT game_state[\\s\\S]*FOR UPDATE/);
-  assert.match(body, /await client\\.query\\("BEGIN"\\)/);
-  assert.match(body, /await client\\.query\\("COMMIT"\\)/);
-  assert.match(body, /await client\\.query\\("ROLLBACK"\\)/);
-  assert.match(body, /client\\.release\\(\\)/);
+  assert.match(body, /SELECT game_state[\s\S]*FOR UPDATE/);
+  assert.match(body, /await client\.query\("BEGIN"\)/);
+  assert.match(body, /await client\.query\("COMMIT"\)/);
+  assert.match(body, /await client\.query\("ROLLBACK"\)/);
+  assert.match(body, /client\.release\(\)/);
   assert.match(body, /UPDATE durak_games/);
 });
