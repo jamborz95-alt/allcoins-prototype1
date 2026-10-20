@@ -3157,6 +3157,12 @@ try {
   if (gameResult.ok) {
     const startedRoomId = durakWaitingRoom.id;
 
+    // Останавливаем опрос комнаты ожидания при автоматическом переходе к игре.
+    if (durakWaitingRefreshTimer !== null) {
+      clearInterval(durakWaitingRefreshTimer);
+      durakWaitingRefreshTimer = null;
+    }
+    durakWaitingRoom = null;
     currentDurakRoomId = startedRoomId;
 
     $("durakWaitingPanel").style.display = "none";
