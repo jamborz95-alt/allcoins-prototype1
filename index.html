@@ -292,12 +292,15 @@
 }
 .durak-flying-card {
   position: fixed !important;
+  display: block !important;
   margin: 0 !important;
+  padding: 0 !important;
   pointer-events: none !important;
-  z-index: 20000 !important;
+  z-index: 2147483647 !important;
   transform-origin: center center;
-  will-change: transform, opacity;
-  box-shadow: 0 12px 24px rgba(0,0,0,.35) !important;
+  will-change: transform;
+  opacity: 1 !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,.38) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   #durakGame #durakHand .durak-card { transition: none !important; }
@@ -1694,7 +1697,7 @@ $("durakGameStatus").textContent = "Загружаем карты...";
 
         game.hand.forEach((card) => {
           const cardElement = createDurakCardElement(card);
-          cardElement.classList.add("player-card");
+          cardElement.classList.add("player-card");\n    cardElement.dataset.cardId = String(card.id);
 cardElement.style.cursor = "pointer";
 
 cardElement.onclick = () => {
@@ -2000,10 +2003,9 @@ const imageName = cardImages[rank.toUpperCase() + "-" + suit];
 }
 
 // Короткая анимация: карта визуально перелетает из руки на стол.
+// Плавная и непрерывная анимация розыгрыша карты.
 function animateDurakCardToTarget(cardElement, targetElement) {
-  if (!cardElement || !targetElement || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return Promise.resolve();
-  }
+  if (!cardElement || !targetElement) return Promise.resolve();
 
   const from = cardElement.getBoundingClientRect();
   const to = targetElement.getBoundingClientRect();
@@ -2013,37 +2015,46 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 
   const flyer = cardElement.cloneNode(true);
   flyer.classList.add("durak-flying-card");
-  flyer.classList.remove("selected", "is-dragging");
+  flyer.classList.remove("selected", "is-dragging", "dragging");
   flyer.style.left = from.left + "px";
   flyer.style.top = from.top + "px";
   flyer.style.width = from.width + "px";
   flyer.style.height = from.height + "px";
-  flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1)";
+  flyer.style.margin = "0";
   flyer.style.opacity = "1";
+  flyer.style.transform = "translate3d(0,0,0) scale(1)";
+  flyer.style.transition = "none";
   document.body.appendChild(flyer);
-
-  // Принудительно фиксируем исходную позицию перед запуском transition.
   void flyer.getBoundingClientRect();
 
-  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-  const dy = to.top + Math.min(to.height * 0.42, 46) - (from.top + from.height / 2);
+  // Защиту кладём прямо на атакующую карту; атаку — в центр игровой зоны.
+  const targetCard = targetElement.matches?.(".durak-card")
+    ? targetElement
+    : null;
+  const targetRect = targetCard ? targetCard.getBoundingClientRect() : to;
+  const dx = targetRect.left + (targetCard ? 12 : targetRect.width * 0.5) -
+    (from.left + from.width * 0.5);
+  const dy = targetRect.top + (targetCard ? 8 : Math.min(targetRect.height * 0.35, 52)) -
+    (from.top + from.height * 0.5);
 
   return new Promise((resolve) => {
-    let finished = false;
+    let done = false;
     const finish = () => {
-      if (finished) return;
-      finished = true;
-      flyer.removeEventListener("transitionend", finish);
+      if (done) return;
+      done = true;
+      flyer.removeEventListener("transitionend", onEnd);
       flyer.remove();
       resolve();
     };
-    flyer.addEventListener("transitionend", finish, { once: true });
-    flyer.style.transition = "transform 340ms cubic-bezier(.18,.72,.22,1), opacity 340ms ease";
+    const onEnd = (event) => {
+      if (event.target === flyer && event.propertyName === "transform") finish();
+    };
+    flyer.addEventListener("transitionend", onEnd);
     requestAnimationFrame(() => {
-      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${dx >= 0 ? 5 : -5}deg) scale(.92)`;
-      flyer.style.opacity = ".92";
+      flyer.style.transition = "transform 420ms cubic-bezier(.22,.8,.25,1)";
+      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) scale(.96)`;
     });
-    window.setTimeout(finish, 430);
+    window.setTimeout(finish, 520);
   });
 }
 
@@ -2448,132 +2459,117 @@ if (Array.isArray(game.hand)) {
       selectedDurakCardId = card.id;
     };
 
-    // Перетаскивание карты пальцем
+    // Перетаскивание через отдельную копию поверх стола.
     cardElement.onpointerdown = (event) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || durakActionInProgress) return;
+      event.preventDefault();
 
       const startX = event.clientX;
       const startY = event.clientY;
+      const originalRect = cardElement.getBoundingClientRect();
       let dragging = false;
-
-      cardElement.dataset.dragged = "false";
+      let flyer = null;
+      let offsetX = 0;
+      let offsetY = 0;
 
       const moveCard = (moveEvent) => {
-        const distanceX = moveEvent.clientX - startX;
-        const distanceY = moveEvent.clientY - startY;
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
 
-        if (!dragging && Math.hypot(distanceX, distanceY) > 5) {
-  dragging = true;
-  durakCardDragging = true;
-  selectedDurakCardId = card.id;
-  cardElement.style.zIndex = "1000";
-  cardElement.style.opacity = "0.85";
-  cardElement.style.transition = "none";
-}
+        if (!dragging && Math.hypot(dx, dy) > 6) {
+          dragging = true;
+          durakCardDragging = true;
+          selectedDurakCardId = card.id;
 
-if (dragging) {
-  moveEvent.preventDefault();
+          flyer = cardElement.cloneNode(true);
+          flyer.classList.add("durak-flying-card");
+          flyer.classList.remove("selected", "is-dragging", "dragging");
+          flyer.style.left = originalRect.left + "px";
+          flyer.style.top = originalRect.top + "px";
+          flyer.style.width = originalRect.width + "px";
+          flyer.style.height = originalRect.height + "px";
+          flyer.style.transition = "none";
+          flyer.style.transform = "translate3d(0,0,0) scale(1)";
+          flyer.style.opacity = "1";
+          document.body.appendChild(flyer);
+          offsetX = startX - originalRect.left;
+          offsetY = startY - originalRect.top;
+          cardElement.style.opacity = "0";
+          cardElement.style.transition = "none";
+          cardElement.dataset.dragged = "true";
+        }
 
-  cardElement.style.transform =
-    `translate(${distanceX}px, ${distanceY}px) rotate(4deg)`;
-}
+        if (dragging && flyer) {
+          moveEvent.preventDefault();
+          flyer.style.left = (moveEvent.clientX - offsetX) + "px";
+          flyer.style.top = (moveEvent.clientY - offsetY) + "px";
+          flyer.style.transform = "rotate(3deg) scale(1.035)";
+        }
       };
 
-      const releaseCard = async (upEvent) => {
-  document.removeEventListener("pointermove", moveCard);
-  document.removeEventListener("pointerup", releaseCard);
-  document.removeEventListener("pointercancel", cancelCard);
-
-  durakCardDragging = false;
-
-  cardElement.style.zIndex = "";
-  cardElement.style.opacity = "";
-  cardElement.style.transition = "";
-
-  if (!dragging) return;
-
-  cardElement.dataset.dragged = "true";
-
-  // Возвращаем карту в исходное положение перед проверкой стола
-  cardElement.style.transform = "";
-
-  // Определяем элемент под пальцем
-  const elementUnderPointer = document.elementFromPoint(
-    upEvent.clientX,
-    upEvent.clientY
-  );
-
-  const table = $("durakTable");
-
-  // Проверяем, отпущена ли карта над игровым столом
-  const droppedOnTable =
-    table &&
-    elementUnderPointer &&
-    (
-      table === elementUnderPointer ||
-      table.contains(elementUnderPointer) ||
-      elementUnderPointer.closest("#durakTable") === table
-    );
-
-  cardElement.style.border = "";
-
-  if (!droppedOnTable) {
-    return;
-  }
-
-  selectedDurakCardId = card.id;
-
-  const targetCard = elementUnderPointer.closest(
-    "#durakTable .durak-card"
-  );
-
-  const isDefender =
-    Number(game.playerIndex) === Number(game.defenderIndex);
-
-  const isAttacker =
-    Number(game.playerIndex) === Number(game.attackerIndex);
-
-  // Защита: нужно положить карту на карту атаки
-  if (
-    isDefender &&
-    game.phase === "defense" &&
-    targetCard &&
-    targetCard.dataset.tableCardType === "attack"
-  ) {
-    await durakAction("defend");
-    return;
-  }
-
-  // Атака: карту можно положить на свободное место стола
-  if (
-    isAttacker &&
-    game.phase === "attack"
-  ) {
-    await durakAction("attack");
-    return;
-  }
-
-  showStatus(
-    "durakGameStatus",
-    "Сейчас нельзя положить эту карту. Проверь, чей ход."
-  );
-};
-
-      const cancelCard = () => {
+      const cleanup = () => {
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
         durakCardDragging = false;
-        cardElement.style.transform = "";
-        cardElement.style.zIndex = "";
         cardElement.style.opacity = "";
         cardElement.style.transition = "";
+        cardElement.style.transform = "";
+        if (flyer) flyer.remove();
       };
 
-      document.addEventListener("pointermove", moveCard, {
-        passive: false
-      });
+      const releaseCard = async (upEvent) => {
+        document.removeEventListener("pointermove", moveCard);
+        document.removeEventListener("pointerup", releaseCard);
+        document.removeEventListener("pointercancel", cancelCard);
+        durakCardDragging = false;
 
+        if (!dragging) return;
+        cardElement.dataset.dragged = "true";
+
+        const elementUnderPointer = document.elementFromPoint(
+          upEvent.clientX,
+          upEvent.clientY
+        );
+        const table = $("durakTable");
+        const targetCard = elementUnderPointer?.closest("#durakTable .durak-card");
+        const droppedOnTable = table && elementUnderPointer &&
+          (table === elementUnderPointer ||
+           table.contains(elementUnderPointer) ||
+           elementUnderPointer.closest("#durakTable") === table);
+
+        cardElement.style.opacity = "";
+        cardElement.style.transition = "";
+        cardElement.style.transform = "";
+        if (flyer) flyer.remove();
+
+        if (!droppedOnTable) return;
+
+        selectedDurakCardId = card.id;
+        const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
+        const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
+
+        if (
+          isDefender &&
+          game.phase === "defense" &&
+          targetCard &&
+          targetCard.dataset.tableCardType === "attack"
+        ) {
+          await durakAction("defend");
+          return;
+        }
+
+        if (isAttacker && game.phase === "attack") {
+          await durakAction("attack");
+          return;
+        }
+
+        showStatus("durakGameStatus", "Сейчас нельзя положить эту карту. Проверь, чей ход.");
+      };
+
+      const cancelCard = () => cleanup();
+
+      document.addEventListener("pointermove", moveCard, { passive: false });
       document.addEventListener("pointerup", releaseCard);
       document.addEventListener("pointercancel", cancelCard);
     };
