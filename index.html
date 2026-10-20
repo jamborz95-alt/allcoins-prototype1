@@ -1557,7 +1557,10 @@ function createDurakCardElement(card) {
   const suit = String(card.suit || "");
   const cardElement = document.createElement("div");
   cardElement.className = "durak-card premium-card";
-cardElement.dataset.cardId = String(card.id);
+if (["♥", "♡", "♦", "♢"].includes(suit)) {
+  cardElement.classList.add("red");
+}
+  cardElement.dataset.cardId = String(card.id);
 cardElement.style.touchAction = "none";
   // Подбираем готовое изображение для нужной карты
 const cardImages = {
