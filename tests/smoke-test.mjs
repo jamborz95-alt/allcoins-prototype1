@@ -187,8 +187,12 @@ try {
   // The visible card and attack button must perform a real UI-driven move.
   const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
   await page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]').click();
+  const uiMoveResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/durak/action")
+  );
   await page.locator("#durakAttack").click();
-  await page.waitForFunction(() => pendingDurakAction === null);
+  await uiMoveResponse;
+  await page.waitForFunction(() => !durakActionInProgress && pendingDurakAction === null);
   const uiMoveCalls = apiCalls.filter((call) => call.path === "/api/durak/action");
   assert.equal(uiMoveCalls.length, actionsBeforeUiMove + 1,
     "clicking a card and the visible attack button should submit exactly one move");
