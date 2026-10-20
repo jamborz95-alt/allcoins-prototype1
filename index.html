@@ -3380,6 +3380,10 @@ async function loadDurakRooms() {
     const result = await apiRequest("/api/durak/rooms/list", {});
 
     if (!result.ok || !Array.isArray(result.rooms)) {
+      showStatus(
+        "durakGameStatus",
+        result.error || "Не удалось получить список комнат. Попробуй обновить список."
+      );
       return;
     }
 
@@ -3396,6 +3400,10 @@ isOwner: room.is_owner
     render();
     } catch (error) {
     console.log("Не удалось загрузить комнаты Дурак Онлайн:", error.message);
+    showStatus(
+      "durakGameStatus",
+      "Не удалось загрузить комнаты: " + String(error.message || error).slice(0, 140)
+    );
   }
 }
 // Данные комнат Лото
