@@ -2499,9 +2499,16 @@ if (dragging) {
   });
 }
 
+    const gameResultLabel = game.status !== "finished"
+      ? "Идёт партия"
+      : game.isLoser
+        ? "Ты проиграл — ДУРАК"
+        : game.hasLoser
+          ? "Победа! Партия завершена"
+          : "Партия завершена";
+
     $("durakGameStatus").textContent =
-      (game.status === "finished" ? "Партия завершена" : "Идёт партия") +
-      " · Карт в колоде: " + game.cardsLeft;
+      gameResultLabel + " · Карт в колоде: " + game.cardsLeft;
 
   } catch (error) {
     console.log("Обновление Дурака:", error.message);
