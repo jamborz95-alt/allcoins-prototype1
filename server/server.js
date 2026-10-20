@@ -1250,6 +1250,39 @@ app.post("/api/durak/action", async (req, res) => {
 
     const canBeatCard = (defense, attack) => beatsCard(defense, attack, game.trumpSuit);
 
+    // Бот бережёт козыри и выбирает самую дешёвую подходящую карту.
+    function chooseBotAttackIndex(hand, requiredRanks = null) {
+      const candidates = hand
+        .map((card, index) => ({ card, index }))
+        .filter(({ card }) =>
+          !requiredRanks || requiredRanks.includes(card.rank)
+        );
+
+      candidates.sort((a, b) => {
+        const aTrump = a.card.suit === game.trumpSuit ? 1 : 0;
+        const bTrump = b.card.suit === game.trumpSuit ? 1 : 0;
+        return aTrump - bTrump || cardRank(a.card) - cardRank(b.card);
+      });
+
+      return candidates[0]?.index ?? -1;
+    }
+
+    function chooseBotDefenseIndex(hand, attack) {
+      const candidates = hand
+        .map((card, index) => ({ card, index }))
+        .filter(({ card }) => canBeatCard(card, attack));
+
+      candidates.sort((a, b) => {
+        const aUsesTrump = a.card.suit === game.trumpSuit &&
+          attack.suit !== game.trumpSuit ? 1 : 0;
+        const bUsesTrump = b.card.suit === game.trumpSuit &&
+          attack.suit !== game.trumpSuit ? 1 : 0;
+        return aUsesTrump - bUsesTrump || cardRank(a.card) - cardRank(b.card);
+      });
+
+      return candidates[0]?.index ?? -1;
+    }
+
     function nextActivePlayer(startIndex, excluded = []) {
       for (let step = 1; step <= count; step++) {
         const index = (startIndex + step) % count;
@@ -1545,12 +1578,12 @@ if (action === "beat") {
               finishIfNeeded();
               break;
             }
-            candidateIndex = 0;
+            candidateIndex = chooseBotAttackIndex(bot.hand);
           } else if (canAddMore && bot.hand.length > 0) {
             const tableRanks = game.table.flatMap(item =>
               [item.attack?.rank, item.defense?.rank].filter(Boolean)
             );
-            candidateIndex = bot.hand.findIndex(card => tableRanks.includes(card.rank));
+            candidateIndex = chooseBotAttackIndex(bot.hand, tableRanks);
           }
 
           if (candidateIndex >= 0) {
@@ -1582,7 +1615,7 @@ if (action === "beat") {
           const openItem = game.table.find(item => item.attack && !item.defense);
           if (!openItem) break;
           const bot = game.players[botIndex];
-          const defenseIndex = bot.hand.findIndex(card => canBeatCard(card, openItem.attack));
+          const defenseIndex = chooseBotDefenseIndex(bot.hand, openItem.attack);
           if (defenseIndex >= 0) {
             openItem.defense = bot.hand.splice(defenseIndex, 1)[0];
             game.phase = game.table.some(item => item.attack && !item.defense)
