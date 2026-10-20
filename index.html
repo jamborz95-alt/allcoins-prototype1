@@ -2202,7 +2202,7 @@ if (!response.ok) {
 
   return response.json();
 }
-async function durakAction(action) {
+async function durakAction(action, requestedCardIds = null) {
   if (!currentDurakRoomId) {
     alert("Сначала открой игровую комнату.");
     return;
@@ -2219,10 +2219,15 @@ async function durakAction(action) {
   }
 
   const actionRoomId = currentDurakRoomId;
-  const actionCardId =
-    action === "attack" || action === "defend"
-      ? selectedDurakCardId
-      : null;
+  const actionCardIds =
+    action === "attack"
+      ? (Array.isArray(requestedCardIds) && requestedCardIds.length
+          ? [...new Set(requestedCardIds.map(String))]
+          : [String(selectedDurakCardId)])
+      : action === "defend" && selectedDurakCardId
+        ? [String(selectedDurakCardId)]
+        : [];
+  const actionCardId = actionCardIds[0] || null;
 
   // Пока результат предыдущего действия неизвестен, нельзя отправлять другой ход.
   // Повтор той же команды использует прежний ID и не дублирует успешный ход.
@@ -2231,7 +2236,8 @@ async function durakAction(action) {
     (
       pendingDurakAction.roomId !== actionRoomId ||
       pendingDurakAction.action !== action ||
-      String(pendingDurakAction.cardId || "") !== String(actionCardId || "")
+      String(pendingDurakAction.cardId || "") !== String(actionCardId || "") ||
+      JSON.stringify(pendingDurakAction.cardIds || []) !== JSON.stringify(actionCardIds)
     )
   ) {
     showStatus(
@@ -2249,6 +2255,7 @@ async function durakAction(action) {
       roomId: actionRoomId,
       action,
       cardId: actionCardId,
+      cardIds: actionCardIds,
       requestId: actionRequestId
     };
   }
@@ -2272,7 +2279,8 @@ async function durakAction(action) {
       roomId: actionRoomId,
       action: action,
       actionRequestId,
-      ...(actionCardId ? { cardId: actionCardId } : {})
+      ...(actionCardId ? { cardId: actionCardId } : {}),
+      ...(actionCardIds.length ? { cardIds: actionCardIds } : {})
     });
 
     if (!result.ok) {
@@ -2956,16 +2964,35 @@ if (Array.isArray(game.hand)) {
         return;
       }
 
-      document
-        .querySelectorAll("#durakHand .durak-card")
-        .forEach((element) => {
-          element.style.transform = "";
-          element.style.border = "";
-        });
+      const handCards = Array.from(
+        document.querySelectorAll("#durakHand .durak-card")
+      );
+      const alreadySelected = cardElement.dataset.groupSelected === "true";
+      if (alreadySelected) {
+        cardElement.dataset.groupSelected = "false";
+        cardElement.classList.remove("selected");
+        cardElement.style.transform = "";
+        cardElement.style.border = "";
+        const remaining = handCards.filter(el => el.dataset.groupSelected === "true");
+        selectedDurakCardId = remaining.length ? remaining[remaining.length - 1].dataset.cardId : null;
+        return;
+      }
 
+      const selectedCards = handCards.filter(el => el.dataset.groupSelected === "true");
+      // Несколько карт можно выбрать только одного достоинства — как набор для атаки.
+      if (selectedCards.length && selectedCards[0].dataset.rank !== cardElement.dataset.rank) {
+        handCards.forEach(el => {
+          el.dataset.groupSelected = "false";
+          el.classList.remove("selected");
+          el.style.transform = "";
+          el.style.border = "";
+        });
+      }
+
+      cardElement.dataset.groupSelected = "true";
+      cardElement.classList.add("selected");
       cardElement.style.transform = "translateY(-10px)";
       cardElement.style.border = "3px solid #d4af37";
-
       selectedDurakCardId = card.id;
     };
 
@@ -2998,7 +3025,23 @@ if (Array.isArray(game.hand)) {
           durakCardDragging = true;
           selectedDurakCardId = card.id;
 
+          const selectedSameRankCards = Array.from(
+            document.querySelectorAll('#durakHand .durak-card[data-group-selected="true"]')
+          ).filter(element => element.dataset.rank === String(card.rank || ""));
+          const groupedCardIds = selectedSameRankCards.some(element =>
+            element.dataset.cardId === String(card.id)
+          )
+            ? selectedSameRankCards.map(element => String(element.dataset.cardId))
+            : [String(card.id)];
+          cardElement.dataset.dragGroupIds = JSON.stringify(groupedCardIds);
+
           flyer = cardElement.cloneNode(true);
+          if (groupedCardIds.length > 1) {
+            const groupBadge = document.createElement("span");
+            groupBadge.textContent = String(groupedCardIds.length) + " карты";
+            groupBadge.style.cssText = "position:absolute;right:-8px;top:-10px;z-index:4;padding:3px 6px;border-radius:12px;background:#d4af37;color:#182033;font:bold 12px sans-serif;box-shadow:0 2px 6px #0006";
+            flyer.appendChild(groupBadge);
+          }
           flyer.classList.add("durak-flying-card");
           flyer.classList.remove("selected", "is-dragging", "dragging");
           flyer.style.left = originalRect.left + "px";
@@ -3100,7 +3143,17 @@ if (Array.isArray(game.hand)) {
           durakPendingDragFlyer = flyer;
         }
 
-        await durakAction(canDefend ? "defend" : "attack");
+        let draggedGroupIds = [String(card.id)];
+        try {
+          const parsed = JSON.parse(cardElement.dataset.dragGroupIds || "[]");
+          if (Array.isArray(parsed) && parsed.includes(String(card.id))) {
+            draggedGroupIds = parsed;
+          }
+        } catch (_) {}
+        await durakAction(
+          canDefend ? "defend" : "attack",
+          canDefend ? [String(card.id)] : draggedGroupIds
+        );
       };
       const cancelCard = (cancelEvent) => {
         if (cancelEvent.pointerId !== pointerId) return;
