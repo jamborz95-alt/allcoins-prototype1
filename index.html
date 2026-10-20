@@ -2203,7 +2203,12 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 }
 
 async function loadDurakGame(roomId) {
-  if (!roomId || !state.user || !tg?.initData) {
+  if (!roomId) {
+    showStatus("durakGameStatus", "Не выбрана комната. Вернись к списку и открой комнату снова.");
+    return;
+  }
+  if (!state.user || !tg?.initData) {
+    showStatus("durakGameStatus", "Для загрузки партии открой ALLCOINS через Telegram и войди в профиль.");
     return;
   }
 
@@ -2214,7 +2219,7 @@ async function loadDurakGame(roomId) {
     if (!game.ok) {
       showStatus(
         "durakGameStatus",
-        game.error || "Не удалось обновить партию. Попробуй ещё раз."
+        (game.error || "Не удалось обновить партию.") + " Проверь подключение и попробуй обновить игру."
       );
       return;
     }
