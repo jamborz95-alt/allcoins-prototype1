@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDurakDeck, beatsCard, cardRank, dealInitialHands, shuffleDurakDeck } from "../server/durak-rules.js";
+import { createDurakDeck, beatsCard, cardRank, dealInitialHands, shuffleDurakDeck, chooseBotAttackIndex, chooseBotDefenseIndex } from "../server/durak-rules.js";
 
 test("a trump beats a non-trump attack", () => {
   assert.equal(beatsCard({ rank: "6", suit: "♥" }, { rank: "Туз", suit: "♠" }, "♥"), true);
@@ -61,4 +61,44 @@ test("shuffle returns a new array without losing or duplicating cards", () => {
   assert.notEqual(shuffled, deck);
   assert.equal(shuffled.length, deck.length);
   assert.deepEqual(new Set(shuffled.map(card => card.id)), new Set(deck.map(card => card.id)));
+});
+
+
+test("bot opens with the lowest available non-trump card", () => {
+  const hand = [
+    { id: "trump-6", rank: "6", suit: "♥" },
+    { id: "spade-9", rank: "9", suit: "♠" },
+    { id: "club-7", rank: "7", suit: "♣" }
+  ];
+  assert.equal(chooseBotAttackIndex(hand, "♥"), 2);
+});
+
+test("bot throw-in only selects a matching rank and prefers a non-trump", () => {
+  const hand = [
+    { id: "trump-8", rank: "8", suit: "♥" },
+    { id: "spade-9", rank: "9", suit: "♠" },
+    { id: "club-9", rank: "9", suit: "♣" }
+  ];
+  assert.equal(chooseBotAttackIndex(hand, "♥", ["9"]), 2);
+  assert.equal(chooseBotAttackIndex(hand, "♥", ["10"]), -1);
+});
+
+test("bot defense prefers a same-suit card over spending a trump", () => {
+  const hand = [
+    { id: "trump-6", rank: "6", suit: "♥" },
+    { id: "spade-10", rank: "10", suit: "♠" },
+    { id: "spade-8", rank: "8", suit: "♠" }
+  ];
+  const attack = { id: "spade-7", rank: "7", suit: "♠" };
+  assert.equal(chooseBotDefenseIndex(hand, attack, "♥"), 2);
+});
+
+test("bot defense uses the lowest trump that can beat a non-trump attack", () => {
+  const hand = [
+    { id: "trump-9", rank: "9", suit: "♥" },
+    { id: "trump-7", rank: "7", suit: "♥" },
+    { id: "club-ace", rank: "Туз", suit: "♣" }
+  ];
+  const attack = { id: "spade-ace", rank: "Туз", suit: "♠" };
+  assert.equal(chooseBotDefenseIndex(hand, attack, "♥"), 1);
 });
