@@ -139,8 +139,8 @@ try {
   await page.evaluate(async () => { await loadDurakGame("77"); });
   assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
     "defender should still be able to take before the attacker declares beat");
-  assert.equal(await page.locator("#durakDefend").evaluate((el) => el.style.display), "none",
-    "defend button should be hidden when no attack card is uncovered");
+  assert.equal(await page.locator("#durakHand .durak-card").count(), 6,
+    "defender should still see their cards when all current attacks are covered");
 
   mockDurakTable = [
     { attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: { id: "table-7-clubs", rank: "7", suit: "♣" } },
@@ -148,8 +148,10 @@ try {
   ];
   mockDurakPhase = "defense";
   await page.evaluate(async () => { await loadDurakGame("77"); });
-  assert.notEqual(await page.locator("#durakDefend").evaluate((el) => el.style.display), "none",
-    "defender should be able to defend the next uncovered attack");
+  assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ТВОЯ ЗАЩИТА",
+    "defender should keep the defense prompt while another attack remains uncovered");
+  assert.equal(await page.locator("#durakHand .durak-card").count(), 6,
+    "defender should be able to select a card for the next defense");
   assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
     "defender should retain the option to take the full table");
 
