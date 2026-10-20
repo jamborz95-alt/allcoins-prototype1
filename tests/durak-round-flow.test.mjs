@@ -82,20 +82,20 @@ test("finished Durak games record the last player holding cards as the loser", (
 
 test("the test bot is opt-in and is never inserted by normal room creation", () => {
   const createStart = source.indexOf('app.post("/api/durak/rooms",');
-  const createEnd = source.indexOf("\\napp.post(", createStart + 1);
+  const createEnd = source.indexOf("\napp.post(", createStart + 1);
   assert.notEqual(createStart, -1, "Normal room creation route must exist");
   const createBody = source.slice(createStart, createEnd);
-  assert.doesNotMatch(createBody, /VALUES\\s*\\(\\s*\\$1\\s*,\\s*0\\s*,/);
+  assert.doesNotMatch(createBody, /VALUES\s*\(\s*\$1\s*,\s*0\s*,/);
 
   const addBotStart = source.indexOf('app.post("/api/durak/rooms/add-bot",');
-  const addBotEnd = source.indexOf("\\napp.post(", addBotStart + 1);
+  const addBotEnd = source.indexOf("\napp.post(", addBotStart + 1);
   assert.notEqual(addBotStart, -1, "Explicit test-bot route must exist");
   const addBotBody = source.slice(addBotStart, addBotEnd);
-  assert.match(addBotBody, /room\\.status !== "waiting"/);
-  assert.match(addBotBody, /String\\(room\\.owner_telegram_id\\) !== String\\(user\\.id\\)/);
-  assert.match(addBotBody, /VALUES \\(\\$1, 0, TRUE, '🤖 Бот ALLCOINS'\\)/);
+  assert.match(addBotBody, /room\.status !== "waiting"/);
+  assert.match(addBotBody, /String\(room\.owner_telegram_id\) !== String\(user\.id\)/);
+  assert.match(addBotBody, /VALUES \(\$1, 0, TRUE, '🤖 Бот ALLCOINS'\)/);
 });
 
 test("bot automation runs only for a bot already present in the game", () => {
-  assert.match(body, /const botIndex = game\\.players\\.findIndex\\(p => String\\(p\\.telegramId\\) === "0"\\);\\s*if \\(botIndex >= 0\\) \{/);
+  assert.match(body, /const botIndex = game\.players\.findIndex\(p => String\(p\.telegramId\) === "0"\);\s*if \(botIndex >= 0\) \{/);
 });
