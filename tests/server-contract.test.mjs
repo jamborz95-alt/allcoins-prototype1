@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../server/server.js", import.meta.url), "utf8");
+const clientSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
 function routeBody(path) {
   const marker = `app.post("${path}", async (req, res) => {`;
@@ -89,4 +90,12 @@ test("Durak game state exposes only the requesting player's hand, not opponents'
   assert.doesNotMatch(body, /hand: p\.hand/);
   assert.doesNotMatch(body, /telegramId: String\(p\.telegramId\)/);
   assert.doesNotMatch(body, /players: gameState\.players\s*[,}]/);
+});
+
+
+test("a confirmed Durak action schedules a refresh if polling is already in progress", () => {
+  assert.match(clientSource, /let durakGameReloadRequested = false/);
+  assert.match(clientSource, /durakGameReloadRequested = true;[\\s\\S]*?durakGameReloadRoomId = actionRoomId/);
+  assert.match(clientSource, /if \\(durakGameLoadInProgress\\) \\{[\\s\\S]*?durakGameReloadRequested = true/);
+  assert.match(clientSource, /if \\(durakGameReloadRequested\\) \\{[\\s\\S]*?durakGameReloadRequested = false;[\\s\\S]*?setTimeout\\(\\(\\) => loadDurakGame\\(reloadRoomId\\), 0\\)/);
 });
