@@ -127,8 +127,9 @@ try {
   assert.equal(await page.locator("#durakTable").count(), 1, "Durak table should exist");
   assert.equal(await page.locator("#durakAddBotButton").count(), 1, "test bot button should exist");
 
-  // Open the actual Durak screen before testing its visible controls.
+  // Open the actual Durak screen and show the board as if a room had been entered.
   await page.locator("#openDurak").click();
+  await page.locator("#durakBoard").evaluate((el) => { el.style.display = "block"; });
 
   // Render a complete mocked game to test nicknames, card backs, cards and turn controls.
   await page.evaluate(async () => {
