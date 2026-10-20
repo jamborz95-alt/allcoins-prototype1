@@ -1700,7 +1700,12 @@ $("durakGameStatus").textContent = "Загружаем карты...";
           cardElement.classList.add("player-card");\n    cardElement.dataset.cardId = String(card.id);
 cardElement.style.cursor = "pointer";
 
+let suppressNextClick = false;
 cardElement.onclick = () => {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
   document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
     element.classList.remove("selected");
     element.style.transform = "translateY(0)";
@@ -1714,68 +1719,97 @@ cardElement.onclick = () => {
   selectedDurakCardId = card.id;
 };
                   let startX = 0;
-        let startY = 0;
-        let isDragging = false;
+let startY = 0;
+let isDragging = false;
+let flyer = null;
+let pointerId = null;
+let cardStartRect = null;
 
-        cardElement.addEventListener("pointerdown", (event) => {
-          startX = event.clientX;
-          startY = event.clientY;
-          isDragging = false;
-          cardElement.setPointerCapture(event.pointerId);
-        });
-
-        cardElement.addEventListener("pointermove", (event) => {
-          if (!cardElement.hasPointerCapture(event.pointerId)) return;
-
-          const dx = event.clientX - startX;
-          const dy = event.clientY - startY;
-
-          if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-            isDragging = true;
-            cardElement.style.transform =
-              `translate(${dx}px, ${dy}px)`;
-            cardElement.style.zIndex = "100";
-          }
-        });
-        cardElement.addEventListener("pointerup", async (event) => {
-  if (!isDragging) return;
-
-  const target = document.elementFromPoint(
-    event.clientX,
-    event.clientY
-  );
-
-  const table = $("durakTable");
-  const targetCard = target?.closest("#durakTable .durak-card");
-
-  cardElement.style.transform = "translateY(0)";
+const cleanDrag = () => {
+  if (flyer) {
+    flyer.remove();
+    flyer = null;
+  }
+  cardElement.style.opacity = "";
   cardElement.style.zIndex = "";
-  cardElement.style.border = "1px solid #bbbbbb";
+  cardElement.style.transform = "";
+  cardElement.classList.remove("is-dragging");
+};
 
-  if (targetCard) {
-  const tableCardType = targetCard.dataset.tableCardType;
+cardElement.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  startX = event.clientX;
+  startY = event.clientY;
+  pointerId = event.pointerId;
+  isDragging = false;
+  cardStartRect = cardElement.getBoundingClientRect();
+  try { cardElement.setPointerCapture(event.pointerId); } catch (_) {}
+});
 
-  if (tableCardType === "attack") {
+cardElement.addEventListener("pointermove", (event) => {
+  if (pointerId !== event.pointerId || !cardStartRect) return;
+  const dx = event.clientX - startX;
+  const dy = event.clientY - startY;
+
+  if (!isDragging && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+    isDragging = true;
+    suppressNextClick = true;
+    flyer = cardElement.cloneNode(true);
+    flyer.classList.add("durak-flying-card");
+    flyer.classList.remove("selected", "is-dragging", "dragging");
+    flyer.style.left = cardStartRect.left + "px";
+    flyer.style.top = cardStartRect.top + "px";
+    flyer.style.width = cardStartRect.width + "px";
+    flyer.style.height = cardStartRect.height + "px";
+    flyer.style.transform = "translate3d(0,0,0)";
+    flyer.style.transition = "none";
+    document.body.appendChild(flyer);
+    cardElement.style.opacity = "0";
+    cardElement.classList.add("is-dragging");
+  }
+
+  if (isDragging && flyer) {
+    flyer.style.left = (cardStartRect.left + dx) + "px";
+    flyer.style.top = (cardStartRect.top + dy) + "px";
+  }
+});
+
+cardElement.addEventListener("pointerup", async (event) => {
+  if (pointerId !== event.pointerId) return;
+  const wasDragging = isDragging;
+  const target = wasDragging
+    ? document.elementFromPoint(event.clientX, event.clientY)
+    : null;
+  const targetCard = target?.closest("#durakTable .durak-card");
+  const table = $("durakTable");
+  const droppedOnTable = !!(table && target && table.contains(target));
+  cleanDrag();
+  pointerId = null;
+  cardStartRect = null;
+  isDragging = false;
+
+  if (!wasDragging) return;
+  suppressNextClick = true;
+
+  if (targetCard && targetCard.dataset.tableCardType === "attack") {
     selectedDurakCardId = card.id;
     await durakAction("defend");
-  }
-
-  return;
-  }
-
-  if (table && target && table.contains(target)) {
+  } else if (droppedOnTable) {
     selectedDurakCardId = card.id;
     await durakAction("attack");
   }
 });
 
-cardElement.addEventListener("pointercancel", () => {
+cardElement.addEventListener("pointercancel", (event) => {
+  if (pointerId !== event.pointerId) return;
+  cleanDrag();
+  pointerId = null;
+  cardStartRect = null;
   isDragging = false;
-  cardElement.style.transform = "translateY(0)";
-  cardElement.style.zIndex = "";
+  suppressNextClick = true;
 });
-        
-          if (card.suit === "♥" || card.suit === "♦") {
+
+if (card.suit === "♥" || card.suit === "♦") {
             cardElement.classList.add("red");
           }
 
