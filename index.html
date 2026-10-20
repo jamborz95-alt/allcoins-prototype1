@@ -844,6 +844,36 @@
 #durakGame .premium-card .card-corner-bottom .corner-suit {
   font-size: 12px;
 }
+
+/* ALLCOINS — компактное расположение пар карт на узких экранах */
+@media (max-width: 380px) {
+  #durakGame #durakTable .durak-table-pair {
+    width: 88px !important;
+    flex: 0 0 88px !important;
+    height: 108px !important;
+    margin: 2px !important;
+  }
+
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+    width: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    height: 86px !important;
+  }
+
+  #durakGame #durakTable .durak-table-pair
+  .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important;
+    top: 0 !important;
+  }
+
+  #durakGame #durakTable .durak-table-pair
+  .durak-card.table-card[data-table-card-type="defense"] {
+    left: 24px !important;
+    top: -5px !important;
+  }
+}
+
   </style>
 </head>
 <body>
