@@ -3769,15 +3769,34 @@ if (stake > state.balance) {
   return;
 }   
 
-  if (!state.user || !tg?.initData) {
-    alert("Открой ALLCOINS через Telegram и войди в профиль.");
+  if (!tg?.initData) {
+    showStatus("durakCreateStatus", "Открой ALLCOINS именно через Telegram, затем попробуй снова.");
     return;
   }
 
   const button = $("createRoom");
   button.disabled = true;
+  showStatus("durakCreateStatus", "Подключаемся к серверу и создаём комнату…");
 
   try {
+    // Повторно подтверждаем профиль перед созданием комнаты.
+    // Это исправляет случай, когда экран игры открылся раньше завершения авторизации.
+    if (!state.user) {
+      const authResult = await apiRequest("/api/auth", {});
+      if (authResult.ok && authResult.player) {
+        state.user = authResult.player;
+        if (authResult.player.balance !== undefined) {
+          state.balance = Number(authResult.player.balance);
+        }
+        if (authResult.player.energy !== undefined) {
+          state.energy = Number(authResult.player.energy);
+        }
+        render();
+      } else {
+        throw new Error("Не удалось подтвердить профиль Telegram.");
+      }
+    }
+
     const result = await apiRequest("/api/durak/rooms", {
   name: roomName,
   maxPlayers: roomCapacity,
