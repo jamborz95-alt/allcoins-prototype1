@@ -2985,6 +2985,9 @@ const imageName = cardImages[rank.toUpperCase() + "-" + suit];
 // Короткая анимация: карта визуально перелетает из руки на стол.
 // Плавная и непрерывная анимация розыгрыша карты.
 let durakPendingDragFlyer = null;
+// Не запускаем раздачу повторно при каждом автообновлении состояния.
+let durakAnimatedCardIds = new Set();
+let durakAnimationRoomId = null;
 
 // После отпускания на поле продолжаем движение той же визуальной карты.
 // Не создаём вторую копию из руки: это убирает эффект «назад, затем снова вперёд».
@@ -3495,6 +3498,10 @@ defenseCard.style.boxSizing = "border-box";
 }
 
 
+if (String(durakAnimationRoomId) !== String(roomId)) {
+  durakAnimationRoomId = roomId;
+  durakAnimatedCardIds = new Set();
+}
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
@@ -3756,6 +3763,38 @@ if (Array.isArray(game.hand)) {
     };
 
     $("durakHand").appendChild(cardElement);
+
+    // Новая карта плавно прилетает из колоды в руку. Идентификаторы запоминаются,
+    // чтобы автообновление каждые 2 секунды не запускало анимацию заново.
+    const animationCardId = String(card.id);
+    if (!durakAnimatedCardIds.has(animationCardId)) {
+      durakAnimatedCardIds.add(animationCardId);
+      const deck = document.querySelector("#durakTrump .durak-deck-stack");
+      const deckRect = deck ? deck.getBoundingClientRect() : null;
+      const handRect = cardElement.getBoundingClientRect();
+      if (deckRect && handRect.width > 0 && handRect.height > 0 &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const dx = deckRect.left + deckRect.width / 2 - (handRect.left + handRect.width / 2);
+        const dy = deckRect.top + deckRect.height / 2 - (handRect.top + handRect.height / 2);
+        cardElement.style.opacity = "0";
+        cardElement.style.transition = "none";
+        cardElement.style.transform = "translate3d(" + dx + "px," + dy + "px,0) scale(.72) rotate(-7deg)";
+        cardElement.style.transformOrigin = "center center";
+        cardElement.style.zIndex = String(30 + (game.hand.length - 1));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (!cardElement.isConnected) return;
+          cardElement.style.transition = "transform 460ms cubic-bezier(.18,.72,.25,1), opacity 220ms ease";
+          cardElement.style.opacity = game.status === "playing" ? "1" : "0.65";
+          cardElement.style.transform = "";
+          window.setTimeout(() => {
+            if (!cardElement.isConnected) return;
+            cardElement.style.transition = "";
+            cardElement.style.transform = "";
+            cardElement.style.zIndex = "";
+          }, 500);
+        }));
+      }
+    }
   });
 }
 
