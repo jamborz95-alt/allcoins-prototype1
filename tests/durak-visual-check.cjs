@@ -142,7 +142,9 @@ const path = require("node:path");
     await page.mouse.up();
     const flyer = page.locator("body > .durak-flying-card, #durakGame .durak-flying-card").first();
     const flyerAtRelease = await flyer.boundingBox();
-    await page.waitForTimeout(160);
+    // Карта должна продолжать движение после отпускания, а затем быстро
+    // смениться видимой картой в точке посадки (без зависшей копии над столом).
+    await page.waitForTimeout(40);
     const flyerInFlight = await flyer.boundingBox();
     await page.screenshot({ path: path.join(out, "04-game-in-flight-after-release.png"), fullPage: true });
     const animationMoved = Boolean(
@@ -150,6 +152,21 @@ const path = require("node:path");
       (Math.abs(flyerInFlight.x - flyerAtRelease.x) > 3 ||
        Math.abs(flyerInFlight.y - flyerAtRelease.y) > 3)
     );
+    await page.waitForTimeout(140);
+    const optimisticLanding = await page.evaluate(() => {
+      const element = document.querySelector('#durakTable .durak-landing-target[data-optimistic-landing="true"]');
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        visible: style.visibility !== "hidden" && Number(style.opacity) > 0.9,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height
+      };
+    });
+    await page.screenshot({ path: path.join(out, "04b-game-card-landed-before-server-reply.png"), fullPage: true });
     await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(out, "05-game-after-drop.png"), fullPage: true });
 
@@ -169,6 +186,8 @@ const path = require("node:path");
     const animationDiagnostics = {
       flyerPresentImmediatelyAfterRelease: Boolean(flyerAtRelease),
       flyerMovedDuringReleaseAnimation: animationMoved,
+      optimisticLandingVisibleBeforeServerReply: Boolean(optimisticLanding?.visible),
+      optimisticLanding,
       flyerAtRelease,
       flyerInFlight
     };
@@ -182,6 +201,9 @@ const path = require("node:path");
     }
     if (!animationMoved) {
       throw new Error("Карта не перемещалась после отпускания пальца: анимация приземления не подтверждена");
+    }
+    if (!optimisticLanding?.visible) {
+      throw new Error("Карта не закрепилась в точке посадки до ответа сервера");
     }
     if (diagnostics.tableAttackCardsAfterDrop !== 1) {
       throw new Error("После перетаскивания карта не закрепилась на столе. Карты на столе: " + diagnostics.tableAttackCardsAfterDrop);
