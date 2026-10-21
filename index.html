@@ -4173,9 +4173,24 @@ if (Array.isArray(game.hand)) {
         const tableRect = table?.getBoundingClientRect();
         const pointX = upEvent.clientX;
         const pointY = upEvent.clientY;
-        const droppedOnTable = !!(table && tableRect &&
-          pointX >= tableRect.left && pointX <= tableRect.right &&
-          pointY >= tableRect.top && pointY <= tableRect.bottom);
+        // На телефоне карта часто отпускается сразу над рукой, чуть не доходя
+        // пальцем до стола. Считаем короткий направленный бросок на стол,
+        // если палец/сама карта заходит в расширенную верхнюю зону стола.
+        const releasedCardRect = flyer?.getBoundingClientRect();
+        const cardOverlapsTable = !!(tableRect && releasedCardRect &&
+          releasedCardRect.right > tableRect.left + 8 &&
+          releasedCardRect.left < tableRect.right - 8 &&
+          releasedCardRect.bottom > tableRect.top + 10 &&
+          releasedCardRect.top < tableRect.bottom);
+        const shortForwardDrop = !!(tableRect &&
+          pointX >= tableRect.left - 24 && pointX <= tableRect.right + 24 &&
+          pointY >= tableRect.top - 86 && pointY <= tableRect.bottom &&
+          latestDragY > startY + 12);
+        const droppedOnTable = !!(table && tableRect && (
+          (pointX >= tableRect.left && pointX <= tableRect.right &&
+           pointY >= tableRect.top && pointY <= tableRect.bottom) ||
+          cardOverlapsTable || shortForwardDrop
+        ));
         const targetCard = table
           ? Array.from(table.querySelectorAll('.durak-card[data-table-card-type="attack"]'))
               .find(element => {
@@ -4183,8 +4198,15 @@ if (Array.isArray(game.hand)) {
                 const alreadyCovered = !!pair?.querySelector('.durak-card[data-table-card-type="defense"]');
                 if (alreadyCovered) return false;
                 const rect = element.getBoundingClientRect();
-                return pointX >= rect.left && pointX <= rect.right &&
+                const releaseCardRect = flyer?.getBoundingClientRect();
+                const pointerHitsCard = pointX >= rect.left && pointX <= rect.right &&
                   pointY >= rect.top && pointY <= rect.bottom;
+                const cardEdgeHitsCard = !!(releaseCardRect &&
+                  releaseCardRect.right > rect.left + 12 &&
+                  releaseCardRect.left < rect.right - 12 &&
+                  releaseCardRect.bottom > rect.top + 12 &&
+                  releaseCardRect.top < rect.bottom - 12);
+                return pointerHitsCard || cardEdgeHitsCard;
               })
           : null;
 
