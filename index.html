@@ -2212,7 +2212,12 @@ async function durakAction(action, requestedCardIds = null) {
     action === "attack"
       ? (Array.isArray(requestedCardIds) && requestedCardIds.length
           ? [...new Set(requestedCardIds.map(String))]
-          : [String(selectedDurakCardId)])
+          : (() => {
+              const grouped = Array.from(
+                document.querySelectorAll("#durakHand .durak-card[data-group-selected='true']")
+              ).map(card => String(card.dataset.cardId));
+              return grouped.length ? [...new Set(grouped)] : [String(selectedDurakCardId)];
+            })())
       : action === "defend" && selectedDurakCardId
         ? [String(selectedDurakCardId)]
         : [];
