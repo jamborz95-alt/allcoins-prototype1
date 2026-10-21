@@ -57,6 +57,12 @@ test("the bot continues defending until no uncovered attack cards remain", () =>
   assert.match(body, /openItem\.defense = bot\.hand\.splice\(defenseIndex, 1\)\[0\];[\s\S]*?continue;\s*\} else \{/);
 });
 
+test("drag-and-drop allows the attacker to throw in during the defense phase", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const frontend = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(frontend, /const canAttack = isAttacker && \(game\.phase === "attack" \|\| game\.phase === "defense"\) && droppedOnTable/);
+});
+
 test("the bot attacker can throw in a matching rank while the defender still has an open attack", () => {
   const botAttackStart = body.indexOf('if (game.attackerIndex === botIndex) {');
   const botAttackEnd = body.indexOf('if (game.defenderIndex === botIndex)', botAttackStart);
