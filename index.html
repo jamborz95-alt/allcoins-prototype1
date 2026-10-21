@@ -3811,25 +3811,36 @@ if (stake > state.balance) {
     }
 
     const room = result.room;
+    let botAddError = "";
 
-    if (singlePlayerWithBot) {
-      await apiRequest("/api/durak/rooms/add-bot", { roomId: room.id });
-    }
-
+    // Сначала фиксируем созданную комнату на экране. Если добавление бота
+    // не сработает, не показываем ложное сообщение, будто сама комната не создана.
     state.rooms.push({
-  id: room.id,
-  name: room.name,
-  players: Number(room.max_players),
-  playersCount: singlePlayerWithBot ? 2 : 1,
-  stake: Number(room.stake),
-  status: "waiting",
-  isOwner: true
-});
+      id: room.id,
+      name: room.name || roomName,
+      players: Number(room.max_players || roomCapacity),
+      playersCount: 1,
+      stake: Number(room.stake),
+      status: "waiting",
+      isOwner: true
+    });
 
     render();
 
-    // Остаёмся внутри экрана «Дурак Онлайн» и сразу открываем созданную комнату.
-    // Никакого alert и возврата в ALLCOINS: список игроков обновляется автоматически.
+    if (singlePlayerWithBot) {
+      try {
+        const botResult = await apiRequest("/api/durak/rooms/add-bot", { roomId: room.id });
+        if (!botResult.ok) {
+          botAddError = botResult.error || "Бот не добавлен.";
+        } else {
+          state.rooms[state.rooms.length - 1].playersCount = 2;
+        }
+      } catch (botError) {
+        botAddError = String(botError?.message || botError || "Бот не добавлен.").slice(0, 140);
+      }
+    }
+
+    // Остаёмся внутри «Дурак Онлайн» и открываем комнату, даже если бот не добавился.
     $("durakCreatePanel").style.display = "none";
     $("durakRoomsPanel").style.display = "none";
     $("durakRoomActions").style.display = "none";
@@ -3840,13 +3851,17 @@ if (stake > state.balance) {
       ...room,
       id: room.id,
       name: room.name || roomName,
+      max_players: Number(room.max_players || roomCapacity),
       isOwner: true
     });
+
     showStatus(
       "durakWaitingStatus",
-      singlePlayerWithBot
-        ? "Комната создана. Бот ALLCOINS добавлен — можно начинать игру."
-        : "Комната создана! Ожидаем игроков."
+      botAddError
+        ? "Комната создана, но бот не добавился: " + botAddError
+        : singlePlayerWithBot
+          ? "Комната создана. Бот ALLCOINS добавлен — можно начинать игру."
+          : "Комната создана! Ожидаем игроков."
     );
   } catch (error) {
     const message = String(error?.message || error || "Неизвестная ошибка").slice(0, 180);
