@@ -4416,8 +4416,12 @@ $("durakReadyButton").onclick = async function () {
 };
 
 
-// Кнопка «Начать игру» для создателя
-$("durakStartButton").onclick = async function () {
+// Кнопка «Начать игру» для создателя — не даём событию закрыть Mini App/перейти по форме.
+$("durakStartButton").type = "button";
+$("durakStartButton").addEventListener("click", async function (event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
   if (!durakWaitingRoom) {
     alert("Сначала открой свою комнату.");
     return;
@@ -4471,7 +4475,7 @@ $("durakStartButton").onclick = async function () {
   } finally {
     button.disabled = false;
   }
-};
+}, { capture: true });
 
 
 // Возврат к списку комнат
