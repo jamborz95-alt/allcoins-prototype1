@@ -407,11 +407,12 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
       room: roomResult.rows[0]
     });
   } catch (error) {
-    console.error("Create Durak room error:", error.message);
+    console.error("Create Durak room error:", error.stack || error.message);
 
     return res.status(500).json({
       ok: false,
-      error: "Server error"
+      error: "Не удалось создать комнату",
+      debugMessage: String(error.message || "Неизвестная ошибка").slice(0, 240)
     });
   }
 });// Получение списка комнат Дурак Онлайн
