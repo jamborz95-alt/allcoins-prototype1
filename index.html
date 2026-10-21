@@ -2200,6 +2200,153 @@
       margin: 0 !important;
       visibility: visible !important;
     }
+
+/* ALLCOINS Durak reference pass: larger readable hand + visible opponent hands. */
+@media (max-width: 600px) {
+  #durakGame.durak-fullscreen #durakHand {
+    position: fixed !important;
+    left: 2px !important;
+    right: 2px !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    gap: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 0 2px !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    z-index: 15 !important;
+    touch-action: none !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 5px !important;
+    box-shadow: 0 3px 9px rgba(0,0,0,.32) !important;
+    touch-action: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card.image-card {
+    overflow: hidden !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card.image-card > img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: fill !important;
+    object-position: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+  /* Без заголовка перед рукой: он раньше попадал поверх увеличенных карт. */
+  #durakGame.durak-fullscreen #durakBoard > h4 {
+    display: none !important;
+  }
+  /* Карты соперников находятся вокруг плашки игрока, а не внутри тесного квадрата. */
+  #durakGame.durak-fullscreen .durak-player {
+    overflow: visible !important;
+    isolation: isolate;
+  }
+  #durakGame.durak-fullscreen .durak-player .durak-card-backs {
+    position: absolute !important;
+    top: calc(100% - 2px) !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    width: max-content !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translateX(-50%) !important;
+    background: transparent !important;
+    z-index: 9 !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+  }
+  #durakGame.durak-fullscreen .durak-player .durak-card-back {
+    position: relative !important;
+    flex: 0 0 20px !important;
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    margin: 0 0 0 -9px !important;
+    border: 1px solid #d8bb72 !important;
+    border-radius: 3px !important;
+    background: repeating-linear-gradient(45deg, #172b49 0 3px, #2d4a70 3px 6px) !important;
+    box-shadow: inset 0 0 0 1px rgba(234,205,128,.75), 0 1px 2px rgba(0,0,0,.28) !important;
+    box-sizing: border-box !important;
+  }
+  #durakGame.durak-fullscreen .durak-player .durak-card-back:first-child {
+    margin-left: 0 !important;
+  }
+  /* У боковых соперников рубашки стоят вертикально, как в референсе. */
+  #durakGame.durak-fullscreen .durak-player[data-seat="left"] .durak-card-backs,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-top"] .durak-card-backs,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-bottom"] .durak-card-backs {
+    top: 50% !important;
+    left: calc(100% - 2px) !important;
+    right: auto !important;
+    flex-direction: column !important;
+    transform: translateY(-50%) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="right"] .durak-card-backs,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-top"] .durak-card-backs,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-bottom"] .durak-card-backs {
+    top: 50% !important;
+    left: auto !important;
+    right: calc(100% - 2px) !important;
+    flex-direction: column !important;
+    transform: translateY(-50%) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="left"] .durak-card-back,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-top"] .durak-card-back,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-bottom"] .durak-card-back,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right"] .durak-card-back,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-top"] .durak-card-back,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-bottom"] .durak-card-back {
+    margin: -20px 0 0 0 !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="left"] .durak-card-back:first-child,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-top"] .durak-card-back:first-child,
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-bottom"] .durak-card-back:first-child,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right"] .durak-card-back:first-child,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-top"] .durak-card-back:first-child,
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-bottom"] .durak-card-back:first-child {
+    margin-top: 0 !important;
+  }
+  /* При 5–6 игроках верхние и боковые плашки не должны накладываться друг на друга. */
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-top"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-top"] {
+    top: 29% !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-bottom"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-bottom"] {
+    top: 65% !important;
+  }
+}
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
@@ -3089,7 +3236,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     flyerImage.style.height = "100%";
     flyerImage.style.maxWidth = "100%";
     flyerImage.style.maxHeight = "100%";
-    flyerImage.style.objectFit = "contain";
+    flyerImage.style.objectFit = "fill";
   }
   flyer.style.transformOrigin = "top left";
   flyer.style.margin = "0";
@@ -3690,8 +3837,8 @@ if (Array.isArray(game.hand)) {
           const flyHeight = Math.min(originalRect.height, 148);
           flyer.style.width = flyWidth + "px";
           flyer.style.height = flyHeight + "px";
-          flyer.style.maxWidth = "min(24vw, 112px)";
-          flyer.style.maxHeight = "min(34vw, 148px)";
+          flyer.style.maxWidth = "none";
+          flyer.style.maxHeight = "none";
           flyer.style.boxSizing = "border-box";
           flyer.style.overflow = "hidden";
           const flyerImage = flyer.querySelector("img");
@@ -3700,7 +3847,7 @@ if (Array.isArray(game.hand)) {
             flyerImage.style.height = "100%";
             flyerImage.style.maxWidth = "100%";
             flyerImage.style.maxHeight = "100%";
-            flyerImage.style.objectFit = "contain";
+            flyerImage.style.objectFit = "fill";
           }
           flyer.style.transition = "none";
           flyer.style.transform = "rotate(0deg) scale(1.035)";
@@ -3912,23 +4059,31 @@ if (Array.isArray(game.hand)) {
     }
   });
 
-  // Размер каждой карты остаётся постоянным даже при большой руке.
-  // Если карт много, увеличиваем только перекрытие, чтобы вся рука помещалась на телефоне.
+  // Подгоняем веер карт под ширину экрана: каждая карта крупнее, а перекрытие
+  // растёт только тогда, когда карт в руке становится больше.
   const handBox = $("durakHand");
   if (handBox) {
     const handCards = Array.from(handBox.querySelectorAll(".durak-card.premium-card"));
-    const fixedCardWidth = 56;
-    const available = Math.max(1, handBox.clientWidth || window.innerWidth - 4);
-    const overlap = handCards.length > 1
-      ? Math.min(38, Math.max(5, (fixedCardWidth * handCards.length - available) / (handCards.length - 1)))
-      : 0;
+    const count = handCards.length;
+    const available = Math.max(240, handBox.clientWidth || window.innerWidth - 8);
+    const cardWidth = count
+      ? Math.floor(Math.min(90, Math.max(54, available / (1 + Math.max(0, count - 1) * 0.60))))
+      : 54;
+    const cardHeight = Math.round(cardWidth * 1.62);
+    const step = count > 1
+      ? Math.max(6, Math.min(cardWidth * 0.60, (available - cardWidth) / (count - 1)))
+      : cardWidth;
+    const overlap = Math.max(0, cardWidth - step);
+
     handCards.forEach((handCard, index) => {
-      handCard.style.setProperty("flex", "0 0 56px", "important");
-      handCard.style.setProperty("width", "56px", "important");
-      handCard.style.setProperty("min-width", "56px", "important");
-      handCard.style.setProperty("max-width", "56px", "important");
-      handCard.style.setProperty("height", "84px", "important");
+      handCard.style.setProperty("flex", "0 0 " + cardWidth + "px", "important");
+      handCard.style.setProperty("width", cardWidth + "px", "important");
+      handCard.style.setProperty("min-width", cardWidth + "px", "important");
+      handCard.style.setProperty("max-width", cardWidth + "px", "important");
+      handCard.style.setProperty("height", cardHeight + "px", "important");
       handCard.style.setProperty("margin-left", index === 0 ? "0px" : "-" + overlap + "px", "important");
+      handCard.style.setProperty("z-index", String(10 + index), "important");
+      handCard.style.setProperty("transform-origin", "center bottom", "important");
     });
   }
 }
