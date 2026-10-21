@@ -3269,7 +3269,8 @@ deckCard.style.background = `
 `;
 deckCard.style.border = "2px solid #d4af37";
 deckCard.style.position = "relative";
-deckCard.style.zIndex = "2";
+deckCard.style.zIndex = "3";
+deckCard.style.setProperty("z-index", "3", "important");
 
 const deckCount = document.createElement("div");
 deckCount.style.cssText = `
@@ -3321,12 +3322,31 @@ deckCardBack.style.cssText = `
     );
   box-shadow: 1px 2px 4px rgba(0,0,0,0.35);
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 2;
 `;
 
 deckStack.appendChild(deckCardBack);
 deckStack.appendChild(deckCard);
 
+if (game.trumpCard) {
+  const trumpElement = createDurakCardElement(game.trumpCard);
+
+  trumpElement.style.flex = "none";
+  trumpElement.style.width = "58px";
+  trumpElement.style.height = "86px";
+  trumpElement.style.minWidth = "58px";
+  trumpElement.style.transform = "rotate(90deg)";
+  trumpElement.style.transformOrigin = "center center";
+  trumpElement.style.pointerEvents = "none";
+  trumpElement.style.position = "absolute";
+  trumpElement.style.left = "8px";
+  trumpElement.style.top = "34px";
+  trumpElement.style.setProperty("left", "8px", "important");
+  trumpElement.style.setProperty("top", "34px", "important");
+  trumpElement.style.zIndex = "1";
+  trumpElement.style.margin = "0";
+
+  deckStack.appendChild(trumpElement);
 if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
 
