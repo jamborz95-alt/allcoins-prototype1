@@ -3721,6 +3721,8 @@ async function loadDurakGame(roomId) {
     let incomingAttackIds = [];
     if (String(durakTableHistoryRoomId) !== String(roomId)) {
       durakTableHistoryRoomId = roomId;
+      // Если игрок открыл комнату в момент чужой атаки, первые карты тоже должны прилететь.
+      incomingAttackIds = [...liveAttackIds];
       durakKnownAttackCardIds = new Set(liveAttackIds);
     } else {
       incomingAttackIds = [...liveAttackIds].filter(id => !durakKnownAttackCardIds.has(id));
