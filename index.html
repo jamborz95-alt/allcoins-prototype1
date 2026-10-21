@@ -1771,6 +1771,41 @@
 }
 
 
+
+/* FIX: кнопка добавления бота должна быть видна поверх игрового поля на телефоне */
+#durakGame.durak-fullscreen #durakAddBotButton {
+  position: relative;
+  z-index: 1500;
+  width: 100%;
+  min-height: 48px;
+  margin: 12px 0 10px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #273b59, #18243a);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  pointer-events: auto;
+}
+@media (max-width: 600px) {
+  #durakGame.durak-fullscreen #durakAddBotButton {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    width: calc(100% - 24px) !important;
+    z-index: 5000 !important;
+    box-shadow: 0 4px 18px rgba(0,0,0,.4) !important;
+  }
+  #durakGame.durak-fullscreen #durakStartButton,
+  #durakGame.durak-fullscreen #durakReadyButton {
+    position: relative;
+    z-index: 1500;
+  }
+}
+
 /* FIX: кнопка создания комнаты всегда доступна внизу экрана телефона */
 #durakGame.durak-fullscreen #durakCreatePanel {
   position: relative;
