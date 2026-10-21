@@ -3471,14 +3471,11 @@ function animateDurakCardToTarget(cardElement, targetElement) {
         flyer.style.transition = "none";
         flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
         void flyer.getBoundingClientRect();
-        // Небольшая пауза создаёт ощущение, что карта зависла над атакующей картой.
-        hoverTimer = window.setTimeout(() => {
-          if (!flyer.isConnected || finished) { finish(); return; }
-          flyer.dataset.durakHoverPhase = "settle";
-          flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
-          flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
-          settleTimer = window.setTimeout(finish, 240);
-        }, 1200);
+        // Без зависания: сразу после короткого торможения карта плавно садится на стол.
+        flyer.dataset.durakHoverPhase = "settle";
+        flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
+        flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
+        settleTimer = window.setTimeout(finish, 240);
       } else if (flyer.dataset.durakHoverPhase === "settle") {
         finish();
       }
@@ -3496,13 +3493,11 @@ function animateDurakCardToTarget(cardElement, targetElement) {
         flyer.dataset.durakHoverPhase = "hover";
         flyer.style.transition = "none";
         flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
-        hoverTimer = window.setTimeout(() => {
-          if (!flyer.isConnected || finished) { finish(); return; }
-          flyer.dataset.durakHoverPhase = "settle";
-          flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
-          flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
-          settleTimer = window.setTimeout(finish, 240);
-        }, 1200);
+        // Без зависания: сразу после короткого торможения карта плавно садится на стол.
+        flyer.dataset.durakHoverPhase = "settle";
+        flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
+        flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
+        settleTimer = window.setTimeout(finish, 240);
       }, Math.max(210, flightDuration) + 100);
     });
   });
