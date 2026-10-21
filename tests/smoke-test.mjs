@@ -21,6 +21,7 @@ try {
   let mockDurakPhase = "attack";
   let mockDurakPlayerIndex = 0;
   let mockDurakStatus = "playing";
+  let mockDurakTakePending = false;
   let mockDurakHasLoser = false;
   let mockDurakIsLoser = false;
   let failNextDurakAction = false;
@@ -69,6 +70,9 @@ try {
         trumpSuit: "♥", trumpCard: { id: "trump-8-hearts", rank: "8", suit: "♥" },
         table: mockDurakTable,
         cardsLeft: mockDurakStatus === "finished" ? 0 : 24, status: mockDurakStatus,
+        takePending: mockDurakTakePending,
+        turnStartedAt: new Date().toISOString(),
+        finishedReason: null,
         hasLoser: mockDurakHasLoser, isLoser: mockDurakIsLoser, phase: mockDurakPhase,
         attackerIndex: 0, defenderIndex: 1, playerIndex: mockDurakPlayerIndex,
         players: [
@@ -224,6 +228,20 @@ try {
     "defender should be able to select a card for the next defense");
   assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
     "defender should retain the option to take the full table");
+
+  // When the defender presses «Беру», the attacker is prompted to throw in or
+  // confirm the take with «Бито»; this must not falsely mark cards as beaten.
+  mockDurakTakePending = true;
+  mockDurakPhase = "takePending";
+  mockDurakPlayerIndex = 0;
+  await page.evaluate(async () => { await loadDurakGame("77"); });
+  assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ПОДКИНЬ ИЛИ БИТО",
+    "attacker should see the pending-take decision");
+  assert.notEqual(await page.locator("#durakBeat").evaluate((el) => el.style.display), "none",
+    "attacker should be able to transfer taken cards with the beat action");
+  assert.equal(await page.locator("#durakControls #durakBeat").innerText(), "✅ Бито · отдать карты",
+    "beat button should explain that it hands the table to the defender");
+  mockDurakTakePending = false;
 
   mockDurakTable = [{ attack: { id: "table-6-clubs", rank: "6", suit: "♣" }, defense: null }];
   mockDurakPhase = "attack";
