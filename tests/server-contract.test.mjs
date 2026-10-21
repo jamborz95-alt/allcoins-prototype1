@@ -111,13 +111,16 @@ test("a pending Durak refresh never redraws the table over a card drag or throw"
   assert.ok(clientSource.includes("flushDurakGameReloadIfIdle();"));
 
   const loadStart = clientSource.indexOf("async function loadDurakGame(roomId)");
+  const gameFetch = clientSource.indexOf(
+    'const game = await apiRequest("/api/durak/game"', loadStart
+  );
   const renderGuard = clientSource.indexOf(
-    "if (durakCardDragging || durakActionInProgress) {", loadStart
+    "if (durakCardDragging || durakActionInProgress) {", gameFetch
   );
   const flyingCardCleanup = clientSource.indexOf(
     'document.querySelectorAll("#durakGame .durak-flying-card, body > .durak-flying-card")', loadStart
   );
-  assert.ok(loadStart !== -1 && renderGuard !== -1 && flyingCardCleanup !== -1);
-  assert.ok(renderGuard < flyingCardCleanup,
-    "the interaction guard must run before an update removes flying cards and rebuilds the table");
+  assert.ok(loadStart !== -1 && gameFetch !== -1 && renderGuard !== -1 && flyingCardCleanup !== -1);
+  assert.ok(gameFetch < renderGuard && renderGuard < flyingCardCleanup,
+    "a poll that finishes mid-throw must defer before removing the flyer or rebuilding the table");
 });
