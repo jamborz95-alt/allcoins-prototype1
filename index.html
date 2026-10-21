@@ -1835,14 +1835,18 @@
 }
 
 
-  /* Колода как в референсе: компактная стопка в левой центральной зоне поля */
-  #durakGame.durak-fullscreen .durak-table {
+  /* Колода привязана к игровому полю, а не к маленькому контейнеру стола */
+  #durakGame.durak-fullscreen #durakBoard {
     position: relative !important;
+    min-height: 58vh !important;
+  }
+  #durakGame.durak-fullscreen .durak-table {
+    position: static !important;
   }
   #durakGame.durak-fullscreen #durakTrump {
     position: absolute !important;
-    left: 4px !important;
-    top: 50% !important;
+    left: 6px !important;
+    top: 42% !important;
     right: auto !important;
     bottom: auto !important;
     transform: translateY(-50%) !important;
