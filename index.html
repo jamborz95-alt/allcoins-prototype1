@@ -3797,7 +3797,8 @@ trumpBox.appendChild(deckStack);
 // Стопка в узкой левой полосе, выше центра розыгрыша, как в видео.
 // Центральные атакующие и защитные карты остаются свободны.
 const deckLayout = {
-  position:"absolute", left:"4px", right:"auto", top:"24%", bottom:"auto",
+  // В видео стопка уходит за левый край: оставляем видимой только узкую часть.
+  position:"absolute", left:"-18px", right:"auto", top:"24%", bottom:"auto",
   transform:"none", width:"49px", minWidth:"49px", height:"92px",
   minHeight:"92px", margin:"0", padding:"0", overflow:"visible",
   zIndex:"3", pointerEvents:"none", background:"transparent", border:"0",
@@ -3815,7 +3816,8 @@ deckStack.style.setProperty("min-width", "48px", "important");
 deckStack.style.setProperty("height", "90px", "important");
 deckStack.style.setProperty("margin", "0", "important");
 deckStack.style.setProperty("overflow", "visible", "important");
-deckCount.style.setProperty("left", "0", "important");
+// Счётчик остаётся внутри экрана, даже когда сама стопка частично скрыта слева.
+deckCount.style.setProperty("left", "20px", "important");
 deckCount.style.setProperty("top", "-16px", "important");
 deckCount.style.setProperty("width", "42px", "important");
 deckCount.style.setProperty("padding", "0", "important");
