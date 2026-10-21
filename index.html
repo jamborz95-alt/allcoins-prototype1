@@ -2297,10 +2297,13 @@
     height: 30px !important;
     min-height: 30px !important;
     margin: 0 0 0 -9px !important;
-    border: 1px solid #d8bb72 !important;
+    border: 1px solid #edf1e4 !important;
     border-radius: 3px !important;
-    background: repeating-linear-gradient(45deg, #172b49 0 3px, #2d4a70 3px 6px) !important;
-    box-shadow: inset 0 0 0 1px rgba(234,205,128,.75), 0 1px 2px rgba(0,0,0,.28) !important;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 3px, rgba(75,139,99,.9) 3px 4px, transparent 4px 7px),
+      repeating-linear-gradient(-45deg, transparent 0 3px, rgba(75,139,99,.88) 3px 4px, transparent 4px 7px),
+      #f3f5e9 !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.84), 0 1px 2px rgba(0,0,0,.28) !important;
     box-sizing: border-box !important;
   }
   #durakGame.durak-fullscreen .durak-player .durak-card-back:first-child {
@@ -3717,180 +3720,58 @@ deckBox.style.cssText = `
   margin-right: 14px;
 `;
 
-// ALLCOINS — классическая рубашка колоды
-const deckCard = document.createElement("div");
-
-deckCard.style.cssText = `
-  position: relative;
-  width: 48px;
-  height: 68px;
-  flex: 0 0 48px;
-  border: 2px solid #d4af37;
-  border-radius: 6px;
-  background:
-    repeating-linear-gradient(
-      45deg,
-      #182747 0px,
-      #182747 3px,
-      #294779 3px,
-      #294779 6px
-    );
-  box-shadow:
-    inset 0 0 0 2px #101a30,
-    inset 0 0 0 4px #d4af37,
-    2px 3px 6px rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-`;
-
-const deckOrnament = document.createElement("div");
-
-deckOrnament.style.cssText = `
-  width: 28px;
-  height: 46px;
-  border: 1px solid #e6c66d;
-  border-radius: 50%;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      #20365c 0px,
-      #20365c 3px,
-      #314f80 3px,
-      #314f80 6px
-    );
-  box-shadow:
-    inset 0 0 0 2px #182747,
-    0 0 0 1px rgba(230,198,109,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #f1d58a;
-  font-size: 17px;
-  font-weight: 900;
-`;
-
-deckOrnament.textContent = "AC";
-deckCard.appendChild(deckOrnament);
-
-// Авторская рубашка ALLCOINS: тёмно-синий узор, тонкая двойная золотая окантовка
-// и центральный медальон. Всё сделано CSS-элементами, поэтому рубашка сразу
-// готова к показу и не грузится поверх игрового стола во время партии.
-const deckFrame = document.createElement("div");
-deckFrame.style.cssText = `
-  position:absolute; inset:4px; border:1px solid rgba(244,211,125,.92);
-  border-radius:3px; pointer-events:none; z-index:1;
-  box-shadow:inset 0 0 0 1px rgba(7,18,37,.65);
-`;
-deckCard.insertBefore(deckFrame, deckOrnament);
-
-const deckCorners = [
-  { top:"8px", left:"8px" },
-  { top:"8px", right:"8px" },
-  { bottom:"8px", left:"8px" },
-  { bottom:"8px", right:"8px" }
-];
-deckCorners.forEach((position) => {
-  const corner = document.createElement("span");
-  corner.textContent = "✦";
-  corner.style.cssText = `
-    position:absolute; width:9px; height:9px; display:flex;
-    align-items:center; justify-content:center; color:#f5dc91;
-    font:700 8px/1 Georgia,serif; text-shadow:0 0 3px #d9ad46;
-    z-index:2; pointer-events:none;
+// Рубашка колоды по видео: светлая тканая основа с зелёной диагональной клеткой.
+// Та же рубашка используется для карт на руках соперников; центральный медальон не нужен.
+const deckBackPattern = "repeating-linear-gradient(45deg, transparent 0 3px, rgba(75,139,99,.9) 3px 4px, transparent 4px 7px), repeating-linear-gradient(-45deg, transparent 0 3px, rgba(75,139,99,.88) 3px 4px, transparent 4px 7px), #f3f5e9";
+const makeDeckBack = (left, top, zIndex) => {
+  const cardBack = document.createElement("div");
+  cardBack.className = "durak-deck-card-back";
+  cardBack.style.cssText = `
+    position:absolute; left:${left}px; top:${top}px;
+    width:30px; height:44px; min-width:30px; min-height:44px;
+    border:1px solid #edf1e4; border-radius:3px;
+    background:${deckBackPattern};
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.78), 0 1px 3px rgba(0,0,0,.28);
+    box-sizing:border-box; z-index:${zIndex}; pointer-events:none;
   `;
-  Object.assign(corner.style, position);
-  deckCard.insertBefore(corner, deckOrnament);
-});
+  return cardBack;
+};
 
-Object.assign(deckOrnament.style, {
-  width:"25px", height:"34px", borderRadius:"50% 50% 45% 45%",
-  border:"1px solid #f7d982",
-  background:"radial-gradient(ellipse at 35% 28%, #476b91 0%, #1b3559 55%, #0c1a31 100%)",
-  boxShadow:"inset 0 0 0 2px rgba(8,20,39,.9), inset 0 0 0 3px rgba(238,198,94,.45), 0 1px 4px #0008",
-  display:"flex", alignItems:"center", justifyContent:"center",
-  color:"#fff0bd", fontSize:"10px", fontWeight:"900", letterSpacing:"-.4px",
-  textShadow:"0 1px 2px #000"
-});
-deckCard.style.setProperty("background", "radial-gradient(ellipse at 50% 48%, rgba(54,91,135,.98) 0%, rgba(24,49,82,.98) 52%, rgba(9,21,41,1) 100%), repeating-linear-gradient(45deg, transparent 0 4px, rgba(240,205,111,.18) 4px 5px)", "important");
-deckCard.style.setProperty("border", "1px solid #f0ce76", "important");
-deckCard.style.setProperty("border-radius", "4px", "important");
-deckCard.style.setProperty("box-shadow", "inset 0 0 0 1px #08162b, inset 0 0 0 3px rgba(222,183,83,.72), 1px 3px 7px rgba(0,0,0,.5)", "important");
-deckCard.style.setProperty("left", "1px", "important");
-deckCard.style.setProperty("top", "0px", "important");
-deckCard.style.setProperty("z-index", "4", "important");
+// Три немного смещённых рубашки дают аккуратную стопку, как на эталонном видео.
+const deckCardBack = makeDeckBack(5, 4, 2);
+const deckCardMiddle = makeDeckBack(2, 2, 3);
+const deckCard = makeDeckBack(0, 0, 4);
 
 const deckCount = document.createElement("div");
-deckCount.style.cssText = `
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-`;
-deckCount.textContent = "В колоде: " + (game.cardsLeft ?? 0);
+deckCount.textContent = String(game.cardsLeft ?? 0);
 
-// ALLCOINS — колода сверху, козырь под ней
+// Компактная стопка с местом для козыря и счётчика.
 const deckStack = document.createElement("div");
-
 deckStack.style.cssText = `
-   display: block;
-   position: relative;
-   flex: 0 0 112px;
-   width: 112px;
-   min-width: 112px;
-   height: 158px;
-   margin: -20px 0 0 0;
- `;
-
-deckBox.style.cssText = `
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
+  display:block; position:relative; flex:0 0 48px;
+  width:48px; min-width:48px; height:90px; margin:0; overflow:visible;
 `;
-// Нижняя карта колоды ALLCOINS
-const deckCardBack = document.createElement("div");
-
-deckCardBack.style.cssText = `
-   position:absolute; top:3px; left:4px; width:44px; height:64px;
-   border:1px solid #d4ad58; border-radius:4px;
-   background:radial-gradient(ellipse at center, #213e66 0%, #102441 70%, #09152a 100%);
-   box-shadow:inset 0 0 0 2px rgba(220,183,90,.38), 1px 3px 5px rgba(0,0,0,.4);
-   box-sizing:border-box; z-index:2;
-`;
-deckCardBack.style.setProperty("background", "radial-gradient(ellipse at center, #213e66 0%, #102441 70%, #09152a 100%), repeating-linear-gradient(45deg, transparent 0 4px, rgba(232,195,104,.22) 4px 5px)", "important");
-deckCardBack.style.setProperty("border", "1px solid #cfa84d", "important");
-deckCardBack.style.setProperty("border-radius", "4px", "important");
-deckCardBack.style.setProperty("left", "4px", "important");
-deckCardBack.style.setProperty("top", "3px", "important");
-deckCardBack.style.setProperty("z-index", "2", "important");
-
-deckStack.appendChild(deckCardBack);
-deckStack.appendChild(deckCard);
-
 if (game.trumpCard) {
   const trumpElement = createDurakCardElement(game.trumpCard);
   trumpElement.classList.add("durak-trump-card");
 
   trumpElement.style.flex = "none";
-  trumpElement.style.width = "44px";
-  trumpElement.style.height = "65px";
-  trumpElement.style.minWidth = "44px";
-  trumpElement.style.maxWidth = "44px";
+  trumpElement.style.width = "30px";
+  trumpElement.style.height = "44px";
+  trumpElement.style.minWidth = "30px";
+  trumpElement.style.maxWidth = "30px";
   trumpElement.style.transform = "rotate(90deg)";
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
-  // Колода остаётся на месте; козырь опускаем ещё на 8 пикселей.
-  trumpElement.style.left = "22px";
-  trumpElement.style.top = "-4px";
-  trumpElement.style.setProperty("left", "22px", "important");
-  trumpElement.style.setProperty("top", "-4px", "important");
+  // Козырь выглядывает из-под короткой стопки, но не заходит на игровую зону.
+  trumpElement.style.left = "5px";
+  trumpElement.style.top = "17px";
+  trumpElement.style.setProperty("left", "5px", "important");
+  trumpElement.style.setProperty("top", "17px", "important");
   trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
-  trumpElement.style.transform = "rotate(90deg) translateX(-2px)";
+  trumpElement.style.transform = "rotate(90deg)";
   trumpElement.style.transformOrigin = "center center";
 
   deckStack.appendChild(trumpElement);
@@ -3902,27 +3783,23 @@ if (game.trumpCard) {
 }
 
 deckCount.style.cssText = `
-  position: absolute;
-  left: 0;
-  top: 116px;
-  width: 112px;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-  text-shadow: 0 1px 3px #000;
+  position:absolute; left:0; top:-16px; width:42px;
+  color:#f4f5ef; font-size:10px; line-height:12px; font-weight:700;
+  text-align:left; text-shadow:0 1px 3px #000;
 `;
 
+deckStack.appendChild(deckCardBack);
+deckStack.appendChild(deckCardMiddle);
+deckStack.appendChild(deckCard);
 deckStack.appendChild(deckCount);
 trumpBox.appendChild(deckStack);
 
-// Компактная колода стоит у верхнего левого края игрового поля: центральная
-// зона полностью свободна для атакующих и защитных карт. Если карты всё же
-// приблизятся к краю, игровой стол отрисовывается поверх колоды.
+// Стопка в узкой левой полосе, выше центра розыгрыша, как в видео.
+// Центральные атакующие и защитные карты остаются свободны.
 const deckLayout = {
-  position:"absolute", left:"5px", right:"auto", top:"8px", bottom:"auto",
-  transform:"none", width:"76px", minWidth:"76px", height:"132px",
-  minHeight:"132px", margin:"0", padding:"0", overflow:"visible",
+  position:"absolute", left:"4px", right:"auto", top:"24%", bottom:"auto",
+  transform:"none", width:"49px", minWidth:"49px", height:"92px",
+  minHeight:"92px", margin:"0", padding:"0", overflow:"visible",
   zIndex:"3", pointerEvents:"none", background:"transparent", border:"0",
   boxShadow:"none"
 };
@@ -3933,34 +3810,41 @@ deckStack.style.setProperty("position", "relative", "important");
 deckStack.style.setProperty("display", "block", "important");
 deckStack.style.setProperty("left", "0", "important");
 deckStack.style.setProperty("top", "0", "important");
-deckStack.style.setProperty("width", "76px", "important");
-deckStack.style.setProperty("min-width", "76px", "important");
-deckStack.style.setProperty("height", "132px", "important");
+deckStack.style.setProperty("width", "48px", "important");
+deckStack.style.setProperty("min-width", "48px", "important");
+deckStack.style.setProperty("height", "90px", "important");
 deckStack.style.setProperty("margin", "0", "important");
 deckStack.style.setProperty("overflow", "visible", "important");
 deckCount.style.setProperty("left", "0", "important");
-deckCount.style.setProperty("top", "111px", "important");
-deckCount.style.setProperty("width", "70px", "important");
-deckCount.style.setProperty("padding", "2px 1px", "important");
-deckCount.style.setProperty("font-size", "9px", "important");
-deckCount.style.setProperty("line-height", "11px", "important");
-deckCount.style.setProperty("color", "#ffedba", "important");
-deckCount.style.setProperty("background", "rgba(7,19,37,.72)", "important");
-deckCount.style.setProperty("border", "1px solid rgba(231,193,93,.7)", "important");
-deckCount.style.setProperty("border-radius", "6px", "important");
-deckCount.style.setProperty("z-index", "4", "important");
-deckCardBack.style.setProperty("width", "44px", "important");
-deckCardBack.style.setProperty("height", "64px", "important");
-deckCard.style.setProperty("width", "44px", "important");
-deckCard.style.setProperty("height", "64px", "important");
+deckCount.style.setProperty("top", "-16px", "important");
+deckCount.style.setProperty("width", "42px", "important");
+deckCount.style.setProperty("padding", "0", "important");
+deckCount.style.setProperty("font-size", "10px", "important");
+deckCount.style.setProperty("line-height", "12px", "important");
+deckCount.style.setProperty("color", "#f4f5ef", "important");
+deckCount.style.setProperty("background", "transparent", "important");
+deckCount.style.setProperty("border", "0", "important");
+deckCount.style.setProperty("border-radius", "0", "important");
+deckCount.style.setProperty("z-index", "5", "important");
+[deckCardBack, deckCardMiddle, deckCard].forEach((cardBack) => {
+  cardBack.style.setProperty("width", "30px", "important");
+  cardBack.style.setProperty("min-width", "30px", "important");
+  cardBack.style.setProperty("height", "44px", "important");
+  cardBack.style.setProperty("min-height", "44px", "important");
+  cardBack.style.setProperty("border", "1px solid #edf1e4", "important");
+  cardBack.style.setProperty("border-radius", "3px", "important");
+  cardBack.style.setProperty("background", deckBackPattern, "important");
+});
 if (game.trumpCard) {
   const trumpCard = deckStack.querySelector(".durak-trump-card");
   if (trumpCard) {
     trumpCard.style.setProperty("left", "5px", "important");
-    trumpCard.style.setProperty("top", "43px", "important");
+    trumpCard.style.setProperty("top", "17px", "important");
     trumpCard.style.setProperty("z-index", "1", "important");
-    trumpCard.style.setProperty("width", "44px", "important");
-    trumpCard.style.setProperty("height", "65px", "important");
+    trumpCard.style.setProperty("width", "30px", "important");
+    trumpCard.style.setProperty("min-width", "30px", "important");
+    trumpCard.style.setProperty("height", "44px", "important");
+    trumpCard.style.setProperty("min-height", "44px", "important");
   }
 }
 
