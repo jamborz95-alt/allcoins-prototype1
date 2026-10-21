@@ -199,16 +199,16 @@ try {
   assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
     "defender should be able to take an open attack");
 
-  // The defender must still be able to take after covering every current attack,
-  // until the attacker explicitly declares the round beaten.
+  // Once every attack is covered, «Беру» is hidden: classic Durak requires
+  // the attacker to finish the round with «Бито».
   mockDurakTable = [{
     attack: { id: "table-6-clubs", rank: "6", suit: "♣" },
     defense: { id: "table-7-clubs", rank: "7", suit: "♣" }
   }];
   mockDurakPhase = "attack";
   await page.evaluate(async () => { await loadDurakGame("77"); });
-  assert.notEqual(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
-    "defender should still be able to take before the attacker declares beat");
+  assert.equal(await page.locator("#durakTake").evaluate((el) => el.style.display), "none",
+    "defender should not be able to take after all cards are beaten");
   assert.equal(await page.locator("#durakHand .durak-card").count(), 6,
     "defender should still see their cards when all current attacks are covered");
 
