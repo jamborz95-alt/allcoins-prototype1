@@ -2948,7 +2948,25 @@ async function durakAction(action, requestedCardIds = null) {
   });
 
   let actionConfirmed = false;
+  let dragFlyerAnimationStarted = false;
   try {
+    // Запускаем полёт той же копии карты сразу после отпускания пальца,
+    // не ожидая ответа сервера: сетевой запрос не должен создавать паузу.
+    const dragFlyer = durakPendingDragFlyer;
+    const dragTarget = action === "defend"
+      ? $("durakTable")?.querySelector('.durak-card[data-table-card-type="attack"]')
+      : $("durakTable");
+    if (dragFlyer && dragTarget) {
+      const from = dragFlyer.getBoundingClientRect();
+      const to = dragTarget.getBoundingClientRect();
+      if (from.width > 0 && from.height > 0 && to.width > 0 && to.height > 0) {
+        durakPendingDragFlyer = null;
+        dragFlyerAnimationStarted = true;
+        // Запускается немедленно; функцию можно не ждать до подтверждения API.
+        animateDurakCardToTarget(dragFlyer, dragTarget);
+      }
+    }
+
     const result = await apiRequest("/api/durak/action", {
       roomId: actionRoomId,
       action: action,
@@ -2972,7 +2990,9 @@ async function durakAction(action, requestedCardIds = null) {
     const targetElement = action === "defend"
       ? $("durakTable").querySelector('.durak-card[data-table-card-type="attack"]')
       : $("durakTable");
-    if (playedCard && targetElement) {
+    // Для drag уже летит исходная копия карты; повторная анимация из руки
+    // после ответа сервера создавала исчезновение и появление карты в другом месте.
+    if (!dragFlyerAnimationStarted && playedCard && targetElement) {
       await animateDurakCardToTarget(playedCard, targetElement);
     }
 
