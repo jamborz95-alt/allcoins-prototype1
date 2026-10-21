@@ -2418,9 +2418,13 @@
     <!-- ИГРОВОЙ СТОЛ -->
   <div id="durakBoard" style="display:none;">
 
-    <p id="durakGameStatus" class="muted">
-      Ожидание начала игры...
-    </p>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <p id="durakGameStatus" class="muted" style="margin:0;flex:1;">
+        Ожидание начала игры...
+      </p>
+      <button type="button" id="durakSoundToggle" class="secondary" aria-pressed="true"
+        style="flex:0 0 auto;padding:7px 10px;font-size:13px;">🔊 Звук</button>
+    </div>
 
     <div class="durak-table">
 
@@ -3184,11 +3188,13 @@ async function durakAction(action, requestedCardIds = null) {
 }
   // Кнопка «Беру»
 $("durakTake").onclick = async () => {
+  playDurakSound("take");
   await durakAction("take");
 };
 
 // Кнопка «Бито»
 $("durakBeat").onclick = async () => {
+  playDurakSound("beat");
   await durakAction("beat");
 };
   // Сохраняем точный внешний вид карты при перетаскивании вне #durakGame.
@@ -3353,6 +3359,70 @@ let durakAnimationRoomId = null;
 // Пока последовательная раздача идёт, не запускаем поверх неё новый визуальный кадр партии.
 let durakDealAnimationActive = false;
 let durakDealAnimationToken = 0;
+
+// Встроенные короткие звуки карт — без внешних файлов и сетевых загрузок.
+let durakSoundEnabled = true;
+let durakAudioContext = null;
+let durakSoundLastAt = 0;
+
+function ensureDurakAudio() {
+  if (!durakSoundEnabled) return null;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return null;
+  try {
+    if (!durakAudioContext) durakAudioContext = new AudioCtor();
+    if (durakAudioContext.state === "suspended") durakAudioContext.resume().catch(() => {});
+    return durakAudioContext;
+  } catch (_) {
+    return null;
+  }
+}
+
+function playDurakSound(kind = "card") {
+  if (!durakSoundEnabled) return;
+  const now = performance.now();
+  if (kind === "card" && now - durakSoundLastAt < 55) return;
+  durakSoundLastAt = now;
+  const ctx = ensureDurakAudio();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const presets = {
+    card: { f: 620, end: 390, duration: .075, volume: .045, wave: "triangle" },
+    deal: { f: 760, end: 470, duration: .095, volume: .055, wave: "triangle" },
+    beat: { f: 520, end: 760, duration: .13, volume: .055, wave: "sine" },
+    take: { f: 300, end: 190, duration: .16, volume: .06, wave: "triangle" }
+  };
+  const p = presets[kind] || presets.card;
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  oscillator.type = p.wave;
+  oscillator.frequency.setValueAtTime(p.f, t);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(50, p.end), t + p.duration);
+  gain.gain.setValueAtTime(.0001, t);
+  gain.gain.exponentialRampToValueAtTime(p.volume, t + .012);
+  gain.gain.exponentialRampToValueAtTime(.0001, t + p.duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(t);
+  oscillator.stop(t + p.duration + .015);
+}
+
+function initDurakSoundToggle() {
+  const button = $("durakSoundToggle");
+  if (!button || button.dataset.bound === "true") return;
+  button.dataset.bound = "true";
+  button.onclick = () => {
+    durakSoundEnabled = !durakSoundEnabled;
+    button.textContent = durakSoundEnabled ? "🔊 Звук" : "🔇 Без звука";
+    button.setAttribute("aria-pressed", String(durakSoundEnabled));
+    if (durakSoundEnabled) {
+      ensureDurakAudio();
+      playDurakSound("card");
+    }
+  };
+}
+initDurakSoundToggle();
+
 // Следим за новыми атакующими картами, чтобы анимировать только свежие броски соперника.
 let durakKnownAttackCardIds = new Set();
 let durakTableHistoryRoomId = null;
@@ -3405,7 +3475,8 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   const from = flyer.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
   const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-  const duration = 300;
+  playDurakSound("card");
+  const duration = 330;
   let timer = null;
   let finished = false;
   const cleanup = () => {
@@ -3451,7 +3522,8 @@ async function animateDurakDealSequence(dealTargets, roomId) {
   // Стопка немного за левым краем, поэтому раздача начинается от её видимого края.
   const sourceCenterX = Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23));
   const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
-  const duration = 340;
+  // Чуть медленнее прежнего, чтобы полёт каждой карты было хорошо видно.
+  const duration = 455;
   const savedStyles = new WeakMap();
 
   // Скрываем весь набор заранее: карты не должны сначала появиться в руках,
@@ -3548,6 +3620,7 @@ async function animateDurakDealSequence(dealTargets, roomId) {
         resolve();
       };
 
+      playDurakSound("deal");
       requestAnimationFrame(() => {
         if (token !== durakDealAnimationToken || !target.isConnected) {
           finish();
@@ -3568,7 +3641,7 @@ async function animateDurakDealSequence(dealTargets, roomId) {
           cleanupTimer = window.setTimeout(finish, 125);
         }, duration);
       });
-    }, index * 82);
+    }, index * 125);
   }));
 
   await Promise.all(tasks);
