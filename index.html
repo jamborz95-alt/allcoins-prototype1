@@ -2958,17 +2958,18 @@ async function durakAction(action, requestedCardIds = null) {
     // Запускаем полёт той же копии карты сразу после отпускания пальца,
     // не ожидая ответа сервера: сетевой запрос не должен создавать паузу.
     const dragFlyer = durakPendingDragFlyer;
-    const dragTarget = action === "defend"
-      ? $("durakTable")?.querySelector('.durak-card[data-table-card-type="attack"]')
-      : $("durakTable");
-    if (dragFlyer && dragTarget) {
-      const from = dragFlyer.getBoundingClientRect();
-      const to = dragTarget.getBoundingClientRect();
-      if (from.width > 0 && from.height > 0 && to.width > 0 && to.height > 0) {
-        durakPendingDragFlyer = null;
-        dragFlyerAnimationStarted = true;
-        // Запускается немедленно; функцию можно не ждать до подтверждения API.
-        animateDurakCardToTarget(dragFlyer, dragTarget);
+    if (dragFlyer) {
+      const landing = createDurakLandingTarget(action);
+      if (landing?.element) {
+        const from = dragFlyer.getBoundingClientRect();
+        const to = landing.element.getBoundingClientRect();
+        if (from.width > 0 && from.height > 0 && to.width > 0 && to.height > 0) {
+          durakPendingDragFlyer = null;
+          dragFlyerAnimationStarted = true;
+          // Запускаем полёт сразу; замеренная цель совпадает с будущим местом карты.
+          animateDurakCardToTarget(dragFlyer, landing.element);
+        }
+        landing.cleanup();
       }
     }
 
@@ -3007,13 +3008,17 @@ async function durakAction(action, requestedCardIds = null) {
       ? Array.from(document.querySelectorAll("#durakHand .durak-card"))
           .find(cardElement => cardElement.dataset.cardId === String(actionCardId))
       : null;
-    const targetElement = action === "defend"
-      ? $("durakTable").querySelector('.durak-card[data-table-card-type="attack"]')
-      : $("durakTable");
-    // Для drag уже летит исходная копия карты; повторная анимация из руки
-    // после ответа сервера создавала исчезновение и появление карты в другом месте.
-    if (!dragFlyerAnimationStarted && playedCard && targetElement) {
-      await animateDurakCardToTarget(playedCard, targetElement);
+    // Для drag уже летит исходная копия карты. Для обычного действия
+    // используем такое же точное место посадки, чтобы не было скачка к новому месту.
+    if (!dragFlyerAnimationStarted && playedCard) {
+      const landing = createDurakLandingTarget(action);
+      if (landing?.element) {
+        try {
+          await animateDurakCardToTarget(playedCard, landing.element);
+        } finally {
+          landing.cleanup();
+        }
+      }
     }
 
     selectedDurakCardId = null;
@@ -3240,8 +3245,85 @@ let durakPendingDragFlyer = null;
 let durakAnimatedCardIds = new Set();
 let durakAnimationRoomId = null;
 
-// После отпускания на поле продолжаем движение той же визуальной карты.
-// Не создаём вторую копию из руки: это убирает эффект «назад, затем снова вперёд».
+// Создаёт невидимую цель в точном месте, куда новая карта будет отрисована.
+// Так карта летит не в произвольный участок стола, а прямо в будущую ячейку.
+function createDurakLandingTarget(action) {
+  const table = $("durakTable");
+  if (!table) return null;
+
+  let holder = null;
+  let target = null;
+
+  if (action === "defend") {
+    // Защита должна лечь поверх первой ещё не покрытой атакующей карты.
+    const attackCard = Array.from(
+      table.querySelectorAll('.durak-card[data-table-card-type="attack"]')
+    ).find(element =>
+      !element.closest(".durak-table-pair")?.querySelector('.durak-card[data-table-card-type="defense"]')
+    );
+    const pair = attackCard?.closest(".durak-table-pair");
+    if (!attackCard || !pair) return null;
+
+    target = document.createElement("div");
+    target.className = "durak-card premium-card table-card durak-landing-target";
+    target.dataset.tableCardType = "defense";
+    target.style.display = "flex";
+    target.style.visibility = "hidden";
+    target.style.opacity = "0";
+    target.style.pointerEvents = "none";
+    target.style.position = "absolute";
+    target.style.left = "30px";
+    target.style.top = "-6px";
+    target.style.zIndex = "2";
+    target.style.width = "68px";
+    target.style.height = "100px";
+    target.style.boxSizing = "border-box";
+    pair.appendChild(target);
+
+    return {
+      element: target,
+      cleanup: () => target?.remove()
+    };
+  }
+
+  // Имитация следующей пары использует те же размеры/классы, что и реальная.
+  // После измерения её можно убрать: анимация уже запомнила экранные координаты.
+  holder = document.createElement("div");
+  holder.className = "durak-table-pair";
+  holder.style.position = "relative";
+  holder.style.display = "inline-flex";
+  holder.style.alignItems = "center";
+  holder.style.justifyContent = "center";
+  holder.style.width = "100px";
+  holder.style.height = "125px";
+  holder.style.flex = "0 0 100px";
+  holder.style.margin = "4px";
+  holder.style.overflow = "visible";
+
+  target = document.createElement("div");
+  target.className = "durak-card premium-card table-card durak-landing-target";
+  target.dataset.tableCardType = "attack";
+  target.style.display = "flex";
+  target.style.visibility = "hidden";
+  target.style.opacity = "0";
+  target.style.pointerEvents = "none";
+  target.style.position = "absolute";
+  target.style.left = "0";
+  target.style.top = "0";
+  target.style.zIndex = "1";
+  target.style.width = "68px";
+  target.style.height = "100px";
+  target.style.boxSizing = "border-box";
+  holder.appendChild(target);
+  table.appendChild(holder);
+
+  return {
+    element: target,
+    cleanup: () => holder?.remove()
+  };
+}
+
+// После отпускания продолжаем движение той же визуальной карты до точного места посадки.
 function animateDurakCardToTarget(cardElement, targetElement) {
   if (!cardElement || !targetElement) {
     if (durakPendingDragFlyer) durakPendingDragFlyer.remove();
@@ -3323,15 +3405,24 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   flyer.style.transition = "none";
   void flyer.getBoundingClientRect();
 
-  // Защиту кладём прямо на атакующую карту; атаку — в центр игровой зоны.
-  const targetCard = targetElement.matches?.(".durak-card")
-    ? targetElement
-    : null;
-  const targetRect = targetCard ? targetCard.getBoundingClientRect() : to;
-  const dx = targetRect.left + (targetCard ? 12 : targetRect.width * 0.5) -
-    (from.left + from.width * 0.5);
-  const dy = targetRect.top + (targetCard ? 8 : Math.min(targetRect.height * 0.35, 52)) -
-    (from.top + from.height * 0.5);
+  // Центр летящей карты приходит в центр реальной будущей позиции на столе.
+  // Угол берём у целевой карты: атака ложится слегка влево, защита — вправо.
+  const targetRect = targetElement.getBoundingClientRect();
+  const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
+  const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
+  let targetRotation = 0;
+  if (targetElement.classList.contains("durak-landing-target")) {
+    const targetTransform = window.getComputedStyle(targetElement).transform;
+    if (targetTransform && targetTransform !== "none") {
+      const matrix = targetTransform.match(/^matrix\\(([^)]+)\\)$/);
+      if (matrix) {
+        const values = matrix[1].split(",").map(Number);
+        if (values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1])) {
+          targetRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
+        }
+      }
+    }
+  }
 
   return new Promise((resolve) => {
     let done = false;
@@ -3348,11 +3439,12 @@ function animateDurakCardToTarget(cardElement, targetElement) {
       if (event.target === flyer && event.propertyName === "transform") finish();
     };
     flyer.addEventListener("transitionend", onEnd);
+    flyer.style.transformOrigin = "center center";
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform 420ms cubic-bezier(.22,.8,.25,1)";
-      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) scale(.96)`;
+      flyer.style.transition = "transform 500ms cubic-bezier(.16,.88,.24,1)";
+      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
     });
-    window.setTimeout(finish, 520);
+    window.setTimeout(finish, 600);
   });
 }
 
@@ -4046,6 +4138,9 @@ if (Array.isArray(game.hand)) {
         const targetCard = table
           ? Array.from(table.querySelectorAll('.durak-card[data-table-card-type="attack"]'))
               .find(element => {
+                const pair = element.closest(".durak-table-pair");
+                const alreadyCovered = !!pair?.querySelector('.durak-card[data-table-card-type="defense"]');
+                if (alreadyCovered) return false;
                 const rect = element.getBoundingClientRect();
                 return pointX >= rect.left && pointX <= rect.right &&
                   pointY >= rect.top && pointY <= rect.bottom;
