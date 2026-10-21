@@ -25,8 +25,9 @@ const path = require("node:path");
       { label: "Соперник", cardsCount: 6 }
     ],
     hand: [
-      { id: "visual-card-1", rank: "К", suit: "♠" },
-      { id: "visual-card-2", rank: "Д", suit: "♥" }
+      { id: "visual-card-1", rank: "8", suit: "♠" },
+      { id: "visual-card-2", rank: "8", suit: "♥" },
+      { id: "visual-card-3", rank: "Д", suit: "♥" }
     ],
     table: [],
     cardsLeft: 20,
@@ -34,6 +35,7 @@ const path = require("node:path");
     trumpSuit: "♥"
   };
   let actionRequests = 0;
+  const actionRequestBodies = [];
 
   await page.addInitScript(() => {
     window.Telegram = {
@@ -65,11 +67,13 @@ const path = require("node:path");
     }
     if (url.pathname.endsWith("/api/durak/action")) {
       actionRequests++;
+      actionRequestBodies.push({ action: body.action, cardIds: Array.isArray(body.cardIds) ? body.cardIds.map(String) : [] });
       const ids = Array.isArray(body.cardIds) ? body.cardIds.map(String) : [];
-      const card = currentGame.hand.find(item => ids.includes(String(item.id))) || currentGame.hand[0];
-      if (body.action === "attack" && card) {
-        currentGame.hand = currentGame.hand.filter(item => String(item.id) !== String(card.id));
-        currentGame.table = [{ attack: card, defense: null }];
+      const cards = currentGame.hand.filter(item => ids.includes(String(item.id)));
+      if (body.action === "attack" && cards.length) {
+        const playedIds = new Set(cards.map(item => String(item.id)));
+        currentGame.hand = currentGame.hand.filter(item => !playedIds.has(String(item.id)));
+        currentGame.table = cards.map(card => ({ attack: card, defense: null }));
         currentGame.phase = "defense";
         currentGame.players[0].cardsCount = currentGame.hand.length;
       }
@@ -122,7 +126,13 @@ const path = require("node:path");
     await page.screenshot({ path: path.join(out, "02-game-before-drag.png"), fullPage: true });
 
     const card = page.locator('#durakHand .durak-card[data-card-id="visual-card-1"]');
-    if (!(await card.count())) throw new Error("Тестовая карта не отрисовалась настоящим рендерером ALLCOINS");
+    const sameRankCard = page.locator('#durakHand .durak-card[data-card-id="visual-card-2"]');
+    if (!(await card.count()) || !(await sameRankCard.count())) throw new Error("Тестовые карты не отрисовались настоящим рендерером ALLCOINS");
+    // Выбираем две одинаковые по достоинству карты; один бросок должен отправить обе.
+    await card.click();
+    await sameRankCard.click();
+    const selectedGroupCount = await page.locator('#durakHand .durak-card[data-group-selected="true"]').count();
+    if (selectedGroupCount !== 2) throw new Error("Не удалось выбрать группу одинаковых карт для одного броска");
     const cardRect = await card.boundingBox();
     const tableRect = await page.locator("#durakTable").boundingBox();
     if (!cardRect || !tableRect || tableRect.width < 20 || tableRect.height < 20) {
@@ -232,11 +242,11 @@ const path = require("node:path");
     if (!optimisticLanding?.visible) {
       throw new Error("Карта не закрепилась в точке посадки до ответа сервера");
     }
-    if (diagnostics.tableAttackCardsAfterDrop !== 1) {
-      throw new Error("После перетаскивания карта не закрепилась на столе. Карты на столе: " + diagnostics.tableAttackCardsAfterDrop);
+    if (diagnostics.tableAttackCardsAfterDrop !== 2) {
+      throw new Error("Один бросок должен положить на стол две одинаковые карты. Карты на столе: " + diagnostics.tableAttackCardsAfterDrop);
     }
     if (diagnostics.handCardsAfterDrop !== 1) {
-      throw new Error("После хода ожидается 1 карта в руке, найдено: " + diagnostics.handCardsAfterDrop);
+      throw new Error("После группового хода ожидается 1 карта в руке, найдено: " + diagnostics.handCardsAfterDrop);
     }
     if (diagnostics.flyingCardsAfterDrop !== 0) {
       throw new Error("После завершения анимации осталась летающая копия карты");
@@ -257,6 +267,40 @@ const path = require("node:path");
       throw new Error("Козырь должен выглядывать из колоды у левого края экрана");
     }
     if (actionRequests !== 1) throw new Error("Ожидался ровно один запрос хода, получено: " + actionRequests);
+    if (actionRequestBodies.length !== 1 || actionRequestBodies[0].cardIds.length !== 2) {
+      throw new Error("Групповой бросок должен отправить оба ID одинаковых карт одним запросом: " + JSON.stringify(actionRequestBodies));
+    }
+
+    // Теперь имитируем новый бросок противника: карта должна прилететь от его места к столу.
+    await page.evaluate(async () => {
+      currentGame.table = [];
+      currentGame.attackerIndex = 0;
+      currentGame.defenderIndex = 1;
+      currentGame.phase = "attack";
+      await loadDurakGame("visual-test-room");
+      currentGame.attackerIndex = 1;
+      currentGame.defenderIndex = 0;
+      currentGame.phase = "defense";
+      currentGame.table = [{ attack: { id: "incoming-attack-1", rank: "9", suit: "♣" }, defense: null }];
+      await loadDurakGame("visual-test-room");
+    });
+    await page.waitForTimeout(70);
+    const incomingFlyer = page.locator('.durak-flying-card[data-incoming-attack="true"]');
+    if (!(await incomingFlyer.count())) {
+      throw new Error("Новая атакующая карта соперника не начала полёт от его места к столу");
+    }
+    const incomingStart = await incomingFlyer.boundingBox();
+    await page.waitForTimeout(430);
+    const incomingEnd = await page.evaluate(() => {
+      const card = document.querySelector('#durakTable .durak-card[data-card-id="incoming-attack-1"]');
+      if (!card) return null;
+      const style = getComputedStyle(card);
+      const rect = card.getBoundingClientRect();
+      return { visible: style.visibility !== "hidden" && Number(style.opacity) > 0.9, x: rect.x, y: rect.y };
+    });
+    if (!incomingStart || !incomingEnd?.visible || await incomingFlyer.count() !== 0) {
+      throw new Error("Анимация атаки соперника не завершилась посадкой карты на стол");
+    }
     if (errors.length) {
       fs.writeFileSync(path.join(out, "browser-errors.txt"), errors.join("\n"));
       throw new Error("Есть ошибки браузера: " + errors.length + ". См. visual-test-output/browser-errors.txt");
