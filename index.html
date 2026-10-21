@@ -2118,6 +2118,16 @@
     <div id="roomsList"></div>
 
   </div>
+  <style>
+    #durakWaitingPlayers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; width:100%; margin:12px 0; position:relative; min-height:0; }
+    #durakWaitingPlayers .durak-waiting-seat { position:relative; inset:auto; transform:none; float:none; width:auto; min-width:0; min-height:58px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px 6px; border:1px solid rgba(212,175,55,.55); border-radius:10px; background:rgba(10,25,48,.78); color:#fff; overflow-wrap:anywhere; z-index:auto; }
+    #durakWaitingPlayers .durak-waiting-seat .durak-player-name, #durakWaitingPlayers .durak-waiting-seat .durak-player-meta { position:static; display:block; max-width:100%; text-align:center; overflow-wrap:anywhere; }
+    #durakWaitingPlayers .durak-waiting-seat .durak-player-name { font-size:12px; line-height:1.25; }
+    #durakWaitingPlayers .durak-waiting-seat .durak-player-meta { font-size:10px; line-height:1.2; opacity:.8; }
+    #durakWaitingPlayers .durak-waiting-seat.durak-seat-empty { border-style:dashed; opacity:.75; }
+    @media (max-width:360px) { #durakWaitingPlayers { gap:6px; } #durakWaitingPlayers .durak-waiting-seat { min-height:52px; padding:6px 4px; } }
+  </style>
+
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
   <div id="durakWaitingPanel" class="card" style="display:none;">
 
@@ -4257,7 +4267,7 @@ $("durakBoard").style.display = "block";
 }
     // Пока партия не запущена, показываем всех участников прямо вокруг игрового поля.
     // Не пересоздаём квадраты во время перетаскивания, иначе касание на телефоне оборвётся.
-    const playersContainer = $("durakPlayers");
+    const playersContainer = $("durakWaitingPlayers");
     if (!durakSeatDragging) {
     playersContainer.innerHTML = "";
     const seatByCount = {
@@ -4278,7 +4288,7 @@ $("durakBoard").style.display = "block";
       const playerIndex = (myIndex + seatIndex) % seatCount;
       const player = players[playerIndex];
       const playerTag = document.createElement("div");
-      playerTag.className = "durak-player";
+      playerTag.className = "durak-waiting-seat";
       playerTag.dataset.seat = seats[seatIndex] || "top";
 
       if (player) {
