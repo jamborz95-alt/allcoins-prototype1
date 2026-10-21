@@ -1849,16 +1849,19 @@
     height: 100% !important;
     overflow: visible !important;
   }
+  /* FIX: keep deck and trump card together at the upper-right of the playing field.
+     The previous left:0/top:50% rule moved the entire deck to the screen edge,
+     so changing the trump card's own coordinates could not fix its apparent position. */
   #durakGame.durak-fullscreen #durakTrump {
     position: absolute !important;
-    left: 0 !important;
-    top: 50% !important;
-    right: auto !important;
+    left: auto !important;
+    right: 4px !important;
+    top: 4px !important;
     bottom: auto !important;
-    transform: translateY(-50%) !important;
+    transform: none !important;
     display: block !important;
-    width: 100px !important;
-    min-width: 100px !important;
+    width: 112px !important;
+    min-width: 112px !important;
     height: 158px !important;
     min-height: 158px !important;
     margin: 0 !important;
