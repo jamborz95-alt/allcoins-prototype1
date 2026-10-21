@@ -46,6 +46,13 @@ const path = require("node:path");
     };
   });
 
+  // Не даём внешнему Telegram SDK перезаписать тестовый WebApp до создания const tg в index.html.
+  await page.route("**/telegram-web-app.js", route => route.fulfill({
+    status: 200,
+    contentType: "application/javascript",
+    body: "// Telegram WebApp is mocked by addInitScript in this offline visual test.\n"
+  }));
+
   await page.route("**/api/**", async route => {
     const url = new URL(route.request().url());
     let body = {};
