@@ -1471,7 +1471,11 @@ app.post("/api/durak/action", async (req, res) => {
       drawCardsAfterRound();
 
       game.attackerIndex = attackerIndex;
-      game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
+      // В дуэли один на один после «Беру» тот же защищающийся принимает
+      // следующую атаку; в игре от трёх игроков очередь переходит дальше по кругу.
+      game.defenderIndex = count === 2
+        ? defenderIndex
+        : nextActivePlayer(defenderIndex, [attackerIndex]);
       if (game.defenderIndex === game.attackerIndex) {
         markGameFinished();
       } else {
