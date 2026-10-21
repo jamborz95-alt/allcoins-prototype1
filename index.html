@@ -3689,10 +3689,10 @@ if (Array.isArray(game.hand)) {
           // Позиционируем карту непосредственно по координатам пальца.
           // Смещение точки захвата сохраняется: карта не прыгает центром под палец.
           // Координаты обновляются на каждом pointermove, а transform отвечает только за наклон.
-          const tilt = Math.max(-7, Math.min(7, dx * 0.075));
+          const tilt = Math.max(-5, Math.min(5, dx * 0.055));
           flyer.style.left = (moveEvent.clientX - offsetX) + "px";
           flyer.style.top = (moveEvent.clientY - offsetY) + "px";
-          flyer.style.transform = "rotate(" + tilt + "deg) scale(1.045)";
+          flyer.style.transform = "rotate(" + tilt + "deg) scale(1.035)";
         }
       };
 
@@ -3721,6 +3721,15 @@ if (Array.isArray(game.hand)) {
           return;
         }
         cardElement.dataset.dragged = "true";
+
+        // Финальная синхронизация с последней координатой пальца перед проверкой цели.
+        // На Android WebView последний pointermove иногда приходит не на самую
+        // последнюю позицию, поэтому без этого карта визуально и логически расходится.
+        if (flyer) {
+          flyer.style.left = (upEvent.clientX - offsetX) + "px";
+          flyer.style.top = (upEvent.clientY - offsetY) + "px";
+          flyer.style.transform = "rotate(0deg) scale(1.045)";
+        }
 
         const elementUnderPointer = document.elementFromPoint(
           upEvent.clientX,
