@@ -3428,7 +3428,9 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Быстрый, прямой бросок без ощущения зависания: короткий полёт
   // и без дополнительного ожидания после завершения CSS-перехода.
-  const flightDuration = Math.round(260 - throwPower * 90);
+  // Резкий бросок должен практически сразу долетать до цели,
+  // без длинного зависания в воздухе даже на мобильном WebView.
+  const flightDuration = Math.round(190 - throwPower * 70);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -3467,7 +3469,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
       const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
       flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation + throwTilt}deg) scale(.96)`;
     });
-    window.setTimeout(finish, flightDuration + 100);
+    window.setTimeout(finish, flightDuration + 60);
   });
 }
 
