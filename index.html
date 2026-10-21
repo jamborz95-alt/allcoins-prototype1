@@ -4252,29 +4252,42 @@ if (isOwner) {
 }
 
 
-// Добавить одного тестового бота, чтобы играть без второго телефона
-$("durakAddBotButton").onclick = async function () {
-  if (!durakWaitingRoom?.id) {
-    alert("Сначала открой комнату ожидания.");
-    return;
+// Добавить одного тестового бота, чтобы играть без второго телефона.
+// Сразу показываем отклик на нажатие, чтобы ошибка не выглядела как неработающая кнопка.
+$("durakAddBotButton").onclick = async function (event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
   const button = $("durakAddBotButton");
+  const status = $("durakWaitingStatus");
+  if (!durakWaitingRoom?.id) {
+    const message = "Не удалось определить комнату. Вернись к списку и создай комнату заново.";
+    if (status) status.textContent = "⚠️ " + message;
+    alert(message);
+    return;
+  }
+  const roomId = durakWaitingRoom.id;
   button.disabled = true;
+  const oldText = button.textContent;
+  button.textContent = "⏳ Добавляем бота…";
+  button.style.pointerEvents = "auto";
+  if (status) status.textContent = "⏳ Отправляем запрос на добавление бота…";
   try {
-    const result = await apiRequest("/api/durak/rooms/add-bot", {
-      roomId: durakWaitingRoom.id
-    });
+    const result = await apiRequest("/api/durak/rooms/add-bot", { roomId });
     if (!result.ok) {
-      throw new Error(result.error || "Не удалось добавить бота.");
+      throw new Error(result.error || "Сервер не подтвердил добавление бота.");
     }
-    $("durakWaitingStatus").textContent =
-      "🤖 Бот добавлен! Теперь нажми «Начать игру».";
+    if (status) status.textContent = "🤖 Бот добавлен! Теперь нажми «Начать игру».";
     $("durakGameStatus").textContent = "🤖 Бот добавлен в комнату. Можно начинать игру.";
     await refreshDurakWaitingRoom();
   } catch (error) {
-    alert("Ошибка добавления бота: " + error.message);
+    const message = String(error?.message || error || "Неизвестная ошибка");
+    if (status) status.textContent = "❌ Не удалось добавить бота: " + message;
+    alert("Ошибка добавления бота: " + message);
   } finally {
     button.disabled = false;
+    button.textContent = oldText;
   }
 };
 
