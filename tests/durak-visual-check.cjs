@@ -176,7 +176,8 @@ const path = require("node:path");
     const diagnostics = await page.evaluate(() => {
       const deck = document.getElementById("durakTrump");
       const deckRect = deck?.getBoundingClientRect();
-      const deckFront = deck?.children[1]?.children[1];
+      const deckBackCards = [...(deck?.querySelectorAll(".durak-deck-card-back") || [])];
+      const deckBackStyles = deckBackCards.map(card => getComputedStyle(card));
       const cardRects = [...document.querySelectorAll('#durakTable .durak-card.table-card[data-table-card-type="attack"], #durakTable .durak-card.table-card[data-table-card-type="defense"]')].map(card => {
         const r = card.getBoundingClientRect();
         return { x:r.x, y:r.y, right:r.right, bottom:r.bottom };
@@ -195,8 +196,11 @@ const path = require("node:path");
         flyingCardsAfterDrop: document.querySelectorAll(".durak-flying-card").length,
         deckRect: deckRect ? {x:deckRect.x,y:deckRect.y,width:deckRect.width,height:deckRect.height} : null,
         deckOverlapsTableCards,
-        deckBackDecorations: deckFront?.children.length || 0,
-        deckBackHasPattern: !!deckFront && getComputedStyle(deckFront).backgroundImage !== "none",
+        deckBackCards: deckBackCards.length,
+        deckBackHasPattern: deckBackCards.length >= 3 && deckBackStyles.every(style =>
+          style.backgroundImage.includes("repeating-linear-gradient") &&
+          style.borderTopColor !== "rgb(212, 175, 55)"
+        ),
         imageCards: [...document.querySelectorAll('#durakHand img, #durakTable img')].map(img => ({
           src: img.getAttribute("src"),
           loaded: img.complete && img.naturalWidth > 0
@@ -237,8 +241,13 @@ const path = require("node:path");
     if (diagnostics.deckOverlapsTableCards) {
       throw new Error("Колода закрывает карты на игровом столе");
     }
-    if (!diagnostics.deckBackHasPattern || diagnostics.deckBackDecorations < 6) {
-      throw new Error("Декоративная рубашка ALLCOINS не отрисована");
+    if (!diagnostics.deckBackHasPattern || diagnostics.deckBackCards < 3) {
+      throw new Error("Рубашка колоды с диагональным узором не отрисована");
+    }
+    if (!diagnostics.deckRect || diagnostics.deckRect.x > 20 ||
+        diagnostics.deckRect.y < diagnostics.viewport.height * 0.15 ||
+        diagnostics.deckRect.y > diagnostics.viewport.height * 0.36) {
+      throw new Error("Колода находится не в компактной левой зоне, как на видео");
     }
     if (actionRequests !== 1) throw new Error("Ожидался ровно один запрос хода, получено: " + actionRequests);
     if (errors.length) {
