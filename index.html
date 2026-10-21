@@ -1920,6 +1920,36 @@
     white-space: nowrap !important;
   }
 
+
+/* Waiting room controls must stay in normal flow and never cover player seats. */
+#durakWaitingPanel #durakWaitingPlayers,
+#durakWaitingPanel #durakWaitingStatus {
+  position: relative !important;
+  z-index: 1 !important;
+  clear: both !important;
+}
+#durakWaitingPanel #durakAddBotButton,
+#durakWaitingPanel #durakReadyButton,
+#durakWaitingPanel #durakStartButton,
+#durakWaitingPanel #durakLeaveWaiting {
+  position: relative !important;
+  inset: auto !important;
+  display: block;
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 10px 0 0 !important;
+  z-index: 2 !important;
+  transform: none !important;
+  clear: both !important;
+  box-sizing: border-box !important;
+}
+#durakWaitingPanel #durakAddBotButton[style*="display: none"],
+#durakWaitingPanel #durakReadyButton[style*="display: none"],
+#durakWaitingPanel #durakStartButton[style*="display: none"] {
+  display: none !important;
+}
+
 </style>
 </head>
 <body>
@@ -4307,17 +4337,32 @@ if (addBotButton) {
     isOwner && players.length === 1 && !hasBot ? "block" : "none";
 }
 
-// Обе кнопки занимают одно и то же место.
-// У гостя показывается «Готов».
-// У создателя показывается «Начать игру».
+// В комнате ожидания не перекрываем список игроков кнопкой «Начать игру».
+// Кнопка запуска остаётся внизу панели, после списка игроков и статуса.
 if (isOwner) {
   readyButton.style.display = "none";
   startButton.style.display = "block";
+  startButton.style.position = "relative";
+  startButton.style.left = "auto";
+  startButton.style.right = "auto";
+  startButton.style.bottom = "auto";
+  startButton.style.top = "auto";
+  startButton.style.width = "100%";
+  startButton.style.marginTop = "12px";
+  startButton.style.zIndex = "1";
+  startButton.style.float = "none";
 } else if (myPlayer) {
   startButton.style.display = "none";
-
-  readyButton.style.display =
-    myPlayer.isReady ? "none" : "block";
+  readyButton.style.position = "relative";
+  readyButton.style.left = "auto";
+  readyButton.style.right = "auto";
+  readyButton.style.bottom = "auto";
+  readyButton.style.top = "auto";
+  readyButton.style.width = "100%";
+  readyButton.style.marginTop = "12px";
+  readyButton.style.zIndex = "1";
+  readyButton.style.float = "none";
+  readyButton.style.display = myPlayer.isReady ? "none" : "block";
 } else {
   readyButton.style.display = "none";
   startButton.style.display = "none";
