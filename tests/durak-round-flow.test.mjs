@@ -20,9 +20,11 @@ test("round completion clears the table and draws cards for players", () => {
   assert.match(body, /target\.hand\.length < 6 &&\s*game\.deck\.length > 0/);
 });
 
-test("a defender who cannot beat a card takes the whole table", () => {
-  assert.match(body, /if \(action === "take"\)[\s\S]*?for \(const item of game\.table\)[\s\S]*?player\.hand\.push\(item\.attack\)/);
-  assert.match(body, /if \(game\.defenderIndex === botIndex\)[\s\S]*?if \(defenseIndex >= 0\)[\s\S]*?else \{[\s\S]*?bot\.hand\.push\(item\.attack\)/);
+test("a defender who cannot beat a card marks a pending take without collecting immediately", () => {
+  assert.match(body, /if \(action === "take"\)[\s\S]*?game\.takePending = true;[\s\S]*?game\.phase = "takePending";/);
+  assert.match(body, /function finishTakingRound\(\)[\s\S]*?taker\.hand\.push\(item\.attack\)[\s\S]*?taker\.hand\.push\(item\.defense\)[\s\S]*?game\.table = \[\][\s\S]*?drawCardsAfterRound\(\)/);
+  assert.match(body, /if \(game\.takePending === true\) \{[\s\S]*?finishTakingRound\(\)/);
+  assert.match(body, /if \(game\.defenderIndex === botIndex\)[\s\S]*?game\.takePending = true;[\s\S]*?game\.phase = "takePending";/);
 });
 
 test("the test bot has separate attack and defense behavior", () => {
