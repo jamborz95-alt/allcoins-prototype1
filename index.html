@@ -1727,6 +1727,24 @@
   #durakGame.durak-fullscreen #durakHand .durak-card.premium-card:first-child {
     margin-left: 0 !important;
   }
+  /* Загруженные PNG-карты заполняют свою карточку, без уменьшенной картинки внутри. */
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card.image-card {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card.image-card > img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: fill !important;
+    object-position: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: scale(1.06) !important;
+    transform-origin: center !important;
+  }
   #durakGame.durak-fullscreen #durakHand .durak-card.selected {
     transform: translateY(-7px) !important;
   }
