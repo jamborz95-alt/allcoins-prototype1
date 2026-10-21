@@ -3372,6 +3372,15 @@ async function loadDurakGame(roomId) {
       return;
     }
 
+    // Убираем временные копии анимации перед отрисовкой подтверждённого состояния.
+    // Если Android Telegram WebView пропустил завершение анимации, большая карта
+    // не должна оставаться поверх игрового поля.
+    document.querySelectorAll("#durakGame .durak-flying-card, body > .durak-flying-card").forEach((element) => element.remove());
+    document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
+      element.style.opacity = "";
+      element.style.transition = "";
+    });
+
     // Участники, ники и рубашки карт соперников.
     const playersBox = $("durakPlayers");
     if (playersBox && Array.isArray(game.players)) {
