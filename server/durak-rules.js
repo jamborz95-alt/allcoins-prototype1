@@ -4,6 +4,55 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RANKS_36 = ["6", "7", "8", "9", "10", "В", "Д", "К", "Т"];
 const RANKS_52 = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "В", "Д", "К", "Туз"];
 
+
+export const DURAK_TURN_TIMEOUT_MS = 120_000;
+
+// Сервер определяет проигрыш по бездействию, поэтому таймер нельзя
+// считать только в браузере. Возвращаем данные так, чтобы endpoint мог
+// надёжно сохранить результат в БД вместе с состоянием партии.
+export function expireDurakTurnIfNeeded(game, nowMs = Date.now()) {
+  if (!game || game.status !== "playing") {
+    return { changed: false, timedOut: false };
+  }
+
+  const startedAt = Date.parse(game.turnStartedAt || "");
+  if (!Number.isFinite(startedAt)) {
+    // Для партий, созданных до появления таймера, начинаем отсчёт с первого
+    // запроса вместо мгновенного проигрыша.
+    game.turnStartedAt = new Date(nowMs).toISOString();
+    return { changed: true, timedOut: false };
+  }
+
+  if (nowMs - startedAt < DURAK_TURN_TIMEOUT_MS) {
+    return { changed: false, timedOut: false };
+  }
+
+  // Во время защиты действует отбивающийся. Во всех остальных игровых
+  // фазах (включая ожидание окончательного «Бито» после «Беру») действует
+  // атакующий игрок.
+  const activeIndex = game.phase === "defense"
+    ? Number(game.defenderIndex)
+    : Number(game.attackerIndex);
+  const activePlayer = Array.isArray(game.players)
+    ? game.players[activeIndex]
+    : null;
+
+  // Бот ходит автоматически при обработке предыдущего действия; его нельзя
+  // объявлять проигравшим за таймер ожидания ответа человека.
+  if (!activePlayer || String(activePlayer.telegramId) === "0") {
+    return { changed: false, timedOut: false };
+  }
+
+  const nowIso = new Date(nowMs).toISOString();
+  game.status = "finished";
+  game.phase = "finished";
+  game.finishedReason = "timeout";
+  game.turnTimedOutAt = nowIso;
+  game.turnTimedOutPlayerId = String(activePlayer.telegramId);
+  game.loserTelegramId = String(activePlayer.telegramId);
+  return { changed: true, timedOut: true, loserTelegramId: game.loserTelegramId };
+}
+
 const RANK_ORDER = {
   "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8,
   "9": 9, "10": 10, "В": 11, "J": 11, "Д": 12, "Q": 12,
