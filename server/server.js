@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import pg from "pg";
 import crypto from "node:crypto";
-import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex } from "./durak-rules.js";
+import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex, expireDurakTurnIfNeeded } from "./durak-rules.js";
 
 const { Pool } = pg;
 const app = express();
@@ -963,6 +963,8 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       defenderIndex: (startingPlayerIndex + 1) % gamePlayers.length,
       phase: "attack",
       status: "playing",
+      takePending: false,
+      turnStartedAt: new Date().toISOString(),
       loserTelegramId: null
     };
 
@@ -1093,6 +1095,8 @@ app.post("/api/durak/game", async (req, res) => {
             defenderIndex: (starter + 1) % players.length,
             phase: "attack",
             status: "playing",
+            takePending: false,
+            turnStartedAt: new Date().toISOString(),
             loserTelegramId: null
           };
           if (String(players[starter]?.telegramId) === "0") {
@@ -1121,7 +1125,32 @@ app.post("/api/durak/game", async (req, res) => {
       }
     }
 
-    const gameState = gameResult.rows[0].game_state;
+    let gameState = gameResult.rows[0].game_state;
+    const stateBeforeTimeoutCheck = JSON.stringify(gameState);
+    const timeoutCheck = expireDurakTurnIfNeeded(gameState);
+    if (timeoutCheck.changed) {
+      // Сравнение JSONB защищает новый ход от гонки с устаревшим опросом.
+      const timeoutSave = await pool.query(
+        `UPDATE durak_games
+         SET game_state = $1::jsonb, updated_at = NOW()
+         WHERE room_id = $2 AND game_state = $3::jsonb`,
+        [JSON.stringify(gameState), roomId, stateBeforeTimeoutCheck]
+      );
+      if (timeoutSave.rowCount === 1) {
+        if (timeoutCheck.timedOut) {
+          await pool.query(
+            "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
+            [roomId]
+          );
+        }
+      } else {
+        const latestState = await pool.query(
+          "SELECT game_state FROM durak_games WHERE room_id = $1",
+          [roomId]
+        );
+        if (latestState.rows.length) gameState = latestState.rows[0].game_state;
+      }
+    }
 // Не пишем Telegram ID игроков в обычные логи.
     // Возвращаем игроку только его карты
     const me = gameState.players.find(
@@ -1160,6 +1189,9 @@ app.post("/api/durak/game", async (req, res) => {
   hasLoser: Boolean(gameState.loserTelegramId),
   isLoser: String(gameState.loserTelegramId ?? "") === String(user.id),
   phase: gameState.phase,
+  takePending: gameState.takePending === true,
+  turnStartedAt: gameState.turnStartedAt || null,
+  finishedReason: gameState.finishedReason || null,
   attackerIndex: gameState.attackerIndex,
   defenderIndex: gameState.defenderIndex,
   playerIndex: gameState.players.findIndex(
@@ -1289,6 +1321,30 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
+    const timeoutCheck = expireDurakTurnIfNeeded(game);
+    if (timeoutCheck.timedOut) {
+      await client.query(
+        `UPDATE durak_games
+         SET game_state = $1::jsonb, updated_at = NOW()
+         WHERE room_id = $2`,
+        [JSON.stringify(game), roomId]
+      );
+      await client.query(
+        "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
+        [roomId]
+      );
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return res.status(409).json({
+        ok: false,
+        error: "Время хода истекло — игрок автоматически проиграл",
+        status: "finished",
+        phase: "finished",
+        finishedReason: "timeout",
+        loserTelegramId: game.loserTelegramId
+      });
+    }
+
     const count = game.players.length;
     const attackerIndex = game.attackerIndex;
     const defenderIndex = game.defenderIndex;
@@ -1399,6 +1455,31 @@ app.post("/api/durak/action", async (req, res) => {
       }
     }
 
+    // Разрешение «Беру»: после окончательного «Бито» все карты стола
+    // переходят защищающемуся, но атакующий остаётся атакующим в следующем раунде.
+    function finishTakingRound() {
+      const taker = game.players[game.defenderIndex];
+      for (const item of game.table) {
+        if (item.attack) taker.hand.push(item.attack);
+        if (item.defense) taker.hand.push(item.defense);
+      }
+
+      game.table = [];
+      delete game.defenderHandAtRoundStart;
+      delete game.takePending;
+
+      drawCardsAfterRound();
+
+      game.attackerIndex = attackerIndex;
+      game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
+      if (game.defenderIndex === game.attackerIndex) {
+        markGameFinished();
+      } else {
+        game.phase = "attack";
+        finishIfNeeded();
+      }
+    }
+
     // АТАКА: можно перенести одну карту или сразу несколько карт одного достоинства.
     if (action === "attack") {
       if (playerIndex !== game.attackerIndex) {
@@ -1415,7 +1496,11 @@ app.post("/api/durak/action", async (req, res) => {
         });
       }
 
-      if (game.phase !== "attack" && game.phase !== "defense") {
+      if (
+        game.phase !== "attack" &&
+        game.phase !== "defense" &&
+        !(game.phase === "takePending" && game.takePending === true)
+      ) {
         return res.status(400).json({
           ok: false,
           error: "Сейчас нельзя атаковать"
@@ -1478,7 +1563,9 @@ app.post("/api/durak/action", async (req, res) => {
       for (const card of cardsToPlay) {
         game.table.push({ attack: card, defense: null });
       }
-      game.phase = "defense";
+      // Если защищающийся уже нажал «Беру», дополнительные карты всё ещё
+      // можно подкидывать, пока атакующий не завершит раунд кнопкой «Бито».
+      game.phase = game.takePending ? "takePending" : "defense";
     }
 
     // ЗАЩИТА
@@ -1573,31 +1660,13 @@ if (hasUnbeatenCards) {
         });
       }
 
-      for (const item of game.table) {
-        if (item.attack) player.hand.push(item.attack);
-        if (item.defense) player.hand.push(item.defense);
-      }
-
-      game.table = [];
-      delete game.defenderHandAtRoundStart;
-
-      drawCardsAfterRound();
-
-      game.attackerIndex = attackerIndex;
-      game.defenderIndex = nextActivePlayer(
-        defenderIndex,
-        [attackerIndex]
-      );
-
-      if (game.defenderIndex === game.attackerIndex) {
-        markGameFinished();
-      } else {
-        game.phase = "attack";
-        finishIfNeeded();
-      }
+      // Нажатие «Беру» фиксирует намерение, но пока не забирает карты:
+      // атакующий получает последнюю возможность подкинуть карты и нажать «Бито».
+      game.takePending = true;
+      game.phase = "takePending";
     }
 
-    // ЗАВЕРШИТЬ ОТБИВАНИЕ
+    // ЗАВЕРШИТЬ ОТБИВАНИЕ / ПЕРЕДАТЬ ВЗЯТЫЕ КАРТЫ
 if (action === "beat") {
   if (playerIndex !== game.attackerIndex) {
     return res.status(403).json({
@@ -1606,38 +1675,45 @@ if (action === "beat") {
     });
   }
 
-      if (
-        game.table.length === 0 ||
-        !game.table.every(item => item.attack && item.defense)
-      ) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сначала нужно побить все карты на столе"
-        });
-      }
-
-      game.table = [];
-      delete game.defenderHandAtRoundStart;
-
-      drawCardsAfterRound();
-
-      game.attackerIndex = defenderIndex;
-      game.defenderIndex = nextActivePlayer(
-        game.attackerIndex
-      );
-
-      if (game.defenderIndex === game.attackerIndex) {
-        markGameFinished();
-      } else {
-        game.phase = "attack";
-        finishIfNeeded();
-      }
+  if (game.takePending === true) {
+    // Защищающийся заранее нажал «Беру»: завершение раунда отдаёт ему
+    // все атакующие и защитные карты, в том числе последние подкинутые.
+    finishTakingRound();
+  } else {
+    if (
+      game.table.length === 0 ||
+      !game.table.every(item => item.attack && item.defense)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: "Сначала нужно побить все карты на столе"
+      });
     }
+
+    game.table = [];
+    delete game.defenderHandAtRoundStart;
+
+    drawCardsAfterRound();
+
+    game.attackerIndex = defenderIndex;
+    game.defenderIndex = nextActivePlayer(game.attackerIndex);
+
+    if (game.defenderIndex === game.attackerIndex) {
+      markGameFinished();
+    } else {
+      game.phase = "attack";
+      finishIfNeeded();
+    }
+  }
+}
 
     // Автоматический ход тестового бота (telegram_id = 0).
     const botIndex = game.players.findIndex(p => String(p.telegramId) === "0");
     if (botIndex >= 0) {
       for (let botStep = 0; botStep < 12 && game.status === "playing"; botStep++) {
+        // Бот-защитник уже нажал «Беру» и ждёт решения атакующего — не отбивается снова.
+        if (game.takePending === true && game.defenderIndex === botIndex) break;
+
         if (game.attackerIndex === botIndex) {
           const bot = game.players[botIndex];
           const defender = game.players[game.defenderIndex];
@@ -1645,6 +1721,26 @@ if (action === "beat") {
             game.defenderHandAtRoundStart = defender.hand.length + game.table.length;
           }
           const canAddMore = game.table.length < game.defenderHandAtRoundStart;
+
+          // Если человек взял карты, бот подкидывает все допустимые карты,
+          // затем завершает раунд и передаёт стол защищающемуся.
+          if (game.takePending === true) {
+            const ranksOnTable = game.table.flatMap(item =>
+              [item.attack?.rank, item.defense?.rank].filter(Boolean)
+            );
+            const extraIndex = canAddMore && bot.hand.length
+              ? chooseBotAttackIndex(bot.hand, game.trumpSuit, ranksOnTable)
+              : -1;
+            if (extraIndex >= 0) {
+              const extraCard = bot.hand.splice(extraIndex, 1)[0];
+              game.table.push({ attack: extraCard, defense: null });
+              game.phase = "takePending";
+              continue;
+            }
+            finishTakingRound();
+            continue;
+          }
+
           let candidateIndex = -1;
 
           if (game.table.length === 0) {
@@ -1698,27 +1794,19 @@ if (action === "beat") {
             // Продолжаем отбивать остальные открытые атаки в этом же запросе.
             continue;
           } else {
-            for (const item of game.table) {
-              if (item.attack) bot.hand.push(item.attack);
-              if (item.defense) bot.hand.push(item.defense);
-            }
-            game.table = [];
-            // Завершили раунд взятием карт: лимит подкидывания нужно сбросить.
-            delete game.defenderHandAtRoundStart;
-            drawCardsAfterRound();
-            game.attackerIndex = attackerIndex;
-            game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
-            if (game.defenderIndex === game.attackerIndex) {
-              markGameFinished();
-            } else {
-              game.phase = "attack";
-              finishIfNeeded();
-            }
+            // Бот объявляет, что берёт карты, но отдаёт их только после того,
+            // как атакующий получит возможность подкинуть и нажать «Бито».
+            game.takePending = true;
+            game.phase = "takePending";
           }
           break;
         }
         break;
       }
+    }
+
+    if (game.status === "playing") {
+      game.turnStartedAt = new Date().toISOString();
     }
 
     // Сохраняем последние 100 идентификаторов вместе с состоянием партии.
