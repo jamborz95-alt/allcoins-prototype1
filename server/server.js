@@ -1639,7 +1639,6 @@ if (action === "beat") {
     if (botIndex >= 0) {
       for (let botStep = 0; botStep < 12 && game.status === "playing"; botStep++) {
         if (game.attackerIndex === botIndex) {
-          if (game.table.some(item => !item.defense)) break;
           const bot = game.players[botIndex];
           const defender = game.players[game.defenderIndex];
           if (!Number.isInteger(game.defenderHandAtRoundStart)) {
