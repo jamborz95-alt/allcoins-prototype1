@@ -4166,17 +4166,11 @@ async function openDurakWaitingRoom(room) {
   $("durakRoomActions").style.display = "none";
   $("durakCreatePanel").style.display = "none";
   $("durakRoomsPanel").style.display = "none";
-  // Все действия комнаты доступны прямо внутри игрового поля.
-  $("durakWaitingPanel").style.display = "none";
+  // Кнопки управления остаются внутри панели ожидания.
+  // Не переносим их в durakBoard: там абсолютным позиционированием размещены игроки,
+  // поэтому «Начать игру» перекрывало бота/второго игрока.
+  $("durakWaitingPanel").style.display = "block";
   $("durakBoard").style.display = "block";
-  const board = $("durakBoard");
-  ["durakWaitingStatus", "durakAddBotButton", "durakReadyButton", "durakStartButton"].forEach((id) => {
-    const control = $(id);
-    // durakTrump находится внутри .durak-table, а не непосредственно в durakBoard.
-    // Поэтому board.insertBefore(control, durakTrump) выбрасывал DOMException
-    // и прерывал открытие только что созданной комнаты.
-    if (control && control.parentElement !== board) board.appendChild(control);
-  });
   $("durakGameStatus").textContent =
     "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
   $("durakTrump").style.display = "none";
