@@ -4285,7 +4285,7 @@ if (Array.isArray(game.hand)) {
     // Выбор карты нажатием. Во время отправки хода выбор блокируется,
     // чтобы быстрые повторные касания не меняли выбранную карту.
     cardElement.onclick = () => {
-      if (durakActionInProgress) return;
+      if (durakActionInProgress || durakDealAnimationActive) return;
 
       if (cardElement.dataset.dragged === "true") {
         cardElement.dataset.dragged = "false";
@@ -4327,7 +4327,7 @@ if (Array.isArray(game.hand)) {
     // Перетаскивание через отдельную копию поверх стола.
     cardElement.onpointerdown = (event) => {
       // Касание на Android не блокируется проверкой кнопки мыши.
-      if ((event.pointerType === "mouse" && event.button !== 0) || durakActionInProgress) return;
+      if ((event.pointerType === "mouse" && event.button !== 0) || durakActionInProgress || durakDealAnimationActive) return;
       event.preventDefault();
 
       const pointerId = event.pointerId;
