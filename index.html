@@ -4214,7 +4214,7 @@ if (Array.isArray(game.hand)) {
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
         const canDefend = isDefender && game.phase === "defense" &&
           !!targetCard && droppedOnTable;
-        const canAttack = isAttacker && game.phase === "attack" && droppedOnTable;
+        const canAttack = isAttacker && (game.phase === "attack" || game.phase === "defense") && droppedOnTable;
 
         if (!canDefend && !canAttack) {
           cardElement.style.opacity = "";
