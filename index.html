@@ -4679,7 +4679,7 @@ if (Array.isArray(game.hand)) {
       const playerCount = game.players.length;
       const targetsByPlayer = new Map();
       const ownTargets = Array.from(
-        handBox?.querySelectorAll(".durak-card.player-card") || []
+        $("durakHand")?.querySelectorAll(".durak-card.player-card") || []
       );
       targetsByPlayer.set(ownIndex, ownTargets);
 
