@@ -2251,7 +2251,8 @@
     object-position: center !important;
     margin: 0 !important;
     padding: 0 !important;
-    transform: none !important;
+    transform: scale(1.06) !important;
+    transform-origin: center !important;
   }
   /* Без заголовка перед рукой: он раньше попадал поверх увеличенных карт. */
   #durakGame.durak-fullscreen #durakBoard > h4 {
@@ -4071,7 +4072,7 @@ if (Array.isArray(game.hand)) {
       : 54;
     const cardHeight = Math.round(cardWidth * 1.62);
     const step = count > 1
-      ? Math.max(6, Math.min(cardWidth * 0.60, (available - cardWidth) / (count - 1)))
+      ? Math.max(6, Math.min(cardWidth * 0.78, (available - cardWidth) / (count - 1)))
       : cardWidth;
     const overlap = Math.max(0, cardWidth - step);
 
