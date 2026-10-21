@@ -2768,8 +2768,8 @@ async function durakAction(action, requestedCardIds = null) {
     const shortMessage = rawMessage.length > 180
       ? rawMessage.slice(0, 177) + "..."
       : rawMessage;
-    const statusMatch = rawMessage.match(/^Ошибка сервера (\d{3}):/);
-    const responseStatus = statusMatch ? Number(statusMatch[1]) : 0;
+    const statusMatch = rawMessage.match(/(?:^Ошибка сервера (\d{3}):|\(HTTP (\d{3})\))/);
+    const responseStatus = statusMatch ? Number(statusMatch[1] || statusMatch[2]) : 0;
     // Ответ 4xx означает, что сервер отклонил ход и его не нужно повторять
     // с тем же ID. Сохраняем pending только для сетевых ошибок и 5xx,
     // когда результат действия может оставаться неизвестным.
