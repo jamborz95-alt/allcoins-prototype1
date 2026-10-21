@@ -57,10 +57,15 @@ test("the bot continues defending until no uncovered attack cards remain", () =>
   assert.match(body, /openItem\.defense = bot\.hand\.splice\(defenseIndex, 1\)\[0\];[\s\S]*?continue;\s*\} else \{/);
 });
 
-test("drag-and-drop allows the attacker to throw in during the defense phase", async () => {
+test("drag-and-drop sends a deliberate throw from any direction to the correct table slot", async () => {
   const { readFile } = await import("node:fs/promises");
   const frontend = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(frontend, /const canAttack = isAttacker && \(game\.phase === "attack" \|\| game\.phase === "defense"\) && droppedOnTable/);
+  assert.match(frontend, /const throwDistance = Math\.hypot\(pointX - startX, pointY - startY\)/);
+  assert.match(frontend, /const intentionalThrow = throwDistance >= 24/);
+  assert.match(frontend, /const canAttack = isAttacker &&[\s\S]*?intentionalThrow/);
+  assert.match(frontend, /const canDefend = isDefender && game\.phase === "defense" &&[\s\S]*?intentionalThrow/);
+  assert.match(frontend, /return !pair\?\.querySelector\('\.durak-card\[data-table-card-type="defense"\]'\)/);
+  assert.doesNotMatch(frontend, /const canAttack = isAttacker && \(game\.phase === "attack" \|\| game\.phase === "defense"\) && droppedOnTable/);
 });
 
 test("the bot attacker can throw in a matching rank while the defender still has an open attack", () => {
