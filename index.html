@@ -3223,7 +3223,15 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     return Promise.resolve();
   }
 
-  const flyer = durakPendingDragFlyer || cardElement.cloneNode(true);
+  // Если перетаскивание уже создало и показало летящую карту,
+  // продолжаем анимацию именно этого DOM-элемента. Клонирование здесь
+  // оставляло исходную большую копию поверх игрового поля.
+  const flyer = (
+    cardElement.classList.contains("durak-flying-card") &&
+    cardElement.isConnected
+  )
+    ? cardElement
+    : (durakPendingDragFlyer || cardElement.cloneNode(true));
   durakPendingDragFlyer = null;
   const isAlreadyFlying = flyer.classList.contains("durak-flying-card");
 
