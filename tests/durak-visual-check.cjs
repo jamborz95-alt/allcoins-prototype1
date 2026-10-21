@@ -48,9 +48,10 @@ const path = require("node:path");
 
   await page.route("**/api/**", async route => {
     const url = new URL(route.request().url());
-    const body = route.request().method() === "POST"
-      ? await route.request().postDataJSON().catch(() => ({}))
-      : {};
+    let body = {};
+    if (route.request().method() === "POST") {
+      try { body = route.request().postDataJSON(); } catch (_) { body = {}; }
+    }
     if (url.pathname.endsWith("/api/durak/game")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(currentGame) });
       return;
