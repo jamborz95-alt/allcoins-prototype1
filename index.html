@@ -2355,6 +2355,242 @@
   }
 }
 
+
+/* ===== ALLCOINS DURAK — раскладка по присланному образцу ===== */
+#durakGame.durak-fullscreen {
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: max(4px, env(safe-area-inset-top)) 0 max(4px, env(safe-area-inset-bottom)) !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  background-color: #2c5274 !important;
+  background-image:
+    radial-gradient(ellipse at 50% 24%, rgba(111,153,183,.28), transparent 56%),
+    radial-gradient(ellipse at 50% 82%, rgba(9,35,57,.18), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, rgba(0,0,0,.012) 1px 2px),
+    linear-gradient(135deg, #355f81 0%, #2c5274 50%, #244866 100%) !important;
+}
+#durakGame #durakBoard {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important; min-height: 0 !important;
+  margin: 0 !important; padding: 0 !important; display: block !important;
+  overflow: hidden !important;
+}
+#durakGame #durakBoard > div:first-child {
+  position: absolute !important;
+  top: max(5px, env(safe-area-inset-top)) !important;
+  left: 9px !important; right: 9px !important;
+  height: 30px !important; min-height: 30px !important; gap: 8px !important;
+  z-index: 30 !important;
+}
+#durakGame #durakGameStatus {
+  flex: 1 1 auto !important; min-width: 0 !important;
+  margin: 0 !important; padding: 2px 0 !important;
+  border: 0 !important; border-radius: 0 !important; background: transparent !important;
+  color: rgba(250,252,255,.88) !important; font-size: 10px !important;
+  line-height: 1.15 !important; white-space: nowrap !important;
+  overflow: hidden !important; text-overflow: ellipsis !important;
+  text-align: left !important; text-shadow: 0 1px 3px rgba(0,0,0,.4) !important;
+}
+#durakGame #durakSoundToggle {
+  flex: 0 0 auto !important; min-height: 27px !important;
+  padding: 4px 8px !important; border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 7px !important; color: #fff !important;
+  background: rgba(12,35,54,.35) !important; font-size: 11px !important;
+  box-shadow: none !important;
+}
+#durakGame .durak-table {
+  position: absolute !important; inset: 0 !important; display: block !important;
+  width: 100% !important; height: 100% !important; min-height: 0 !important;
+  margin: 0 !important; padding: 0 !important; border: 0 !important;
+  border-radius: 0 !important; background: transparent !important;
+  box-shadow: none !important; overflow: visible !important;
+}
+#durakGame .durak-table::before { content: none !important; }
+#durakGame #durakTrump {
+  position: absolute !important; left: -18px !important; right: auto !important;
+  top: 33% !important; bottom: auto !important; width: 49px !important;
+  min-width: 49px !important; height: 92px !important; min-height: 92px !important;
+  margin: 0 !important; padding: 0 !important; border: 0 !important;
+  border-radius: 0 !important; background: transparent !important;
+  box-shadow: none !important; overflow: visible !important; z-index: 4 !important;
+  pointer-events: none !important;
+}
+#durakGame #durakTrump > div:first-child { display: none !important; }
+#durakGame #durakTrump .durak-deck-stack {
+  position: relative !important; width: 48px !important;
+  min-width: 48px !important; height: 90px !important;
+  margin: 0 !important; overflow: visible !important;
+}
+#durakGame #durakPlayers {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  margin: 0 !important; padding: 0 !important;
+  z-index: 6 !important; pointer-events: none !important;
+}
+#durakGame .durak-player {
+  width: 80px !important; min-width: 68px !important; max-width: 25vw !important;
+  min-height: 54px !important; padding: 4px 5px 5px !important;
+  border: 2px solid #f2475c !important; border-radius: 10px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(239,242,242,.96) 52%, rgba(32,41,53,.94) 53%, rgba(22,31,43,.98)) !important;
+  box-shadow: 0 3px 7px rgba(0,0,0,.32), 0 0 0 1px rgba(255,255,255,.42) !important;
+  color: #151820 !important; text-align: center !important; font-size: 10px !important;
+  pointer-events: auto !important; z-index: 8 !important;
+}
+#durakGame .durak-player.active {
+  border-color: #8ddd19 !important;
+  box-shadow: 0 0 0 3px rgba(141,221,25,.28), 0 4px 9px rgba(0,0,0,.32) !important;
+}
+#durakGame .durak-player-name {
+  max-width: 100% !important; color: #151820 !important; font-size: 11px !important;
+  font-weight: 900 !important; line-height: 1.1 !important;
+  overflow-wrap: anywhere !important; text-shadow: 0 1px 0 rgba(255,255,255,.55) !important;
+}
+#durakGame .durak-player-meta {
+  margin-top: 2px !important; color: #f3f6fa !important;
+  font-size: 8px !important; line-height: 1.05 !important;
+}
+#durakGame .durak-card-backs {
+  position: absolute !important; top: calc(100% - 1px) !important;
+  left: -4px !important; right: -4px !important;
+  display: flex !important; justify-content: center !important; align-items: flex-start !important;
+  min-height: 20px !important; padding-top: 0 !important; overflow: visible !important;
+  z-index: -1 !important;
+}
+#durakGame .durak-card-back {
+  flex: 0 0 28px !important; width: 28px !important; height: 42px !important;
+  min-width: 28px !important; min-height: 42px !important; margin-left: -19px !important;
+  border: 1px solid #f1f0e8 !important; border-radius: 4px !important;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 2px, rgba(72,139,100,.92) 2px 2.8px, transparent 2.8px 4.4px),
+    repeating-linear-gradient(-45deg, transparent 0 2px, rgba(194,112,123,.76) 2px 2.8px, transparent 2.8px 4.4px),
+    #f4f3e8 !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.22) !important;
+}
+#durakGame .durak-card-back:first-child { margin-left: 0 !important; }
+#durakGame .durak-player[data-seat="top"] {
+  top: 7% !important; left: 50% !important; right: auto !important; bottom: auto !important;
+  transform: translateX(-50%) !important;
+}
+#durakGame .durak-player[data-seat="top-left"] {
+  top: 8% !important; left: 26% !important; right: auto !important; bottom: auto !important;
+  transform: translateX(-50%) !important;
+}
+#durakGame .durak-player[data-seat="top-right"] {
+  top: 8% !important; left: 74% !important; right: auto !important; bottom: auto !important;
+  transform: translateX(-50%) !important;
+}
+#durakGame .durak-player[data-seat="left"] {
+  top: 44% !important; left: 0 !important; right: auto !important; bottom: auto !important;
+  transform: translateY(-50%) !important;
+}
+#durakGame .durak-player[data-seat="right"] {
+  top: 44% !important; right: 0 !important; left: auto !important; bottom: auto !important;
+  transform: translateY(-50%) !important;
+}
+#durakGame .durak-player[data-seat="bottom"] {
+  top: auto !important; bottom: -43% !important; left: 50% !important; right: auto !important;
+  transform: translateX(-50%) !important;
+}
+#durakGame .durak-player[data-seat="left-top"],
+#durakGame .durak-player[data-seat="right-top"] { top: 28% !important; }
+#durakGame .durak-player[data-seat="left-bottom"],
+#durakGame .durak-player[data-seat="right-bottom"] { top: 64% !important; }
+#durakGame #durakTable {
+  position: absolute !important; z-index: 3 !important; left: 0 !important; right: 0 !important;
+  top: 19% !important; bottom: 30% !important; display: flex !important;
+  justify-content: center !important; align-content: center !important; align-items: center !important;
+  flex-wrap: wrap !important; gap: 9px 0 !important; width: 100% !important;
+  min-height: 0 !important; height: auto !important; margin: 0 !important;
+  padding: 0 43px !important; border: 0 !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important; overflow: visible !important;
+  box-sizing: border-box !important;
+}
+#durakGame #durakTable .durak-table-pair {
+  position: relative !important; display: block !important; flex: 0 0 88px !important;
+  width: 88px !important; height: 116px !important; margin: 1px 0 !important;
+  overflow: visible !important;
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card {
+  position: absolute !important; display: block !important; flex: none !important;
+  width: 62px !important; min-width: 62px !important; max-width: 62px !important;
+  height: 92px !important; min-height: 92px !important; padding: 0 !important;
+  overflow: hidden !important; box-sizing: border-box !important;
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+  left: 0 !important; top: 12px !important; z-index: 1 !important; transform: rotate(-5deg) !important;
+}
+#durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+  left: 27px !important; top: 0 !important; z-index: 2 !important; transform: rotate(5deg) !important;
+}
+#durakGame .durak-table + h4 { display: none !important; }
+#durakGame #durakHand {
+  position: absolute !important; left: 0 !important; right: 0 !important;
+  bottom: 66px !important; width: 100% !important; height: min(23vh, 190px) !important;
+  min-height: 136px !important; max-height: 190px !important;
+  margin: 0 !important; padding: 0 4px 0 !important; display: flex !important;
+  justify-content: center !important; align-items: flex-end !important;
+  flex-wrap: nowrap !important; gap: 0 !important; overflow: visible !important;
+  z-index: 7 !important; perspective: 900px !important; -webkit-overflow-scrolling: auto !important;
+}
+#durakGame #durakHand .durak-card {
+  margin-bottom: 0 !important; box-shadow: 0 4px 9px rgba(0,0,0,.35) !important;
+  transform-origin: center bottom !important;
+}
+#durakGame #durakControls {
+  position: absolute !important; left: 0 !important; right: 0 !important;
+  bottom: max(2px, env(safe-area-inset-bottom)) !important;
+  height: 62px !important; min-height: 62px !important; display: flex !important;
+  flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important;
+  gap: 6px !important; margin: 0 !important; padding: 5px 8px !important;
+  z-index: 20 !important;
+  background: linear-gradient(180deg, rgba(19,47,68,0), rgba(12,34,52,.72)) !important;
+}
+#durakGame #durakControls button {
+  min-height: 48px !important; max-height: 56px !important; border-radius: 9px !important;
+  touch-action: manipulation !important; box-shadow: 0 2px 4px rgba(0,0,0,.2) !important;
+}
+#durakGame #durakControls #durakAttack,
+#durakGame #durakControls #durakDefend { display: none !important; }
+#durakGame #durakControls #durakTake,
+#durakGame #durakControls #durakBeat {
+  flex: 0 0 40% !important; width: 40% !important; margin: 0 !important; padding: 5px 8px !important;
+  border: 1px solid #d7d7d4 !important; border-radius: 9px !important;
+  background: #fffefa !important; color: #d51f31 !important;
+  font-size: clamp(20px, 6vw, 30px) !important; line-height: 1 !important; font-weight: 500 !important;
+}
+#durakGame #durakControls #durakBeat { font-size: clamp(15px, 4.4vw, 21px) !important; }
+#durakGame #durakTurnMessage {
+  flex: 1 1 auto !important; min-width: 0 !important; max-width: 57% !important;
+  display: flex !important; padding: 7px 3px !important;
+  border: 1px solid rgba(242,211,107,.75) !important; border-radius: 8px !important;
+  background: rgba(13,45,51,.76) !important; color: #fff2b2 !important;
+  font-size: 10px !important; line-height: 1.15 !important; text-align: center !important;
+  text-wrap: balance !important;
+}
+@media (max-width: 380px) {
+  #durakGame #durakTable { padding: 0 41px !important; top: 19% !important; bottom: 30% !important; gap: 7px 0 !important; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 83px !important; width: 83px !important; height: 106px !important; }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+    width: 58px !important; min-width: 58px !important; max-width: 58px !important;
+    height: 86px !important; min-height: 86px !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] { left: 24px !important; }
+  #durakGame #durakControls #durakTake,
+  #durakGame #durakControls #durakBeat { flex-basis: 38% !important; width: 38% !important; }
+}
+@media (max-height: 700px) {
+  #durakGame #durakTable { top: 19% !important; bottom: 28% !important; }
+  #durakGame #durakHand { height: 21vh !important; min-height: 116px !important; bottom: 63px !important; }
+  #durakGame #durakControls { height: 58px !important; min-height: 58px !important; }
+  #durakGame .durak-player[data-seat="bottom"] { bottom: -40% !important; }
+}
+/* Бумажный звук должен хорошо различаться на телефоне, не только в тихой комнате. */
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
@@ -3520,7 +3756,7 @@ function playDurakSound(kind = "card") {
     filter.Q.setValueAtTime(q, t + offset);
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.0001, t + offset);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), t + offset + attack);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, Math.min(0.14, volume * 1.7)), t + offset + attack);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + offset + duration);
     source.connect(filter);
     filter.connect(gain);
@@ -3540,7 +3776,7 @@ function playDurakSound(kind = "card") {
     osc.frequency.setValueAtTime(startFreq, t + offset);
     osc.frequency.exponentialRampToValueAtTime(endFreq, t + offset + duration);
     gain.gain.setValueAtTime(0.0001, t + offset);
-    gain.gain.exponentialRampToValueAtTime(volume, t + offset + 0.004);
+    gain.gain.exponentialRampToValueAtTime(Math.min(0.055, volume * 1.55), t + offset + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + offset + duration);
     osc.connect(filter);
     filter.connect(gain);
@@ -4212,7 +4448,7 @@ async function loadDurakGame(roomId) {
         const relativeSeat = (index - ownIndex + seatCount) % seatCount;
         const seatByCount = {
           2: ["bottom", "top"],
-          3: ["bottom", "right", "left"],
+          3: ["bottom", "top-left", "top-right"],
           4: ["bottom", "right", "top", "left"],
           5: ["bottom", "right", "top-right", "top-left", "left"],
           6: ["bottom", "right-bottom", "right-top", "top", "left-top", "left-bottom"]
@@ -4263,20 +4499,24 @@ const isDefender =
   Number(game.playerIndex) === Number(game.defenderIndex);
 const hasCardsOnTable = Array.isArray(game.table) && game.table.length > 0;
 const hasOpenAttack = hasCardsOnTable && game.table.some(item => item.attack && !item.defense);
+const takePending = game.takePending === true;
 const turnMessage = $("durakTurnMessage");
 const gameIsPlaying = game.status === "playing";
 const isMyAttackTurn =
-  gameIsPlaying && isAttacker && game.phase === "attack";
+  gameIsPlaying && isAttacker &&
+  (game.phase === "attack" || game.phase === "takePending");
 const isMyDefenseTurn =
-  gameIsPlaying && isDefender && hasCardsOnTable;
+  gameIsPlaying && isDefender && hasCardsOnTable && game.phase === "defense";
 
 if (turnMessage) {
   turnMessage.style.display =
-    isMyAttackTurn || isMyDefenseTurn ? "flex" : "none";
+    isMyAttackTurn || isMyDefenseTurn || takePending ? "flex" : "none";
 
-  turnMessage.textContent = isMyDefenseTurn
-    ? "ТВОЯ ЗАЩИТА"
-    : "ТВОЯ АТАКА";
+  turnMessage.textContent = takePending
+    ? (isAttacker ? "ПОДКИНЬ ИЛИ БИТО" : "ТЫ БЕРЁШЬ")
+    : isMyDefenseTurn
+      ? "ТВОЯ ЗАЩИТА"
+      : "ТВОЯ АТАКА";
 }
 
 const attackButton = $("durakAttack");
@@ -4302,9 +4542,10 @@ if (takeButton) {
   // Защищающийся может взять карты, пока атакующий не объявил «Бито»,
   // даже если все текущие карты уже побиты.
   takeButton.style.display =
-    gameIsPlaying && isDefender && hasCardsOnTable
+    gameIsPlaying && isDefender && hasCardsOnTable && !takePending
       ? "inline-block"
       : "none";
+  takeButton.textContent = "✋ Беру";
 }
 
 const allCardsBeaten =
@@ -4314,9 +4555,10 @@ const allCardsBeaten =
 
 if (beatButton) {
   beatButton.style.display =
-    gameIsPlaying && isAttacker && allCardsBeaten
+    gameIsPlaying && isAttacker && (allCardsBeaten || takePending)
       ? "inline-block"
       : "none";
+  beatButton.textContent = takePending ? "✅ Бито · отдать карты" : "✅ Бито";
 }
    
     $("durakGame").style.display = "block";
@@ -4437,7 +4679,7 @@ trumpBox.appendChild(deckStack);
 // Центральные атакующие и защитные карты остаются свободны.
 const deckLayout = {
   // В видео стопка уходит за левый край: оставляем видимой только узкую часть.
-  position:"absolute", left:"-18px", right:"auto", top:"24%", bottom:"auto",
+  position:"absolute", left:"-18px", right:"auto", top:"33%", bottom:"auto",
   transform:"none", width:"49px", minWidth:"49px", height:"92px",
   minHeight:"92px", margin:"0", padding:"0", overflow:"visible",
   zIndex:"3", pointerEvents:"none", background:"transparent", border:"0",
@@ -4873,7 +5115,7 @@ if (Array.isArray(game.hand)) {
         const canDefend = isDefender && game.phase === "defense" &&
           !!targetCard && intentionalThrow;
         const canAttack = isAttacker &&
-          (game.phase === "attack" || game.phase === "defense") &&
+          (game.phase === "attack" || game.phase === "defense" || game.phase === "takePending") &&
           intentionalThrow;
 
         if (!canDefend && !canAttack) {
@@ -5033,14 +5275,30 @@ if (Array.isArray(game.hand)) {
 
     const gameResultLabel = game.status !== "finished"
       ? "Идёт партия"
-      : game.isLoser
-        ? "Ты проиграл — ДУРАК"
-        : game.hasLoser
-          ? "Победа! Партия завершена"
-          : "Партия завершена";
+      : game.finishedReason === "timeout"
+        ? (game.isLoser
+            ? "Ты проиграл — не сделал ход за 2 минуты"
+            : "Победа! Соперник пропустил ход")
+        : game.isLoser
+          ? "Ты проиграл — ДУРАК"
+          : game.hasLoser
+            ? "Победа! Партия завершена"
+            : "Партия завершена";
 
-    $("durakGameStatus").textContent =
-      gameResultLabel + " · Карт в колоде: " + game.cardsLeft;
+    let gameStatusText = gameResultLabel + " · Карт в колоде: " + game.cardsLeft;
+    if (game.status === "playing" && Number.isFinite(Date.parse(game.turnStartedAt || ""))) {
+      const elapsed = Math.max(0, Date.now() - Date.parse(game.turnStartedAt));
+      const secondsLeft = Math.max(0, Math.ceil((120000 - elapsed) / 1000));
+      const clock = String(Math.floor(secondsLeft / 60)).padStart(2, "0") + ":" +
+        String(secondsLeft % 60).padStart(2, "0");
+      if (takePending) {
+        gameStatusText = isAttacker
+          ? "Соперник нажал «Беру» — можешь подкинуть или нажать «Бито»"
+          : "Ты нажал «Беру» — атакующий может подкинуть карты";
+      }
+      gameStatusText += " · ⏱ " + clock;
+    }
+    $("durakGameStatus").textContent = gameStatusText;
 
   } catch (error) {
     console.warn("Обновление Дурака:", error);
