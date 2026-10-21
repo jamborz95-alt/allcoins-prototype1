@@ -2566,7 +2566,7 @@
 #durakGame #durakControls #durakBeat { font-size: clamp(15px, 4.4vw, 21px) !important; }
 #durakGame #durakTurnMessage {
   flex: 1 1 auto !important; min-width: 0 !important; max-width: 57% !important;
-  display: flex !important; padding: 7px 3px !important;
+  display: flex; padding: 7px 3px !important;
   border: 1px solid rgba(242,211,107,.75) !important; border-radius: 8px !important;
   background: rgba(13,45,51,.76) !important; color: #fff2b2 !important;
   font-size: 10px !important; line-height: 1.15 !important; text-align: center !important;
@@ -5716,11 +5716,11 @@ function setupDurakSeatDragging(seat, roomId, seatName, container, freeMove = fa
       x = Math.max(halfWidth, Math.min(1 - halfWidth, x));
       y = Math.max(halfHeight, Math.min(1 - halfHeight, y));
       durakSeatPositions[key] = { x, y };
-      seat.style.left = (x * 100) + "%";
-      seat.style.top = (y * 100) + "%";
-      seat.style.right = "auto";
-      seat.style.bottom = "auto";
-      seat.style.transform = "translate(-50%, -50%)";
+      seat.style.setProperty("left", (x * 100) + "%", "important");
+      seat.style.setProperty("top", (y * 100) + "%", "important");
+      seat.style.setProperty("right", "auto", "important");
+      seat.style.setProperty("bottom", "auto", "important");
+      seat.style.setProperty("transform", "translate(-50%, -50%)", "important");
     };
     const finish = (upEvent) => {
       if (upEvent.pointerId !== event.pointerId) return;
@@ -5737,11 +5737,11 @@ function setupDurakSeatDragging(seat, roomId, seatName, container, freeMove = fa
 
   const saved = durakSeatPositions[String(roomId) + ":" + seatName];
   if (saved) {
-    seat.style.left = (saved.x * 100) + "%";
-    seat.style.top = (saved.y * 100) + "%";
-    seat.style.right = "auto";
-    seat.style.bottom = "auto";
-    seat.style.transform = "translate(-50%, -50%)";
+    seat.style.setProperty("left", (saved.x * 100) + "%", "important");
+    seat.style.setProperty("top", (saved.y * 100) + "%", "important");
+    seat.style.setProperty("right", "auto", "important");
+    seat.style.setProperty("bottom", "auto", "important");
+    seat.style.setProperty("transform", "translate(-50%, -50%)", "important");
   }
 }
 
