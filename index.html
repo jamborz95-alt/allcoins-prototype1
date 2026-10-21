@@ -3430,7 +3430,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   // и без дополнительного ожидания после завершения CSS-перехода.
   // Резкий бросок должен практически сразу долетать до цели,
   // без длинного зависания в воздухе даже на мобильном WebView.
-  const flightDuration = Math.round(190 - throwPower * 70);
+  const flightDuration = Math.round(165 - throwPower * 45);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -3463,7 +3463,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     flyer.style.transformOrigin = "center center";
     requestAnimationFrame(() => {
       flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(" +
-        (throwPower > 0.35 ? ".12,.78,.18,1" : ".16,.88,.24,1") + ")";
+        (throwPower > 0.35 ? ".18,.82,.22,1" : ".22,.76,.28,1") + ")";
       // При броске карта чуть сильнее наклоняется в полёте и ровно
       // садится поверх атакующей карты; направление наклона зависит от броска.
       const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
