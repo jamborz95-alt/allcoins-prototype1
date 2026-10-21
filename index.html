@@ -1835,18 +1835,24 @@
 }
 
 
-  /* Колода привязана к игровому полю, а не к маленькому контейнеру стола */
+  /* Раскладка колоды по присланному референсу: слева по центру синего игрового поля */
   #durakGame.durak-fullscreen #durakBoard {
     position: relative !important;
+    height: 100% !important;
     min-height: 58vh !important;
+    overflow: visible !important;
   }
   #durakGame.durak-fullscreen .durak-table {
-    position: static !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
   }
   #durakGame.durak-fullscreen #durakTrump {
     position: absolute !important;
-    left: 6px !important;
-    top: 42% !important;
+    left: 0 !important;
+    top: 50% !important;
     right: auto !important;
     bottom: auto !important;
     transform: translateY(-50%) !important;
