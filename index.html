@@ -3827,7 +3827,15 @@ deckCount.style.setProperty("background", "transparent", "important");
 deckCount.style.setProperty("border", "0", "important");
 deckCount.style.setProperty("border-radius", "0", "important");
 deckCount.style.setProperty("z-index", "5", "important");
-[deckCardBack, deckCardMiddle, deckCard].forEach((cardBack) => {
+[
+  [deckCardBack, 5, 4],
+  [deckCardMiddle, 2, 2],
+  [deckCard, 0, 0]
+].forEach(([cardBack, left, top]) => {
+  // CSS legacy selectors pin the first two stack children to (0,0);
+  // inline !important offsets preserve a small, visible three-card fan.
+  cardBack.style.setProperty("left", left + "px", "important");
+  cardBack.style.setProperty("top", top + "px", "important");
   cardBack.style.setProperty("width", "30px", "important");
   cardBack.style.setProperty("min-width", "30px", "important");
   cardBack.style.setProperty("height", "44px", "important");
