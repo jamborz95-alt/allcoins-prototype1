@@ -4170,7 +4170,9 @@ async function openDurakWaitingRoom(room) {
   // Не переносим их в durakBoard: там абсолютным позиционированием размещены игроки,
   // поэтому «Начать игру» перекрывало бота/второго игрока.
   $("durakWaitingPanel").style.display = "block";
-  $("durakBoard").style.display = "block";
+  // Пока комната ожидает игроков, игровое поле с абсолютным позиционированием
+  // скрыто: иначе оно визуально накрывает панель и кнопку «Начать игру».
+  $("durakBoard").style.display = "none";
   $("durakGameStatus").textContent =
     "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
   $("durakTrump").style.display = "none";
