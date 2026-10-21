@@ -3343,46 +3343,38 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     return Promise.resolve();
   }
 
-  // Если перетаскивание уже создало и показало летящую карту,
-  // продолжаем анимацию именно этого DOM-элемента. Клонирование здесь
-  // оставляло исходную большую копию поверх игрового поля.
+  // Используем тот же элемент, который пользователь перетащил пальцем:
+  // так не возникает второй большой карты поверх игрового поля.
   const flyer = (
     cardElement.classList.contains("durak-flying-card") &&
     cardElement.isConnected
-  )
-    ? cardElement
-    : (durakPendingDragFlyer || cardElement.cloneNode(true));
+  ) ? cardElement : (durakPendingDragFlyer || cardElement.cloneNode(true));
   durakPendingDragFlyer = null;
   const isAlreadyFlying = flyer.classList.contains("durak-flying-card");
 
-  // Если анимация вызвана не перетаскиванием, берём точные размеры карты из руки.
-  // Иначе свежий clone ещё не в DOM и getBoundingClientRect() вернёт нули.
   if (!isAlreadyFlying) {
     const sourceRect = cardElement.getBoundingClientRect();
     if (!sourceRect.width || !sourceRect.height) return Promise.resolve();
-    // Даже резервный путь (когда карту запускают не drag-жестом) должен
-    // сохранить её реальный премиальный вид вне игрового CSS-контейнера.
     copyDurakComputedStyles(cardElement, flyer);
     flyer.classList.add("durak-flying-card");
-    flyer.style.position = "fixed";
-    flyer.style.left = sourceRect.left + "px";
-    flyer.style.top = sourceRect.top + "px";
-    flyer.style.width = sourceRect.width + "px";
-    flyer.style.height = sourceRect.height + "px";
-    flyer.style.maxWidth = "none";
-    flyer.style.maxHeight = "none";
-    flyer.style.boxSizing = "border-box";
-    flyer.style.margin = "0";
-    flyer.style.transformOrigin = "top left";
-    flyer.style.transform = "translate3d(0,0,0)";
-    flyer.style.transition = "none";
-    flyer.style.pointerEvents = "none";
+    Object.assign(flyer.style, {
+      position: "fixed",
+      left: sourceRect.left + "px",
+      top: sourceRect.top + "px",
+      width: sourceRect.width + "px",
+      height: sourceRect.height + "px",
+      maxWidth: "none",
+      maxHeight: "none",
+      boxSizing: "border-box",
+      margin: "0",
+      transformOrigin: "center center",
+      transform: "translate3d(0,0,0)",
+      transition: "none",
+      pointerEvents: "none"
+    });
     document.body.appendChild(flyer);
   }
 
-  // Сначала считываем фактическую видимую рамку летящей карты. Затем приводим её
-  // к обычному прямоугольнику с теми же координатами, чтобы смена transform-origin
-  // не вызывала рывок в момент отпускания пальца.
   const from = flyer.getBoundingClientRect();
   const to = targetElement.getBoundingClientRect();
   if (!from.width || !from.height || !to.width || !to.height) {
@@ -3392,113 +3384,82 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 
   flyer.classList.add("durak-flying-card");
   flyer.classList.remove("selected", "is-dragging", "dragging");
-  flyer.style.position = "fixed";
-  flyer.style.left = from.left + "px";
-  flyer.style.top = from.top + "px";
-  flyer.style.width = from.width + "px";
-  flyer.style.height = from.height + "px";
-  flyer.style.maxWidth = "none";
-  flyer.style.maxHeight = "none";
-  flyer.style.boxSizing = "border-box";
-  flyer.style.overflow = "hidden";
+  Object.assign(flyer.style, {
+    position: "fixed",
+    left: from.left + "px",
+    top: from.top + "px",
+    width: from.width + "px",
+    height: from.height + "px",
+    maxWidth: "none",
+    maxHeight: "none",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    transformOrigin: "center center",
+    margin: "0",
+    opacity: "1",
+    pointerEvents: "none",
+    transform: "translate3d(0,0,0) scale(1)",
+    transition: "none"
+  });
+
   const flyerImage = flyer.querySelector("img");
   if (flyerImage) {
-    flyerImage.style.width = "100%";
-    flyerImage.style.height = "100%";
-    flyerImage.style.maxWidth = "100%";
-    flyerImage.style.maxHeight = "100%";
-    flyerImage.style.objectFit = "fill";
+    Object.assign(flyerImage.style, {
+      width: "100%",
+      height: "100%",
+      maxWidth: "100%",
+      maxHeight: "100%",
+      objectFit: "fill"
+    });
   }
-  flyer.style.transformOrigin = "top left";
-  flyer.style.margin = "0";
-  flyer.style.opacity = "1";
-  flyer.style.pointerEvents = "none";
-  flyer.style.transform = "translate3d(0,0,0) scale(1)";
-  flyer.style.transition = "none";
-  void flyer.getBoundingClientRect();
 
-  // Центр летящей карты приходит в центр реальной будущей позиции на столе.
-  // Угол берём у целевой карты: атака ложится слегка влево, защита — вправо.
+  void flyer.getBoundingClientRect();
   const targetRect = targetElement.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
   const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-  // Резкий бросок получает более короткий, собранный полёт; плавное движение —
-  // мягкую длинную посадку. Скорость измеряется в момент отпускания пальца.
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
-  // Быстрый, прямой бросок без ощущения зависания: короткий полёт
-  // и без дополнительного ожидания после завершения CSS-перехода.
-  // Резкий бросок должен практически сразу долетать до цели,
-  // без длинного зависания в воздухе даже на мобильном WebView.
-  const flightDuration = Math.round(165 - throwPower * 45);
+  // Карта сразу летит в конечную точку: никаких остановок над столом,
+  // промежуточного подъёма или отдельной фазы «посадки».
+  const flightDuration = Math.round(125 - throwPower * 35);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
-    if (targetTransform && targetTransform !== "none") {
-      const matrix = targetTransform.match(/^matrix\\(([^)]+)\\)$/);
-      if (matrix) {
-        const values = matrix[1].split(",").map(Number);
-        if (values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1])) {
-          targetRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
-        }
+    const matrix = targetTransform && targetTransform !== "none"
+      ? targetTransform.match(/^matrix\\(([^)]+)\\)$/)
+      : null;
+    if (matrix) {
+      const values = matrix[1].split(",").map(Number);
+      if (values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1])) {
+        targetRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
       }
     }
   }
 
   return new Promise((resolve) => {
     let finished = false;
-    let hoverTimer = null;
-    let settleTimer = null;
-    const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
-    const easing = throwPower > 0.35 ? ".18,.82,.22,1" : ".22,.76,.28,1";
+    let fallbackTimer = null;
     const cleanup = () => {
       flyer.removeEventListener("transitionend", onEnd);
-      if (hoverTimer !== null) window.clearTimeout(hoverTimer);
-      if (settleTimer !== null) window.clearTimeout(settleTimer);
+      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
     };
     const finish = () => {
       if (finished) return;
       finished = true;
       cleanup();
-      // Оставляем визуальную карту до подтверждённой перерисовки состояния сервера.
       resolve();
     };
     const onEnd = (event) => {
-      if (event.target !== flyer || event.propertyName !== "transform") return;
-      // Первая фаза: карта остановилась над целевой позицией.
-      if (flyer.dataset.durakHoverPhase === "flight") {
-        flyer.dataset.durakHoverPhase = "hover";
-        flyer.style.transition = "none";
-        flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
-        void flyer.getBoundingClientRect();
-        // Без зависания: сразу после короткого торможения карта плавно садится на стол.
-        flyer.dataset.durakHoverPhase = "settle";
-        flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
-        flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
-        settleTimer = window.setTimeout(finish, 240);
-      } else if (flyer.dataset.durakHoverPhase === "settle") {
-        finish();
-      }
+      if (event.target === flyer && event.propertyName === "transform") finish();
     };
-    flyer.dataset.durakHoverPhase = "flight";
+
     flyer.addEventListener("transitionend", onEnd);
-    flyer.style.transformOrigin = "center center";
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform " + Math.max(210, flightDuration) + "ms cubic-bezier(" + easing + ")";
-      // Карта летит к месту, но сначала тормозит чуть выше поверхности стола.
-      flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
-      // Защита от отсутствующего transitionend в некоторых Android WebView.
-      window.setTimeout(() => {
-        if (finished || flyer.dataset.durakHoverPhase !== "flight") return;
-        flyer.dataset.durakHoverPhase = "hover";
-        flyer.style.transition = "none";
-        flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
-        // Без зависания: сразу после короткого торможения карта плавно садится на стол.
-        flyer.dataset.durakHoverPhase = "settle";
-        flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
-        flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
-        settleTimer = window.setTimeout(finish, 240);
-      }, Math.max(210, flightDuration) + 100);
+      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(.2,.72,.25,1)";
+      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(1)`;
+      // Android WebView иногда не отправляет transitionend; завершаем быстро,
+      // не оставляя карту зависшей в воздухе.
+      fallbackTimer = window.setTimeout(finish, flightDuration + 55);
     });
   });
 }
