@@ -3686,11 +3686,13 @@ if (Array.isArray(game.hand)) {
 
         if (dragging && flyer) {
           moveEvent.preventDefault();
-          // Двигаем копию через GPU-трансформацию: карта остаётся под пальцем
-          // без рывков, слегка наклоняется по направлению движения и приподнимается.
-          const tilt = Math.max(-8, Math.min(8, dx * 0.10));
-          flyer.style.transform =
-            "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.045)";
+          // Позиционируем карту непосредственно по координатам пальца.
+          // Смещение точки захвата сохраняется: карта не прыгает центром под палец.
+          // Координаты обновляются на каждом pointermove, а transform отвечает только за наклон.
+          const tilt = Math.max(-7, Math.min(7, dx * 0.075));
+          flyer.style.left = (moveEvent.clientX - offsetX) + "px";
+          flyer.style.top = (moveEvent.clientY - offsetY) + "px";
+          flyer.style.transform = "rotate(" + tilt + "deg) scale(1.045)";
         }
       };
 
@@ -3758,6 +3760,7 @@ if (Array.isArray(game.hand)) {
         cardElement.style.opacity = "0";
         cardElement.style.transition = "none";
         if (flyer) {
+          // Передаём карту в игровую анимацию ровно из точки отпускания пальца.
           flyer.style.left = (upEvent.clientX - offsetX) + "px";
           flyer.style.top = (upEvent.clientY - offsetY) + "px";
           flyer.style.transform = "rotate(0deg) scale(1.045)";
