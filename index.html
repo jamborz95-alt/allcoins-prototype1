@@ -3042,6 +3042,9 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   if (!isAlreadyFlying) {
     const sourceRect = cardElement.getBoundingClientRect();
     if (!sourceRect.width || !sourceRect.height) return Promise.resolve();
+    // Даже резервный путь (когда карту запускают не drag-жестом) должен
+    // сохранить её реальный премиальный вид вне игрового CSS-контейнера.
+    copyDurakComputedStyles(cardElement, flyer);
     flyer.classList.add("durak-flying-card");
     flyer.style.position = "fixed";
     flyer.style.left = sourceRect.left + "px";
