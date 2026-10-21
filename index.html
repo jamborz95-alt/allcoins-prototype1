@@ -3430,59 +3430,100 @@ function getDurakNoiseBuffer(ctx) {
 function playDurakSound(kind = "card") {
   if (!durakSoundEnabled) return;
   const now = performance.now();
-  if (kind === "card" && now - durakSoundLastAt < 55) return;
+  if (kind === "card" && now - durakSoundLastAt < 42) return;
 
   const ctx = ensureDurakAudio();
   if (!ctx) return;
   if (ctx.state !== "running") {
-    // Не отмечаем звук как проигранный: после разблокировки нужно воспроизвести его.
     unlockDurakAudio().then(unlocked => {
       if (unlocked && durakSoundEnabled) playDurakSound(kind);
     });
     return;
   }
   durakSoundLastAt = now;
-
-  const presets = {
-    card: { f: 420, end: 220, duration: .078, volume: .045, wave: "triangle", noise: .18, noiseFreq: 2300, filter: "highpass" },
-    deal: { f: 680, end: 400, duration: .13, volume: .028, wave: "triangle", noise: .14, noiseFreq: 1650, filter: "bandpass" },
-    beat: { f: 270, end: 145, duration: .105, volume: .055, wave: "triangle", noise: .20, noiseFreq: 1050, filter: "bandpass" },
-    take: { f: 260, end: 145, duration: .16, volume: .045, wave: "triangle", noise: .12, noiseFreq: 900, filter: "lowpass" }
-  };
-  const p = presets[kind] || presets.card;
   const t = ctx.currentTime;
 
-  // Короткий бумажный шлепок/шелест.
-  const noise = ctx.createBufferSource();
-  noise.buffer = getDurakNoiseBuffer(ctx);
-  const filter = ctx.createBiquadFilter();
-  filter.type = p.filter;
-  filter.frequency.setValueAtTime(p.noiseFreq, t);
-  const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(.0001, t);
-  noiseGain.gain.exponentialRampToValueAtTime(p.noise, t + .006);
-  noiseGain.gain.exponentialRampToValueAtTime(.0001, t + p.duration);
-  noise.connect(filter);
-  filter.connect(noiseGain);
-  noiseGain.connect(ctx.destination);
-  noise.start(t);
-  noise.stop(t + p.duration);
+  // Это не электронный «бип»: звук собран из коротких бумажных шумов,
+  // лёгкого щелчка края карты и низкого мягкого удара по игровой поверхности.
+  function noiseBurst(offset, duration, volume, filterType, frequency, q = 0.7, attack = 0.003) {
+    const source = ctx.createBufferSource();
+    source.buffer = getDurakNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = filterType;
+    filter.frequency.setValueAtTime(frequency, t + offset);
+    filter.Q.setValueAtTime(q, t + offset);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t + offset);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), t + offset + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + offset + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(t + offset);
+    source.stop(t + offset + duration + 0.005);
+  }
 
-  // Негромкий низкий тон добавляет ощущение касания карты о стол.
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
-  oscillator.type = p.wave;
-  oscillator.frequency.setValueAtTime(p.f, t);
-  oscillator.frequency.exponentialRampToValueAtTime(Math.max(50, p.end), t + p.duration);
-  gain.gain.setValueAtTime(.0001, t);
-  gain.gain.exponentialRampToValueAtTime(p.volume, t + .008);
-  gain.gain.exponentialRampToValueAtTime(.0001, t + p.duration);
-  oscillator.connect(gain);
-  gain.connect(ctx.destination);
-  oscillator.start(t);
-  oscillator.stop(t + p.duration + .01);
+  function softThump(offset, duration, volume, startFreq, endFreq) {
+    // Низкочастотный удар с быстрым падением высоты — очень тихий, без музыкального тона.
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(520, t + offset);
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(startFreq, t + offset);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, t + offset + duration);
+    gain.gain.setValueAtTime(0.0001, t + offset);
+    gain.gain.exponentialRampToValueAtTime(volume, t + offset + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + offset + duration);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t + offset);
+    osc.stop(t + offset + duration + 0.006);
+  }
+
+  if (kind === "shuffle") {
+    // Короткий веер/перебор колоды: несколько неровных бумажных скольжений.
+    noiseBurst(0, .19, .055, "bandpass", 1450, .45, .018);
+    noiseBurst(.075, .22, .045, "highpass", 2850, .3, .014);
+    noiseBurst(.17, .18, .038, "bandpass", 1850, .55, .012);
+    noiseBurst(.29, .16, .032, "highpass", 3200, .35, .008);
+    softThump(.39, .09, .012, 105, 64);
+    return;
+  }
+
+  if (kind === "slide") {
+    // Карта скользит по столу: шорох с небольшим затуханием.
+    noiseBurst(0, .12, .052, "bandpass", 1900, .5, .012);
+    noiseBurst(.035, .09, .022, "highpass", 3500, .35, .004);
+    return;
+  }
+
+  if (kind === "deal") {
+    // При раздаче — короткий сухой щелчок и шорох картона.
+    noiseBurst(0, .105, .040, "bandpass", 2050, .65, .002);
+    noiseBurst(.009, .055, .024, "highpass", 4200, .4, .0015);
+    softThump(0, .055, .010, 135, 78);
+    return;
+  }
+
+  if (kind === "beat" || kind === "take") {
+    // «Бито» звучит плотнее; «Беру» — чуть более протяжный сдвиг нескольких карт.
+    const isTake = kind === "take";
+    noiseBurst(0, isTake ? .20 : .095, isTake ? .048 : .060, "bandpass", isTake ? 1250 : 1550, .55, .004);
+    noiseBurst(.018, isTake ? .14 : .045, isTake ? .030 : .042, "highpass", 3100, .35, .002);
+    noiseBurst(isTake ? .075 : .012, isTake ? .19 : .060, isTake ? .036 : .025, "lowpass", isTake ? 750 : 980, .65, .004);
+    softThump(0, isTake ? .11 : .065, isTake ? .016 : .022, isTake ? 115 : 145, isTake ? 62 : 72);
+    return;
+  }
+
+  // Бросок/защита: шелест движения, отчётливый контакт края карты и мягкий столовый щелчок.
+  noiseBurst(0, .105, .052, "bandpass", 2200, .7, .002);
+  noiseBurst(.008, .060, .035, "highpass", 4100, .45, .001);
+  noiseBurst(.012, .075, .020, "lowpass", 850, .8, .003);
+  softThump(.004, .065, .019, 155, 76);
 }
-
 function updateDurakSoundButton(button) {
   if (!button) return;
   button.textContent = durakSoundEnabled ? "🔊 Звук" : "🔇 Без звука";
@@ -3602,6 +3643,7 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
 // Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
 // а собственная карта игрока переворачивается лицом вверх в момент приземления.
 async function animateDurakDealSequence(dealTargets, roomId) {
+  playDurakSound("shuffle");
   if (!Array.isArray(dealTargets) || !dealTargets.length ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -4766,7 +4808,8 @@ if (Array.isArray(game.hand)) {
             ...draggedGroupIds.filter(id => String(id) !== String(card.id))
           ];
         }
-        // Звук слышен сразу в момент отпускания карты, до ответа сервера.
+        // Реалистичный короткий шорох движения и контакт карты со столом.
+        playDurakSound("slide");
         playDurakSound(canDefend ? "beat" : "card");
         await durakAction(
           canDefend ? "defend" : "attack",
