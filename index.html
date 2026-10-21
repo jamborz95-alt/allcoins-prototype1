@@ -2955,27 +2955,37 @@ async function durakAction(action, requestedCardIds = null) {
   let actionConfirmed = false;
   let dragFlyerAnimationStarted = false;
   let dragFlyerAnimationPromise = null;
+  // Видимая карта-приёмник остаётся на столе после короткого полёта,
+  // даже если сервер отвечает медленно. При отказе хода она удаляется.
+  let dragFlyerLanding = null;
   try {
     // Запускаем полёт той же копии карты сразу после отпускания пальца,
     // не ожидая ответа сервера: сетевой запрос не должен создавать паузу.
     const dragFlyer = durakPendingDragFlyer;
     if (dragFlyer) {
-      const landing = createDurakLandingTarget(action);
+      const landing = createDurakLandingTarget(action, dragFlyer);
       if (landing?.element) {
         const from = dragFlyer.getBoundingClientRect();
         const to = landing.element.getBoundingClientRect();
         if (from.width > 0 && from.height > 0 && to.width > 0 && to.height > 0) {
           durakPendingDragFlyer = null;
           dragFlyerAnimationStarted = true;
-          // Запускаем полёт сразу; замеренная цель совпадает с будущим местом карты.
-          // Запоминаем анимацию, чтобы быстрый ответ сервера не оборвал её перерисовкой.
+          if (landing.optimistic) dragFlyerLanding = landing;
+          // Стартуем визуальный полёт до сетевого ответа. При финише летящая карта
+          // заменит скрытый макет в точке стола, так что она не будет «висеть» над ним.
           try {
             dragFlyerAnimationPromise = animateDurakCardToTarget(dragFlyer, landing.element);
           } catch (animationError) {
             console.warn("Не удалось запустить анимацию карты:", animationError);
+            landing.cleanup();
+            dragFlyerLanding = null;
           }
+        } else {
+          landing.cleanup();
         }
-        landing.cleanup();
+        // Обычный служебный target больше не нужен. Оптимистичный target оставляем:
+        // он покажет карту ровно в месте посадки, пока сервер подтверждает ход.
+        if (!landing.optimistic) landing.cleanup();
       }
     }
 
@@ -3048,6 +3058,12 @@ async function durakAction(action, requestedCardIds = null) {
     if (durakPendingDragFlyer) {
       durakPendingDragFlyer.remove();
       durakPendingDragFlyer = null;
+    }
+    // Если сервер не подтвердил ход, убираем временную карту со стола.
+    // При подтверждённом ходе оставляем её на месте, даже если обновление состояния упало.
+    if (!actionConfirmed && dragFlyerLanding) {
+      dragFlyerLanding.cleanup();
+      dragFlyerLanding = null;
     }
     // Если сервер отклонил ход или соединение оборвалось, убрать летающие копии.
     document.querySelectorAll(".durak-flying-card").forEach((element) => element.remove());
@@ -3259,15 +3275,53 @@ let durakAnimationRoomId = null;
 
 // Создаёт невидимую цель в точном месте, куда новая карта будет отрисована.
 // Так карта летит не в произвольный участок стола, а прямо в будущую ячейку.
-function createDurakLandingTarget(action) {
+function createDurakLandingTarget(action, sourceCard = null) {
   const table = $("durakTable");
   if (!table) return null;
 
   let holder = null;
   let target = null;
+  const optimistic = !!sourceCard;
+
+  // Скрытая копия самой карты станет видимой точкой посадки после полёта.
+  // Так серверная задержка не выглядит как зависшая карта над пустым столом.
+  const makeTargetCard = (type) => {
+    const card = sourceCard
+      ? sourceCard.cloneNode(true)
+      : document.createElement("div");
+    card.className = "durak-card premium-card table-card durak-landing-target";
+    card.dataset.tableCardType = type;
+    card.dataset.optimisticLanding = optimistic ? "true" : "false";
+    card.removeAttribute("id");
+    card.style.display = "flex";
+    card.style.visibility = "hidden";
+    card.style.opacity = "0";
+    card.style.pointerEvents = "none";
+    card.style.position = "absolute";
+    card.style.width = "68px";
+    card.style.height = "100px";
+    card.style.minWidth = "0";
+    card.style.maxWidth = "none";
+    card.style.minHeight = "0";
+    card.style.maxHeight = "none";
+    card.style.boxSizing = "border-box";
+    card.style.margin = "0";
+    card.style.transform = "none";
+    card.style.transition = "none";
+    card.style.zIndex = type === "defense" ? "2" : "1";
+    const image = card.querySelector("img");
+    if (image) {
+      image.style.width = "100%";
+      image.style.height = "100%";
+      image.style.maxWidth = "100%";
+      image.style.maxHeight = "100%";
+      image.style.objectFit = "contain";
+    }
+    return card;
+  };
 
   if (action === "defend") {
-    // Защита должна лечь поверх первой ещё не покрытой атакующей карты.
+    // Защита ложится поверх первой ещё не покрытой атакующей карты.
     const attackCard = Array.from(
       table.querySelectorAll('.durak-card[data-table-card-type="attack"]')
     ).find(element =>
@@ -3276,30 +3330,19 @@ function createDurakLandingTarget(action) {
     const pair = attackCard?.closest(".durak-table-pair");
     if (!attackCard || !pair) return null;
 
-    target = document.createElement("div");
-    target.className = "durak-card premium-card table-card durak-landing-target";
-    target.dataset.tableCardType = "defense";
-    target.style.display = "flex";
-    target.style.visibility = "hidden";
-    target.style.opacity = "0";
-    target.style.pointerEvents = "none";
-    target.style.position = "absolute";
+    target = makeTargetCard("defense");
     target.style.left = "30px";
     target.style.top = "-6px";
-    target.style.zIndex = "2";
-    target.style.width = "68px";
-    target.style.height = "100px";
-    target.style.boxSizing = "border-box";
     pair.appendChild(target);
 
     return {
       element: target,
+      optimistic,
       cleanup: () => target?.remove()
     };
   }
 
-  // Имитация следующей пары использует те же размеры/классы, что и реальная.
-  // После измерения её можно убрать: анимация уже запомнила экранные координаты.
+  // Макет новой пары заранее занимает точное место будущей атакующей карты.
   holder = document.createElement("div");
   holder.className = "durak-table-pair";
   holder.style.position = "relative";
@@ -3312,25 +3355,15 @@ function createDurakLandingTarget(action) {
   holder.style.margin = "4px";
   holder.style.overflow = "visible";
 
-  target = document.createElement("div");
-  target.className = "durak-card premium-card table-card durak-landing-target";
-  target.dataset.tableCardType = "attack";
-  target.style.display = "flex";
-  target.style.visibility = "hidden";
-  target.style.opacity = "0";
-  target.style.pointerEvents = "none";
-  target.style.position = "absolute";
+  target = makeTargetCard("attack");
   target.style.left = "0";
   target.style.top = "0";
-  target.style.zIndex = "1";
-  target.style.width = "68px";
-  target.style.height = "100px";
-  target.style.boxSizing = "border-box";
   holder.appendChild(target);
   table.appendChild(holder);
 
   return {
     element: target,
+    optimistic,
     cleanup: () => holder?.remove()
   };
 }
@@ -3423,7 +3456,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
   // и без отдельной паузы перед посадкой. Скорый бросок короче, обычный заметнее.
-  const flightDuration = Math.round(190 - throwPower * 45);
+  const flightDuration = Math.round(150 - throwPower * 30);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -3449,6 +3482,17 @@ function animateDurakCardToTarget(cardElement, targetElement) {
       if (finished) return;
       finished = true;
       cleanup();
+      // Мгновенно меняем летящую копию на карту, уже лежащую в паре на столе.
+      // Макет находится в тех же координатах и сохраняется до ответа сервера.
+      if (
+        targetElement?.isConnected &&
+        targetElement.dataset.optimisticLanding === "true"
+      ) {
+        targetElement.style.visibility = "visible";
+        targetElement.style.opacity = "1";
+        targetElement.style.transition = "none";
+        flyer.remove();
+      }
       resolve();
     };
     const onEnd = (event) => {
