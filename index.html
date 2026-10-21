@@ -3350,6 +3350,9 @@ let durakPendingDragFlyer = null;
 // Не запускаем раздачу повторно при каждом автообновлении состояния.
 let durakAnimatedCardIds = new Set();
 let durakAnimationRoomId = null;
+// Пока последовательная раздача идёт, не запускаем поверх неё новый визуальный кадр партии.
+let durakDealAnimationActive = false;
+let durakDealAnimationToken = 0;
 // Следим за новыми атакующими картами, чтобы анимировать только свежие броски соперника.
 let durakKnownAttackCardIds = new Set();
 let durakTableHistoryRoomId = null;
@@ -3432,6 +3435,130 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
       timer = window.setTimeout(finish, duration + 70);
     });
   }, Math.max(0, delayMs));
+}
+
+// Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
+// а собственная карта игрока переворачивается лицом вверх в момент приземления.
+async function animateDurakDealSequence(dealTargets, roomId) {
+  if (!Array.isArray(dealTargets) || !dealTargets.length ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const deck = document.querySelector("#durakTrump .durak-deck-stack");
+  const deckRect = deck?.getBoundingClientRect();
+  if (!deckRect || !deckRect.width || !deckRect.height) return;
+
+  const token = durakDealAnimationToken;
+  // Стопка немного за левым краем, поэтому раздача начинается от её видимого края.
+  const sourceCenterX = Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23));
+  const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
+  const duration = 340;
+  durakDealAnimationActive = true;
+
+  const tasks = dealTargets.map((item, index) => new Promise(resolve => {
+    window.setTimeout(() => {
+      const target = item?.target;
+      if (token !== durakDealAnimationToken || !target?.isConnected) {
+        resolve();
+        return;
+      }
+
+      const targetRect = target.getBoundingClientRect();
+      if (!targetRect.width || !targetRect.height) {
+        resolve();
+        return;
+      }
+
+      const previousOpacity = target.style.opacity;
+      const previousTransform = target.style.transform;
+      const previousTransition = target.style.transition;
+      const previousPointerEvents = target.style.pointerEvents;
+      const previousTransformOrigin = target.style.transformOrigin;
+
+      target.style.transition = "none";
+      target.style.opacity = "0";
+      target.style.pointerEvents = "none";
+      if (item.faceUp) {
+        target.style.transformOrigin = "center center";
+        target.style.transform = "rotateY(88deg)";
+      }
+
+      const flyer = document.createElement("span");
+      flyer.className = "durak-deal-flyer";
+      flyer.setAttribute("aria-hidden", "true");
+      flyer.style.cssText = [
+        "position:fixed",
+        "left:" + (sourceCenterX - targetRect.width / 2) + "px",
+        "top:" + (sourceCenterY - targetRect.height / 2) + "px",
+        "width:" + targetRect.width + "px",
+        "height:" + targetRect.height + "px",
+        "min-width:0",
+        "min-height:0",
+        "max-width:none",
+        "max-height:none",
+        "box-sizing:border-box",
+        "margin:0",
+        "padding:0",
+        "border:1px solid #edf1e4",
+        "border-radius:3px",
+        "background:repeating-linear-gradient(45deg,transparent 0 3px,rgba(72,139,100,.92) 3px 4px,transparent 4px 7px),repeating-linear-gradient(-45deg,transparent 0 3px,rgba(194,112,123,.78) 3px 4px,transparent 4px 7px),#f4f3e8",
+        "box-shadow:inset 0 0 0 1px rgba(255,255,255,.78),0 2px 5px rgba(0,0,0,.24)",
+        "pointer-events:none",
+        "z-index:2147483647",
+        "transform-origin:center center",
+        "transform:rotate(-8deg) scale(.64)",
+        "transition:none",
+        "will-change:transform",
+        "backface-visibility:hidden"
+      ].join(";");
+
+      document.body.appendChild(flyer);
+      const dx = targetRect.left + targetRect.width / 2 - sourceCenterX;
+      const dy = targetRect.top + targetRect.height / 2 - sourceCenterY;
+      let revealTimer = null;
+      let cleanupTimer = null;
+      let finished = false;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        if (revealTimer !== null) window.clearTimeout(revealTimer);
+        if (cleanupTimer !== null) window.clearTimeout(cleanupTimer);
+        flyer.remove();
+        if (target.isConnected) {
+          target.style.opacity = previousOpacity;
+          target.style.transform = previousTransform;
+          target.style.transition = previousTransition;
+          target.style.pointerEvents = previousPointerEvents;
+          target.style.transformOrigin = previousTransformOrigin;
+        }
+        resolve();
+      };
+
+      requestAnimationFrame(() => {
+        if (token !== durakDealAnimationToken || !target.isConnected) {
+          finish();
+          return;
+        }
+        flyer.style.transition = "transform " + duration + "ms cubic-bezier(.16,.72,.22,1)";
+        flyer.style.transform = "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(1)";
+        revealTimer = window.setTimeout(() => {
+          if (!target.isConnected) {
+            finish();
+            return;
+          }
+          target.style.transition = item.faceUp
+            ? "transform 115ms ease-out, opacity 115ms ease-out"
+            : "opacity 115ms ease-out";
+          target.style.opacity = "1";
+          if (item.faceUp) target.style.transform = "rotateY(0deg)";
+          cleanupTimer = window.setTimeout(finish, 125);
+        }, duration);
+      });
+    }, index * 82);
+  }));
+
+  await Promise.all(tasks);
+  if (token === durakDealAnimationToken) durakDealAnimationActive = false;
 }
 
 // Создаёт невидимую цель в точном месте, куда новая карта будет отрисована.
@@ -3926,6 +4053,7 @@ deckCount.textContent = String(game.cardsLeft ?? 0);
 
 // Компактная стопка с местом для козыря и счётчика.
 const deckStack = document.createElement("div");
+deckStack.className = "durak-deck-stack";
 deckStack.style.cssText = `
   display:block; position:relative; flex:0 0 48px;
   width:48px; min-width:48px; height:90px; margin:0; overflow:visible;
@@ -4113,10 +4241,14 @@ if (attacksFromOpponent && incomingAttackIds.length) {
   });
 }
 
-if (String(durakAnimationRoomId) !== String(roomId)) {
+const isInitialDealForRoom = String(durakAnimationRoomId) !== String(roomId);
+if (isInitialDealForRoom) {
   durakAnimationRoomId = roomId;
   durakAnimatedCardIds = new Set();
+  durakDealAnimationToken += 1;
+  durakDealAnimationActive = false;
 }
+const newlyDealtHandCards = [];
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
@@ -4487,36 +4619,12 @@ if (Array.isArray(game.hand)) {
 
     $("durakHand").appendChild(cardElement);
 
-    // Новая карта плавно прилетает из колоды в руку. Идентификаторы запоминаются,
-    // чтобы автообновление каждые 2 секунды не запускало анимацию заново.
+    // Запоминаем новые ID, чтобы опрос сервера не запускал повторную анимацию.
+    // Сам полёт выполняется после расчёта окончательных размеров веера.
     const animationCardId = String(card.id);
     if (!durakAnimatedCardIds.has(animationCardId)) {
       durakAnimatedCardIds.add(animationCardId);
-      const deck = document.querySelector("#durakTrump div");
-      const deckRect = deck ? deck.getBoundingClientRect() : null;
-      const handRect = cardElement.getBoundingClientRect();
-      if (deckRect && handRect.width > 0 && handRect.height > 0 &&
-          !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        const dx = deckRect.left + deckRect.width / 2 - (handRect.left + handRect.width / 2);
-        const dy = deckRect.top + deckRect.height / 2 - (handRect.top + handRect.height / 2);
-        cardElement.style.opacity = "0";
-        cardElement.style.transition = "none";
-        cardElement.style.transform = "translate3d(" + dx + "px," + dy + "px,0) scale(.72) rotate(-7deg)";
-        cardElement.style.transformOrigin = "center center";
-        cardElement.style.zIndex = String(30 + (game.hand.length - 1));
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          if (!cardElement.isConnected) return;
-          cardElement.style.transition = "transform 460ms cubic-bezier(.18,.72,.25,1), opacity 220ms ease";
-          cardElement.style.opacity = game.status === "playing" ? "1" : "0.65";
-          cardElement.style.transform = "";
-          window.setTimeout(() => {
-            if (!cardElement.isConnected) return;
-            cardElement.style.transition = "";
-            cardElement.style.transform = "";
-            cardElement.style.zIndex = "";
-          }, 500);
-        }));
-      }
+      newlyDealtHandCards.push(cardElement);
     }
   });
 
@@ -4546,6 +4654,43 @@ if (Array.isArray(game.hand)) {
       handCard.style.setProperty("z-index", String(10 + index), "important");
       handCard.style.setProperty("transform-origin", "center bottom", "important");
     });
+  }
+
+  // На первом отображении партии раздаём карты по кругу: соперникам — рубашкой,
+  // игроку — с переворотом лица в конце полёта. При доборе анимируем новые карты руки.
+  if (game.status === "playing") {
+    const dealQueue = [];
+    if (isInitialDealForRoom && Array.isArray(game.players) && game.players.length) {
+      const ownIndex = Number(game.playerIndex);
+      const playerCount = game.players.length;
+      const targetsByPlayer = new Map();
+      const ownTargets = Array.from(
+        handBox?.querySelectorAll(".durak-card.player-card") || []
+      );
+      targetsByPlayer.set(ownIndex, ownTargets);
+
+      game.players.forEach((player, index) => {
+        if (index === ownIndex) return;
+        const seat = playersBox?.querySelector('[data-player-index="' + String(index) + '"]');
+        const backs = Array.from(seat?.querySelectorAll(".durak-card-back") || []);
+        targetsByPlayer.set(index, backs);
+      });
+
+      const rounds = Math.max(0, ...Array.from(targetsByPlayer.values()).map(cards => cards.length));
+      for (let round = 0; round < rounds; round++) {
+        // Имитируем настоящую раздачу: по одной карте каждому, по кругу.
+        // Начинаем со следующего места и заканчиваем рукой текущего игрока.
+        for (let offset = 1; offset <= playerCount; offset++) {
+          const playerIndex = (ownIndex + offset) % playerCount;
+          const target = targetsByPlayer.get(playerIndex)?.[round];
+          if (target) dealQueue.push({ target, faceUp: playerIndex === ownIndex });
+        }
+      }
+    } else {
+      newlyDealtHandCards.forEach(target => dealQueue.push({ target, faceUp: true }));
+    }
+
+    if (dealQueue.length) await animateDurakDealSequence(dealQueue, roomId);
   }
 }
 
