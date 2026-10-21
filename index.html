@@ -3402,11 +3402,11 @@ if (game.trumpCard) {
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
-  // Козырь располагается под колодой; inline !important раньше перекрывал CSS-сдвиги.
+  // Колода остаётся на месте; сдвигаем только козырь вниз под её нижний край.
   trumpElement.style.left = "-2px";
-  trumpElement.style.top = "8px";
+  trumpElement.style.top = "50px";
   trumpElement.style.setProperty("left", "-2px", "important");
-  trumpElement.style.setProperty("top", "8px", "important");
+  trumpElement.style.setProperty("top", "50px", "important");
   trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
   trumpElement.style.transform = "rotate(90deg) translateX(-2px)";
@@ -3423,7 +3423,7 @@ if (game.trumpCard) {
 deckCount.style.cssText = `
   position: absolute;
   left: 0;
-  top: 70px;
+  top: 116px;
   width: 112px;
   color: #ffffff;
   font-size: 11px;
