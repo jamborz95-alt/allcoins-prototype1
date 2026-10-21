@@ -4033,21 +4033,29 @@ if (Array.isArray(game.hand)) {
           flyer.style.transform = "rotate(0deg) scale(1.035)";
         }
 
-        const elementUnderPointer = document.elementFromPoint(
-          upEvent.clientX,
-          upEvent.clientY
-        );
         const table = $("durakTable");
-        const targetCard = elementUnderPointer?.closest("#durakTable .durak-card");
-        const droppedOnTable = !!(table && elementUnderPointer &&
-          (table === elementUnderPointer ||
-           table.contains(elementUnderPointer) ||
-           elementUnderPointer.closest("#durakTable") === table));
+        // Проверяем попадание по реальным экранным координатам, а не только
+        // elementFromPoint(): на Telegram Android WebView он иногда возвращает
+        // соседний слой/контейнер, хотя палец визуально уже над столом.
+        const tableRect = table?.getBoundingClientRect();
+        const pointX = upEvent.clientX;
+        const pointY = upEvent.clientY;
+        const droppedOnTable = !!(table && tableRect &&
+          pointX >= tableRect.left && pointX <= tableRect.right &&
+          pointY >= tableRect.top && pointY <= tableRect.bottom);
+        const targetCard = table
+          ? Array.from(table.querySelectorAll('.durak-card[data-table-card-type="attack"]'))
+              .find(element => {
+                const rect = element.getBoundingClientRect();
+                return pointX >= rect.left && pointX <= rect.right &&
+                  pointY >= rect.top && pointY <= rect.bottom;
+              })
+          : null;
 
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
         const canDefend = isDefender && game.phase === "defense" &&
-          targetCard && targetCard.dataset.tableCardType === "attack";
+          !!targetCard && droppedOnTable;
         const canAttack = isAttacker && game.phase === "attack" && droppedOnTable;
 
         if (!canDefend && !canAttack) {
