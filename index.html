@@ -3398,6 +3398,8 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     margin: "0",
     opacity: "1",
     pointerEvents: "none",
+    animation: "none",
+    willChange: "transform",
     transform: "translate3d(0,0,0) scale(1)",
     transition: "none"
   });
@@ -3421,7 +3423,7 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
   // и без отдельной паузы перед посадкой. Скорый бросок короче, обычный заметнее.
-  const flightDuration = Math.round(225 - throwPower * 55);
+  const flightDuration = Math.round(190 - throwPower * 45);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -3455,11 +3457,11 @@ function animateDurakCardToTarget(cardElement, targetElement) {
 
     flyer.addEventListener("transitionend", onEnd);
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(.2,.72,.25,1)";
+      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(.22,.68,.28,1)";
       flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(1)`;
       // Android WebView иногда не отправляет transitionend; завершаем быстро,
       // не оставляя карту зависшей в воздухе.
-      fallbackTimer = window.setTimeout(finish, flightDuration + 80);
+      fallbackTimer = window.setTimeout(finish, flightDuration + 45);
     });
   });
 }
