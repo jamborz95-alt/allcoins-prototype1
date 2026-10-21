@@ -3484,13 +3484,14 @@ function animateDurakCardToTarget(cardElement, targetElement) {
       cleanup();
       // Мгновенно меняем летящую копию на карту, уже лежащую в паре на столе.
       // Макет находится в тех же координатах и сохраняется до ответа сервера.
-      if (
-        targetElement?.isConnected &&
-        targetElement.dataset.optimisticLanding === "true"
-      ) {
-        targetElement.style.visibility = "visible";
-        targetElement.style.opacity = "1";
-        targetElement.style.transition = "none";
+      if (targetElement?.dataset.optimisticLanding === "true") {
+        if (targetElement.isConnected) {
+          targetElement.style.visibility = "visible";
+          targetElement.style.opacity = "1";
+          targetElement.style.transition = "none";
+        }
+        // Даже если автообновление игры уже удалило временную ячейку,
+        // не оставляем завершившую полёт копию навсегда поверх экрана.
         flyer.remove();
       }
       resolve();
