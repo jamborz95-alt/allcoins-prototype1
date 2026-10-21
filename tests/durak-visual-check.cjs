@@ -131,8 +131,11 @@ const path = require("node:path");
 
     const startX = cardRect.x + cardRect.width / 2;
     const startY = cardRect.y + cardRect.height / 2;
-    const targetX = tableRect.x + Math.min(tableRect.width - 10, Math.max(20, tableRect.width * 0.55));
-    const targetY = tableRect.y + Math.min(tableRect.height - 10, Math.max(20, tableRect.height * 0.5));
+    // Throw horizontally toward a screen edge, not toward the table.
+    // The game should still send the card to its proper slot automatically.
+    const viewportWidth = page.viewportSize().width;
+    const targetX = startX < viewportWidth / 2 ? viewportWidth - 8 : 8;
+    const targetY = startY;
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move((startX + targetX) / 2, (startY + targetY) / 2, { steps: 5 });
