@@ -1766,6 +1766,35 @@
   }
 }
 
+
+/* FIX: кнопка создания комнаты всегда доступна внизу экрана телефона */
+#durakGame.durak-fullscreen #durakCreatePanel {
+  position: relative;
+  padding-bottom: 14px;
+  overflow: visible;
+}
+#durakGame.durak-fullscreen #createRoom {
+  position: sticky !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 48px !important;
+  margin: 12px 0 6px !important;
+  padding: 13px 16px !important;
+  box-sizing: border-box !important;
+  z-index: 1200 !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #20c997, #087f5b) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 5px 18px rgba(0,0,0,.35) !important;
+}
+#durakGame.durak-fullscreen #createRoom:disabled {
+  opacity: .72 !important;
+}
+
 </style>
 </head>
 <body>
