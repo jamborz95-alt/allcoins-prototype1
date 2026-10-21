@@ -1902,17 +1902,19 @@
      Позиционируем относительно стопки, не относительно всего поля. */
   #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > .durak-trump-card {
     position: absolute !important;
+    display: block !important;
     width: 44px !important;
     min-width: 44px !important;
     max-width: 44px !important;
     height: 65px !important;
     left: 2px !important;
-    top: 28px !important;
+    top: 46px !important;
     transform: rotate(90deg) !important;
     transform-origin: center center !important;
     border-radius: 4px !important;
-    z-index: 0 !important;
+    z-index: 1 !important;
     margin: 0 !important;
+    visibility: visible !important;
   }
   #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:last-child {
     top: 145px !important;
@@ -3348,10 +3350,10 @@ if (game.trumpCard) {
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
   trumpElement.style.left = "2px";
-  trumpElement.style.top = "28px";
+  trumpElement.style.top = "46px";
   trumpElement.style.setProperty("left", "2px", "important");
-  trumpElement.style.setProperty("top", "28px", "important");
-  trumpElement.style.zIndex = "0";
+  trumpElement.style.setProperty("top", "46px", "important");
+  trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
 
   deckStack.appendChild(trumpElement);
