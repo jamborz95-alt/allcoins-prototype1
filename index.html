@@ -2469,6 +2469,9 @@ $("durakGame").style.display = "block";
 $("durakGame").classList.add("durak-fullscreen");
 
 $("durakWaitingPanel").style.display = "none";
+$("durakAddBotButton").style.display = "none";
+$("durakReadyButton").style.display = "none";
+$("durakStartButton").style.display = "none";
 $("durakBoard").style.display = "block";
 
 $("durakCreatePanel").style.display = "none";
@@ -4359,6 +4362,10 @@ $("durakStartButton").onclick = async function () {
       "🎮 Игра начинается! Загружаем карты...";
 
     $("durakWaitingPanel").style.display = "none";
+    // После старта партии скрываем кнопки управления комнатой.
+    $("durakAddBotButton").style.display = "none";
+    $("durakReadyButton").style.display = "none";
+    $("durakStartButton").style.display = "none";
     $("durakGame").style.display = "block";
     $("durakGame").classList.add("durak-fullscreen");
     $("durakBoard").style.display = "block";
