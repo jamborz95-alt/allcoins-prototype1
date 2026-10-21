@@ -15,7 +15,9 @@ const path = require("node:path");
   const errors = [];
   page.on("pageerror", error => errors.push("PAGE: " + error.message));
   page.on("console", message => {
-    if (message.type() === "error") errors.push("CONSOLE: " + message.text());
+    if (message.type() === "error" && !/adsgram|telegram\.org|ERR_BLOCKED_BY_CLIENT/i.test(message.text())) {
+      errors.push("CONSOLE: " + message.text());
+    }
   });
   page.on("requestfailed", request => {
     const url = request.url();
@@ -28,6 +30,10 @@ const path = require("node:path");
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(1200);
     await page.screenshot({ path: path.join(out, "01-home-mobile.png"), fullPage: true });
+
+    const gamesNav = page.locator('.nav [data-page="games"]');
+    if (await gamesNav.count()) await gamesNav.click();
+    await page.waitForTimeout(200);
 
     const openButton = page.locator("#openDurak");
     if (await openButton.count()) {
