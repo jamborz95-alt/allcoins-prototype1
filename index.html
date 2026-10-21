@@ -2608,6 +2608,57 @@ let durakActionInProgress = false;
 // Повторяем один и тот же запрос с тем же ID, если ответ сервера потерялся.
 let pendingDurakAction = null;
 let durakCardDragging = false;
+let durakLastGameSnapshotSignature = null;
+let durakLastGameSnapshotRoomId = null;
+
+// Сравниваем ключевые данные партии, чтобы после обрыва связи определить,
+// принял ли сервер ход, даже если сам ответ на ход потерялся.
+function durakGameSnapshotSignature(game) {
+  return JSON.stringify({
+    status: String(game?.status || ""),
+    phase: String(game?.phase || ""),
+    playerIndex: Number(game?.playerIndex ?? -1),
+    attackerIndex: Number(game?.attackerIndex ?? -1),
+    defenderIndex: Number(game?.defenderIndex ?? -1),
+    hand: (Array.isArray(game?.hand) ? game.hand : [])
+      .map(card => String(card?.id ?? ""))
+      .sort(),
+    table: (Array.isArray(game?.table) ? game.table : []).map(item => [
+      String(item?.attack?.id ?? ""),
+      String(item?.defense?.id ?? "")
+    ]),
+    cardsLeft: game?.cardsLeft ?? game?.deckCount ?? null,
+    trumpCard: String(game?.trumpCard?.id ?? "")
+  });
+}
+
+function reconcilePendingDurakActionWithGame(game, roomId) {
+  if (!pendingDurakAction ||
+      String(pendingDurakAction.roomId) !== String(roomId)) return;
+
+  const requestedCardIds = Array.isArray(pendingDurakAction.cardIds)
+    ? pendingDurakAction.cardIds.map(String).filter(Boolean)
+    : [];
+
+  if (requestedCardIds.length) {
+    const cardsInHand = new Set(
+      (Array.isArray(game?.hand) ? game.hand : [])
+        .map(card => String(card?.id ?? ""))
+    );
+    // Карта (или все карты группы) ушла из руки: серверный ход уже применён.
+    if (requestedCardIds.every(id => !cardsInHand.has(id))) {
+      pendingDurakAction = null;
+    }
+    return;
+  }
+
+  const before = pendingDurakAction.beforeSnapshotSignature;
+  if (before && before !== durakGameSnapshotSignature(game)) {
+    // Для «Бито»/«Беру» изменилось состояние партии — ожидавшийся ход обработан.
+    pendingDurakAction = null;
+  }
+}
+
   const tg = window.Telegram && window.Telegram.WebApp;
   // Раскрываем приложение в Telegram
 if (tg) {
@@ -2942,7 +2993,11 @@ async function durakAction(action, requestedCardIds = null) {
       action,
       cardId: actionCardId,
       cardIds: actionCardIds,
-      requestId: actionRequestId
+      requestId: actionRequestId,
+      beforeSnapshotSignature:
+        durakLastGameSnapshotRoomId === String(actionRoomId)
+          ? durakLastGameSnapshotSignature
+          : null
     };
   }
 
@@ -3131,51 +3186,60 @@ async function durakAction(action, requestedCardIds = null) {
       await loadDurakGame(actionRoomId);
     }
   } catch (error) {
-    // Если сервер отклонил ход или сеть оборвалась, не оставляем
-    // подвешенную копию карты и скрытую карту в руке.
-    if (durakPendingDragFlyer) {
-      durakPendingDragFlyer.remove();
-      durakPendingDragFlyer = null;
-    }
-    // Если сервер не подтвердил ход, убираем временную карту со стола.
-    // При подтверждённом ходе оставляем её на месте, даже если обновление состояния упало.
-    if (!actionConfirmed && dragFlyerLanding) {
-      dragFlyerLanding.cleanup();
-      dragFlyerLanding = null;
-    }
-    if (!actionConfirmed) {
-      dragFlyerGroupLandings.forEach(landing => landing?.cleanup());
-      dragFlyerGroupLandings = [];
-    }
-    // Если сервер отклонил ход или соединение оборвалось, убрать летающие копии.
-    document.querySelectorAll(".durak-flying-card").forEach((element) => element.remove());
-    document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
-      element.style.opacity = "";
-      element.style.transition = "";
-    });
     const rawMessage = String(error?.message || "");
     const shortMessage = rawMessage.length > 180
       ? rawMessage.slice(0, 177) + "..."
       : rawMessage;
     const statusMatch = rawMessage.match(/(?:^Ошибка сервера (\d{3}):|\(HTTP (\d{3})\))/);
     const responseStatus = statusMatch ? Number(statusMatch[1] || statusMatch[2]) : 0;
-    // Ответ 4xx означает, что сервер отклонил ход и его не нужно повторять
-    // с тем же ID. Сохраняем pending только для сетевых ошибок и 5xx,
-    // когда результат действия может оставаться неизвестным.
+    // Только 4xx — однозначный отказ. При сетевой ошибке или 5xx сервер мог
+    // применить ход, даже если ответ до телефона не дошёл.
     const actionRejected = responseStatus >= 400 && responseStatus < 500;
+    const actionOutcomeUnknown = !actionConfirmed && !actionRejected;
+    const keepOptimisticLanding = actionOutcomeUnknown &&
+      (Boolean(dragFlyerLanding) || dragFlyerGroupLandings.length > 0);
+
+    if (durakPendingDragFlyer) {
+      if (!keepOptimisticLanding) durakPendingDragFlyer.remove();
+      durakPendingDragFlyer = null;
+    }
+
+    if (!keepOptimisticLanding) {
+      // При однозначном отказе откатываем временную карту. Если результат
+      // неизвестен, оставляем её на месте до получения нового состояния игры.
+      if (!actionConfirmed && dragFlyerLanding) {
+        dragFlyerLanding.cleanup();
+        dragFlyerLanding = null;
+      }
+      if (!actionConfirmed) {
+        dragFlyerGroupLandings.forEach(landing => landing?.cleanup());
+        dragFlyerGroupLandings = [];
+      }
+      document.querySelectorAll(".durak-flying-card").forEach((element) => element.remove());
+      document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
+        element.style.opacity = "";
+        element.style.transition = "";
+      });
+    }
+
     if (actionRejected) {
       pendingDurakAction = null;
+    } else {
+      // Сразу сверяемся с сервером, не дожидаясь следующего двухсекундного опроса.
+      // Если ход ещё выполняется на сервере, последующие опросы тоже его проверят.
+      durakGameReloadRequested = true;
+      durakGameReloadRoomId = actionRoomId;
     }
+
     showStatus(
       "durakGameStatus",
       actionConfirmed
-        ? "Ход принят сервером, но не удалось обновить отображение. Открой партию заново. " +
-          (shortMessage || "")
+        ? "Ход принят сервером, обновляю игровое поле. " + (shortMessage || "")
         : actionRejected
           ? "Сервер отклонил ход. Выбери допустимое действие и попробуй ещё раз. " +
             (shortMessage || "")
-          : "Не удалось подтвердить ход. Повтори то же действие, чтобы безопасно проверить результат. " +
-            (shortMessage || "Проверь соединение и попробуй ещё раз.")
+          : "Связь с сервером прервалась. Проверяю, дошёл ли ход; пока не отправляй другой ход. " +
+            (shortMessage || "Состояние партии будет сверено автоматически.")
     );
     console.warn("Ход в Дураке не выполнен:", error);
   } finally {
@@ -4101,6 +4165,11 @@ async function loadDurakGame(roomId) {
       durakGameReloadRoomId = roomId;
       return;
     }
+
+    // Сначала сверяем неопределённый ход с достоверным состоянием сервера.
+    reconcilePendingDurakActionWithGame(game, roomId);
+    durakLastGameSnapshotRoomId = String(roomId);
+    durakLastGameSnapshotSignature = durakGameSnapshotSignature(game);
 
     const liveAttackIds = new Set(
       (Array.isArray(game.table) ? game.table : [])
