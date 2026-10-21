@@ -3968,7 +3968,10 @@ async function openDurakWaitingRoom(room) {
   const board = $("durakBoard");
   ["durakWaitingStatus", "durakAddBotButton", "durakReadyButton", "durakStartButton"].forEach((id) => {
     const control = $(id);
-    if (control && control.parentElement !== board) board.insertBefore(control, $("durakTrump"));
+    // durakTrump находится внутри .durak-table, а не непосредственно в durakBoard.
+    // Поэтому board.insertBefore(control, durakTrump) выбрасывал DOMException
+    // и прерывал открытие только что созданной комнаты.
+    if (control && control.parentElement !== board) board.appendChild(control);
   });
   $("durakGameStatus").textContent =
     "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
