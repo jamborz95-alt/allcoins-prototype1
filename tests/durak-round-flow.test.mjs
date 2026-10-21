@@ -24,6 +24,8 @@ test("a defender who cannot beat a card marks a pending take without collecting 
   assert.match(body, /if \(action === "take"\)[\s\S]*?game\.takePending = true;[\s\S]*?game\.phase = "takePending";/);
   assert.match(body, /function finishTakingRound\(\)[\s\S]*?taker\.hand\.push\(item\.attack\)[\s\S]*?taker\.hand\.push\(item\.defense\)[\s\S]*?game\.table = \[\][\s\S]*?drawCardsAfterRound\(\)/);
   assert.match(body, /if \(game\.takePending === true\) \{[\s\S]*?finishTakingRound\(\)/);
+  assert.match(body, /game\.defenderIndex = count === 2\s*\? defenderIndex\s*:\s*nextActivePlayer\(defenderIndex, \[attackerIndex\]\)/,
+    "in a two-player game the defender who took cards must remain the defender");
   assert.match(body, /if \(game\.defenderIndex === botIndex\)[\s\S]*?game\.takePending = true;[\s\S]*?game\.phase = "takePending";/);
 });
 
