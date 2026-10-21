@@ -2848,14 +2848,15 @@ $("durakGameStatus").textContent = "Загружаем карты...";
 
   saveGame();
 }
-async function apiRequest(path, data = {}) {
+async function apiRequest(path, data = {}, options = {}) {
   const response = await fetch(API + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...data,
       initData: tg?.initData || ""
-    })
+    }),
+    ...(options.signal ? { signal: options.signal } : {})
   });
 
 const responseText = await response.text();
@@ -2971,13 +2972,28 @@ async function durakAction(action, requestedCardIds = null) {
       }
     }
 
-    const result = await apiRequest("/api/durak/action", {
-      roomId: actionRoomId,
-      action: action,
-      actionRequestId,
-      ...(actionCardId ? { cardId: actionCardId } : {}),
-      ...(actionCardIds.length ? { cardIds: actionCardIds } : {})
-    });
+    // Render free-сервер иногда просыпается медленно. Не оставляем игру
+    // заблокированной навсегда: по таймауту освобождаем интерфейс, а тот же
+    // actionRequestId позволяет безопасно проверить результат повтором.
+    const actionController = new AbortController();
+    const actionTimeout = window.setTimeout(() => actionController.abort(), 20000);
+    let result;
+    try {
+      result = await apiRequest("/api/durak/action", {
+        roomId: actionRoomId,
+        action: action,
+        actionRequestId,
+        ...(actionCardId ? { cardId: actionCardId } : {}),
+        ...(actionCardIds.length ? { cardIds: actionCardIds } : {})
+      }, { signal: actionController.signal });
+    } catch (requestError) {
+      if (actionController.signal.aborted) {
+        throw new Error("Сервер не ответил за 20 секунд. Игра разблокирована; повтори тот же ход, чтобы безопасно проверить результат.");
+      }
+      throw requestError;
+    } finally {
+      window.clearTimeout(actionTimeout);
+    }
 
     if (!result.ok) {
       throw new Error(result.error || "Действие не выполнено.");
