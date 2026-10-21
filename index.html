@@ -2430,7 +2430,7 @@
   position: absolute !important; inset: 0 !important;
   width: 100% !important; height: 100% !important;
   margin: 0 !important; padding: 0 !important;
-  z-index: 6 !important; pointer-events: none !important;
+  z-index: 9 !important; pointer-events: none !important;
 }
 #durakGame .durak-player {
   width: 80px !important; min-width: 68px !important; max-width: 25vw !important;
@@ -2493,7 +2493,7 @@
   transform: translateY(-50%) !important;
 }
 #durakGame .durak-player[data-seat="bottom"] {
-  top: auto !important; bottom: -43% !important; left: 50% !important; right: auto !important;
+  top: auto !important; bottom: 8% !important; left: 50% !important; right: auto !important;
   transform: translateX(-50%) !important;
 }
 #durakGame .durak-player[data-seat="left-top"],
@@ -2587,7 +2587,7 @@
   #durakGame #durakTable { top: 19% !important; bottom: 28% !important; }
   #durakGame #durakHand { height: 21vh !important; min-height: 116px !important; bottom: 63px !important; }
   #durakGame #durakControls { height: 58px !important; min-height: 58px !important; }
-  #durakGame .durak-player[data-seat="bottom"] { bottom: -40% !important; }
+  #durakGame .durak-player[data-seat="bottom"] { bottom: 8% !important; }
 }
 /* Бумажный звук должен хорошо различаться на телефоне, не только в тихой комнате. */
 
@@ -4542,7 +4542,7 @@ if (takeButton) {
   // Защищающийся может взять карты, пока атакующий не объявил «Бито»,
   // даже если все текущие карты уже побиты.
   takeButton.style.display =
-    gameIsPlaying && isDefender && hasCardsOnTable && !takePending
+    gameIsPlaying && isDefender && hasOpenAttack && !takePending
       ? "inline-block"
       : "none";
   takeButton.textContent = "✋ Беру";
