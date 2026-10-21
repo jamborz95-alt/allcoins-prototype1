@@ -3446,30 +3446,65 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   }
 
   return new Promise((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
+    let finished = false;
+    let hoverTimer = null;
+    let settleTimer = null;
+    const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
+    const easing = throwPower > 0.35 ? ".18,.82,.22,1" : ".22,.76,.28,1";
+    const cleanup = () => {
       flyer.removeEventListener("transitionend", onEnd);
-      // Не удаляем визуальную карту по таймеру: сервер может ответить позже
-      // анимации. Оставляем её до loadDurakGame(), который удаляет flyer
-      // непосредственно перед отрисовкой подтверждённой карты на столе.
+      if (hoverTimer !== null) window.clearTimeout(hoverTimer);
+      if (settleTimer !== null) window.clearTimeout(settleTimer);
+    };
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      // Оставляем визуальную карту до подтверждённой перерисовки состояния сервера.
       resolve();
     };
     const onEnd = (event) => {
-      if (event.target === flyer && event.propertyName === "transform") finish();
+      if (event.target !== flyer || event.propertyName !== "transform") return;
+      // Первая фаза: карта остановилась над целевой позицией.
+      if (flyer.dataset.durakHoverPhase === "flight") {
+        flyer.dataset.durakHoverPhase = "hover";
+        flyer.style.transition = "none";
+        flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
+        void flyer.getBoundingClientRect();
+        // Небольшая пауза создаёт ощущение, что карта зависла над атакующей картой.
+        hoverTimer = window.setTimeout(() => {
+          if (!flyer.isConnected || finished) { finish(); return; }
+          flyer.dataset.durakHoverPhase = "settle";
+          flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
+          flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
+          settleTimer = window.setTimeout(finish, 240);
+        }, 1200);
+      } else if (flyer.dataset.durakHoverPhase === "settle") {
+        finish();
+      }
     };
+    flyer.dataset.durakHoverPhase = "flight";
     flyer.addEventListener("transitionend", onEnd);
     flyer.style.transformOrigin = "center center";
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(" +
-        (throwPower > 0.35 ? ".18,.82,.22,1" : ".22,.76,.28,1") + ")";
-      // При броске карта чуть сильнее наклоняется в полёте и ровно
-      // садится поверх атакующей карты; направление наклона зависит от броска.
-      const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
-      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation + throwTilt}deg) scale(.96)`;
+      flyer.style.transition = "transform " + Math.max(210, flightDuration) + "ms cubic-bezier(" + easing + ")";
+      // Карта летит к месту, но сначала тормозит чуть выше поверхности стола.
+      flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
+      // Защита от отсутствующего transitionend в некоторых Android WebView.
+      window.setTimeout(() => {
+        if (finished || flyer.dataset.durakHoverPhase !== "flight") return;
+        flyer.dataset.durakHoverPhase = "hover";
+        flyer.style.transition = "none";
+        flyer.style.transform = `translate3d(${dx}px,${dy - 15}px,0) rotate(${targetRotation + throwTilt}deg) scale(1.025)`;
+        hoverTimer = window.setTimeout(() => {
+          if (!flyer.isConnected || finished) { finish(); return; }
+          flyer.dataset.durakHoverPhase = "settle";
+          flyer.style.transition = "transform 190ms cubic-bezier(.2,.72,.25,1)";
+          flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
+          settleTimer = window.setTimeout(finish, 240);
+        }, 1200);
+      }, Math.max(210, flightDuration) + 100);
     });
-    window.setTimeout(finish, flightDuration + 60);
   });
 }
 
