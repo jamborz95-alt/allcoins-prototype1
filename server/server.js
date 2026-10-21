@@ -1422,12 +1422,8 @@ app.post("/api/durak/action", async (req, res) => {
         });
       }
 
-      if (game.table.some(item => !item.defense)) {
-        return res.status(400).json({
-          ok: false,
-          error: "Сначала защищающийся должен побить открытую карту или взять карты"
-        });
-      }
+      // По правилам «Дурака» атакующий может подкидывать карты подходящего достоинства,
+      // даже если защищающийся ещё не успел побить все карты на столе.
 
       const defender = game.players[game.defenderIndex];
       if (!Number.isInteger(game.defenderHandAtRoundStart)) {
