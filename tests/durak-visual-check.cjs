@@ -173,19 +173,36 @@ const path = require("node:path");
     await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(out, "05-game-after-drop.png"), fullPage: true });
 
-    const diagnostics = await page.evaluate(() => ({
-      title: document.title,
-      viewport: { width: innerWidth, height: innerHeight },
-      documentWidth: document.documentElement.scrollWidth,
-      documentHeight: document.documentElement.scrollHeight,
-      handCardsAfterDrop: document.querySelectorAll("#durakHand .durak-card").length,
-      tableAttackCardsAfterDrop: document.querySelectorAll('#durakTable .durak-card[data-table-card-type="attack"]').length,
-      flyingCardsAfterDrop: document.querySelectorAll(".durak-flying-card").length,
-      imageCards: [...document.querySelectorAll('#durakHand img, #durakTable img')].map(img => ({
-        src: img.getAttribute("src"),
-        loaded: img.complete && img.naturalWidth > 0
-      }))
-    }));
+    const diagnostics = await page.evaluate(() => {
+      const deck = document.getElementById("durakTrump");
+      const deckRect = deck?.getBoundingClientRect();
+      const deckFront = deck?.children[1]?.children[1];
+      const cardRects = [...document.querySelectorAll('#durakTable .durak-card.table-card[data-table-card-type="attack"], #durakTable .durak-card.table-card[data-table-card-type="defense"]')].map(card => {
+        const r = card.getBoundingClientRect();
+        return { x:r.x, y:r.y, right:r.right, bottom:r.bottom };
+      });
+      const deckOverlapsTableCards = Boolean(deckRect) && cardRects.some(r =>
+        r.right > deckRect.left + 1 && r.x < deckRect.right - 1 &&
+        r.bottom > deckRect.top + 1 && r.y < deckRect.bottom - 1
+      );
+      return {
+        title: document.title,
+        viewport: { width: innerWidth, height: innerHeight },
+        documentWidth: document.documentElement.scrollWidth,
+        documentHeight: document.documentElement.scrollHeight,
+        handCardsAfterDrop: document.querySelectorAll("#durakHand .durak-card").length,
+        tableAttackCardsAfterDrop: document.querySelectorAll('#durakTable .durak-card[data-table-card-type="attack"]').length,
+        flyingCardsAfterDrop: document.querySelectorAll(".durak-flying-card").length,
+        deckRect: deckRect ? {x:deckRect.x,y:deckRect.y,width:deckRect.width,height:deckRect.height} : null,
+        deckOverlapsTableCards,
+        deckBackDecorations: deckFront?.children.length || 0,
+        deckBackHasPattern: !!deckFront && getComputedStyle(deckFront).backgroundImage !== "none",
+        imageCards: [...document.querySelectorAll('#durakHand img, #durakTable img')].map(img => ({
+          src: img.getAttribute("src"),
+          loaded: img.complete && img.naturalWidth > 0
+        }))
+      };
+    });
     const animationDiagnostics = {
       flyerPresentImmediatelyAfterRelease: Boolean(flyerAtRelease),
       flyerMovedDuringReleaseAnimation: animationMoved,
@@ -216,6 +233,12 @@ const path = require("node:path");
     }
     if (diagnostics.flyingCardsAfterDrop !== 0) {
       throw new Error("После завершения анимации осталась летающая копия карты");
+    }
+    if (diagnostics.deckOverlapsTableCards) {
+      throw new Error("Колода закрывает карты на игровом столе");
+    }
+    if (!diagnostics.deckBackHasPattern || diagnostics.deckBackDecorations < 6) {
+      throw new Error("Декоративная рубашка ALLCOINS не отрисована");
     }
     if (actionRequests !== 1) throw new Error("Ожидался ровно один запрос хода, получено: " + actionRequests);
     if (errors.length) {
