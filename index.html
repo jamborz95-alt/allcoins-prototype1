@@ -1512,7 +1512,11 @@
     background: #4e718f !important;
     color: #fff !important;
     padding: max(4px, env(safe-area-inset-top)) 4px max(6px, env(safe-area-inset-bottom)) !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
     border: 0 !important;
     box-shadow: none !important;
   }
