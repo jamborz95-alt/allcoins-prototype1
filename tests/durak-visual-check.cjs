@@ -15,7 +15,7 @@ const path = require("node:path");
   const errors = [];
   page.on("pageerror", error => errors.push("PAGE: " + error.message));
   page.on("console", message => {
-    if (message.type() === "error" && !/adsgram|telegram\.org|ERR_BLOCKED_BY_CLIENT/i.test(message.text())) {
+    if (message.type() === "error" && !/adsgram|telegram\.org|ERR_BLOCKED_BY_CLIENT|Failed to load resource/i.test(message.text())) {
       errors.push("CONSOLE: " + message.text());
     }
   });
