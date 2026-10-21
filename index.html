@@ -2954,6 +2954,7 @@ async function durakAction(action, requestedCardIds = null) {
 
   let actionConfirmed = false;
   let dragFlyerAnimationStarted = false;
+  let dragFlyerAnimationPromise = null;
   try {
     // Запускаем полёт той же копии карты сразу после отпускания пальца,
     // не ожидая ответа сервера: сетевой запрос не должен создавать паузу.
@@ -2967,7 +2968,12 @@ async function durakAction(action, requestedCardIds = null) {
           durakPendingDragFlyer = null;
           dragFlyerAnimationStarted = true;
           // Запускаем полёт сразу; замеренная цель совпадает с будущим местом карты.
-          animateDurakCardToTarget(dragFlyer, landing.element);
+          // Запоминаем анимацию, чтобы быстрый ответ сервера не оборвал её перерисовкой.
+          try {
+            dragFlyerAnimationPromise = animateDurakCardToTarget(dragFlyer, landing.element);
+          } catch (animationError) {
+            console.warn("Не удалось запустить анимацию карты:", animationError);
+          }
         }
         landing.cleanup();
       }
@@ -3003,6 +3009,12 @@ async function durakAction(action, requestedCardIds = null) {
     // Сервер подтвердил действие (включая ответ duplicate:true).
     actionConfirmed = true;
     pendingDurakAction = null;
+
+    // Дожидаемся окончания красивого полёта перед отрисовкой серверного состояния.
+    // Иначе быстрый ответ API убирает летящую карту раньше времени.
+    if (dragFlyerAnimationPromise) {
+      try { await dragFlyerAnimationPromise; } catch (_) {}
+    }
 
     const playedCard = actionCardId
       ? Array.from(document.querySelectorAll("#durakHand .durak-card"))
