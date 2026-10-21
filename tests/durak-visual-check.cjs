@@ -73,6 +73,9 @@ const path = require("node:path");
         currentGame.phase = "defense";
         currentGame.players[0].cardsCount = currentGame.hand.length;
       }
+      // Keep the response pending long enough to observe the real release animation
+      // before the server-confirmed render replaces the flying DOM element.
+      await new Promise(resolve => setTimeout(resolve, 700));
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
       return;
     }
@@ -137,8 +140,18 @@ const path = require("node:path");
     await page.screenshot({ path: path.join(out, "03-game-card-being-dragged.png"), fullPage: true });
     await page.mouse.move(targetX, targetY, { steps: 12 });
     await page.mouse.up();
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(out, "04-game-after-drop.png"), fullPage: true });
+    const flyer = page.locator("body > .durak-flying-card, #durakGame .durak-flying-card").first();
+    const flyerAtRelease = await flyer.boundingBox();
+    await page.waitForTimeout(160);
+    const flyerInFlight = await flyer.boundingBox();
+    await page.screenshot({ path: path.join(out, "04-game-in-flight-after-release.png"), fullPage: true });
+    const animationMoved = Boolean(
+      flyerAtRelease && flyerInFlight &&
+      (Math.abs(flyerInFlight.x - flyerAtRelease.x) > 3 ||
+       Math.abs(flyerInFlight.y - flyerAtRelease.y) > 3)
+    );
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(out, "05-game-after-drop.png"), fullPage: true });
 
     const diagnostics = await page.evaluate(() => ({
       title: document.title,
@@ -153,10 +166,22 @@ const path = require("node:path");
         loaded: img.complete && img.naturalWidth > 0
       }))
     }));
-    fs.writeFileSync(path.join(out, "diagnostics.json"), JSON.stringify({ diagnostics, errors, actionRequests }, null, 2));
+    const animationDiagnostics = {
+      flyerPresentImmediatelyAfterRelease: Boolean(flyerAtRelease),
+      flyerMovedDuringReleaseAnimation: animationMoved,
+      flyerAtRelease,
+      flyerInFlight
+    };
+    fs.writeFileSync(path.join(out, "diagnostics.json"), JSON.stringify({ diagnostics, animationDiagnostics, errors, actionRequests }, null, 2));
 
     if (diagnostics.documentWidth > diagnostics.viewport.width + 2) {
       throw new Error("Горизонтальное переполнение: " + diagnostics.documentWidth + "px при viewport " + diagnostics.viewport.width + "px");
+    }
+    if (!flyerAtRelease) {
+      throw new Error("После отпускания карты не найден летящий элемент анимации");
+    }
+    if (!animationMoved) {
+      throw new Error("Карта не перемещалась после отпускания пальца: анимация приземления не подтверждена");
     }
     if (diagnostics.tableAttackCardsAfterDrop !== 1) {
       throw new Error("После перетаскивания карта не закрепилась на столе. Карты на столе: " + diagnostics.tableAttackCardsAfterDrop);
@@ -172,7 +197,7 @@ const path = require("node:path");
       fs.writeFileSync(path.join(out, "browser-errors.txt"), errors.join("\n"));
       throw new Error("Есть ошибки браузера: " + errors.length + ". См. visual-test-output/browser-errors.txt");
     }
-    console.log("Mobile drag/drop visual test passed:", JSON.stringify(diagnostics));
+    console.log("Mobile drag/drop visual test passed:", JSON.stringify({ diagnostics, animationDiagnostics }));
   } finally {
     await browser.close();
   }
