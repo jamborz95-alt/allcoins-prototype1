@@ -101,11 +101,23 @@ test("Durak game state exposes only the requesting player's hand, not opponents'
 });
 
 
-test("a confirmed Durak action schedules a refresh if polling is already in progress", () => {
+test("a pending Durak refresh never redraws the table over a card drag or throw", () => {
   assert.ok(clientSource.includes("let durakGameReloadRequested = false"));
   assert.ok(clientSource.includes("durakGameReloadRequested = true;"));
   assert.ok(clientSource.includes("durakGameReloadRoomId = actionRoomId;"));
   assert.ok(clientSource.includes("if (durakGameLoadInProgress) {"));
-  assert.ok(clientSource.includes("if (durakGameReloadRequested) {"));
-  assert.ok(clientSource.includes("window.setTimeout(() => loadDurakGame(reloadRoomId), 0);"));
+  assert.ok(clientSource.includes("function flushDurakGameReloadIfIdle()"));
+  assert.ok(clientSource.includes("durakCardDragging || durakActionInProgress"));
+  assert.ok(clientSource.includes("flushDurakGameReloadIfIdle();"));
+
+  const loadStart = clientSource.indexOf("async function loadDurakGame(roomId)");
+  const renderGuard = clientSource.indexOf(
+    "if (durakCardDragging || durakActionInProgress) {", loadStart
+  );
+  const flyingCardCleanup = clientSource.indexOf(
+    'document.querySelectorAll("#durakGame .durak-flying-card, body > .durak-flying-card")', loadStart
+  );
+  assert.ok(loadStart !== -1 && renderGuard !== -1 && flyingCardCleanup !== -1);
+  assert.ok(renderGuard < flyingCardCleanup,
+    "the interaction guard must run before an update removes flying cards and rebuilds the table");
 });
