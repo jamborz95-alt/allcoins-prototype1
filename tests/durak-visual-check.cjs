@@ -272,18 +272,16 @@ const path = require("node:path");
     }
 
     // Теперь имитируем новый бросок противника: карта должна прилететь от его места к столу.
-    await page.evaluate(async () => {
-      currentGame.table = [];
-      currentGame.attackerIndex = 0;
-      currentGame.defenderIndex = 1;
-      currentGame.phase = "attack";
-      await loadDurakGame("visual-test-room");
-      currentGame.attackerIndex = 1;
-      currentGame.defenderIndex = 0;
-      currentGame.phase = "defense";
-      currentGame.table = [{ attack: { id: "incoming-attack-1", rank: "9", suit: "♣" }, defense: null }];
-      await loadDurakGame("visual-test-room");
-    });
+    currentGame.table = [];
+    currentGame.attackerIndex = 0;
+    currentGame.defenderIndex = 1;
+    currentGame.phase = "attack";
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    currentGame.attackerIndex = 1;
+    currentGame.defenderIndex = 0;
+    currentGame.phase = "defense";
+    currentGame.table = [{ attack: { id: "incoming-attack-1", rank: "9", suit: "♣" }, defense: null }];
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
     await page.waitForTimeout(70);
     const incomingFlyer = page.locator('.durak-flying-card[data-incoming-attack="true"]');
     if (!(await incomingFlyer.count())) {
