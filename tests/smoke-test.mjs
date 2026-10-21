@@ -158,10 +158,18 @@ try {
   const attackBox = await attackCard.boundingBox();
   const tableBox = await tableTarget.boundingBox();
   assert.ok(attackBox && tableBox, "hand card and play area should be visible");
-  const attackResponse = page.waitForResponse((response) => response.url().includes("/api/durak/action"), { timeout: 5000 });
-  await page.mouse.move(attackBox.x + attackBox.width / 2, attackBox.y + attackBox.height / 2);
+  const attackResponse = page.waitForResponse((response) => response.url().includes("/api/durak/action"), { timeout: 8000 });
+  const handX = attackBox.x + attackBox.width / 2;
+  const handY = attackBox.y + attackBox.height / 2;
+  const tableX = tableBox.x + tableBox.width / 2;
+  const tableY = tableBox.y + tableBox.height / 2;
+  await page.mouse.move(handX, handY, { steps: 3 });
   await page.mouse.down();
-  await page.mouse.move(tableBox.x + tableBox.width / 2, tableBox.y + tableBox.height / 2, { steps: 8 });
+  // Give the custom pointer-drag handler time to cross its movement threshold
+  // and paint the floating card before releasing it over the table.
+  await page.mouse.move(tableX, tableY, { steps: 12 });
+  await page.mouse.move(tableX, tableY, { steps: 2 });
+  await page.waitForFunction(() => document.querySelector(".durak-flying-card") !== null);
   await page.mouse.up();
   await attackResponse;
   await page.waitForFunction(() => !durakActionInProgress && pendingDurakAction === null);
