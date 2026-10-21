@@ -1715,9 +1715,9 @@
     z-index: 15 !important;
   }
   #durakGame.durak-fullscreen #durakHand .durak-card.premium-card {
-    flex: 0 1 56px !important;
+    flex: 0 0 56px !important;
     width: 56px !important;
-    min-width: 0 !important;
+    min-width: 56px !important;
     max-width: 56px !important;
     height: 84px !important;
     margin-left: -5px !important;
@@ -2872,7 +2872,24 @@ $("durakTake").onclick = async () => {
 $("durakBeat").onclick = async () => {
   await durakAction("beat");
 };
-  // ===== ALLCOINS PREMIUM CARD FACTORY =====
+  // Сохраняем точный внешний вид карты при перетаскивании вне #durakGame.
+// CSS игровых карт частично ограничен контейнером, поэтому переносим computed styles
+// и на саму карту, и на её угловые обозначения/изображение.
+function copyDurakComputedStyles(source, target) {
+  if (!source || !target) return;
+  const computed = window.getComputedStyle(source);
+  for (let i = 0; i < computed.length; i++) {
+    const property = computed[i];
+    target.style.setProperty(property, computed.getPropertyValue(property), computed.getPropertyPriority(property));
+  }
+  const sourceChildren = source.children || [];
+  const targetChildren = target.children || [];
+  for (let i = 0; i < Math.min(sourceChildren.length, targetChildren.length); i++) {
+    copyDurakComputedStyles(sourceChildren[i], targetChildren[i]);
+  }
+}
+
+// ===== ALLCOINS PREMIUM CARD FACTORY =====
 
 function createDurakCardElement(card) {
   const rank = String(card.rank || "");
@@ -3603,6 +3620,9 @@ if (Array.isArray(game.hand)) {
           cardElement.dataset.dragGroupIds = JSON.stringify(groupedCardIds);
 
           flyer = cardElement.cloneNode(true);
+          // Копия вне игрового контейнера должна выглядеть один-в-один как оригинал,
+          // без возврата к старому цветному/золотому CSS оформлению.
+          copyDurakComputedStyles(cardElement, flyer);
           if (groupedCardIds.length > 1) {
             const groupBadge = document.createElement("span");
             groupBadge.textContent = String(groupedCardIds.length) + " карты";
@@ -3796,6 +3816,26 @@ if (Array.isArray(game.hand)) {
       }
     }
   });
+
+  // Размер каждой карты остаётся постоянным даже при большой руке.
+  // Если карт много, увеличиваем только перекрытие, чтобы вся рука помещалась на телефоне.
+  const handBox = $("durakHand");
+  if (handBox) {
+    const handCards = Array.from(handBox.querySelectorAll(".durak-card.premium-card"));
+    const fixedCardWidth = 56;
+    const available = Math.max(1, handBox.clientWidth || window.innerWidth - 4);
+    const overlap = handCards.length > 1
+      ? Math.min(38, Math.max(5, (fixedCardWidth * handCards.length - available) / (handCards.length - 1)))
+      : 0;
+    handCards.forEach((handCard, index) => {
+      handCard.style.setProperty("flex", "0 0 56px", "important");
+      handCard.style.setProperty("width", "56px", "important");
+      handCard.style.setProperty("min-width", "56px", "important");
+      handCard.style.setProperty("max-width", "56px", "important");
+      handCard.style.setProperty("height", "84px", "important");
+      handCard.style.setProperty("margin-left", index === 0 ? "0px" : "-" + overlap + "px", "important");
+    });
+  }
 }
 
     const gameResultLabel = game.status !== "finished"
