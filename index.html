@@ -3452,34 +3452,48 @@ async function animateDurakDealSequence(dealTargets, roomId) {
   const sourceCenterX = Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23));
   const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
   const duration = 340;
-  durakDealAnimationActive = true;
+  const savedStyles = new WeakMap();
 
+  // Скрываем весь набор заранее: карты не должны сначала появиться в руках,
+  // а затем исчезнуть перед своим полётом.
+  dealTargets.forEach(item => {
+    const target = item?.target;
+    if (!target?.isConnected) return;
+    savedStyles.set(target, {
+      opacity: target.style.opacity,
+      transform: target.style.transform,
+      transition: target.style.transition,
+      pointerEvents: target.style.pointerEvents,
+      transformOrigin: target.style.transformOrigin
+    });
+    target.style.transition = "none";
+    target.style.opacity = "0";
+    target.style.pointerEvents = "none";
+    if (item.faceUp) {
+      target.style.transformOrigin = "center center";
+      target.style.transform = "rotateY(88deg)";
+    }
+  });
+
+  durakDealAnimationActive = true;
   const tasks = dealTargets.map((item, index) => new Promise(resolve => {
     window.setTimeout(() => {
       const target = item?.target;
-      if (token !== durakDealAnimationToken || !target?.isConnected) {
+      const previous = target ? savedStyles.get(target) : null;
+      if (token !== durakDealAnimationToken || !target?.isConnected || !previous) {
         resolve();
         return;
       }
 
       const targetRect = target.getBoundingClientRect();
       if (!targetRect.width || !targetRect.height) {
+        target.style.opacity = previous.opacity;
+        target.style.transform = previous.transform;
+        target.style.transition = previous.transition;
+        target.style.pointerEvents = previous.pointerEvents;
+        target.style.transformOrigin = previous.transformOrigin;
         resolve();
         return;
-      }
-
-      const previousOpacity = target.style.opacity;
-      const previousTransform = target.style.transform;
-      const previousTransition = target.style.transition;
-      const previousPointerEvents = target.style.pointerEvents;
-      const previousTransformOrigin = target.style.transformOrigin;
-
-      target.style.transition = "none";
-      target.style.opacity = "0";
-      target.style.pointerEvents = "none";
-      if (item.faceUp) {
-        target.style.transformOrigin = "center center";
-        target.style.transform = "rotateY(88deg)";
       }
 
       const flyer = document.createElement("span");
@@ -3525,11 +3539,11 @@ async function animateDurakDealSequence(dealTargets, roomId) {
         if (cleanupTimer !== null) window.clearTimeout(cleanupTimer);
         flyer.remove();
         if (target.isConnected) {
-          target.style.opacity = previousOpacity;
-          target.style.transform = previousTransform;
-          target.style.transition = previousTransition;
-          target.style.pointerEvents = previousPointerEvents;
-          target.style.transformOrigin = previousTransformOrigin;
+          target.style.opacity = previous.opacity;
+          target.style.transform = previous.transform;
+          target.style.transition = previous.transition;
+          target.style.pointerEvents = previous.pointerEvents;
+          target.style.transformOrigin = previous.transformOrigin;
         }
         resolve();
       };
