@@ -3036,10 +3036,36 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   const flyer = durakPendingDragFlyer || cardElement.cloneNode(true);
   durakPendingDragFlyer = null;
   const isAlreadyFlying = flyer.classList.contains("durak-flying-card");
+
+  // Если анимация вызвана не перетаскиванием, берём точные размеры карты из руки.
+  // Иначе свежий clone ещё не в DOM и getBoundingClientRect() вернёт нули.
+  if (!isAlreadyFlying) {
+    const sourceRect = cardElement.getBoundingClientRect();
+    if (!sourceRect.width || !sourceRect.height) return Promise.resolve();
+    flyer.classList.add("durak-flying-card");
+    flyer.style.position = "fixed";
+    flyer.style.left = sourceRect.left + "px";
+    flyer.style.top = sourceRect.top + "px";
+    flyer.style.width = sourceRect.width + "px";
+    flyer.style.height = sourceRect.height + "px";
+    flyer.style.maxWidth = "none";
+    flyer.style.maxHeight = "none";
+    flyer.style.boxSizing = "border-box";
+    flyer.style.margin = "0";
+    flyer.style.transformOrigin = "top left";
+    flyer.style.transform = "translate3d(0,0,0)";
+    flyer.style.transition = "none";
+    flyer.style.pointerEvents = "none";
+    document.body.appendChild(flyer);
+  }
+
+  // Сначала считываем фактическую видимую рамку летящей карты. Затем приводим её
+  // к обычному прямоугольнику с теми же координатами, чтобы смена transform-origin
+  // не вызывала рывок в момент отпускания пальца.
   const from = flyer.getBoundingClientRect();
   const to = targetElement.getBoundingClientRect();
   if (!from.width || !from.height || !to.width || !to.height) {
-    if (isAlreadyFlying) flyer.remove();
+    if (flyer.isConnected) flyer.remove();
     return Promise.resolve();
   }
 
@@ -3048,10 +3074,10 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   flyer.style.position = "fixed";
   flyer.style.left = from.left + "px";
   flyer.style.top = from.top + "px";
-  flyer.style.width = Math.min(from.width, 112) + "px";
-  flyer.style.height = Math.min(from.height, 148) + "px";
-  flyer.style.maxWidth = "min(24vw, 112px)";
-  flyer.style.maxHeight = "min(34vw, 148px)";
+  flyer.style.width = from.width + "px";
+  flyer.style.height = from.height + "px";
+  flyer.style.maxWidth = "none";
+  flyer.style.maxHeight = "none";
   flyer.style.boxSizing = "border-box";
   flyer.style.overflow = "hidden";
   const flyerImage = flyer.querySelector("img");
@@ -3062,12 +3088,12 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     flyerImage.style.maxHeight = "100%";
     flyerImage.style.objectFit = "contain";
   }
+  flyer.style.transformOrigin = "top left";
   flyer.style.margin = "0";
   flyer.style.opacity = "1";
   flyer.style.pointerEvents = "none";
-  flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1.045)";
+  flyer.style.transform = "translate3d(0,0,0) scale(1)";
   flyer.style.transition = "none";
-  if (!isAlreadyFlying) document.body.appendChild(flyer);
   void flyer.getBoundingClientRect();
 
   // Защиту кладём прямо на атакующую карту; атаку — в центр игровой зоны.
@@ -3616,6 +3642,10 @@ if (Array.isArray(game.hand)) {
       let flyer = null;
       let offsetX = 0;
       let offsetY = 0;
+      let dragRafId = 0;
+      let latestDragX = startX;
+      let latestDragY = startY;
+      let latestDragTilt = 0;
 
       const moveCard = (moveEvent) => {
         if (moveEvent.pointerId !== pointerId) return;
@@ -3670,15 +3700,19 @@ if (Array.isArray(game.hand)) {
             flyerImage.style.objectFit = "contain";
           }
           flyer.style.transition = "none";
-          flyer.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1.045)";
+          flyer.style.transform = "rotate(0deg) scale(1.035)";
           flyer.style.opacity = "1";
-          flyer.style.willChange = "transform";
+          flyer.style.willChange = "left, top, transform";
           // Копия карты не должна перекрывать стол при проверке drop-цели.
           flyer.style.pointerEvents = "none";
           flyer.setAttribute("aria-hidden", "true");
           document.body.appendChild(flyer);
           offsetX = startX - originalRect.left;
           offsetY = startY - originalRect.top;
+          // Точка, за которую схватили карту, остаётся прямо под пальцем.
+          // Вращение и небольшое увеличение происходят вокруг точки захвата,
+          // а не вокруг центра карты — это убирает боковой сдвиг на движении.
+          flyer.style.transformOrigin = offsetX + "px " + offsetY + "px";
           cardElement.style.opacity = "0";
           cardElement.style.transition = "none";
           cardElement.dataset.dragged = "true";
@@ -3686,17 +3720,29 @@ if (Array.isArray(game.hand)) {
 
         if (dragging && flyer) {
           moveEvent.preventDefault();
-          // Позиционируем карту непосредственно по координатам пальца.
-          // Смещение точки захвата сохраняется: карта не прыгает центром под палец.
-          // Координаты обновляются на каждом pointermove, а transform отвечает только за наклон.
-          const tilt = Math.max(-5, Math.min(5, dx * 0.055));
-          flyer.style.left = (moveEvent.clientX - offsetX) + "px";
-          flyer.style.top = (moveEvent.clientY - offsetY) + "px";
-          flyer.style.transform = "rotate(" + tilt + "deg) scale(1.035)";
+          // Сохраняем самые свежие координаты, а стили меняем один раз за кадр.
+          // Это уменьшает рывки на Android WebView при частых pointermove.
+          latestDragX = moveEvent.clientX;
+          latestDragY = moveEvent.clientY;
+          latestDragTilt = Math.max(-5, Math.min(5, dx * 0.055));
+          if (!dragRafId) {
+            dragRafId = requestAnimationFrame(() => {
+              dragRafId = 0;
+              if (!dragging || !flyer) return;
+              flyer.style.left = (latestDragX - offsetX) + "px";
+              flyer.style.top = (latestDragY - offsetY) + "px";
+              flyer.style.transformOrigin = offsetX + "px " + offsetY + "px";
+              flyer.style.transform = "rotate(" + latestDragTilt + "deg) scale(1.035)";
+            });
+          }
         }
       };
 
       const cleanup = () => {
+        if (dragRafId) {
+          cancelAnimationFrame(dragRafId);
+          dragRafId = 0;
+        }
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
@@ -3716,6 +3762,10 @@ if (Array.isArray(game.hand)) {
         // автоматически отправляет lostpointercapture; он не должен удалять
         // летящую копию карты, переданную в durakPendingDragFlyer.
         cardElement.removeEventListener("lostpointercapture", lostPointer);
+        if (dragRafId) {
+          cancelAnimationFrame(dragRafId);
+          dragRafId = 0;
+        }
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
@@ -3733,9 +3783,14 @@ if (Array.isArray(game.hand)) {
         // На Android WebView последний pointermove иногда приходит не на самую
         // последнюю позицию, поэтому без этого карта визуально и логически расходится.
         if (flyer) {
+          // Последнее положение выставляем синхронно до проверки drop-зоны:
+          // даже если RAF ещё не успел отрисоваться, карта останется под пальцем.
+          latestDragX = upEvent.clientX;
+          latestDragY = upEvent.clientY;
           flyer.style.left = (upEvent.clientX - offsetX) + "px";
           flyer.style.top = (upEvent.clientY - offsetY) + "px";
-          flyer.style.transform = "rotate(0deg) scale(1.045)";
+          flyer.style.transformOrigin = offsetX + "px " + offsetY + "px";
+          flyer.style.transform = "rotate(0deg) scale(1.035)";
         }
 
         const elementUnderPointer = document.elementFromPoint(
