@@ -4316,7 +4316,8 @@ $("durakBoard").style.display = "block";
         playerTag.appendChild(emptyMeta);
       }
       playersContainer.appendChild(playerTag);
-      setupDurakSeatDragging(playerTag, durakWaitingRoom.id, seats[seatIndex] || ("seat-" + seatIndex), playersContainer);
+      // Места ожидания остаются в потоке сетки: абсолютное перетаскивание
+      // здесь снова наложило бы квадраты на кнопки. Перемещение остаётся для игрового поля.
     }
     }
 
