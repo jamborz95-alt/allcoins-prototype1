@@ -3360,10 +3360,12 @@ let durakAnimationRoomId = null;
 let durakDealAnimationActive = false;
 let durakDealAnimationToken = 0;
 
-// Встроенные короткие звуки карт — без внешних файлов и сетевых загрузок.
+// Встроенные звуки карт: шелест/удар карты + мягкий тон, без внешних файлов.
 let durakSoundEnabled = true;
 let durakAudioContext = null;
+let durakSoundNoiseBuffer = null;
 let durakSoundLastAt = 0;
+let durakAudioUnlocked = false;
 
 function ensureDurakAudio() {
   if (!durakSoundEnabled) return null;
@@ -3371,11 +3373,58 @@ function ensureDurakAudio() {
   if (!AudioCtor) return null;
   try {
     if (!durakAudioContext) durakAudioContext = new AudioCtor();
-    if (durakAudioContext.state === "suspended") durakAudioContext.resume().catch(() => {});
     return durakAudioContext;
   } catch (_) {
     return null;
   }
+}
+
+function unlockDurakAudio() {
+  const ctx = ensureDurakAudio();
+  if (!ctx) return Promise.resolve(false);
+  if (ctx.state === "running") {
+    durakAudioUnlocked = true;
+    return Promise.resolve(true);
+  }
+  try {
+    const resumed = ctx.resume();
+    if (resumed && typeof resumed.then === "function") {
+      return resumed.then(() => {
+        durakAudioUnlocked = ctx.state === "running";
+        if (durakAudioUnlocked) {
+          document.removeEventListener("pointerdown", durakAudioUnlockGesture, true);
+          document.removeEventListener("touchstart", durakAudioUnlockGesture, true);
+        }
+        return durakAudioUnlocked;
+      }).catch(() => false);
+    }
+    durakAudioUnlocked = ctx.state === "running";
+    return Promise.resolve(durakAudioUnlocked);
+  } catch (_) {
+    return Promise.resolve(false);
+  }
+}
+
+// Android/Telegram WebView блокирует звук до первого настоящего касания.
+// Разблокируем аудио именно на жесте, а не во время фоновой анимации раздачи.
+function durakAudioUnlockGesture(event) {
+  if (!event || !event.isTrusted || !durakSoundEnabled) return;
+  if (event.target && event.target.closest && event.target.closest("#durakSoundToggle")) return;
+  unlockDurakAudio();
+}
+document.addEventListener("pointerdown", durakAudioUnlockGesture, true);
+document.addEventListener("touchstart", durakAudioUnlockGesture, { capture: true, passive: true });
+
+function getDurakNoiseBuffer(ctx) {
+  if (durakSoundNoiseBuffer && durakSoundNoiseBuffer.sampleRate === ctx.sampleRate) {
+    return durakSoundNoiseBuffer;
+  }
+  const length = Math.max(1, Math.floor(ctx.sampleRate * 0.20));
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * 0.85;
+  durakSoundNoiseBuffer = buffer;
+  return buffer;
 }
 
 function playDurakSound(kind = "card") {
@@ -3383,41 +3432,83 @@ function playDurakSound(kind = "card") {
   const now = performance.now();
   if (kind === "card" && now - durakSoundLastAt < 55) return;
   durakSoundLastAt = now;
+
   const ctx = ensureDurakAudio();
   if (!ctx) return;
-  const t = ctx.currentTime;
+  if (ctx.state !== "running") {
+    // Если WebView ещё не разблокировал звук, попробуем возобновить контекст.
+    unlockDurakAudio().then(unlocked => {
+      if (unlocked && durakSoundEnabled) playDurakSound(kind);
+    });
+    return;
+  }
+
   const presets = {
-    card: { f: 620, end: 390, duration: .075, volume: .045, wave: "triangle" },
-    deal: { f: 760, end: 470, duration: .095, volume: .055, wave: "triangle" },
-    beat: { f: 520, end: 760, duration: .13, volume: .055, wave: "sine" },
-    take: { f: 300, end: 190, duration: .16, volume: .06, wave: "triangle" }
+    card: { f: 420, end: 220, duration: .078, volume: .045, wave: "triangle", noise: .18, noiseFreq: 2300, filter: "highpass" },
+    deal: { f: 680, end: 400, duration: .13, volume: .028, wave: "triangle", noise: .14, noiseFreq: 1650, filter: "bandpass" },
+    beat: { f: 270, end: 145, duration: .105, volume: .055, wave: "triangle", noise: .20, noiseFreq: 1050, filter: "bandpass" },
+    take: { f: 260, end: 145, duration: .16, volume: .045, wave: "triangle", noise: .12, noiseFreq: 900, filter: "lowpass" }
   };
   const p = presets[kind] || presets.card;
+  const t = ctx.currentTime;
+
+  // Короткий бумажный шлепок/шелест.
+  const noise = ctx.createBufferSource();
+  noise.buffer = getDurakNoiseBuffer(ctx);
+  const filter = ctx.createBiquadFilter();
+  filter.type = p.filter;
+  filter.frequency.setValueAtTime(p.noiseFreq, t);
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(.0001, t);
+  noiseGain.gain.exponentialRampToValueAtTime(p.noise, t + .006);
+  noiseGain.gain.exponentialRampToValueAtTime(.0001, t + p.duration);
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + p.duration);
+
+  // Негромкий низкий тон добавляет ощущение касания карты о стол.
   const oscillator = ctx.createOscillator();
   const gain = ctx.createGain();
   oscillator.type = p.wave;
   oscillator.frequency.setValueAtTime(p.f, t);
   oscillator.frequency.exponentialRampToValueAtTime(Math.max(50, p.end), t + p.duration);
   gain.gain.setValueAtTime(.0001, t);
-  gain.gain.exponentialRampToValueAtTime(p.volume, t + .012);
+  gain.gain.exponentialRampToValueAtTime(p.volume, t + .008);
   gain.gain.exponentialRampToValueAtTime(.0001, t + p.duration);
   oscillator.connect(gain);
   gain.connect(ctx.destination);
   oscillator.start(t);
-  oscillator.stop(t + p.duration + .015);
+  oscillator.stop(t + p.duration + .01);
+}
+
+function updateDurakSoundButton(button) {
+  if (!button) return;
+  button.textContent = durakSoundEnabled ? "🔊 Звук" : "🔇 Без звука";
+  button.setAttribute("aria-pressed", String(durakSoundEnabled));
+  button.title = durakSoundEnabled ? "Звук игры включён" : "Нажми, чтобы включить звук игры";
 }
 
 function initDurakSoundToggle() {
   const button = $("durakSoundToggle");
   if (!button || button.dataset.bound === "true") return;
   button.dataset.bound = "true";
-  button.onclick = () => {
+  updateDurakSoundButton(button);
+  button.onclick = async () => {
+    // Первое нажатие не выключает звук случайно: оно разблокирует аудио в Telegram.
+    if (!durakAudioUnlocked) {
+      durakSoundEnabled = true;
+      updateDurakSoundButton(button);
+      const unlocked = await unlockDurakAudio();
+      if (unlocked) playDurakSound("card");
+      return;
+    }
     durakSoundEnabled = !durakSoundEnabled;
-    button.textContent = durakSoundEnabled ? "🔊 Звук" : "🔇 Без звука";
-    button.setAttribute("aria-pressed", String(durakSoundEnabled));
+    updateDurakSoundButton(button);
     if (durakSoundEnabled) {
-      ensureDurakAudio();
-      playDurakSound("card");
+      const unlocked = await unlockDurakAudio();
+      if (unlocked) playDurakSound("card");
     }
   };
 }
@@ -4675,6 +4766,8 @@ if (Array.isArray(game.hand)) {
             ...draggedGroupIds.filter(id => String(id) !== String(card.id))
           ];
         }
+        // Звук слышен сразу в момент отпускания карты, до ответа сервера.
+        playDurakSound(canDefend ? "beat" : "card");
         await durakAction(
           canDefend ? "defend" : "attack",
           canDefend ? [String(card.id)] : draggedGroupIds
@@ -5832,12 +5925,18 @@ render();
 login().then(() => loadDurakRooms());
 const durakAttackButton = $("durakAttack");
 if (durakAttackButton) {
-  durakAttackButton.onclick = () => durakAction("attack");
+  durakAttackButton.onclick = () => {
+    playDurakSound("card");
+    return durakAction("attack");
+  };
 }
 
 const durakDefendButton = $("durakDefend");
 if (durakDefendButton) {
-  durakDefendButton.onclick = () => durakAction("defend");
+  durakDefendButton.onclick = () => {
+    playDurakSound("beat");
+    return durakAction("defend");
+  };
 }
 
 const durakTakeButton = $("durakTake");
