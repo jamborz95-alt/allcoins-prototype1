@@ -151,9 +151,21 @@ try {
   // Match the active-room state established by the real room-entry flow.
   await page.evaluate(() => { currentDurakRoomId = "77"; });
 
+  // Wait until the deal-in animation has finished. Otherwise Playwright can
+  // pick coordinates from the card's animated position near the deck, not its
+  // final position in the player's hand, making the simulated throw invalid.
+  const attackCard = page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]');
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#durakHand .durak-card[data-card-id="card-6-hearts"]');
+    if (!card) return false;
+    const style = getComputedStyle(card);
+    const rect = card.getBoundingClientRect();
+    return Number(style.opacity) > 0.98 && rect.width > 0 && rect.height > 0 &&
+      !card.style.transform.includes("translate3d");
+  }, { timeout: 5000 });
+  await page.waitForTimeout(250);
   // Drag a card onto the play area to attack; no action button is used.
   const actionsBeforeUiMove = apiCalls.filter((call) => call.path === "/api/durak/action").length;
-  const attackCard = page.locator('#durakHand .durak-card[data-card-id="card-6-hearts"]');
   const tableTarget = page.locator("#durakTable");
   const attackBox = await attackCard.boundingBox();
   const tableBox = await tableTarget.boundingBox();
