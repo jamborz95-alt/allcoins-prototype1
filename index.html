@@ -3700,6 +3700,9 @@ if (Array.isArray(game.hand)) {
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
+        // Не оставляем обработчик потери pointer capture после очистки.
+        // На Android WebView он может сработать сразу после pointerup.
+        cardElement.removeEventListener("lostpointercapture", lostPointer);
         durakCardDragging = false;
         cardElement.style.opacity = "";
         cardElement.style.transition = "";
@@ -3709,6 +3712,10 @@ if (Array.isArray(game.hand)) {
 
       const releaseCard = async (upEvent) => {
         if (upEvent.pointerId !== pointerId) return;
+        // pointerup — штатное завершение перетаскивания. Браузер затем
+        // автоматически отправляет lostpointercapture; он не должен удалять
+        // летящую копию карты, переданную в durakPendingDragFlyer.
+        cardElement.removeEventListener("lostpointercapture", lostPointer);
         document.removeEventListener("pointermove", moveCard);
         document.removeEventListener("pointerup", releaseCard);
         document.removeEventListener("pointercancel", cancelCard);
