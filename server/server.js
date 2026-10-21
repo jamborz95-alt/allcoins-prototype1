@@ -1704,6 +1704,8 @@ if (action === "beat") {
               if (item.defense) bot.hand.push(item.defense);
             }
             game.table = [];
+            // Завершили раунд взятием карт: лимит подкидывания нужно сбросить.
+            delete game.defenderHandAtRoundStart;
             drawCardsAfterRound();
             game.attackerIndex = attackerIndex;
             game.defenderIndex = nextActivePlayer(defenderIndex, [attackerIndex]);
