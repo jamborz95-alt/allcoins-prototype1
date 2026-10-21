@@ -4094,7 +4094,8 @@ async function loadDurakGame(roomId) {
 
     // Опрос мог начаться до броска карты и вернуться посреди анимации.
     // В таком случае не трогаем DOM, а откладываем перерисовку до конца хода.
-    if (String(roomId) !== String(currentDurakRoomId)) return;
+    if (currentDurakRoomId != null &&
+        String(roomId) !== String(currentDurakRoomId)) return;
     if (durakCardDragging || durakActionInProgress) {
       durakGameReloadRequested = true;
       durakGameReloadRoomId = roomId;
