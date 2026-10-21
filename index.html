@@ -3399,12 +3399,15 @@ if (game.trumpCard) {
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
-  trumpElement.style.left = "4px";
-  trumpElement.style.top = "34px";
-  trumpElement.style.setProperty("left", "4px", "important");
-  trumpElement.style.setProperty("top", "34px", "important");
+  // Козырь располагается под колодой; inline !important раньше перекрывал CSS-сдвиги.
+  trumpElement.style.left = "-2px";
+  trumpElement.style.top = "43px";
+  trumpElement.style.setProperty("left", "-2px", "important");
+  trumpElement.style.setProperty("top", "43px", "important");
   trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
+  trumpElement.style.transform = "rotate(90deg) translateX(-2px)";
+  trumpElement.style.transformOrigin = "center center";
 
   deckStack.appendChild(trumpElement);
 } else {
