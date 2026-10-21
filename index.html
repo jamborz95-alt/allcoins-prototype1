@@ -4229,30 +4229,26 @@ if (Array.isArray(game.hand)) {
            pointY >= tableRect.top && pointY <= tableRect.bottom) ||
           cardOverlapsTable || shortForwardDrop
         ));
+        // После заметного броска направление и точка отпускания не важны:
+        // игра сама выбирает нужное место на столе. Защита закрывает первую
+        // ещё не побитую атакующую карту, атака занимает следующую пару.
+        const throwDistance = Math.hypot(pointX - startX, pointY - startY);
+        const intentionalThrow = throwDistance >= 24;
         const targetCard = table
           ? Array.from(table.querySelectorAll('.durak-card[data-table-card-type="attack"]'))
               .find(element => {
                 const pair = element.closest(".durak-table-pair");
-                const alreadyCovered = !!pair?.querySelector('.durak-card[data-table-card-type="defense"]');
-                if (alreadyCovered) return false;
-                const rect = element.getBoundingClientRect();
-                const releaseCardRect = flyer?.getBoundingClientRect();
-                const pointerHitsCard = pointX >= rect.left && pointX <= rect.right &&
-                  pointY >= rect.top && pointY <= rect.bottom;
-                const cardEdgeHitsCard = !!(releaseCardRect &&
-                  releaseCardRect.right > rect.left + 12 &&
-                  releaseCardRect.left < rect.right - 12 &&
-                  releaseCardRect.bottom > rect.top + 12 &&
-                  releaseCardRect.top < rect.bottom - 12);
-                return pointerHitsCard || cardEdgeHitsCard;
+                return !pair?.querySelector('.durak-card[data-table-card-type="defense"]');
               })
           : null;
 
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
         const canDefend = isDefender && game.phase === "defense" &&
-          !!targetCard && droppedOnTable;
-        const canAttack = isAttacker && (game.phase === "attack" || game.phase === "defense") && droppedOnTable;
+          !!targetCard && intentionalThrow;
+        const canAttack = isAttacker &&
+          (game.phase === "attack" || game.phase === "defense") &&
+          intentionalThrow;
 
         if (!canDefend && !canAttack) {
           cardElement.style.opacity = "";
