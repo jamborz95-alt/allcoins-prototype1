@@ -57,6 +57,15 @@ test("the bot continues defending until no uncovered attack cards remain", () =>
   assert.match(body, /openItem\.defense = bot\.hand\.splice\(defenseIndex, 1\)\[0\];[\s\S]*?continue;\s*\} else \{/);
 });
 
+test("the bot attacker can throw in a matching rank while the defender still has an open attack", () => {
+  const botAttackStart = body.indexOf('if (game.attackerIndex === botIndex) {');
+  const botAttackEnd = body.indexOf('if (game.defenderIndex === botIndex)', botAttackStart);
+  const botAttackBody = body.slice(botAttackStart, botAttackEnd);
+  assert.ok(botAttackStart >= 0, "bot attack branch must exist");
+  assert.doesNotMatch(botAttackBody, /if \(game\.table\.some\(item => !item\.defense\)\) break;/);
+  assert.match(botAttackBody, /else if \(canAddMore && bot\.hand\.length > 0\)[\s\S]*?chooseBotAttackIndex\(bot\.hand, game\.trumpSuit, tableRanks\)/);
+});
+
 test("the bot closes a fully covered attack when it cannot throw in another card", () => {
   assert.match(body, /if \(game\.table\.length > 0 && game\.table\.every\(item => item\.defense\)[\s\S]*?game\.table = \[\][\s\S]*?drawCardsAfterRound\(\)/);
 });
