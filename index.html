@@ -3769,7 +3769,7 @@ if (Array.isArray(game.hand)) {
     const animationCardId = String(card.id);
     if (!durakAnimatedCardIds.has(animationCardId)) {
       durakAnimatedCardIds.add(animationCardId);
-      const deck = document.querySelector("#durakTrump .durak-deck-stack");
+      const deck = document.querySelector("#durakTrump div");
       const deckRect = deck ? deck.getBoundingClientRect() : null;
       const handRect = cardElement.getBoundingClientRect();
       if (deckRect && handRect.width > 0 && handRect.height > 0 &&
