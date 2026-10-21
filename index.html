@@ -1505,6 +1505,259 @@
   #durakGame .durak-player[data-seat="top-right"] { left: 82%; top: 31%; }
   #durakGame .durak-player[data-seat="top-left"] { left: 18%; top: 31%; }
 }
+
+/* ===== ALLCOINS DURAK: раскладка по референсному видео 20.10.2026 ===== */
+@media (max-width: 600px) {
+  #durakGame.durak-fullscreen {
+    background: #4e718f !important;
+    color: #fff !important;
+    padding: max(4px, env(safe-area-inset-top)) 4px max(6px, env(safe-area-inset-bottom)) !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  #durakGame.durak-fullscreen > .durak-back,
+  #durakGame.durak-fullscreen > h3 {
+    display: none !important;
+  }
+  #durakGame.durak-fullscreen #durakBoard {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakGameStatus {
+    position: absolute !important;
+    left: 6px !important;
+    top: 5px !important;
+    z-index: 20 !important;
+    max-width: 62% !important;
+    margin: 0 !important;
+    padding: 3px 5px !important;
+    border: 0 !important;
+    border-radius: 4px !important;
+    background: rgba(25,49,68,.35) !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+  }
+  #durakGame.durak-fullscreen .durak-table {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  #durakGame.durak-fullscreen #durakPlayers {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+  #durakGame.durak-fullscreen .durak-player {
+    position: absolute !important;
+    display: flex !important;
+    min-width: 44px !important;
+    max-width: 76px !important;
+    min-height: 40px !important;
+    padding: 3px 4px !important;
+    border: 1px solid rgba(238,245,250,.7) !important;
+    border-radius: 5px !important;
+    background: rgba(24,47,66,.72) !important;
+    color: #fff !important;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+    box-shadow: 0 1px 3px #0003 !important;
+    pointer-events: auto !important;
+    z-index: 3 !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="top"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="top-left"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="top-right"] {
+    top: 4% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="left"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-top"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="left-bottom"] {
+    left: 1% !important;
+    top: 43% !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
+  #durakGame.durak-fullscreen .durak-player[data-seat="right"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-top"],
+  #durakGame.durak-fullscreen .durak-player[data-seat="right-bottom"] {
+    right: 1% !important;
+    top: 43% !important;
+    left: auto !important;
+    bottom: auto !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    left: auto !important;
+    bottom: auto !important;
+    display: block !important;
+    width: 58px !important;
+    min-width: 58px !important;
+    height: 78px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    z-index: 8 !important;
+    pointer-events: none !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump .premium-card {
+    width: 46px !important;
+    min-width: 46px !important;
+    height: 68px !important;
+    max-width: 46px !important;
+    border-radius: 4px !important;
+  }
+  #durakGame.durak-fullscreen #durakTable {
+    position: absolute !important;
+    left: 50% !important;
+    top: 43% !important;
+    transform: translate(-50%, -50%) !important;
+    display: flex !important;
+    align-content: center !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 1px !important;
+    width: min(78vw, 340px) !important;
+    max-height: 34vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    z-index: 4 !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair {
+    flex: 0 0 68px !important;
+    width: 68px !important;
+    height: 78px !important;
+    margin: 1px !important;
+    overflow: visible !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card {
+    width: 47px !important;
+    min-width: 47px !important;
+    max-width: 47px !important;
+    height: 69px !important;
+    min-height: 0 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px #0005 !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important;
+    top: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: 21px !important;
+    top: -5px !important;
+  }
+  #durakGame.durak-fullscreen #durakHand {
+    position: fixed !important;
+    left: 2px !important;
+    right: 2px !important;
+    bottom: 54px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    gap: 0 !important;
+    width: auto !important;
+    min-height: 76px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    z-index: 15 !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card {
+    flex: 0 1 48px !important;
+    width: 48px !important;
+    min-width: 0 !important;
+    max-width: 52px !important;
+    height: 71px !important;
+    margin-left: -5px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px #0005 !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.premium-card:first-child {
+    margin-left: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakHand .durak-card.selected {
+    transform: translateY(-7px) !important;
+  }
+  #durakGame.durak-fullscreen #durakBoard > h4 {
+    position: fixed !important;
+    left: 6px !important;
+    bottom: 126px !important;
+    margin: 0 !important;
+    color: rgba(255,255,255,.85) !important;
+    font-size: 10px !important;
+    z-index: 15 !important;
+  }
+  #durakGame.durak-fullscreen #durakControls {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: max(3px, env(safe-area-inset-bottom)) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding: 3px 4px !important;
+    background: rgba(230,235,238,.94) !important;
+    z-index: 25 !important;
+  }
+  #durakGame.durak-fullscreen #durakControls button {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    margin: 0 !important;
+    padding: 7px 3px !important;
+    border-radius: 5px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+  #durakGame.durak-fullscreen #durakTurnMessage {
+    font-size: 11px !important;
+    padding: 4px !important;
+    border-width: 1px !important;
+  }
+}
+
 </style>
 </head>
 <body>
