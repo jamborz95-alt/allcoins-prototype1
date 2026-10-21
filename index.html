@@ -3402,11 +3402,11 @@ if (game.trumpCard) {
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
-  // Колода остаётся на месте; сдвигаем только козырь вниз под её нижний край.
+  // Колода остаётся на месте; козырь поднимаем к середине колоды.
   trumpElement.style.left = "-2px";
-  trumpElement.style.top = "50px";
+  trumpElement.style.top = "-24px";
   trumpElement.style.setProperty("left", "-2px", "important");
-  trumpElement.style.setProperty("top", "50px", "important");
+  trumpElement.style.setProperty("top", "-24px", "important");
   trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
   trumpElement.style.transform = "rotate(90deg) translateX(-2px)";
