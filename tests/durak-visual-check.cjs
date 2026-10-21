@@ -176,6 +176,8 @@ const path = require("node:path");
     const diagnostics = await page.evaluate(() => {
       const deck = document.getElementById("durakTrump");
       const deckRect = deck?.getBoundingClientRect();
+      const trump = deck?.querySelector(".durak-trump-card");
+      const trumpRect = trump?.getBoundingClientRect();
       const deckBackCards = [...(deck?.querySelectorAll(".durak-deck-card-back") || [])];
       const deckBackStyles = deckBackCards.map(card => getComputedStyle(card));
       const cardRects = [...document.querySelectorAll('#durakTable .durak-card.table-card[data-table-card-type="attack"], #durakTable .durak-card.table-card[data-table-card-type="defense"]')].map(card => {
@@ -195,6 +197,7 @@ const path = require("node:path");
         tableAttackCardsAfterDrop: document.querySelectorAll('#durakTable .durak-card[data-table-card-type="attack"]').length,
         flyingCardsAfterDrop: document.querySelectorAll(".durak-flying-card").length,
         deckRect: deckRect ? {x:deckRect.x,y:deckRect.y,width:deckRect.width,height:deckRect.height} : null,
+        trumpRect: trumpRect ? {x:trumpRect.x,y:trumpRect.y,right:trumpRect.right,bottom:trumpRect.bottom,width:trumpRect.width,height:trumpRect.height} : null,
         deckOverlapsTableCards,
         deckBackCards: deckBackCards.length,
         deckBackHasPattern: deckBackCards.length >= 3 && deckBackStyles.every(style =>
@@ -248,6 +251,10 @@ const path = require("node:path");
         diagnostics.deckRect.y < diagnostics.viewport.height * 0.15 ||
         diagnostics.deckRect.y > diagnostics.viewport.height * 0.36) {
       throw new Error("Колода находится не в компактной левой зоне, как на видео");
+    }
+    if (!diagnostics.trumpRect || diagnostics.trumpRect.x >= 0 ||
+        diagnostics.trumpRect.right < 30 || diagnostics.trumpRect.width < 38) {
+      throw new Error("Козырь должен выглядывать из колоды у левого края экрана");
     }
     if (actionRequests !== 1) throw new Error("Ожидался ровно один запрос хода, получено: " + actionRequests);
     if (errors.length) {
