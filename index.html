@@ -1834,6 +1834,81 @@
   opacity: .72 !important;
 }
 
+
+  /* Колода как в референсе: компактная стопка в верхней центральной зоне поля */
+  #durakGame.durak-fullscreen .durak-table {
+    position: relative !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump {
+    position: absolute !important;
+    left: 50% !important;
+    top: 5px !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+    display: block !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    height: 84px !important;
+    min-height: 84px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    z-index: 12 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:first-child {
+    display: none !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) {
+    position: relative !important;
+    display: block !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    height: 84px !important;
+    margin: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:first-child,
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:nth-child(2) {
+    width: 43px !important;
+    min-width: 43px !important;
+    height: 63px !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:first-child {
+    left: 0 !important;
+    top: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:nth-child(2) {
+    left: 3px !important;
+    top: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > .premium-card {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 65px !important;
+    left: 31px !important;
+    top: 1px !important;
+    transform: rotate(90deg) !important;
+    transform-origin: center center !important;
+    border-radius: 4px !important;
+    z-index: 4 !important;
+  }
+  #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:last-child {
+    top: 66px !important;
+    left: 0 !important;
+    width: 100px !important;
+    font-size: 10px !important;
+    line-height: 12px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+
 </style>
 </head>
 <body>
