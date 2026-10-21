@@ -1898,16 +1898,21 @@
     left: 3px !important;
     top: 0 !important;
   }
+  /* Козырь должен выглядывать ИЗ-ПОД нижнего края колоды.
+     Позиционируем относительно стопки, не относительно всего поля. */
   #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > .durak-trump-card {
+    position: absolute !important;
     width: 44px !important;
     min-width: 44px !important;
+    max-width: 44px !important;
     height: 65px !important;
-    left: 8px !important;
-    top: 34px !important;
+    left: 2px !important;
+    top: 28px !important;
     transform: rotate(90deg) !important;
     transform-origin: center center !important;
     border-radius: 4px !important;
-    z-index: 1 !important;
+    z-index: 0 !important;
+    margin: 0 !important;
   }
   #durakGame.durak-fullscreen #durakTrump > div:nth-child(2) > div:last-child {
     top: 145px !important;
@@ -3334,18 +3339,19 @@ if (game.trumpCard) {
   trumpElement.classList.add("durak-trump-card");
 
   trumpElement.style.flex = "none";
-  trumpElement.style.width = "58px";
-  trumpElement.style.height = "86px";
-  trumpElement.style.minWidth = "58px";
+  trumpElement.style.width = "44px";
+  trumpElement.style.height = "65px";
+  trumpElement.style.minWidth = "44px";
+  trumpElement.style.maxWidth = "44px";
   trumpElement.style.transform = "rotate(90deg)";
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
-  trumpElement.style.left = "8px";
-  trumpElement.style.top = "34px";
-  trumpElement.style.setProperty("left", "8px", "important");
-  trumpElement.style.setProperty("top", "34px", "important");
-  trumpElement.style.zIndex = "1";
+  trumpElement.style.left = "2px";
+  trumpElement.style.top = "28px";
+  trumpElement.style.setProperty("left", "2px", "important");
+  trumpElement.style.setProperty("top", "28px", "important");
+  trumpElement.style.zIndex = "0";
   trumpElement.style.margin = "0";
 
   deckStack.appendChild(trumpElement);
