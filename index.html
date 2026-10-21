@@ -2300,9 +2300,9 @@
     border: 1px solid #edf1e4 !important;
     border-radius: 3px !important;
     background:
-      repeating-linear-gradient(45deg, transparent 0 3px, rgba(75,139,99,.9) 3px 4px, transparent 4px 7px),
-      repeating-linear-gradient(-45deg, transparent 0 3px, rgba(75,139,99,.88) 3px 4px, transparent 4px 7px),
-      #f3f5e9 !important;
+      repeating-linear-gradient(45deg, transparent 0 1.2px, rgba(72,139,100,.92) 1.2px 1.65px, transparent 1.65px 2.8px),
+      repeating-linear-gradient(-45deg, transparent 0 1.2px, rgba(194,112,123,.78) 1.2px 1.65px, transparent 1.65px 2.8px),
+      #f4f3e8 !important;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.84), 0 1px 2px rgba(0,0,0,.28) !important;
     box-sizing: border-box !important;
   }
@@ -3722,7 +3722,7 @@ deckBox.style.cssText = `
 
 // Рубашка колоды по видео: светлая тканая основа с зелёной диагональной клеткой.
 // Та же рубашка используется для карт на руках соперников; центральный медальон не нужен.
-const deckBackPattern = "repeating-linear-gradient(45deg, transparent 0 3px, rgba(75,139,99,.9) 3px 4px, transparent 4px 7px), repeating-linear-gradient(-45deg, transparent 0 3px, rgba(75,139,99,.88) 3px 4px, transparent 4px 7px), #f3f5e9";
+const deckBackPattern = "repeating-linear-gradient(45deg, transparent 0 1.2px, rgba(72,139,100,.92) 1.2px 1.65px, transparent 1.65px 2.8px), repeating-linear-gradient(-45deg, transparent 0 1.2px, rgba(194,112,123,.78) 1.2px 1.65px, transparent 1.65px 2.8px), #f4f3e8";
 const makeDeckBack = (left, top, zIndex) => {
   const cardBack = document.createElement("div");
   cardBack.className = "durak-deck-card-back";
@@ -3819,8 +3819,9 @@ deckCount.style.setProperty("left", "0", "important");
 deckCount.style.setProperty("top", "-16px", "important");
 deckCount.style.setProperty("width", "42px", "important");
 deckCount.style.setProperty("padding", "0", "important");
-deckCount.style.setProperty("font-size", "10px", "important");
-deckCount.style.setProperty("line-height", "12px", "important");
+deckCount.style.setProperty("font-size", "13px", "important");
+deckCount.style.setProperty("line-height", "14px", "important");
+deckCount.style.setProperty("text-align", "left", "important");
 deckCount.style.setProperty("color", "#f4f5ef", "important");
 deckCount.style.setProperty("background", "transparent", "important");
 deckCount.style.setProperty("border", "0", "important");
