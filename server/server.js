@@ -362,17 +362,16 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
       });
     }
 
+    // Гарантируем наличие профиля в базе: при первом входе/гонке авторизации
+    // создаём запись, не заставляя пользователя повторно открывать приложение.
     const result = await pool.query(
-      `SELECT balance FROM players WHERE telegram_id = $1`,
+      `INSERT INTO players (telegram_id)
+       VALUES ($1)
+       ON CONFLICT (telegram_id) DO UPDATE
+         SET updated_at = NOW()
+       RETURNING balance`,
       [String(user.id)]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        ok: false,
-        error: "Игрок не найден. Сначала войдите через Telegram."
-      });
-    }
 
     if (Number(result.rows[0].balance) < stake) {
       return res.status(400).json({
