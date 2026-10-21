@@ -1564,6 +1564,15 @@ if (hasUnbeatenCards) {
         });
       }
 
+      // Если все карты уже побиты, защищающийся не может задним числом взять их.
+      // В этой ситуации атакующий должен завершить раунд кнопкой «Бито».
+      if (game.table.every(item => item.attack && item.defense)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Все карты уже побиты. Атакующий должен нажать «Бито»."
+        });
+      }
+
       for (const item of game.table) {
         if (item.attack) player.hand.push(item.attack);
         if (item.defense) player.hand.push(item.defense);
