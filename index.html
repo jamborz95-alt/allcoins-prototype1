@@ -3422,6 +3422,11 @@ function animateDurakCardToTarget(cardElement, targetElement) {
   const targetRect = targetElement.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
   const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
+  // Резкий бросок получает более короткий, собранный полёт; плавное движение —
+  // мягкую длинную посадку. Скорость измеряется в момент отпускания пальца.
+  const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
+  const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
+  const flightDuration = Math.round(500 - throwPower * 220);
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -3453,8 +3458,12 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     flyer.addEventListener("transitionend", onEnd);
     flyer.style.transformOrigin = "center center";
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform 500ms cubic-bezier(.16,.88,.24,1)";
-      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(.96)`;
+      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(" +
+        (throwPower > 0.35 ? ".12,.78,.18,1" : ".16,.88,.24,1") + ")";
+      // При броске карта чуть сильнее наклоняется в полёте и ровно
+      // садится поверх атакующей карты; направление наклона зависит от броска.
+      const throwTilt = Math.max(-7, Math.min(7, Number(flyer.dataset.throwTilt) || 0)) * throwPower;
+      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation + throwTilt}deg) scale(.96)`;
     });
     window.setTimeout(finish, 600);
   });
@@ -3990,6 +3999,11 @@ if (Array.isArray(game.hand)) {
       let latestDragX = startX;
       let latestDragY = startY;
       let latestDragTilt = 0;
+      let lastMoveX = startX;
+      let lastMoveY = startY;
+      let lastMoveAt = performance.now();
+      let releaseSpeed = 0;
+      let releaseTilt = 0;
 
       const moveCard = (moveEvent) => {
         if (moveEvent.pointerId !== pointerId) return;
@@ -4066,6 +4080,17 @@ if (Array.isArray(game.hand)) {
           moveEvent.preventDefault();
           // Сохраняем самые свежие координаты, а стили меняем один раз за кадр.
           // Это уменьшает рывки на Android WebView при частых pointermove.
+          const moveAt = performance.now();
+          const elapsed = Math.max(1, moveAt - lastMoveAt);
+          const stepX = moveEvent.clientX - lastMoveX;
+          const stepY = moveEvent.clientY - lastMoveY;
+          // px/ms, с фильтром от случайного единичного скачка координат.
+          const instantSpeed = Math.hypot(stepX, stepY) / elapsed;
+          releaseSpeed = releaseSpeed * 0.35 + Math.min(3, instantSpeed) * 0.65;
+          releaseTilt = Math.max(-7, Math.min(7, stepX * 0.22));
+          lastMoveX = moveEvent.clientX;
+          lastMoveY = moveEvent.clientY;
+          lastMoveAt = moveAt;
           latestDragX = moveEvent.clientX;
           latestDragY = moveEvent.clientY;
           latestDragTilt = Math.max(-5, Math.min(5, dx * 0.055));
@@ -4189,6 +4214,10 @@ if (Array.isArray(game.hand)) {
           // Передаём карту в игровую анимацию ровно из точки отпускания пальца.
           flyer.style.left = (upEvent.clientX - offsetX) + "px";
           flyer.style.top = (upEvent.clientY - offsetY) + "px";
+          // Передаём скорость броска анимации посадки: резкий жест даёт
+          // короткий уверенный полёт, а не одинаковое медленное скольжение.
+          flyer.dataset.throwSpeed = String(releaseSpeed);
+          flyer.dataset.throwTilt = String(releaseTilt);
           flyer.style.transform = "rotate(0deg) scale(1.045)";
           durakPendingDragFlyer = flyer;
         }
