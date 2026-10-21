@@ -2550,7 +2550,15 @@ let durakGameNotReadyRetries = 0;
 let durakGameReloadRoomId = null;
 
 async function loadDurakGame(roomId) {
-  if (durakGameLoadInProgress) return;
+  // Не теряем запрос обновления, если в этот момент уже идёт опрос сервера.
+  // Это важно при старте партии и после хода: следующий запрос выполнится сразу после текущего.
+  if (durakGameLoadInProgress) {
+    if (roomId && roomId === currentDurakRoomId) {
+      durakGameReloadRequested = true;
+      durakGameReloadRoomId = roomId;
+    }
+    return;
+  }
   if (!roomId) {
     showStatus("durakGameStatus", "Не выбрана комната. Вернись к списку и открой комнату снова.");
     return;
