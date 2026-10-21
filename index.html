@@ -3431,17 +3431,17 @@ function playDurakSound(kind = "card") {
   if (!durakSoundEnabled) return;
   const now = performance.now();
   if (kind === "card" && now - durakSoundLastAt < 55) return;
-  durakSoundLastAt = now;
 
   const ctx = ensureDurakAudio();
   if (!ctx) return;
   if (ctx.state !== "running") {
-    // Если WebView ещё не разблокировал звук, попробуем возобновить контекст.
+    // Не отмечаем звук как проигранный: после разблокировки нужно воспроизвести его.
     unlockDurakAudio().then(unlocked => {
       if (unlocked && durakSoundEnabled) playDurakSound(kind);
     });
     return;
   }
+  durakSoundLastAt = now;
 
   const presets = {
     card: { f: 420, end: 220, duration: .078, volume: .045, wave: "triangle", noise: .18, noiseFreq: 2300, filter: "highpass" },
