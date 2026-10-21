@@ -3016,6 +3016,8 @@ async function durakAction(action, requestedCardIds = null) {
       durakPendingDragFlyer.remove();
       durakPendingDragFlyer = null;
     }
+    // Если сервер отклонил ход или соединение оборвалось, убрать летающие копии.
+    document.querySelectorAll(".durak-flying-card").forEach((element) => element.remove());
     document.querySelectorAll("#durakHand .durak-card").forEach((element) => {
       element.style.opacity = "";
       element.style.transition = "";
@@ -3084,10 +3086,14 @@ function copyDurakComputedStyles(source, target) {
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 const DURAK_CARD_ASSETS = [
   "ace-spades.png",
+  "ace-hearts.png",
   "king-spades-2.png",
+  "king-hearts.png",
   "queen-hearts.png",
+  "queen-spades.png",
   "jack-diamonds.png",
-  "jack-hearts.png"
+  "jack-hearts.png",
+  "jack-spades.png"
 ];
 const durakCardAssetsReady = Promise.all(
   DURAK_CARD_ASSETS.map(filename => new Promise(resolve => {
@@ -3317,7 +3323,9 @@ function animateDurakCardToTarget(cardElement, targetElement) {
       if (done) return;
       done = true;
       flyer.removeEventListener("transitionend", onEnd);
-      flyer.remove();
+      // Не удаляем визуальную карту по таймеру: сервер может ответить позже
+      // анимации. Оставляем её до loadDurakGame(), который удаляет flyer
+      // непосредственно перед отрисовкой подтверждённой карты на столе.
       resolve();
     };
     const onEnd = (event) => {
