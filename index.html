@@ -3184,6 +3184,8 @@ async function durakAction(action, requestedCardIds = null) {
       button.disabled = false;
       button.removeAttribute("aria-busy");
     });
+    // Показываем подтверждённый сервером стол после завершения полёта карты.
+    flushDurakGameReloadIfIdle();
   }
 }
   // Кнопка «Беру»
@@ -4024,11 +4026,42 @@ let durakGameReloadRequested = false;
 let durakGameNotReadyRetries = 0;
 let durakGameReloadRoomId = null;
 
+// Отложенное обновление не должно перерисовывать стол поверх движения карты.
+function flushDurakGameReloadIfIdle() {
+  if (!durakGameReloadRequested || durakGameLoadInProgress ||
+      durakCardDragging || durakActionInProgress) return;
+
+  const reloadRoomId = durakGameReloadRoomId || currentDurakRoomId;
+  if (!reloadRoomId || String(reloadRoomId) !== String(currentDurakRoomId)) {
+    durakGameReloadRequested = false;
+    durakGameReloadRoomId = null;
+    return;
+  }
+
+  durakGameReloadRequested = false;
+  durakGameReloadRoomId = null;
+  window.setTimeout(() => {
+    if (String(reloadRoomId) !== String(currentDurakRoomId)) return;
+    if (durakCardDragging || durakActionInProgress || durakGameLoadInProgress) {
+      durakGameReloadRequested = true;
+      durakGameReloadRoomId = reloadRoomId;
+      return;
+    }
+    loadDurakGame(reloadRoomId);
+  }, 70);
+}
+
 async function loadDurakGame(roomId) {
-  // Не теряем запрос обновления, если в этот момент уже идёт опрос сервера.
-  // Это важно при старте партии и после хода: следующий запрос выполнится сразу после текущего.
+  // Не запускаем новое обновление во время перетаскивания или исполнения хода.
+  if ((durakCardDragging || durakActionInProgress) &&
+      String(roomId) === String(currentDurakRoomId)) {
+    durakGameReloadRequested = true;
+    durakGameReloadRoomId = roomId;
+    return;
+  }
+  // Не теряем запрос обновления, если уже идёт запрос к серверу.
   if (durakGameLoadInProgress) {
-    if (roomId && roomId === currentDurakRoomId) {
+    if (roomId && String(roomId) === String(currentDurakRoomId)) {
       durakGameReloadRequested = true;
       durakGameReloadRoomId = roomId;
     }
@@ -4056,6 +4089,15 @@ async function loadDurakGame(roomId) {
         "durakGameStatus",
         (game.error || "Не удалось обновить партию.") + " Проверь подключение и попробуй обновить игру."
       );
+      return;
+    }
+
+    // Опрос мог начаться до броска карты и вернуться посреди анимации.
+    // В таком случае не трогаем DOM, а откладываем перерисовку до конца хода.
+    if (String(roomId) !== String(currentDurakRoomId)) return;
+    if (durakCardDragging || durakActionInProgress) {
+      durakGameReloadRequested = true;
+      durakGameReloadRoomId = roomId;
       return;
     }
 
@@ -4677,6 +4719,7 @@ if (Array.isArray(game.hand)) {
         cardElement.style.transition = "";
         cardElement.style.transform = "";
         if (flyer) flyer.remove();
+        flushDurakGameReloadIfIdle();
       };
 
       const releaseCard = async (upEvent) => {
@@ -4698,6 +4741,7 @@ if (Array.isArray(game.hand)) {
           cardElement.style.opacity = "";
           cardElement.style.transition = "";
           if (flyer) flyer.remove();
+          flushDurakGameReloadIfIdle();
           return;
         }
         cardElement.dataset.dragged = "true";
@@ -4944,14 +4988,7 @@ if (Array.isArray(game.hand)) {
     }
   } finally {
     durakGameLoadInProgress = false;
-    if (durakGameReloadRequested) {
-      const reloadRoomId = durakGameReloadRoomId;
-      durakGameReloadRequested = false;
-      durakGameReloadRoomId = null;
-      if (reloadRoomId && reloadRoomId === currentDurakRoomId) {
-        window.setTimeout(() => loadDurakGame(reloadRoomId), 0);
-      }
-    }
+    flushDurakGameReloadIfIdle();
   }
 }
 // Автоматически обновляем состояние Дурака каждые 2 секунды
