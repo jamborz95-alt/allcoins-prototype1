@@ -2621,6 +2621,38 @@
 }
 /* Бумажный звук должен хорошо различаться на телефоне, не только в тихой комнате. */
 
+
+/* FIX: inline display:none must win over the fullscreen layout rule.
+   This keeps the board and sound control hidden in the room lobby. */
+#durakGame #durakBoard[style*="display:none"],
+#durakGame #durakBoard[style*="display: none"] {
+  display: none !important;
+}
+/* Sound stays in a quiet corner and never sits below the lobby's Start button. */
+#durakGame #durakBoard > div:first-child { padding-right: 0 !important; }
+#durakGame #durakGameStatus {
+  width: calc(100% - 104px) !important;
+  max-width: calc(100% - 104px) !important;
+}
+#durakGame #durakSoundToggle {
+  position: fixed !important;
+  top: max(8px, env(safe-area-inset-top)) !important;
+  right: 10px !important;
+  z-index: 2147483000 !important;
+  min-height: 30px !important;
+  padding: 5px 10px !important;
+  border: 1px solid rgba(245, 216, 143, .58) !important;
+  border-radius: 999px !important;
+  color: #fff8df !important;
+  background: linear-gradient(135deg, rgba(32, 59, 77, .94), rgba(13, 36, 54, .88)) !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: .1px !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .18) !important;
+}
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
@@ -3869,44 +3901,44 @@ function playDurakSound(kind = "card") {
 
   if (kind === "shuffle") {
     // Короткий веер/перебор колоды: несколько неровных бумажных скольжений.
-    noiseBurst(0, .19, .055, "bandpass", 1450, .45, .018);
-    noiseBurst(.075, .22, .045, "highpass", 2850, .3, .014);
-    noiseBurst(.17, .18, .038, "bandpass", 1850, .55, .012);
-    noiseBurst(.29, .16, .032, "highpass", 3200, .35, .008);
-    softThump(.39, .09, .012, 105, 64);
+    noiseBurst(0, .16, .036, "bandpass", 1450, .45, .018);
+    noiseBurst(.075, .17, .029, "highpass", 2850, .3, .014);
+    noiseBurst(.17, .15, .025, "bandpass", 1850, .55, .012);
+    noiseBurst(.29, .13, .022, "highpass", 3200, .35, .008);
+    softThump(.34, .08, .008, 105, 64);
     return;
   }
 
   if (kind === "slide") {
     // Карта скользит по столу: шорох с небольшим затуханием.
-    noiseBurst(0, .12, .052, "bandpass", 1900, .5, .012);
-    noiseBurst(.035, .09, .022, "highpass", 3500, .35, .004);
+    noiseBurst(0, .12, .034, "bandpass", 1750, .5, .012);
+    noiseBurst(.035, .075, .013, "highpass", 3100, .35, .004);
     return;
   }
 
   if (kind === "deal") {
     // При раздаче — короткий сухой щелчок и шорох картона.
-    noiseBurst(0, .105, .040, "bandpass", 2050, .65, .002);
-    noiseBurst(.009, .055, .024, "highpass", 4200, .4, .0015);
-    softThump(0, .055, .010, 135, 78);
+    noiseBurst(0, .10, .032, "bandpass", 1850, .65, .003);
+    noiseBurst(.009, .05, .014, "highpass", 3600, .4, .002);
+    softThump(0, .052, .007, 128, 78);
     return;
   }
 
   if (kind === "beat" || kind === "take") {
     // «Бито» звучит плотнее; «Беру» — чуть более протяжный сдвиг нескольких карт.
     const isTake = kind === "take";
-    noiseBurst(0, isTake ? .20 : .095, isTake ? .048 : .060, "bandpass", isTake ? 1250 : 1550, .55, .004);
-    noiseBurst(.018, isTake ? .14 : .045, isTake ? .030 : .042, "highpass", 3100, .35, .002);
-    noiseBurst(isTake ? .075 : .012, isTake ? .19 : .060, isTake ? .036 : .025, "lowpass", isTake ? 750 : 980, .65, .004);
-    softThump(0, isTake ? .11 : .065, isTake ? .016 : .022, isTake ? 115 : 145, isTake ? 62 : 72);
+    noiseBurst(0, isTake ? .18 : .085, isTake ? .036 : .044, "bandpass", isTake ? 1150 : 1450, .55, .005);
+    noiseBurst(.018, isTake ? .12 : .042, isTake ? .020 : .027, "highpass", 2850, .35, .002);
+    noiseBurst(isTake ? .075 : .012, isTake ? .16 : .055, isTake ? .024 : .018, "lowpass", isTake ? 700 : 900, .65, .004);
+    softThump(0, isTake ? .10 : .060, isTake ? .012 : .016, isTake ? 108 : 138, isTake ? 62 : 72);
     return;
   }
 
   // Бросок/защита: шелест движения, отчётливый контакт края карты и мягкий столовый щелчок.
-  noiseBurst(0, .105, .052, "bandpass", 2200, .7, .002);
-  noiseBurst(.008, .060, .035, "highpass", 4100, .45, .001);
-  noiseBurst(.012, .075, .020, "lowpass", 850, .8, .003);
-  softThump(.004, .065, .019, 155, 76);
+  noiseBurst(0, .10, .036, "bandpass", 1900, .7, .003);
+  noiseBurst(.008, .055, .019, "highpass", 3600, .45, .0015);
+  noiseBurst(.012, .070, .013, "lowpass", 780, .8, .003);
+  softThump(.004, .060, .013, 145, 76);
 }
 function updateDurakSoundButton(button) {
   if (!button) return;
@@ -4215,7 +4247,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         "backface-visibility:hidden"
       ].join(";");
       // Не накладываем узор рубашки колоды на летящую лицевую карту со стола.
-      if (isTableTransfer && item.source?.visual) {
+      if (isTableTransfer && item.source?.visual && item.faceUp !== false) {
         flyer.style.background = item.source.visual.background || "#fffdf8";
         flyer.style.border = item.source.visual.border || "1px solid #d5d1c8";
         flyer.style.borderRadius = item.source.visual.borderRadius || "7px";
