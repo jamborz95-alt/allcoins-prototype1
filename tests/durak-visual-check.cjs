@@ -200,8 +200,8 @@ const path = require("node:path");
         total: settled.length,
         loaded: settled.filter(item => item.loaded).length,
         missing: settled.filter(item => !item.loaded),
-        pngFaces: settled.filter(item => item.loaded && String(item.src).endsWith(".png")).length,
-        svgFaces: settled.filter(item => item.loaded && String(item.src).endsWith(".svg")).length
+        pngFaces: settled.filter(item => item.loaded && String(item.src).split("?")[0].endsWith(".png")).length,
+        svgFaces: settled.filter(item => item.loaded && String(item.src).split("?")[0].endsWith(".svg")).length
       };
     });
     fs.writeFileSync(path.join(out, "full-deck-asset-report.json"), JSON.stringify(fullDeckAssetReport, null, 2));
