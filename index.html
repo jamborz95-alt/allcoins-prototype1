@@ -4060,16 +4060,20 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           : isOpponentDraw
             ? 420
             : 385;
-      // При взятии противником видимая лицевая карта уменьшается до рубашки
-      // в его руке; при обычной раздаче сопернику рубашка летит полным размером.
+      // Полётная копия сохраняет исходный размер и оформление карты.
+      const sourceWidth = Math.max(1, Number(item?.source?.width) || targetRect.width);
+      const sourceHeight = Math.max(1, Number(item?.source?.height) || targetRect.height);
+      const tableEndScale = isTableTransfer
+        ? Math.min(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
+        : 1;
       const startScale = isTableTransfer
-        ? (item.faceUp ? 1.04 : 1.45)
+        ? 1.02
         : isOpponentDraw ? 0.98 : 0.64;
       const middleScale = isTableTransfer
-        ? (item.faceUp ? 1.03 : 1.28)
+        ? (item.faceUp ? Math.max(tableEndScale, 0.88) : Math.max(tableEndScale * 1.65, 0.55))
         : isOpponentDraw ? 1.03 : 0.77;
       const lateScale = isTableTransfer
-        ? (item.faceUp ? 1.01 : 1.10)
+        ? (item.faceUp ? tableEndScale * 1.05 : tableEndScale * 1.25)
         : isOpponentDraw ? 1 : 0.93;
       const flyer = isTableTransfer
         ? item.source.element.cloneNode(true)
@@ -4079,12 +4083,14 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       flyer.setAttribute("aria-hidden", "true");
       const cardSourceX = Number.isFinite(item?.source?.x) ? item.source.x : sourceCenterX;
       const cardSourceY = Number.isFinite(item?.source?.y) ? item.source.y : sourceCenterY;
+      const flyerWidth = isTableTransfer ? sourceWidth : targetRect.width;
+      const flyerHeight = isTableTransfer ? sourceHeight : targetRect.height;
       flyer.style.cssText = [
         "position:fixed",
-        "left:" + (cardSourceX - targetRect.width / 2) + "px",
-        "top:" + (cardSourceY - targetRect.height / 2) + "px",
-        "width:" + targetRect.width + "px",
-        "height:" + targetRect.height + "px",
+        "left:" + (cardSourceX - flyerWidth / 2) + "px",
+        "top:" + (cardSourceY - flyerHeight / 2) + "px",
+        "width:" + flyerWidth + "px",
+        "height:" + flyerHeight + "px",
         "min-width:0",
         "min-height:0",
         "max-width:none",
@@ -4104,6 +4110,14 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         "will-change:transform",
         "backface-visibility:hidden"
       ].join(";");
+      // Не накладываем узор рубашки колоды на летящую лицевую карту со стола.
+      if (isTableTransfer && item.source?.visual) {
+        flyer.style.background = item.source.visual.background || "#fffdf8";
+        flyer.style.border = item.source.visual.border || "1px solid #d5d1c8";
+        flyer.style.borderRadius = item.source.visual.borderRadius || "7px";
+        flyer.style.boxShadow = item.source.visual.boxShadow || "0 4px 7px rgba(0,0,0,.3)";
+        flyer.style.color = item.source.visual.color || "#e5c46b";
+      }
 
       const flyerImage = flyer.querySelector("img");
       if (flyerImage) Object.assign(flyerImage.style, {
@@ -4146,7 +4160,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           { offset: 0, transform: "translate3d(0,0,0) rotate(-8deg) scale(" + startScale + ")" },
           { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(" + middleScale + ")" },
           { offset: 0.70, transform: "translate3d(" + (dx * 0.70) + "px," + (dy * 0.70 - arcHeight * 0.52) + "px,0) rotate(2deg) scale(" + lateScale + ")" },
-          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(1)" }
+          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(" + (isTableTransfer ? tableEndScale : 1) + ")" }
         ], { duration: flightDuration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         revealTimer = window.setTimeout(() => {
           if (!target.isConnected) {
@@ -4496,14 +4510,56 @@ async function loadDurakGame(roomId) {
     // Сохраняем экранные позиции карт до обновления стола. Если после «Беру»
     // карта оказалась в руке, она перелетит со стола, а не из колоды.
     const previousTableCardOrigins = new Map();
+    // Сохраняем оформление дочерних элементов: scoped CSS иначе теряется за пределами #durakGame.
+    const durakFlightVisualProperties = [
+      "position", "display", "box-sizing", "overflow",
+      "top", "right", "bottom", "left",
+      "width", "height", "min-width", "min-height", "max-width", "max-height",
+      "margin", "padding", "font-family", "font-size", "font-weight", "font-style",
+      "line-height", "letter-spacing", "text-align", "color", "text-shadow",
+      "white-space", "vertical-align", "background", "background-color",
+      "background-image", "background-size", "background-position", "background-repeat",
+      "border", "border-width", "border-style", "border-color", "border-radius",
+      "box-shadow", "transform", "transform-origin", "z-index", "opacity",
+      "pointer-events", "object-fit", "object-position", "align-items", "justify-content"
+    ];
+    const cloneDurakFlightCard = element => {
+      const clone = element.cloneNode(true);
+      const sourceNodes = [element, ...element.querySelectorAll("*")];
+      const cloneNodes = [clone, ...clone.querySelectorAll("*")];
+      sourceNodes.forEach((sourceNode, index) => {
+        const copyNode = cloneNodes[index];
+        if (!copyNode) return;
+        const computed = window.getComputedStyle(sourceNode);
+        durakFlightVisualProperties.forEach(property => {
+          const value = computed.getPropertyValue(property);
+          if (value) copyNode.style.setProperty(property, value);
+        });
+      });
+      const rootStyle = window.getComputedStyle(element);
+      return {
+        element: clone,
+        visual: {
+          background: rootStyle.background,
+          border: rootStyle.border,
+          borderRadius: rootStyle.borderRadius,
+          boxShadow: rootStyle.boxShadow,
+          color: rootStyle.color
+        }
+      };
+    };
     document.querySelectorAll("#durakGame #durakTable .durak-card.table-card").forEach(element => {
       const cardId = String(element.dataset.cardId || "");
       const rect = element.getBoundingClientRect();
       if (cardId && rect.width > 0 && rect.height > 0) {
+        const frozenCard = cloneDurakFlightCard(element);
         previousTableCardOrigins.set(cardId, {
           x: rect.left + rect.width / 2,
           y: rect.top + rect.height / 2,
-          element: element.cloneNode(true)
+          width: rect.width,
+          height: rect.height,
+          element: frozenCard.element,
+          visual: frozenCard.visual
         });
       }
     });
