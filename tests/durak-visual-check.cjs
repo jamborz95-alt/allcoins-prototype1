@@ -149,38 +149,30 @@ const path = require("node:path");
         return groups;
       }, []);
       const presentSuits = [...new Set(cards.map(card => normalizeSuit(card.suit)))];
-      const expectedGroupSequence = presentSuits.includes(trump) ? [trump].concat(
-        suitOrder.filter(suit => presentSuits.includes(suit) && suit !== trump)
-      ) : suitOrder.filter(suit => presentSuits.includes(suit));
+      const expectedGroupSequence = suitOrder.filter(suit =>
+        presentSuits.includes(suit) && suit !== trump
+      ).concat(presentSuits.includes(trump) ? [trump] : []);
       const suitGroupsTogetherAndOrdered =
         groupSequence.length === presentSuits.length &&
         groupSequence.every((suit, index) => suit === expectedGroupSequence[index]);
-      const ranksDescWithinSuit = cards.every((card, index) => {
+      const ranksAscWithinSuit = cards.every((card, index) => {
         if (index === 0) return true;
         const previous = cards[index - 1];
         return normalizeSuit(previous.suit) !== normalizeSuit(card.suit) ||
-          rankWeight(previous.rank) >= rankWeight(card.rank);
+          rankWeight(previous.rank) <= rankWeight(card.rank);
       });
       return {
         cards,
         firstTrumpIndex,
-        trumpsOnLeft: firstTrumpIndex === 0 &&
-          cards.slice(0, cards.findIndex(card => normalizeSuit(card.suit) !== trump) < 0
-            ? cards.length
-            : cards.findIndex(card => normalizeSuit(card.suit) !== trump))
-            .every(card => normalizeSuit(card.suit) === trump) &&
-          cards.slice(cards.findIndex(card => normalizeSuit(card.suit) !== trump) < 0
-            ? cards.length
-            : cards.findIndex(card => normalizeSuit(card.suit) !== trump))
-            .every(card => normalizeSuit(card.suit) !== trump),
+        trumpsOnRight: !presentSuits.includes(trump) || groupSequence[groupSequence.length - 1] === trump,
         suitGroupsTogetherAndOrdered,
-        ranksDescWithinSuit,
+        ranksAscWithinSuit,
         logoContent
       };
     });
     fs.writeFileSync(path.join(out, "hand-order-and-logo.json"), JSON.stringify(handDisplay, null, 2));
-    if (!handDisplay.trumpsOnLeft || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksDescWithinSuit) {
-      throw new Error("Козыри должны идти первой группой слева, затем масти группами от старшей к младшей: " + JSON.stringify(handDisplay));
+    if (!handDisplay.trumpsOnRight || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksAscWithinSuit) {
+      throw new Error("Козыри должны быть справа, а внутри каждой масти карты должны идти слева направо от младшей к старшей: " + JSON.stringify(handDisplay));
     }
     if (!String(handDisplay.logoContent).includes("ALLCOINS")) {
       throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
