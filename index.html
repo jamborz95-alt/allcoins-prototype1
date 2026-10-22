@@ -4213,6 +4213,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         ? item.source.element.cloneNode(true)
         : document.createElement("span");
       flyer.classList.add("durak-deal-flyer");
+      flyer.dataset.dealSource = isTableTransfer ? "table" : isDeckDraw ? "deck" : isOpponentDraw ? "opponent" : "other";
       flyer.classList.remove("table-card", "durak-landing-target");
       flyer.setAttribute("aria-hidden", "true");
 
