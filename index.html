@@ -2806,6 +2806,34 @@
   transform: translateY(1px) scale(.99) !important; filter: brightness(1.08) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.28) !important;
 }
+
+/* ALLCOINS: cards on the table match the current size of cards in the hand (56×84). */
+#durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card {
+  flex: 0 0 56px !important;
+  width: 56px !important;
+  min-width: 56px !important;
+  max-width: 56px !important;
+  height: 84px !important;
+  min-height: 84px !important;
+  max-height: 84px !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+#durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card.image-card > img {
+  display: block !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  object-position: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
@@ -5371,8 +5399,8 @@ pair.style.overflow = "visible";
 attackCard.style.left = "0";
 attackCard.style.top = "7px";
 attackCard.style.zIndex = "1";
-attackCard.style.width = "62px";
-attackCard.style.height = "92px";
+attackCard.style.width = "56px";
+attackCard.style.height = "84px";
 attackCard.style.boxSizing = "border-box";
 
       pair.appendChild(attackCard);
@@ -5391,8 +5419,8 @@ attackCard.style.boxSizing = "border-box";
 defenseCard.style.left = "22px";
 defenseCard.style.top = "0";
 defenseCard.style.zIndex = "2";
-defenseCard.style.width = "62px";
-defenseCard.style.height = "92px";
+defenseCard.style.width = "56px";
+defenseCard.style.height = "84px";
 defenseCard.style.boxSizing = "border-box";
 
       pair.appendChild(defenseCard);
