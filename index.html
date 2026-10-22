@@ -2511,8 +2511,8 @@
   box-sizing: border-box !important;
 }
 #durakGame #durakTable .durak-table-pair {
-  position: relative !important; display: block !important; flex: 0 0 88px !important;
-  width: 88px !important; height: 116px !important; margin: 1px 0 !important;
+  position: relative !important; display: block !important; flex: 0 0 136px !important;
+  width: 136px !important; height: 108px !important; margin: 1px 0 !important;
   overflow: visible !important;
 }
 #durakGame #durakTable .durak-table-pair .durak-card.table-card {
@@ -2521,11 +2521,12 @@
   height: 92px !important; min-height: 92px !important; padding: 0 !important;
   overflow: hidden !important; box-sizing: border-box !important;
 }
+/* Атака и защита лежат рядом: между картами остаётся небольшой зазор. */
 #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
-  left: 0 !important; top: 12px !important; z-index: 1 !important; transform: rotate(-5deg) !important;
+  left: 0 !important; top: 7px !important; z-index: 1 !important; transform: rotate(-1deg) !important;
 }
 #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
-  left: 27px !important; top: 0 !important; z-index: 2 !important; transform: rotate(5deg) !important;
+  left: 69px !important; top: 7px !important; z-index: 2 !important; transform: rotate(1deg) !important;
 }
 #durakGame .durak-table + h4 { display: none !important; }
 #durakGame #durakHand {
@@ -2573,13 +2574,18 @@
   text-wrap: balance !important;
 }
 @media (max-width: 380px) {
-  #durakGame #durakTable { padding: 0 41px !important; top: 19% !important; bottom: 30% !important; gap: 7px 0 !important; }
-  #durakGame #durakTable .durak-table-pair { flex-basis: 83px !important; width: 83px !important; height: 106px !important; }
+  #durakGame #durakTable { padding: 0 28px !important; top: 19% !important; bottom: 30% !important; gap: 7px 0 !important; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 124px !important; width: 124px !important; height: 100px !important; }
   #durakGame #durakTable .durak-table-pair .durak-card.table-card {
     width: 58px !important; min-width: 58px !important; max-width: 58px !important;
     height: 86px !important; min-height: 86px !important;
   }
-  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] { left: 24px !important; }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important; top: 7px !important; transform: rotate(-1deg) !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: 64px !important; top: 7px !important; transform: rotate(1deg) !important;
+  }
   #durakGame #durakControls #durakTake,
   #durakGame #durakControls #durakBeat { flex-basis: 38% !important; width: 38% !important; }
 }
@@ -4192,8 +4198,8 @@ function createDurakLandingTarget(action, sourceCard = null) {
     if (!attackCard || !pair) return null;
 
     target = makeTargetCard("defense");
-    target.style.left = "30px";
-    target.style.top = "-6px";
+    target.style.left = "69px";
+    target.style.top = "7px";
     pair.appendChild(target);
 
     return {
@@ -4210,10 +4216,10 @@ function createDurakLandingTarget(action, sourceCard = null) {
   holder.style.display = "inline-flex";
   holder.style.alignItems = "center";
   holder.style.justifyContent = "center";
-  holder.style.width = "100px";
-  holder.style.height = "125px";
-  holder.style.flex = "0 0 100px";
-  holder.style.margin = "4px";
+  holder.style.width = "136px";
+  holder.style.height = "108px";
+  holder.style.flex = "0 0 136px";
+  holder.style.margin = "1px 0";
   holder.style.overflow = "visible";
 
   target = makeTargetCard("attack");
@@ -4847,9 +4853,9 @@ pair.style.position = "relative";
 pair.style.display = "inline-flex";
 pair.style.alignItems = "center";
 pair.style.justifyContent = "center";
-    pair.style.width = "100px";
-pair.style.height = "125px";
-pair.style.flex = "0 0 100px";
+    pair.style.width = "136px";
+pair.style.height = "108px";
+pair.style.flex = "0 0 136px";
 pair.style.margin = "4px";
 pair.style.overflow = "visible";
 
@@ -4864,7 +4870,7 @@ pair.style.overflow = "visible";
       attackCard.style.opacity = "1";
       attackCard.style.position = "absolute";
 attackCard.style.left = "0";
-attackCard.style.top = "0";
+attackCard.style.top = "7px";
 attackCard.style.zIndex = "1";
 attackCard.style.width = "68px";
 attackCard.style.height = "100px";
@@ -4883,8 +4889,8 @@ attackCard.style.boxSizing = "border-box";
       defenseCard.style.visibility = "visible";
       defenseCard.style.opacity = "1";
       defenseCard.style.position = "absolute";
-defenseCard.style.left = "30px";
-defenseCard.style.top = "-6px";
+defenseCard.style.left = "69px";
+defenseCard.style.top = "7px";
 defenseCard.style.zIndex = "2";
 defenseCard.style.width = "68px";
 defenseCard.style.height = "100px";
