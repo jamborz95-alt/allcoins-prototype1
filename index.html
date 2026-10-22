@@ -3719,6 +3719,7 @@ const durakCardAssetsReady = Promise.all(
 function createDurakCardElement(card) {
   const rank = String(card.rank || "");
   const suit = String(card.suit || "");
+  const normalizedCardSuit = ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" })[suit] || suit;
   const cardElement = document.createElement("div");
   cardElement.className = "durak-card premium-card";
 if (["♥", "♡", "♦", "♢"].includes(suit)) {
@@ -3765,7 +3766,7 @@ const premiumCourtArtSources = {
   "К-♦": "king-hearts.png",
   "К-♣": "king-spades-2.png"
 };
-const premiumCourtArtName = premiumCourtArtSources[rank.toUpperCase() + "-" + normalizeDurakSuit(suit)];
+const premiumCourtArtName = premiumCourtArtSources[rank.toUpperCase() + "-" + normalizedCardSuit];
 if (premiumCourtArtName) {
   cardElement.classList.add("image-card", "premium-court-crop");
   Object.assign(cardElement.style, {
@@ -3813,7 +3814,7 @@ if (premiumCourtArtName) {
       position: "absolute", zIndex: "4", display: "flex",
       flexDirection: "column", alignItems: "center", justifyContent: "center",
       width: "19px", height: "28px", gap: "0",
-      color: ["♥","♦"].includes(normalizeDurakSuit(suit)) ? "#c32138" : "#172431",
+      color: ["♥","♦"].includes(normalizedCardSuit) ? "#c32138" : "#172431",
       fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: "900",
       lineHeight: "1", textShadow: "0 0 .3px currentColor", pointerEvents: "none"
     });
@@ -3830,7 +3831,7 @@ if (premiumCourtArtName) {
     cornerRank.style.setProperty("font-size", "13px", "important");
     cornerRank.style.setProperty("line-height", "14px", "important");
     const cornerSuit = document.createElement("span");
-    cornerSuit.textContent = normalizeDurakSuit(suit);
+    cornerSuit.textContent = normalizedCardSuit;
     cornerSuit.style.setProperty("font-size", "12px", "important");
     cornerSuit.style.setProperty("line-height", "13px", "important");
     corner.appendChild(cornerRank);
@@ -3842,13 +3843,13 @@ if (premiumCourtArtName) {
 
   const courtSuitBadge = document.createElement("span");
   courtSuitBadge.className = "premium-court-suit-badge";
-  courtSuitBadge.textContent = normalizeDurakSuit(suit);
+  courtSuitBadge.textContent = normalizedCardSuit;
   Object.assign(courtSuitBadge.style, {
     position: "absolute", left: "50%", bottom: "8%", transform: "translateX(-50%)",
     zIndex: "3", display: "grid", placeItems: "center", width: "18px", height: "18px",
     border: "1px solid #b9974c", borderRadius: "50%",
     background: "rgba(250,244,229,.96)",
-    color: ["♥","♦"].includes(normalizeDurakSuit(suit)) ? "#c32138" : "#172431",
+    color: ["♥","♦"].includes(normalizedCardSuit) ? "#c32138" : "#172431",
     fontFamily: "Georgia,serif", fontSize: "13px", fontWeight: "900",
     lineHeight: "1", boxSizing: "border-box", pointerEvents: "none"
   });
