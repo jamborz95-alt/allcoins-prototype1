@@ -5338,15 +5338,14 @@ const newlyDealtHandCards = [];
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
-  // Группируем карты по мастям слева направо, внутри масти — от старшей к младшей.
-  // Козыри всегда помещаем последней группой справа.
+  // Козыри идут первой группой слева; за ними каждая оставшаяся масть идёт подряд, от старшей карты к младшей.
   const handTrumpSuit = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
   const orderedHandCards = [...game.hand].sort((a, b) => {
     const aSuit = normalizeDurakSuit(a?.suit);
     const bSuit = normalizeDurakSuit(b?.suit);
     const aTrump = aSuit === handTrumpSuit ? 1 : 0;
     const bTrump = bSuit === handTrumpSuit ? 1 : 0;
-    return (aTrump - bTrump) ||
+    return (bTrump - aTrump) ||
       (durakHandSuitWeight(aSuit) - durakHandSuitWeight(bSuit)) ||
       (durakHandRankWeight(b?.rank) - durakHandRankWeight(a?.rank));
   });
