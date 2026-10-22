@@ -2674,48 +2674,37 @@
   pointer-events: none !important;
   user-select: none;
 }
-#durakGame #durakTable .durak-trump-suit-marker {
+/* Only the suit symbol remains, in the original trump card's slot by the deck. */
+#durakGame #durakTrump .durak-deck-stack .durak-trump-suit-marker {
   position: absolute !important;
-  left: 50% !important;
-  top: 6px !important;
-  transform: translateX(-50%) !important;
-  z-index: 8 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0 !important;
+  left: 17px !important;
+  top: 17px !important;
   width: 44px !important;
   min-width: 44px !important;
-  height: 47px !important;
-  min-height: 47px !important;
-  padding: 2px 0 !important;
-  box-sizing: border-box !important;
-  border: 1px solid rgba(230, 195, 93, .92) !important;
-  border-radius: 10px !important;
-  background: linear-gradient(160deg, rgba(11, 31, 43, .96), rgba(7, 17, 28, .96)) !important;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .26), inset 0 0 0 1px rgba(255,255,255,.05) !important;
+  height: 65px !important;
+  min-height: 65px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  z-index: 6 !important;
   pointer-events: none !important;
 }
-#durakGame #durakTable .durak-trump-suit-marker-symbol {
+#durakGame #durakTrump .durak-trump-suit-marker-symbol {
   display: block !important;
-  color: #f5f3ea !important;
-  font-size: 22px !important;
-  line-height: 25px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: 32px !important;
+  line-height: 1 !important;
   font-weight: 900 !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.65);
-}
-#durakGame #durakTable .durak-trump-suit-marker.red-trump-suit .durak-trump-suit-marker-symbol,
-#durakGame #durakTable .durak-trump-suit-marker.red-trump-suit .durak-trump-suit-marker-symbol {
-  color: #f1495d !important;
-}
-#durakGame #durakTable .durak-trump-suit-marker-label {
-  display: block !important;
-  color: #f5dfa0 !important;
-  font-size: 7px !important;
-  line-height: 9px !important;
-  font-weight: 850 !important;
-  letter-spacing: .06em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.55);
 }
 
 </style>
@@ -5172,27 +5161,83 @@ if (game.trumpCard) {
 
 $("durakTable").innerHTML = "";
 
-// Последний козырь уже ушёл игроку: оставляем на игровом поле знак его масти.
+// Когда последняя карта-«козырь» ушла с колоды, оставляем только символ масти
+// в исходной точке козырной карты — внутри стопки колоды, без надписи или подложки.
 const remainingDeckCountForTrump = Math.max(0, Number(game.cardsLeft ?? 0));
 const activeTrumpSuitForMarker = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
 if (remainingDeckCountForTrump === 0 && activeTrumpSuitForMarker) {
   const trumpMarker = document.createElement("div");
   trumpMarker.className = "durak-trump-suit-marker";
   trumpMarker.dataset.trumpSuit = activeTrumpSuitForMarker;
-  trumpMarker.setAttribute("aria-label", "Козырь: " + activeTrumpSuitForMarker);
-  trumpMarker.title = "Козырь: " + activeTrumpSuitForMarker;
+  trumpMarker.setAttribute("aria-label", activeTrumpSuitForMarker);
+  trumpMarker.setAttribute("role", "img");
+
   const trumpMarkerSymbol = document.createElement("span");
   trumpMarkerSymbol.className = "durak-trump-suit-marker-symbol";
   trumpMarkerSymbol.textContent = activeTrumpSuitForMarker;
-  const trumpMarkerLabel = document.createElement("span");
-  trumpMarkerLabel.className = "durak-trump-suit-marker-label";
-  trumpMarkerLabel.textContent = "КОЗЫРЬ";
-  if (activeTrumpSuitForMarker === "♥" || activeTrumpSuitForMarker === "♦") {
-    trumpMarker.classList.add("red-trump-suit");
-  }
   trumpMarker.appendChild(trumpMarkerSymbol);
-  trumpMarker.appendChild(trumpMarkerLabel);
-  $("durakTable").appendChild(trumpMarker);
+
+  // Совпадает с координатами старой козырной карты внутри deckStack.
+  Object.assign(trumpMarker.style, {
+    position: "absolute",
+    left: "17px",
+    top: "17px",
+    width: "44px",
+    height: "65px",
+    minWidth: "44px",
+    minHeight: "65px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0",
+    padding: "0",
+    border: "0",
+    borderRadius: "0",
+    background: "transparent",
+    boxShadow: "none",
+    transform: "none",
+    pointerEvents: "none",
+    zIndex: "6",
+    boxSizing: "border-box",
+    color: activeTrumpSuitForMarker === "♥" || activeTrumpSuitForMarker === "♦" ? "#f2475c" : "#e1bb58"
+  });
+  Object.entries({
+    left: "17px",
+    top: "17px",
+    width: "44px",
+    height: "65px",
+    "min-width": "44px",
+    "min-height": "65px",
+    display: "flex",
+    "align-items": "center",
+    "justify-content": "center",
+    margin: "0",
+    padding: "0",
+    border: "0",
+    "border-radius": "0",
+    background: "transparent",
+    "box-shadow": "none",
+    transform: "none",
+    "pointer-events": "none",
+    "z-index": "6",
+    "box-sizing": "border-box",
+    color: activeTrumpSuitForMarker === "♥" || activeTrumpSuitForMarker === "♦" ? "#f2475c" : "#e1bb58"
+  }).forEach(([property, value]) => trumpMarker.style.setProperty(property, value, "important"));
+  trumpMarkerSymbol.style.cssText = [
+    "display:block!important",
+    "font-size:32px!important",
+    "line-height:1!important",
+    "font-weight:900!important",
+    "color:inherit!important",
+    "text-shadow:0 1px 3px rgba(0,0,0,.55)!important",
+    "transform:none!important",
+    "margin:0!important",
+    "padding:0!important"
+  ].join(";");
+
+  // Place the mark before the deck layers just like the original trump card.
+  const deckStackForTrumpMarker = $("durakTrump").querySelector(".durak-deck-stack");
+  if (deckStackForTrumpMarker) deckStackForTrumpMarker.insertBefore(trumpMarker, deckStackForTrumpMarker.firstChild);
 }
 
 if (Array.isArray(game.table)) {
