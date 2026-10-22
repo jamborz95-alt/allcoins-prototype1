@@ -135,7 +135,7 @@ const path = require("node:path");
       }));
       const logoContent = getComputedStyle(document.getElementById("durakTable"), "::before").content;
       const trump = "♥";
-      const firstTrumpIndex = cards.findIndex(card => card.suit === trump);
+      const lastTrumpIndex = cards.reduce((last, card, index) => normalizeSuit(card.suit) === trump ? index : last, -1);
       const rankWeight = value => {
         const v = String(value).toUpperCase();
         const face = { "В": 11, "J": 11, "Д": 12, "Q": 12, "К": 13, "K": 13, "Т": 14, "ТУЗ": 14, "A": 14 };
@@ -152,10 +152,10 @@ const path = require("node:path");
       const expectedGroupSequence = suitOrder.filter(suit =>
         presentSuits.includes(suit) && suit !== trump
       );
-      const firstNonTrumpIndex = cards.findIndex(card => normalizeSuit(card.suit) !== trump);
-      const trumpsStayOnLeft = !presentSuits.includes(trump) ||
-        (firstTrumpIndex === 0 && firstNonTrumpIndex >= 0 &&
-         cards.slice(0, firstNonTrumpIndex).every(card => normalizeSuit(card.suit) === trump));
+      const lastNonTrumpIndex = cards.reduce((last, card, index) => normalizeSuit(card.suit) !== trump ? index : last, -1);
+      const trumpsStayOnRight = !presentSuits.includes(trump) ||
+        (lastTrumpIndex > lastNonTrumpIndex &&
+         cards.slice(lastNonTrumpIndex + 1).every(card => normalizeSuit(card.suit) === trump));
       const nonTrumpGroups = groupSequence.filter((suit, index) =>
         suit !== trump && groupSequence.indexOf(suit) === index
       );
@@ -170,16 +170,16 @@ const path = require("node:path");
       });
       return {
         cards,
-        firstTrumpIndex,
-        trumpsStayOnLeft,
+        lastTrumpIndex,
+        trumpsStayOnRight,
         suitGroupsTogetherAndOrdered,
         ranksAscWithinSuit,
         logoContent
       };
     });
     fs.writeFileSync(path.join(out, "hand-order-and-logo.json"), JSON.stringify(handDisplay, null, 2));
-    if (!handDisplay.trumpsStayOnLeft || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksAscWithinSuit) {
-      throw new Error("Козыри должны остаться слева, а внутри каждой масти карты должны идти слева направо от младшей к старшей: " + JSON.stringify(handDisplay));
+    if (!handDisplay.trumpsStayOnRight || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksAscWithinSuit) {
+      throw new Error("Козыри должны быть справа, а внутри каждой масти карты должны идти слева направо от младшей к старшей: " + JSON.stringify(handDisplay));
     }
     if (!String(handDisplay.logoContent).includes("ALLCOINS")) {
       throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
