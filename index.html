@@ -5338,16 +5338,16 @@ const newlyDealtHandCards = [];
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
-  // Козыри идут первой группой слева; за ними каждая оставшаяся масть идёт подряд, от старшей карты к младшей.
+  // Старшие карты располагаются справа: масти идут слева направо, козыри — последней группой, а внутри каждой масти карты идут от младшей к старшей.
   const handTrumpSuit = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
   const orderedHandCards = [...game.hand].sort((a, b) => {
     const aSuit = normalizeDurakSuit(a?.suit);
     const bSuit = normalizeDurakSuit(b?.suit);
     const aTrump = aSuit === handTrumpSuit ? 1 : 0;
     const bTrump = bSuit === handTrumpSuit ? 1 : 0;
-    return (bTrump - aTrump) ||
+    return (aTrump - bTrump) ||
       (durakHandSuitWeight(aSuit) - durakHandSuitWeight(bSuit)) ||
-      (durakHandRankWeight(b?.rank) - durakHandRankWeight(a?.rank));
+      (durakHandRankWeight(a?.rank) - durakHandRankWeight(b?.rank));
   });
   orderedHandCards.forEach((card, cardIndex) => {
     const cardElement = createDurakCardElement(card);
