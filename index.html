@@ -3716,6 +3716,15 @@ function createDurakDeckPileLayer(index) {
     "z-index:" + (index + 2),
     "pointer-events:none"
   ].join(";");
+  // Explicit priority beats older styles for the retired three-card deck.
+  cardBack.style.setProperty("left", left + "px", "important");
+  cardBack.style.setProperty("top", top + "px", "important");
+  cardBack.style.setProperty("width", "30px", "important");
+  cardBack.style.setProperty("min-width", "30px", "important");
+  cardBack.style.setProperty("height", "44px", "important");
+  cardBack.style.setProperty("min-height", "44px", "important");
+  cardBack.style.setProperty("background", DURAK_DECK_PILE_PATTERN, "important");
+  cardBack.style.setProperty("z-index", String(index + 2), "important");
   return cardBack;
 }
 
@@ -4886,32 +4895,14 @@ deckBox.style.cssText = `
   margin-right: 14px;
 `;
 
-// Рубашка колоды по видео: светлая тканая основа с зелёной диагональной клеткой.
-// Та же рубашка используется для карт на руках соперников; центральный медальон не нужен.
-const deckBackPattern = "repeating-linear-gradient(45deg, transparent 0 1.2px, rgba(72,139,100,.92) 1.2px 1.65px, transparent 1.65px 2.8px), repeating-linear-gradient(-45deg, transparent 0 1.2px, rgba(194,112,123,.78) 1.2px 1.65px, transparent 1.65px 2.8px), #f4f3e8";
-const makeDeckBack = (left, top, zIndex) => {
-  const cardBack = document.createElement("div");
-  cardBack.className = "durak-deck-card-back";
-  cardBack.style.cssText = `
-    position:absolute; left:${left}px; top:${top}px;
-    width:30px; height:44px; min-width:30px; min-height:44px;
-    border:1px solid #edf1e4; border-radius:3px;
-    background:${deckBackPattern};
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.78), 0 1px 3px rgba(0,0,0,.28);
-    box-sizing:border-box; z-index:${zIndex}; pointer-events:none;
-  `;
-  return cardBack;
-};
-
+// Рубашка колоды использует общий рисунок DURAK_DECK_PILE_PATTERN.
 // Каждый оставшийся экземпляр колоды представлен отдельной смещённой рубашкой.
 const deckPile = document.createElement("div");
 deckPile.className = "durak-deck-pile";
 deckPile.style.cssText = "position:absolute;left:0;top:0;width:48px;height:90px;overflow:visible;pointer-events:none;";
 const initialPileCount = Math.max(0, Math.min(52, Math.floor(Number(game.cardsLeft) || 0)));
 for (let i = 0; i < initialPileCount; i++) {
-  const layer = makeDeckBack(Math.min(18, i * 0.36), Math.max(-8, -i * 0.16), i + 2);
-  layer.dataset.deckLayer = String(i);
-  deckPile.appendChild(layer);
+  deckPile.appendChild(createDurakDeckPileLayer(i));
 }
 
 const deckCount = document.createElement("div");
@@ -5003,24 +4994,7 @@ deckCount.style.setProperty("font-variant-numeric", "tabular-nums", "important")
 deckCount.style.setProperty("background", "transparent", "important");
 deckCount.style.setProperty("border", "0", "important");
 deckCount.style.setProperty("border-radius", "0", "important");
-deckCount.style.setProperty("z-index", "5", "important");
-[
-  [deckCardBack, 5, 4],
-  [deckCardMiddle, 2, 2],
-  [deckCard, 0, 0]
-].forEach(([cardBack, left, top]) => {
-  // CSS legacy selectors pin the first two stack children to (0,0);
-  // inline !important offsets preserve a small, visible three-card fan.
-  cardBack.style.setProperty("left", left + "px", "important");
-  cardBack.style.setProperty("top", top + "px", "important");
-  cardBack.style.setProperty("width", "30px", "important");
-  cardBack.style.setProperty("min-width", "30px", "important");
-  cardBack.style.setProperty("height", "44px", "important");
-  cardBack.style.setProperty("min-height", "44px", "important");
-  cardBack.style.setProperty("border", "1px solid #edf1e4", "important");
-  cardBack.style.setProperty("border-radius", "3px", "important");
-  cardBack.style.setProperty("background", deckBackPattern, "important");
-});
+deckCount.style.setProperty("z-index", "120", "important");
 if (game.trumpCard) {
   const trumpCard = deckStack.querySelector(".durak-trump-card");
   if (trumpCard) {
@@ -5771,7 +5745,9 @@ setInterval(() => {
     state.user &&
     tg?.initData &&
     !durakCardDragging &&
-    !durakActionInProgress
+    !durakActionInProgress &&
+    !durakDealAnimationActive &&
+    !durakGameLoadInProgress
   ) {
     loadDurakGame(currentDurakRoomId);
   }
