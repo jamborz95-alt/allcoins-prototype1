@@ -4054,7 +4054,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
       const isOpponentDraw = item?.opponentDraw === true;
       const flightDuration = isTableTransfer
-        ? 470
+        ? 680
         : isInitialDeal
           ? 430
           : isOpponentDraw
@@ -4155,7 +4155,11 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           finish();
           return;
         }
-        const arcHeight = Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
+        // Для карт со стола делаем более выраженную дугу: виден сам путь,
+        // а не только исчезновение на столе и появление у соперника.
+        const arcHeight = isTableTransfer
+          ? Math.min(72, Math.max(34, Math.abs(dx) * 0.095 + Math.abs(dy) * 0.035))
+          : Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
         flightAnimation = flyer.animate([
           { offset: 0, transform: "translate3d(0,0,0) rotate(-8deg) scale(" + startScale + ")" },
           { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(" + middleScale + ")" },
@@ -4179,7 +4183,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       });
     }, index * (
       isInitialDeal ? 92 :
-      item?.fromTable ? 62 :
+      item?.fromTable ? 125 :
       item?.opponentDraw ? 68 : 72
     ));
   }));
