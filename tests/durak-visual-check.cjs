@@ -499,24 +499,37 @@ const path = require("node:path");
     await page.waitForTimeout(160);
     await page.screenshot({ path: path.join(out, "10-trump-suit-marker-after-final-draw.png"), fullPage: true });
     const finalTrumpState = await page.evaluate(() => {
-      const marker = document.querySelector("#durakTable .durak-trump-suit-marker");
+      const marker = document.querySelector("#durakTrump .durak-deck-stack .durak-trump-suit-marker");
       const deck = document.querySelector("#durakTrump");
+      const stack = deck?.querySelector(".durak-deck-stack");
       const count = deck?.querySelector(".durak-deck-count");
       const markerRect = marker?.getBoundingClientRect();
+      const stackRect = stack?.getBoundingClientRect();
       return {
         markerSuit: marker?.dataset.trumpSuit || null,
-        markerLabel: marker?.querySelector(".durak-trump-suit-marker-label")?.textContent || null,
+        markerText: marker?.textContent?.trim() || null,
+        markerHasLabel: Boolean(marker?.querySelector(".durak-trump-suit-marker-label")),
         markerVisible: Boolean(markerRect && markerRect.width > 0 && markerRect.height > 0 &&
           getComputedStyle(marker).visibility !== "hidden"),
+        markerX: markerRect?.x ?? null,
+        markerY: markerRect?.y ?? null,
+        stackX: stackRect?.x ?? null,
+        stackY: stackRect?.y ?? null,
+        tableHasMarker: Boolean(document.querySelector("#durakTable .durak-trump-suit-marker")),
         deckCount: count ? Number(count.dataset.count) : null,
         trumpCardStillUnderDeck: Boolean(deck?.querySelector(".durak-trump-card"))
       };
     });
     fs.writeFileSync(path.join(out, "final-trump-state.json"), JSON.stringify(finalTrumpState, null, 2));
-    if (finalTrumpState.markerSuit !== "♥" || finalTrumpState.markerLabel !== "КОЗЫРЬ" ||
-        !finalTrumpState.markerVisible || finalTrumpState.deckCount !== 0 ||
-        finalTrumpState.trumpCardStillUnderDeck) {
-      throw new Error("После раздачи последнего козыря должен остаться знак масти на столе, а не в колоде: " + JSON.stringify(finalTrumpState));
+    if (finalTrumpState.markerSuit !== "♥" || finalTrumpState.markerText !== "♥" ||
+        finalTrumpState.markerHasLabel || !finalTrumpState.markerVisible ||
+        finalTrumpState.tableHasMarker || finalTrumpState.deckCount !== 0 ||
+        finalTrumpState.trumpCardStillUnderDeck ||
+        finalTrumpState.markerX === null || finalTrumpState.markerX < finalTrumpState.stackX - 3 ||
+        finalTrumpState.markerX > finalTrumpState.stackX + 50 ||
+        finalTrumpState.markerY < finalTrumpState.stackY + 5 ||
+        finalTrumpState.markerY > finalTrumpState.stackY + 30) {
+      throw new Error("После ухода последнего козыря должен остаться только символ масти в прежнем месте у колоды: " + JSON.stringify(finalTrumpState));
     }
 
     if (errors.length) {
