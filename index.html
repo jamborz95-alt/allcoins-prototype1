@@ -5446,7 +5446,8 @@ if (Array.isArray(game.hand)) {
   if (
     durakLastRenderedTakePending &&
     Array.isArray(game.table) && game.table.length === 0 &&
-    Number.isInteger(durakLastRenderedDefenderIndex)
+    Number.isInteger(durakLastRenderedDefenderIndex) &&
+    durakLastRenderedDefenderIndex !== Number(game.playerIndex)
   ) {
     const tableSources = Array.from(previousTableCardOrigins.values());
     const opponentTakerCards = newlyDealtOpponentBacks.filter(
