@@ -2511,8 +2511,10 @@
   box-sizing: border-box !important;
 }
 #durakGame #durakTable .durak-table-pair {
-  position: relative !important; display: block !important; flex: 0 0 144px !important;
-  width: 144px !important; height: 108px !important; margin: 1px 0 !important;
+  /* Каждая пара создаёт свой слой: защита прошлой пары не рисуется поверх новой атаки. */
+  position: relative !important; z-index: 0 !important; isolation: isolate !important;
+  display: block !important; flex: 0 0 147px !important;
+  width: 147px !important; height: 108px !important; margin: 1px 0 !important;
   overflow: visible !important;
 }
 #durakGame #durakTable .durak-table-pair .durak-card.table-card {
@@ -2575,7 +2577,7 @@
 }
 @media (max-width: 380px) {
   #durakGame #durakTable { padding: 0 28px !important; top: 19% !important; bottom: 30% !important; gap: 7px 0 !important; }
-  #durakGame #durakTable .durak-table-pair { flex-basis: 132px !important; width: 132px !important; height: 100px !important; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 140px !important; width: 140px !important; height: 100px !important; }
   #durakGame #durakTable .durak-table-pair .durak-card.table-card {
     width: 58px !important; min-width: 58px !important; max-width: 58px !important;
     height: 86px !important; min-height: 86px !important;
@@ -2588,6 +2590,10 @@
   }
   #durakGame #durakControls #durakTake,
   #durakGame #durakControls #durakBeat { flex-basis: 38% !important; width: 38% !important; }
+}
+/* На очень узких экранах оставляем две пары в одном ряду, но сохраняем отдельные слои. */
+@media (max-width: 350px) {
+  #durakGame #durakTable .durak-table-pair { flex-basis: 132px !important; width: 132px !important; }
 }
 @media (max-height: 700px) {
   #durakGame #durakTable { top: 19% !important; bottom: 28% !important; }
