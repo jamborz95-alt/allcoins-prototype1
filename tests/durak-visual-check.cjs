@@ -141,23 +141,40 @@ const path = require("node:path");
         const face = { "В": 11, "J": 11, "Д": 12, "Q": 12, "К": 13, "K": 13, "Т": 14, "ТУЗ": 14, "A": 14 };
         return Number(v) || face[v] || 0;
       };
-      const ranksOrdered = list => list.every((card, index) =>
-        index === 0 || rankWeight(list[index - 1].rank) <= rankWeight(card.rank)
-      );
+      const normalizeSuit = value => ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" }[String(value)] || String(value));
+      const suitOrder = ["♠","♥","♦","♣"];
+      const groupSequence = cards.reduce((groups, card) => {
+        const suit = normalizeSuit(card.suit);
+        if (groups[groups.length - 1] !== suit) groups.push(suit);
+        return groups;
+      }, []);
+      const presentSuits = [...new Set(cards.map(card => normalizeSuit(card.suit)))];
+      const expectedGroupSequence = suitOrder
+        .filter(suit => presentSuits.includes(suit) && suit !== trump)
+        .concat(presentSuits.includes(trump) ? [trump] : []);
+      const suitGroupsTogetherAndOrdered =
+        groupSequence.length === presentSuits.length &&
+        groupSequence.every((suit, index) => suit === expectedGroupSequence[index]);
+      const ranksDescWithinSuit = cards.every((card, index) => {
+        if (index === 0) return true;
+        const previous = cards[index - 1];
+        return normalizeSuit(previous.suit) !== normalizeSuit(card.suit) ||
+          rankWeight(previous.rank) >= rankWeight(card.rank);
+      });
       return {
         cards,
         firstTrumpIndex,
         trumpsOnRight: firstTrumpIndex >= 0 &&
-          cards.slice(0, firstTrumpIndex).every(card => card.suit !== trump) &&
-          cards.slice(firstTrumpIndex).every(card => card.suit === trump),
-        nonTrumpRanksGrouped: ranksOrdered(cards.slice(0, firstTrumpIndex < 0 ? cards.length : firstTrumpIndex)),
-        trumpRanksGrouped: ranksOrdered(cards.slice(firstTrumpIndex < 0 ? cards.length : firstTrumpIndex)),
+          cards.slice(0, firstTrumpIndex).every(card => normalizeSuit(card.suit) !== trump) &&
+          cards.slice(firstTrumpIndex).every(card => normalizeSuit(card.suit) === trump),
+        suitGroupsTogetherAndOrdered,
+        ranksDescWithinSuit,
         logoContent
       };
     });
     fs.writeFileSync(path.join(out, "hand-order-and-logo.json"), JSON.stringify(handDisplay, null, 2));
-    if (!handDisplay.trumpsOnRight || !handDisplay.nonTrumpRanksGrouped || !handDisplay.trumpRanksGrouped) {
-      throw new Error("Карты в руке должны быть сгруппированы по достоинству, а козыри находиться справа: " + JSON.stringify(handDisplay));
+    if (!handDisplay.trumpsOnRight || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksDescWithinSuit) {
+      throw new Error("Карты должны идти группами по мастям, от старшей к младшей, а козыри — справа: " + JSON.stringify(handDisplay));
     }
     if (!String(handDisplay.logoContent).includes("ALLCOINS")) {
       throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
