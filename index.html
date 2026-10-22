@@ -3958,12 +3958,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   // Стопка немного за левым краем, поэтому раздача начинается от её видимого края.
   const sourceCenterX = Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23));
   const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
-  // Быстрая раздача: начальная раскладка остаётся заметной, а карты при доборе
-  // и взятии стола не задерживают следующий ход.
-  const duration = isInitialDeal ? 285 : 185;
-  const staggerMs = isInitialDeal ? 52 : 24;
-  const faceUpTransitionMs = isInitialDeal ? 78 : 48;
-  const cleanupDelayMs = isInitialDeal ? 82 : 58;
+  // Плавная, хорошо различимая раздача: карта должна успевать пролететь
+  // от колоды/стола до руки, как в карточной игре, без резкого телепорта.
+  const duration = isInitialDeal ? 420 : 340;
+  const staggerMs = isInitialDeal ? 88 : 64;
+  const faceUpTransitionMs = isInitialDeal ? 110 : 95;
+  const cleanupDelayMs = isInitialDeal ? 115 : 100;
   const savedStyles = new WeakMap();
 
   // Скрываем весь набор заранее: карты не должны сначала появиться в руках,
