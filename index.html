@@ -5338,7 +5338,8 @@ const newlyDealtHandCards = [];
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
-  // Обычные масти идут слева, козыри всегда справа; одинаковые достоинства сгруппированы.
+  // Группируем карты по мастям слева направо, внутри масти — от старшей к младшей.
+  // Козыри всегда помещаем последней группой справа.
   const handTrumpSuit = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
   const orderedHandCards = [...game.hand].sort((a, b) => {
     const aSuit = normalizeDurakSuit(a?.suit);
@@ -5346,11 +5347,20 @@ if (Array.isArray(game.hand)) {
     const aTrump = aSuit === handTrumpSuit ? 1 : 0;
     const bTrump = bSuit === handTrumpSuit ? 1 : 0;
     return (aTrump - bTrump) ||
-      (durakHandRankWeight(a?.rank) - durakHandRankWeight(b?.rank)) ||
-      (durakHandSuitWeight(aSuit) - durakHandSuitWeight(bSuit));
+      (durakHandSuitWeight(aSuit) - durakHandSuitWeight(bSuit)) ||
+      (durakHandRankWeight(b?.rank) - durakHandRankWeight(a?.rank));
   });
-  orderedHandCards.forEach((card) => {
+  orderedHandCards.forEach((card, cardIndex) => {
     const cardElement = createDurakCardElement(card);
+    const cardSuitGroup = normalizeDurakSuit(card?.suit);
+    const previousCardSuitGroup = cardIndex > 0
+      ? normalizeDurakSuit(orderedHandCards[cardIndex - 1]?.suit)
+      : "";
+    if (cardIndex > 0 && cardSuitGroup !== previousCardSuitGroup) {
+      cardElement.classList.add("suit-group-start");
+      // Небольшой визуальный интервал отделяет масти, не раздвигая все карты.
+      cardElement.style.setProperty("margin-left", "3px", "important");
+    }
 
     cardElement.classList.add("player-card");
     const gameIsActive = game.status === "playing";
