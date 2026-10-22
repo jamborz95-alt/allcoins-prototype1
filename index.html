@@ -3647,7 +3647,7 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache SVGs by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-premium4";
+const DURAK_CARD_ASSET_VERSION = "20261022-king-diamonds-png1";
 const DURAK_CARD_ASSETS = [
   "10-clubs.svg",
   "10-diamonds.svg",
@@ -3694,7 +3694,7 @@ const DURAK_CARD_ASSETS = [
   "jack-hearts.png",
   "jack-spades.png",
   "king-clubs.svg",
-  "king-diamonds.svg",
+  "king-diamonds.png",
   "king-hearts.png",
   "king-spades-2.png",
   "queen-clubs.svg",
@@ -3749,6 +3749,7 @@ const existingPngFaces = {
   "queen-spades.svg":"queen-spades.png",
   "queen-hearts.svg":"queen-hearts.png",
   "king-spades.svg":"king-spades-2.png",
+  "king-diamonds.svg":"king-diamonds.png",
   "king-hearts.svg":"king-hearts.png"
 };
 const rankImageName = rankImageNames[rank.toUpperCase()];
