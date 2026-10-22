@@ -4155,6 +4155,23 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       flyer.classList.remove("table-card", "durak-landing-target");
       flyer.setAttribute("aria-hidden", "true");
 
+      // Карты, которые забирает соперник, летят только рубашкой вверх.
+      // Лицо карты не должно просвечивать ни на старте, ни в середине полёта.
+      if (isTableTransfer && item.faceUp === false) {
+        flyer.querySelectorAll("*").forEach(node => {
+          node.style.setProperty("visibility", "hidden", "important");
+          node.style.setProperty("opacity", "0", "important");
+        });
+        flyer.style.setProperty("background", DURAK_DECK_PILE_PATTERN, "important");
+        flyer.style.setProperty("background-image", DURAK_DECK_PILE_PATTERN.split(", #f4f3e8")[0], "important");
+        flyer.style.setProperty("border", "1px solid #edf1e4", "important");
+        flyer.style.setProperty("border-radius", "4px", "important");
+        flyer.style.setProperty("box-shadow", "inset 0 0 0 1px rgba(255,255,255,.78),0 2px 5px rgba(0,0,0,.3)", "important");
+        flyer.style.setProperty("overflow", "hidden", "important");
+        flyer.style.setProperty("backface-visibility", "hidden", "important");
+        flyer.style.setProperty("transform-style", "flat", "important");
+      }
+
       // Источник пересчитывается для каждой карты: она уходит с текущего верхнего слоя стопки.
       const topDeckCard = document.querySelector("#durakTrump .durak-deck-pile")?.lastElementChild;
       const liveDeckSource = topDeckCard?.getBoundingClientRect();
