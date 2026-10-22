@@ -235,6 +235,13 @@ try {
   mockDurakPhase = "takePending";
   mockDurakPlayerIndex = 0;
   await page.evaluate(async () => { await loadDurakGame("77"); });
+  // A refresh can be queued while a previous card flight is finishing.
+  // Wait for that queued refresh instead of asserting against the stale prior frame.
+  await page.waitForFunction(
+    () => document.querySelector("#durakTurnMessage")?.innerText.trim() === "ПОДКИНЬ ИЛИ БИТО",
+    null,
+    { timeout: 5000 }
+  );
   assert.equal((await page.locator("#durakTurnMessage").innerText()).trim(), "ПОДКИНЬ ИЛИ БИТО",
     "attacker should see the pending-take decision");
   assert.notEqual(await page.locator("#durakBeat").evaluate((el) => el.style.display), "none",
