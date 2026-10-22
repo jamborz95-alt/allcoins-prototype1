@@ -128,6 +128,7 @@ const path = require("node:path");
 
     // Check ALLCOINS hand ordering and the new table wordmark before interacting.
     const handDisplay = await page.evaluate(() => {
+      const normalizeSuit = value => ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" }[String(value)] || String(value));
       const cards = [...document.querySelectorAll("#durakHand .durak-card")].map(card => ({
         id: card.dataset.cardId,
         rank: card.dataset.rank || "",
@@ -141,7 +142,6 @@ const path = require("node:path");
         const face = { "В": 11, "J": 11, "Д": 12, "Q": 12, "К": 13, "K": 13, "Т": 14, "ТУЗ": 14, "A": 14 };
         return Number(v) || face[v] || 0;
       };
-      const normalizeSuit = value => ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" }[String(value)] || String(value));
       const suitOrder = ["♠","♥","♦","♣"];
       const groupSequence = cards.reduce((groups, card) => {
         const suit = normalizeSuit(card.suit);
