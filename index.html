@@ -3647,7 +3647,7 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache SVGs by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-premium2";
+const DURAK_CARD_ASSET_VERSION = "20261022-premium3";
 const DURAK_CARD_ASSETS = [
   "10-clubs.svg",
   "10-diamonds.svg",
@@ -3756,106 +3756,6 @@ const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()]
 const svgFilename = rankImageName && suitImageName ? rankImageName + "-" + suitImageName + ".svg" : null;
 const imageName = svgFilename ? (existingPngFaces[svgFilename] || svgFilename) : null;
 
-// Для недостающих валетов/дам/королей используем центральную иллюстрацию из уже
-// готовых PNG ALLCOINS, а не упрощённый рисунок. Уголки и масть рисуем заново.
-const premiumCourtArtSources = {
-  "В-♦": "jack-hearts.png",
-  "В-♣": "jack-spades.png",
-  "Д-♦": "queen-hearts.png",
-  "Д-♣": "queen-spades.png",
-  "К-♦": "king-hearts.png",
-  "К-♣": "king-spades-2.png"
-};
-const premiumCourtArtName = premiumCourtArtSources[rank.toUpperCase() + "-" + normalizedCardSuit];
-if (premiumCourtArtName) {
-  cardElement.classList.add("image-card", "premium-court-crop");
-  Object.assign(cardElement.style, {
-    position: "relative", overflow: "hidden",
-    background: "linear-gradient(145deg,#fffdf7,#f0e4cd)",
-    border: "1px solid #b99b59", borderRadius: "6px", boxSizing: "border-box"
-  });
-
-  const artWindow = document.createElement("span");
-  artWindow.className = "premium-court-art-window";
-  Object.assign(artWindow.style, {
-    position: "absolute", left: "14%", top: "12%", width: "72%", height: "76%",
-    overflow: "hidden", display: "block", zIndex: "1", pointerEvents: "none",
-    border: "1px solid rgba(185,151,76,.52)", boxSizing: "border-box",
-    background: "#f7efdc"
-  });
-
-  const artImage = document.createElement("img");
-  artImage.src = "cards/" + premiumCourtArtName + "?v=" + DURAK_CARD_ASSET_VERSION;
-  artImage.alt = rank + " " + suit + " — иллюстрация ALLCOINS";
-  artImage.draggable = false;
-  artImage.style.setProperty("position", "absolute", "important");
-  artImage.style.setProperty("left", "-19.4444%", "important");
-  artImage.style.setProperty("top", "-15.7895%", "important");
-  artImage.style.setProperty("width", "138.8889%", "important");
-  artImage.style.setProperty("height", "131.5789%", "important");
-  artImage.style.setProperty("min-width", "0", "important");
-  artImage.style.setProperty("min-height", "0", "important");
-  artImage.style.setProperty("max-width", "none", "important");
-  artImage.style.setProperty("max-height", "none", "important");
-  artImage.style.setProperty("object-fit", "fill", "important");
-  artImage.style.setProperty("object-position", "center", "important");
-  artImage.style.setProperty("margin", "0", "important");
-  artImage.style.setProperty("padding", "0", "important");
-  artImage.style.setProperty("border", "0", "important");
-  artImage.style.setProperty("border-radius", "0", "important");
-  artImage.style.setProperty("pointer-events", "none", "important");
-  artWindow.appendChild(artImage);
-  cardElement.appendChild(artWindow);
-
-  const makeCourtIndex = (isBottom) => {
-    const corner = document.createElement("span");
-    corner.className = isBottom ? "premium-court-index premium-court-index-bottom" : "premium-court-index";
-    Object.assign(corner.style, {
-      position: "absolute", zIndex: "4", display: "flex",
-      flexDirection: "column", alignItems: "center", justifyContent: "center",
-      width: "19px", height: "28px", gap: "0",
-      color: ["♥","♦"].includes(normalizedCardSuit) ? "#c32138" : "#172431",
-      fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: "900",
-      lineHeight: "1", textShadow: "0 0 .3px currentColor", pointerEvents: "none"
-    });
-    if (isBottom) {
-      corner.style.setProperty("right", "3px", "important");
-      corner.style.setProperty("bottom", "3px", "important");
-      corner.style.setProperty("transform", "rotate(180deg)", "important");
-    } else {
-      corner.style.setProperty("left", "3px", "important");
-      corner.style.setProperty("top", "3px", "important");
-    }
-    const cornerRank = document.createElement("span");
-    cornerRank.textContent = rank;
-    cornerRank.style.setProperty("font-size", "13px", "important");
-    cornerRank.style.setProperty("line-height", "14px", "important");
-    const cornerSuit = document.createElement("span");
-    cornerSuit.textContent = normalizedCardSuit;
-    cornerSuit.style.setProperty("font-size", "12px", "important");
-    cornerSuit.style.setProperty("line-height", "13px", "important");
-    corner.appendChild(cornerRank);
-    corner.appendChild(cornerSuit);
-    return corner;
-  };
-  cardElement.appendChild(makeCourtIndex(false));
-  cardElement.appendChild(makeCourtIndex(true));
-
-  const courtSuitBadge = document.createElement("span");
-  courtSuitBadge.className = "premium-court-suit-badge";
-  courtSuitBadge.textContent = normalizedCardSuit;
-  Object.assign(courtSuitBadge.style, {
-    position: "absolute", left: "50%", bottom: "8%", transform: "translateX(-50%)",
-    zIndex: "3", display: "grid", placeItems: "center", width: "18px", height: "18px",
-    border: "1px solid #b9974c", borderRadius: "50%",
-    background: "rgba(250,244,229,.96)",
-    color: ["♥","♦"].includes(normalizedCardSuit) ? "#c32138" : "#172431",
-    fontFamily: "Georgia,serif", fontSize: "13px", fontWeight: "900",
-    lineHeight: "1", boxSizing: "border-box", pointerEvents: "none"
-  });
-  cardElement.appendChild(courtSuitBadge);
-  return cardElement;
-}
 
   if (imageName) {
     const image = document.createElement("img");
