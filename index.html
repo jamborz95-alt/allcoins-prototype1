@@ -3647,10 +3647,11 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-user-png-preserve1";
+const DURAK_CARD_ASSET_VERSION = "20261022-user-png-preserve2";
 const DURAK_CARD_ASSETS = [
   "ace-hearts.png",
   "ace-spades.png",
+  "jack-diamonds.png",
   "jack-hearts.png",
   "jack-spades.png",
   "king-hearts.png",
@@ -3702,6 +3703,7 @@ const existingPngFaces = {
   "ace-hearts.svg":"ace-hearts.png",
   "jack-spades.svg":"jack-spades.png",
   "jack-hearts.svg":"jack-hearts.png",
+  "jack-diamonds.svg":"jack-diamonds.png",
   "queen-spades.svg":"queen-spades.png",
   "queen-hearts.svg":"queen-hearts.png",
   "king-spades.svg":"king-spades-2.png",
