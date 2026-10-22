@@ -2653,6 +2653,71 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, .18) !important;
 }
 
+/* ALLCOINS wordmark watermark on the playing area; the cards remain fully interactive. */
+#durakGame #durakTable::before {
+  content: "◈ ALLCOINS ◈";
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+  z-index: 0 !important;
+  max-width: calc(100% - 16px);
+  color: rgba(225, 187, 88, .17);
+  font-size: clamp(17px, 5.2vw, 25px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 0 18px rgba(225, 187, 88, .06);
+  pointer-events: none !important;
+  user-select: none;
+}
+#durakGame #durakTable .durak-trump-suit-marker {
+  position: absolute !important;
+  left: 50% !important;
+  top: 6px !important;
+  transform: translateX(-50%) !important;
+  z-index: 8 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 47px !important;
+  min-height: 47px !important;
+  padding: 2px 0 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(230, 195, 93, .92) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(160deg, rgba(11, 31, 43, .96), rgba(7, 17, 28, .96)) !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .26), inset 0 0 0 1px rgba(255,255,255,.05) !important;
+  pointer-events: none !important;
+}
+#durakGame #durakTable .durak-trump-suit-marker-symbol {
+  display: block !important;
+  color: #f5f3ea !important;
+  font-size: 22px !important;
+  line-height: 25px !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.65);
+}
+#durakGame #durakTable .durak-trump-suit-marker.red-trump-suit .durak-trump-suit-marker-symbol,
+#durakGame #durakTable .durak-trump-suit-marker.red-trump-suit .durak-trump-suit-marker-symbol {
+  color: #f1495d !important;
+}
+#durakGame #durakTable .durak-trump-suit-marker-label {
+  display: block !important;
+  color: #f5dfa0 !important;
+  font-size: 7px !important;
+  line-height: 9px !important;
+  font-weight: 850 !important;
+  letter-spacing: .06em;
+}
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
@@ -4950,7 +5015,23 @@ $("durakCreatePanel").style.display = "none";
 $("durakRoomsPanel").style.display = "none";
 $("durakRoomActions").style.display = "none";
 $("durakEntry").style.display = "none";
-  // ALLCOINS — отображение козырной карты
+  // ALLCOINS — единое обозначение мастей и рангов для козыря и порядка руки.
+const normalizeDurakSuit = (value) => {
+  const suit = String(value ?? "");
+  return ({ "♤": "♠", "♡": "♥", "♢": "♦", "♧": "♣" })[suit] || suit;
+};
+const durakHandRankWeight = (value) => {
+  const rank = String(value ?? "").trim().toUpperCase();
+  const faceRanks = { "В": 11, "J": 11, "Д": 12, "Q": 12, "К": 13, "K": 13, "Т": 14, "ТУЗ": 14, "A": 14 };
+  const numeric = Number(rank);
+  return Number.isFinite(numeric) && rank !== "" ? numeric : (faceRanks[rank] ?? 0);
+};
+const durakHandSuitWeight = (value) => {
+  const weight = ["♠", "♥", "♦", "♣"].indexOf(normalizeDurakSuit(value));
+  return weight < 0 ? 99 : weight;
+};
+
+// ALLCOINS — отображение козырной карты
 const trumpBox = $("durakTrump");
 trumpBox.innerHTML = "";
 
@@ -4996,7 +5077,9 @@ deckStack.style.cssText = `
   display:block; position:relative; flex:0 0 48px;
   width:48px; min-width:48px; height:90px; margin:0; overflow:visible;
 `;
-if (game.trumpCard) {
+// Козырная карта лежит под колодой, пока она ещё не закончилась.
+// Когда последняя карта (козырь) взята, она больше не дублируется у колоды.
+if (game.trumpCard && Number(game.cardsLeft ?? 0) > 0) {
   const trumpElement = createDurakCardElement(game.trumpCard);
   trumpElement.classList.add("durak-trump-card");
 
@@ -5020,7 +5103,7 @@ if (game.trumpCard) {
   trumpElement.style.transformOrigin = "center center";
 
   deckStack.appendChild(trumpElement);
-} else {
+} else if (Number(game.cardsLeft ?? 0) > 0) {
   const trumpText = document.createElement("span");
   trumpText.textContent = game.trumpSuit || "—";
   trumpText.style.color = "#ffffff";
@@ -5087,7 +5170,30 @@ if (game.trumpCard) {
   }
 }
 
-$("durakTable").innerHTML = "";  
+$("durakTable").innerHTML = "";
+
+// Последний козырь уже ушёл игроку: оставляем на игровом поле знак его масти.
+const remainingDeckCountForTrump = Math.max(0, Number(game.cardsLeft ?? 0));
+const activeTrumpSuitForMarker = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
+if (remainingDeckCountForTrump === 0 && activeTrumpSuitForMarker) {
+  const trumpMarker = document.createElement("div");
+  trumpMarker.className = "durak-trump-suit-marker";
+  trumpMarker.dataset.trumpSuit = activeTrumpSuitForMarker;
+  trumpMarker.setAttribute("aria-label", "Козырь: " + activeTrumpSuitForMarker);
+  trumpMarker.title = "Козырь: " + activeTrumpSuitForMarker;
+  const trumpMarkerSymbol = document.createElement("span");
+  trumpMarkerSymbol.className = "durak-trump-suit-marker-symbol";
+  trumpMarkerSymbol.textContent = activeTrumpSuitForMarker;
+  const trumpMarkerLabel = document.createElement("span");
+  trumpMarkerLabel.className = "durak-trump-suit-marker-label";
+  trumpMarkerLabel.textContent = "КОЗЫРЬ";
+  if (activeTrumpSuitForMarker === "♥" || activeTrumpSuitForMarker === "♦") {
+    trumpMarker.classList.add("red-trump-suit");
+  }
+  trumpMarker.appendChild(trumpMarkerSymbol);
+  trumpMarker.appendChild(trumpMarkerLabel);
+  $("durakTable").appendChild(trumpMarker);
+}
 
 if (Array.isArray(game.table)) {
   game.table.forEach((item) => {
@@ -5173,7 +5279,18 @@ const newlyDealtHandCards = [];
 $("durakHand").innerHTML = "";
 
 if (Array.isArray(game.hand)) {
-  game.hand.forEach((card) => {
+  // Обычные масти идут слева, козыри всегда справа; одинаковые достоинства сгруппированы.
+  const handTrumpSuit = normalizeDurakSuit(game.trumpSuit || game.trumpCard?.suit);
+  const orderedHandCards = [...game.hand].sort((a, b) => {
+    const aSuit = normalizeDurakSuit(a?.suit);
+    const bSuit = normalizeDurakSuit(b?.suit);
+    const aTrump = aSuit === handTrumpSuit ? 1 : 0;
+    const bTrump = bSuit === handTrumpSuit ? 1 : 0;
+    return (aTrump - bTrump) ||
+      (durakHandRankWeight(a?.rank) - durakHandRankWeight(b?.rank)) ||
+      (durakHandSuitWeight(aSuit) - durakHandSuitWeight(bSuit));
+  });
+  orderedHandCards.forEach((card) => {
     const cardElement = createDurakCardElement(card);
 
     cardElement.classList.add("player-card");
