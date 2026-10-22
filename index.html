@@ -5571,12 +5571,17 @@ if (Array.isArray(game.hand)) {
   );
   const previousTableRemoved = previousTableCardIds.length > 0 &&
     previousTableCardIds.every(id => !currentTableCardIds.has(String(id)));
+  // Если защитник нажал «Беру», а атакующий затем подтвердил «Бито»,
+  // сервер может уже сменить атакующего. Старой проверки только по attackerIndex
+  // тогда недостаточно: карты со стола ошибочно летели из колоды.
+  const previousRoundWasTaking = durakLastRenderedTakePending === true;
   const opponentTookTable = sameRenderedRoom &&
     previousTableRemoved &&
-    Number.isInteger(durakLastRenderedAttackerIndex) &&
-    Number(game.attackerIndex) === durakLastRenderedAttackerIndex &&
     Number.isInteger(durakLastRenderedDefenderIndex) &&
-    durakLastRenderedDefenderIndex !== Number(game.playerIndex);
+    durakLastRenderedDefenderIndex !== Number(game.playerIndex) &&
+    (previousRoundWasTaking ||
+      (Number.isInteger(durakLastRenderedAttackerIndex) &&
+       Number(game.attackerIndex) === durakLastRenderedAttackerIndex));
 
   // Когда соперник забрал карты, отправляем каждую карту со старого стола прямо к его рубашкам.
   // Число видимых рубашек ограничено шестью, поэтому для остальных есть временные точки посадки.
