@@ -4068,6 +4068,33 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   const isInitialDeal = options.initial === true;
   if (!Array.isArray(dealTargets) || !dealTargets.length ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  // При взятии карт защищающимся соблюдаем порядок:
+  // сначала весь стол перелетает в руку берущего, и только после посадки
+  // последней карты начинается добор из колоды остальным игрокам.
+  const tableTransferTargets = dealTargets.filter(item =>
+    item?.fromTable === true &&
+    Boolean(item?.source?.element) &&
+    item?.target?.isConnected
+  );
+  if (tableTransferTargets.length) {
+    const tableTransferSet = new Set(tableTransferTargets);
+    const remainingTargets = dealTargets.filter(item => !tableTransferSet.has(item));
+    if (remainingTargets.length) {
+      await animateDurakDealSequence(tableTransferTargets, roomId, {
+        ...options,
+        initial: false,
+        finalDeckCount: null
+      });
+      await animateDurakDealSequence(remainingTargets, roomId, {
+        ...options,
+        initial: false,
+        finalDeckCount: options.finalDeckCount
+      });
+      return;
+    }
+  }
+
   if (isInitialDeal) playDurakSound("shuffle");
 
   const usableTargets = dealTargets.filter(item => item?.target?.isConnected);
