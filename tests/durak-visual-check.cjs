@@ -288,7 +288,8 @@ const path = require("node:path");
       throw new Error("Новая атакующая карта соперника не начала полёт от его места к столу");
     }
     const incomingStart = await incomingFlyer.boundingBox();
-    await page.waitForTimeout(430);
+    // The reference-style incoming card now follows a slower curved flight.
+    await page.waitForTimeout(525);
     const incomingEnd = await page.evaluate(() => {
       const card = document.querySelector('#durakTable .durak-card[data-card-id="incoming-attack-1"]');
       if (!card) return null;
