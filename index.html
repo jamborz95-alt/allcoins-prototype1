@@ -4152,8 +4152,10 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
       const isDeckDraw = item?.deckDraw === true;
       const isOpponentDraw = item?.opponentDraw === true;
+      // Карты со стола уходят в руку быстрым непрерывным полётом:
+      // без долгого зависания, но с заметной дугой до места в веере.
       const flightDuration = isTableTransfer
-        ? 1150
+        ? 690
         : isInitialDeal
           ? 540
           : isOpponentDraw
@@ -4300,7 +4302,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         }
         // Взятие со стола должно читаться глазами: выше дуга, дольше путь и пауза между картами.
         const arcHeight = isTableTransfer
-          ? Math.min(126, Math.max(84, Math.abs(dx) * 0.14 + Math.abs(dy) * 0.12))
+          ? Math.min(88, Math.max(42, Math.abs(dx) * 0.095 + Math.abs(dy) * 0.075))
           : isDeckDraw
             ? Math.min(68, Math.max(36, Math.abs(dx) * 0.085 + Math.abs(dy) * 0.065))
             : Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
@@ -4328,7 +4330,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       });
     }, index * (
       isInitialDeal ? 105 :
-      item?.fromTable ? 220 :
+      item?.fromTable ? 70 :
       item?.deckDraw ? 135 :
       item?.opponentDraw ? 125 : 115
     ));
