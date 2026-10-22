@@ -302,7 +302,7 @@ const path = require("node:path");
     await page.evaluate(() => document.getElementById("full-deck-contact-sheet")?.remove());
     await page.setViewportSize({ width: 390, height: 844 });
     if (contactSheetAudit.count !== 52 || contactSheetAudit.loadedCount !== 52 ||
-        contactSheetAudit.svgCount !== 0 || contactSheetAudit.pngCount !== 9) {
+        contactSheetAudit.svgCount !== 0 || contactSheetAudit.pngCount !== 11) {
       throw new Error("Визуальный лист ALLCOINS: не все карты видны и загружены: " + JSON.stringify(contactSheetAudit));
     }
 
