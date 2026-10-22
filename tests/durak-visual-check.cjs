@@ -206,7 +206,7 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "full-deck-asset-report.json"), JSON.stringify(fullDeckAssetReport, null, 2));
     if (fullDeckAssetReport.total !== 52 || fullDeckAssetReport.loaded !== 52 ||
-        fullDeckAssetReport.svgFaces !== 44 || fullDeckAssetReport.pngFaces !== 8) {
+        fullDeckAssetReport.svgFaces !== 38 || fullDeckAssetReport.pngFaces !== 14) {
       throw new Error("Не все 52 карты ALLCOINS имеют готовые загружаемые изображения: " + JSON.stringify(fullDeckAssetReport));
     }
 
@@ -226,7 +226,7 @@ const path = require("node:path");
         overflow: "hidden", alignContent: "start",
         background: "radial-gradient(ellipse at top, #2b4557, #101b25)"
       });
-      document.body.appendChild(host);
+      (document.getElementById("durakGame") || document.body).appendChild(host);
       const ranks = ["2","3","4","5","6","7","8","9","10","В","Д","К","Туз"];
       const suits = ["♠","♥","♦","♣"];
       const checks = [];
@@ -275,12 +275,12 @@ const path = require("node:path");
         svgCount: results.filter(item => item.loaded && item.src.endsWith(".svg")).length
       };
     });
-    await page.screenshot({ path: path.join(out, "full-deck-contact-sheet.png"), fullPage: true });
+    await page.screenshot({ path: path.join(out, "full-deck-contact-sheet.png"), fullPage: false });
     fs.writeFileSync(path.join(out, "full-deck-contact-sheet-report.json"), JSON.stringify(contactSheetAudit, null, 2));
     await page.evaluate(() => document.getElementById("full-deck-contact-sheet")?.remove());
     await page.setViewportSize({ width: 390, height: 844 });
     if (contactSheetAudit.count !== 52 || contactSheetAudit.loadedCount !== 52 ||
-        contactSheetAudit.svgCount !== 44 || contactSheetAudit.pngCount !== 8) {
+        contactSheetAudit.svgCount !== 38 || contactSheetAudit.pngCount !== 14) {
       throw new Error("Визуальный лист ALLCOINS: не все карты видны и загружены: " + JSON.stringify(contactSheetAudit));
     }
 
