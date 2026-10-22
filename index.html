@@ -2051,8 +2051,9 @@
   <div class="durak-room-actions" id="durakRoomActions">
 
   <button type="button" id="durakShowCreate">
-    ＋ Создать комнату
-  </button>
+      <span class="durak-create-icon" aria-hidden="true">＋</span>
+      <span>Создать комнату</span>
+    </button>
 
   <button type="button" id="durakShowRooms" class="secondary">
     🌍 Найти комнату
@@ -2717,6 +2718,72 @@
 }
 #durakGame .premium-court-index { text-align: center !important; text-shadow: 0 0 .3px currentColor !important; }
 #durakGame .premium-court-art-window { contain: paint; }
+
+
+/* ALLCOINS polish: a slightly larger deck with a clearer visible trump card. */
+#durakGame #durakTrump .durak-deck-stack {
+  width: 54px !important;
+  min-width: 54px !important;
+  height: 102px !important;
+  overflow: visible !important;
+}
+#durakGame #durakTrump .durak-deck-pile {
+  width: 54px !important;
+  height: 102px !important;
+  overflow: visible !important;
+}
+#durakGame #durakTrump .durak-deck-stack .durak-trump-suit-marker {
+  left: 19px !important;
+  top: 20px !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 70px !important;
+  min-height: 70px !important;
+  z-index: 6 !important;
+}
+#durakGame #durakTrump .durak-trump-suit-marker-symbol {
+  font-size: 36px !important;
+}
+#durakGame #durakShowCreate {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  min-height: 68px !important;
+  padding: 10px 14px !important;
+  border: 1px solid rgba(234, 199, 103, .72) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #1b2b45 0%, #101a2d 70%, #192843 100%) !important;
+  color: #fff8e4 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+  text-align: left !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 16px rgba(0,0,0,.32), 0 0 0 1px rgba(212,175,55,.08) !important;
+}
+#durakGame #durakShowCreate .durak-create-icon {
+  display: inline-flex !important;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(255, 229, 154, .86) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, #f7df91 0%, #d5a83a 52%, #9e7120 100%) !important;
+  color: #142039 !important;
+  font-size: 30px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 3px 8px rgba(0,0,0,.28) !important;
+}
+#durakGame #durakShowCreate:active {
+  transform: translateY(1px) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.28) !important;
+}
 
 </style>
 
@@ -3798,16 +3865,16 @@ function createDurakDeckPileLayer(index) {
   const cardBack = document.createElement("div");
   cardBack.className = "durak-deck-card-back";
   cardBack.dataset.deckLayer = String(index);
-  const left = Math.min(18, index * 0.36);
+  const left = Math.min(20, index * 0.4);
   const top = Math.max(-8, -index * 0.16);
   cardBack.style.cssText = [
     "position:absolute",
     "left:" + left + "px",
     "top:" + top + "px",
-    "width:30px",
-    "height:44px",
-    "min-width:30px",
-    "min-height:44px",
+    "width:34px",
+    "height:50px",
+    "min-width:34px",
+    "min-height:50px",
     "border:1px solid #edf1e4",
     "border-radius:3px",
     "background:" + DURAK_DECK_PILE_PATTERN,
@@ -3819,10 +3886,10 @@ function createDurakDeckPileLayer(index) {
   // Explicit priority beats older styles for the retired three-card deck.
   cardBack.style.setProperty("left", left + "px", "important");
   cardBack.style.setProperty("top", top + "px", "important");
-  cardBack.style.setProperty("width", "30px", "important");
-  cardBack.style.setProperty("min-width", "30px", "important");
-  cardBack.style.setProperty("height", "44px", "important");
-  cardBack.style.setProperty("min-height", "44px", "important");
+  cardBack.style.setProperty("width", "34px", "important");
+  cardBack.style.setProperty("min-width", "34px", "important");
+  cardBack.style.setProperty("height", "50px", "important");
+  cardBack.style.setProperty("min-height", "50px", "important");
   cardBack.style.setProperty("background", DURAK_DECK_PILE_PATTERN, "important");
   cardBack.style.setProperty("z-index", String(index + 2), "important");
   return cardBack;
@@ -5062,7 +5129,7 @@ deckBox.style.cssText = `
 // Каждый оставшийся экземпляр колоды представлен отдельной смещённой рубашкой.
 const deckPile = document.createElement("div");
 deckPile.className = "durak-deck-pile";
-deckPile.style.cssText = "position:absolute;left:0;top:0;width:48px;height:90px;overflow:visible;pointer-events:none;";
+deckPile.style.cssText = "position:absolute;left:0;top:0;width:54px;height:102px;overflow:visible;pointer-events:none;";
 const initialPileCount = Math.max(0, Math.min(52, Math.floor(Number(game.cardsLeft) || 0)));
 for (let i = 0; i < initialPileCount; i++) {
   deckPile.appendChild(createDurakDeckPileLayer(i));
@@ -5077,8 +5144,8 @@ deckCount.textContent = String(initialPileCount);
 const deckStack = document.createElement("div");
 deckStack.className = "durak-deck-stack";
 deckStack.style.cssText = `
-  display:block; position:relative; flex:0 0 48px;
-  width:48px; min-width:48px; height:90px; margin:0; overflow:visible;
+  display:block; position:relative; flex:0 0 54px;
+  width:54px; min-width:54px; height:102px; margin:0; overflow:visible;
 `;
 // Козырная карта лежит под колодой, пока она ещё не закончилась.
 // Когда последняя карта (козырь) взята, она больше не дублируется у колоды.
@@ -5087,19 +5154,19 @@ if (game.trumpCard && Number(game.cardsLeft ?? 0) > 0) {
   trumpElement.classList.add("durak-trump-card");
 
   trumpElement.style.flex = "none";
-  trumpElement.style.width = "30px";
-  trumpElement.style.height = "44px";
-  trumpElement.style.minWidth = "30px";
-  trumpElement.style.maxWidth = "30px";
+  trumpElement.style.width = "36px";
+  trumpElement.style.height = "52px";
+  trumpElement.style.minWidth = "36px";
+  trumpElement.style.maxWidth = "36px";
   trumpElement.style.transform = "rotate(90deg)";
   trumpElement.style.transformOrigin = "center center";
   trumpElement.style.pointerEvents = "none";
   trumpElement.style.position = "absolute";
   // Козырь выглядывает из-под короткой стопки, но не заходит на игровую зону.
-  trumpElement.style.left = "5px";
-  trumpElement.style.top = "17px";
+  trumpElement.style.left = "17px";
+  trumpElement.style.top = "24px";
   trumpElement.style.setProperty("left", "17px", "important");
-  trumpElement.style.setProperty("top", "17px", "important");
+  trumpElement.style.setProperty("top", "24px", "important");
   trumpElement.style.zIndex = "1";
   trumpElement.style.margin = "0";
   trumpElement.style.transform = "rotate(90deg)";
@@ -5164,12 +5231,12 @@ if (game.trumpCard) {
   const trumpCard = deckStack.querySelector(".durak-trump-card");
   if (trumpCard) {
     trumpCard.style.setProperty("left", "17px", "important");
-    trumpCard.style.setProperty("top", "17px", "important");
+    trumpCard.style.setProperty("top", "24px", "important");
     trumpCard.style.setProperty("z-index", "1", "important");
-    trumpCard.style.setProperty("width", "30px", "important");
-    trumpCard.style.setProperty("min-width", "30px", "important");
-    trumpCard.style.setProperty("height", "44px", "important");
-    trumpCard.style.setProperty("min-height", "44px", "important");
+    trumpCard.style.setProperty("width", "36px", "important");
+    trumpCard.style.setProperty("min-width", "36px", "important");
+    trumpCard.style.setProperty("height", "52px", "important");
+    trumpCard.style.setProperty("min-height", "52px", "important");
   }
 }
 
