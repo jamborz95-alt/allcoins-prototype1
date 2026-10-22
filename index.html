@@ -3832,13 +3832,15 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-user-png-preserve2";
+const DURAK_CARD_ASSET_VERSION = "20261022-deal-preloaded-visibility-v4";
 const DURAK_CARD_ASSETS = [
+  "ace-diamonds.png",
   "ace-hearts.png",
   "ace-spades.png",
   "jack-diamonds.png",
   "jack-hearts.png",
   "jack-spades.png",
+  "king-diamonds.png",
   "king-hearts.png",
   "king-spades-2.png",
   "queen-hearts.png",
@@ -3904,6 +3906,7 @@ const suitImageNames = {
   "♣":"clubs","♧":"clubs","CLUBS":"clubs"
 };
 const existingPngFaces = {
+  "ace-diamonds.svg":"ace-diamonds.png",
   "ace-spades.svg":"ace-spades.png",
   "ace-hearts.svg":"ace-hearts.png",
   "jack-spades.svg":"jack-spades.png",
@@ -3912,7 +3915,8 @@ const existingPngFaces = {
   "queen-spades.svg":"queen-spades.png",
   "queen-hearts.svg":"queen-hearts.png",
   "king-spades.svg":"king-spades-2.png",
-  "king-hearts.svg":"king-hearts.png"
+  "king-hearts.svg":"king-hearts.png",
+  "king-diamonds.svg":"king-diamonds.png"
 };
 const rankImageName = rankImageNames[rank.toUpperCase()];
 const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
@@ -4437,14 +4441,16 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
     if (!target?.isConnected) return;
     savedStyles.set(target, {
       opacity: target.style.opacity,
+      visibility: target.style.visibility,
       transform: target.style.transform,
       transition: target.style.transition,
       pointerEvents: target.style.pointerEvents,
       transformOrigin: target.style.transformOrigin
     });
-    // Скрытый класс снимается только после сохранения конечного стиля.
-    // Операции выполняются в одном JS-кадре, поэтому карта не мелькнёт в руке.
+    // Android WebView иногда рисует PNG до применения opacity; жёстко скрываем
+    // карту перед снятием класса и показываем её только в точке посадки.
     if (target.dataset.durakDealPending === "true") {
+      target.style.visibility = "hidden";
       target.classList.remove("durak-deal-hidden");
       delete target.dataset.durakDealPending;
     }
@@ -4463,6 +4469,15 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const target = item?.target;
       const previous = target ? savedStyles.get(target) : null;
       if (token !== durakDealAnimationToken || !target?.isConnected || !previous) {
+        if (target?.isConnected && previous) {
+          target.style.opacity = previous.opacity;
+          target.style.visibility = previous.visibility;
+          target.style.transform = previous.transform;
+          target.style.transition = previous.transition;
+          target.style.pointerEvents = previous.pointerEvents;
+          target.style.transformOrigin = previous.transformOrigin;
+          delete target.dataset.durakDealPending;
+        }
         if (item?.temporaryTarget) target?.remove();
         resolve();
         return;
@@ -4471,10 +4486,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const targetRect = target.getBoundingClientRect();
       if (!targetRect.width || !targetRect.height) {
         target.style.opacity = previous.opacity;
+        target.style.visibility = previous.visibility;
         target.style.transform = previous.transform;
         target.style.transition = previous.transition;
         target.style.pointerEvents = previous.pointerEvents;
         target.style.transformOrigin = previous.transformOrigin;
+        delete target.dataset.durakDealPending;
         if (item?.temporaryTarget) target.remove();
         resolve();
         return;
@@ -4612,10 +4629,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         flyer.remove();
         if (target.isConnected) {
           target.style.opacity = previous.opacity;
+          target.style.visibility = previous.visibility;
           target.style.transform = previous.transform;
           target.style.transition = previous.transition;
           target.style.pointerEvents = previous.pointerEvents;
           target.style.transformOrigin = previous.transformOrigin;
+          delete target.dataset.durakDealPending;
         }
         // Временные невидимые цели нужны только для карт сверх лимита рубашек в веере.
         if (item?.temporaryTarget) target.remove();
@@ -4650,6 +4669,8 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
             finish();
             return;
           }
+          // Показываем целевой PNG строго в момент, когда летящая карта достигла руки.
+          target.style.visibility = "visible";
           // Звук контакта звучит в момент посадки карты, а не в начале полёта.
           playDurakSound("deal");
           target.style.transition = item.faceUp
@@ -7682,6 +7703,7 @@ if (gamesSection) {
   }
 /* Новой карте нельзя появляться в руке до старта перелёта из колоды. */
 #durakGame .durak-card.durak-deal-hidden {
+  visibility: hidden !important;
   opacity: 0 !important;
   transform: rotateY(88deg) !important;
   transform-origin: center center !important;
