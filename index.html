@@ -3646,59 +3646,15 @@ function copyDurakComputedStyles(source, target) {
 // ===== ПРЕДЗАГРУЗКА КАРТ ALLCOINS =====
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
-// Bump this value whenever files in /cards are replaced. Telegram WebView may cache SVGs by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-premium4";
+// Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
+const DURAK_CARD_ASSET_VERSION = "20261022-user-png-preserve1";
 const DURAK_CARD_ASSETS = [
-  "10-clubs.svg",
-  "10-diamonds.svg",
-  "10-hearts.svg",
-  "10-spades.svg",
-  "2-clubs.svg",
-  "2-diamonds.svg",
-  "2-hearts.svg",
-  "2-spades.svg",
-  "3-clubs.svg",
-  "3-diamonds.svg",
-  "3-hearts.svg",
-  "3-spades.svg",
-  "4-clubs.svg",
-  "4-diamonds.svg",
-  "4-hearts.svg",
-  "4-spades.svg",
-  "5-clubs.svg",
-  "5-diamonds.svg",
-  "5-hearts.svg",
-  "5-spades.svg",
-  "6-clubs.svg",
-  "6-diamonds.svg",
-  "6-hearts.svg",
-  "6-spades.svg",
-  "7-clubs.svg",
-  "7-diamonds.svg",
-  "7-hearts.svg",
-  "7-spades.svg",
-  "8-clubs.svg",
-  "8-diamonds.svg",
-  "8-hearts.svg",
-  "8-spades.svg",
-  "9-clubs.svg",
-  "9-diamonds.svg",
-  "9-hearts.svg",
-  "9-spades.svg",
-  "ace-clubs.svg",
-  "ace-diamonds.svg",
   "ace-hearts.png",
   "ace-spades.png",
-  "jack-clubs.svg",
-  "jack-diamonds.svg",
   "jack-hearts.png",
   "jack-spades.png",
-  "king-clubs.svg",
-  "king-diamonds.svg",
   "king-hearts.png",
   "king-spades-2.png",
-  "queen-clubs.svg",
-  "queen-diamonds.svg",
   "queen-hearts.png",
   "queen-spades.png"
 ];
@@ -3754,7 +3710,7 @@ const existingPngFaces = {
 const rankImageName = rankImageNames[rank.toUpperCase()];
 const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
 const svgFilename = rankImageName && suitImageName ? rankImageName + "-" + suitImageName + ".svg" : null;
-const imageName = svgFilename ? (existingPngFaces[svgFilename] || svgFilename) : null;
+const imageName = svgFilename ? (existingPngFaces[svgFilename] || null) : null;
 
 
   if (imageName) {
