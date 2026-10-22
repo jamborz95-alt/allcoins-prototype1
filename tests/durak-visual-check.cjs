@@ -300,6 +300,70 @@ const path = require("node:path");
     if (!incomingStart || !incomingEnd?.visible || await incomingFlyer.count() !== 0) {
       throw new Error("Анимация атаки соперника не завершилась посадкой карты на стол");
     }
+
+    // Regression check for the video layout:
+    // defence may overlap its own attack, but must not overlap the next attack.
+    currentGame.table = [
+      {
+        attack: { id: "spacing-attack-1", rank: "9", suit: "♠" },
+        defense: { id: "spacing-defense-1", rank: "Т", suit: "♠" }
+      },
+      {
+        attack: { id: "spacing-attack-2", rank: "10", suit: "♦" },
+        defense: { id: "spacing-defense-2", rank: "В", suit: "♦" }
+      },
+      {
+        attack: { id: "spacing-attack-3", rank: "Д", suit: "♥" },
+        defense: null
+      }
+    ];
+    currentGame.phase = "defense";
+    currentGame.attackerIndex = 1;
+    currentGame.defenderIndex = 0;
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    // Let the opponent's cards complete their flight before measuring final positions.
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: path.join(out, "06-game-card-pair-spacing.png"), fullPage: true });
+
+    const pairSpacing = await page.evaluate(() => {
+      const table = document.getElementById("durakTable");
+      const pairs = [...(table?.querySelectorAll(".durak-table-pair") || [])].map((pair, index) => {
+        const attack = pair.querySelector('.durak-card.table-card[data-table-card-type="attack"]');
+        const defense = pair.querySelector('.durak-card.table-card[data-table-card-type="defense"]');
+        const rect = element => {
+          if (!element) return null;
+          const r = element.getBoundingClientRect();
+          return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
+        };
+        return { index, pair: rect(pair), attack: rect(attack), defense: rect(defense) };
+      });
+      const gaps = [];
+      for (let i = 0; i < pairs.length - 1; i++) {
+        if (pairs[i].defense && pairs[i + 1].attack) {
+          gaps.push({
+            fromPair: i,
+            toPair: i + 1,
+            px: pairs[i + 1].attack.x - pairs[i].defense.right,
+            sameRow: Math.abs(pairs[i + 1].attack.y - pairs[i].defense.y) < 20
+          });
+        }
+      }
+      return { viewport: { width: innerWidth, height: innerHeight }, table: rectTable(table), pairs, gaps };
+      function rectTable(element) {
+        if (!element) return null;
+        const r = element.getBoundingClientRect();
+        return { x:r.x, y:r.y, width:r.width, height:r.height };
+      }
+    });
+    fs.writeFileSync(path.join(out, "pair-spacing.json"), JSON.stringify(pairSpacing, null, 2));
+    if (pairSpacing.pairs.length !== 3) {
+      throw new Error("Тест расстояния ожидал 3 пары карт; получено " + pairSpacing.pairs.length);
+    }
+    const overlappingNextAttack = pairSpacing.gaps.find(gap => gap.px < 8 && gap.sameRow);
+    if (overlappingNextAttack) {
+      throw new Error("Защита перекрывает следующую атакующую карту. Расстояние: " + overlappingNextAttack.px + "px. См. pair-spacing.json");
+    }
+
     if (errors.length) {
       fs.writeFileSync(path.join(out, "browser-errors.txt"), errors.join("\n"));
       throw new Error("Есть ошибки браузера: " + errors.length + ". См. visual-test-output/browser-errors.txt");
