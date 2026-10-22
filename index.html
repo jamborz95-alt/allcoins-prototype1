@@ -2511,10 +2511,10 @@
   box-sizing: border-box !important;
 }
 #durakGame #durakTable .durak-table-pair {
-  /* Каждая пара создаёт свой слой: защита прошлой пары не рисуется поверх новой атаки. */
+  /* Как в видео: защита немного накрывает свою атаку, но следующая атака начинается отдельно справа. */
   position: relative !important; z-index: 0 !important; isolation: isolate !important;
-  display: block !important; flex: 0 0 147px !important;
-  width: 147px !important; height: 108px !important; margin: 1px 0 !important;
+  display: block !important; flex: 0 0 100px !important;
+  width: 100px !important; height: 108px !important; margin: 1px 0 !important;
   overflow: visible !important;
 }
 #durakGame #durakTable .durak-table-pair .durak-card.table-card {
@@ -2523,12 +2523,11 @@
   height: 92px !important; min-height: 92px !important; padding: 0 !important;
   overflow: hidden !important; box-sizing: border-box !important;
 }
-/* Атака и защита лежат рядом: между картами остаётся небольшой зазор. */
 #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
-  left: 0 !important; top: 7px !important; z-index: 1 !important; transform: rotate(-1deg) !important;
+  left: 0 !important; top: 7px !important; z-index: 1 !important; transform: rotate(-2deg) !important;
 }
 #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
-  left: 69px !important; top: 7px !important; z-index: 2 !important; transform: rotate(1deg) !important;
+  left: 22px !important; top: 0 !important; z-index: 2 !important; transform: rotate(3deg) !important;
 }
 #durakGame .durak-table + h4 { display: none !important; }
 #durakGame #durakHand {
@@ -2577,23 +2576,33 @@
 }
 @media (max-width: 380px) {
   #durakGame #durakTable { padding: 0 28px !important; top: 19% !important; bottom: 30% !important; gap: 7px 0 !important; }
-  #durakGame #durakTable .durak-table-pair { flex-basis: 140px !important; width: 140px !important; height: 100px !important; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 96px !important; width: 96px !important; height: 100px !important; }
   #durakGame #durakTable .durak-table-pair .durak-card.table-card {
     width: 58px !important; min-width: 58px !important; max-width: 58px !important;
     height: 86px !important; min-height: 86px !important;
   }
   #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
-    left: 0 !important; top: 7px !important; transform: rotate(-1deg) !important;
+    left: 0 !important; top: 7px !important; transform: rotate(-2deg) !important;
   }
   #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
-    left: 64px !important; top: 7px !important; transform: rotate(1deg) !important;
+    left: 20px !important; top: 0 !important; transform: rotate(3deg) !important;
   }
   #durakGame #durakControls #durakTake,
   #durakGame #durakControls #durakBeat { flex-basis: 38% !important; width: 38% !important; }
 }
-/* На очень узких экранах оставляем две пары в одном ряду, но сохраняем отдельные слои. */
+/* На очень узких экранах уменьшаем только размер слота, сохраняя разрыв между парами. */
 @media (max-width: 350px) {
-  #durakGame #durakTable .durak-table-pair { flex-basis: 132px !important; width: 132px !important; }
+  #durakGame #durakTable .durak-table-pair { flex-basis: 84px !important; width: 84px !important; height: 88px !important; }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+    width: 52px !important; min-width: 52px !important; max-width: 52px !important;
+    height: 78px !important; min-height: 78px !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important; top: 6px !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: 18px !important; top: 0 !important;
+  }
 }
 @media (max-height: 700px) {
   #durakGame #durakTable { top: 19% !important; bottom: 28% !important; }
@@ -4204,8 +4213,8 @@ function createDurakLandingTarget(action, sourceCard = null) {
     if (!attackCard || !pair) return null;
 
     target = makeTargetCard("defense");
-    target.style.left = "69px";
-    target.style.top = "7px";
+    target.style.left = "22px";
+    target.style.top = "0";
     pair.appendChild(target);
 
     return {
@@ -4222,15 +4231,15 @@ function createDurakLandingTarget(action, sourceCard = null) {
   holder.style.display = "inline-flex";
   holder.style.alignItems = "center";
   holder.style.justifyContent = "center";
-  holder.style.width = "144px";
+  holder.style.width = "100px";
   holder.style.height = "108px";
-  holder.style.flex = "0 0 144px";
+  holder.style.flex = "0 0 100px";
   holder.style.margin = "1px 0";
   holder.style.overflow = "visible";
 
   target = makeTargetCard("attack");
   target.style.left = "0";
-  target.style.top = "0";
+  target.style.top = "7px";
   holder.appendChild(target);
   table.appendChild(holder);
 
@@ -4859,10 +4868,10 @@ pair.style.position = "relative";
 pair.style.display = "inline-flex";
 pair.style.alignItems = "center";
 pair.style.justifyContent = "center";
-    pair.style.width = "144px";
+    pair.style.width = "100px";
 pair.style.height = "108px";
-pair.style.flex = "0 0 144px";
-pair.style.margin = "4px";
+pair.style.flex = "0 0 100px";
+pair.style.margin = "1px 0";
 pair.style.overflow = "visible";
 
     // Карта атаки
@@ -4878,8 +4887,8 @@ pair.style.overflow = "visible";
 attackCard.style.left = "0";
 attackCard.style.top = "7px";
 attackCard.style.zIndex = "1";
-attackCard.style.width = "68px";
-attackCard.style.height = "100px";
+attackCard.style.width = "62px";
+attackCard.style.height = "92px";
 attackCard.style.boxSizing = "border-box";
 
       pair.appendChild(attackCard);
@@ -4895,11 +4904,11 @@ attackCard.style.boxSizing = "border-box";
       defenseCard.style.visibility = "visible";
       defenseCard.style.opacity = "1";
       defenseCard.style.position = "absolute";
-defenseCard.style.left = "69px";
-defenseCard.style.top = "7px";
+defenseCard.style.left = "22px";
+defenseCard.style.top = "0";
 defenseCard.style.zIndex = "2";
-defenseCard.style.width = "68px";
-defenseCard.style.height = "100px";
+defenseCard.style.width = "62px";
+defenseCard.style.height = "92px";
 defenseCard.style.boxSizing = "border-box";
 
       pair.appendChild(defenseCard);
