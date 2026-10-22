@@ -3860,6 +3860,9 @@ initDurakSoundToggle();
 // Следим за новыми атакующими картами, чтобы анимировать только свежие броски соперника.
 let durakKnownAttackCardIds = new Set();
 let durakTableHistoryRoomId = null;
+let durakLastRenderedGameRoomId = null;
+let durakLastRenderedTakePending = false;
+let durakLastRenderedDefenderIndex = null;
 
 function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   if (!targetCard || !attackerSeat ||
@@ -3962,8 +3965,6 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
   // Плавная, хорошо различимая раздача: карта должна успевать пролететь
   // от колоды/стола до руки, как в карточной игре, без резкого телепорта.
-  const duration = isInitialDeal ? 510 : 435;
-  const staggerMs = isInitialDeal ? 112 : 96;
   const faceUpTransitionMs = isInitialDeal ? 130 : 112;
   const cleanupDelayMs = isInitialDeal ? 122 : 108;
   const savedStyles = new WeakMap();
@@ -4010,8 +4011,19 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         return;
       }
 
-      const flyer = document.createElement("span");
-      flyer.className = "durak-deal-flyer";
+      const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
+      const flightDuration = isTableTransfer
+        ? 680
+        : isInitialDeal
+          ? 510
+          : item?.opponentDraw
+            ? 520
+            : 435;
+      const flyer = isTableTransfer
+        ? item.source.element.cloneNode(true)
+        : document.createElement("span");
+      flyer.classList.add("durak-deal-flyer");
+      flyer.classList.remove("table-card", "durak-landing-target");
       flyer.setAttribute("aria-hidden", "true");
       const cardSourceX = Number.isFinite(item?.source?.x) ? item.source.x : sourceCenterX;
       const cardSourceY = Number.isFinite(item?.source?.y) ? item.source.y : sourceCenterY;
@@ -4041,6 +4053,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         "backface-visibility:hidden"
       ].join(";");
 
+      const flyerImage = flyer.querySelector("img");
+      if (flyerImage) Object.assign(flyerImage.style, {
+        display: "block", width: "100%", height: "100%",
+        minWidth: "0", minHeight: "0", maxWidth: "100%", maxHeight: "100%",
+        objectFit: "contain", pointerEvents: "none"
+      });
       document.body.appendChild(flyer);
       const dx = targetRect.left + targetRect.width / 2 - cardSourceX;
       const dy = targetRect.top + targetRect.height / 2 - cardSourceY;
@@ -4077,7 +4095,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(.77)" },
           { offset: 0.70, transform: "translate3d(" + (dx * 0.70) + "px," + (dy * 0.70 - arcHeight * 0.52) + "px,0) rotate(2deg) scale(.93)" },
           { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(1)" }
-        ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
+        ], { duration: flightDuration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         revealTimer = window.setTimeout(() => {
           if (!target.isConnected) {
             finish();
@@ -4091,9 +4109,13 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           target.style.opacity = "1";
           if (item.faceUp) target.style.transform = "rotateY(0deg)";
           cleanupTimer = window.setTimeout(finish, cleanupDelayMs);
-        }, duration);
+        }, flightDuration);
       });
-    }, index * staggerMs);
+    }, index * (
+      isInitialDeal ? 112 :
+      item?.fromTable ? 78 :
+      item?.opponentDraw ? 84 : 96
+    ));
   }));
 
   await Promise.all(tasks);
@@ -4428,7 +4450,8 @@ async function loadDurakGame(roomId) {
       if (cardId && rect.width > 0 && rect.height > 0) {
         previousTableCardOrigins.set(cardId, {
           x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2
+          y: rect.top + rect.height / 2,
+          element: element.cloneNode(true)
         });
       }
     });
@@ -4467,6 +4490,22 @@ async function loadDurakGame(roomId) {
       element.style.transition = "";
     });
 
+    // Запоминаем количество карт у соперников до обновления плашек.
+    // Это позволяет анимировать каждую новую рубашку, а не просто увеличивать счётчик.
+    const previousOpponentSeatState = new Map();
+    const sameRenderedRoom = durakLastRenderedGameRoomId === String(roomId);
+    const existingPlayersBox = $("durakPlayers");
+    if (sameRenderedRoom && existingPlayersBox) {
+      existingPlayersBox.querySelectorAll(".durak-player[data-player-index]").forEach(seat => {
+        const index = Number(seat.dataset.playerIndex);
+        const cardsCount = Number(seat.dataset.cardsCount);
+        if (Number.isInteger(index) && Number.isFinite(cardsCount)) {
+          previousOpponentSeatState.set(index, { cardsCount });
+        }
+      });
+    }
+    const newlyDealtOpponentBacks = [];
+
     // Участники, ники и рубашки карт соперников.
     const playersBox = $("durakPlayers");
     if (playersBox && Array.isArray(game.players)) {
@@ -4497,6 +4536,7 @@ async function loadDurakGame(roomId) {
         playerTag.appendChild(name);
 
         const count = Math.max(0, Number(player.cardsCount) || 0);
+        playerTag.dataset.cardsCount = String(count);
         const meta = document.createElement("span");
         meta.className = "durak-player-meta";
         meta.textContent = index === Number(game.playerIndex)
@@ -4510,10 +4550,22 @@ async function loadDurakGame(roomId) {
           const backs = document.createElement("div");
           backs.className = "durak-card-backs";
           const visibleBacks = Math.min(count, 6);
+          const previousCount = previousOpponentSeatState.has(index)
+            ? Math.min(Number(previousOpponentSeatState.get(index).cardsCount) || 0, 6)
+            : visibleBacks;
           for (let i = 0; i < visibleBacks; i++) {
             const back = document.createElement("span");
             back.className = "durak-card-back";
+            back.dataset.cardBackIndex = String(i);
             backs.appendChild(back);
+            if (i >= previousCount) {
+              newlyDealtOpponentBacks.push({
+                target: back,
+                faceUp: false,
+                opponentDraw: true,
+                playerIndex: index
+              });
+            }
           }
           playerTag.appendChild(backs);
         }
@@ -5232,7 +5284,13 @@ if (Array.isArray(game.hand)) {
     // Запоминаем новые ID, чтобы опрос сервера не запускал повторную анимацию.
     // Сам полёт выполняется после расчёта окончательных размеров веера.
     const animationCardId = String(card.id);
-    if (!durakAnimatedCardIds.has(animationCardId)) {
+    const returnedFromTable = previousTableCardOrigins.get(animationCardId);
+    if (returnedFromTable) {
+      // Карта уже была в руке раньше, но теперь её нужно показать летящей
+      // от старого места на столе — известный ID не должен отключать анимацию.
+      newlyDealtHandCards.push(cardElement);
+      durakAnimatedCardIds.add(animationCardId);
+    } else if (!durakAnimatedCardIds.has(animationCardId)) {
       durakAnimatedCardIds.add(animationCardId);
       newlyDealtHandCards.push(cardElement);
     }
@@ -5266,8 +5324,28 @@ if (Array.isArray(game.hand)) {
     });
   }
 
+  // Если завершилось «Беру», сначала отправляем видимые карты стола к руке игрока,
+  // который забрал карты. Следующие добранные карты продолжают лететь от колоды.
+  if (
+    durakLastRenderedTakePending &&
+    Array.isArray(game.table) && game.table.length === 0 &&
+    Number.isInteger(durakLastRenderedDefenderIndex)
+  ) {
+    const tableSources = Array.from(previousTableCardOrigins.values());
+    const opponentTakerCards = newlyDealtOpponentBacks.filter(
+      item => item.playerIndex === durakLastRenderedDefenderIndex
+    );
+    opponentTakerCards.forEach((item, index) => {
+      if (tableSources[index]) {
+        item.source = tableSources[index];
+        item.fromTable = true;
+      }
+    });
+  }
+
   // На первом отображении партии раздаём карты по кругу: соперникам — рубашкой,
-  // игроку — с переворотом лица в конце полёта. При доборе анимируем новые карты руки.
+  // игроку — с переворотом лица в конце полёта. В дальнейших раундах анимируем
+  // и свои новые карты, и рубашки, которые появились у соперников.
   if (game.status === "playing") {
     const dealQueue = [];
     if (isInitialDealForRoom && Array.isArray(game.players) && game.players.length) {
@@ -5299,7 +5377,20 @@ if (Array.isArray(game.hand)) {
     } else {
       newlyDealtHandCards.forEach(target => {
         const tableSource = previousTableCardOrigins.get(String(target.dataset.cardId || ""));
-        dealQueue.push({ target, faceUp: true, source: tableSource || null });
+        dealQueue.push({
+          target,
+          faceUp: true,
+          source: tableSource || null,
+          fromTable: Boolean(tableSource)
+        });
+      });
+      newlyDealtOpponentBacks.forEach(item => {
+        dealQueue.push({
+          ...item,
+          source: item.source || null,
+          fromTable: item.fromTable === true,
+          faceUp: false
+        });
       });
     }
 
@@ -5309,7 +5400,12 @@ if (Array.isArray(game.hand)) {
       });
     }
   }
-}
+
+  durakLastRenderedGameRoomId = String(roomId);
+  durakLastRenderedTakePending = game.takePending === true;
+  durakLastRenderedDefenderIndex = Number.isInteger(Number(game.defenderIndex))
+    ? Number(game.defenderIndex)
+    : null;
 
     const gameResultLabel = game.status !== "finished"
       ? "Идёт партия"
