@@ -2876,6 +2876,33 @@
     }
   }
 
+
+  /* ALLCOINS: карты на столе точно такого же размера, как карты в руке (56×84). */
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card {
+    flex: 0 0 56px !important;
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    height: 84px !important;
+    min-height: 84px !important;
+    max-height: 84px !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card.image-card > img {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    object-fit: fill !important;
+    object-position: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
