@@ -5571,15 +5571,26 @@ if (Array.isArray(game.hand)) {
   );
   const previousTableRemoved = previousTableCardIds.length > 0 &&
     previousTableCardIds.every(id => !currentTableCardIds.has(String(id)));
-  // Если защитник нажал «Беру», а атакующий затем подтвердил «Бито»,
-  // сервер может уже сменить атакующего. Старой проверки только по attackerIndex
-  // тогда недостаточно: карты со стола ошибочно летели из колоды.
+  // Проверяем получение карт обоими типами игроков: своим игроком по картам,
+  // вернувшимся в game.hand, и соперником по изменению его card count.
+  // Это важно, если быстрые обновления пропустили короткое состояние «Беру».
   const previousRoundWasTaking = durakLastRenderedTakePending === true;
+  const previousDefenderCount = previousOpponentSeatState.get(
+    Number(durakLastRenderedDefenderIndex)
+  )?.cardsCount;
+  const currentDefender = Array.isArray(game.players)
+    ? game.players[Number(durakLastRenderedDefenderIndex)]
+    : null;
+  const defenderCardsIncreased =
+    Number.isFinite(Number(previousDefenderCount)) &&
+    Number.isFinite(Number(currentDefender?.cardsCount)) &&
+    Number(currentDefender.cardsCount) > Number(previousDefenderCount);
   const opponentTookTable = sameRenderedRoom &&
     previousTableRemoved &&
     Number.isInteger(durakLastRenderedDefenderIndex) &&
     durakLastRenderedDefenderIndex !== Number(game.playerIndex) &&
     (previousRoundWasTaking ||
+      defenderCardsIncreased ||
       (Number.isInteger(durakLastRenderedAttackerIndex) &&
        Number(game.attackerIndex) === durakLastRenderedAttackerIndex));
 
