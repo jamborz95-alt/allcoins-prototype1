@@ -3914,7 +3914,6 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   let flightAnimation = null;
   let finished = false;
   const cleanup = () => {
-    flyer.removeEventListener("transitionend", onEnd);
     if (timer !== null) clearTimeout(timer);
   };
   const finish = () => {
