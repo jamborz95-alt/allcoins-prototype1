@@ -364,6 +364,94 @@ const path = require("node:path");
       throw new Error("Защита перекрывает следующую атакующую карту. Расстояние: " + overlappingNextAttack.px + "px. См. pair-spacing.json");
     }
 
+    // Visual regression: when the defender takes, cards already on the table
+    // must reach the defender's hand before any player receives a card from deck.
+    currentGame.players[0].cardsCount = currentGame.hand.length;
+    currentGame.players[1].cardsCount = 5;
+    currentGame.hand = currentGame.hand.slice(0, 1);
+    currentGame.phase = "defense";
+    currentGame.attackerIndex = 1;
+    currentGame.defenderIndex = 0;
+    currentGame.takePending = false;
+    currentGame.table = [
+      {
+        attack: { id: "take-attack-1", rank: "9", suit: "♠" },
+        defense: { id: "take-defense-1", rank: "Т", suit: "♠" }
+      },
+      {
+        attack: { id: "take-attack-2", rank: "10", suit: "♦" },
+        defense: null
+      }
+    ];
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    await page.waitForTimeout(750);
+    await page.screenshot({ path: path.join(out, "07-before-defender-takes.png"), fullPage: true });
+
+    await page.evaluate(() => {
+      window.__dealFlightEvents = [];
+      if (window.__dealFlightObserver) window.__dealFlightObserver.disconnect();
+      window.__dealFlightObserver = new MutationObserver(records => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.nodeType === 1 && node.classList?.contains("durak-deal-flyer")) {
+              window.__dealFlightEvents.push({
+                source: node.dataset.dealSource || "unknown",
+                at: performance.now()
+              });
+            }
+          }
+        }
+      });
+      window.__dealFlightObserver.observe(document.body, { childList: true, subtree: true });
+    });
+
+    const takenCards = await page.evaluate(() => currentGame.table.flatMap(pair => [pair.attack, pair.defense]).filter(Boolean));
+    currentGame.hand.push(...takenCards);
+    currentGame.table = [];
+    currentGame.players[0].cardsCount = currentGame.hand.length;
+    currentGame.players[1].cardsCount = 6;
+    currentGame.cardsLeft = 17;
+    await page.evaluate(() => { void loadDurakGame("visual-test-room"); });
+    await page.waitForFunction(() => window.__dealFlightEvents?.some(event => event.source === "table"), { timeout: 5000 });
+    await page.waitForTimeout(180);
+    await page.screenshot({ path: path.join(out, "08-table-cards-flying-to-defender.png"), fullPage: true });
+    await page.waitForFunction(() => window.__dealFlightEvents?.some(event => event.source === "deck"), { timeout: 7000 });
+    await page.screenshot({ path: path.join(out, "09-deck-draw-starts-after-table-pickup.png"), fullPage: true });
+    await page.waitForTimeout(800);
+
+    const pickupOrder = await page.evaluate(() => {
+      const events = window.__dealFlightEvents || [];
+      const tableEvents = events.filter(event => event.source === "table");
+      const deckEvents = events.filter(event => event.source === "deck");
+      return {
+        events,
+        tableCount: tableEvents.length,
+        deckCount: deckEvents.length,
+        lastTableStart: tableEvents.length ? Math.max(...tableEvents.map(event => event.at)) : null,
+        firstDeckStart: deckEvents.length ? Math.min(...deckEvents.map(event => event.at)) : null,
+        handCards: document.querySelectorAll("#durakHand .durak-card").length,
+        tableCards: document.querySelectorAll("#durakTable .durak-card.table-card").length,
+        remainingFlyingCards: document.querySelectorAll(".durak-deal-flyer").length
+      };
+    });
+    fs.writeFileSync(path.join(out, "take-pickup-order.json"), JSON.stringify(pickupOrder, null, 2));
+    if (pickupOrder.tableCount !== 3) {
+      throw new Error("При взятии ожидались 3 полёта карт со стола, получено " + pickupOrder.tableCount);
+    }
+    if (pickupOrder.deckCount !== 1) {
+      throw new Error("После взятия ожидался 1 добор из колоды сопернику, получено " + pickupOrder.deckCount);
+    }
+    if (pickupOrder.firstDeckStart === null || pickupOrder.lastTableStart === null ||
+        pickupOrder.firstDeckStart < pickupOrder.lastTableStart + 450) {
+      throw new Error("Карты из колоды начали лететь до завершения взятия карт со стола: " + JSON.stringify(pickupOrder));
+    }
+    if (pickupOrder.tableCards !== 0 || pickupOrder.remainingFlyingCards !== 0) {
+      throw new Error("После взятия на столе или в полёте остались лишние карты: " + JSON.stringify(pickupOrder));
+    }
+    if (pickupOrder.handCards !== 4) {
+      throw new Error("В руке защищающегося ожидалось 4 карты после взятия, получено " + pickupOrder.handCards);
+    }
+
     if (errors.length) {
       fs.writeFileSync(path.join(out, "browser-errors.txt"), errors.join("\n"));
       throw new Error("Есть ошибки браузера: " + errors.length + ". См. visual-test-output/browser-errors.txt");
