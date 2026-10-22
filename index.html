@@ -2834,6 +2834,48 @@
   padding: 0 !important;
 }
 
+
+  /* ALLCOINS: карты на столе того же размера, что и карты в руке */
+  #durakGame #durakTable .durak-table-pair {
+    width: 88px !important;
+    flex: 0 0 88px !important;
+    height: 102px !important;
+    overflow: visible !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+    width: 65px !important;
+    min-width: 65px !important;
+    max-width: 65px !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important;
+  }
+  #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: 22px !important;
+    top: 0 !important;
+  }
+  @media (max-width: 380px) {
+    #durakGame #durakTable .durak-table-pair {
+      width: 74px !important;
+      flex: 0 0 74px !important;
+      height: 90px !important;
+    }
+    #durakGame #durakTable .durak-table-pair .durak-card.table-card {
+      width: 56px !important;
+      min-width: 56px !important;
+      max-width: 56px !important;
+      height: 84px !important;
+      min-height: 84px !important;
+    }
+    #durakGame #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+      left: 18px !important;
+    }
+  }
+
 </style>
 
   <!-- КОМНАТА: ОЖИДАНИЕ И ГОТОВНОСТЬ -->
