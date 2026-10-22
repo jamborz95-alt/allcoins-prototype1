@@ -4343,10 +4343,25 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
 
 // Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
 // а собственная карта игрока переворачивается лицом вверх в момент приземления.
+function revealPendingDurakDealTargets(dealTargets) {
+  if (!Array.isArray(dealTargets)) return;
+  dealTargets.forEach(item => {
+    const target = item?.target;
+    if (!target?.isConnected || target.dataset.durakDealPending !== "true") return;
+    target.classList.remove("durak-deal-hidden");
+    delete target.dataset.durakDealPending;
+    target.style.removeProperty("opacity");
+    target.style.removeProperty("transition");
+  });
+}
+
 async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   const isInitialDeal = options.initial === true;
-  if (!Array.isArray(dealTargets) || !dealTargets.length ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!Array.isArray(dealTargets) || !dealTargets.length) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    revealPendingDurakDealTargets(dealTargets);
+    return;
+  }
 
   // При взятии карт защищающимся соблюдаем порядок:
   // сначала весь стол перелетает в руку берущего, и только после посадки
@@ -4377,7 +4392,10 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   if (isInitialDeal) playDurakSound("shuffle");
 
   const usableTargets = dealTargets.filter(item => item?.target?.isConnected);
-  if (!usableTargets.length) return;
+  if (!usableTargets.length) {
+    revealPendingDurakDealTargets(dealTargets);
+    return;
+  }
   const deckDrawCount = usableTargets.filter(item => item?.deckDraw === true).length;
   const finalDeckCount = Number.isFinite(Number(options.finalDeckCount))
     ? Math.max(0, Math.min(52, Math.floor(Number(options.finalDeckCount))))
@@ -4402,6 +4420,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
     item?.fromTable === true && Number.isFinite(item?.source?.x) && Number.isFinite(item?.source?.y)
   )) {
     if (finalDeckCount !== null) updateDurakDeckVisualCount(finalDeckCount);
+    revealPendingDurakDealTargets(dealTargets);
     return;
   }
 
@@ -4423,6 +4442,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       pointerEvents: target.style.pointerEvents,
       transformOrigin: target.style.transformOrigin
     });
+    // Скрытый класс снимается только после сохранения конечного стиля.
+    // Операции выполняются в одном JS-кадре, поэтому карта не мелькнёт в руке.
+    if (target.dataset.durakDealPending === "true") {
+      target.classList.remove("durak-deal-hidden");
+      delete target.dataset.durakDealPending;
+    }
     target.style.transition = "none";
     target.style.opacity = "0";
     target.style.pointerEvents = "none";
@@ -5939,21 +5964,23 @@ if (Array.isArray(game.hand)) {
       cardElement.addEventListener("lostpointercapture", lostPointer, { once: true });
     };
 
-    $("durakHand").appendChild(cardElement);
-
-    // Запоминаем новые ID, чтобы опрос сервера не запускал повторную анимацию.
-    // Сам полёт выполняется после расчёта окончательных размеров веера.
+    // Новую карту скрываем ДО вставки в DOM: WebView не покажет её в руке
+    // на кадр раньше, чем начнётся перелёт из колоды.
     const animationCardId = String(card.id);
     const returnedFromTable = previousTableCardOrigins.get(animationCardId);
+    const shouldAnimateArrival = Boolean(returnedFromTable) || !durakAnimatedCardIds.has(animationCardId);
     if (returnedFromTable) {
-      // Карта уже была в руке раньше, но теперь её нужно показать летящей
-      // от старого места на столе — известный ID не должен отключать анимацию.
       newlyDealtHandCards.push(cardElement);
       durakAnimatedCardIds.add(animationCardId);
     } else if (!durakAnimatedCardIds.has(animationCardId)) {
       durakAnimatedCardIds.add(animationCardId);
       newlyDealtHandCards.push(cardElement);
     }
+    if (shouldAnimateArrival) {
+      cardElement.classList.add("durak-deal-hidden");
+      cardElement.dataset.durakDealPending = "true";
+    }
+    $("durakHand").appendChild(cardElement);
   });
 
   // Подгоняем веер карт под ширину экрана: каждая карта крупнее, а перекрытие
@@ -7640,6 +7667,32 @@ if (gamesSection) {
     font-weight: 800 !important;
     text-align: center !important;
   }
+/* Новой карте нельзя появляться в руке до старта перелёта из колоды. */
+#durakGame .durak-card.durak-deal-hidden {
+  opacity: 0 !important;
+  transform: rotateY(88deg) !important;
+  transform-origin: center center !important;
+  transition: none !important;
+  pointer-events: none !important;
+}
+/* Показываем ник целиком, переносим длинные имена вместо многоточия. */
+#durakGame .durak-player-name {
+  display: block !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+@media (max-width: 380px) {
+  #durakGame .durak-player-name {
+    font-size: 9px !important;
+    line-height: 1.18 !important;
+  }
+}
 </style>
 </body>
 </html>
