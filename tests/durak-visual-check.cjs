@@ -237,10 +237,18 @@ const path = require("node:path");
           Object.assign(card.style, {
             flex: "none", width: "70px", minWidth: "70px", maxWidth: "70px",
             height: "106px", minHeight: "106px", margin: "0",
-            borderRadius: "5px", boxSizing: "border-box"
+            borderRadius: "5px", boxSizing: "border-box", overflow: "hidden",
+            background: "#fffdf8", border: "1px solid #d0bd8a"
+          });
+          const image = card.querySelector("img");
+          if (image) Object.assign(image.style, {
+            display: "block", width: "100%", height: "100%",
+            minWidth: "0", minHeight: "0", maxWidth: "100%", maxHeight: "100%",
+            objectFit: "contain", objectPosition: "center",
+            margin: "0", padding: "0", pointerEvents: "none"
           });
           host.appendChild(card);
-          checks.push({ rank, suit, element: card, image: card.querySelector("img") });
+          checks.push({ rank, suit, element: card, image });
         }
       }
       const results = await Promise.all(checks.map(async item => {
