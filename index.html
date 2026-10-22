@@ -3636,15 +3636,58 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 const DURAK_CARD_ASSETS = [
-  "ace-spades.png",
+  "10-clubs.svg",
+  "10-diamonds.svg",
+  "10-hearts.svg",
+  "10-spades.svg",
+  "2-clubs.svg",
+  "2-diamonds.svg",
+  "2-hearts.svg",
+  "2-spades.svg",
+  "3-clubs.svg",
+  "3-diamonds.svg",
+  "3-hearts.svg",
+  "3-spades.svg",
+  "4-clubs.svg",
+  "4-diamonds.svg",
+  "4-hearts.svg",
+  "4-spades.svg",
+  "5-clubs.svg",
+  "5-diamonds.svg",
+  "5-hearts.svg",
+  "5-spades.svg",
+  "6-clubs.svg",
+  "6-diamonds.svg",
+  "6-hearts.svg",
+  "6-spades.svg",
+  "7-clubs.svg",
+  "7-diamonds.svg",
+  "7-hearts.svg",
+  "7-spades.svg",
+  "8-clubs.svg",
+  "8-diamonds.svg",
+  "8-hearts.svg",
+  "8-spades.svg",
+  "9-clubs.svg",
+  "9-diamonds.svg",
+  "9-hearts.svg",
+  "9-spades.svg",
+  "ace-clubs.svg",
+  "ace-diamonds.svg",
   "ace-hearts.png",
-  "king-spades-2.png",
-  "king-hearts.png",
-  "queen-hearts.png",
-  "queen-spades.png",
-  "jack-diamonds.png",
+  "ace-spades.png",
+  "jack-clubs.svg",
+  "jack-diamonds.svg",
   "jack-hearts.png",
-  "jack-spades.png"
+  "jack-spades.png",
+  "king-clubs.svg",
+  "king-diamonds.svg",
+  "king-hearts.png",
+  "king-spades-2.png",
+  "queen-clubs.svg",
+  "queen-diamonds.svg",
+  "queen-hearts.png",
+  "queen-spades.png"
 ];
 const durakCardAssetsReady = Promise.all(
   DURAK_CARD_ASSETS.map(filename => new Promise(resolve => {
@@ -3671,35 +3714,33 @@ if (["♥", "♡", "♦", "♢"].includes(suit)) {
   cardElement.dataset.cardId = String(card.id);
 cardElement.style.touchAction = "none";
   // Подбираем готовое изображение для нужной карты
-const cardImages = {
-  "К-♠": "king-spades-2.png",
-  "К-♤": "king-spades-2.png",
-  "К-♥": "king-hearts.png",
-  "К-♡": "king-hearts.png",
-
-  "Д-♥": "queen-hearts.png",
-  "Д-♡": "queen-hearts.png",
-  "Д-♠": "queen-spades.png",
-  "Д-♤": "queen-spades.png",
-
-  "В-♥": "jack-hearts.png",
-  "В-♡": "jack-hearts.png",
-  "В-♠": "jack-spades.png",
-  "В-♤": "jack-spades.png",
-
-  "Т-♠": "ace-spades.png",
-  "Т-♤": "ace-spades.png",
-  "Т-♥": "ace-hearts.png",
-  "Т-♡": "ace-hearts.png",
-
-  "ТУЗ-♠": "ace-spades.png",
-  "ТУЗ-♤": "ace-spades.png",
-  "ТУЗ-♥": "ace-hearts.png",
-  "ТУЗ-♡": "ace-hearts.png"
+const rankImageNames = {
+  "2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9","10":"10",
+  "В":"jack","J":"jack",
+  "Д":"queen","Q":"queen",
+  "К":"king","K":"king",
+  "Т":"ace","ТУЗ":"ace","A":"ace"
 };
-
-  console.log("Карта:", rank, suit);
-const imageName = cardImages[rank.toUpperCase() + "-" + suit];
+const suitImageNames = {
+  "♠":"spades","♤":"spades","SPADES":"spades",
+  "♥":"hearts","♡":"hearts","HEARTS":"hearts",
+  "♦":"diamonds","♢":"diamonds","DIAMONDS":"diamonds",
+  "♣":"clubs","♧":"clubs","CLUBS":"clubs"
+};
+const existingPngFaces = {
+  "ace-spades.svg":"ace-spades.png",
+  "ace-hearts.svg":"ace-hearts.png",
+  "jack-spades.svg":"jack-spades.png",
+  "jack-hearts.svg":"jack-hearts.png",
+  "queen-spades.svg":"queen-spades.png",
+  "queen-hearts.svg":"queen-hearts.png",
+  "king-spades.svg":"king-spades-2.png",
+  "king-hearts.svg":"king-hearts.png"
+};
+const rankImageName = rankImageNames[rank.toUpperCase()];
+const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
+const svgFilename = rankImageName && suitImageName ? rankImageName + "-" + suitImageName + ".svg" : null;
+const imageName = svgFilename ? (existingPngFaces[svgFilename] || svgFilename) : null;
 
   if (imageName) {
     const image = document.createElement("img");

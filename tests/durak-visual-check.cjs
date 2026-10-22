@@ -163,6 +163,53 @@ const path = require("node:path");
       throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
     }
 
+
+    // Every face in the standard 52-card deck must resolve to a ready-to-use image asset.
+    const fullDeckAssetReport = await page.evaluate(async () => {
+      const host = document.createElement("div");
+      host.id = "full-deck-asset-check";
+      Object.assign(host.style, {
+        position: "fixed", left: "-10000px", top: "0", width: "1px", height: "1px",
+        overflow: "hidden", opacity: "0", pointerEvents: "none"
+      });
+      document.body.appendChild(host);
+      const ranks = ["2","3","4","5","6","7","8","9","10","В","Д","К","Туз"];
+      const suits = ["♠","♥","♦","♣"];
+      const checks = [];
+      for (const rank of ranks) {
+        for (const suit of suits) {
+          const card = createDurakCardElement({ id: "asset-check-" + rank + suit, rank, suit });
+          card.style.width = "65px";
+          card.style.height = "98px";
+          host.appendChild(card);
+          checks.push({ rank, suit, image: card.querySelector("img") });
+        }
+      }
+      const settled = await Promise.all(checks.map(async item => {
+        const img = item.image;
+        if (!img) return { rank:item.rank, suit:item.suit, loaded:false, src:null };
+        try {
+          await img.decode();
+          return { rank:item.rank, suit:item.suit, loaded:img.naturalWidth > 0 && img.naturalHeight > 0, src:img.getAttribute("src") };
+        } catch (_) {
+          return { rank:item.rank, suit:item.suit, loaded:false, src:img.getAttribute("src") };
+        }
+      }));
+      host.remove();
+      return {
+        total: settled.length,
+        loaded: settled.filter(item => item.loaded).length,
+        missing: settled.filter(item => !item.loaded),
+        pngFaces: settled.filter(item => item.loaded && String(item.src).endsWith(".png")).length,
+        svgFaces: settled.filter(item => item.loaded && String(item.src).endsWith(".svg")).length
+      };
+    });
+    fs.writeFileSync(path.join(out, "full-deck-asset-report.json"), JSON.stringify(fullDeckAssetReport, null, 2));
+    if (fullDeckAssetReport.total !== 52 || fullDeckAssetReport.loaded !== 52 ||
+        fullDeckAssetReport.svgFaces !== 44 || fullDeckAssetReport.pngFaces !== 8) {
+      throw new Error("Не все 52 карты ALLCOINS имеют готовые загружаемые изображения: " + JSON.stringify(fullDeckAssetReport));
+    }
+
     const card = page.locator('#durakHand .durak-card[data-card-id="visual-card-1"]');
     const sameRankCard = page.locator('#durakHand .durak-card[data-card-id="visual-card-2"]');
     if (!(await card.count()) || !(await sameRankCard.count())) throw new Error("Тестовые карты не отрисовались настоящим рендерером ALLCOINS");
