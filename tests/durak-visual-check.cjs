@@ -271,8 +271,8 @@ const path = require("node:path");
         count: results.length,
         loadedCount: results.filter(item => item.loaded).length,
         failed: results.filter(item => !item.loaded),
-        pngCount: results.filter(item => item.loaded && item.src.endsWith(".png")).length,
-        svgCount: results.filter(item => item.loaded && item.src.endsWith(".svg")).length
+        pngCount: results.filter(item => item.loaded && item.src && String(item.src).split("?")[0].endsWith(".png")).length,
+        svgCount: results.filter(item => item.loaded && item.src && String(item.src).split("?")[0].endsWith(".svg")).length
       };
     });
     await page.screenshot({ path: path.join(out, "full-deck-contact-sheet.png"), fullPage: false });
