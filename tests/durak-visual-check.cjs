@@ -125,6 +125,44 @@ const path = require("node:path");
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(out, "02-game-before-drag.png"), fullPage: true });
 
+
+    // Check ALLCOINS hand ordering and the new table wordmark before interacting.
+    const handDisplay = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll("#durakHand .durak-card")].map(card => ({
+        id: card.dataset.cardId,
+        rank: card.dataset.rank || "",
+        suit: card.dataset.suit || ""
+      }));
+      const logoContent = getComputedStyle(document.getElementById("durakTable"), "::before").content;
+      const trump = "♥";
+      const firstTrumpIndex = cards.findIndex(card => card.suit === trump);
+      const rankWeight = value => {
+        const v = String(value).toUpperCase();
+        const face = { "В": 11, "J": 11, "Д": 12, "Q": 12, "К": 13, "K": 13, "Т": 14, "ТУЗ": 14, "A": 14 };
+        return Number(v) || face[v] || 0;
+      };
+      const ranksOrdered = list => list.every((card, index) =>
+        index === 0 || rankWeight(list[index - 1].rank) <= rankWeight(card.rank)
+      );
+      return {
+        cards,
+        firstTrumpIndex,
+        trumpsOnRight: firstTrumpIndex >= 0 &&
+          cards.slice(0, firstTrumpIndex).every(card => card.suit !== trump) &&
+          cards.slice(firstTrumpIndex).every(card => card.suit === trump),
+        nonTrumpRanksGrouped: ranksOrdered(cards.slice(0, firstTrumpIndex < 0 ? cards.length : firstTrumpIndex)),
+        trumpRanksGrouped: ranksOrdered(cards.slice(firstTrumpIndex < 0 ? cards.length : firstTrumpIndex)),
+        logoContent
+      };
+    });
+    fs.writeFileSync(path.join(out, "hand-order-and-logo.json"), JSON.stringify(handDisplay, null, 2));
+    if (!handDisplay.trumpsOnRight || !handDisplay.nonTrumpRanksGrouped || !handDisplay.trumpRanksGrouped) {
+      throw new Error("Карты в руке должны быть сгруппированы по достоинству, а козыри находиться справа: " + JSON.stringify(handDisplay));
+    }
+    if (!String(handDisplay.logoContent).includes("ALLCOINS")) {
+      throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
+    }
+
     const card = page.locator('#durakHand .durak-card[data-card-id="visual-card-1"]');
     const sameRankCard = page.locator('#durakHand .durak-card[data-card-id="visual-card-2"]');
     if (!(await card.count()) || !(await sameRankCard.count())) throw new Error("Тестовые карты не отрисовались настоящим рендерером ALLCOINS");
@@ -450,6 +488,35 @@ const path = require("node:path");
     }
     if (pickupOrder.handCards !== 4) {
       throw new Error("В руке защищающегося ожидалось 4 карты после взятия, получено " + pickupOrder.handCards);
+    }
+
+
+    // Empty the deck to emulate drawing the final card (the trump itself).
+    // It must disappear from beneath the pile while a clear suit marker remains on the table.
+    currentGame.cardsLeft = 0;
+    currentGame.trumpSuit = "♥";
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    await page.waitForTimeout(160);
+    await page.screenshot({ path: path.join(out, "10-trump-suit-marker-after-final-draw.png"), fullPage: true });
+    const finalTrumpState = await page.evaluate(() => {
+      const marker = document.querySelector("#durakTable .durak-trump-suit-marker");
+      const deck = document.querySelector("#durakTrump");
+      const count = deck?.querySelector(".durak-deck-count");
+      const markerRect = marker?.getBoundingClientRect();
+      return {
+        markerSuit: marker?.dataset.trumpSuit || null,
+        markerLabel: marker?.querySelector(".durak-trump-suit-marker-label")?.textContent || null,
+        markerVisible: Boolean(markerRect && markerRect.width > 0 && markerRect.height > 0 &&
+          getComputedStyle(marker).visibility !== "hidden"),
+        deckCount: count ? Number(count.dataset.count) : null,
+        trumpCardStillUnderDeck: Boolean(deck?.querySelector(".durak-trump-card"))
+      };
+    });
+    fs.writeFileSync(path.join(out, "final-trump-state.json"), JSON.stringify(finalTrumpState, null, 2));
+    if (finalTrumpState.markerSuit !== "♥" || finalTrumpState.markerLabel !== "КОЗЫРЬ" ||
+        !finalTrumpState.markerVisible || finalTrumpState.deckCount !== 0 ||
+        finalTrumpState.trumpCardStillUnderDeck) {
+      throw new Error("После раздачи последнего козыря должен остаться знак масти на столе, а не в колоде: " + JSON.stringify(finalTrumpState));
     }
 
     if (errors.length) {
