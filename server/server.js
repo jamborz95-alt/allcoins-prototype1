@@ -21,6 +21,79 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+/**
+ * Делит банк между реальными победителями один раз на завершённую партию.
+ * Функция вызывается внутри открытой PostgreSQL-транзакции.
+ */
+async function settleDurakGamePayout(client, gameState) {
+  const pot = gameState?.pot;
+  if (gameState?.status !== "finished" || !pot || pot.settled === true) {
+    return pot?.settlement || null;
+  }
+
+  const contributors = [...new Set(
+    (Array.isArray(pot.contributors) ? pot.contributors : [])
+      .map(id => String(id))
+      .filter(id => id && id !== "0")
+  )];
+  const grossPot = Math.max(0, Math.floor(Number(pot.grossPot) || 0));
+  const burnedAmount = Math.min(
+    grossPot,
+    Math.max(0, Math.floor(Number(pot.burnedAmount ?? Math.floor(grossPot * 0.05)) || 0))
+  );
+  const payoutPool = Math.max(
+    0,
+    Math.min(grossPot - burnedAmount, Math.floor(Number(pot.payoutPool ?? grossPot - burnedAmount) || 0))
+  );
+  const loserId = gameState.loserTelegramId == null ? "" : String(gameState.loserTelegramId);
+
+  let recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
+    contributors.includes(String(player.telegramId)) &&
+    String(player.telegramId) !== "0" &&
+    String(player.telegramId) !== loserId
+  );
+  // Если в партии с ботом реального победителя нет, оставшиеся 95% возвращаются
+  // реальному участнику: бот не получает и не создаёт виртуальные AC.
+  if (!recipients.length) {
+    recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
+      contributors.includes(String(player.telegramId)) && String(player.telegramId) !== "0"
+    );
+  }
+
+  const baseShare = recipients.length ? Math.floor(payoutPool / recipients.length) : 0;
+  let remainder = recipients.length ? payoutPool % recipients.length : 0;
+  const winners = [];
+
+  for (const player of recipients) {
+    const amount = baseShare + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+    if (amount > 0) {
+      const credited = await client.query(
+        `UPDATE players
+         SET balance = balance + $1,
+             updated_at = NOW()
+         WHERE telegram_id = $2
+         RETURNING balance`,
+        [amount, String(player.telegramId)]
+      );
+      if (!credited.rows.length) {
+        throw new Error("Не найден баланс победителя для выплаты выигрыша");
+      }
+    }
+    winners.push({ telegramId: String(player.telegramId), amount });
+  }
+
+  pot.settled = true;
+  pot.settlement = {
+    grossPot,
+    burnedAmount,
+    payoutPool,
+    settledAt: new Date().toISOString(),
+    winners
+  };
+  return pot.settlement;
+}
+
 // Проверяем подлинность данных Telegram
 function verifyTelegram(initData) {
   const botToken = process.env.BOT_TOKEN;
@@ -805,7 +878,12 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
   }
 });
 app.post("/api/durak/rooms/start", async (req, res) => {
+  let client;
+  let transactionOpen = false;
   try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
     const user = verifyTelegram(req.body?.initData);
 
     if (!user || !user.id) {
@@ -824,7 +902,7 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       });
     }
     
-     const roomResult = await pool.query(
+     const roomResult = await client.query(
   `SELECT
      id,
      name,
@@ -859,13 +937,13 @@ app.post("/api/durak/rooms/start", async (req, res) => {
     if (room.status !== "waiting") {
       // Восстанавливаем комнату, если предыдущий запуск оборвался
       // и статус сменился на playing, но состояние партии не сохранилось.
-      const savedGame = await pool.query(
+      const savedGame = await client.query(
         "SELECT room_id FROM durak_games WHERE room_id = $1",
         [roomId]
       );
 
       if (room.status === "playing" && savedGame.rows.length === 0) {
-        await pool.query(
+        await client.query(
           "UPDATE durak_rooms SET status = 'waiting' WHERE id = $1",
           [roomId]
         );
@@ -880,7 +958,7 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       }
     }
 
-    const countResult = await pool.query(
+    const countResult = await client.query(
       `SELECT COUNT(*)::INTEGER AS total
        FROM durak_room_players
        WHERE room_id = $1`,
@@ -909,7 +987,7 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       });
     }
     // Проверяем готовность всех игроков, кроме создателя
-    const readyResult = await pool.query(
+    const readyResult = await client.query(
       `SELECT
          COUNT(*) FILTER (
            WHERE p.telegram_id <> r.owner_telegram_id
@@ -940,13 +1018,48 @@ app.post("/api/durak/rooms/start", async (req, res) => {
        // Создание и перемешивание колоды для Дурака
 const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.randomInt);
         // Получаем игроков комнаты
-    const playersResult = await pool.query(
+    const playersResult = await client.query(
       `SELECT telegram_id
        FROM durak_room_players
        WHERE room_id = $1
        ORDER BY joined_at ASC`,
       [roomId]
     );
+
+    // Списываем ставку со всех реальных участников внутри одной транзакции.
+    // Если средств не хватит хотя бы одному игроку, вся операция откатится.
+    const humanPlayerIds = [...new Set(
+      playersResult.rows.map(row => String(row.telegram_id)).filter(id => id !== "0")
+    )];
+    const stakePerPlayer = Math.floor(Number(room.stake));
+    if (!Number.isSafeInteger(stakePerPlayer) || stakePerPlayer <= 0 || !humanPlayerIds.length) {
+      return res.status(400).json({ ok: false, error: "Некорректная ставка или нет реальных игроков" });
+    }
+    for (const telegramId of humanPlayerIds) {
+      await client.query(
+        `INSERT INTO players (telegram_id)
+         VALUES ($1)
+         ON CONFLICT (telegram_id) DO NOTHING`,
+        [telegramId]
+      );
+      const debit = await client.query(
+        `UPDATE players
+         SET balance = balance - $1,
+             updated_at = NOW()
+         WHERE telegram_id = $2 AND balance >= $1
+         RETURNING balance`,
+        [stakePerPlayer, telegramId]
+      );
+      if (!debit.rows.length) {
+        return res.status(400).json({
+          ok: false,
+          error: "У одного из игроков недостаточно AC для ставки. Списание отменено."
+        });
+      }
+    }
+    const grossPot = stakePerPlayer * humanPlayerIds.length;
+    const burnedAmount = Math.floor(grossPot * 0.05);
+    const payoutPool = grossPot - burnedAmount;
 
     // Раздаём карты через общий проверенный модуль правил.
     // Он гарантирует, что каждому игроку достанется 6 карт и останется козырь.
@@ -985,7 +1098,17 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       status: "playing",
       takePending: false,
       turnStartedAt: new Date().toISOString(),
-      loserTelegramId: null
+      loserTelegramId: null,
+      pot: {
+        stakePerPlayer,
+        contributors: humanPlayerIds,
+        grossPot,
+        burnPercent: 5,
+        burnedAmount,
+        payoutPool,
+        settled: false,
+        settlement: null
+      }
     };
 
     // Если младший козырь у тестового бота, он сразу делает первый ход.
@@ -1001,7 +1124,7 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       }
     }
 
-    await pool.query(
+    await client.query(
       `INSERT INTO durak_games (room_id, game_state, updated_at)
        VALUES ($1, $2::jsonb, NOW())
        ON CONFLICT (room_id)
@@ -1010,7 +1133,7 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
          updated_at = NOW()`,
       [roomId, JSON.stringify(gameState)]
     );
-    const updateResult = await pool.query(
+    const updateResult = await client.query(
       `UPDATE durak_rooms
        SET status = 'playing'
        WHERE id = $1 AND status = 'waiting'
@@ -1024,6 +1147,9 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
         error: "Не удалось запустить игру"
       });
     }
+
+    await client.query("COMMIT");
+    transactionOpen = false;
 
     return res.json({
       ok: true,
@@ -1039,6 +1165,12 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       error: "Не удалось начать игру",
       debugMessage: String(error?.message || error || "Неизвестная ошибка").slice(0, 300)
     });
+  } finally {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); }
+      catch (rollbackError) { console.error("Start Durak rollback error:", rollbackError.message); }
+    }
+    if (client) client.release();
   }
 });
 // Получение состояния игры Дурак Онлайн
@@ -1343,6 +1475,7 @@ app.post("/api/durak/action", async (req, res) => {
 
     const timeoutCheck = expireDurakTurnIfNeeded(game);
     if (timeoutCheck.timedOut) {
+      await settleDurakGamePayout(client, game);
       await client.query(
         `UPDATE durak_games
          SET game_state = $1::jsonb, updated_at = NOW()
@@ -1843,7 +1976,16 @@ if (action === "beat") {
       game.lastActionRequestId = actionRequestId; // совместимость со старым состоянием партии
     }
 
-    // Сохраняем состояние партии внутри транзакции.
+    // Завершённая партия: сжигаем 5% банка, остаток распределяем победителям.
+    if (game.status === "finished") {
+      await settleDurakGamePayout(client, game);
+      await client.query(
+        "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
+        [roomId]
+      );
+    }
+
+    // Сохраняем состояние партии и выплаты одной транзакцией.
     await client.query(
       `UPDATE durak_games
        SET game_state = $1::jsonb,
