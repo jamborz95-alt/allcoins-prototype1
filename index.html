@@ -4012,13 +4012,25 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       }
 
       const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
+      const isOpponentDraw = item?.opponentDraw === true;
       const flightDuration = isTableTransfer
         ? 680
         : isInitialDeal
           ? 510
-          : item?.opponentDraw
+          : isOpponentDraw
             ? 520
             : 435;
+      // При взятии противником видимая лицевая карта уменьшается до рубашки
+      // в его руке; при обычной раздаче сопернику рубашка летит полным размером.
+      const startScale = isTableTransfer
+        ? (item.faceUp ? 1.08 : 2.15)
+        : isOpponentDraw ? 0.98 : 0.64;
+      const middleScale = isTableTransfer
+        ? (item.faceUp ? 1.06 : 1.58)
+        : isOpponentDraw ? 1.03 : 0.77;
+      const lateScale = isTableTransfer
+        ? (item.faceUp ? 1.02 : 1.18)
+        : isOpponentDraw ? 1 : 0.93;
       const flyer = isTableTransfer
         ? item.source.element.cloneNode(true)
         : document.createElement("span");
@@ -4091,9 +4103,9 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         }
         const arcHeight = Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
         flightAnimation = flyer.animate([
-          { offset: 0, transform: "translate3d(0,0,0) rotate(-8deg) scale(.64)" },
-          { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(.77)" },
-          { offset: 0.70, transform: "translate3d(" + (dx * 0.70) + "px," + (dy * 0.70 - arcHeight * 0.52) + "px,0) rotate(2deg) scale(.93)" },
+          { offset: 0, transform: "translate3d(0,0,0) rotate(-8deg) scale(" + startScale + ")" },
+          { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(" + middleScale + ")" },
+          { offset: 0.70, transform: "translate3d(" + (dx * 0.70) + "px," + (dy * 0.70 - arcHeight * 0.52) + "px,0) rotate(2deg) scale(" + lateScale + ")" },
           { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(1)" }
         ], { duration: flightDuration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         revealTimer = window.setTimeout(() => {
