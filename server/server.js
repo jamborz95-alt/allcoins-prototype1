@@ -416,6 +416,24 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
     });
   }
 });// Получение списка комнат Дурак Онлайн
+// Удаляем ожидающие комнаты, в которые за 2 минуты никто не присоединился.
+// В таблице игроков остаётся создатель, поэтому «пустой» зал означает не больше одного участника.
+async function cleanupExpiredEmptyDurakRooms() {
+  const result = await pool.query(`
+    DELETE FROM durak_rooms r
+    WHERE r.status = 'waiting'
+      AND r.created_at <= NOW() - INTERVAL '2 minutes'
+      AND (
+        SELECT COUNT(*)
+        FROM durak_room_players p
+        WHERE p.room_id = r.id
+      ) <= 1
+  `);
+  if (result.rowCount > 0) {
+    console.log(`Removed ${result.rowCount} expired empty Durak room(s)`);
+  }
+}
+
 app.post("/api/durak/rooms/list", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
@@ -426,6 +444,8 @@ app.post("/api/durak/rooms/list", async (req, res) => {
         error: "Telegram authentication failed"
       });
     }
+
+   await cleanupExpiredEmptyDurakRooms();
 
    const result = await pool.query(
   `SELECT
@@ -1950,6 +1970,15 @@ async function startServer() {
       ADD COLUMN IF NOT EXISTS privacy TEXT NOT NULL DEFAULT 'public'
     `);
     console.log("Durak games table is ready");
+
+    const durakRoomCleanupTimer = setInterval(() => {
+      cleanupExpiredEmptyDurakRooms().catch((error) => {
+        console.error("Durak room cleanup error:", error.message);
+      });
+    }, 15000);
+    if (typeof durakRoomCleanupTimer.unref === "function") {
+      durakRoomCleanupTimer.unref();
+    }
 
     const port = process.env.PORT || 3000;
     
