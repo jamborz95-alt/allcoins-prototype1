@@ -1676,9 +1676,16 @@
     z-index: 4 !important;
   }
   #durakGame.durak-fullscreen #durakTable .durak-table-pair {
-    flex: 0 0 68px !important;
-    width: 68px !important;
-    height: 78px !important;
+    /*
+      Important: this mobile selector is more specific than the later general CSS.
+      A 68px slot made the next attack start underneath the previous defense.
+      Each pair now reserves 94px, so each following attack starts clear of defense.
+    */
+    position: relative !important;
+    isolation: isolate !important;
+    flex: 0 0 94px !important;
+    width: 94px !important;
+    height: 92px !important;
     margin: 1px !important;
     overflow: visible !important;
   }
@@ -1694,10 +1701,12 @@
   #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
     left: 0 !important;
     top: 0 !important;
+    z-index: 1 !important;
   }
   #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
-    left: 21px !important;
-    top: -5px !important;
+    left: 14px !important;
+    top: 7px !important;
+    z-index: 2 !important;
   }
   #durakGame.durak-fullscreen #durakHand {
     position: fixed !important;
