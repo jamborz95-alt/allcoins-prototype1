@@ -151,10 +151,17 @@ const path = require("node:path");
       const presentSuits = [...new Set(cards.map(card => normalizeSuit(card.suit)))];
       const expectedGroupSequence = suitOrder.filter(suit =>
         presentSuits.includes(suit) && suit !== trump
-      ).concat(presentSuits.includes(trump) ? [trump] : []);
+      );
+      const firstNonTrumpIndex = cards.findIndex(card => normalizeSuit(card.suit) !== trump);
+      const trumpsStayOnLeft = !presentSuits.includes(trump) ||
+        (firstTrumpIndex === 0 && firstNonTrumpIndex >= 0 &&
+         cards.slice(0, firstNonTrumpIndex).every(card => normalizeSuit(card.suit) === trump));
+      const nonTrumpGroups = groupSequence.filter((suit, index) =>
+        suit !== trump && groupSequence.indexOf(suit) === index
+      );
       const suitGroupsTogetherAndOrdered =
-        groupSequence.length === presentSuits.length &&
-        groupSequence.every((suit, index) => suit === expectedGroupSequence[index]);
+        nonTrumpGroups.length === expectedGroupSequence.length &&
+        nonTrumpGroups.every((suit, index) => suit === expectedGroupSequence[index]);
       const ranksAscWithinSuit = cards.every((card, index) => {
         if (index === 0) return true;
         const previous = cards[index - 1];
@@ -164,15 +171,15 @@ const path = require("node:path");
       return {
         cards,
         firstTrumpIndex,
-        trumpsOnRight: !presentSuits.includes(trump) || groupSequence[groupSequence.length - 1] === trump,
+        trumpsStayOnLeft,
         suitGroupsTogetherAndOrdered,
         ranksAscWithinSuit,
         logoContent
       };
     });
     fs.writeFileSync(path.join(out, "hand-order-and-logo.json"), JSON.stringify(handDisplay, null, 2));
-    if (!handDisplay.trumpsOnRight || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksAscWithinSuit) {
-      throw new Error("Козыри должны быть справа, а внутри каждой масти карты должны идти слева направо от младшей к старшей: " + JSON.stringify(handDisplay));
+    if (!handDisplay.trumpsStayOnLeft || !handDisplay.suitGroupsTogetherAndOrdered || !handDisplay.ranksAscWithinSuit) {
+      throw new Error("Козыри должны остаться слева, а внутри каждой масти карты должны идти слева направо от младшей к старшей: " + JSON.stringify(handDisplay));
     }
     if (!String(handDisplay.logoContent).includes("ALLCOINS")) {
       throw new Error("Логотип ALLCOINS не виден на игровой зоне: " + String(handDisplay.logoContent));
