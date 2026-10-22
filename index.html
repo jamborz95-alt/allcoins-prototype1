@@ -4084,7 +4084,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       await animateDurakDealSequence(tableTransferTargets, roomId, {
         ...options,
         initial: false,
-        finalDeckCount: null
+        finalDeckCount: undefined
       });
       await animateDurakDealSequence(remainingTargets, roomId, {
         ...options,
