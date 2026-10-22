@@ -405,7 +405,7 @@ const path = require("node:path");
       window.__dealFlightObserver.observe(document.body, { childList: true, subtree: true });
     });
 
-    const takenCards = await page.evaluate(() => currentGame.table.flatMap(pair => [pair.attack, pair.defense]).filter(Boolean));
+    const takenCards = currentGame.table.flatMap(pair => [pair.attack, pair.defense]).filter(Boolean);
     currentGame.hand.push(...takenCards);
     currentGame.table = [];
     currentGame.players[0].cardsCount = currentGame.hand.length;
