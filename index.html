@@ -6223,6 +6223,19 @@ if (Array.isArray(game.hand)) {
             : "Партия завершена";
 
     let gameStatusText = gameResultLabel + " · Карт в колоде: " + game.cardsLeft;
+    if (game.pot) {
+      const formatDurakAC = value => Math.max(0, Number(value) || 0).toLocaleString("ru-RU");
+      gameStatusText += " · Банк: " + formatDurakAC(game.pot.grossPot) + " AC";
+      gameStatusText += " · Сожжено 5%: " + formatDurakAC(game.pot.burnedAmount) + " AC";
+      if (game.pot.settled) {
+        gameStatusText += " · Твой выигрыш: " + formatDurakAC(game.pot.myPrize) + " AC";
+        if (Array.isArray(game.pot.winners) && game.pot.winners.length) {
+          gameStatusText += " · Выплаты: " + game.pot.winners
+            .map(winner => winner.name + " +" + formatDurakAC(winner.amount) + " AC")
+            .join(", ");
+        }
+      }
+    }
     if (game.status === "playing" && Number.isFinite(Date.parse(game.turnStartedAt || ""))) {
       const elapsed = Math.max(0, Date.now() - Date.parse(game.turnStartedAt));
       const secondsLeft = Math.max(0, Math.ceil((120000 - elapsed) / 1000));
