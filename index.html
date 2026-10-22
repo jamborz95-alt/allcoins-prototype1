@@ -3834,13 +3834,11 @@ function copyDurakComputedStyles(source, target) {
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
 const DURAK_CARD_ASSET_VERSION = "20261022-deal-preloaded-visibility-v4";
 const DURAK_CARD_ASSETS = [
-  "ace-diamonds.png",
   "ace-hearts.png",
   "ace-spades.png",
   "jack-diamonds.png",
   "jack-hearts.png",
   "jack-spades.png",
-  "king-diamonds.png",
   "king-hearts.png",
   "king-spades-2.png",
   "queen-hearts.png",
@@ -3906,7 +3904,6 @@ const suitImageNames = {
   "♣":"clubs","♧":"clubs","CLUBS":"clubs"
 };
 const existingPngFaces = {
-  "ace-diamonds.svg":"ace-diamonds.png",
   "ace-spades.svg":"ace-spades.png",
   "ace-hearts.svg":"ace-hearts.png",
   "jack-spades.svg":"jack-spades.png",
@@ -3915,8 +3912,7 @@ const existingPngFaces = {
   "queen-spades.svg":"queen-spades.png",
   "queen-hearts.svg":"queen-hearts.png",
   "king-spades.svg":"king-spades-2.png",
-  "king-hearts.svg":"king-hearts.png",
-  "king-diamonds.svg":"king-diamonds.png"
+  "king-hearts.svg":"king-hearts.png"
 };
 const rankImageName = rankImageNames[rank.toUpperCase()];
 const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
