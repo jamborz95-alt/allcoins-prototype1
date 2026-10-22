@@ -228,7 +228,7 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "full-deck-asset-report.json"), JSON.stringify(fullDeckAssetReport, null, 2));
     if (fullDeckAssetReport.total !== 52 || fullDeckAssetReport.loaded !== 52 ||
-        fullDeckAssetReport.svgFaces !== 0 || fullDeckAssetReport.pngFaces !== 9) {
+        fullDeckAssetReport.svgFaces !== 0 || fullDeckAssetReport.pngFaces !== 11) {
       throw new Error("Не все 52 карты ALLCOINS имеют готовые загружаемые изображения: " + JSON.stringify(fullDeckAssetReport));
     }
 
