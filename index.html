@@ -3635,6 +3635,8 @@ function copyDurakComputedStyles(source, target) {
 // ===== ПРЕДЗАГРУЗКА КАРТ ALLCOINS =====
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
+// Bump this value whenever files in /cards are replaced. Telegram WebView may cache SVGs by URL.
+const DURAK_CARD_ASSET_VERSION = "20261022-premium2";
 const DURAK_CARD_ASSETS = [
   "10-clubs.svg",
   "10-diamonds.svg",
@@ -3697,7 +3699,7 @@ const durakCardAssetsReady = Promise.all(
       console.warn("Не удалось предварительно загрузить карту:", filename);
       resolve({ filename, loaded: false });
     };
-    image.src = new URL("cards/" + filename, document.baseURI).href;
+    image.src = new URL("cards/" + filename + "?v=" + DURAK_CARD_ASSET_VERSION, document.baseURI).href;
   }))
 );
 
@@ -3745,7 +3747,7 @@ const imageName = svgFilename ? (existingPngFaces[svgFilename] || svgFilename) :
   if (imageName) {
     const image = document.createElement("img");
 
-    image.src = "cards/" + imageName;
+    image.src = "cards/" + imageName + "?v=" + DURAK_CARD_ASSET_VERSION;
     image.alt = rank + " " + suit;
     image.draggable = false;
 
