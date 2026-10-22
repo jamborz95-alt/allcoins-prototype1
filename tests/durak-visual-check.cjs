@@ -210,6 +210,72 @@ const path = require("node:path");
       throw new Error("Не все 52 карты ALLCOINS имеют готовые загружаемые изображения: " + JSON.stringify(fullDeckAssetReport));
     }
 
+
+    // A true visual audit sheet makes every updated card face visible at once.
+    await page.setViewportSize({ width: 1100, height: 620 });
+    const contactSheetAudit = await page.evaluate(async () => {
+      const existing = document.getElementById("full-deck-contact-sheet");
+      existing?.remove();
+      const host = document.createElement("div");
+      host.id = "full-deck-contact-sheet";
+      Object.assign(host.style, {
+        position: "fixed", inset: "0", zIndex: "2147483647",
+        display: "grid", gridTemplateColumns: "repeat(13, 70px)",
+        gridAutoRows: "106px", gap: "6px", padding: "12px",
+        boxSizing: "border-box", width: "1100px", height: "620px",
+        overflow: "hidden", alignContent: "start",
+        background: "radial-gradient(ellipse at top, #2b4557, #101b25)"
+      });
+      document.body.appendChild(host);
+      const ranks = ["2","3","4","5","6","7","8","9","10","В","Д","К","Туз"];
+      const suits = ["♠","♥","♦","♣"];
+      const checks = [];
+      for (const rank of ranks) {
+        for (const suit of suits) {
+          const card = createDurakCardElement({ id: "preview-" + rank + suit, rank, suit });
+          card.dataset.previewCard = rank + suit;
+          Object.assign(card.style, {
+            flex: "none", width: "70px", minWidth: "70px", maxWidth: "70px",
+            height: "106px", minHeight: "106px", margin: "0",
+            borderRadius: "5px", boxSizing: "border-box"
+          });
+          host.appendChild(card);
+          checks.push({ rank, suit, element: card, image: card.querySelector("img") });
+        }
+      }
+      const results = await Promise.all(checks.map(async item => {
+        let loaded = false;
+        try {
+          if (item.image) {
+            await item.image.decode();
+            loaded = item.image.naturalWidth > 0 && item.image.naturalHeight > 0;
+          }
+        } catch (_) {}
+        return {
+          card: item.rank + item.suit,
+          src: item.image?.getAttribute("src") || null,
+          loaded,
+          width: item.image?.naturalWidth || 0,
+          height: item.image?.naturalHeight || 0
+        };
+      }));
+      return {
+        count: results.length,
+        loadedCount: results.filter(item => item.loaded).length,
+        failed: results.filter(item => !item.loaded),
+        pngCount: results.filter(item => item.loaded && item.src.endsWith(".png")).length,
+        svgCount: results.filter(item => item.loaded && item.src.endsWith(".svg")).length
+      };
+    });
+    await page.screenshot({ path: path.join(out, "full-deck-contact-sheet.png"), fullPage: true });
+    fs.writeFileSync(path.join(out, "full-deck-contact-sheet-report.json"), JSON.stringify(contactSheetAudit, null, 2));
+    await page.evaluate(() => document.getElementById("full-deck-contact-sheet")?.remove());
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (contactSheetAudit.count !== 52 || contactSheetAudit.loadedCount !== 52 ||
+        contactSheetAudit.svgCount !== 44 || contactSheetAudit.pngCount !== 8) {
+      throw new Error("Визуальный лист ALLCOINS: не все карты видны и загружены: " + JSON.stringify(contactSheetAudit));
+    }
+
     const card = page.locator('#durakHand .durak-card[data-card-id="visual-card-1"]');
     const sameRankCard = page.locator('#durakHand .durak-card[data-card-id="visual-card-2"]');
     if (!(await card.count()) || !(await sameRankCard.count())) throw new Error("Тестовые карты не отрисовались настоящим рендерером ALLCOINS");
