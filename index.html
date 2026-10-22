@@ -4036,6 +4036,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const target = item?.target;
       const previous = target ? savedStyles.get(target) : null;
       if (token !== durakDealAnimationToken || !target?.isConnected || !previous) {
+        if (item?.temporaryTarget) target?.remove();
         resolve();
         return;
       }
@@ -4047,6 +4048,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         target.style.transition = previous.transition;
         target.style.pointerEvents = previous.pointerEvents;
         target.style.transformOrigin = previous.transformOrigin;
+        if (item?.temporaryTarget) target.remove();
         resolve();
         return;
       }
@@ -4147,6 +4149,8 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           target.style.pointerEvents = previous.pointerEvents;
           target.style.transformOrigin = previous.transformOrigin;
         }
+        // Временные невидимые цели нужны только для карт сверх лимита рубашек в веере.
+        if (item?.temporaryTarget) target.remove();
         resolve();
       };
 
@@ -5436,8 +5440,9 @@ if (Array.isArray(game.hand)) {
     });
   }
 
-  // Если завершилось «Беру», сначала отправляем видимые карты стола к руке игрока,
-  // который забрал карты. Следующие добранные карты продолжают лететь от колоды.
+  // Когда защищающийся забрал карты, отправляем каждую карту СО СТОЛА
+  // именно в его руку. Число видимых рубашек ограничено шестью, поэтому
+  // для остальных карт создаём невидимые цели рядом с веером, не меняя его вид.
   if (
     durakLastRenderedTakePending &&
     Array.isArray(game.table) && game.table.length === 0 &&
@@ -5447,12 +5452,79 @@ if (Array.isArray(game.hand)) {
     const opponentTakerCards = newlyDealtOpponentBacks.filter(
       item => item.playerIndex === durakLastRenderedDefenderIndex
     );
-    opponentTakerCards.forEach((item, index) => {
-      if (tableSources[index]) {
-        item.source = tableSources[index];
-        item.fromTable = true;
-      }
+
+    opponentTakerCards.slice(0, tableSources.length).forEach((item, index) => {
+      if (!tableSources[index]) return;
+      item.source = tableSources[index];
+      item.fromTable = true;
     });
+
+    // Если у соперника уже было шесть или больше карт, новые рубашки не добавляются
+    // в DOM из-за компактного веера. Но сами карты со стола всё равно должны пролететь.
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+        opponentTakerCards.length < tableSources.length) {
+      const takerSeat = playersBox?.querySelector(
+        '[data-player-index="' + String(durakLastRenderedDefenderIndex) + '"]'
+      );
+      const backsContainer = takerSeat?.querySelector(".durak-card-backs");
+      const pileRect = backsContainer?.getBoundingClientRect();
+      const seatRect = takerSeat?.getBoundingClientRect();
+      const visibleBacks = Array.from(backsContainer?.querySelectorAll(".durak-card-back") || []);
+      const referenceBackRect = visibleBacks.length
+        ? visibleBacks[visibleBacks.length - 1].getBoundingClientRect()
+        : null;
+      const targetWidth = Math.max(16, referenceBackRect?.width || 20);
+      const targetHeight = Math.max(22, referenceBackRect?.height || 30);
+      const targetArea = pileRect && pileRect.width > 0 && pileRect.height > 0
+        ? pileRect
+        : seatRect;
+      const seatName = String(takerSeat?.dataset.seat || "");
+      const sideStack = /left|right/.test(seatName);
+
+      for (let index = opponentTakerCards.length; index < tableSources.length; index++) {
+        if (!tableSources[index] || !targetArea ||
+            !Number.isFinite(targetArea.left) || !Number.isFinite(targetArea.top)) continue;
+
+        const target = document.createElement("span");
+        target.setAttribute("aria-hidden", "true");
+        const count = Math.max(1, tableSources.length - opponentTakerCards.length);
+        const slot = index - opponentTakerCards.length;
+        const fraction = (slot + 1) / (count + 1);
+        const centerX = sideStack
+          ? (targetArea.left + targetArea.width / 2 + (seatName.startsWith("left") ? 1 : -1) * slot * 2)
+          : targetArea.left + targetArea.width * fraction;
+        const centerY = sideStack
+          ? targetArea.top + targetArea.height * fraction
+          : targetArea.top + targetArea.height / 2 + slot * 0.6;
+
+        Object.assign(target.style, {
+          position: "fixed",
+          left: (centerX - targetWidth / 2) + "px",
+          top: (centerY - targetHeight / 2) + "px",
+          width: targetWidth + "px",
+          height: targetHeight + "px",
+          minWidth: "0",
+          minHeight: "0",
+          margin: "0",
+          padding: "0",
+          opacity: "0",
+          visibility: "hidden",
+          pointerEvents: "none",
+          zIndex: "-1",
+          boxSizing: "border-box"
+        });
+        document.body.appendChild(target);
+        newlyDealtOpponentBacks.push({
+          target,
+          source: tableSources[index],
+          fromTable: true,
+          faceUp: false,
+          opponentDraw: false,
+          playerIndex: durakLastRenderedDefenderIndex,
+          temporaryTarget: true
+        });
+      }
+    }
   }
 
   // На первом отображении партии раздаём карты по кругу: соперникам — рубашкой,
