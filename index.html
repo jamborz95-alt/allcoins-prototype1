@@ -3909,7 +3909,6 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   const from = flyer.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
   const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-  playDurakSound("card");
   const duration = 405;
   let timer = null;
   let flightAnimation = null;
@@ -3940,6 +3939,7 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
         { offset: 0.72, transform: `translate3d(${dx * 0.72}px,${dy * 0.72 - arcHeight * 0.55}px,0) rotate(3deg) scale(.94)` },
         { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(0deg) scale(1)` }
       ], { duration, easing: "cubic-bezier(.18,.72,.24,1)", fill: "forwards" });
+      flightAnimation.onfinish = () => playDurakSound("card");
       timer = window.setTimeout(finish, duration + 90);
     });
   }, Math.max(0, delayMs));
@@ -4067,7 +4067,6 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         resolve();
       };
 
-      playDurakSound("deal");
       requestAnimationFrame(() => {
         if (token !== durakDealAnimationToken || !target.isConnected) {
           finish();
@@ -4085,6 +4084,8 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
             finish();
             return;
           }
+          // Звук контакта звучит в момент посадки карты, а не в начале полёта.
+          playDurakSound("deal");
           target.style.transition = item.faceUp
             ? "transform " + faceUpTransitionMs + "ms ease-out, opacity " + faceUpTransitionMs + "ms ease-out"
             : "opacity " + faceUpTransitionMs + "ms ease-out";
