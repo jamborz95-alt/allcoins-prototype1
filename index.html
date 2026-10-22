@@ -3692,6 +3692,49 @@ let durakAnimationRoomId = null;
 let durakDealAnimationActive = false;
 let durakDealAnimationToken = 0;
 
+const DURAK_DECK_PILE_PATTERN = "repeating-linear-gradient(45deg, transparent 0 1.2px, rgba(72,139,100,.92) 1.2px 1.65px, transparent 1.65px 2.8px), repeating-linear-gradient(-45deg, transparent 0 1.2px, rgba(194,112,123,.78) 1.2px 1.65px, transparent 1.65px 2.8px), #f4f3e8";
+
+function createDurakDeckPileLayer(index) {
+  const cardBack = document.createElement("div");
+  cardBack.className = "durak-deck-card-back";
+  cardBack.dataset.deckLayer = String(index);
+  const left = Math.min(18, index * 0.36);
+  const top = Math.max(-8, -index * 0.16);
+  cardBack.style.cssText = [
+    "position:absolute",
+    "left:" + left + "px",
+    "top:" + top + "px",
+    "width:30px",
+    "height:44px",
+    "min-width:30px",
+    "min-height:44px",
+    "border:1px solid #edf1e4",
+    "border-radius:3px",
+    "background:" + DURAK_DECK_PILE_PATTERN,
+    "box-shadow:inset 0 0 0 1px rgba(255,255,255,.78),0 1px 3px rgba(0,0,0,.28)",
+    "box-sizing:border-box",
+    "z-index:" + (index + 2),
+    "pointer-events:none"
+  ].join(";");
+  return cardBack;
+}
+
+function updateDurakDeckVisualCount(value) {
+  const stack = document.querySelector("#durakTrump .durak-deck-stack");
+  const pile = stack?.querySelector(".durak-deck-pile");
+  const counter = stack?.querySelector(".durak-deck-count");
+  if (!pile || !counter) return null;
+
+  const nextCount = Math.max(0, Math.min(52, Math.floor(Number(value) || 0)));
+  while (pile.children.length > nextCount) pile.lastElementChild.remove();
+  while (pile.children.length < nextCount) {
+    pile.appendChild(createDurakDeckPileLayer(pile.children.length));
+  }
+  counter.textContent = String(nextCount);
+  counter.dataset.count = String(nextCount);
+  return nextCount;
+}
+
 // Встроенные звуки карт: шелест/удар карты + мягкий тон, без внешних файлов.
 let durakSoundEnabled = true;
 let durakAudioContext = null;
@@ -3892,6 +3935,7 @@ let durakKnownAttackCardIds = new Set();
 let durakTableHistoryRoomId = null;
 let durakLastRenderedGameRoomId = null;
 let durakLastRenderedTakePending = false;
+let durakLastRenderedAttackerIndex = null;
 let durakLastRenderedDefenderIndex = null;
 
 function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
@@ -3985,23 +4029,34 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if (isInitialDeal) playDurakSound("shuffle");
 
+  const usableTargets = dealTargets.filter(item => item?.target?.isConnected);
+  if (!usableTargets.length) return;
+  const deckDrawCount = usableTargets.filter(item => item?.deckDraw === true).length;
+  const finalDeckCount = Number.isFinite(Number(options.finalDeckCount))
+    ? Math.max(0, Math.min(52, Math.floor(Number(options.finalDeckCount))))
+    : null;
+  // API показывает остаток ПОСЛЕ раздачи. На время полётов временно возвращаем
+  // в стопку ровно те карты, которые сейчас будут раздаваться, затем снимаем их по одной.
+  if (deckDrawCount > 0 && finalDeckCount !== null) {
+    updateDurakDeckVisualCount(Math.min(52, finalDeckCount + deckDrawCount));
+  }
+
   const deck = document.querySelector("#durakTrump .durak-deck-stack");
   const deckRect = deck?.getBoundingClientRect();
-  // Если источник — карта на столе, её полёт не зависит от того, видна ли сейчас колода.
   const deckIsVisible = Boolean(deckRect && deckRect.width > 0 && deckRect.height > 0);
-
   const token = durakDealAnimationToken;
-  // Источник по умолчанию — видимый край колоды. Для взятия со стола ниже
-  // используются сохранённые координаты и изображение именно той карты.
-  const sourceCenterX = deckIsVisible
+  const fallbackSourceCenterX = deckIsVisible
     ? Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23))
     : Math.max(22, window.innerWidth * 0.5);
-  const sourceCenterY = deckIsVisible
+  const fallbackSourceCenterY = deckIsVisible
     ? deckRect.top + Math.min(28, deckRect.height * 0.32)
     : Math.max(30, window.innerHeight * 0.45);
-  if (!deckIsVisible && !dealTargets.some(item =>
+  if (!deckIsVisible && !usableTargets.some(item =>
     item?.fromTable === true && Number.isFinite(item?.source?.x) && Number.isFinite(item?.source?.y)
-  )) return;
+  )) {
+    if (finalDeckCount !== null) updateDurakDeckVisualCount(finalDeckCount);
+    return;
+  }
 
   // Ускорено до темпа живой карточной раздачи: путь остаётся заметным,
   // но карта не зависает над столом и не появляется внезапно в руке.
@@ -4054,39 +4109,60 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       }
 
       const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
+      const isDeckDraw = item?.deckDraw === true;
       const isOpponentDraw = item?.opponentDraw === true;
       const flightDuration = isTableTransfer
-        ? 680
+        ? 1150
         : isInitialDeal
-          ? 430
+          ? 540
           : isOpponentDraw
-            ? 420
-            : 385;
-      // Полётная копия сохраняет исходный размер и оформление карты.
-      const sourceWidth = Math.max(1, Number(item?.source?.width) || targetRect.width);
-      const sourceHeight = Math.max(1, Number(item?.source?.height) || targetRect.height);
-      const tableEndScale = isTableTransfer
+            ? 660
+            : 610;
+      // При раздаче рубашка стартует настоящего размера стопки (30×44), а затем
+      // увеличивается/уменьшается до размера карты у соответствующего игрока.
+      const sourceWidth = isTableTransfer
+        ? Math.max(1, Number(item?.source?.width) || targetRect.width)
+        : isDeckDraw ? 30 : targetRect.width;
+      const sourceHeight = isTableTransfer
+        ? Math.max(1, Number(item?.source?.height) || targetRect.height)
+        : isDeckDraw ? 44 : targetRect.height;
+      const endScale = (isTableTransfer || isDeckDraw)
         ? Math.min(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
         : 1;
-      const startScale = isTableTransfer
-        ? 1.02
-        : isOpponentDraw ? 0.98 : 0.64;
+      const tableEndScale = isTableTransfer ? endScale : 1;
+      const startScale = isTableTransfer ? 1.02 : isDeckDraw ? 1 : isOpponentDraw ? 0.98 : 0.64;
       const middleScale = isTableTransfer
         ? (item.faceUp ? Math.max(tableEndScale, 0.88) : Math.max(tableEndScale * 1.65, 0.55))
-        : isOpponentDraw ? 1.03 : 0.77;
+        : isDeckDraw ? Math.max(0.66, (1 + endScale) / 2)
+          : isOpponentDraw ? 1.03 : 0.77;
       const lateScale = isTableTransfer
         ? (item.faceUp ? tableEndScale * 1.05 : tableEndScale * 1.25)
-        : isOpponentDraw ? 1 : 0.93;
+        : isDeckDraw ? endScale * 1.04
+          : isOpponentDraw ? 1 : 0.93;
       const flyer = isTableTransfer
         ? item.source.element.cloneNode(true)
         : document.createElement("span");
       flyer.classList.add("durak-deal-flyer");
       flyer.classList.remove("table-card", "durak-landing-target");
       flyer.setAttribute("aria-hidden", "true");
-      const cardSourceX = Number.isFinite(item?.source?.x) ? item.source.x : sourceCenterX;
-      const cardSourceY = Number.isFinite(item?.source?.y) ? item.source.y : sourceCenterY;
-      const flyerWidth = isTableTransfer ? sourceWidth : targetRect.width;
-      const flyerHeight = isTableTransfer ? sourceHeight : targetRect.height;
+
+      // Источник пересчитывается для каждой карты: она уходит с текущего верхнего слоя стопки.
+      const topDeckCard = document.querySelector("#durakTrump .durak-deck-pile")?.lastElementChild;
+      const liveDeckSource = topDeckCard?.getBoundingClientRect();
+      const deckSourceRect = liveDeckSource?.width && liveDeckSource?.height
+        ? liveDeckSource : deckRect;
+      const cardSourceX = isTableTransfer && Number.isFinite(item?.source?.x)
+        ? item.source.x
+        : deckSourceRect?.width
+          ? deckSourceRect.left + deckSourceRect.width / 2
+          : fallbackSourceCenterX;
+      const cardSourceY = isTableTransfer && Number.isFinite(item?.source?.y)
+        ? item.source.y
+        : deckSourceRect?.height
+          ? deckSourceRect.top + deckSourceRect.height / 2
+          : fallbackSourceCenterY;
+      const flyerWidth = isTableTransfer ? sourceWidth : isDeckDraw ? 30 : targetRect.width;
+      const flyerHeight = isTableTransfer ? sourceHeight : isDeckDraw ? 44 : targetRect.height;
       flyer.style.cssText = [
         "position:fixed",
         "left:" + (cardSourceX - flyerWidth / 2) + "px",
@@ -4102,12 +4178,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         "padding:0",
         "border:1px solid #edf1e4",
         "border-radius:3px",
-        "background:repeating-linear-gradient(45deg,transparent 0 3px,rgba(72,139,100,.92) 3px 4px,transparent 4px 7px),repeating-linear-gradient(-45deg,transparent 0 3px,rgba(194,112,123,.78) 3px 4px,transparent 4px 7px),#f4f3e8",
+        "background:" + DURAK_DECK_PILE_PATTERN,
         "box-shadow:inset 0 0 0 1px rgba(255,255,255,.78),0 2px 5px rgba(0,0,0,.24)",
         "pointer-events:none",
         "z-index:2147483647",
         "transform-origin:center center",
-        "transform:rotate(-8deg) scale(.64)",
+        "transform:rotate(-8deg) scale(" + startScale + ")",
         "transition:none",
         "will-change:transform",
         "backface-visibility:hidden"
@@ -4159,16 +4235,23 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           finish();
           return;
         }
-        // Для карт со стола делаем более выраженную дугу: виден сам путь,
-        // а не только исчезновение на столе и появление у соперника.
+        // В момент старта полёта снимаем одну рубашку со стопки и уменьшаем счётчик.
+        if (isDeckDraw) {
+          const currentCount = Number(document.querySelector("#durakTrump .durak-deck-count")?.dataset.count);
+          if (Number.isFinite(currentCount)) updateDurakDeckVisualCount(Math.max(0, currentCount - 1));
+        }
+        // Взятие со стола должно читаться глазами: выше дуга, дольше путь и пауза между картами.
         const arcHeight = isTableTransfer
-          ? Math.min(72, Math.max(34, Math.abs(dx) * 0.095 + Math.abs(dy) * 0.035))
-          : Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
+          ? Math.min(126, Math.max(84, Math.abs(dx) * 0.14 + Math.abs(dy) * 0.12))
+          : isDeckDraw
+            ? Math.min(68, Math.max(36, Math.abs(dx) * 0.085 + Math.abs(dy) * 0.065))
+            : Math.min(54, Math.max(20, Math.abs(dx) * 0.075 + Math.abs(dy) * 0.025));
+        const finalScale = (isTableTransfer || isDeckDraw) ? endScale : 1;
         flightAnimation = flyer.animate([
           { offset: 0, transform: "translate3d(0,0,0) rotate(-8deg) scale(" + startScale + ")" },
-          { offset: 0.28, transform: "translate3d(" + (dx * 0.28) + "px," + (dy * 0.28 - arcHeight) + "px,0) rotate(-5deg) scale(" + middleScale + ")" },
-          { offset: 0.70, transform: "translate3d(" + (dx * 0.70) + "px," + (dy * 0.70 - arcHeight * 0.52) + "px,0) rotate(2deg) scale(" + lateScale + ")" },
-          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(" + (isTableTransfer ? tableEndScale : 1) + ")" }
+          { offset: 0.22, transform: "translate3d(" + (dx * 0.22) + "px," + (dy * 0.22 - arcHeight) + "px,0) rotate(-7deg) scale(" + middleScale + ")" },
+          { offset: 0.68, transform: "translate3d(" + (dx * 0.68) + "px," + (dy * 0.68 - arcHeight * 0.52) + "px,0) rotate(3deg) scale(" + lateScale + ")" },
+          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(0deg) scale(" + finalScale + ")" }
         ], { duration: flightDuration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         revealTimer = window.setTimeout(() => {
           if (!target.isConnected) {
@@ -4186,14 +4269,18 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         }, flightDuration);
       });
     }, index * (
-      isInitialDeal ? 92 :
-      item?.fromTable ? 125 :
-      item?.opponentDraw ? 68 : 72
+      isInitialDeal ? 105 :
+      item?.fromTable ? 220 :
+      item?.deckDraw ? 135 :
+      item?.opponentDraw ? 125 : 115
     ));
   }));
 
   await Promise.all(tasks);
-  if (token === durakDealAnimationToken) durakDealAnimationActive = false;
+  if (token === durakDealAnimationToken) {
+    durakDealAnimationActive = false;
+    if (finalDeckCount !== null) updateDurakDeckVisualCount(finalDeckCount);
+  }
 }
 
 // Создаёт невидимую цель в точном месте, куда новая карта будет отрисована.
@@ -4816,13 +4903,21 @@ const makeDeckBack = (left, top, zIndex) => {
   return cardBack;
 };
 
-// Три немного смещённых рубашки дают аккуратную стопку, как на эталонном видео.
-const deckCardBack = makeDeckBack(5, 4, 2);
-const deckCardMiddle = makeDeckBack(2, 2, 3);
-const deckCard = makeDeckBack(0, 0, 4);
+// Каждый оставшийся экземпляр колоды представлен отдельной смещённой рубашкой.
+const deckPile = document.createElement("div");
+deckPile.className = "durak-deck-pile";
+deckPile.style.cssText = "position:absolute;left:0;top:0;width:48px;height:90px;overflow:visible;pointer-events:none;";
+const initialPileCount = Math.max(0, Math.min(52, Math.floor(Number(game.cardsLeft) || 0)));
+for (let i = 0; i < initialPileCount; i++) {
+  const layer = makeDeckBack(Math.min(18, i * 0.36), Math.max(-8, -i * 0.16), i + 2);
+  layer.dataset.deckLayer = String(i);
+  deckPile.appendChild(layer);
+}
 
 const deckCount = document.createElement("div");
-deckCount.textContent = String(game.cardsLeft ?? 0);
+deckCount.className = "durak-deck-count";
+deckCount.dataset.count = String(initialPileCount);
+deckCount.textContent = String(initialPileCount);
 
 // Компактная стопка с местом для козыря и счётчика.
 const deckStack = document.createElement("div");
@@ -4868,9 +4963,7 @@ deckCount.style.cssText = `
   text-align:left; text-shadow:0 1px 3px #000;
 `;
 
-deckStack.appendChild(deckCardBack);
-deckStack.appendChild(deckCardMiddle);
-deckStack.appendChild(deckCard);
+deckStack.appendChild(deckPile);
 deckStack.appendChild(deckCount);
 trumpBox.appendChild(deckStack);
 
@@ -4905,6 +4998,8 @@ deckCount.style.setProperty("font-size", "13px", "important");
 deckCount.style.setProperty("line-height", "14px", "important");
 deckCount.style.setProperty("text-align", "left", "important");
 deckCount.style.setProperty("color", "#f4f5ef", "important");
+deckCount.style.setProperty("z-index", "120", "important");
+deckCount.style.setProperty("font-variant-numeric", "tabular-nums", "important");
 deckCount.style.setProperty("background", "transparent", "important");
 deckCount.style.setProperty("border", "0", "important");
 deckCount.style.setProperty("border-radius", "0", "important");
@@ -5440,15 +5535,27 @@ if (Array.isArray(game.hand)) {
     });
   }
 
-  // Когда защищающийся забрал карты, отправляем каждую карту СО СТОЛА
-  // именно в его руку. Число видимых рубашек ограничено шестью, поэтому
-  // для остальных карт создаём невидимые цели рядом с веером, не меняя его вид.
-  if (
-    durakLastRenderedTakePending &&
-    Array.isArray(game.table) && game.table.length === 0 &&
+  // Сверяем карты стола между двумя отрисовками. Если все старые карты ушли,
+  // но атакующий игрок остался тем же, раунд закончился взятием (в том числе
+  // когда бот сразу начинает следующую атаку и клиент не успевает увидеть takePending).
+  const previousTableCardIds = Array.from(previousTableCardOrigins.keys());
+  const currentTableCardIds = new Set(
+    (Array.isArray(game.table) ? game.table : []).flatMap(item => [
+      item?.attack?.id, item?.defense?.id
+    ]).filter(id => id !== undefined && id !== null).map(String)
+  );
+  const previousTableRemoved = previousTableCardIds.length > 0 &&
+    previousTableCardIds.every(id => !currentTableCardIds.has(String(id)));
+  const opponentTookTable = sameRenderedRoom &&
+    previousTableRemoved &&
+    Number.isInteger(durakLastRenderedAttackerIndex) &&
+    Number(game.attackerIndex) === durakLastRenderedAttackerIndex &&
     Number.isInteger(durakLastRenderedDefenderIndex) &&
-    durakLastRenderedDefenderIndex !== Number(game.playerIndex)
-  ) {
+    durakLastRenderedDefenderIndex !== Number(game.playerIndex);
+
+  // Когда соперник забрал карты, отправляем каждую карту со старого стола прямо к его рубашкам.
+  // Число видимых рубашек ограничено шестью, поэтому для остальных есть временные точки посадки.
+  if (opponentTookTable) {
     const tableSources = Array.from(previousTableCardOrigins.values());
     const opponentTakerCards = newlyDealtOpponentBacks.filter(
       item => item.playerIndex === durakLastRenderedDefenderIndex
@@ -5556,7 +5663,18 @@ if (Array.isArray(game.hand)) {
         for (let offset = 1; offset <= playerCount; offset++) {
           const playerIndex = (ownIndex + offset) % playerCount;
           const target = targetsByPlayer.get(playerIndex)?.[round];
-          if (target) dealQueue.push({ target, faceUp: playerIndex === ownIndex });
+          if (target) {
+            const tableSource = playerIndex === ownIndex
+              ? previousTableCardOrigins.get(String(target.dataset.cardId || "")) || null
+              : null;
+            dealQueue.push({
+              target,
+              faceUp: playerIndex === ownIndex,
+              source: tableSource,
+              fromTable: Boolean(tableSource),
+              deckDraw: !tableSource
+            });
+          }
         }
       }
     } else {
@@ -5566,7 +5684,8 @@ if (Array.isArray(game.hand)) {
           target,
           faceUp: true,
           source: tableSource || null,
-          fromTable: Boolean(tableSource)
+          fromTable: Boolean(tableSource),
+          deckDraw: !tableSource
         });
       });
       newlyDealtOpponentBacks.forEach(item => {
@@ -5574,6 +5693,7 @@ if (Array.isArray(game.hand)) {
           ...item,
           source: item.source || null,
           fromTable: item.fromTable === true,
+          deckDraw: item.fromTable !== true,
           faceUp: false
         });
       });
@@ -5581,7 +5701,8 @@ if (Array.isArray(game.hand)) {
 
     if (dealQueue.length) {
       await animateDurakDealSequence(dealQueue, roomId, {
-        initial: isInitialDealForRoom
+        initial: isInitialDealForRoom,
+        finalDeckCount: Number(game.cardsLeft ?? 0)
       });
     }
   }
@@ -5590,6 +5711,9 @@ if (Array.isArray(game.hand)) {
   
   durakLastRenderedGameRoomId = String(roomId);
   durakLastRenderedTakePending = game.takePending === true;
+  durakLastRenderedAttackerIndex = Number.isInteger(Number(game.attackerIndex))
+    ? Number(game.attackerIndex)
+    : null;
   durakLastRenderedDefenderIndex = Number.isInteger(Number(game.defenderIndex))
     ? Number(game.defenderIndex)
     : null;
