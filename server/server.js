@@ -756,6 +756,7 @@ app.post("/api/durak/rooms/players", async (req, res) => {
     const playersResult = await pool.query(
   `SELECT
      p.telegram_id,
+     p.display_name,
      p.is_ready,
      (p.telegram_id = r.owner_telegram_id) AS is_owner
    FROM durak_room_players p
@@ -767,10 +768,9 @@ app.post("/api/durak/rooms/players", async (req, res) => {
 
     const players = playersResult.rows.map((player, index) => ({
   label: String(player.telegram_id) === "0"
-    ? "🤖 Бот ALLCOINS"
-    : player.is_owner
-      ? "Создатель комнаты"
-      : "Игрок " + (index + 1),
+    ? "Бот ALLCOINS"
+    : String(player.display_name || "").trim() ||
+      (String(player.telegram_id) === String(user.id) ? "Ты" : "Игрок " + (index + 1)),
   isOwner: player.is_owner,
   isReady: player.is_owner || player.is_ready,
   isMe: String(player.telegram_id) === String(user.id)
@@ -1303,6 +1303,45 @@ app.post("/api/durak/game", async (req, res) => {
         if (latestState.rows.length) gameState = latestState.rows[0].game_state;
       }
     }
+    if (gameState?.status === "finished" && gameState?.pot && gameState.pot.settled !== true) {
+      const payoutClient = await pool.connect();
+      let payoutTransactionOpen = false;
+      try {
+        await payoutClient.query("BEGIN");
+        payoutTransactionOpen = true;
+        const lockedGame = await payoutClient.query(
+          `SELECT game_state FROM durak_games WHERE room_id = $1 FOR UPDATE`,
+          [roomId]
+        );
+        if (lockedGame.rows.length) {
+          gameState = lockedGame.rows[0].game_state;
+          if (gameState?.status === "finished" && gameState?.pot && gameState.pot.settled !== true) {
+            await settleDurakGamePayout(payoutClient, gameState);
+            await payoutClient.query(
+              `UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2`,
+              [JSON.stringify(gameState), roomId]
+            );
+          }
+          if (gameState?.status === "finished") {
+            await payoutClient.query(
+              "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
+              [roomId]
+            );
+          }
+        }
+        await payoutClient.query("COMMIT");
+        payoutTransactionOpen = false;
+      } catch (payoutError) {
+        if (payoutTransactionOpen) {
+          try { await payoutClient.query("ROLLBACK"); }
+          catch (rollbackError) { console.error("Payout recovery rollback error:", rollbackError.message); }
+        }
+        throw payoutError;
+      } finally {
+        payoutClient.release();
+      }
+    }
+
 // Не пишем Telegram ID игроков в обычные логи.
     // Возвращаем игроку только его карты
     const me = gameState.players.find(
@@ -1328,6 +1367,26 @@ app.post("/api/durak/game", async (req, res) => {
         row.display_name
       ])
     );
+    const potState = gameState.pot && typeof gameState.pot === "object" ? gameState.pot : null;
+    const payoutWinners = Array.isArray(potState?.settlement?.winners)
+      ? potState.settlement.winners.map(award => ({
+          name: roomNames.get(String(award.telegramId)) ||
+            (String(award.telegramId) === String(user.id) ? (user.first_name || user.username || "Ты") : "Игрок"),
+          amount: Math.max(0, Number(award.amount) || 0),
+          isMe: String(award.telegramId) === String(user.id)
+        }))
+      : [];
+    const visiblePot = potState ? {
+      grossPot: Math.max(0, Number(potState.grossPot) || 0),
+      burnedAmount: Math.max(0, Number(potState.burnedAmount) || 0),
+      payoutPool: Math.max(0, Number(potState.payoutPool) || 0),
+      burnPercent: 5,
+      settled: potState.settled === true,
+      myPrize: Math.max(0, Number(potState.settlement?.winners?.find(
+        award => String(award.telegramId) === String(user.id)
+      )?.amount) || 0),
+      winners: payoutWinners
+    } : null;
 
     return res.json({
   ok: true,
@@ -1351,12 +1410,12 @@ app.post("/api/durak/game", async (req, res) => {
   ),
   players: gameState.players.map((p, index) => ({
     label: String(p.telegramId) === "0"
-      ? "🤖 Бот ALLCOINS"
-      : String(p.telegramId) === String(user.id)
-        ? "👤 " + (user.first_name || user.username || "Ты")
-        : "👤 " + (roomNames.get(String(p.telegramId)) || "Игрок " + (index + 1)),
+      ? "Бот ALLCOINS"
+      : (roomNames.get(String(p.telegramId)) ||
+        (String(p.telegramId) === String(user.id) ? (user.first_name || user.username || "Ты") : "Игрок " + (index + 1))),
     cardsCount: Array.isArray(p.hand) ? p.hand.length : 0
-  }))
+  })),
+  pot: visiblePot
 });
   } catch (error) {
     console.error("Get Durak game error:", error);
