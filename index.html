@@ -3987,16 +3987,26 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
 
   const deck = document.querySelector("#durakTrump .durak-deck-stack");
   const deckRect = deck?.getBoundingClientRect();
-  if (!deckRect || !deckRect.width || !deckRect.height) return;
+  // Если источник — карта на столе, её полёт не зависит от того, видна ли сейчас колода.
+  const deckIsVisible = Boolean(deckRect && deckRect.width > 0 && deckRect.height > 0);
 
   const token = durakDealAnimationToken;
-  // Стопка немного за левым краем, поэтому раздача начинается от её видимого края.
-  const sourceCenterX = Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23));
-  const sourceCenterY = deckRect.top + Math.min(28, deckRect.height * 0.32);
-  // Плавная, хорошо различимая раздача: карта должна успевать пролететь
-  // от колоды/стола до руки, как в карточной игре, без резкого телепорта.
-  const faceUpTransitionMs = isInitialDeal ? 130 : 112;
-  const cleanupDelayMs = isInitialDeal ? 122 : 108;
+  // Источник по умолчанию — видимый край колоды. Для взятия со стола ниже
+  // используются сохранённые координаты и изображение именно той карты.
+  const sourceCenterX = deckIsVisible
+    ? Math.max(22, Math.min(window.innerWidth - 18, deckRect.left + 23))
+    : Math.max(22, window.innerWidth * 0.5);
+  const sourceCenterY = deckIsVisible
+    ? deckRect.top + Math.min(28, deckRect.height * 0.32)
+    : Math.max(30, window.innerHeight * 0.45);
+  if (!deckIsVisible && !dealTargets.some(item =>
+    item?.fromTable === true && Number.isFinite(item?.source?.x) && Number.isFinite(item?.source?.y)
+  )) return;
+
+  // Ускорено до темпа живой карточной раздачи: путь остаётся заметным,
+  // но карта не зависает над столом и не появляется внезапно в руке.
+  const faceUpTransitionMs = isInitialDeal ? 100 : 90;
+  const cleanupDelayMs = isInitialDeal ? 85 : 75;
   const savedStyles = new WeakMap();
 
   // Скрываем весь набор заранее: карты не должны сначала появиться в руках,
@@ -4044,22 +4054,22 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       const isTableTransfer = item?.fromTable === true && Boolean(item?.source?.element);
       const isOpponentDraw = item?.opponentDraw === true;
       const flightDuration = isTableTransfer
-        ? 680
+        ? 470
         : isInitialDeal
-          ? 510
+          ? 430
           : isOpponentDraw
-            ? 520
-            : 435;
+            ? 420
+            : 385;
       // При взятии противником видимая лицевая карта уменьшается до рубашки
       // в его руке; при обычной раздаче сопернику рубашка летит полным размером.
       const startScale = isTableTransfer
-        ? (item.faceUp ? 1.08 : 2.15)
+        ? (item.faceUp ? 1.04 : 1.45)
         : isOpponentDraw ? 0.98 : 0.64;
       const middleScale = isTableTransfer
-        ? (item.faceUp ? 1.06 : 1.58)
+        ? (item.faceUp ? 1.03 : 1.28)
         : isOpponentDraw ? 1.03 : 0.77;
       const lateScale = isTableTransfer
-        ? (item.faceUp ? 1.02 : 1.18)
+        ? (item.faceUp ? 1.01 : 1.10)
         : isOpponentDraw ? 1 : 0.93;
       const flyer = isTableTransfer
         ? item.source.element.cloneNode(true)
@@ -4154,9 +4164,9 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         }, flightDuration);
       });
     }, index * (
-      isInitialDeal ? 112 :
-      item?.fromTable ? 78 :
-      item?.opponentDraw ? 84 : 96
+      isInitialDeal ? 92 :
+      item?.fromTable ? 62 :
+      item?.opponentDraw ? 68 : 72
     ));
   }));
 
