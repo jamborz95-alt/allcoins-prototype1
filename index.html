@@ -2308,6 +2308,15 @@
       <span class="game-app-title">Лото Онлайн</span>
     </button>
   </div>
+  <div class="game-app-tile" id="twentyOneEntry">
+    <button type="button" id="openTwentyOne" class="game-app-launch" aria-label="Открыть игру 21 Очко">
+      <span class="twentyone-entry-appicon" aria-hidden="true">
+        <span class="twentyone-mini-card back">A</span>
+        <span class="twentyone-mini-card front">21</span>
+      </span>
+      <span class="game-app-title">21 Очко</span>
+    </button>
+  </div>
 </div>
 
 <!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАКА -->
@@ -3565,6 +3574,63 @@
     </details>
     <button type="button" id="onlineLottoPlayRefresh" class="lotto-light-button">↻ Обновить игру</button>
   </div>
+</div>
+
+
+<!-- ОТДЕЛЬНАЯ СТРАНИЦА ИГРЫ «21 ОЧКО» -->
+<div id="twentyOneGame" class="card" style="display:none;">
+  <button type="button" id="twentyOneBack" class="secondary twentyone-back">← Назад к играм</button>
+
+  <header class="twentyone-header">
+    <div>
+      <h2>🂡 21 Очко</h2>
+      <p>Классическое русское очко · игра против банкира</p>
+    </div>
+    <div class="twentyone-balance-box"><span id="twentyOneBalance">0</span><small>ALLCOINS</small></div>
+  </header>
+
+  <details class="twentyone-rules">
+    <summary>📘 Правила игры</summary>
+    <div class="twentyone-rules-body">
+      <p><b>Цель:</b> набрать больше очков, чем банкир, но не больше 21.</p>
+      <p><b>Очки карт:</b> от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.</p>
+      <p><b>Ход:</b> выбери ставку и начни раунд. Получи карту и нажимай «Ещё карту», чтобы добирать, или «Хватит», чтобы остановиться. При переборе свыше 21 ставка проиграна. Набрав ровно 21, ты сразу побеждаешь.</p>
+      <p><b>Банкир:</b> после твоего решения берёт карты до 17 очков. Если очки равны, выигрывает банкир. При победе игрок получает обратно двойную ставку; при проигрыше ставка остаётся у банкира.</p>
+      <p class="twentyone-demo-note">Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.</p>
+    </div>
+  </details>
+
+  <div class="twentyone-table">
+    <section class="twentyone-player-area">
+      <div class="twentyone-seat"><span class="twentyone-seat-dot">♛</span><div><b>Банкир</b><small id="twentyOneDealerScore">Карты банкира</small></div></div>
+      <div id="twentyOneDealerCards" class="twentyone-cards" aria-label="Карты банкира"></div>
+    </section>
+
+    <div class="twentyone-divider"><span>21</span></div>
+
+    <section class="twentyone-player-area">
+      <div class="twentyone-seat"><span class="twentyone-seat-dot player">♠</span><div><b>Ты</b><small id="twentyOnePlayerScore">Твои карты</small></div></div>
+      <div id="twentyOnePlayerCards" class="twentyone-cards" aria-label="Твои карты"></div>
+    </section>
+  </div>
+
+  <div id="twentyOneStatus" class="twentyone-status" aria-live="polite">Выбери ставку и начни раунд.</div>
+  <div class="twentyone-controls">
+    <label for="twentyOneStake">Ставка</label>
+    <select id="twentyOneStake">
+      <option value="100">100 AC</option>
+      <option value="500">500 AC</option>
+      <option value="1000">1 000 AC</option>
+      <option value="5000">5 000 AC</option>
+    </select>
+    <button type="button" id="twentyOneDeal" class="twentyone-primary">🃏 Начать раунд</button>
+    <div id="twentyOnePlayActions" class="twentyone-action-row" style="display:none;">
+      <button type="button" id="twentyOneHit" class="twentyone-primary">＋ Ещё карту</button>
+      <button type="button" id="twentyOneStand" class="twentyone-secondary">✋ Хватит</button>
+    </div>
+    <button type="button" id="twentyOneNewRound" class="twentyone-primary" style="display:none;">↻ Новый раунд</button>
+  </div>
+  <div class="twentyone-footer">Колода из 36 карт · карты взяты из папки <code>cards/</code></div>
 </div>
 
 <nav class="nav">
@@ -9332,6 +9398,197 @@ $("onlineLottoDeleteAllReports").onclick = deleteAllOnlineLottoReports;
 $("onlineLottoTestBot").onclick = addOnlineLottoTestBot;
 
 
+
+/* ===== 21 ОЧКО: одиночная игра против банкира с картами ALLCOINS ===== */
+let twentyOneDeck = [];
+let twentyOnePlayerHand = [];
+let twentyOneDealerHand = [];
+let twentyOneStakeValue = 100;
+let twentyOneRoundActive = false;
+let twentyOneRoundSettled = false;
+
+const TWENTY_ONE_RANKS = ["6","7","8","9","10","В","Д","К","Т"];
+const TWENTY_ONE_SUITS = ["♠","♥","♦","♣"];
+
+function makeTwentyOneDeck() {
+  const deck = [];
+  for (const suit of TWENTY_ONE_SUITS) {
+    for (const rank of TWENTY_ONE_RANKS) {
+      deck.push({ id:"21-" + rank + "-" + suit, rank, suit });
+    }
+  }
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function twentyOneCardValue(card) {
+  const rank = String(card.rank || "").toUpperCase();
+  if (rank === "Т" || rank === "ТУЗ" || rank === "A") return 11;
+  if (rank === "К" || rank === "K") return 4;
+  if (rank === "Д" || rank === "Q") return 3;
+  if (rank === "В" || rank === "J") return 2;
+  return Math.max(0, Number(rank) || 0);
+}
+
+function twentyOneHandScore(cards) {
+  return cards.reduce((total, card) => total + twentyOneCardValue(card), 0);
+}
+
+function renderTwentyOneCardRow(containerId, cards) {
+  const container = $(containerId);
+  if (!container) return;
+  container.textContent = "";
+  cards.forEach((card) => {
+    const element = createDurakCardElement(card);
+    element.classList.add("twentyone-card");
+    element.style.touchAction = "auto";
+    container.appendChild(element);
+  });
+}
+
+function renderTwentyOneTable(revealDealer = true) {
+  renderTwentyOneCardRow("twentyOneDealerCards", twentyOneDealerHand);
+  renderTwentyOneCardRow("twentyOnePlayerCards", twentyOnePlayerHand);
+  const dealerScore = twentyOneHandScore(twentyOneDealerHand);
+  const playerScore = twentyOneHandScore(twentyOnePlayerHand);
+  $("twentyOneDealerScore").textContent = revealDealer
+    ? dealerScore + " очк." + (dealerScore === 1 ? "о" : "ов")
+    : "Банкир получил карту";
+  $("twentyOnePlayerScore").textContent = twentyOnePlayerHand.length
+    ? playerScore + " очк." + (playerScore === 1 ? "о" : "ов")
+    : "Твои карты";
+  $("twentyOneBalance").textContent = Number(state.balance || 0).toLocaleString("ru-RU");
+  $("twentyOneDeal").style.display = twentyOneRoundActive || !twentyOneRoundSettled ? "block" : "none";
+  $("twentyOnePlayActions").style.display = twentyOneRoundActive ? "grid" : "none";
+  $("twentyOneNewRound").style.display = twentyOneRoundSettled ? "block" : "none";
+  $("twentyOneStake").disabled = twentyOneRoundActive;
+  $("twentyOneDeal").disabled = twentyOneRoundActive;
+}
+
+function startTwentyOneRound() {
+  if (twentyOneRoundActive) return;
+  const stake = Math.max(1, Math.floor(Number($("twentyOneStake").value) || 100));
+  if (!Number.isFinite(state.balance) || state.balance < stake) {
+    $("twentyOneStatus").textContent = "Недостаточно AC для этой ставки. Выбери меньшую сумму.";
+    return;
+  }
+
+  twentyOneStakeValue = stake;
+  state.balance -= stake;
+  saveGame();
+  twentyOneDeck = makeTwentyOneDeck();
+  twentyOnePlayerHand = [twentyOneDeck.pop()];
+  twentyOneDealerHand = [twentyOneDeck.pop()];
+  twentyOneRoundActive = true;
+  twentyOneRoundSettled = false;
+  $("twentyOneStatus").textContent = "Твой ход. Возьми ещё карту или остановись.";
+  renderTwentyOneTable(true);
+  if (twentyOneHandScore(twentyOnePlayerHand) === 21) {
+    finishTwentyOneRound("player21");
+  }
+}
+
+function finishTwentyOneRound(reason) {
+  if (twentyOneRoundSettled) return;
+  twentyOneRoundActive = false;
+  twentyOneRoundSettled = true;
+  let playerScore = twentyOneHandScore(twentyOnePlayerHand);
+  let dealerScore = twentyOneHandScore(twentyOneDealerHand);
+  let won = false;
+  let message = "";
+
+  if (reason === "bust" || playerScore > 21) {
+    message = "Перебор — " + playerScore + " очков. Ставка " + twentyOneStakeValue.toLocaleString("ru-RU") + " AC проиграна.";
+  } else if (reason === "player21" || playerScore === 21) {
+    won = true;
+    message = "🎉 21 очко! Ты сразу выиграл раунд.";
+  } else {
+    while (dealerScore < 17 && twentyOneDeck.length) {
+      twentyOneDealerHand.push(twentyOneDeck.pop());
+      dealerScore = twentyOneHandScore(twentyOneDealerHand);
+    }
+    if (dealerScore > 21) {
+      won = true;
+      message = "🎉 У банкира перебор (" + dealerScore + "). Ты выиграл!";
+    } else if (playerScore > dealerScore) {
+      won = true;
+      message = "🎉 У тебя " + playerScore + ", у банкира " + dealerScore + ". Победа!";
+    } else if (playerScore === dealerScore) {
+      message = "У обоих по " + playerScore + ". При равенстве побеждает банкир — ставка проиграна.";
+    } else {
+      message = "У тебя " + playerScore + ", у банкира " + dealerScore + ". В этот раз выиграл банкир.";
+    }
+  }
+
+  if (won) {
+    state.balance += twentyOneStakeValue * 2;
+    message += " Начислено " + (twentyOneStakeValue * 2).toLocaleString("ru-RU") + " AC (ставка + выигрыш).";
+  }
+  saveGame();
+  render();
+  renderTwentyOneTable(true);
+  $("twentyOneStatus").textContent = message;
+}
+
+function hitTwentyOne() {
+  if (!twentyOneRoundActive || !twentyOneDeck.length) return;
+  twentyOnePlayerHand.push(twentyOneDeck.pop());
+  renderTwentyOneTable(true);
+  const score = twentyOneHandScore(twentyOnePlayerHand);
+  if (score > 21) finishTwentyOneRound("bust");
+  else if (score === 21) finishTwentyOneRound("player21");
+  else $("twentyOneStatus").textContent = "У тебя " + score + " очков. Ещё карту или хватит?";
+}
+
+function standTwentyOne() {
+  if (!twentyOneRoundActive) return;
+  finishTwentyOneRound("stand");
+}
+
+function resetTwentyOneRound() {
+  twentyOneDeck = [];
+  twentyOnePlayerHand = [];
+  twentyOneDealerHand = [];
+  twentyOneRoundActive = false;
+  twentyOneRoundSettled = false;
+  $("twentyOneStatus").textContent = "Выбери ставку и начни раунд.";
+  renderTwentyOneTable(true);
+}
+
+function openTwentyOneGame() {
+  $("twentyOneGame").style.display = "block";
+  $("twentyOneGame").classList.add("twentyone-fullscreen");
+  $("twentyOneBalance").textContent = Number(state.balance || 0).toLocaleString("ru-RU");
+  resetTwentyOneRound();
+  if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
+    if (typeof tg.BackButton.offClick === "function") tg.BackButton.offClick(closeTwentyOneGame);
+    tg.BackButton.show();
+    tg.BackButton.onClick(closeTwentyOneGame);
+  }
+}
+
+function closeTwentyOneGame() {
+  $("twentyOneGame").classList.remove("twentyone-fullscreen");
+  $("twentyOneGame").style.display = "none";
+  if (tg && tg.BackButton) {
+    if (typeof tg.BackButton.offClick === "function") tg.BackButton.offClick(closeTwentyOneGame);
+    if (typeof tg.BackButton.hide === "function") tg.BackButton.hide();
+  }
+  switchAllcoinsPage("games");
+}
+
+$("openTwentyOne").onclick = openTwentyOneGame;
+$("twentyOneBack").onclick = closeTwentyOneGame;
+$("twentyOneDeal").onclick = startTwentyOneRound;
+$("twentyOneHit").onclick = hitTwentyOne;
+$("twentyOneStand").onclick = standTwentyOne;
+$("twentyOneNewRound").onclick = resetTwentyOneRound;
+renderTwentyOneTable(true);
+
+
 window.onerror = function(message, source, lineno, colno, error) {
   alert(
     "ОШИБКА ALLCOINS:\n" +
@@ -10546,6 +10803,80 @@ if (gamesSection) {
     font-size: 12px !important;
   }
 }
+</style>
+
+
+<style id="allcoins-twentyone-style">
+  #games .twentyone-entry-appicon {
+    position:relative; display:block; width:64px; height:64px; border-radius:15px;
+    background:linear-gradient(145deg,#222d45,#0b1324); border:1px solid rgba(232,190,95,.7);
+    box-shadow:0 7px 15px #0005; overflow:hidden;
+  }
+  #games .twentyone-mini-card {
+    position:absolute; display:flex; align-items:center; justify-content:center;
+    width:31px; height:43px; border-radius:5px; font-weight:900; font-size:18px;
+    border:1px solid #f1d89b; box-shadow:0 2px 6px #0008;
+  }
+  #games .twentyone-mini-card.back {
+    left:8px; top:9px; transform:rotate(-13deg);
+    color:#f4d796; background:repeating-linear-gradient(45deg,#173e42 0 3px,#21585a 3px 5px);
+  }
+  #games .twentyone-mini-card.front {
+    right:6px; bottom:6px; transform:rotate(10deg);
+    color:#7a241e; background:linear-gradient(145deg,#fffef6,#ead8b4);
+  }
+
+  #twentyOneGame.twentyone-fullscreen {
+    display:block; position:fixed; inset:0; z-index:2500;
+    width:100vw; height:100vh; height:100dvh; max-width:none; margin:0;
+    padding:max(12px,env(safe-area-inset-top)) 13px max(20px,env(safe-area-inset-bottom));
+    overflow-y:auto; border:0; border-radius:0; box-sizing:border-box;
+    color:#f7f5ef;
+    background:radial-gradient(ellipse at 50% -10%,#254c45 0%,#122f2c 40%,#081a1b 100%);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+  #twentyOneGame .twentyone-back { width:100%; margin:0 0 10px; }
+  #twentyOneGame .twentyone-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:4px 0 12px; }
+  #twentyOneGame .twentyone-header h2 { margin:0 0 4px; color:#f4d18a; font-size:25px; }
+  #twentyOneGame .twentyone-header p { margin:0; max-width:230px; color:#d2e1d9; font-size:11px; line-height:1.35; }
+  #twentyOneGame .twentyone-balance-box { min-width:88px; padding:9px 11px; border:1px solid #c49b50; border-radius:12px; background:#122724; text-align:center; font-weight:800; color:#ffdd93; }
+  #twentyOneGame .twentyone-balance-box span { display:block; font-size:17px; }
+  #twentyOneGame .twentyone-balance-box small { display:block; font-size:9px; letter-spacing:1.2px; color:#d3dccc; }
+  #twentyOneGame .twentyone-rules { margin:10px 0 13px; border:1px solid #42645c; border-radius:11px; background:#112925; color:#e7efe8; }
+  #twentyOneGame .twentyone-rules summary { padding:11px 12px; cursor:pointer; font-weight:700; color:#f1d28f; }
+  #twentyOneGame .twentyone-rules-body { padding:0 12px 10px; font-size:12px; line-height:1.45; }
+  #twentyOneGame .twentyone-rules-body p { margin:7px 0; }
+  #twentyOneGame .twentyone-demo-note { color:#ffda95; }
+  #twentyOneGame .twentyone-table { padding:13px 10px 10px; border:1px solid #52776a; border-radius:17px; background:linear-gradient(150deg,#164b3c,#10352d 65%,#0c2824); box-shadow:inset 0 0 0 2px #ffffff08,0 8px 20px #0003; }
+  #twentyOneGame .twentyone-player-area { min-width:0; min-height:142px; }
+  #twentyOneGame .twentyone-seat { display:flex; align-items:center; gap:9px; margin:0 0 8px; }
+  #twentyOneGame .twentyone-seat-dot { display:flex; width:33px; height:33px; align-items:center; justify-content:center; flex:none; border:1px solid #e5be6d; border-radius:10px; background:#192d2a; color:#f1d18d; font-size:20px; }
+  #twentyOneGame .twentyone-seat-dot.player { color:#fff2d1; }
+  #twentyOneGame .twentyone-seat b { display:block; font-size:14px; color:#fff4df; }
+  #twentyOneGame .twentyone-seat small { display:block; margin-top:2px; font-size:11px; color:#c4d9cb; }
+  #twentyOneGame .twentyone-cards { display:flex; align-items:flex-start; gap:7px; min-height:98px; width:100%; overflow-x:auto; overflow-y:hidden; padding:3px 1px 8px; scrollbar-width:thin; }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card { position:relative; display:block; flex:0 0 63px; width:63px; height:94px; min-width:63px; padding:0; overflow:hidden; border:1px solid #d3b569; border-radius:6px; background:#fffdf8; box-shadow:0 4px 8px #0005; box-sizing:border-box; transform:none !important; }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card img { display:block; width:100%; height:100%; object-fit:contain; object-position:center; image-rendering:auto; backface-visibility:hidden; }
+  #twentyOneGame .twentyone-divider { position:relative; height:20px; margin:2px 0 9px; display:flex; align-items:center; justify-content:center; }
+  #twentyOneGame .twentyone-divider:before { content:""; position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,#c9aa65,transparent); }
+  #twentyOneGame .twentyone-divider span { position:relative; padding:3px 12px; border:1px solid #b88c43; border-radius:20px; background:#123a31; color:#f8d990; font-size:11px; font-weight:900; }
+  #twentyOneGame .twentyone-status { min-height:41px; margin:12px 2px 10px; padding:10px 12px; border:1px solid #476b5e; border-radius:10px; background:#102823; color:#f7e4b7; font-size:13px; line-height:1.4; }
+  #twentyOneGame .twentyone-controls { display:grid; grid-template-columns:88px minmax(0,1fr); gap:9px; align-items:center; }
+  #twentyOneGame .twentyone-controls label { color:#d6e2d9; font-size:13px; font-weight:700; }
+  #twentyOneGame .twentyone-controls select { min-width:0; width:100%; padding:11px; border-radius:10px; border:1px solid #b48c47; background:#172f29; color:#fff1d3; font-size:14px; }
+  #twentyOneGame .twentyone-controls button { width:100%; min-height:46px; border-radius:11px; padding:11px 12px; font-size:14px; font-weight:800; }
+  #twentyOneGame .twentyone-primary { grid-column:1 / -1; background:linear-gradient(135deg,#f2d18a,#c99a47); color:#1a2921; border:1px solid #ffdf96; box-shadow:0 4px 10px #0003; }
+  #twentyOneGame .twentyone-action-row { display:grid; grid-column:1 / -1; grid-template-columns:1fr 1fr; gap:9px; }
+  #twentyOneGame .twentyone-action-row .twentyone-primary { grid-column:auto; }
+  #twentyOneGame .twentyone-secondary { background:#1a4338; color:#f7edd7; border:1px solid #668779; }
+  #twentyOneGame button:disabled { opacity:.52; }
+  #twentyOneGame .twentyone-footer { margin:15px 0 5px; color:#9bb5a8; font-size:10px; text-align:center; }
+  @media (max-width:350px) {
+    #twentyOneGame { padding-left:8px !important; padding-right:8px !important; }
+    #twentyOneGame .twentyone-header h2 { font-size:22px; }
+    #twentyOneGame .twentyone-header p { font-size:10px; max-width:180px; }
+    #twentyOneGame .twentyone-cards .durak-card.premium-card { flex-basis:56px; width:56px; height:84px; min-width:56px; }
+  }
 </style>
 
 </body>
