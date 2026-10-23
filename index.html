@@ -3488,6 +3488,7 @@
     <button type="button" id="onlineLottoVoiceToggleWaiting" class="lotto-voice-toggle" aria-pressed="true">🔊 Проверить голос · ВКЛ</button>
     <div id="onlineLottoRoomStatus" class="lotto-status">Ожидаем начало раунда.</div>
     <button type="button" id="onlineLottoBuyTicket" class="lotto-action">🎟 Купить билет</button>
+    <button type="button" id="onlineLottoTestBot" class="lotto-light-button" style="display:none">🤖 Добавить временного бота · тест</button>
     <details class="lotto-instructions">
       <summary>📘 Как играть: вручную или автоматически</summary>
       <div class="lotto-instructions-body">
@@ -8243,6 +8244,9 @@ function supportsNativeLottoSpeech() {
 }
 
 let lottoVoiceAudio = null;
+let lottoSpeechQueue = [];
+let lottoSpeechBusy = false;
+let lottoSpeechVoiceRetries = 0;
 
 function updateLottoVoiceButton() {
   const supported = supportsNativeLottoSpeech() || typeof Audio !== "undefined";
@@ -8268,24 +8272,82 @@ function getLottoRussianVoice() {
   return voices.find(voice => /^ru([_-]|$)/i.test(voice.lang || "")) || null;
 }
 
-function speakLottoText(text) {
-  if (!lottoVoiceEnabled || !supportsNativeLottoSpeech() || !text) return false;
+function processLottoSpeechQueue() {
+  if (lottoSpeechBusy || !lottoSpeechQueue.length) return;
+  if (!lottoVoiceEnabled || !supportsNativeLottoSpeech()) {
+    lottoSpeechQueue = [];
+    lottoSpeechBusy = false;
+    return;
+  }
+
+  const synthesis = window.speechSynthesis;
+  let item = null;
   try {
-    const synthesis = window.speechSynthesis;
-    synthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    if (synthesis.paused) synthesis.resume();
+    const voices = synthesis.getVoices() || [];
+    // На Android/Telegram голоса иногда появляются спустя несколько сотен
+    // миллисекунд после открытия комнаты. Не выбрасываем первое объявление.
+    if (!voices.length && lottoSpeechVoiceRetries < 5) {
+      lottoSpeechVoiceRetries += 1;
+      lottoSpeechBusy = true;
+      setTimeout(() => {
+        lottoSpeechBusy = false;
+        processLottoSpeechQueue();
+      }, 180);
+      return;
+    }
+    lottoSpeechVoiceRetries = 0;
+    item = lottoSpeechQueue.shift();
+    if (!item) return;
+
+    const utterance = new SpeechSynthesisUtterance(item.text);
     utterance.lang = "ru-RU";
     utterance.rate = 0.92;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     const russianVoice = getLottoRussianVoice();
     if (russianVoice) utterance.voice = russianVoice;
+
+    let finished = false;
+    const finishUtterance = () => {
+      if (finished) return;
+      finished = true;
+      lottoSpeechBusy = false;
+      setTimeout(processLottoSpeechQueue, 50);
+    };
+    utterance.onend = finishUtterance;
+    utterance.onerror = () => {
+      // Если системный движок пропустил фразу, используем MP3 для этого числа.
+      // При выключенной озвучке запасной звук не запускаем.
+      if (lottoVoiceEnabled) {
+        if (item.isTest) playLottoVoiceAudio(null, true);
+        else if (Number.isInteger(item.number)) playLottoVoiceAudio(item.number, false);
+      }
+      finishUtterance();
+    };
+
+    lottoSpeechBusy = true;
     synthesis.speak(utterance);
-    return true;
   } catch (error) {
     console.warn("Системное голосовое озвучивание лото недоступно:", error.message || error);
-    return false;
+    lottoSpeechBusy = false;
+    if (item && lottoVoiceEnabled) {
+      if (item.isTest) playLottoVoiceAudio(null, true);
+      else if (Number.isInteger(item.number)) playLottoVoiceAudio(item.number, false);
+    }
+    setTimeout(processLottoSpeechQueue, 50);
   }
+}
+
+function speakLottoText(text, numberForFallback = null, isTest = false) {
+  if (!lottoVoiceEnabled || !supportsNativeLottoSpeech() || !text) return false;
+  lottoSpeechQueue.push({
+    text: String(text),
+    number: Number.isInteger(numberForFallback) ? numberForFallback : null,
+    isTest: isTest === true
+  });
+  processLottoSpeechQueue();
+  return true;
 }
 
 function playLottoVoiceAudio(number, isTest = false) {
@@ -8359,9 +8421,7 @@ function announceLottoDraw(room) {
   if (room.status !== "playing" || !lottoVoiceEnabled) return;
 
   const number = drawn[drawn.length - 1];
-  if (supportsNativeLottoSpeech()) {
-    speakLottoText(lottoNumberToWords(number) + ".");
-  } else {
+  if (!speakLottoText(lottoNumberToWords(number) + ".", number, false)) {
     playLottoVoiceAudio(number, false);
   }
 }
@@ -8379,7 +8439,7 @@ function toggleLottoVoice() {
   if (lottoVoiceEnabled && !lottoVoiceGestureTested) {
     lottoVoiceGestureTested = true;
     if (supportsNativeLottoSpeech()) {
-      speakLottoText("Проверка звука.");
+      speakLottoText("Проверка звука.", null, true);
     } else {
       playLottoVoiceAudio(null, true);
     }
@@ -8391,13 +8451,16 @@ function toggleLottoVoice() {
   try { localStorage.setItem("allcoinsLottoVoiceEnabled", String(lottoVoiceEnabled)); } catch {}
   if (!lottoVoiceEnabled) {
     if (supportsNativeLottoSpeech()) window.speechSynthesis.cancel();
+    lottoSpeechQueue = [];
+    lottoSpeechBusy = false;
+    lottoSpeechVoiceRetries = 0;
     if (lottoVoiceAudio) {
       lottoVoiceAudio.pause();
       try { lottoVoiceAudio.currentTime = 0; } catch {}
     }
   } else {
     lottoVoiceGestureTested = true;
-    if (supportsNativeLottoSpeech()) speakLottoText("Проверка звука.");
+    if (supportsNativeLottoSpeech()) speakLottoText("Проверка звука.", null, true);
     else playLottoVoiceAudio(null, true);
   }
   updateLottoVoiceButton();
@@ -8492,8 +8555,11 @@ function renderOnlineLottoRooms() {
     title.textContent = "Комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
     const meta = document.createElement("div");
     meta.className = "lotto-room-meta";
+    const deadlinePassed = new Date(room.buyUntil).getTime() <= Date.now();
     const statusText = room.status === "waiting"
-      ? "Старт через " + formatLottoSeconds(Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000))
+      ? (deadlinePassed && Number(room.playersCount || 0) > 0
+          ? "Время вышло · ждём второго игрока"
+          : "Старт через " + formatLottoSeconds(Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000)))
       : room.status === "playing"
         ? "Игра идёт · выпало " + Number(room.drawnCount || 0) + " из 90"
         : (room.resultNote || "Раунд завершён");
@@ -8501,6 +8567,7 @@ function renderOnlineLottoRooms() {
       " · билетов: " + Number(room.ticketCount || 0) +
       " · банк: " + Number(room.pot || 0).toLocaleString("ru-RU") + " AC" +
       (room.status === "finished" && Number(room.prize || 0) > 0 ? " · приз: " + Number(room.prize).toLocaleString("ru-RU") + " AC" : "") +
+      (room.testBotJoined === true ? " · 🤖 тест-бот" : "") +
       (Number(room.myTickets || 0) ? " · твоих билетов: " + Number(room.myTickets) + "/3" : "");
     main.appendChild(title);
     main.appendChild(meta);
@@ -8618,6 +8685,15 @@ function renderOnlineLottoRoom(room, tickets) {
       ? "Продажа билетов закрыта"
       : "🎟 Купить билет · " + Number(room.stake).toLocaleString("ru-RU") + " AC";
 
+  const testBotButton = $("onlineLottoTestBot");
+  if (testBotButton) {
+    testBotButton.style.display = room.status === "waiting" && tickets.length > 0 ? "block" : "none";
+    testBotButton.disabled = onlineLottoActionBusy || room.testBotJoined === true;
+    testBotButton.textContent = room.testBotJoined === true
+      ? "✅ Тест-бот добавлен · без ставки и без выигрыша"
+      : "🤖 Добавить временного бота · начать тестовый раунд";
+  }
+
   const ticketsRoot = $(ticketsId);
   ticketsRoot.textContent = "";
   if (!tickets.length) {
@@ -8685,7 +8761,9 @@ function renderOnlineLottoRoom(room, tickets) {
 
   if (room.status === "waiting") {
     const seconds = Math.max(0, Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000));
-    setOnlineLottoStatus(statusId, "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
+    setOnlineLottoStatus(statusId, seconds === 0 && Number(room.playersCount || 0) === 1
+      ? "Время покупки билетов истекло. Ждём второго игрока — как только он купит билет, раунд начнётся сразу."
+      : "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
   } else if (room.status === "playing") {
     setOnlineLottoStatus(statusId, tickets.length === 0
       ? "Раунд уже идёт, но у тебя нет билетов в этой комнате."
@@ -8717,6 +8795,24 @@ async function buyOnlineLottoTicket() {
       // Перерисовка состояния вернёт правильную доступность кнопки.
       await loadOnlineLottoState(true);
     }
+  }
+}
+
+async function addOnlineLottoTestBot() {
+  if (!onlineLottoRoomId || onlineLottoActionBusy) return;
+  onlineLottoActionBusy = true;
+  const button = $("onlineLottoTestBot");
+  if (button) button.disabled = true;
+  try {
+    const result = await apiRequest("/api/lotto/test-bot/join", { roomId: onlineLottoRoomId });
+    setOnlineLottoStatus("onlineLottoRoomStatus", result.message || "Тест-бот добавлен.");
+    await loadOnlineLottoState(true);
+    await loadOnlineLottoRooms();
+  } catch (error) {
+    setOnlineLottoStatus("onlineLottoRoomStatus", String(error.message || error).slice(0, 180));
+  } finally {
+    onlineLottoActionBusy = false;
+    await loadOnlineLottoState(true);
   }
 }
 
@@ -8771,6 +8867,7 @@ $("onlineLottoPlayBack").onclick = async () => {
   if (!onlineLottoLobbyTimer) onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
 };
 $("onlineLottoBuyTicket").onclick = buyOnlineLottoTicket;
+$("onlineLottoTestBot").onclick = addOnlineLottoTestBot;
 
 
 window.onerror = function(message, source, lineno, colno, error) {
