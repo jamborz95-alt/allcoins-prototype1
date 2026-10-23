@@ -4473,9 +4473,16 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
       visibility: "visible",
       opacity: "1"
     });
+    // Копирование computed styles происходит, пока исходная цель скрыта.
+    // visibility наследуется: без сброса дети копии тоже остаются невидимыми,
+    // и лицо карты «появляется» только после завершения полёта.
+    flyer.querySelectorAll("*").forEach(node => {
+      node.style.setProperty("visibility", "visible", "important");
+    });
     const image = flyer.querySelector("img");
     if (image) Object.assign(image.style, {
       display: "block",
+      visibility: "visible",
       width: "100%", height: "100%", minWidth: "0", minHeight: "0",
       maxWidth: "100%", maxHeight: "100%", objectFit: "fill",
       objectPosition: "center", margin: "0", padding: "0"
