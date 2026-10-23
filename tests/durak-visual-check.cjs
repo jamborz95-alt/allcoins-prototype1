@@ -154,6 +154,10 @@ const path = require("node:path");
         targetRed: !!target?.classList.contains("red"),
         sourceImageLoaded: !!source.querySelector("img") && source.querySelector("img").naturalWidth > 0,
         targetImageLoaded: !!target?.querySelector("img") && target.querySelector("img").naturalWidth > 0,
+        sourceImageObjectFit: source.querySelector("img") ? getComputedStyle(source.querySelector("img")).objectFit : "",
+        targetImageObjectFit: target?.querySelector("img") ? getComputedStyle(target.querySelector("img")).objectFit : "",
+        sourceImageTransform: source.querySelector("img") ? getComputedStyle(source.querySelector("img")).transform : "",
+        targetImageTransform: target?.querySelector("img") ? getComputedStyle(target.querySelector("img")).transform : "",
         sourceBorder: getComputedStyle(source).border,
         targetBorder: target ? getComputedStyle(target).border : ""
       };
@@ -165,6 +169,8 @@ const path = require("node:path");
     if (!landingArtworkAudit.sourceImageCard || !landingArtworkAudit.targetImageCard ||
         landingArtworkAudit.sourceRed !== landingArtworkAudit.targetRed ||
         !landingArtworkAudit.sourceImageLoaded || !landingArtworkAudit.targetImageLoaded ||
+        landingArtworkAudit.targetImageObjectFit !== "fill" ||
+        landingArtworkAudit.targetImageTransform !== "none" ||
         landingArtworkAudit.sourceBorder !== landingArtworkAudit.targetBorder) {
       throw new Error("Временная карта на столе меняет оформление верхнего угла при посадке: " +
         JSON.stringify(landingArtworkAudit));
@@ -653,6 +659,90 @@ const path = require("node:path");
     if (!incomingEnd.imageLoaded || !incomingEnd.imageFitsCard ||
         Math.abs(incomingEnd.width - 56) > 0.5 || Math.abs(incomingEnd.height - 84) > 0.5) {
       throw new Error("После анимации лицо карты должно быть полностью загружено и занять всю карту 56×84: " + JSON.stringify(incomingEnd));
+    }
+
+    // Defence played by the opponent must fly from the defender's seat to the attack card.
+    // This uses the same visible 1280ms flight as an incoming attack.
+    currentGame.table = [
+      {
+        attack: { id: "local-attack-for-defense", rank: "10", suit: "♠" },
+        defense: null
+      }
+    ];
+    currentGame.attackerIndex = 0;
+    currentGame.defenderIndex = 1;
+    currentGame.phase = "defense";
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    currentGame.table = [
+      {
+        attack: { id: "local-attack-for-defense", rank: "10", suit: "♠" },
+        defense: { id: "incoming-defense-1", rank: "Д", suit: "♥" }
+      }
+    ];
+    await page.evaluate(() => loadDurakGame("visual-test-room"));
+    await page.waitForTimeout(70);
+    const incomingDefenseFlyer = page.locator('.durak-flying-card[data-incoming-defense="true"]');
+    if (!(await incomingDefenseFlyer.count())) {
+      throw new Error("Карта защиты соперника должна начинать полёт от его места к атакующей карте");
+    }
+    const incomingDefenseStart = await incomingDefenseFlyer.boundingBox();
+    const incomingDefenseImage = await page.evaluate(() => {
+      const card = document.querySelector('.durak-flying-card[data-incoming-defense="true"]');
+      const image = card?.querySelector("img");
+      const style = image ? getComputedStyle(image) : null;
+      const animation = card?.getAnimations().find(item => item.effect && item.effect.getTiming);
+      return {
+        cardExists: !!card,
+        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+        imageVisible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
+        imageObjectFit: style?.objectFit || null,
+        durationMs: animation?.effect?.getTiming()?.duration ?? null
+      };
+    });
+    await page.waitForTimeout(260);
+    const incomingDefenseMid = await incomingDefenseFlyer.boundingBox();
+    const incomingDefenseDistance = incomingDefenseStart && incomingDefenseMid
+      ? Math.hypot(incomingDefenseMid.x - incomingDefenseStart.x, incomingDefenseMid.y - incomingDefenseStart.y)
+      : 0;
+    fs.writeFileSync(path.join(out, "opponent-defense-flight.json"), JSON.stringify({
+      start: incomingDefenseStart,
+      midpoint: incomingDefenseMid,
+      travelDistancePx: incomingDefenseDistance,
+      timing: incomingDefenseImage
+    }, null, 2));
+    if (!incomingDefenseImage.cardExists || !incomingDefenseImage.imageLoaded ||
+        !incomingDefenseImage.imageVisible || incomingDefenseImage.imageObjectFit !== "fill") {
+      throw new Error("Лицо карты защиты должно быть загружено и полностью видно в полёте: " +
+        JSON.stringify(incomingDefenseImage));
+    }
+    if (incomingDefenseImage.durationMs !== 1280 || incomingDefenseDistance < 10) {
+      throw new Error("Анимация защиты должна лететь к столу 1280 мс как атака: " +
+        JSON.stringify({ incomingDefenseImage, incomingDefenseDistance }));
+    }
+    await page.waitForTimeout(500);
+    if (!(await incomingDefenseFlyer.count())) {
+      throw new Error("Анимация защиты соперника завершилась раньше времени");
+    }
+    await page.waitForFunction(
+      () => !document.querySelector('.durak-flying-card[data-incoming-defense="true"]'),
+      { timeout: 4000 }
+    );
+    const defenseLanding = await page.evaluate(() => {
+      const card = document.querySelector('#durakTable .durak-card[data-card-id="incoming-defense-1"]');
+      const style = card ? getComputedStyle(card) : null;
+      const rect = card?.getBoundingClientRect();
+      const image = card?.querySelector("img");
+      return {
+        visible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
+        width: rect?.width ?? 0,
+        height: rect?.height ?? 0,
+        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0)
+      };
+    });
+    if (!defenseLanding.visible || !defenseLanding.imageLoaded ||
+        Math.abs(defenseLanding.width - 56) > 0.5 ||
+        Math.abs(defenseLanding.height - 84) > 0.5) {
+      throw new Error("Карта защиты должна остаться видимой на столе после полёта: " + JSON.stringify(defenseLanding));
     }
 
     // Regression check for the video layout:
