@@ -4159,7 +4159,7 @@ async function durakAction(action, requestedCardIds = null) {
           dragFlyerGroupLandings = landings.filter(landing => landing.optimistic);
           // Все места создаются заранее; затем карты летят почти одновременно, с коротким шагом.
           dragFlyerAnimationPromises = groupFlyers.map((flyer, index) =>
-            new Promise(resolve => window.setTimeout(resolve, index * 42))
+            new Promise(resolve => window.setTimeout(resolve, index * 14))
               .then(() => animateDurakCardToTarget(flyer, landings[index].element))
           );
         } else {
@@ -5508,12 +5508,9 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
     return Promise.resolve();
   }
 
-  // Сначала декодируем лицо и у источника, и у скрытой цели — не показываем
-  // на столе промежуточный белый/частично отрисованный кадр PNG.
-  await Promise.all([
-    waitForDurakCardImagesReady(cardElement),
-    waitForDurakCardImagesReady(targetElement)
-  ]);
+  // Карта-источник уже видна под пальцем и отрисована. Не задерживаем её
+  // полёт ожиданием декодирования скрытой цели: готовим цель параллельно,
+  // а в конце оставляем летящую карту на месте до готовности чёткого PNG.
   if (!cardElement.isConnected || !targetElement.isConnected) {
     if (durakPendingDragFlyer === cardElement) durakPendingDragFlyer = null;
     if (cardElement.isConnected && cardElement.classList.contains("durak-flying-card")) cardElement.remove();
@@ -5605,11 +5602,12 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
   const targetScaleX = targetRect.width / from.width;
   const targetScaleY = targetRect.height / from.height;
+  const targetImageReadyPromise = waitForDurakCardImagesReady(targetElement).catch(() => false);
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
   // и без отдельной паузы перед посадкой. Скорый бросок короче, обычный заметнее.
-  const flightDuration = Math.round(150 - throwPower * 30);
+  const flightDuration = Math.round(88 - throwPower * 20);
   // Карта в руке немного увеличена внутри рамки. Убираем это увеличение
   // плавно в течение полёта, а не одним кадром при приземлении — угол не пропадает.
   if (flyerImage) {
@@ -5655,19 +5653,20 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       if (finished) return;
       finished = true;
       cleanup();
-      // Мгновенно меняем летящую копию на карту, уже лежащую в паре на столе.
-      // Макет находится в тех же координатах и сохраняется до ответа сервера.
-      if (targetElement?.dataset.optimisticLanding === "true") {
-        if (targetElement.isConnected) {
+
+      // Не ждём декодирования до старта полёта. Если PNG цели ещё готовится,
+      // летящая карта остаётся неподвижно на месте приземления и не мигает.
+      // Заменяем её на карточку стола сразу после готовности изображения.
+      const settleOnTable = () => {
+        if (targetElement?.dataset.optimisticLanding === "true" && targetElement.isConnected) {
           targetElement.style.visibility = "visible";
           targetElement.style.opacity = "1";
           targetElement.style.transition = "none";
         }
-        // Даже если автообновление игры уже удалило временную ячейку,
-        // не оставляем завершившую полёт копию навсегда поверх экрана.
-        flyer.remove();
-      }
-      resolve();
+        if (flyer.isConnected) flyer.remove();
+        resolve();
+      };
+      targetImageReadyPromise.then(settleOnTable, settleOnTable);
     };
     const onEnd = (event) => {
       if (event.target === flyer && event.propertyName === "transform") finish();
@@ -6765,7 +6764,10 @@ if (Array.isArray(game.hand)) {
         // игра сама выбирает нужное место на столе. Защита закрывает первую
         // ещё не побитую атакующую карту, атака занимает следующую пару.
         const throwDistance = Math.hypot(pointX - startX, pointY - startY);
-        const intentionalThrow = throwDistance >= 24;
+        // Даже короткий жест засчитываем, если карта действительно оказалась
+        // над столом. Длинный бросок, как и раньше, можно отпускать чуть раньше.
+        const intentionalThrow = throwDistance >= 7;
+        const acceptedDropGesture = droppedOnTable || throwDistance >= 24;
         const targetCard = table
           ? Array.from(table.querySelectorAll('.durak-card[data-table-card-type="attack"]'))
               .find(element => {
@@ -6777,15 +6779,15 @@ if (Array.isArray(game.hand)) {
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
         const canTransfer = game.mode === "transfer" && isDefender &&
-          game.phase === "defense" && intentionalThrow &&
+          game.phase === "defense" && intentionalThrow && acceptedDropGesture &&
           Array.isArray(game.table) && game.table.length > 0 &&
           game.table.every(item => item.attack && !item.defense) &&
           game.table.some(item => String(item.attack.rank) === String(cardElement.dataset.rank));
         const canDefend = !canTransfer && isDefender && game.phase === "defense" &&
-          !!targetCard && intentionalThrow;
+          !!targetCard && intentionalThrow && acceptedDropGesture;
         const canAttack = isAttacker &&
           (game.phase === "attack" || game.phase === "defense" || game.phase === "takePending") &&
-          intentionalThrow;
+          intentionalThrow && acceptedDropGesture;
 
         if (!canTransfer && !canDefend && !canAttack) {
           cardElement.style.opacity = "";
