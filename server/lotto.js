@@ -208,7 +208,7 @@ export function createLottoRouter(options) {
             [DRAW_INTERVAL_SECONDS, String(room.id)]
           );
           await client.query(
-            "UPDATE lotto_room_players SET auto_play = (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '15 seconds') WHERE room_id = $1",
+            "UPDATE lotto_room_players SET auto_play = (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '8 seconds') WHERE room_id = $1",
             [String(room.id)]
           );
         }
@@ -227,6 +227,13 @@ export function createLottoRouter(options) {
         const drawnNumber = available[randomInt(available.length)];
         const drawn = alreadyDrawn.concat(drawnNumber);
 
+        // Статус рассчитывается на каждом ходе, а не только в момент старта.
+        // Активный игрок продолжает отмечать совпадения сам. Если он ушёл,
+        // через 8 секунд тишины билеты переходят на автоматическую отметку.
+        await client.query(
+          "UPDATE lotto_room_players SET auto_play = (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '8 seconds') WHERE room_id = $1",
+          [String(room.id)]
+        );
         const tickets = await client.query(
           "SELECT t.id, t.telegram_id, t.numbers, t.marked_numbers, p.auto_play " +
           "FROM lotto_tickets t JOIN lotto_room_players p ON p.room_id = t.room_id AND p.telegram_id = t.telegram_id " +
@@ -234,8 +241,10 @@ export function createLottoRouter(options) {
           [String(room.id)]
         );
         for (const ticket of tickets.rows) {
-          // Отмечаем совпадения автоматически на каждом билете.
-          // Используем весь список drawn, чтобы не потерять прежние совпадения.
+          // Ручные билеты не трогаем: игрок должен сам нажать совпавшие числа.
+          // Автоматический режим сохраняет отметки в БД, чтобы после возвращения
+          // игрок увидел завершённый билет и итог раунда.
+          if (ticket.auto_play !== true) continue;
           const ticketNumbers = flattenTicket(ticket.numbers);
           const markedSet = new Set((Array.isArray(ticket.marked_numbers) ? ticket.marked_numbers : []).map(Number));
           let changed = false;
@@ -509,7 +518,7 @@ export function createLottoRouter(options) {
       const visible = req.body && req.body.visible === true;
       if (visible) {
         await pool.query(
-          "UPDATE lotto_room_players SET last_seen_at = NOW() WHERE room_id = $1 AND telegram_id = $2",
+          "UPDATE lotto_room_players SET last_seen_at = NOW(), auto_play = FALSE WHERE room_id = $1 AND telegram_id = $2",
           [String(room.id), String(user.id)]
         );
       }
