@@ -49,6 +49,7 @@ test("leaving a waiting room removes the guest or closes the owner's room, and t
   assert.match(body, /DELETE FROM durak_rooms/);
   assert.match(body, /COMMIT/);
   assert.match(body, /ROLLBACK/);
+  assert.match(routeBody("/api/durak/rooms/start"), /WHERE id = \$1\s+FOR UPDATE/);
   assert.match(clientSource, /apiRequest\("\/api\/durak\/rooms\/leave"/);
   assert.match(clientSource, /🚪 Выйти из комнаты/);
   assert.match(clientSource, /color: #fff9e8 !important/);
