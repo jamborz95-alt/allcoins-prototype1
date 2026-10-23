@@ -548,8 +548,23 @@ const path = require("node:path");
         !incomingFlightImage.imageVisible || !incomingFlightImage.imageLoaded) {
       throw new Error("Лицо PNG должно быть полностью загружено и видно уже во время полёта, а не появляться скачком при посадке: " + JSON.stringify(incomingFlightImage));
     }
-    // The reference-style incoming card now follows a slower curved flight.
-    await page.waitForTimeout(525);
+    // The card must visibly travel along a broad arc, not merely blink into the table.
+    await page.waitForTimeout(260);
+    const incomingMid = await incomingFlyer.boundingBox();
+    const incomingTravelDistance = incomingStart && incomingMid
+      ? Math.hypot(incomingMid.x - incomingStart.x, incomingMid.y - incomingStart.y)
+      : 0;
+    fs.writeFileSync(path.join(out, "opponent-attack-flight.json"), JSON.stringify({
+      start: incomingStart,
+      midpoint: incomingMid,
+      travelDistancePx: incomingTravelDistance
+    }, null, 2));
+    if (!incomingMid || incomingTravelDistance < 10) {
+      throw new Error("Летящая карта соперника должна заметно смещаться к столу во время анимации: " +
+        JSON.stringify({ incomingStart, incomingMid, incomingTravelDistance }));
+    }
+    // Wait beyond the full 640ms flight plus its cleanup buffer before checking landing.
+    await page.waitForTimeout(520);
     const incomingEnd = await page.evaluate(() => {
       const card = document.querySelector('#durakTable .durak-card[data-card-id="incoming-attack-1"]');
       if (!card) return null;
