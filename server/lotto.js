@@ -234,10 +234,18 @@ export function createLottoRouter(options) {
           [String(room.id)]
         );
         for (const ticket of tickets.rows) {
-          if (ticket.auto_play) {
-            const ticketNumbers = flattenTicket(ticket.numbers);
-            const markedSet = new Set((Array.isArray(ticket.marked_numbers) ? ticket.marked_numbers : []).map(Number));
-            for (const number of ticketNumbers) if (drawn.includes(number)) markedSet.add(number);
+          // Отмечаем совпадения автоматически на каждом билете.
+          // Используем весь список drawn, чтобы не потерять прежние совпадения.
+          const ticketNumbers = flattenTicket(ticket.numbers);
+          const markedSet = new Set((Array.isArray(ticket.marked_numbers) ? ticket.marked_numbers : []).map(Number));
+          let changed = false;
+          for (const number of ticketNumbers) {
+            if (drawn.includes(number) && !markedSet.has(number)) {
+              markedSet.add(number);
+              changed = true;
+            }
+          }
+          if (changed) {
             await client.query(
               "UPDATE lotto_tickets SET marked_numbers = $1::jsonb WHERE id = $2",
               [JSON.stringify(Array.from(markedSet)), String(ticket.id)]
@@ -323,15 +331,14 @@ export function createLottoRouter(options) {
       const cached = lottoVoiceCache.get(cacheKey);
       if (cached) {
         res.set("Content-Type", "audio/mpeg");
-        res.set("Cache-Control", "public, max-age=86400");
+        res.set("Cache-Control", "no-store, max-age=0");
         res.set("X-Content-Type-Options", "nosniff");
         return res.status(200).send(cached);
       }
 
-      // Называем само число без лишних слов; немного замедленный темп помогает
-      // разбирать числа на слух во время розыгрыша.
+      // В эфире звучит только сам номер, без вступительной фразы.
       const phrase = isTest
-        ? "Озвучивание чисел включено."
+        ? "Проверка звука."
         : lottoNumberInWords(number) + ".";
       const ttsUrl = new URL("https://translate.googleapis.com/translate_tts");
       ttsUrl.searchParams.set("client", "gtx");
@@ -364,7 +371,7 @@ export function createLottoRouter(options) {
       // Кэшируем голос каждой цифры, чтобы один и тот же номер не синтезировался повторно.
       lottoVoiceCache.set(cacheKey, audioBytes);
       res.set("Content-Type", "audio/mpeg");
-      res.set("Cache-Control", "public, max-age=86400");
+      res.set("Cache-Control", "no-store, max-age=0");
       res.set("X-Content-Type-Options", "nosniff");
       return res.status(200).send(audioBytes);
     } catch (error) {
