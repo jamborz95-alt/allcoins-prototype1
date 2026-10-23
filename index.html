@@ -4858,16 +4858,20 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
   let timer = null;
   let flightAnimation = null;
   let finished = false;
-  const finish = () => {
+  const finish = (landed = false) => {
     if (finished) return;
     finished = true;
     if (timer !== null) clearTimeout(timer);
     if (flightAnimation) flightAnimation.cancel();
-    flyer?.remove();
-    if (targetCard.isConnected) {
-      targetCard.style.visibility = "visible";
-      targetCard.style.opacity = "1";
-      targetCard.style.transition = "";
+
+    const promoted = landed && promoteDurakFlightCardToTable(flyer, targetCard);
+    if (!promoted) {
+      flyer?.remove();
+      if (targetCard.isConnected) {
+        targetCard.style.visibility = "visible";
+        targetCard.style.opacity = "1";
+        targetCard.style.transition = "none";
+      }
     }
     durakIncomingAttackAnimations = Math.max(0, durakIncomingAttackAnimations - 1);
     if (durakIncomingAttackAnimations === 0) flushDurakGameReloadIfIdle();
@@ -4895,17 +4899,19 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     // Paint into a larger backing box and scale down onto the table slot.
     // This avoids enlarging a small composited texture near the end of the flight.
     const viewportWidth = window.innerWidth || targetRect.width;
-    // Чуть увеличиваем внутреннюю область отрисовки: при полёте WebView
-    // держит более крупную текстуру и карта меньше теряет резкость на движении.
+    // Берём базовые размеры самой карты, не размер её повернутого прямоугольника.
+    // Так смена угла в последний кадр не сдвигает карту при приземлении.
+    const targetBoxWidth = targetCard.offsetWidth || targetRect.width;
+    const targetBoxHeight = targetCard.offsetHeight || targetRect.height;
     const flyerRasterScale = Math.max(1, Math.min(
       1.5,
-      Math.min(viewportWidth * 0.30, 136) / targetRect.width,
-      Math.min(viewportWidth * 0.44, 184) / targetRect.height
+      Math.min(viewportWidth * 0.30, 136) / targetBoxWidth,
+      Math.min(viewportWidth * 0.44, 184) / targetBoxHeight
     ));
-    const flyerWidth = targetRect.width * flyerRasterScale;
-    const flyerHeight = targetRect.height * flyerRasterScale;
-    const landingScaleX = targetRect.width / flyerWidth;
-    const landingScaleY = targetRect.height / flyerHeight;
+    const flyerWidth = targetBoxWidth * flyerRasterScale;
+    const flyerHeight = targetBoxHeight * flyerRasterScale;
+    const landingScaleX = targetBoxWidth / flyerWidth;
+    const landingScaleY = targetBoxHeight / flyerHeight;
     flyer.classList.remove("selected", "is-dragging", "dragging");
     if (cardType === "defense") {
       flyer.dataset.incomingDefense = "true";
@@ -5001,9 +5007,9 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
         ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         flightAnimation.onfinish = () => {
           playDurakSound("card");
-          finish();
+          finish(true);
         };
-        timer = window.setTimeout(finish, duration + 250);
+        timer = window.setTimeout(() => finish(true), duration + 250);
       });
     }, Math.max(0, delayMs));
   } catch (error) {
@@ -5023,6 +5029,69 @@ async function animateIncomingDurakDefenseCard(targetCard, defenderSeat, delayMs
 
 // Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
 // а собственная карта игрока переворачивается лицом вверх в момент приземления.
+function promoteDurakFlightCardToTable(flyer, targetElement) {
+  if (!flyer?.isConnected || !targetElement?.isConnected || !targetElement.parentElement) {
+    return false;
+  }
+
+  const targetParent = targetElement.parentElement;
+  const finalClassName = targetElement.className
+    .split(" ")
+    .filter(className => className &&
+      className !== "durak-landing-target" &&
+      className !== "durak-flying-card" &&
+      className !== "durak-pickup-hold-card")
+    .join(" ");
+  const finalLeft = targetElement.style.left || "0px";
+  const finalTop = targetElement.style.top || "0px";
+  const finalWidth = targetElement.offsetWidth || targetElement.getBoundingClientRect().width;
+  const finalHeight = targetElement.offsetHeight || targetElement.getBoundingClientRect().height;
+
+  // Keep the already-decoded <img> node from the flight so the face does not
+  // sharpen, flicker, or shift when a fresh copy is drawn after landing.
+  flyer.className = finalClassName;
+  Object.entries(targetElement.dataset).forEach(([key, value]) => {
+    flyer.dataset[key] = value;
+  });
+  delete flyer.dataset.optimisticLanding;
+  delete flyer.dataset.incomingAttack;
+  delete flyer.dataset.incomingDefense;
+  flyer.style.cssText = targetElement.style.cssText;
+
+  [
+    ["position", "absolute"],
+    ["left", finalLeft],
+    ["top", finalTop],
+    ["width", finalWidth + "px"],
+    ["height", finalHeight + "px"],
+    ["min-width", finalWidth + "px"],
+    ["min-height", finalHeight + "px"],
+    ["max-width", finalWidth + "px"],
+    ["max-height", finalHeight + "px"],
+    ["margin", "0"],
+    ["opacity", "1"],
+    ["visibility", "visible"],
+    ["transition", "none"],
+    ["pointer-events", "none"],
+    ["box-sizing", "border-box"]
+  ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
+
+  const landedImage = flyer.querySelector("img");
+  if (landedImage) {
+    [
+      ["width", "100%"], ["height", "100%"],
+      ["min-width", "100%"], ["min-height", "100%"],
+      ["max-width", "100%"], ["max-height", "100%"],
+      ["object-fit", "fill"], ["object-position", "center"],
+      ["margin", "0"], ["padding", "0"]
+    ].forEach(([property, value]) => landedImage.style.setProperty(property, value, "important"));
+  }
+
+  targetParent.replaceChild(flyer, targetElement);
+  applyDurakTableCardSizeLocks();
+  return true;
+}
+
 function revealPendingDurakDealTargets(dealTargets) {
   if (!Array.isArray(dealTargets)) return;
   dealTargets.forEach(item => {
@@ -5600,8 +5669,10 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   // Карта в руке обычно больше, чем её ячейка на столе.
   // Масштабируем её во время полёта до реальных размеров цели, чтобы большой
   // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
-  const targetScaleX = targetRect.width / from.width;
-  const targetScaleY = targetRect.height / from.height;
+  // getBoundingClientRect includes the card's final angle. Scale to its CSS box
+  // instead, so the last frame and the resting card occupy exactly the same size.
+  const targetScaleX = (targetElement.offsetWidth || targetRect.width) / from.width;
+  const targetScaleY = (targetElement.offsetHeight || targetRect.height) / from.height;
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Возвращаем прежнюю плавную скорость: карта заметно летит к столу,
@@ -5653,60 +5724,11 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       finished = true;
       cleanup();
 
-      // ВАЖНО: не подменяем летевшую карту другим PNG после приземления.
-      // Превращаем тот же элемент в обычную карту стола: так браузер не
-      // перерисовывает лицо повторно, не повышает резкость отдельным кадром
-      // и не создаёт маленького скачка/сдвига после касания.
-      if (targetElement?.dataset.optimisticLanding === "true" &&
-          targetElement.isConnected && flyer.isConnected) {
-        const finalClassName = targetElement.className
-          .split(/\s+/)
-          .filter(className => className && className !== "durak-landing-target")
-          .join(" ");
-        const finalLeft = targetElement.style.left || "0px";
-        const finalTop = targetElement.style.top || "0px";
-        const finalWidth = targetElement.offsetWidth || targetRect.width;
-        const finalHeight = targetElement.offsetHeight || targetRect.height;
-        const finalParent = targetElement.parentElement;
-
-        flyer.className = finalClassName;
-        Object.entries(targetElement.dataset).forEach(([key, value]) => {
-          flyer.dataset[key] = value;
-        });
-        delete flyer.dataset.optimisticLanding;
-        flyer.style.cssText = targetElement.style.cssText;
-        [
-          ["position", "absolute"],
-          ["left", finalLeft],
-          ["top", finalTop],
-          ["width", finalWidth + "px"],
-          ["height", finalHeight + "px"],
-          ["min-width", finalWidth + "px"],
-          ["min-height", finalHeight + "px"],
-          ["max-width", finalWidth + "px"],
-          ["max-height", finalHeight + "px"],
-          ["margin", "0"],
-          ["opacity", "1"],
-          ["visibility", "visible"],
-          ["transition", "none"],
-          ["pointer-events", "none"],
-          ["box-sizing", "border-box"]
-        ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
-
-        const settledImage = flyer.querySelector("img");
-        if (settledImage) {
-          [
-            ["width", "100%"], ["height", "100%"],
-            ["min-width", "100%"], ["min-height", "100%"],
-            ["max-width", "100%"], ["max-height", "100%"],
-            ["object-fit", "fill"], ["object-position", "center"],
-            ["margin", "0"], ["padding", "0"]
-          ].forEach(([property, value]) => settledImage.style.setProperty(property, value, "important"));
+      // Keep the same decoded card node when it becomes a table card.
+      if (targetElement?.dataset.optimisticLanding === "true") {
+        if (!promoteDurakFlightCardToTable(flyer, targetElement) && flyer.isConnected) {
+          flyer.remove();
         }
-
-        // Сохраняем исходную летающую карту; убираем только скрытый макет.
-        if (finalParent) finalParent.replaceChild(flyer, targetElement);
-        applyDurakTableCardSizeLocks();
       } else if (flyer.isConnected) {
         flyer.remove();
       }
@@ -6335,6 +6357,25 @@ if (game.trumpCard) {
   }
 }
 
+const reusableDurakTableCards = new Map();
+$("durakTable").querySelectorAll(".durak-card.table-card[data-card-id]").forEach(cardElement => {
+  const cardId = String(cardElement.dataset.cardId || "");
+  const cardType = String(cardElement.dataset.tableCardType || "");
+  if (cardId && (cardType === "attack" || cardType === "defense")) {
+    reusableDurakTableCards.set(cardType + ":" + cardId, cardElement);
+  }
+});
+const takeReusableDurakTableCard = (cardType, cardData) => {
+  const key = cardType + ":" + String(cardData?.id ?? "");
+  const existing = reusableDurakTableCards.get(key);
+  if (!existing) return createDurakCardElement(cardData);
+  reusableDurakTableCards.delete(key);
+  existing.classList.remove("durak-landing-target", "durak-flying-card", "durak-pickup-hold-card");
+  delete existing.dataset.optimisticLanding;
+  delete existing.dataset.durakPickupHold;
+  existing.dataset.tableCardType = cardType;
+  return existing;
+};
 $("durakTable").innerHTML = "";
 
 // Когда последняя карта-«козырь» ушла с колоды, оставляем только символ масти
@@ -6434,7 +6475,7 @@ pair.style.overflow = "visible";
 
     // Карта атаки
     if (item.attack) {
-      const attackCard = createDurakCardElement(item.attack);
+      const attackCard = takeReusableDurakTableCard("attack", item.attack);
 
       attackCard.classList.add("table-card");
       attackCard.dataset.tableCardType = "attack";
@@ -6454,7 +6495,7 @@ attackCard.style.boxSizing = "border-box";
 
     // Карта защиты
     if (item.defense) {
-      const defenseCard = createDurakCardElement(item.defense);
+      const defenseCard = takeReusableDurakTableCard("defense", item.defense);
 
       defenseCard.classList.add("table-card");
       defenseCard.dataset.tableCardType = "defense";
