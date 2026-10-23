@@ -4895,10 +4895,12 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     // Paint into a larger backing box and scale down onto the table slot.
     // This avoids enlarging a small composited texture near the end of the flight.
     const viewportWidth = window.innerWidth || targetRect.width;
+    // Чуть увеличиваем внутреннюю область отрисовки: при полёте WebView
+    // держит более крупную текстуру и карта меньше теряет резкость на движении.
     const flyerRasterScale = Math.max(1, Math.min(
-      1.25,
-      Math.min(viewportWidth * 0.24, 112) / targetRect.width,
-      Math.min(viewportWidth * 0.34, 148) / targetRect.height
+      1.5,
+      Math.min(viewportWidth * 0.30, 136) / targetRect.width,
+      Math.min(viewportWidth * 0.44, 184) / targetRect.height
     ));
     const flyerWidth = targetRect.width * flyerRasterScale;
     const flyerHeight = targetRect.height * flyerRasterScale;
@@ -5024,6 +5026,8 @@ async function animateIncomingDurakDefenseCard(targetCard, defenderSeat, delayMs
 function revealPendingDurakDealTargets(dealTargets) {
   if (!Array.isArray(dealTargets)) return;
   dealTargets.forEach(item => {
+    const pickupHold = item?.source?.element;
+    if (pickupHold?.dataset?.durakPickupHold === "true") pickupHold.remove();
     const target = item?.target;
     if (!target?.isConnected || target.dataset.durakDealPending !== "true") return;
     target.classList.remove("durak-deal-hidden");
@@ -5223,7 +5227,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         : document.createElement("span");
       flyer.classList.add("durak-deal-flyer");
       flyer.dataset.dealSource = isTableTransfer ? "table" : isDeckDraw ? "deck" : isOpponentDraw ? "opponent" : "other";
-      flyer.classList.remove("table-card", "durak-landing-target");
+      flyer.classList.remove("table-card", "durak-landing-target", "durak-pickup-hold-card");
       flyer.setAttribute("aria-hidden", "true");
 
       // Карты, которые забирает соперник, летят только рубашкой вверх.
@@ -5334,6 +5338,12 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
           finish();
           return;
         }
+        // В тот же кадр, когда копия начинает лететь, убираем её неподвижный
+        // дубль со стола. Поэтому карта не исчезает заранее и уходит по одной.
+        if (isTableTransfer && item.source?.element?.dataset?.durakPickupHold === "true") {
+          item.source.element.remove();
+        }
+
         // В момент старта полёта снимаем одну рубашку со стопки и уменьшаем счётчик.
         if (isDeckDraw) {
           const currentCount = Number(document.querySelector("#durakTrump .durak-deck-count")?.dataset.count);
@@ -5371,7 +5381,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
       });
     }, index * (
       isInitialDeal ? 105 :
-      item?.fromTable ? 70 :
+      item?.fromTable ? 140 :
       item?.deckDraw ? 135 :
       item?.opponentDraw ? 125 : 115
     ));
@@ -5838,6 +5848,72 @@ async function loadDurakGame(roomId) {
         });
       }
     });
+
+    // Если сервер уже перенёс карты в руку берущего, не даём им исчезнуть
+    // вместе с перерисовкой стола: временные копии остаются ровно на своих
+    // местах и заменяются летящей картой по одной, непосредственно в момент старта.
+    const pickupPreviousTableIds = Array.from(previousTableCardOrigins.keys());
+    const pickupCurrentTableIds = new Set(
+      (Array.isArray(game.table) ? game.table : []).flatMap(item => [
+        item?.attack?.id, item?.defense?.id
+      ]).filter(id => id !== undefined && id !== null).map(String)
+    );
+    const pickupOldTableFullyRemoved = pickupPreviousTableIds.length > 0 &&
+      pickupPreviousTableIds.every(id => !pickupCurrentTableIds.has(String(id)));
+    const pickupRoomMatches = durakLastRenderedGameRoomId === String(roomId);
+    const pickupHandIds = new Set(
+      (Array.isArray(game.hand) ? game.hand : []).map(card => String(card?.id ?? ""))
+    );
+    const pickupDefenderIndex = Number(durakLastRenderedDefenderIndex);
+    const pickupOldDefenderSeat = Number.isInteger(pickupDefenderIndex)
+      ? document.querySelector('#durakPlayers .durak-player[data-player-index="' + String(pickupDefenderIndex) + '"]')
+      : null;
+    const pickupOldDefenderCount = Number(pickupOldDefenderSeat?.dataset.cardsCount);
+    const pickupNewDefenderCount = Number(game.players?.[pickupDefenderIndex]?.cardsCount);
+    const pickupByOwnHand = pickupDefenderIndex === Number(game.playerIndex) &&
+      pickupPreviousTableIds.some(id => pickupHandIds.has(String(id)));
+    const pickupByOpponentCount = Number.isInteger(pickupDefenderIndex) &&
+      pickupDefenderIndex !== Number(game.playerIndex) &&
+      Number.isFinite(pickupOldDefenderCount) &&
+      Number.isFinite(pickupNewDefenderCount) &&
+      pickupNewDefenderCount > pickupOldDefenderCount;
+    const shouldHoldTableCardsForPickup =
+      pickupRoomMatches &&
+      pickupOldTableFullyRemoved &&
+      game.status === "playing" &&
+      (durakLastRenderedTakePending || pickupByOwnHand || pickupByOpponentCount);
+
+    if (shouldHoldTableCardsForPickup &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      previousTableCardOrigins.forEach(source => {
+        const holdCard = source.element;
+        if (!holdCard) return;
+        holdCard.classList.remove("table-card", "durak-landing-target");
+        holdCard.classList.add("durak-pickup-hold-card");
+        holdCard.dataset.durakPickupHold = "true";
+        [
+          ["position", "fixed"],
+          ["left", (source.x - source.width / 2) + "px"],
+          ["top", (source.y - source.height / 2) + "px"],
+          ["width", source.width + "px"],
+          ["height", source.height + "px"],
+          ["min-width", source.width + "px"],
+          ["min-height", source.height + "px"],
+          ["max-width", source.width + "px"],
+          ["max-height", source.height + "px"],
+          ["margin", "0"],
+          ["z-index", "2147483000"],
+          ["opacity", "1"],
+          ["visibility", "visible"],
+          ["pointer-events", "none"],
+          ["box-sizing", "border-box"]
+        ].forEach(([property, value]) => holdCard.style.setProperty(property, value, "important"));
+        document.body.appendChild(holdCard);
+        // Ссылка должна указывать именно на видимую копию-источник,
+        // которую анимация уберёт, когда начнётся её собственный полёт.
+        source.element = holdCard;
+      });
+    }
 
     // Сначала сверяем неопределённый ход с достоверным состоянием сервера.
     reconcilePendingDurakActionWithGame(game, roomId);
