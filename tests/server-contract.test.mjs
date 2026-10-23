@@ -40,6 +40,21 @@ test("joining a room checks membership, room state, and capacity", () => {
   assert.match(body, /INSERT INTO durak_room_players/);
 });
 
+test("leaving a waiting room removes the guest or closes the owner's room, and the UI has a clear exit", () => {
+  const body = routeBody("/api/durak/rooms/leave");
+  assert.match(body, /verifyTelegram\(req\.body\?\.initData\)/);
+  assert.match(body, /room\.status !== "waiting"/);
+  assert.match(body, /FOR UPDATE/);
+  assert.match(body, /DELETE FROM durak_room_players/);
+  assert.match(body, /DELETE FROM durak_rooms/);
+  assert.match(body, /COMMIT/);
+  assert.match(body, /ROLLBACK/);
+  assert.match(clientSource, /apiRequest\("\/api\/durak\/rooms\/leave"/);
+  assert.match(clientSource, /🚪 Выйти из комнаты/);
+  assert.match(clientSource, /color: #fff9e8 !important/);
+  assert.match(clientSource, /color: #8ff5d3 !important/);
+});
+
 test("starting a game checks owner, minimum players, and guest readiness", () => {
   const body = routeBody("/api/durak/rooms/start");
   assert.match(body, /Начать игру может только создатель комнаты/);
