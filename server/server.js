@@ -1437,10 +1437,76 @@ app.post("/api/durak/game", async (req, res) => {
       );
       if (timeoutSave.rowCount === 1) {
         if (timeoutCheck.timedOut) {
-          await pool.query(
-            "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
-            [roomId]
-          );
+          // Тайм-аут завершает партию только один раз: этот блок выполняется
+          // лишь у запроса, который успешно сохранил состояние по compare-and-swap.
+          const timeoutClient = await pool.connect();
+          let timeoutTransactionOpen = false;
+          try {
+            await timeoutClient.query("BEGIN");
+            timeoutTransactionOpen = true;
+            const locked = await timeoutClient.query(
+              "SELECT game_state FROM durak_games WHERE room_id = $1 FOR UPDATE",
+              [roomId]
+            );
+            const lockedState = locked.rows[0]?.game_state;
+            if (lockedState?.status === "finished" &&
+                lockedState?.finishedReason === "timeout" &&
+                lockedState?.timeoutBalanceSettled !== true) {
+              const loserId = String(lockedState.loserTelegramId || "");
+              const balanceRow = await timeoutClient.query(
+                "SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE",
+                [loserId]
+              );
+              const loserBalance = Math.max(0, Math.floor(Number(balanceRow.rows[0]?.balance) || 0));
+              const recipients = (Array.isArray(lockedState.players) ? lockedState.players : [])
+                .map(player => String(player.telegramId))
+                .filter(id => id && id !== "0" && id !== loserId);
+              if (loserBalance > 0 && recipients.length > 0) {
+                const share = Math.floor(loserBalance / recipients.length);
+                let remainder = loserBalance % recipients.length;
+                for (const recipientId of recipients) {
+                  const amount = share + (remainder > 0 ? 1 : 0);
+                  if (remainder > 0) remainder -= 1;
+                  if (amount > 0) {
+                    const credit = await timeoutClient.query(
+                      "UPDATE players SET balance = balance + $1, updated_at = NOW() WHERE telegram_id = $2",
+                      [amount, recipientId]
+                    );
+                    if (credit.rowCount !== 1) throw new Error("Не найден баланс игрока для выплаты за тайм-аут");
+                  }
+                }
+              }
+              if (loserBalance > 0) {
+                await timeoutClient.query(
+                  "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2",
+                  [loserBalance, loserId]
+                );
+              }
+              await timeoutClient.query(
+                "DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2",
+                [roomId, loserId]
+              );
+              lockedState.timeoutBalanceSettled = true;
+              lockedState.timeoutBalanceTransferred = loserBalance;
+              await timeoutClient.query(
+                "UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2",
+                [JSON.stringify(lockedState), roomId]
+              );
+            }
+            await timeoutClient.query(
+              "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
+              [roomId]
+            );
+            await timeoutClient.query("COMMIT");
+            timeoutTransactionOpen = false;
+          } catch (timeoutError) {
+            if (timeoutTransactionOpen) {
+              try { await timeoutClient.query("ROLLBACK"); } catch {}
+            }
+            throw timeoutError;
+          } finally {
+            timeoutClient.release();
+          }
         }
       } else {
         const latestState = await pool.query(
