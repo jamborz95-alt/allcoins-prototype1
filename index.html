@@ -8084,6 +8084,13 @@ function formatLottoSeconds(value) {
   return minutes ? (minutes + " мин " + remaining + " сек") : (remaining + " сек");
 }
 
+function formatLottoStakeShort(value) {
+  const stake = Number(value) || 0;
+  if (stake >= 1000000) return "1М";
+  if (stake >= 100000) return Math.round(stake / 1000) + "К";
+  return stake.toLocaleString("ru-RU");
+}
+
 function openOnlineLotto() {
   $("lottoGame").style.display = "block";
   $("lottoGame").classList.add("lotto-fullscreen");
@@ -8144,7 +8151,7 @@ function renderOnlineLottoRooms() {
     card.className = "lotto-room-card";
     const ball = document.createElement("div");
     ball.className = "lotto-room-ball";
-    ball.textContent = Number(room.stake).toLocaleString("ru-RU");
+    ball.textContent = formatLottoStakeShort(room.stake);
     const main = document.createElement("div");
     main.className = "lotto-room-main";
     const title = document.createElement("div");
@@ -8273,7 +8280,7 @@ function renderOnlineLottoRoom(room, tickets) {
         }
         const isMarked = marked.has(Number(number));
         const isCalled = drawn.includes(Number(number));
-        const canManualMark = room.status === "playing" && isCalled && !isMarked && !room.autoPlay;
+        const canManualMark = room.status === "playing" && isCalled && !isMarked && !room.autoPlay && !onlineLottoActionBusy;
         const cell = document.createElement(canManualMark ? "button" : "div");
         if (canManualMark) {
           cell.type = "button";
