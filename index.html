@@ -5053,7 +5053,7 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
   Object.entries(targetElement.dataset).forEach(([key, value]) => {
     flyer.dataset[key] = value;
   });
-  delete flyer.dataset.optimisticLanding;
+  // Keep the optimistic marker until the server-confirmed render reuses this same node.
   delete flyer.dataset.incomingAttack;
   delete flyer.dataset.incomingDefense;
   flyer.style.cssText = targetElement.style.cssText;
