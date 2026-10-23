@@ -8203,7 +8203,7 @@ async function loadOnlineLottoState(silent) {
       visible: document.visibilityState === "visible"
     });
     onlineLottoRoomCache = result.room;
-    if (Number.isFinite(Number(result.balance))) {
+    if (result.balance != null && Number.isFinite(Number(result.balance))) {
       state.balance = Number(result.balance);
       $("onlineLottoBalance").textContent = state.balance.toLocaleString("ru-RU");
       render();
