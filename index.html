@@ -2112,6 +2112,62 @@
     border:1px solid #ac8251 !important;
   }
   #lottoGame .lotto-small-note { font-size:12px; line-height:1.45; color:#fff1d8; margin:8px 2px; }
+  /* Отдельный экран раунда: номер, история тиража и сразу все купленные билеты. */
+  #lottoGame .lotto-play-heading {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 2px 4px; color:#fff4db;
+  }
+  #lottoGame .lotto-play-title { font-size:20px; line-height:1.2; font-weight:1000; }
+  #lottoGame .lotto-play-subtitle { margin-top:4px; font-size:11px; line-height:1.3; color:#f3d4a1; }
+  #lottoGame .lotto-play-heading .lotto-current-ball { flex-basis:70px; width:70px; height:70px; font-size:34px; }
+  #lottoGame .lotto-play-stats {
+    display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 8px;
+  }
+  #lottoGame .lotto-play-stats span {
+    padding:5px 8px; border:1px solid #d4b27b; border-radius:8px;
+    background:#f8e7c8; color:#432a15; font-size:12px;
+  }
+  #lottoGame .lotto-play-history-label,
+  #lottoGame .lotto-play-tickets-label {
+    margin:9px 1px 5px; color:#fff4db; font-size:14px; font-weight:900;
+  }
+  #lottoGame .lotto-play-called-strip {
+    display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:3px;
+    max-height:92px; overflow-y:auto; padding:6px;
+    background:#4a291cbb; border:1px solid #d5b27a; border-radius:10px;
+  }
+  #lottoGame .lotto-play-called-strip .lotto-called-chip {
+    width:auto; height:22px; min-width:0; border-radius:6px; font-size:10px; flex:auto;
+  }
+  #lottoGame .lotto-play-called-strip .lotto-called-chip.latest {
+    background:#f4d578; border-color:#f4d578; color:#42250f;
+  }
+  #lottoGame .lotto-play-tickets { display:flex; flex-direction:column; gap:6px; width:100%; }
+  #lottoGame .lotto-play-tickets .lotto-ticket { margin:0; padding:5px; border-width:2px; }
+  #lottoGame .lotto-play-tickets .lotto-ticket-title { margin:0 0 4px; font-size:11px; }
+  #lottoGame .lotto-play-tickets .lotto-ticket-grid { gap:1px; padding:1px; }
+  #lottoGame .lotto-play-tickets .lotto-number {
+    aspect-ratio:1.25 / 1; font-size:clamp(11px,3.3vw,16px) !important;
+    -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
+  }
+  #lottoGame .lotto-play-tickets .lotto-number:focus,
+  #lottoGame .lotto-play-tickets .lotto-number:focus-visible { outline:none !important; }
+  #lottoGame .lotto-play-tickets button.lotto-number { cursor:pointer; }
+  #lottoGame .lotto-play-tickets .lotto-number.lotto-marked {
+    border-radius:50% !important;
+  }
+  #lottoGame .lotto-play-tickets .lotto-number:not(.lotto-marked) {
+    background:#fff !important; color:#101010 !important;
+  }
+  #lottoGame.lotto-playing #onlineLottoRoomView { display:none !important; }
+  #lottoGame.lotto-playing #onlineLottoPlayView:not(.hidden) { display:block !important; }
+  @media (max-height:760px) {
+    #lottoGame .lotto-play-called-strip { max-height:66px; }
+    #lottoGame .lotto-play-heading .lotto-current-ball { flex-basis:60px; width:60px; height:60px; font-size:29px; }
+    #lottoGame .lotto-play-title { font-size:18px; }
+    #lottoGame .lotto-play-tickets .lotto-ticket { padding:4px; }
+  }
+
   /* Lotto gameplay: compact three-ticket view and complete draw history. */
   #lottoGame.lotto-playing #onlineLottoTickets {
     display:grid; grid-template-columns:1fr; gap:8px; width:100%;
@@ -3362,7 +3418,7 @@
 
 <div id="lottoGame" class="card" style="display:none;">
   <button type="button" id="onlineLottoBack" class="secondary lotto-back">← Назад к играм</button>
-  <div class="lotto-header">
+  <div class="lotto-header" id="onlineLottoMasterHeader">
     <div>
       <h2>🎱 Лото Онлайн</h2>
       <p>Комнаты обновляются каждые 3 минуты<br>До 3 билетов на игрока в каждой комнате</p>
@@ -3398,6 +3454,29 @@
     <div class="lotto-small-note">Во время игры сам проверяй выпавшие числа и отмечай их в билетах. Подсказок о совпадениях нет. Фиолетовая отметка означает, что число зачёркнуто.</div>
     <div id="onlineLottoTickets"></div>
     <button type="button" id="onlineLottoRoomRefresh" class="lotto-light-button">↻ Обновить поле</button>
+  </div>
+
+  <div id="onlineLottoPlayView" class="hidden">
+    <button type="button" id="onlineLottoPlayBack" class="lotto-back">← К комнатам</button>
+    <div class="lotto-play-heading">
+      <div>
+        <div id="onlineLottoPlayTitle" class="lotto-play-title">🎱 Игра в лото</div>
+        <div class="lotto-play-subtitle">Числа выпадают автоматически каждые 3 секунды</div>
+      </div>
+      <div id="onlineLottoPlayCurrentBall" class="lotto-current-ball">—</div>
+    </div>
+    <div class="lotto-play-stats">
+      <span>Билет: <b id="onlineLottoPlayStake">0 AC</b></span>
+      <span>Банк: <b id="onlineLottoPlayPot">0 AC</b></span>
+      <span>Числа: <b id="onlineLottoPlayDrawCount">0 / 90</b></span>
+    </div>
+    <div class="lotto-play-history-label">Выпавшие числа</div>
+    <div id="onlineLottoPlayCalledStrip" class="lotto-play-called-strip"></div>
+    <div id="onlineLottoPlayStatus" class="lotto-status">Ожидаем розыгрыш…</div>
+    <div class="lotto-play-tickets-label">Твои билеты · до 3</div>
+    <div id="onlineLottoPlayTickets" class="lotto-play-tickets"></div>
+    <div class="lotto-small-note">Сверяй выпавшие числа сверху и сам нажимай совпадения на билетах. Совпадающие числа не выделяются и не подсказываются заранее.</div>
+    <button type="button" id="onlineLottoPlayRefresh" class="lotto-light-button">↻ Обновить игру</button>
   </div>
 </div>
 
@@ -8203,6 +8282,10 @@ async function openOnlineLottoRoom(roomId) {
   onlineLottoRoomId = String(roomId);
   $("onlineLottoLobbyView").classList.add("hidden");
   $("onlineLottoRoomView").classList.remove("hidden");
+  $("onlineLottoPlayView").classList.add("hidden");
+  $("onlineLottoMasterHeader").classList.remove("hidden");
+  $("onlineLottoBack").classList.remove("hidden");
+  $("lottoGame").classList.remove("lotto-playing");
   if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
   onlineLottoStateTimer = setInterval(() => {
     if (document.visibilityState === "visible") loadOnlineLottoState(true);
@@ -8239,18 +8322,37 @@ async function loadOnlineLottoState(silent) {
 }
 
 function renderOnlineLottoRoom(room, tickets) {
-  const isLottoPlaying = room.status === "playing";
-  $("lottoGame").classList.toggle("lotto-playing", isLottoPlaying);
-  $("onlineLottoRoomTitle").textContent = isLottoPlaying
-    ? "🎱 ИГРА ИДЁТ · " + Number(room.stake).toLocaleString("ru-RU") + " AC"
+  const inGameScreen = room.status === "playing" || room.status === "finished";
+  const previousGameScreen = !$("onlineLottoPlayView").classList.contains("hidden");
+  $("lottoGame").classList.toggle("lotto-playing", inGameScreen);
+  $("onlineLottoRoomView").classList.toggle("hidden", inGameScreen);
+  $("onlineLottoPlayView").classList.toggle("hidden", !inGameScreen);
+  $("onlineLottoMasterHeader").classList.toggle("hidden", inGameScreen);
+  $("onlineLottoBack").classList.toggle("hidden", inGameScreen);
+
+  if (inGameScreen && !previousGameScreen) $("lottoGame").scrollTop = 0;
+
+  const titleId = inGameScreen ? "onlineLottoPlayTitle" : "onlineLottoRoomTitle";
+  const stakeId = inGameScreen ? "onlineLottoPlayStake" : "onlineLottoStake";
+  const potId = inGameScreen ? "onlineLottoPlayPot" : "onlineLottoPot";
+  const drawCountId = inGameScreen ? "onlineLottoPlayDrawCount" : "onlineLottoDrawCount";
+  const currentBallId = inGameScreen ? "onlineLottoPlayCurrentBall" : "onlineLottoCurrentBall";
+  const calledStripId = inGameScreen ? "onlineLottoPlayCalledStrip" : "onlineLottoCalledStrip";
+  const ticketsId = inGameScreen ? "onlineLottoPlayTickets" : "onlineLottoTickets";
+  const statusId = inGameScreen ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
+
+  $(titleId).textContent = inGameScreen
+    ? (room.status === "finished" ? "🏁 Розыгрыш завершён" : "🎱 Игра идёт") + " · " + Number(room.stake).toLocaleString("ru-RU") + " AC"
     : "🎱 Лото · комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
-  $("onlineLottoStake").textContent = Number(room.stake).toLocaleString("ru-RU") + " AC";
-  $("onlineLottoPot").textContent = Number(room.pot || 0).toLocaleString("ru-RU") + " AC";
-  $("onlineLottoOwned").textContent = tickets.length + " / 3";
+  $(stakeId).textContent = Number(room.stake).toLocaleString("ru-RU") + " AC";
+  $(potId).textContent = Number(room.pot || 0).toLocaleString("ru-RU") + " AC";
+  if (!inGameScreen) $("onlineLottoOwned").textContent = tickets.length + " / 3";
+
   const drawn = Array.isArray(room.drawnNumbers) ? room.drawnNumbers.map(Number) : [];
-  $("onlineLottoDrawCount").textContent = drawn.length + " / 90";
-  $("onlineLottoCurrentBall").textContent = drawn.length ? String(drawn[drawn.length - 1]) : "—";
-  const strip = $("onlineLottoCalledStrip");
+  $(drawCountId).textContent = drawn.length + " / 90";
+  $(currentBallId).textContent = drawn.length ? String(drawn[drawn.length - 1]) : "—";
+
+  const strip = $(calledStripId);
   strip.textContent = "";
   drawn.slice().reverse().forEach((number, index) => {
     const chip = document.createElement("span");
@@ -8258,6 +8360,7 @@ function renderOnlineLottoRoom(room, tickets) {
     chip.textContent = String(number);
     strip.appendChild(chip);
   });
+
   const buyButton = $("onlineLottoBuyTicket");
   buyButton.disabled = room.status !== "waiting" || tickets.length >= 3 || onlineLottoActionBusy;
   buyButton.textContent = tickets.length >= 3
@@ -8265,7 +8368,8 @@ function renderOnlineLottoRoom(room, tickets) {
     : room.status !== "waiting"
       ? "Продажа билетов закрыта"
       : "🎟 Купить билет · " + Number(room.stake).toLocaleString("ru-RU") + " AC";
-  const ticketsRoot = $("onlineLottoTickets");
+
+  const ticketsRoot = $(ticketsId);
   ticketsRoot.textContent = "";
   if (!tickets.length) {
     const empty = document.createElement("div");
@@ -8275,6 +8379,7 @@ function renderOnlineLottoRoom(room, tickets) {
       : "В этой комнате у тебя нет купленных билетов.";
     ticketsRoot.appendChild(empty);
   }
+
   tickets.forEach(ticket => {
     const ticketElement = document.createElement("div");
     ticketElement.className = "lotto-ticket";
@@ -8289,6 +8394,7 @@ function renderOnlineLottoRoom(room, tickets) {
     ticketTitle.appendChild(ticketName);
     ticketTitle.appendChild(markCount);
     ticketElement.appendChild(ticketTitle);
+
     const grid = document.createElement("div");
     grid.className = "lotto-ticket-grid";
     (ticket.numbers || []).forEach(row => {
@@ -8299,8 +8405,9 @@ function renderOnlineLottoRoom(room, tickets) {
           grid.appendChild(blank);
           return;
         }
+
         const isMarked = marked.has(Number(number));
-        const isCalled = drawn.includes(Number(number));
+        // Все неотмеченные числа имеют одинаковый вид. Совпадения не подсвечиваются заранее.
         const manualGameCell = room.status === "playing" && !room.autoPlay && !onlineLottoActionBusy && !isMarked;
         const cell = document.createElement(manualGameCell ? "button" : "div");
         if (manualGameCell) {
@@ -8317,20 +8424,20 @@ function renderOnlineLottoRoom(room, tickets) {
     ticketElement.appendChild(grid);
     ticketsRoot.appendChild(ticketElement);
   });
+
   if (room.status === "waiting") {
     const seconds = Math.max(0, Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000));
-    setOnlineLottoStatus("onlineLottoRoomStatus", "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
+    setOnlineLottoStatus(statusId, "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
   } else if (room.status === "playing") {
-    setOnlineLottoStatus("onlineLottoRoomStatus", tickets.length === 0
+    setOnlineLottoStatus(statusId, tickets.length === 0
       ? "Раунд уже идёт, но у тебя нет билетов в этой комнате."
       : room.autoPlay
         ? "Автоматический режим: выпавшие числа на твоих билетах отмечаются сами."
-        : "Твой ход: нажимай на числа, которые уже выпали и подсвечены жёлтым.");
+        : "Сверяй выпавшие числа сверху и сам нажимай совпадения в билетах. Подсказок о совпадениях нет.");
   } else {
-    setOnlineLottoStatus("onlineLottoRoomStatus", room.resultNote || "Раунд завершён.");
+    setOnlineLottoStatus(statusId, room.resultNote || "Раунд завершён.");
   }
 }
-
 async function buyOnlineLottoTicket() {
   if (!onlineLottoRoomId || onlineLottoActionBusy) return;
   onlineLottoActionBusy = true;
@@ -8386,6 +8493,20 @@ $("onlineLottoRoomsBack").onclick = async () => {
   if (!onlineLottoLobbyTimer) onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
 };
 $("onlineLottoRoomRefresh").onclick = () => loadOnlineLottoState(false);
+$("onlineLottoPlayRefresh").onclick = () => loadOnlineLottoState(false);
+$("onlineLottoPlayBack").onclick = async () => {
+  if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
+  onlineLottoStateTimer = null;
+  onlineLottoRoomId = null;
+  $("onlineLottoPlayView").classList.add("hidden");
+  $("onlineLottoRoomView").classList.add("hidden");
+  $("onlineLottoLobbyView").classList.remove("hidden");
+  $("onlineLottoMasterHeader").classList.remove("hidden");
+  $("onlineLottoBack").classList.remove("hidden");
+  $("lottoGame").classList.remove("lotto-playing");
+  await loadOnlineLottoRooms();
+  if (!onlineLottoLobbyTimer) onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
+};
 $("onlineLottoBuyTicket").onclick = buyOnlineLottoTicket;
 
 
