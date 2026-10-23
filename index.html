@@ -4293,6 +4293,8 @@ initDurakSoundToggle();
 
 // Следим за новыми атакующими картами, чтобы анимировать только свежие броски соперника.
 let durakKnownAttackCardIds = new Set();
+// Пока атакующая карта летит к столу, опрос сервера не должен стирать её копию.
+let durakIncomingAttackAnimations = 0;
 let durakTableHistoryRoomId = null;
 let durakLastRenderedGameRoomId = null;
 let durakLastRenderedTakePending = false;
@@ -4343,6 +4345,7 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
     maxWidth: "100%", maxHeight: "100%", objectFit: "fill"
   });
   document.body.appendChild(flyer);
+  durakIncomingAttackAnimations += 1;
 
   const from = flyer.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
@@ -4364,6 +4367,10 @@ function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
       targetCard.style.visibility = "visible";
       targetCard.style.opacity = "1";
       targetCard.style.transition = "";
+    }
+    durakIncomingAttackAnimations = Math.max(0, durakIncomingAttackAnimations - 1);
+    if (durakIncomingAttackAnimations === 0) {
+      flushDurakGameReloadIfIdle();
     }
   };
   window.setTimeout(() => {
@@ -4993,7 +5000,8 @@ let durakGameReloadRoomId = null;
 // Отложенное обновление не должно перерисовывать стол поверх движения карты.
 function flushDurakGameReloadIfIdle() {
   if (!durakGameReloadRequested || durakGameLoadInProgress ||
-      durakCardDragging || durakActionInProgress) return;
+      durakCardDragging || durakActionInProgress ||
+      durakIncomingAttackAnimations > 0) return;
 
   const reloadRoomId = durakGameReloadRoomId || currentDurakRoomId;
   if (!reloadRoomId || String(reloadRoomId) !== String(currentDurakRoomId)) {
@@ -5016,6 +5024,15 @@ function flushDurakGameReloadIfIdle() {
 }
 
 async function loadDurakGame(roomId) {
+  // Не пересоздаём стол, пока карта соперника летит на него:
+  // иначе очередной опрос может удалить видимый летящий экземпляр.
+  if (durakIncomingAttackAnimations > 0 &&
+      String(roomId) === String(currentDurakRoomId)) {
+    durakGameReloadRequested = true;
+    durakGameReloadRoomId = roomId;
+    return;
+  }
+
   // Пока идёт перелёт карт при раздаче, не перерисовываем руку:
   // иначе новый PNG может на мгновение показаться в руке, а затем повторно
   // стартовать анимация той же карты из колоды. Следующий обычный опрос обновит состояние.
@@ -6473,6 +6490,7 @@ setInterval(() => {
     !durakCardDragging &&
     !durakActionInProgress &&
     !durakDealAnimationActive &&
+    durakIncomingAttackAnimations === 0 &&
     !durakGameLoadInProgress
   ) {
     loadDurakGame(currentDurakRoomId);
