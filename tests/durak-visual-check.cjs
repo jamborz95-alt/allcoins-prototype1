@@ -250,7 +250,7 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "full-deck-asset-report.json"), JSON.stringify(fullDeckAssetReport, null, 2));
     if (fullDeckAssetReport.total !== 52 || fullDeckAssetReport.loaded !== 52 ||
-        fullDeckAssetReport.svgFaces !== 0 || fullDeckAssetReport.pngFaces !== 11) {
+        fullDeckAssetReport.svgFaces !== 0 || fullDeckAssetReport.pngFaces !== 20) {
       throw new Error("Не все 52 карты ALLCOINS имеют готовые загружаемые изображения: " + JSON.stringify(fullDeckAssetReport));
     }
 
@@ -324,7 +324,7 @@ const path = require("node:path");
     await page.evaluate(() => document.getElementById("full-deck-contact-sheet")?.remove());
     await page.setViewportSize({ width: 390, height: 844 });
     if (contactSheetAudit.count !== 52 || contactSheetAudit.loadedCount !== 52 ||
-        contactSheetAudit.svgCount !== 0 || contactSheetAudit.pngCount !== 11) {
+        contactSheetAudit.svgCount !== 0 || contactSheetAudit.pngCount !== 20) {
       throw new Error("Визуальный лист ALLCOINS: не все карты видны и загружены: " + JSON.stringify(contactSheetAudit));
     }
 
