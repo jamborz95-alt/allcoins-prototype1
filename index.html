@@ -2096,7 +2096,6 @@
     line-height:1 !important; box-shadow:none !important;
   }
   #lottoGame .lotto-number.lotto-empty { background:#fbfaf7 !important; border-color:#e8e5dd !important; }
-  #lottoGame button.lotto-number.lotto-markable { background:#fff2ad !important; border:2px solid #d49a31 !important; cursor:pointer; }
   #lottoGame .lotto-number.lotto-marked {
     border-radius:50% !important; background:#9670b8 !important; border:2px solid #775293 !important;
     color:#fff !important; font-weight:900 !important; box-shadow:inset 0 1px 3px #45305e88 !important;
@@ -8307,17 +8306,23 @@ async function loadOnlineLottoState(silent) {
       render();
     }
     renderOnlineLottoRoom(result.room, result.tickets || []);
+    const statusId = result.room.status === "playing" || result.room.status === "finished"
+      ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
     if (result.room.status === "finished") {
       if (result.room.winnerIsMe === true) {
-        setOnlineLottoStatus("onlineLottoRoomStatus", "🎉 Ты выиграл " + Number(result.room.prize || 0).toLocaleString("ru-RU") + " AC! " + (result.room.resultNote || ""));
+        setOnlineLottoStatus(statusId, "🎉 Ты выиграл " + Number(result.room.prize || 0).toLocaleString("ru-RU") + " AC! " + (result.room.resultNote || ""));
       } else {
-        setOnlineLottoStatus("onlineLottoRoomStatus", (result.room.winnerName ? "Победитель: " + result.room.winnerName + ". " : "") + (result.room.resultNote || "Раунд завершён."));
+        setOnlineLottoStatus(statusId, (result.room.winnerName ? "Победитель: " + result.room.winnerName + ". " : "") + (result.room.resultNote || "Раунд завершён."));
       }
-    } else if (!silent) {
-      setOnlineLottoStatus("onlineLottoRoomStatus", result.room.status === "waiting" ? "Покупка билетов открыта. Раунд скоро начнётся." : "Нажимай на выпавшие числа в своих билетах.");
+    } else if (!silent && result.room.status === "waiting") {
+      setOnlineLottoStatus(statusId, "Покупка билетов открыта. Раунд скоро начнётся.");
     }
   } catch (error) {
-    if (!silent) setOnlineLottoStatus("onlineLottoRoomStatus", "Ошибка комнаты: " + String(error.message || error).slice(0, 160));
+    if (!silent) {
+      const statusId = onlineLottoRoomCache && onlineLottoRoomCache.status !== "waiting"
+        ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
+      setOnlineLottoStatus(statusId, "Ошибка комнаты: " + String(error.message || error).slice(0, 160));
+    }
   }
 }
 
@@ -8470,10 +8475,10 @@ async function markOnlineLottoNumber(ticketId, number) {
       ticketId: String(ticketId),
       number: number
     });
-    if (result.won) setOnlineLottoStatus("onlineLottoRoomStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
+    if (result.won) setOnlineLottoStatus("onlineLottoPlayStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
     await loadOnlineLottoState(true);
   } catch (error) {
-    setOnlineLottoStatus("onlineLottoRoomStatus", String(error.message || error).slice(0, 180));
+    setOnlineLottoStatus("onlineLottoPlayStatus", String(error.message || error).slice(0, 180));
   } finally {
     onlineLottoActionBusy = false;
     await loadOnlineLottoState(true);
