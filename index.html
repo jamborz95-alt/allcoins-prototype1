@@ -3160,6 +3160,7 @@ let selectedDurakCardId = null;
 let currentDurakRoomId = null;
 let durakLastGameStatus = null;
 let durakLastGameWasTimeoutLoser = false;
+let durakFinishedBackSentinelAdded = false;
 let durakRematchStartInProgress = false;
 let durakRematchStartRoomId = null;
 let durakRematchStartRetryAt = 0;
@@ -5241,6 +5242,13 @@ async function loadDurakGame(roomId) {
 
     durakLastGameStatus = game.status || null;
     durakLastGameWasTimeoutLoser = game.status === "finished" && game.finishedReason === "timeout" && game.isLoser === true;
+    if (game.status === "finished") {
+      if (!durakFinishedBackSentinelAdded) {
+        history.pushState({ allcoinsDurakFinished: true }, "", location.href);
+        durakFinishedBackSentinelAdded = true;
+      }
+      if (tg?.BackButton && typeof tg.BackButton.show === "function") tg.BackButton.show();
+    }
 
     // Опрос мог начаться до броска карты и вернуться посреди анимации.
     // В таком случае не трогаем DOM, а откладываем перерисовку до конца хода.
@@ -7832,6 +7840,8 @@ function returnDurakToRoomMenu() {
   currentDurakRoomId = null;
   durakLastGameStatus = null;
   durakLastGameWasTimeoutLoser = false;
+  durakFinishedBackSentinelAdded = false;
+  if (tg?.BackButton && typeof tg.BackButton.hide === "function") tg.BackButton.hide();
   const game = $("durakGame");
   game.style.display = "block";
   game.classList.add("durak-fullscreen");
