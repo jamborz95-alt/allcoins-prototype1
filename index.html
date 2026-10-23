@@ -4487,12 +4487,17 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
       maxWidth: "100%", maxHeight: "100%", objectFit: "fill",
       objectPosition: "center", margin: "0", padding: "0"
     });
+    // Attach the transparent copy before decoding: some mobile WebViews do not
+    // finish decoding cloned <img> elements until they are connected to the DOM.
+    // Opacity hides the entire copy during decoding (including visible children).
+    flyer.style.setProperty("opacity", "0", "important");
+    document.body.appendChild(flyer);
     await waitForDurakCardImagesReady(flyer);
-    if (!targetCard.isConnected) {
+    if (!targetCard.isConnected || !flyer.isConnected) {
       finish();
       return;
     }
-    document.body.appendChild(flyer);
+    flyer.style.setProperty("opacity", "1", "important");
 
     const from = flyer.getBoundingClientRect();
     const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
