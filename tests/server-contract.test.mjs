@@ -19,7 +19,9 @@ test("Durak room creation validates Telegram identity, players, and stake", () =
   assert.match(body, /maxPlayers/);
   assert.match(body, /max_players/);
   assert.match(body, /stake/);
-  assert.match(body, /\[36, 52\]\.includes\(deck\)/);
+  assert.match(body, /\[24, 36, 52\]\.includes\(deck\)/);
+  assert.match(body, /const maxPlayersForDeck = deck === 24 \? 3 : deck === 36 \? 5 : 6/);
+  assert.match(body, /С колодой на 24 карты можно играть максимум втроём/);
   assert.match(body, /INSERT INTO durak_rooms/);
   assert.match(body, /INSERT INTO durak_room_players/);
 });
@@ -60,7 +62,9 @@ test("starting a game checks owner, minimum players, and guest readiness", () =>
   const body = routeBody("/api/durak/rooms/start");
   assert.match(body, /Начать игру может только создатель комнаты/);
   assert.match(body, /total < 2/);
-  assert.match(body, /total > 5 && selectedDeck !== 52/);
+  assert.match(body, /\[24, 36, 52\]\.includes\(selectedDeck\)/);
+  assert.match(body, /const maxPlayersForDeck = selectedDeck === 24 \? 3 : selectedDeck === 36 \? 5 : 6/);
+  assert.match(body, /В колоде на 24 карты максимум 3 игрока/);
   assert.match(body, /Для игры шестью игроками выбери колоду на 52 карты/);
   assert.match(body, /readyGuests < totalGuests/);
   assert.match(body, /createDurakDeck/);
