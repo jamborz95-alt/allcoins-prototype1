@@ -364,6 +364,33 @@ const path = require("node:path");
     await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(out, "05-game-after-drop.png"), fullPage: true });
 
+    // Regression guard: after the initial landing and the server-confirmed redraw,
+    // table cards must remain 56×84 instead of expanding to the old 68×100 hand size.
+    const tableSizeAfterRerender = await page.evaluate(async () => {
+      const cards = [...document.querySelectorAll("#durakTable .durak-card.table-card")];
+      const before = cards.map(card => {
+        const rect = card.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+      cards.forEach(card => {
+        // Simulate an older CSS/JS rule attempting to enlarge the card after landing.
+        card.style.setProperty("width", "68px", "important");
+        card.style.setProperty("height", "100px", "important");
+      });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await new Promise(resolve => setTimeout(resolve, 45));
+      const after = cards.map(card => {
+        const rect = card.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+      return { before, after };
+    });
+    fs.writeFileSync(path.join(out, "table-card-size-lock.json"), JSON.stringify(tableSizeAfterRerender, null, 2));
+    if (tableSizeAfterRerender.after.length !== 2 ||
+        tableSizeAfterRerender.after.some(size => Math.abs(size.width - 56) > 0.5 || Math.abs(size.height - 84) > 0.5)) {
+      throw new Error("Размер карты на столе изменился после перерисовки/позднего CSS-правила: " + JSON.stringify(tableSizeAfterRerender));
+    }
+
     const diagnostics = await page.evaluate(() => {
       const deck = document.getElementById("durakTrump");
       const deckRect = deck?.getBoundingClientRect();
@@ -422,6 +449,10 @@ const path = require("node:path");
     }
     if (!optimisticLanding?.visible) {
       throw new Error("Карта не закрепилась в точке посадки до ответа сервера");
+    }
+    if (Math.abs((optimisticLanding?.width ?? 0) - 56) > 0.5 ||
+        Math.abs((optimisticLanding?.height ?? 0) - 84) > 0.5) {
+      throw new Error("Временная карта на столе уже в момент посадки должна быть 56×84: " + JSON.stringify(optimisticLanding));
     }
     if (diagnostics.tableAttackCardsAfterDrop !== 2) {
       throw new Error("Один бросок должен положить на стол две одинаковые карты. Карты на столе: " + diagnostics.tableAttackCardsAfterDrop);
