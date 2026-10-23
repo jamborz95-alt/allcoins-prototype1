@@ -3,6 +3,7 @@ import cors from "cors";
 import pg from "pg";
 import crypto from "node:crypto";
 import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex, expireDurakTurnIfNeeded } from "./durak-rules.js";
+import { createLottoRouter } from "./lotto.js";
 
 const { Pool } = pg;
 const app = express();
@@ -191,6 +192,9 @@ async function getPlayer(req, res) {
     username: user.username || null
   };
 }
+
+const lottoRouter = createLottoRouter({ pool, verifyTelegram });
+app.use("/api/lotto", lottoRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -2471,6 +2475,9 @@ async function startServer() {
     `);
 
     console.log("Players table is ready");
+
+    await lottoRouter.initialize();
+    console.log("Lotto Online tables and scheduler are ready");
   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_rooms (
