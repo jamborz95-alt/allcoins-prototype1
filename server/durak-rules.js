@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 const SUITS = ["♠", "♥", "♦", "♣"];
+const RANKS_24 = ["9", "10", "В", "Д", "К", "Туз"];
 const RANKS_36 = ["6", "7", "8", "9", "10", "В", "Д", "К", "Т"];
 const RANKS_52 = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "В", "Д", "К", "Туз"];
 
@@ -61,10 +62,10 @@ const RANK_ORDER = {
 
 export function createDurakDeck(deckSize = 36) {
   const size = Number(deckSize);
-  if (size !== 36 && size !== 52) {
-    throw new RangeError("Размер колоды должен быть 36 или 52 карты");
+  if (![24, 36, 52].includes(size)) {
+    throw new RangeError("Размер колоды должен быть 24, 36 или 52 карты");
   }
-  const ranks = size === 52 ? RANKS_52 : RANKS_36;
+  const ranks = size === 24 ? RANKS_24 : size === 52 ? RANKS_52 : RANKS_36;
   return SUITS.flatMap((suit) => ranks.map((rank) => ({
     suit,
     rank,
