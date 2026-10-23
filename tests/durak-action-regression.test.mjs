@@ -49,9 +49,10 @@ test("six players cannot be dealt six cards each from a 36-card deck", () => {
   );
 });
 
-test("unsupported deck sizes are rejected before a game can start", () => {
-  for (const size of [24, 40, 0, -1]) {
-    assert.throws(() => createDurakDeck(size), /36 или 52 карты/);
+test("24-card deck is supported and unsupported deck sizes are rejected before a game can start", () => {
+  assert.equal(createDurakDeck(24).length, 24);
+  for (const size of [40, 0, -1]) {
+    assert.throws(() => createDurakDeck(size), /24, 36 или 52 карты/);
   }
 });
 
