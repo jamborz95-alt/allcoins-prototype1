@@ -3027,6 +3027,13 @@
   >
     ✅ Бито
   </button>
+  <button
+    type="button"
+    id="durakRematchReady"
+    class="secondary"
+    style="display:none;flex:1 1 100%;width:100%;"
+  >🔁 Готов к следующей игре</button>
+
      <div
     id="durakTurnMessage"
     style="
@@ -3151,6 +3158,34 @@
 const API = "https://allcoins-server.onrender.com";
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
+let durakRematchStartInProgress = false;
+let durakRematchStartRoomId = null;
+let durakRematchStartRetryAt = 0;
+
+// Размер карт на столе всегда берём из реально отображаемой карты в руке.
+// Это учитывает мобильные CSS-размеры и изменения ширины экрана.
+function syncDurakTableCardSizes() {
+  const gameRoot = document.getElementById("durakGame");
+  const hand = document.getElementById("durakHand");
+  const sample = hand?.querySelector(".durak-card.premium-card");
+  if (!gameRoot || !sample) return;
+
+  const computed = window.getComputedStyle(sample);
+  const width = Number.parseFloat(computed.width);
+  const height = Number.parseFloat(computed.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
+
+  const offset = Math.max(14, Math.round(width * 0.32));
+  gameRoot.style.setProperty("--durak-hand-card-width", width + "px");
+  gameRoot.style.setProperty("--durak-hand-card-height", height + "px");
+  gameRoot.style.setProperty("--durak-table-card-offset", offset + "px");
+  gameRoot.style.setProperty("--durak-table-pair-width", (width + offset) + "px");
+  gameRoot.style.setProperty("--durak-table-pair-height", (height + 4) + "px");
+}
+
+window.addEventListener("resize", () => {
+  window.requestAnimationFrame(syncDurakTableCardSizes);
+});
 let durakActionInProgress = false;
 // Повторяем один и тот же запрос с тем же ID, если ответ сервера потерялся.
 let pendingDurakAction = null;
@@ -6297,6 +6332,22 @@ if (Array.isArray(game.hand)) {
     }
     $("durakGameStatus").textContent = gameStatusText;
 
+    // Слот карты синхронизируется с вычисленным размером карты в руке.
+    syncDurakTableCardSizes();
+
+    const rematchButton = $("durakRematchReady");
+    if (rematchButton) {
+      if (game.status === "finished") {
+        rematchButton.style.display = "block";
+        // Не сбрасываем текст/disabled здесь — состояние готовности приходит с сервера.
+        void refreshDurakRematchStatus(roomId);
+      } else {
+        rematchButton.style.display = "none";
+        rematchButton.disabled = false;
+        rematchButton.textContent = "🔁 Готов к следующей игре";
+      }
+    }
+
   } catch (error) {
     console.warn("Обновление Дурака:", error);
     const errorMessage = String(error?.message || "Проверь соединение и попробуй ещё раз.");
@@ -6316,6 +6367,95 @@ if (Array.isArray(game.hand)) {
     flushDurakGameReloadIfIdle();
   }
 }
+// После финала игроки готовятся повторно прямо на игровом столе.
+async function refreshDurakRematchStatus(roomId) {
+  if (!roomId || String(roomId) !== String(currentDurakRoomId)) return;
+  if (durakCardDragging || durakActionInProgress) return;
+
+  const button = $("durakRematchReady");
+  if (!button) return;
+
+  let result;
+  try {
+    result = await apiRequest("/api/durak/rooms/players", { roomId });
+  } catch (error) {
+    console.warn("Не удалось обновить готовность к следующей партии:", error);
+    return;
+  }
+
+  if (!result?.ok || !result.room || !Array.isArray(result.players)) return;
+  if (String(roomId) !== String(currentDurakRoomId)) return;
+
+  const me = result.players.find(player => player.isMe === true);
+  const total = result.players.length;
+  const ready = result.players.filter(player => player.isReady === true).length;
+  const allReady = total >= 2 && ready === total;
+
+  if (result.room.status === "finished") {
+    button.style.display = "block";
+    button.disabled = me?.isReady === true;
+    button.textContent = me?.isReady === true
+      ? "✅ Ты готов • " + ready + "/" + total
+      : "🔁 Готов к следующей игре";
+    return;
+  }
+
+  if (result.room.status === "waiting") {
+    button.style.display = "block";
+    if (allReady && me?.isOwner === true) {
+      button.disabled = true;
+      button.textContent = "🎮 Запускаем следующую партию…";
+
+      if (!durakRematchStartInProgress &&
+          durakRematchStartRoomId !== String(roomId) &&
+          Date.now() >= durakRematchStartRetryAt) {
+        durakRematchStartInProgress = true;
+        durakRematchStartRoomId = String(roomId);
+        try {
+          const started = await apiRequest("/api/durak/rooms/start", { roomId });
+          if (!started?.ok) {
+            throw new Error(started?.error || "Не удалось начать следующую партию.");
+          }
+
+          // Это новая партия в той же комнате: разрешаем анимацию новой раздачи.
+          durakAnimatedCardIds = new Set();
+          durakAnimationRoomId = null;
+          durakDealAnimationToken += 1;
+          durakDealAnimationActive = false;
+          durakLastRenderedGameRoomId = null;
+
+          showStatus("durakGameStatus", "🎮 Все готовы! Раздаём карты для следующей партии…");
+          durakGameReloadRequested = true;
+          durakGameReloadRoomId = roomId;
+        } catch (error) {
+          console.warn("Не удалось автоматически запустить следующую партию:", error);
+          button.disabled = false;
+          button.textContent = "⚠️ Не удалось запустить — попробуем снова";
+          durakRematchStartRoomId = null;
+          durakRematchStartRetryAt = Date.now() + 8000;
+          showStatus("durakGameStatus", String(error?.message || error).slice(0, 180));
+        } finally {
+          durakRematchStartInProgress = false;
+        }
+      }
+    } else {
+      button.disabled = true;
+      button.textContent = allReady
+        ? "✅ Все готовы • ждём запуска"
+        : "⏳ Готовы " + ready + " из " + total;
+    }
+    return;
+  }
+
+  if (result.room.status === "playing") {
+    durakRematchStartRoomId = null;
+    durakRematchStartRetryAt = 0;
+    button.style.display = "none";
+    button.disabled = false;
+    button.textContent = "🔁 Готов к следующей игре";
+  }
+}
+
 // Автоматически обновляем состояние Дурака каждые 2 секунды
 setInterval(() => {
   if (
@@ -7053,6 +7193,43 @@ $("durakReadyButton").onclick = async function () {
   }
 };
 
+
+// Повторная готовность не выводит игроков из комнаты и не закрывает игровой экран.
+$("durakRematchReady").type = "button";
+$("durakRematchReady").onclick = async function (event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (!currentDurakRoomId) {
+    showStatus("durakGameStatus", "Не удалось определить текущую комнату.");
+    return;
+  }
+
+  const button = $("durakRematchReady");
+  button.disabled = true;
+  button.textContent = "⏳ Отмечаем готовность…";
+
+  try {
+    const result = await apiRequest("/api/durak/rooms/ready", {
+      roomId: currentDurakRoomId
+    });
+
+    if (!result?.ok) {
+      throw new Error(result?.error || "Не удалось отметить готовность.");
+    }
+
+    button.textContent = result.allReady
+      ? "✅ Все готовы • запускаем игру…"
+      : "✅ Ты готов • ждём " + (result.readyPlayers ?? "?") + "/" + (result.totalPlayers ?? "?");
+
+    showStatus("durakGameStatus", result.message || "Готовность отмечена. Ожидаем остальных игроков.");
+    await refreshDurakRematchStatus(currentDurakRoomId);
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "🔁 Готов к следующей игре";
+    showStatus("durakGameStatus", "Не удалось продолжить игру: " + String(error?.message || error).slice(0, 150));
+  }
+};
 
 // Кнопка «Начать игру» для создателя — не даём событию закрыть Mini App/перейти по форме.
 $("durakStartButton").type = "button";
@@ -8251,6 +8428,91 @@ if (gamesSection) {
     #games .durak-app-card-front b {font-size:14px;}
     #games .durak-app-card-front i {font-size:17px;}
     #games .game-app-title {font-size:12px !important;}
+  }
+</style>
+
+<style id="allcoins-durak-table-fit-and-rematch">
+  /* Полная карта атаки всегда видна; защита лежит рядом и поверх неё. */
+  #durakGame.durak-fullscreen {
+    --durak-hand-card-width: 56px;
+    --durak-hand-card-height: 84px;
+    --durak-table-card-offset: 18px;
+    --durak-table-pair-width: 74px;
+    --durak-table-pair-height: 88px;
+  }
+  #durakGame.durak-fullscreen #durakTable {
+    overflow: visible !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair {
+    position: relative !important;
+    display: block !important;
+    flex: 0 0 var(--durak-table-pair-width, 74px) !important;
+    width: var(--durak-table-pair-width, 74px) !important;
+    height: var(--durak-table-pair-height, 88px) !important;
+    min-height: var(--durak-table-pair-height, 88px) !important;
+    margin: 1px 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card {
+    position: absolute !important;
+    display: block !important;
+    flex: 0 0 var(--durak-hand-card-width, 56px) !important;
+    width: var(--durak-hand-card-width, 56px) !important;
+    min-width: var(--durak-hand-card-width, 56px) !important;
+    max-width: var(--durak-hand-card-width, 56px) !important;
+    height: var(--durak-hand-card-height, 84px) !important;
+    min-height: var(--durak-hand-card-height, 84px) !important;
+    max-height: var(--durak-hand-card-height, 84px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="attack"] {
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 3 !important;
+    transform: none !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card[data-table-card-type="defense"] {
+    left: var(--durak-table-card-offset, 18px) !important;
+    top: 0 !important;
+    z-index: 4 !important;
+    transform: rotate(2deg) !important;
+  }
+  #durakGame.durak-fullscreen #durakTable .durak-card.table-card.image-card > img {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    object-fit: fill !important;
+    object-position: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #durakGame.durak-fullscreen #durakControls #durakRematchReady {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 45px !important;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    border: 1px solid #f1d17d !important;
+    border-radius: 11px !important;
+    background: linear-gradient(110deg,#f4dc98,#d2a23b) !important;
+    color: #172334 !important;
+    font: 800 14px/1.2 Arial,Helvetica,sans-serif !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,.28) !important;
+  }
+  #durakGame.durak-fullscreen #durakControls #durakRematchReady:disabled {
+    opacity: .92 !important;
   }
 </style>
 
