@@ -67,7 +67,7 @@ test("drag-and-drop sends a deliberate throw from any direction to the correct t
   assert.match(frontend, /const throwDistance = Math\.hypot\(pointX - startX, pointY - startY\)/);
   assert.match(frontend, /const intentionalThrow = throwDistance >= 24/);
   assert.match(frontend, /const canAttack = isAttacker &&[\s\S]*?intentionalThrow/);
-  assert.match(frontend, /const canDefend = isDefender && game\.phase === "defense" &&[\s\S]*?intentionalThrow/);
+  assert.match(frontend, /const canDefend = !canTransfer && isDefender && game\.phase === "defense" &&[\s\S]*?intentionalThrow/);
   assert.match(frontend, /return !pair\?\.querySelector\('\.durak-card\[data-table-card-type="defense"\]'\)/);
   assert.doesNotMatch(frontend, /const canAttack = isAttacker && \(game\.phase === "attack" \|\| game\.phase === "defense"\) && droppedOnTable/);
 });
