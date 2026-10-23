@@ -230,6 +230,7 @@ export function createLottoRouter(options) {
         const updatedRoom = { ...room, drawn_numbers: drawn };
         const winner = await findCompletedTicket(client, room.id);
         if (winner) {
+          await client.query("UPDATE lotto_rooms SET drawn_numbers = $1::jsonb WHERE id = $2", [JSON.stringify(drawn), String(room.id)]);
           await settleWinner(client, updatedRoom, winner);
           continue;
         }
@@ -320,7 +321,6 @@ export function createLottoRouter(options) {
           drawnCount: Array.isArray(room.drawn_numbers) ? room.drawn_numbers.length : 0,
           pot: Number(room.pot) || 0,
           prize: Number(room.prize) || 0,
-          winnerTelegramId: room.winner_telegram_id == null ? null : String(room.winner_telegram_id),
           resultNote: room.result_note || "",
           playersCount: Number(room.players_count) || 0,
           ticketCount: Number(room.ticket_count) || 0,
@@ -456,7 +456,7 @@ export function createLottoRouter(options) {
           currentNumber: Array.isArray(room.drawn_numbers) && room.drawn_numbers.length ? Number(room.drawn_numbers[room.drawn_numbers.length - 1]) : null,
           pot: Number(room.pot) || 0,
           prize: Number(room.prize) || 0,
-          winnerTelegramId: room.winner_telegram_id == null ? null : String(room.winner_telegram_id),
+          winnerIsMe: room.winner_telegram_id != null && String(room.winner_telegram_id) === String(user.id),
           winnerName: winnerNameResult.rows.length ? winnerNameResult.rows[0].display_name : null,
           resultNote: room.result_note || "",
           playersCount: Number(countResult.rows[0].players_count) || 0,
