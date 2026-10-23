@@ -2025,30 +2025,17 @@
   <section id="games" class="hidden">
     <div class="section-title">🎮 Развлечения</div>
     <!-- КАРТОЧКА ДУРАКА НА СТРАНИЦЕ ИГРЫ -->
-<div class="card" id="durakEntry">
-
-  <div class="durak-entry-brand">
-    <div class="durak-entry-appicon" role="img" aria-label="Логотип игры Дурак Онлайн">
-      <span class="durak-app-card durak-app-card-back">♠</span>
-      <span class="durak-app-card durak-app-card-front"><b>A</b><i>♥</i></span>
-      <span class="durak-app-corner">✦</span>
-      <span class="durak-app-wordmark">ALLCOINS</span>
-    </div>
-    <div class="durak-entry-heading">
-      <div class="durak-entry-kicker">КАРТОЧНАЯ ИГРА ALLCOINS</div>
-      <h3>Дурак Онлайн</h3>
-      <div class="durak-entry-subtitle">Классический подкидной дурак</div>
-    </div>
+<div class="games-app-grid">
+  <div class="game-app-tile" id="durakEntry">
+    <button type="button" id="openDurak" class="game-app-launch" aria-label="Открыть игру Дурак Онлайн">
+      <span class="durak-entry-appicon" aria-hidden="true">
+        <span class="durak-app-card durak-app-card-back">♠</span>
+        <span class="durak-app-card durak-app-card-front"><b>A</b><i>♥</i></span>
+        <span class="durak-app-corner">✦</span>
+      </span>
+      <span class="game-app-title">Дурак Онлайн</span>
+    </button>
   </div>
-
-  <p class="muted">
-    Создавай комнаты, выбирай ставку AC и играй с другими игроками.
-  </p>
-
-  <button type="button" id="openDurak" class="full">
-    ▶ Играть в Дурак Онлайн
-  </button>
-
 </div>
 
 <!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАКА -->
@@ -8114,6 +8101,156 @@ if (gamesSection) {
     #durakEntry .durak-app-wordmark {font-size:7px;letter-spacing:1.1px;}
     #durakEntry .durak-entry-kicker {font-size:8px;letter-spacing:.7px;}
     #durakEntry .durak-entry-subtitle {font-size:10px;}
+  }
+</style>
+
+
+<style id="allcoins-games-app-grid">
+  /* Раздел «Игры» — иконки, как на экране приложений Android */
+  #games .games-app-grid {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    align-items:start;
+    gap:20px 8px;
+    width:100%;
+    padding:12px 2px 18px;
+    box-sizing:border-box;
+  }
+  #games .game-app-tile {
+    display:flex;
+    justify-content:center;
+    min-width:0;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    overflow:visible !important;
+  }
+  #games .game-app-launch {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+    width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:0 1px !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    color:inherit !important;
+    box-shadow:none !important;
+    font:400 14px/1.25 Arial,Helvetica,sans-serif !important;
+    text-align:center !important;
+    white-space:normal !important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #games .game-app-launch:active {
+    transform:scale(.96);
+    opacity:.88;
+  }
+  #games .durak-entry-appicon {
+    position:relative;
+    isolation:isolate;
+    display:block;
+    flex:0 0 82px;
+    width:82px;
+    height:82px;
+    box-sizing:border-box;
+    overflow:hidden;
+    border:1px solid rgba(244,213,133,.9);
+    border-radius:21px;
+    background:
+      radial-gradient(circle at 50% 28%,rgba(222,178,72,.27),transparent 47%),
+      linear-gradient(145deg,#1b4960 0%,#0c1c30 62%,#25172b 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 4px 10px rgba(0,0,0,.27);
+  }
+  #games .durak-entry-appicon::before {
+    content:"";
+    position:absolute;
+    inset:4px;
+    border:1px solid rgba(244,213,133,.25);
+    border-radius:16px;
+    pointer-events:none;
+  }
+  #games .durak-app-card {
+    position:absolute;
+    top:10px;
+    display:flex;
+    flex-direction:column;
+    box-sizing:border-box;
+    width:37px;
+    height:53px;
+    border-radius:5px;
+    box-shadow:0 3px 7px rgba(0,0,0,.43);
+    font-family:Georgia,"Times New Roman",serif;
+    line-height:1;
+  }
+  #games .durak-app-card-back {
+    left:10px;
+    align-items:center;
+    justify-content:center;
+    color:#f4d782;
+    font-size:27px;
+    background:linear-gradient(145deg,#285873,#0a2035);
+    border:1px solid #e2bf68;
+    transform:rotate(-14deg);
+  }
+  #games .durak-app-card-front {
+    left:34px;
+    align-items:flex-start;
+    justify-content:flex-start;
+    padding:4px 5px;
+    color:#b82440;
+    font-size:15px;
+    background:linear-gradient(145deg,#fffef8,#e7dfca);
+    border:1px solid #e0cf9c;
+    transform:rotate(12deg);
+  }
+  #games .durak-app-card-front b {
+    font:700 15px/1 Georgia,"Times New Roman",serif;
+  }
+  #games .durak-app-card-front i {
+    align-self:flex-end;
+    margin-top:auto;
+    font:normal 19px/1 Georgia,"Times New Roman",serif;
+  }
+  #games .durak-app-corner {
+    position:absolute;
+    z-index:2;
+    top:4px;
+    right:6px;
+    color:#f6d981;
+    font-size:12px;
+    text-shadow:0 0 7px rgba(246,217,129,.65);
+  }
+  #games .game-app-title {
+    display:block;
+    width:100%;
+    max-width:100%;
+    color:var(--text,#f3f5f7);
+    font:400 14px/1.25 Arial,Helvetica,sans-serif !important;
+    letter-spacing:0 !important;
+    overflow-wrap:anywhere;
+    text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,.16);
+  }
+  #games #durakEntry:focus-within .durak-entry-appicon {
+    outline:2px solid rgba(244,213,133,.75);
+    outline-offset:3px;
+  }
+  @media (max-width:360px) {
+    #games .games-app-grid {gap:17px 5px;padding-left:0;padding-right:0;}
+    #games .durak-entry-appicon {flex-basis:74px;width:74px;height:74px;border-radius:19px;}
+    #games .durak-app-card {top:9px;width:34px;height:48px;}
+    #games .durak-app-card-back {left:9px;font-size:24px;}
+    #games .durak-app-card-front {left:30px;padding:4px;}
+    #games .durak-app-card-front b {font-size:14px;}
+    #games .durak-app-card-front i {font-size:17px;}
+    #games .game-app-title {font-size:12px !important;}
   }
 </style>
 
