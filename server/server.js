@@ -1516,7 +1516,9 @@ app.post("/api/durak/game", async (req, res) => {
         if (latestState.rows.length) gameState = latestState.rows[0].game_state;
       }
     }
-    if (gameState?.status === "finished" && gameState?.pot && gameState.pot.settled !== true) {
+    if (gameState?.status === "finished" &&
+        ((gameState?.pot && gameState.pot.settled !== true) ||
+         (gameState?.finishedReason === "timeout" && gameState?.timeoutBalanceSettled !== true))) {
       const payoutClient = await pool.connect();
       let payoutTransactionOpen = false;
       try {
@@ -1528,18 +1530,41 @@ app.post("/api/durak/game", async (req, res) => {
         );
         if (lockedGame.rows.length) {
           gameState = lockedGame.rows[0].game_state;
-          if (gameState?.status === "finished" && gameState?.pot && gameState.pot.settled !== true) {
-            await settleDurakGamePayout(payoutClient, gameState);
-            await payoutClient.query(
-              `UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2`,
-              [JSON.stringify(gameState), roomId]
-            );
-          }
           if (gameState?.status === "finished") {
-            await payoutClient.query(
-              "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
-              [roomId]
-            );
+            if (gameState?.pot && gameState.pot.settled !== true) {
+              await settleDurakGamePayout(payoutClient, gameState);
+            }
+            // Тайм-аут: остаток баланса проигравшего делится один раз в этой транзакции.
+            if (gameState.finishedReason === "timeout" && gameState.timeoutBalanceSettled !== true) {
+              const loserId = String(gameState.loserTelegramId || "");
+              const winners = [...new Set((Array.isArray(gameState.players) ? gameState.players : [])
+                .map(player => String(player.telegramId))
+                .filter(id => id && id !== "0" && id !== loserId))];
+              if (loserId && winners.length) {
+                const balanceResult = await payoutClient.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [loserId]);
+                const balance = Math.max(0, Math.floor(Number(balanceResult.rows[0]?.balance) || 0));
+                const zeroed = balance > 0 ? await payoutClient.query(
+                  "UPDATE players SET balance = 0, updated_at = NOW() WHERE telegram_id = $1 AND balance = $2 RETURNING telegram_id",
+                  [loserId, balance]
+                ) : { rows: [] };
+                if (balance === 0 || zeroed.rows.length) {
+                  const share = Math.floor(balance / winners.length);
+                  let remainder = balance % winners.length;
+                  gameState.timeoutBalanceAwards = [];
+                  for (const winnerId of winners) {
+                    const amount = share + (remainder > 0 ? 1 : 0);
+                    if (remainder > 0) remainder -= 1;
+                    if (amount > 0) await payoutClient.query("UPDATE players SET balance = balance + $1, updated_at = NOW() WHERE telegram_id = $2", [amount, winnerId]);
+                    gameState.timeoutBalanceAwards.push({ telegramId: winnerId, amount });
+                  }
+                  gameState.timeoutBalanceForfeited = balance;
+                  await payoutClient.query("DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2", [roomId, loserId]);
+                  gameState.timeoutBalanceSettled = true;
+                }
+              }
+            }
+            await payoutClient.query(`UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2`, [JSON.stringify(gameState), roomId]);
+            await payoutClient.query("UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'", [roomId]);
           }
         }
         await payoutClient.query("COMMIT");
