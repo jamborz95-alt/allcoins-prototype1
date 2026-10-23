@@ -2064,6 +2064,8 @@
   #lottoGame .lotto-report-details { margin-top:10px; padding-top:10px; border-top:1px solid currentColor; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
   #lottoGame .lotto-report-details .lotto-report-drawn { margin-top:7px; line-height:1.7; }
   #lottoGame .lotto-report-delete { display:block; width:100%; margin-top:10px; padding:10px !important; border-radius:9px !important; background:#6d2528 !important; color:#fff !important; border:1px solid #471418 !important; font-size:12px !important; }
+  #lottoGame .lotto-report-delete-all { display:block; width:100%; margin:10px 0 12px; padding:11px !important; border-radius:10px !important; background:linear-gradient(#8b252b,#64171c) !important; color:#fff !important; border:1px solid #471418 !important; font-size:13px !important; font-weight:900 !important; }
+  #lottoGame .lotto-report-delete-all:disabled { opacity:.55; }
   #lottoGame .lotto-report-empty { padding:12px; border:1px dashed #bd935a; border-radius:11px; color:#ffebce; font-size:12px; line-height:1.5; }
   #lottoGame .lotto-status {
     min-height:22px; padding:9px 11px; margin:10px 0; border-radius:10px;
@@ -3486,6 +3488,7 @@
     <div id="onlineLottoLobbyStatus" class="lotto-status">Загружаем комнаты…</div>
     <div class="lotto-section-heading lotto-report-section-heading">Отчёт</div>
     <div class="lotto-explain">Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.</div>
+    <button type="button" id="onlineLottoDeleteAllReports" class="lotto-report-delete-all">🗑 Удалить все отчёты</button>
     <div id="onlineLottoReportsList" class="lotto-reports-list"></div>
   </div>
 
