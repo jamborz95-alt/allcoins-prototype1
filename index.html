@@ -8183,8 +8183,12 @@ function formatLottoStakeShort(value) {
 function openOnlineLotto() {
   $("lottoGame").style.display = "block";
   $("lottoGame").classList.add("lotto-fullscreen");
+  $("lottoGame").classList.remove("lotto-playing");
   $("onlineLottoLobbyView").classList.remove("hidden");
   $("onlineLottoRoomView").classList.add("hidden");
+  $("onlineLottoPlayView").classList.add("hidden");
+  $("onlineLottoMasterHeader").classList.remove("hidden");
+  $("onlineLottoBack").classList.remove("hidden");
   onlineLottoRoomId = null;
   if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
   if (onlineLottoLobbyTimer) clearInterval(onlineLottoLobbyTimer);
