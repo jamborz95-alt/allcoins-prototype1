@@ -328,13 +328,16 @@ export function createLottoRouter(options) {
         return res.status(200).send(cached);
       }
 
+      // Называем само число без лишних слов; немного замедленный темп помогает
+      // разбирать числа на слух во время розыгрыша.
       const phrase = isTest
         ? "Озвучивание чисел включено."
-        : "Внимание. Номер " + lottoNumberInWords(number) + ".";
+        : lottoNumberInWords(number) + ".";
       const ttsUrl = new URL("https://translate.googleapis.com/translate_tts");
       ttsUrl.searchParams.set("client", "gtx");
       ttsUrl.searchParams.set("ie", "UTF-8");
       ttsUrl.searchParams.set("tl", "ru");
+      ttsUrl.searchParams.set("ttsspeed", "0.85");
       ttsUrl.searchParams.set("q", phrase);
 
       const upstream = await fetch(ttsUrl, {
