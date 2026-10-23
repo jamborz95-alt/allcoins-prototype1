@@ -2140,9 +2140,9 @@
       <div class="durak-create-field">
         <label class="muted" for="durakDeck">🃏 Колода карт</label>
         <select id="durakDeck">
-          <option value="24">24 карты</option>
+          <option value="24">24 карт</option>
           <option value="36" selected>36 карт</option>
-          <option value="52">52 карты</option>
+          <option value="52">52 карт</option>
         </select>
       </div>
 
@@ -3499,7 +3499,7 @@ info.innerHTML =
   "<span class='muted small'>" +
   (room.playersCount ?? 1) + " из " + room.players +
   " игроков · Режим: " + (room.mode === "transfer" ? "Переводной" : "Подкидной") +
-  " · Колода: " + (Number(room.deck) === 24 ? "24 карты" : Number(room.deck) === 52 ? "52 карты" : "36 карт") +
+  " · Колода: " + (Number(room.deck) === 24 ? "24 карт" : Number(room.deck) === 52 ? "52 карт" : "36 карт") +
   " · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
@@ -6994,7 +6994,7 @@ const mode = $("durakMode").value === "transfer" ? "transfer" : "throw-in";
   const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
   if (players > maxPlayersForDeck) {
     alert(deck === 24
-      ? "С колодой на 24 карты можно играть максимум втроём."
+      ? "С колодой на 24 карт можно играть максимум втроём."
       : "С колодой на 36 карт можно играть максимум впятером.");
     return;
   }
@@ -9029,5 +9029,53 @@ if (gamesSection) {
   }
 
 </style>
+
+<style id="durak-create-panel-final-compact">
+/* Final mobile layout: keep game mode immediately visible and settings compact. */
+#durakGame #durakCreatePanel .durak-create-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 4px 8px !important;
+  align-items: start !important;
+}
+#durakGame #durakCreatePanel .durak-create-field { min-width: 0 !important; }
+#durakGame #durakCreatePanel .durak-create-field.full { grid-column: 1 / -1 !important; }
+#durakGame #durakCreatePanel .durak-create-field label {
+  display: block !important;
+  margin: 2px 0 1px !important;
+  line-height: 1.15 !important;
+  font-size: 12px !important;
+}
+#durakGame #durakCreatePanel .durak-create-field select,
+#durakGame #durakCreatePanel .durak-create-field input:not([type="range"]) {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  margin: 2px 0 4px !important;
+  padding: 7px 8px !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  border-radius: 9px !important;
+}
+#durakGame #durakCreatePanel .durak-create-field input[type="range"] {
+  margin: 3px 0 5px !important;
+}
+#durakGame #durakCreatePanel .durak-create-field .muted { font-size: 11px !important; }
+#durakGame #durakCreatePanel { padding: 10px !important; }
+#durakGame #durakCreatePanel > h3 { margin: 0 0 6px !important; font-size: 16px !important; }
+#durakGame #durakCreatePanel .durak-create-field:has(#durakMode) select {
+  border-color: rgba(103,245,181,.75) !important;
+  box-shadow: 0 0 0 1px rgba(103,245,181,.12) !important;
+}
+@media (max-width: 340px) {
+  #durakGame #durakCreatePanel .durak-create-grid { column-gap: 5px !important; }
+  #durakGame #durakCreatePanel .durak-create-field select,
+  #durakGame #durakCreatePanel .durak-create-field input:not([type="range"]) {
+    padding: 7px 5px !important;
+    font-size: 12px !important;
+  }
+}
+</style>
+
 </body>
 </html>
