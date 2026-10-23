@@ -744,8 +744,9 @@ const path = require("node:path");
       const image = card?.querySelector("img");
       return {
         visible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
-        width: rect?.width ?? 0,
-        height: rect?.height ?? 0,
+        // offsetWidth/Height measure the real card box without the expanded rotated bounding box.
+        width: card?.offsetWidth ?? rect?.width ?? 0,
+        height: card?.offsetHeight ?? rect?.height ?? 0,
         imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
         imageNaturalWidth: image?.naturalWidth ?? 0,
         imageNaturalHeight: image?.naturalHeight ?? 0,
