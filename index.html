@@ -5318,6 +5318,8 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
         if (revealTimer !== null) window.clearTimeout(revealTimer);
         if (cleanupTimer !== null) window.clearTimeout(cleanupTimer);
         if (flightAnimation) flightAnimation.cancel();
+        const pickupHold = item?.source?.element;
+        if (pickupHold?.dataset?.durakPickupHold === "true") pickupHold.remove();
         flyer.remove();
         if (target.isConnected) {
           target.style.opacity = previous.opacity;
@@ -5836,13 +5838,15 @@ async function loadDurakGame(roomId) {
     document.querySelectorAll("#durakGame #durakTable .durak-card.table-card").forEach(element => {
       const cardId = String(element.dataset.cardId || "");
       const rect = element.getBoundingClientRect();
+      const cardWidth = element.offsetWidth || rect.width;
+      const cardHeight = element.offsetHeight || rect.height;
       if (cardId && rect.width > 0 && rect.height > 0) {
         const frozenCard = cloneDurakFlightCard(element);
         previousTableCardOrigins.set(cardId, {
           x: rect.left + rect.width / 2,
           y: rect.top + rect.height / 2,
-          width: rect.width,
-          height: rect.height,
+          width: cardWidth,
+          height: cardHeight,
           element: frozenCard.element,
           visual: frozenCard.visual
         });
