@@ -3488,7 +3488,17 @@
     <button type="button" id="onlineLottoVoiceToggleWaiting" class="lotto-voice-toggle" aria-pressed="true">🔊 Проверить голос · ВКЛ</button>
     <div id="onlineLottoRoomStatus" class="lotto-status">Ожидаем начало раунда.</div>
     <button type="button" id="onlineLottoBuyTicket" class="lotto-action">🎟 Купить билет</button>
-    <div class="lotto-small-note">Во время игры сам проверяй выпавшие числа и отмечай их в билетах. Подсказок о совпадениях нет. Фиолетовая отметка означает, что число зачёркнуто.</div>
+    <details class="lotto-instructions">
+      <summary>📘 Как играть: вручную или автоматически</summary>
+      <div class="lotto-instructions-body">
+        <b>Ручной режим</b>
+        <p>Оставайся на экране комнаты во время розыгрыша. Когда выпадает число с твоего билета, нажми на него сам. Фиолетовый кружок означает, что число отмечено.</p>
+        <b>Автоматический режим</b>
+        <p>Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпадения начнут закрываться автоматически. Все твои билеты будут продолжать играть.</p>
+        <b>Отчёт после игры</b>
+        <p>Вернись в Лото Онлайн и открой эту комнату. В истории будут все выпавшие числа, на билетах — сохранённые отметки, а в результате — сведения о победе, призе или возврате ставки.</p>
+      </div>
+    </details>
     <div id="onlineLottoTickets"></div>
     <button type="button" id="onlineLottoRoomRefresh" class="lotto-light-button">↻ Обновить поле</button>
   </div>
