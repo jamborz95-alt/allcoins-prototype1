@@ -8568,6 +8568,14 @@ function renderOnlineLottoRooms() {
 
   const activeRooms = onlineLottoLobbyRoomsCache.filter(room => room.status !== "finished");
   const reports = onlineLottoLobbyRoomsCache.filter(room => room.status === "finished");
+  const deleteAllButton = $("onlineLottoDeleteAllReports");
+  if (deleteAllButton) {
+    deleteAllButton.style.display = reports.length ? "block" : "none";
+    deleteAllButton.disabled = false;
+    deleteAllButton.textContent = reports.length
+      ? "🗑 Удалить все (" + reports.length + ")"
+      : "🗑 Удалить все отчёты";
+  }
 
   if (!activeRooms.length) {
     const empty = document.createElement("div");
