@@ -436,7 +436,7 @@ export function createLottoRouter(options) {
         "SELECT display_name FROM lotto_room_players WHERE room_id = $1 AND telegram_id = $2",
         [String(room.id), String(room.winner_telegram_id)]
       );
-      const playerResultBalance = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+      const playerResultBalance = await pool.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO UPDATE SET updated_at = NOW() RETURNING balance", [String(user.id)]);
       const countResult = await pool.query(
         "SELECT COUNT(DISTINCT telegram_id)::integer AS players_count, COUNT(*)::integer AS ticket_count FROM lotto_tickets WHERE room_id = $1",
         [String(room.id)]
