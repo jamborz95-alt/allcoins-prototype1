@@ -8229,8 +8229,8 @@ function speakLottoText(text) {
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "ru-RU";
-    utterance.rate = 0.82;
-    utterance.pitch = 1.03;
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
     utterance.volume = 1.0;
     const russianVoice = getLottoRussianVoice();
     if (russianVoice) utterance.voice = russianVoice;
@@ -8256,9 +8256,10 @@ function playLottoVoiceAudio(number, isTest = false) {
         ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
       setOnlineLottoStatus(statusId, "Не удалось загрузить голос. Проверь интернет и попробуй нажать «Проверить голос» ещё раз.");
     };
+    // Cache-busting URL prevents replaying older MP3 clips from the phone cache.
     const query = isTest
-      ? "?test=1"
-      : "?number=" + encodeURIComponent(String(number));
+      ? "?test=1&v=20261023c"
+      : "?number=" + encodeURIComponent(String(number)) + "&v=20261023c";
     lottoVoiceAudio.src = API + "/api/lotto/voice" + query;
     lottoVoiceAudio.load();
     const playPromise = lottoVoiceAudio.play();
@@ -8332,7 +8333,7 @@ function toggleLottoVoice() {
   if (lottoVoiceEnabled && !lottoVoiceGestureTested) {
     lottoVoiceGestureTested = true;
     if (supportsNativeLottoSpeech()) {
-      speakLottoText("Озвучивание чисел включено.");
+      speakLottoText("Проверка звука.");
     } else {
       playLottoVoiceAudio(null, true);
     }
@@ -8350,7 +8351,7 @@ function toggleLottoVoice() {
     }
   } else {
     lottoVoiceGestureTested = true;
-    if (supportsNativeLottoSpeech()) speakLottoText("Озвучивание чисел включено.");
+    if (supportsNativeLottoSpeech()) speakLottoText("Проверка звука.");
     else playLottoVoiceAudio(null, true);
   }
   updateLottoVoiceButton();
@@ -8484,7 +8485,7 @@ async function openOnlineLottoRoom(roomId) {
   if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
   onlineLottoStateTimer = setInterval(() => {
     if (document.visibilityState === "visible") loadOnlineLottoState(true);
-  }, 2000);
+  }, 1000);
   await loadOnlineLottoState(false);
 }
 
@@ -8582,6 +8583,7 @@ function renderOnlineLottoRoom(room, tickets) {
     ticketsRoot.appendChild(empty);
   }
 
+  const drawnNumbersForTickets = new Set((room.drawnNumbers || []).map(Number));
   tickets.forEach(ticket => {
     const ticketElement = document.createElement("div");
     ticketElement.className = "lotto-ticket";
@@ -8592,6 +8594,10 @@ function renderOnlineLottoRoom(room, tickets) {
     const markCount = document.createElement("span");
     const ticketValues = (ticket.numbers || []).flat().filter(n => Number.isInteger(n));
     const marked = new Set((ticket.markedNumbers || []).map(Number));
+    // Keep the display correct for any draw already saved before this update.
+    ticketValues.forEach(number => {
+      if (drawnNumbersForTickets.has(Number(number))) marked.add(Number(number));
+    });
     markCount.textContent = marked.size + " / " + ticketValues.length;
     ticketTitle.appendChild(ticketName);
     ticketTitle.appendChild(markCount);
@@ -8609,14 +8615,8 @@ function renderOnlineLottoRoom(room, tickets) {
         }
 
         const isMarked = marked.has(Number(number));
-        // Все неотмеченные числа имеют одинаковый вид. Совпадения не подсвечиваются заранее.
-        const manualGameCell = room.status === "playing" && !room.autoPlay && !onlineLottoActionBusy && !isMarked;
-        const cell = document.createElement(manualGameCell ? "button" : "div");
-        if (manualGameCell) {
-          cell.type = "button";
-          cell.setAttribute("aria-label", "Отметить число " + Number(number));
-          cell.onclick = () => markOnlineLottoNumber(ticket.id, Number(number));
-        }
+        // Совпавшие с тиражом числа отображаются закрытыми автоматически.
+        const cell = document.createElement("div");
         cell.className = "lotto-number";
         if (isMarked) cell.classList.add("lotto-marked");
         cell.textContent = String(number);
@@ -8633,9 +8633,8 @@ function renderOnlineLottoRoom(room, tickets) {
   } else if (room.status === "playing") {
     setOnlineLottoStatus(statusId, tickets.length === 0
       ? "Раунд уже идёт, но у тебя нет билетов в этой комнате."
-      : room.autoPlay
-        ? "Автоматический режим: выпавшие числа на твоих билетах отмечаются сами."
-        : "Сверяй выпавшие числа сверху и сам нажимай совпадения в билетах. Подсказок о совпадениях нет.");
+      : "Выпавшие числа автоматически закрываются на всех твоих билетах."
+    );
   } else {
     setOnlineLottoStatus(statusId, room.resultNote || "Раунд завершён.");
   }
