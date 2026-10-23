@@ -8117,7 +8117,10 @@ function closeOnlineLotto() {
   onlineLottoRoomId = null;
   $("lottoGame").classList.remove("lotto-fullscreen");
   $("lottoGame").style.display = "none";
-  if (tg && tg.BackButton && typeof tg.BackButton.hide === "function") tg.BackButton.hide();
+  if (tg && tg.BackButton) {
+    if (typeof tg.BackButton.offClick === "function") tg.BackButton.offClick(closeOnlineLotto);
+    if (typeof tg.BackButton.hide === "function") tg.BackButton.hide();
+  }
 }
 
 async function loadOnlineLottoRooms() {
