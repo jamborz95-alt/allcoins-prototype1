@@ -421,6 +421,7 @@ const speed = req.body.speed === "fast" ? "fast" : "normal";
       });
     }
 const privacy = req.body.privacy === "private" ? "private" : "public";
+const mode = req.body.mode === "transfer" ? "transfer" : "throw-in";
     if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
       return res.status(400).json({
         ok: false,
@@ -464,9 +465,9 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
 
     const roomResult = await pool.query(
   `INSERT INTO durak_rooms
-    (name, owner_telegram_id, max_players, stake, deck, speed, privacy)
-   VALUES ($1, $2, $3, $4, $5, $6, $7)
-   RETURNING id, name, max_players, stake, deck, speed, privacy, status`,
+    (name, owner_telegram_id, max_players, stake, deck, speed, privacy, mode)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+   RETURNING id, name, max_players, stake, deck, speed, privacy, mode, status`,
   [
     name,
     String(user.id),
@@ -474,7 +475,8 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
     stake,
     deck,
     speed,
-    privacy
+    privacy,
+    mode
   ]
 );
 
@@ -536,6 +538,7 @@ app.post("/api/durak/rooms/list", async (req, res) => {
      r.max_players,
      r.stake,
      r.deck,
+     r.mode,
      r.status,
      (r.owner_telegram_id = $1::bigint) AS is_owner,
      COUNT(p.telegram_id)::INTEGER AS players_count
@@ -1059,6 +1062,7 @@ app.post("/api/durak/rooms/start", async (req, res) => {
      deck,
      speed,
      privacy,
+     mode,
      status
    FROM durak_rooms
    WHERE id = $1
@@ -1239,6 +1243,7 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       dealt.trumpSuit
     );
     const gameState = {
+      mode: room.mode === "transfer" ? "transfer" : "throw-in",
       players: gamePlayers,
       deck: remainingDeck,
       trumpCard,
@@ -1383,7 +1388,7 @@ app.post("/api/durak/game", async (req, res) => {
       // Самовосстановление: если комната уже переведена в playing, но запись
       // партии потерялась/не успела сохраниться, создаём начальное состояние.
       const roomCheck = await pool.query(
-        `SELECT id, status, deck FROM durak_rooms WHERE id = $1`,
+        `SELECT id, status, deck, mode FROM durak_rooms WHERE id = $1`,
         [roomId]
       );
       const room = roomCheck.rows[0];
@@ -1400,6 +1405,7 @@ app.post("/api/durak/game", async (req, res) => {
           const players = playersResult.rows.map((row, index) => ({ telegramId: String(row.telegram_id), hand: dealt.hands[index] }));
           const starter = chooseStartingPlayerIndex(dealt.hands, dealt.trumpSuit);
           const repairedState = {
+            mode: room.mode === "transfer" ? "transfer" : "throw-in",
             players,
             deck: dealt.deck,
             trumpCard: dealt.trumpCard,
@@ -1645,6 +1651,7 @@ app.post("/api/durak/game", async (req, res) => {
     return res.json({
   ok: true,
   roomId: String(roomId),
+  mode: gameState.mode || "throw-in",
   hand: me.hand,
   trumpSuit: gameState.trumpSuit,
   trumpCard: gameState.trumpCard,
@@ -1711,7 +1718,7 @@ app.post("/api/durak/action", async (req, res) => {
       });
     }
 
-    if (!["attack", "defend", "take", "beat"].includes(action)) {
+    if (!["attack", "defend", "transfer", "take", "beat"].includes(action)) {
       return res.status(400).json({
         ok: false,
         error: "Неизвестное действие"
@@ -2036,6 +2043,72 @@ app.post("/api/durak/action", async (req, res) => {
       // Если защищающийся уже нажал «Беру», дополнительные карты всё ещё
       // можно подкидывать, пока атакующий не завершит раунд кнопкой «Бито».
       game.phase = game.takePending ? "takePending" : "defense";
+    }
+
+    // ПЕРЕВОД: переводим атаку картой того же достоинства до начала отбивания.
+    if (action === "transfer") {
+      if (game.mode !== "transfer") {
+        return res.status(400).json({
+          ok: false,
+          error: "В этой комнате включён подкидной режим"
+        });
+      }
+      if (playerIndex !== game.defenderIndex || game.phase !== "defense") {
+        return res.status(403).json({
+          ok: false,
+          error: "Перевести атаку может только защищающийся игрок"
+        });
+      }
+      if (!cardId) {
+        return res.status(400).json({
+          ok: false,
+          error: "Выбери карту для перевода"
+        });
+      }
+      if (!game.table.length || game.table.some(item => !item.attack || item.defense)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Перевод возможен до того, как на столе побита хотя бы одна карта"
+        });
+      }
+      const transferCardIndex = player.hand.findIndex(
+        card => String(card.id) === String(cardId)
+      );
+      if (transferCardIndex < 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "Этой карты нет в твоей руке"
+        });
+      }
+      const transferCard = player.hand[transferCardIndex];
+      const ranksOnTable = game.table.map(item => String(item.attack.rank));
+      if (!ranksOnTable.includes(String(transferCard.rank))) {
+        return res.status(400).json({
+          ok: false,
+          error: "Для перевода выбери карту того же достоинства, что и карта на столе"
+        });
+      }
+
+      const outgoingDefenderIndex = game.defenderIndex;
+      const nextDefenderIndex = nextActivePlayer(outgoingDefenderIndex, [outgoingDefenderIndex]);
+      const nextDefender = game.players[nextDefenderIndex];
+      const resultingTableSize = game.table.length + 1;
+      if (!nextDefender || nextDefenderIndex === outgoingDefenderIndex ||
+          nextDefender.hand.length < resultingTableSize) {
+        return res.status(400).json({
+          ok: false,
+          error: "У следующего игрока недостаточно карт, чтобы принять перевод"
+        });
+      }
+
+      player.hand.splice(transferCardIndex, 1);
+      game.table.push({ attack: transferCard, defense: null });
+      // Переводящий становится атакующим, следующий активный игрок принимает весь стол.
+      game.attackerIndex = outgoingDefenderIndex;
+      game.defenderIndex = nextDefenderIndex;
+      game.defenderHandAtRoundStart = nextDefender.hand.length;
+      game.takePending = false;
+      game.phase = "defense";
     }
 
     // ЗАЩИТА
@@ -2423,6 +2496,10 @@ async function startServer() {
     await pool.query(`
       ALTER TABLE durak_rooms
       ADD COLUMN IF NOT EXISTS privacy TEXT NOT NULL DEFAULT 'public'
+    `);
+    await pool.query(`
+      ALTER TABLE durak_rooms
+      ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'throw-in'
     `);
     console.log("Durak games table is ready");
 
