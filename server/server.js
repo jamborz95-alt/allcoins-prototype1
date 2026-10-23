@@ -715,7 +715,7 @@ app.post("/api/durak/rooms/leave", async (req, res) => {
     }
 
     const roomId = req.body?.roomId;
-    if (!roomId || !/^\\d+$/.test(String(roomId))) {
+    if (!roomId || !/^\d+$/.test(String(roomId))) {
       return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
     }
 
