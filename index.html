@@ -327,6 +327,9 @@
   max-width: 100% !important;
   max-height: 100% !important;
   object-fit: contain !important;
+  image-rendering: auto !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -339,6 +342,9 @@
   height: 100%;
   object-fit: contain;
   object-position: center;
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   margin: 0;
   padding: 0;
   border: 0;
@@ -4794,10 +4800,10 @@ let durakLastRenderedAttackerIndex = null;
 let durakLastRenderedDefenderIndex = null;
 
 // Не показываем полупустой/недекодированный PNG в момент посадки карты.
-async function waitForDurakCardImagesReady(element, timeoutMs = 700) {
+async function waitForDurakCardImagesReady(element, timeoutMs = 1800) {
   const images = Array.from(element?.querySelectorAll("img") || []);
-  await Promise.all(images.map(async image => {
-    if (!image.getAttribute("src")) return;
+  const readiness = await Promise.all(images.map(async image => {
+    if (!image.getAttribute("src")) return true;
 
     if (!image.complete) {
       await new Promise(resolve => {
@@ -4817,13 +4823,24 @@ async function waitForDurakCardImagesReady(element, timeoutMs = 700) {
       });
     }
 
-    if (image.complete && image.naturalWidth > 0 && typeof image.decode === "function") {
-      await Promise.race([
-        image.decode().catch(() => {}),
-        new Promise(resolve => setTimeout(resolve, timeoutMs))
+    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return false;
+
+    // Wait for actual PNG decoding before showing this image in motion.
+    // If decoding stalls, skip the flight instead of showing a soft face that sharpens on landing.
+    if (typeof image.decode === "function") {
+      let decodeTimer = null;
+      const decoded = await Promise.race([
+        image.decode().then(() => true).catch(() => false),
+        new Promise(resolve => {
+          decodeTimer = setTimeout(() => resolve(false), timeoutMs);
+        })
       ]);
+      if (decodeTimer !== null) clearTimeout(decodeTimer);
+      if (!decoded) return false;
     }
+    return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
   }));
+  return readiness.every(Boolean);
 }
 
 async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0, cardType = "attack") {
@@ -4857,8 +4874,8 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
   };
 
   try {
-    await waitForDurakCardImagesReady(targetCard);
-    if (!targetCard.isConnected || !playerSeat.isConnected) {
+    const targetImageReady = await waitForDurakCardImagesReady(targetCard);
+    if (!targetImageReady || !targetCard.isConnected || !playerSeat.isConnected) {
       finish();
       return;
     }
@@ -4875,6 +4892,18 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     flyer = targetCard.cloneNode(true);
     copyDurakComputedStyles(targetCard, flyer);
     flyer.classList.add("durak-flying-card");
+    // Paint into a larger backing box and scale down onto the table slot.
+    // This avoids enlarging a small composited texture near the end of the flight.
+    const viewportWidth = window.innerWidth || targetRect.width;
+    const flyerRasterScale = Math.max(1, Math.min(
+      1.25,
+      Math.min(viewportWidth * 0.24, 112) / targetRect.width,
+      Math.min(viewportWidth * 0.34, 148) / targetRect.height
+    ));
+    const flyerWidth = targetRect.width * flyerRasterScale;
+    const flyerHeight = targetRect.height * flyerRasterScale;
+    const landingScaleX = targetRect.width / flyerWidth;
+    const landingScaleY = targetRect.height / flyerHeight;
     flyer.classList.remove("selected", "is-dragging", "dragging");
     if (cardType === "defense") {
       flyer.dataset.incomingDefense = "true";
@@ -4884,11 +4913,11 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     Object.assign(flyer.style, {
       position: "fixed",
       left: (((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().left ?? (seatRect.left + seatRect.width / 2)) +
-        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().width || 0) / 2)) - targetRect.width / 2) + "px",
+        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().width || 0) / 2)) - flyerWidth / 2) + "px",
       top: (((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().top ?? (seatRect.bottom - Math.min(8, seatRect.height * 0.12))) +
-        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().height || 0) / 2)) - targetRect.height / 2) + "px",
-      width: targetRect.width + "px",
-      height: targetRect.height + "px",
+        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().height || 0) / 2)) - flyerHeight / 2) + "px",
+      width: flyerWidth + "px",
+      height: flyerHeight + "px",
       minWidth: "0",
       maxWidth: "none",
       minHeight: "0",
@@ -4900,7 +4929,8 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
       overflow: "hidden",
       boxShadow: "0 10px 24px rgba(0,0,0,.50), 0 0 0 1px rgba(212,175,55,.7)",
       transformOrigin: "center center",
-      transform: "translate3d(0,0,0) rotate(-16deg) scale(.62)",
+      transform: "translate3d(0,0,0) rotate(-16deg) scale(" +
+        (landingScaleX * 0.62) + "," + (landingScaleY * 0.62) + ")",
       transition: "none",
       willChange: "transform",
       visibility: "visible",
@@ -4919,6 +4949,9 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
       width: "100%", height: "100%", minWidth: "0", minHeight: "0",
       maxWidth: "100%", maxHeight: "100%", objectFit: "fill",
       objectPosition: "center", margin: "0", padding: "0",
+      imageRendering: "auto",
+      backfaceVisibility: "hidden",
+      webkitBackfaceVisibility: "hidden",
       transform: "none"
     });
     // Attach the transparent copy before decoding: some mobile WebViews do not
@@ -4926,8 +4959,8 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     // Opacity hides the entire copy during decoding (including visible children).
     flyer.style.setProperty("opacity", "0", "important");
     document.body.appendChild(flyer);
-    await waitForDurakCardImagesReady(flyer);
-    if (!targetCard.isConnected || !flyer.isConnected) {
+    const flyerImageReady = await waitForDurakCardImagesReady(flyer);
+    if (!flyerImageReady || !targetCard.isConnected || !flyer.isConnected) {
       finish();
       return;
     }
@@ -4951,18 +4984,18 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     }
     const rotationAt78 = landingRotation * 0.75 - 1.5;
     const rotationAt94 = landingRotation * 0.75 + 0.5;
-    const duration = 1160;
+    const duration = 580;
     timer = window.setTimeout(() => {
       if (!flyer?.isConnected) return finish();
       requestAnimationFrame(() => {
         const arcHeight = Math.min(76, Math.max(34, Math.abs(dx) * 0.09 + Math.abs(dy) * 0.045));
         flightAnimation = flyer.animate([
-          { offset: 0, transform: "translate3d(0,0,0) rotate(-16deg) scale(.62)" },
-          { offset: 0.18, transform: `translate3d(${dx * 0.18}px,${dy * 0.18 - arcHeight}px,0) rotate(-10deg) scale(.78)` },
-          { offset: 0.48, transform: `translate3d(${dx * 0.48}px,${dy * 0.48 - arcHeight * 1.12}px,0) rotate(-4deg) scale(.94)` },
-          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.38}px,0) rotate(${rotationAt78}deg) scale(.985)` },
-          { offset: 0.94, transform: `translate3d(${dx * 0.94}px,${dy * 0.94}px,0) rotate(${rotationAt94}deg) scale(1)` },
-          { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(${landingRotation}deg) scale(1)` }
+          { offset: 0, transform: `translate3d(0,0,0) rotate(-16deg) scale(${landingScaleX * 0.62},${landingScaleY * 0.62})` },
+          { offset: 0.18, transform: `translate3d(${dx * 0.18}px,${dy * 0.18 - arcHeight}px,0) rotate(-10deg) scale(${landingScaleX * 0.78},${landingScaleY * 0.78})` },
+          { offset: 0.48, transform: `translate3d(${dx * 0.48}px,${dy * 0.48 - arcHeight * 1.12}px,0) rotate(-4deg) scale(${landingScaleX * 0.94},${landingScaleY * 0.94})` },
+          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.38}px,0) rotate(${rotationAt78}deg) scale(${landingScaleX * 0.985},${landingScaleY * 0.985})` },
+          { offset: 0.94, transform: `translate3d(${dx * 0.94}px,${dy * 0.94}px,0) rotate(${rotationAt94}deg) scale(${landingScaleX},${landingScaleY})` },
+          { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(${landingRotation}deg) scale(${landingScaleX},${landingScaleY})` }
         ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         flightAnimation.onfinish = () => {
           playDurakSound("card");

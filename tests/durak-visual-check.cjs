@@ -607,7 +607,10 @@ const path = require("node:path");
       return {
         durationMs: animation?.effect?.getTiming()?.duration ?? null,
         imageCardClass: !!card?.classList.contains("image-card"),
-        imageObjectFit: card?.querySelector("img") ? getComputedStyle(card.querySelector("img")).objectFit : null
+        imageObjectFit: card?.querySelector("img") ? getComputedStyle(card.querySelector("img")).objectFit : null,
+        imageRendering: card?.querySelector("img") ? getComputedStyle(card.querySelector("img")).imageRendering : null,
+        imageNaturalWidth: card?.querySelector("img")?.naturalWidth ?? 0,
+        imageNaturalHeight: card?.querySelector("img")?.naturalHeight ?? 0
       };
     });
     const incomingTravelDistance = incomingStart && incomingMid
@@ -623,12 +626,14 @@ const path = require("node:path");
       throw new Error("Летящая карта соперника должна заметно смещаться к столу во время анимации: " +
         JSON.stringify({ incomingStart, incomingMid, incomingTravelDistance }));
     }
-    if (incomingFlightTiming.durationMs !== 1160 || !incomingFlightTiming.imageCardClass) {
-      throw new Error("Полёт соперника должен длиться 1160 мс и сохранять оформление карты до посадки: " +
+    if (incomingFlightTiming.durationMs !== 580 || !incomingFlightTiming.imageCardClass ||
+        incomingFlightTiming.imageRendering !== "auto" ||
+        incomingFlightTiming.imageNaturalWidth < 56 || incomingFlightTiming.imageNaturalHeight < 84) {
+      throw new Error("Полёт соперника должен длиться 580 мс и сохранять оформление карты до посадки: " +
         JSON.stringify(incomingFlightTiming));
     }
-    // At roughly 760ms the slightly faster flight must still be in the air, not already snapped onto the table.
-    await page.waitForTimeout(500);
+    // At roughly 360ms the faster flight should still be moving, not snapped onto the table.
+    await page.waitForTimeout(100);
     if (!(await incomingFlyer.count())) {
       throw new Error("Замедленная анимация соперника завершилась раньше времени");
     }
@@ -696,6 +701,9 @@ const path = require("node:path");
         imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
         imageVisible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
         imageObjectFit: style?.objectFit || null,
+        imageRendering: style?.imageRendering || null,
+        imageNaturalWidth: image?.naturalWidth ?? 0,
+        imageNaturalHeight: image?.naturalHeight ?? 0,
         durationMs: animation?.effect?.getTiming()?.duration ?? null
       };
     });
@@ -711,16 +719,18 @@ const path = require("node:path");
       timing: incomingDefenseImage
     }, null, 2));
     if (!incomingDefenseImage.cardExists || !incomingDefenseImage.imageLoaded ||
-        !incomingDefenseImage.imageVisible || incomingDefenseImage.imageObjectFit !== "fill") {
+        !incomingDefenseImage.imageVisible || incomingDefenseImage.imageObjectFit !== "fill" ||
+        incomingDefenseImage.imageRendering !== "auto" ||
+        incomingDefenseImage.imageNaturalWidth < 56 || incomingDefenseImage.imageNaturalHeight < 84) {
       throw new Error("Лицо карты защиты должно быть загружено и полностью видно в полёте: " +
         JSON.stringify(incomingDefenseImage));
     }
-    if (incomingDefenseImage.durationMs !== 1160 || incomingDefenseDistance < 10) {
-      throw new Error("Анимация защиты должна лететь к столу 1160 мс как атака: " +
+    if (incomingDefenseImage.durationMs !== 580 || incomingDefenseDistance < 10) {
+      throw new Error("Анимация защиты должна лететь к столу 580 мс как атака: " +
         JSON.stringify({ incomingDefenseImage, incomingDefenseDistance }));
     }
-    await page.waitForTimeout(500);
-    if (!(await incomingDefenseFlyer.count())) {
+    await page.waitForTimeout(100);
+    if (!(await incomingDefenseFlyer.count())) {}
       throw new Error("Анимация защиты соперника завершилась раньше времени");
     }
     await page.waitForFunction(
@@ -736,10 +746,15 @@ const path = require("node:path");
         visible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
         width: rect?.width ?? 0,
         height: rect?.height ?? 0,
-        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0)
+        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+        imageNaturalWidth: image?.naturalWidth ?? 0,
+        imageNaturalHeight: image?.naturalHeight ?? 0,
+        imageRendering: image ? getComputedStyle(image).imageRendering : null
       };
     });
     if (!defenseLanding.visible || !defenseLanding.imageLoaded ||
+        defenseLanding.imageNaturalWidth < 56 || defenseLanding.imageNaturalHeight < 84 ||
+        defenseLanding.imageRendering !== "auto" ||
         Math.abs(defenseLanding.width - 56) > 0.5 ||
         Math.abs(defenseLanding.height - 84) > 0.5) {
       throw new Error("Карта защиты должна остаться видимой на столе после полёта: " + JSON.stringify(defenseLanding));
