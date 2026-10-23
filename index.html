@@ -4361,6 +4361,18 @@ function revealPendingDurakDealTargets(dealTargets) {
 
 async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   const isInitialDeal = options.initial === true;
+
+  // Важно для Telegram Android WebView: сначала скачиваем и декодируем все
+  // изображения карт, и только потом начинаем перелёт. Иначе PNG (например,
+  // валет пик) может сначала показаться в руке, анимация запустится позже.
+  // Карты-цели уже скрыты до вставки в руку, поэтому ожидание не даёт вспышки.
+  if (durakCardAssetsReady && typeof durakCardAssetsReady.then === "function") {
+    try {
+      await durakCardAssetsReady;
+    } catch (error) {
+      console.warn("Не удалось дождаться подготовки изображений карт:", error);
+    }
+  }
   if (!Array.isArray(dealTargets) || !dealTargets.length) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     revealPendingDurakDealTargets(dealTargets);
@@ -7738,3 +7750,30 @@ if (gamesSection) {
 </style>
 </body>
 </html>
+
+
+/* ALLCOINS: читаемые ники в квадратных карточках игроков */
+#durakGame .durak-player {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+#durakGame .durak-player-name {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  line-height: 1.25 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+#durakGame .durak-player-meta {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+}
