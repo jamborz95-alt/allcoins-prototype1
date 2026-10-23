@@ -719,10 +719,10 @@ const path = require("node:path");
       timing: incomingDefenseImage
     }, null, 2));
     if (!incomingDefenseImage.cardExists || !incomingDefenseImage.imageLoaded ||
-        !incomingDefenseImage.imageVisible || incomingDefenseImage.imageObjectFit !== "fill" ||
+        !incomingDefenseImage.imageVisible || incomingDefenseImage.imageObjectFit !== "contain" ||
         incomingDefenseImage.imageRendering !== "auto" ||
         incomingDefenseImage.imageNaturalWidth < 56 || incomingDefenseImage.imageNaturalHeight < 84) {
-      throw new Error("Лицо карты защиты должно быть загружено и полностью видно в полёте: " +
+      throw new Error("Лицо карты защиты должно быть полностью загружено, чётким и видимым в полёте: " +
         JSON.stringify(incomingDefenseImage));
     }
     if (incomingDefenseImage.durationMs !== 580 || incomingDefenseDistance < 10) {
