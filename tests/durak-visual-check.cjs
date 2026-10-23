@@ -433,8 +433,8 @@ const path = require("node:path");
         visible: style.visibility !== "hidden" && Number(style.opacity) > 0.9,
         x: rect.x,
         y: rect.y,
-        width: rect.width,
-        height: rect.height
+        width: element.offsetWidth,
+        height: element.offsetHeight
       };
     });
     await page.screenshot({ path: path.join(out, "04b-game-card-landed-before-server-reply.png"), fullPage: true });
