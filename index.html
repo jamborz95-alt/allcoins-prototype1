@@ -1991,6 +1991,152 @@
 }
 
 </style>
+
+<style id="allcoins-lotto-online-style">
+  #lottoGame.lotto-fullscreen {
+    position:fixed !important; inset:0 !important; z-index:2000 !important;
+    width:100vw !important; height:100vh !important; height:100dvh !important;
+    max-width:none !important; margin:0 !important;
+    padding:max(12px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom)) !important;
+    overflow-y:auto !important; border:0 !important; border-radius:0 !important;
+    color:#21170f !important;
+    background:
+      radial-gradient(ellipse at 18% 0%, rgba(255,225,151,.28), transparent 45%),
+      repeating-linear-gradient(4deg, #9b5429 0px, #9b5429 5px, #87451f 7px, #a45f31 12px, #85431f 17px) !important;
+    font-family:Arial,sans-serif;
+  }
+  #lottoGame .lotto-header {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px; margin:10px 0 15px; border:2px solid #f3d59b;
+    border-radius:16px; color:#fff6df;
+    background:linear-gradient(135deg,#59321e,#7c4525);
+    box-shadow:0 5px 12px #3c190b66;
+  }
+  #lottoGame .lotto-header h2 { margin:0 0 5px; font-size:24px; }
+  #lottoGame .lotto-header p { margin:0; color:#f4d9ae; font-size:12px; line-height:1.4; }
+  #lottoGame .lotto-balance {
+    flex:0 0 auto; padding:9px 10px; border-radius:12px;
+    background:#f9e8be; color:#3b2413; font-weight:900; font-size:14px;
+    border:1px solid #b88c4f; white-space:nowrap;
+  }
+  #lottoGame .lotto-back {
+    width:100%; min-height:42px; margin:0 0 4px;
+    background:#382317 !important; color:#fff0d4 !important; border:1px solid #e5bf83 !important;
+  }
+  #lottoGame .lotto-section-heading { color:#fff4db; margin:14px 2px 8px; font-size:18px; font-weight:900; }
+  #lottoGame .lotto-explain {
+    color:#fff1d8; font-size:13px; line-height:1.5; margin:7px 2px 13px;
+  }
+  #lottoGame .lotto-rooms-list { display:flex; flex-direction:column; gap:9px; }
+  #lottoGame .lotto-room-card {
+    display:flex; align-items:center; gap:10px; padding:12px;
+    background:linear-gradient(145deg,#fdf5e2,#e7d4b3);
+    border:2px solid #b8874d; border-radius:14px;
+    box-shadow:0 4px 8px #451c0c55; color:#2e1b0e;
+  }
+  #lottoGame .lotto-room-ball {
+    display:flex; flex:0 0 53px; width:53px; height:53px; border-radius:50%;
+    align-items:center; justify-content:center; font-size:16px; font-weight:1000;
+    color:#4b2c12; border:3px solid #f9e1a6;
+    background:radial-gradient(circle at 32% 26%,#fff8da,#e8bd67 65%,#af722d);
+    box-shadow:inset 0 -3px 5px #6d401d44,0 2px 4px #0004;
+  }
+  #lottoGame .lotto-room-main { flex:1; min-width:0; }
+  #lottoGame .lotto-room-title { font-weight:900; font-size:17px; margin-bottom:4px; }
+  #lottoGame .lotto-room-meta { color:#60452c; font-size:12px; line-height:1.45; }
+  #lottoGame .lotto-room-open {
+    flex:0 0 auto; padding:10px 11px !important; border-radius:10px !important;
+    background:linear-gradient(#ffe7a8,#deb25a) !important; color:#42240d !important;
+    border:1px solid #a9712a !important; font-size:12px; max-width:110px;
+  }
+  #lottoGame .lotto-status {
+    min-height:22px; padding:9px 11px; margin:10px 0; border-radius:10px;
+    color:#fff4d6; background:#43281dba; font-size:13px; line-height:1.45;
+  }
+  #lottoGame .lotto-room-top {
+    padding:12px; border-radius:13px; background:#f9ecd3; border:2px solid #b8874d;
+    box-shadow:0 4px 8px #451c0c55; color:#3c2414;
+  }
+  #lottoGame .lotto-room-topline { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  #lottoGame .lotto-current-ball {
+    display:flex; align-items:center; justify-content:center; flex:0 0 78px;
+    width:78px; height:78px; border-radius:50%; border:4px solid #f7e1a4;
+    background:radial-gradient(circle at 30% 25%,#fffdf1,#edc879 58%,#be8538);
+    color:#41260f; font-size:38px; font-weight:1000;
+    box-shadow:inset 0 -5px 8px #75481933,0 4px 7px #0003;
+  }
+  #lottoGame .lotto-room-stats { flex:1; min-width:0; font-size:13px; line-height:1.6; }
+  #lottoGame .lotto-called-strip { display:flex; flex-wrap:wrap; gap:4px; margin-top:9px; }
+  #lottoGame .lotto-called-chip {
+    display:flex; align-items:center; justify-content:center; width:27px; height:27px;
+    border-radius:50%; background:#d6c3a2; border:1px solid #9a8059; color:#5b4229;
+    font-size:11px; font-weight:800;
+  }
+  #lottoGame .lotto-called-chip.latest { background:#f4d578; color:#42250f; border-color:#b17d2a; }
+  #lottoGame .lotto-ticket {
+    margin:12px 0; padding:8px; background:#fcfbf5;
+    border:3px solid #ac8251; border-radius:11px;
+    box-shadow:0 5px 10px #3c190b66;
+  }
+  #lottoGame .lotto-ticket-title {
+    display:flex; justify-content:space-between; gap:8px; margin:0 0 7px;
+    color:#4c321a; font-size:13px; font-weight:900;
+  }
+  #lottoGame .lotto-ticket-grid {
+    display:grid; grid-template-columns:repeat(9,minmax(0,1fr));
+    gap:2px; padding:2px; background:#bdb7ac; border-radius:5px;
+  }
+  #lottoGame .lotto-number {
+    display:flex !important; align-items:center !important; justify-content:center !important;
+    min-width:0 !important; width:100% !important; min-height:0 !important;
+    aspect-ratio:1 / 1.05; padding:0 !important; margin:0 !important;
+    border:1px solid #ddd8ce !important; border-radius:2px !important;
+    background:#fff !important; color:#101010 !important;
+    font-size:clamp(10px,3.8vw,19px) !important; font-weight:500 !important;
+    line-height:1 !important; box-shadow:none !important;
+  }
+  #lottoGame .lotto-number.lotto-empty { background:#fbfaf7 !important; border-color:#e8e5dd !important; }
+  #lottoGame button.lotto-number.lotto-markable { background:#fff2ad !important; border:2px solid #d49a31 !important; cursor:pointer; }
+  #lottoGame .lotto-number.lotto-marked {
+    border-radius:50% !important; background:#9670b8 !important; border:2px solid #775293 !important;
+    color:#fff !important; font-weight:900 !important; box-shadow:inset 0 1px 3px #45305e88 !important;
+  }
+  #lottoGame .lotto-action {
+    width:100%; min-height:46px; margin:6px 0 10px;
+    color:#3b210c !important; background:linear-gradient(#ffe9ae,#dba84f) !important;
+    border:1px solid #a7732e !important; box-shadow:0 3px 5px #44200d44;
+  }
+  #lottoGame .lotto-action:disabled { opacity:.5; }
+  #lottoGame .lotto-light-button {
+    width:100%; margin:5px 0; background:#f5e6c9 !important; color:#47301a !important;
+    border:1px solid #ac8251 !important;
+  }
+  #lottoGame .lotto-small-note { font-size:12px; line-height:1.45; color:#fff1d8; margin:8px 2px; }
+  @media (max-width:390px) {
+    #lottoGame.lotto-fullscreen { padding-left:8px !important; padding-right:8px !important; }
+    #lottoGame .lotto-room-card { padding:8px; gap:7px; }
+    #lottoGame .lotto-room-ball { width:45px; height:45px; flex-basis:45px; font-size:13px; }
+    #lottoGame .lotto-room-title { font-size:15px; }
+    #lottoGame .lotto-room-open { padding:8px 7px !important; max-width:90px; }
+    #lottoGame .lotto-number { font-size:clamp(9px,3.4vw,15px) !important; }
+  }
+  #games .lotto-entry-appicon {
+    position:relative; display:flex; align-items:center; justify-content:center;
+    width:82px; height:82px; flex:0 0 82px; border-radius:22px;
+    background:linear-gradient(145deg,#a75a2c,#f0bd69 58%,#7d3e20);
+    border:2px solid #f8d9a0; box-shadow:0 4px 8px #0005; overflow:hidden;
+  }
+  #games .lotto-entry-ball {
+    position:absolute; display:flex; align-items:center; justify-content:center;
+    width:43px; height:43px; border-radius:50%; font-size:19px; font-weight:1000;
+    color:#4b2c12; border:2px solid #ffe8b1;
+    background:radial-gradient(circle at 30% 25%,#fff9df,#edc46c 68%,#b97931);
+    box-shadow:0 3px 5px #4b1e0a66;
+  }
+  #games .lotto-entry-ball.one { left:2px; top:5px; }
+  #games .lotto-entry-ball.two { right:1px; top:18px; }
+  #games .lotto-entry-ball.three { left:18px; bottom:0; }
+</style>
 </head>
 <body>
 <div class="app">
@@ -2034,6 +2180,16 @@
         <span class="durak-app-corner">✦</span>
       </span>
       <span class="game-app-title">Дурак Онлайн</span>
+    </button>
+  </div>
+  <div class="game-app-tile" id="lottoEntry">
+    <button type="button" id="openLotto" class="game-app-launch" aria-label="Открыть игру Лото Онлайн">
+      <span class="lotto-entry-appicon" aria-hidden="true">
+        <span class="lotto-entry-ball one">6</span>
+        <span class="lotto-entry-ball two">27</span>
+        <span class="lotto-entry-ball three">9</span>
+      </span>
+      <span class="game-app-title">Лото Онлайн</span>
     </button>
   </div>
 </div>
@@ -3102,6 +3258,7 @@
 
 
 
+<div id="legacyLottoPanel" style="display:none">
 <div class="card">
   <h3>🎱 Лото Онлайн</h3>
       
@@ -3159,7 +3316,10 @@
 </button>
     </div>
     <div class="notice">Игры пока демонстрационные: онлайн-соперники, реальные розыгрыши и ставки между игроками ещё не подключены.</div>
-  </section>
+  
+</div>
+
+</section>
 
   <section id="withdraw" class="hidden">
     <div class="section-title">💳 Вывод</div>
@@ -3186,6 +3346,48 @@
       <div class="status" id="profileStatus"></div>
     </div>
   </section>
+</div>
+
+
+<div id="lottoGame" class="card" style="display:none;">
+  <button type="button" id="onlineLottoBack" class="secondary lotto-back">← Назад к играм</button>
+  <div class="lotto-header">
+    <div>
+      <h2>🎱 Лото Онлайн</h2>
+      <p>Комнаты обновляются каждые 3 минуты<br>До 3 билетов на игрока в каждой комнате</p>
+    </div>
+    <div class="lotto-balance"><span id="onlineLottoBalance">0</span><br>ALLCOINS</div>
+  </div>
+
+  <div id="onlineLottoLobbyView">
+    <div class="lotto-section-heading">Комнаты и ставки</div>
+    <div class="lotto-explain">Выбери комнату по цене билета. Раунд начинается автоматически через 3 минуты после открытия комнаты. Если при старте тебя нет в игре, билеты будут отмечать выпавшие числа автоматически.</div>
+    <button type="button" id="onlineLottoRefresh" class="lotto-light-button">↻ Обновить комнаты</button>
+    <div id="onlineLottoRoomsList" class="lotto-rooms-list"></div>
+    <div id="onlineLottoLobbyStatus" class="lotto-status">Загружаем комнаты…</div>
+  </div>
+
+  <div id="onlineLottoRoomView" class="hidden">
+    <button type="button" id="onlineLottoRoomsBack" class="lotto-light-button">← К комнатам</button>
+    <div class="lotto-section-heading" id="onlineLottoRoomTitle">Комната лото</div>
+    <div class="lotto-room-top">
+      <div class="lotto-room-topline">
+        <div class="lotto-room-stats">
+          <div>Билет: <b id="onlineLottoStake">0 AC</b></div>
+          <div>Банк: <b id="onlineLottoPot">0 AC</b></div>
+          <div>Билеты у тебя: <b id="onlineLottoOwned">0 / 3</b></div>
+          <div>Числа: <b id="onlineLottoDrawCount">0 / 90</b></div>
+        </div>
+        <div id="onlineLottoCurrentBall" class="lotto-current-ball">—</div>
+      </div>
+      <div id="onlineLottoCalledStrip" class="lotto-called-strip"></div>
+    </div>
+    <div id="onlineLottoRoomStatus" class="lotto-status">Ожидаем начало раунда.</div>
+    <button type="button" id="onlineLottoBuyTicket" class="lotto-action">🎟 Купить билет</button>
+    <div class="lotto-small-note">Во время игры нажимай на число в билете, когда оно выпало. Подсвеченные жёлтым числа уже назывались. Фиолетовая отметка означает, что число зачёркнуто.</div>
+    <div id="onlineLottoTickets"></div>
+    <button type="button" id="onlineLottoRoomRefresh" class="lotto-light-button">↻ Обновить поле</button>
+  </div>
 </div>
 
 <nav class="nav">
@@ -7860,6 +8062,301 @@ document.querySelectorAll(".nav button").forEach(button => {
     $(button.dataset.page).classList.remove("hidden");
   };
 });
+
+
+// ===== ЛОТО ОНЛАЙН: отдельная страница, серверные билеты и автоматический розыгрыш =====
+let onlineLottoRoomId = null;
+let onlineLottoRoomCache = null;
+let onlineLottoLobbyRoomsCache = [];
+let onlineLottoStateTimer = null;
+let onlineLottoLobbyTimer = null;
+let onlineLottoActionBusy = false;
+
+function setOnlineLottoStatus(targetId, message) {
+  const element = $(targetId);
+  if (element) element.textContent = message || "";
+}
+
+function formatLottoSeconds(value) {
+  const seconds = Math.max(0, Number(value) || 0);
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return minutes ? (minutes + " мин " + remaining + " сек") : (remaining + " сек");
+}
+
+function openOnlineLotto() {
+  $("lottoGame").style.display = "block";
+  $("lottoGame").classList.add("lotto-fullscreen");
+  $("onlineLottoLobbyView").classList.remove("hidden");
+  $("onlineLottoRoomView").classList.add("hidden");
+  onlineLottoRoomId = null;
+  if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
+  if (onlineLottoLobbyTimer) clearInterval(onlineLottoLobbyTimer);
+  onlineLottoStateTimer = null;
+  onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
+  loadOnlineLottoRooms();
+  if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
+    tg.BackButton.show();
+    tg.BackButton.onClick(closeOnlineLotto);
+  }
+}
+
+function closeOnlineLotto() {
+  if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
+  if (onlineLottoLobbyTimer) clearInterval(onlineLottoLobbyTimer);
+  onlineLottoStateTimer = null;
+  onlineLottoLobbyTimer = null;
+  onlineLottoRoomId = null;
+  $("lottoGame").classList.remove("lotto-fullscreen");
+  $("lottoGame").style.display = "none";
+  if (tg && tg.BackButton && typeof tg.BackButton.hide === "function") tg.BackButton.hide();
+}
+
+async function loadOnlineLottoRooms() {
+  try {
+    const result = await apiRequest("/api/lotto/rooms/list");
+    onlineLottoLobbyRoomsCache = Array.isArray(result.rooms) ? result.rooms : [];
+    if (Number.isFinite(Number(result.balance))) {
+      state.balance = Number(result.balance);
+      $("onlineLottoBalance").textContent = state.balance.toLocaleString("ru-RU");
+      render();
+    }
+    renderOnlineLottoRooms();
+    setOnlineLottoStatus("onlineLottoLobbyStatus", "Комнат: " + onlineLottoLobbyRoomsCache.length + ". Новые комнаты появляются каждые 3 минуты.");
+  } catch (error) {
+    setOnlineLottoStatus("onlineLottoLobbyStatus", "Не удалось загрузить комнаты: " + String(error.message || error).slice(0, 180));
+  }
+}
+
+function renderOnlineLottoRooms() {
+  const list = $("onlineLottoRoomsList");
+  list.textContent = "";
+  if (!onlineLottoLobbyRoomsCache.length) {
+    const empty = document.createElement("div");
+    empty.className = "lotto-status";
+    empty.textContent = "Пока нет доступных комнат. Список обновится автоматически.";
+    list.appendChild(empty);
+    return;
+  }
+  onlineLottoLobbyRoomsCache.forEach(room => {
+    const card = document.createElement("div");
+    card.className = "lotto-room-card";
+    const ball = document.createElement("div");
+    ball.className = "lotto-room-ball";
+    ball.textContent = Number(room.stake).toLocaleString("ru-RU");
+    const main = document.createElement("div");
+    main.className = "lotto-room-main";
+    const title = document.createElement("div");
+    title.className = "lotto-room-title";
+    title.textContent = "Комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+    const meta = document.createElement("div");
+    meta.className = "lotto-room-meta";
+    const statusText = room.status === "waiting"
+      ? "Старт через " + formatLottoSeconds(Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000))
+      : room.status === "playing"
+        ? "Игра идёт · выпало " + Number(room.drawnCount || 0) + " из 90"
+        : (room.resultNote || "Раунд завершён");
+    meta.textContent = statusText + " · игроков: " + Number(room.playersCount || 0) +
+      " · билетов: " + Number(room.ticketCount || 0) +
+      " · банк: " + Number(room.pot || 0).toLocaleString("ru-RU") + " AC" +
+      (Number(room.myTickets || 0) ? " · твоих билетов: " + Number(room.myTickets) + "/3" : "");
+    main.appendChild(title);
+    main.appendChild(meta);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "lotto-room-open";
+    button.textContent = room.status === "waiting"
+      ? (Number(room.myTickets || 0) ? "Открыть" : "Войти")
+      : room.status === "playing" ? "Играть" : "Результат";
+    button.onclick = () => openOnlineLottoRoom(room.id);
+    card.appendChild(ball);
+    card.appendChild(main);
+    card.appendChild(button);
+    list.appendChild(card);
+  });
+}
+
+async function openOnlineLottoRoom(roomId) {
+  onlineLottoRoomId = String(roomId);
+  $("onlineLottoLobbyView").classList.add("hidden");
+  $("onlineLottoRoomView").classList.remove("hidden");
+  if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
+  onlineLottoStateTimer = setInterval(() => {
+    if (document.visibilityState === "visible") loadOnlineLottoState(true);
+  }, 2000);
+  await loadOnlineLottoState(false);
+}
+
+async function loadOnlineLottoState(silent) {
+  if (!onlineLottoRoomId) return;
+  try {
+    const result = await apiRequest("/api/lotto/room/state", {
+      roomId: onlineLottoRoomId,
+      visible: document.visibilityState === "visible"
+    });
+    onlineLottoRoomCache = result.room;
+    if (Number.isFinite(Number(result.balance))) {
+      state.balance = Number(result.balance);
+      $("onlineLottoBalance").textContent = state.balance.toLocaleString("ru-RU");
+      render();
+    }
+    renderOnlineLottoRoom(result.room, result.tickets || []);
+    if (result.room.status === "finished") {
+      if (result.room.winnerTelegramId && String(result.room.winnerTelegramId) === String(state.user && state.user.id)) {
+        setOnlineLottoStatus("onlineLottoRoomStatus", "🎉 Ты выиграл " + Number(result.room.prize || 0).toLocaleString("ru-RU") + " AC! " + (result.room.resultNote || ""));
+      } else {
+        setOnlineLottoStatus("onlineLottoRoomStatus", (result.room.winnerName ? "Победитель: " + result.room.winnerName + ". " : "") + (result.room.resultNote || "Раунд завершён."));
+      }
+    } else if (!silent) {
+      setOnlineLottoStatus("onlineLottoRoomStatus", result.room.status === "waiting" ? "Покупка билетов открыта. Раунд скоро начнётся." : "Нажимай на выпавшие числа в своих билетах.");
+    }
+  } catch (error) {
+    if (!silent) setOnlineLottoStatus("onlineLottoRoomStatus", "Ошибка комнаты: " + String(error.message || error).slice(0, 160));
+  }
+}
+
+function renderOnlineLottoRoom(room, tickets) {
+  $("onlineLottoRoomTitle").textContent = "🎱 Лото · комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+  $("onlineLottoStake").textContent = Number(room.stake).toLocaleString("ru-RU") + " AC";
+  $("onlineLottoPot").textContent = Number(room.pot || 0).toLocaleString("ru-RU") + " AC";
+  $("onlineLottoOwned").textContent = tickets.length + " / 3";
+  const drawn = Array.isArray(room.drawnNumbers) ? room.drawnNumbers.map(Number) : [];
+  $("onlineLottoDrawCount").textContent = drawn.length + " / 90";
+  $("onlineLottoCurrentBall").textContent = drawn.length ? String(drawn[drawn.length - 1]) : "—";
+  const strip = $("onlineLottoCalledStrip");
+  strip.textContent = "";
+  drawn.slice(-10).reverse().forEach((number, index) => {
+    const chip = document.createElement("span");
+    chip.className = "lotto-called-chip" + (index === 0 ? " latest" : "");
+    chip.textContent = String(number);
+    strip.appendChild(chip);
+  });
+  const buyButton = $("onlineLottoBuyTicket");
+  buyButton.disabled = room.status !== "waiting" || tickets.length >= 3 || onlineLottoActionBusy;
+  buyButton.textContent = tickets.length >= 3
+    ? "✓ Куплено 3 из 3 билетов"
+    : "🎟 Купить билет · " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+  const ticketsRoot = $("onlineLottoTickets");
+  ticketsRoot.textContent = "";
+  if (!tickets.length) {
+    const empty = document.createElement("div");
+    empty.className = "lotto-ticket";
+    empty.textContent = room.status === "waiting"
+      ? "Ты ещё не купил билет. Купи билет, чтобы участвовать в розыгрыше."
+      : "В этой комнате у тебя нет купленных билетов.";
+    ticketsRoot.appendChild(empty);
+  }
+  tickets.forEach(ticket => {
+    const ticketElement = document.createElement("div");
+    ticketElement.className = "lotto-ticket";
+    const ticketTitle = document.createElement("div");
+    ticketTitle.className = "lotto-ticket-title";
+    const ticketName = document.createElement("span");
+    ticketName.textContent = "Билет №" + Number(ticket.ticketNo);
+    const markCount = document.createElement("span");
+    const ticketValues = (ticket.numbers || []).flat().filter(n => Number.isInteger(n));
+    const marked = new Set((ticket.markedNumbers || []).map(Number));
+    markCount.textContent = marked.size + " / " + ticketValues.length;
+    ticketTitle.appendChild(ticketName);
+    ticketTitle.appendChild(markCount);
+    ticketElement.appendChild(ticketTitle);
+    const grid = document.createElement("div");
+    grid.className = "lotto-ticket-grid";
+    (ticket.numbers || []).forEach(row => {
+      row.forEach(number => {
+        if (number == null) {
+          const blank = document.createElement("div");
+          blank.className = "lotto-number lotto-empty";
+          grid.appendChild(blank);
+          return;
+        }
+        const isMarked = marked.has(Number(number));
+        const isCalled = drawn.includes(Number(number));
+        const canManualMark = room.status === "playing" && isCalled && !isMarked && !room.autoPlay;
+        const cell = document.createElement(canManualMark ? "button" : "div");
+        if (canManualMark) {
+          cell.type = "button";
+          cell.onclick = () => markOnlineLottoNumber(ticket.id, Number(number));
+        }
+        cell.className = "lotto-number";
+        if (isMarked) cell.classList.add("lotto-marked");
+        else if (canManualMark) cell.classList.add("lotto-markable");
+        cell.textContent = String(number);
+        grid.appendChild(cell);
+      });
+    });
+    ticketElement.appendChild(grid);
+    ticketsRoot.appendChild(ticketElement);
+  });
+  if (room.status === "waiting") {
+    const seconds = Math.max(0, Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000));
+    setOnlineLottoStatus("onlineLottoRoomStatus", "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
+  } else if (room.status === "playing") {
+    setOnlineLottoStatus("onlineLottoRoomStatus", room.autoPlay
+      ? "Автоматический режим: выпавшие числа на твоих билетах отмечаются сами."
+      : "Твой ход: нажимай на числа, которые уже выпали и подсвечены жёлтым.");
+  } else {
+    setOnlineLottoStatus("onlineLottoRoomStatus", room.resultNote || "Раунд завершён.");
+  }
+}
+
+async function buyOnlineLottoTicket() {
+  if (!onlineLottoRoomId || onlineLottoActionBusy) return;
+  onlineLottoActionBusy = true;
+  $("onlineLottoBuyTicket").disabled = true;
+  try {
+    const result = await apiRequest("/api/lotto/ticket/buy", { roomId: onlineLottoRoomId });
+    state.balance = Number(result.balance);
+    $("onlineLottoBalance").textContent = state.balance.toLocaleString("ru-RU");
+    render();
+    setOnlineLottoStatus("onlineLottoRoomStatus", "Билет куплен. Номер билета: " + result.ticket.ticketNo + ". Ставка списана с баланса.");
+    await loadOnlineLottoState(true);
+    await loadOnlineLottoRooms();
+  } catch (error) {
+    setOnlineLottoStatus("onlineLottoRoomStatus", String(error.message || error).slice(0, 180));
+  } finally {
+    onlineLottoActionBusy = false;
+    if (onlineLottoRoomCache) {
+      // Перерисовка состояния вернёт правильную доступность кнопки.
+      await loadOnlineLottoState(true);
+    }
+  }
+}
+
+async function markOnlineLottoNumber(ticketId, number) {
+  if (!onlineLottoRoomId || onlineLottoActionBusy) return;
+  onlineLottoActionBusy = true;
+  try {
+    const result = await apiRequest("/api/lotto/number/mark", {
+      roomId: onlineLottoRoomId,
+      ticketId: String(ticketId),
+      number: number
+    });
+    if (result.won) setOnlineLottoStatus("onlineLottoRoomStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
+    await loadOnlineLottoState(true);
+  } catch (error) {
+    setOnlineLottoStatus("onlineLottoRoomStatus", String(error.message || error).slice(0, 180));
+  } finally {
+    onlineLottoActionBusy = false;
+    await loadOnlineLottoState(true);
+  }
+}
+
+$("openLotto").onclick = openOnlineLotto;
+$("onlineLottoBack").onclick = closeOnlineLotto;
+$("onlineLottoRefresh").onclick = loadOnlineLottoRooms;
+$("onlineLottoRoomsBack").onclick = async () => {
+  if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
+  onlineLottoStateTimer = null;
+  onlineLottoRoomId = null;
+  $("onlineLottoRoomView").classList.add("hidden");
+  $("onlineLottoLobbyView").classList.remove("hidden");
+  await loadOnlineLottoRooms();
+  if (!onlineLottoLobbyTimer) onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
+};
+$("onlineLottoRoomRefresh").onclick = () => loadOnlineLottoState(false);
+$("onlineLottoBuyTicket").onclick = buyOnlineLottoTicket;
+
 
 window.onerror = function(message, source, lineno, colno, error) {
   alert(
