@@ -523,6 +523,21 @@ const path = require("node:path");
       throw new Error("Новая атакующая карта соперника не начала полёт от его места к столу");
     }
     const incomingStart = await incomingFlyer.boundingBox();
+    const incomingFlightImage = await page.evaluate(() => {
+      const card = document.querySelector('.durak-flying-card[data-incoming-attack="true"]');
+      const image = card?.querySelector("img");
+      const style = image ? getComputedStyle(image) : null;
+      return {
+        cardExists: !!card,
+        imageExists: !!image,
+        imageVisible: !!style && style.visibility !== "hidden" && Number(style.opacity) > 0.9,
+        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0)
+      };
+    });
+    if (!incomingFlightImage.cardExists || !incomingFlightImage.imageExists ||
+        !incomingFlightImage.imageVisible || !incomingFlightImage.imageLoaded) {
+      throw new Error("Лицо PNG должно быть полностью загружено и видно уже во время полёта, а не появляться скачком при посадке: " + JSON.stringify(incomingFlightImage));
+    }
     // The reference-style incoming card now follows a slower curved flight.
     await page.waitForTimeout(525);
     const incomingEnd = await page.evaluate(() => {
