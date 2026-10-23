@@ -6543,7 +6543,10 @@ if (Array.isArray(game.hand)) {
     console.warn("Обновление Дурака:", error);
     const errorMessage = String(error?.message || "Проверь соединение и попробуй ещё раз.");
     const gameNotReady = /Игра ещё не подготовлена|Игра ещё не началась/i.test(errorMessage);
-    if (gameNotReady && currentDurakRoomId === roomId && durakGameNotReadyRetries < 15) {
+    if (durakLastGameWasTimeoutLoser && /HTTP 403|не состоишь в этой комнате/i.test(errorMessage)) {
+      showStatus("durakGameStatus", "Время хода истекло. Возвращаем тебя в меню комнат.");
+      window.setTimeout(() => { if (durakLastGameWasTimeoutLoser) returnDurakToRoomMenu(); }, 900);
+    } else if (gameNotReady && currentDurakRoomId === roomId && durakGameNotReadyRetries < 15) {
       durakGameNotReadyRetries += 1;
       showStatus("durakGameStatus", "Комната открыта. Ждём подготовки партии… (" + durakGameNotReadyRetries + "/15)");
       window.setTimeout(() => {
