@@ -2074,82 +2074,117 @@
 
     <h3>＋ Создание комнаты</h3>
 
-    <label class="muted">Название комнаты</label>
+    <style>
+      /* Компактные настройки: режим расположен сверху и виден до создания комнаты. */
+      #durakCreatePanel .durak-create-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 10px;
+        row-gap: 2px;
+        align-items: start;
+      }
+      #durakCreatePanel .durak-create-field { min-width: 0; }
+      #durakCreatePanel .durak-create-field.full { grid-column: 1 / -1; }
+      #durakCreatePanel .durak-create-field > label {
+        display: block;
+        margin: 3px 0 2px;
+        line-height: 1.2;
+        font-size: 12px;
+      }
+      #durakCreatePanel .durak-create-field input:not([type="range"]),
+      #durakCreatePanel .durak-create-field select {
+        width: 100%;
+        min-width: 0;
+        margin: 2px 0 6px;
+        padding: 9px 10px;
+        min-height: 38px;
+        font-size: 13px;
+        border-radius: 10px;
+      }
+      #durakCreatePanel .durak-create-field input[type="range"] {
+        width: 100%;
+        margin: 4px 0 7px;
+      }
+      #durakCreatePanel .durak-stake-summary {
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        align-items:center;
+        font-size:12px;
+        margin:2px 0;
+      }
+      #durakCreatePanel .durak-create-field .muted { font-size:11px; }
+      #durakCreatePanel { padding: 12px !important; }
+      #durakCreatePanel > h3 { margin: 2px 0 8px; font-size:17px; }
+      @media (max-width:330px) {
+        #durakCreatePanel .durak-create-grid { column-gap:7px; }
+        #durakCreatePanel .durak-create-field input:not([type="range"]),
+        #durakCreatePanel .durak-create-field select { padding:8px 6px; font-size:12px; }
+      }
+    </style>
 
-    <input
-      type="text"
-      id="roomName"
-      placeholder="Например, Комната ALLCOINS"
-      maxlength="30"
-    >
+    <div class="durak-create-grid">
+      <div class="durak-create-field full">
+        <label class="muted" for="roomName">Название комнаты</label>
+        <input type="text" id="roomName" placeholder="Например, Комната ALLCOINS" maxlength="30">
+      </div>
 
-    <label class="muted">Игроков в комнате</label>
+      <div class="durak-create-field">
+        <label class="muted" for="durakMode">🎴 Режим игры</label>
+        <select id="durakMode">
+          <option value="throw-in" selected>Подкидной</option>
+          <option value="transfer">Переводной</option>
+        </select>
+      </div>
 
-    <select id="players">
-      <option value="1">1 игрок + бот</option>
-      <option value="2" selected>2 игрока</option>
-      <option value="3">3 игрока</option>
-      <option value="4">4 игрока</option>
-      <option value="5">5 игроков</option>
-      <option value="6">6 игроков</option>
-    </select>
+      <div class="durak-create-field">
+        <label class="muted" for="durakDeck">🃏 Колода карт</label>
+        <select id="durakDeck">
+          <option value="24">24 карты</option>
+          <option value="36" selected>36 карт</option>
+          <option value="52">52 карты</option>
+        </select>
+      </div>
 
-    <label class="muted">💰 Ставка AC</label>
+      <div class="durak-create-field">
+        <label class="muted" for="players">Игроков в комнате</label>
+        <select id="players">
+          <option value="1">1 игрок + бот</option>
+          <option value="2" selected>2 игрока</option>
+          <option value="3">3 игрока</option>
+          <option value="4">4 игрока</option>
+          <option value="5">5 игроков</option>
+          <option value="6">6 игроков</option>
+        </select>
+      </div>
 
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-      <span class="muted">Минимум: 100 AC</span>
-      <b><span id="durakStakeValue">100</span> AC</b>
+      <div class="durak-create-field">
+        <label class="muted" for="durakSpeed">⚡ Скорость игры</label>
+        <select id="durakSpeed">
+          <option value="normal" selected>Обычная</option>
+          <option value="fast">Быстрая</option>
+        </select>
+      </div>
+
+      <div class="durak-create-field full">
+        <label class="muted">💰 Ставка AC</label>
+        <div class="durak-stake-summary">
+          <span class="muted">Минимум: 100 AC</span>
+          <b><span id="durakStakeValue">100</span> AC</b>
+        </div>
+        <input type="range" id="durakStakeSlider" min="100" max="1000000" step="100" value="100">
+        <label class="muted" for="durakStake">Или введи сумму вручную</label>
+        <input type="number" id="durakStake" value="100" min="100" step="1" inputmode="numeric" placeholder="Например, 100000">
+      </div>
+
+      <div class="durak-create-field full">
+        <label class="muted" for="durakPrivacy">🔒 Тип комнаты</label>
+        <select id="durakPrivacy">
+          <option value="public" selected>🌍 Открытая</option>
+          <option value="private">🔐 Приватная</option>
+        </select>
+      </div>
     </div>
-
-    <input
-      type="range"
-      id="durakStakeSlider"
-      min="100"
-      max="1000000"
-      step="100"
-      value="100"
-    >
-
-    <label class="muted">Или введи сумму вручную</label>
-
-    <input
-      type="number"
-      id="durakStake"
-      value="100"
-      min="100"
-      step="1"
-      inputmode="numeric"
-      placeholder="Например, 100000"
-    >
-
-    <label class="muted">🃏 Колода карт</label>
-
-    <select id="durakDeck">
-      <option value="24">24</option>
-      <option value="36" selected>36 карт</option>
-      <option value="52">52 карты</option>
-    </select>
-
-    <label class="muted">🎴 Режим игры</label>
-
-    <select id="durakMode">
-      <option value="throw-in" selected>Подкидной</option>
-      <option value="transfer">Переводной</option>
-    </select>
-
-    <label class="muted">⚡ Скорость игры</label>
-
-    <select id="durakSpeed">
-      <option value="normal" selected>Обычная</option>
-      <option value="fast">Быстрая</option>
-    </select>
-
-    <label class="muted">🔒 Тип комнаты</label>
-
-    <select id="durakPrivacy">
-      <option value="public" selected>🌍 Открытая</option>
-      <option value="private">🔐 Приватная</option>
-    </select>
 
     <button type="button" class="full" id="createRoom">
       ＋ Создать комнату
@@ -3464,7 +3499,8 @@ info.innerHTML =
   "<span class='muted small'>" +
   (room.playersCount ?? 1) + " из " + room.players +
   " игроков · Режим: " + (room.mode === "transfer" ? "Переводной" : "Подкидной") +
-  " · Колода: " + (Number(room.deck) || 36) + " карт · Ставка: " + room.stake + " AC</span>";
+  " · Колода: " + (Number(room.deck) === 24 ? "24 карты" : Number(room.deck) === 52 ? "52 карты" : "36 карт") +
+  " · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
