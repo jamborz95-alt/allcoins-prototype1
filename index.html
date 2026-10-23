@@ -2958,7 +2958,7 @@
       class="secondary full"
       style="margin-top:10px;"
     >
-      ← К списку комнат
+      🚪 Выйти из комнаты
     </button>
 
   </div>
@@ -7522,25 +7522,65 @@ $("durakStartButton").addEventListener("click", async function (event) {
 }, { capture: true });
 
 
-// Возврат к списку комнат
-$("durakLeaveWaiting").onclick = function () {
-  // Останавливаем автоматическое обновление списка игроков
+// Выход из комнаты до начала партии: сервер освобождает место или закрывает комнату создателя.
+$("durakLeaveWaiting").type = "button";
+$("durakLeaveWaiting").onclick = async function (event) {
+  event?.preventDefault?.();
+  const button = $("durakLeaveWaiting");
+  const roomId = durakWaitingRoom?.id || currentDurakRoomId;
+
+  if (!roomId) {
+    if (durakWaitingRefreshTimer !== null) {
+      clearInterval(durakWaitingRefreshTimer);
+      durakWaitingRefreshTimer = null;
+    }
+    durakWaitingRoom = null;
+    currentDurakRoomId = null;
+    $("durakWaitingPanel").style.display = "none";
+    $("durakRoomsPanel").style.display = "block";
+    await loadDurakRooms();
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "⏳ Выходим из комнаты…";
   if (durakWaitingRefreshTimer !== null) {
     clearInterval(durakWaitingRefreshTimer);
     durakWaitingRefreshTimer = null;
   }
 
-  // Закрываем комнату ожидания и возвращаем список комнат
-  $("durakWaitingPanel").style.display = "none";
-  $("durakRoomsPanel").style.display = "block";
+  try {
+    const result = await apiRequest("/api/durak/rooms/leave", { roomId });
+    if (!result?.ok) {
+      throw new Error(result?.error || "Не удалось выйти из комнаты.");
+    }
 
-  // Сбрасываем текущую комнату
-  durakWaitingRoom = null;
-  currentDurakRoomId = null;
-
-  // Обновляем список комнат
-  loadDurakRooms();
+    durakWaitingRoom = null;
+    currentDurakRoomId = null;
+    durakSeatDragging = false;
+    $("durakWaitingPlayers").innerHTML = "";
+    $("durakWaitingPanel").style.display = "none";
+    $("durakBoard").style.display = "none";
+    $("durakRoomsPanel").style.display = "block";
+    $("durakCreatePanel").style.display = "none";
+    $("durakRoomActions").style.display = "none";
+    await loadDurakRooms();
+    showStatus("durakGameStatus", result.message || "Ты вышел из комнаты.");
+  } catch (error) {
+    showStatus("durakWaitingStatus", "Не удалось выйти: " + String(error?.message || error).slice(0, 150));
+    // Если сервер сообщает, что игра уже началась, возобновляем проверку:
+    // экран автоматически переключится на партию при следующем опросе.
+    if (durakWaitingRoom?.id && durakWaitingRefreshTimer === null) {
+      durakWaitingRefreshTimer = setInterval(() => {
+        if (durakWaitingRoom?.id) refreshDurakWaitingRoom();
+      }, 2000);
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = "🚪 Выйти из комнаты";
+  }
 };
+
 // Загрузка комнат Дурак Онлайн с сервера
 async function loadDurakRooms() {
   if (!tg?.initData) {
@@ -8797,6 +8837,59 @@ if (gamesSection) {
     color: #a5ffc3 !important;
     box-shadow: 0 0 0 1px rgba(112,255,168,.18), 0 1px 5px rgba(0,0,0,.25) !important;
   }
+
+  /* Контрастные плашки ников: тёмный фон, светлое имя и хорошо читаемый статус. */
+  #durakGame.durak-fullscreen .durak-player {
+    background: linear-gradient(145deg, #183858 0%, #0c2035 58%, #071321 100%) !important;
+    border: 2px solid #f0d27a !important;
+    color: #fff8df !important;
+    box-shadow: 0 3px 9px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.16) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player.active {
+    border-color: #8ff0aa !important;
+    box-shadow: 0 0 0 2px rgba(143,240,170,.32), 0 3px 9px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.18) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player-name {
+    color: #fff9e8 !important;
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    line-height: 1.15 !important;
+    text-shadow: 0 1px 2px #000, 0 0 3px rgba(0,0,0,.8) !important;
+  }
+  #durakGame.durak-fullscreen .durak-player-meta {
+    color: #8ff5d3 !important;
+    font-size: 8px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    text-shadow: 0 1px 2px #000 !important;
+  }
+  #durakWaitingPlayers .durak-waiting-seat {
+    background: linear-gradient(145deg, #173654 0%, #0a1d30 100%) !important;
+    border: 2px solid #f0d27a !important;
+    color: #fff9e8 !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  }
+  #durakWaitingPlayers .durak-waiting-seat .durak-player-name {
+    color: #fff9e8 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    line-height: 1.2 !important;
+    text-shadow: 0 1px 2px #000 !important;
+  }
+  #durakWaitingPlayers .durak-waiting-seat .durak-player-meta {
+    color: #8ff5d3 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    opacity: 1 !important;
+    text-shadow: 0 1px 2px #000 !important;
+  }
+  #durakWaitingPanel #durakLeaveWaiting {
+    border: 1px solid #f0b3a8 !important;
+    background: linear-gradient(180deg, #612b32, #3e1720) !important;
+    color: #fff4f0 !important;
+    font-weight: 800 !important;
+  }
+
 </style>
 </body>
 </html>
