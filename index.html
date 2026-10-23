@@ -2125,6 +2125,7 @@
     <label class="muted">🃏 Колода карт</label>
 
     <select id="durakDeck">
+      <option value="24">24 карты (с 9 до туза)</option>
       <option value="36" selected>36 карт</option>
       <option value="52">52 карты</option>
     </select>
@@ -3455,7 +3456,7 @@ info.innerHTML =
   "<b>" + (room.name || ("Комната #" + (index + 1))) + "</b><br>" +
   "<span class='muted small'>" +
   (room.playersCount ?? 1) + " из " + room.players +
-  " игроков · Ставка: " + room.stake + " AC</span>";
+  " игроков · Колода: " + (Number(room.deck) || 36) + " карт · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
@@ -6911,6 +6912,21 @@ durakStakeInput.addEventListener("input", () => {
     );
   }
 });
+function syncDurakPlayerChoicesToDeck() {
+  const selectedDeck = Number($("durakDeck").value);
+  const maxPlayers = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
+  const select = $("players");
+  for (const option of select.options) {
+    const optionPlayers = Number(option.value);
+    option.disabled = optionPlayers > maxPlayers;
+  }
+  if (Number(select.value) > maxPlayers) {
+    select.value = String(maxPlayers);
+  }
+}
+$("durakDeck").addEventListener("change", syncDurakPlayerChoicesToDeck);
+syncDurakPlayerChoicesToDeck();
+
 $("createRoom").onclick = async () => {
   const players = Number($("players").value);
   const stake = Number($("durakStake").value);
@@ -6922,6 +6938,13 @@ const privacy = $("durakPrivacy").value;
 
   if (!Number.isInteger(players) || players < 1 || players > 6) {
     alert("Выбери от 1 игрока с ботом до 6 участников.");
+    return;
+  }
+  const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
+  if (players > maxPlayersForDeck) {
+    alert(deck === 24
+      ? "С колодой на 24 карты можно играть максимум втроём."
+      : "С колодой на 36 карт можно играть максимум впятером.");
     return;
   }
   const singlePlayerWithBot = players === 1;
@@ -6990,6 +7013,7 @@ if (stake > state.balance) {
       name: room.name || roomName,
       players: Number(room.max_players || roomCapacity),
       playersCount: 1,
+      deck: Number(room.deck) || deck,
       stake: Number(room.stake),
       status: "waiting",
       isOwner: true
@@ -7623,6 +7647,7 @@ async function loadDurakRooms() {
       name: room.name,
       players: Number(room.max_players),
       playersCount: Number(room.players_count),
+      deck: Number(room.deck) || 36,
 stake: Number(room.stake),
 status: room.status,
 isOwner: room.is_owner
