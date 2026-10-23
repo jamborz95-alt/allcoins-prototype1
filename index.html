@@ -5663,7 +5663,6 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
           .split(/\s+/)
           .filter(className => className && className !== "durak-landing-target")
           .join(" ");
-          .trim();
         const finalLeft = targetElement.style.left || "0px";
         const finalTop = targetElement.style.top || "0px";
         const finalWidth = targetElement.offsetWidth || targetRect.width;
