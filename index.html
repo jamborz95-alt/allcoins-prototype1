@@ -8247,6 +8247,7 @@ let lottoVoiceAudio = null;
 let lottoSpeechQueue = [];
 let lottoSpeechBusy = false;
 let lottoSpeechVoiceRetries = 0;
+let lottoSpeechVoiceInitDone = false;
 
 function updateLottoVoiceButton() {
   const supported = supportsNativeLottoSpeech() || typeof Audio !== "undefined";
@@ -8285,9 +8286,10 @@ function processLottoSpeechQueue() {
   try {
     if (synthesis.paused) synthesis.resume();
     const voices = synthesis.getVoices() || [];
-    // На Android/Telegram голоса иногда появляются спустя несколько сотен
-    // миллисекунд после открытия комнаты. Не выбрасываем первое объявление.
-    if (!voices.length && lottoSpeechVoiceRetries < 5) {
+    if (voices.length) lottoSpeechVoiceInitDone = true;
+    // На Android/Telegram голоса могут появиться с задержкой. Ждём только
+    // при первом объявлении, чтобы остальные номера не получали лишнюю паузу.
+    if (!lottoSpeechVoiceInitDone && !voices.length && lottoSpeechVoiceRetries < 5) {
       lottoSpeechVoiceRetries += 1;
       lottoSpeechBusy = true;
       setTimeout(() => {
@@ -8296,6 +8298,7 @@ function processLottoSpeechQueue() {
       }, 180);
       return;
     }
+    if (!voices.length && lottoSpeechVoiceRetries >= 5) lottoSpeechVoiceInitDone = true;
     lottoSpeechVoiceRetries = 0;
     item = lottoSpeechQueue.shift();
     if (!item) return;
@@ -8454,6 +8457,7 @@ function toggleLottoVoice() {
     lottoSpeechQueue = [];
     lottoSpeechBusy = false;
     lottoSpeechVoiceRetries = 0;
+    lottoSpeechVoiceInitDone = false;
     if (lottoVoiceAudio) {
       lottoVoiceAudio.pause();
       try { lottoVoiceAudio.currentTime = 0; } catch {}
