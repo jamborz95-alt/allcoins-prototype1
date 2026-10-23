@@ -4159,7 +4159,7 @@ async function durakAction(action, requestedCardIds = null) {
           dragFlyerGroupLandings = landings.filter(landing => landing.optimistic);
           // Все места создаются заранее; затем карты летят почти одновременно, с коротким шагом.
           dragFlyerAnimationPromises = groupFlyers.map((flyer, index) =>
-            new Promise(resolve => window.setTimeout(resolve, index * 14))
+            new Promise(resolve => window.setTimeout(resolve, index * 42))
               .then(() => animateDurakCardToTarget(flyer, landings[index].element))
           );
         } else {
@@ -5602,12 +5602,11 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
   const targetScaleX = targetRect.width / from.width;
   const targetScaleY = targetRect.height / from.height;
-  const targetImageReadyPromise = waitForDurakCardImagesReady(targetElement).catch(() => false);
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
-  // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
-  // и без отдельной паузы перед посадкой. Скорый бросок короче, обычный заметнее.
-  const flightDuration = Math.round(88 - throwPower * 20);
+  // Возвращаем прежнюю плавную скорость: карта заметно летит к столу,
+  // но без лишней остановки или дополнительной паузы после касания.
+  const flightDuration = Math.round(150 - throwPower * 30);
   // Карта в руке немного увеличена внутри рамки. Убираем это увеличение
   // плавно в течение полёта, а не одним кадром при приземлении — угол не пропадает.
   if (flyerImage) {
@@ -5654,19 +5653,63 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       finished = true;
       cleanup();
 
-      // Не ждём декодирования до старта полёта. Если PNG цели ещё готовится,
-      // летящая карта остаётся неподвижно на месте приземления и не мигает.
-      // Заменяем её на карточку стола сразу после готовности изображения.
-      const settleOnTable = () => {
-        if (targetElement?.dataset.optimisticLanding === "true" && targetElement.isConnected) {
-          targetElement.style.visibility = "visible";
-          targetElement.style.opacity = "1";
-          targetElement.style.transition = "none";
+      // ВАЖНО: не подменяем летевшую карту другим PNG после приземления.
+      // Превращаем тот же элемент в обычную карту стола: так браузер не
+      // перерисовывает лицо повторно, не повышает резкость отдельным кадром
+      // и не создаёт маленького скачка/сдвига после касания.
+      if (targetElement?.dataset.optimisticLanding === "true" &&
+          targetElement.isConnected && flyer.isConnected) {
+        const finalClassName = targetElement.className
+          .replace(/\\bdurak-landing-target\\b/g, "")
+          .trim();
+        const finalLeft = targetElement.style.left || "0px";
+        const finalTop = targetElement.style.top || "0px";
+        const finalWidth = targetElement.offsetWidth || targetRect.width;
+        const finalHeight = targetElement.offsetHeight || targetRect.height;
+        const finalParent = targetElement.parentElement;
+
+        flyer.className = finalClassName;
+        Object.entries(targetElement.dataset).forEach(([key, value]) => {
+          flyer.dataset[key] = value;
+        });
+        delete flyer.dataset.optimisticLanding;
+        flyer.style.cssText = targetElement.style.cssText;
+        [
+          ["position", "absolute"],
+          ["left", finalLeft],
+          ["top", finalTop],
+          ["width", finalWidth + "px"],
+          ["height", finalHeight + "px"],
+          ["min-width", finalWidth + "px"],
+          ["min-height", finalHeight + "px"],
+          ["max-width", finalWidth + "px"],
+          ["max-height", finalHeight + "px"],
+          ["margin", "0"],
+          ["opacity", "1"],
+          ["visibility", "visible"],
+          ["transition", "none"],
+          ["pointer-events", "none"],
+          ["box-sizing", "border-box"]
+        ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
+
+        const settledImage = flyer.querySelector("img");
+        if (settledImage) {
+          [
+            ["width", "100%"], ["height", "100%"],
+            ["min-width", "100%"], ["min-height", "100%"],
+            ["max-width", "100%"], ["max-height", "100%"],
+            ["object-fit", "fill"], ["object-position", "center"],
+            ["margin", "0"], ["padding", "0"]
+          ].forEach(([property, value]) => settledImage.style.setProperty(property, value, "important"));
         }
-        if (flyer.isConnected) flyer.remove();
-        resolve();
-      };
-      targetImageReadyPromise.then(settleOnTable, settleOnTable);
+
+        // Сохраняем исходную летающую карту; убираем только скрытый макет.
+        if (finalParent) finalParent.replaceChild(flyer, targetElement);
+        applyDurakTableCardSizeLocks();
+      } else if (flyer.isConnected) {
+        flyer.remove();
+      }
+      resolve();
     };
     const onEnd = (event) => {
       if (event.target === flyer && event.propertyName === "transform") finish();
