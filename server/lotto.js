@@ -545,6 +545,29 @@ export function createLottoRouter(options) {
     }
   });
 
+  router.post("/report/delete-all", async (req, res) => {
+    try {
+      const user = verifyTelegram(req.body && req.body.initData);
+      if (!user || !user.id) return fail(res, 401, "Открой ALLCOINS через Telegram.");
+      const result = await pool.query(
+        "INSERT INTO lotto_report_deletions (room_id, telegram_id, deleted_at) " +
+        "SELECT r.id, $1, NOW() FROM lotto_rooms r " +
+        "WHERE r.status = 'finished' AND EXISTS (" +
+        "SELECT 1 FROM lotto_tickets t WHERE t.room_id = r.id AND t.telegram_id = $1) " +
+        "ON CONFLICT (room_id, telegram_id) DO UPDATE SET deleted_at = NOW()",
+        [String(user.id)]
+      );
+      return res.json({
+        ok: true,
+        deletedCount: result.rowCount || 0,
+        message: "Все отчёты удалены из твоего списка."
+      });
+    } catch (error) {
+      console.error("Lotto delete all reports error:", error.message);
+      return fail(res, 500, "Не удалось удалить все отчёты.");
+    }
+  });
+
   router.post("/report/delete", async (req, res) => {
     try {
       const user = verifyTelegram(req.body && req.body.initData);
