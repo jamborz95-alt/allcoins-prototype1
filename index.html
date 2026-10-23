@@ -2122,6 +2122,17 @@
   #lottoGame .lotto-play-stats {
     display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 8px;
   }
+  #lottoGame .lotto-voice-toggle {
+    display:block; width:100%; min-height:42px; margin:5px 0 7px; padding:9px 12px !important;
+    border-radius:10px !important; border:1px solid #f5d18d !important;
+    background:linear-gradient(135deg,#4b2b19,#70401f) !important;
+    color:#fff2d5 !important; font-size:13px !important; font-weight:900 !important;
+    box-shadow:0 3px 7px #3e1a0b66 !important;
+  }
+  #lottoGame .lotto-voice-toggle[aria-pressed="false"] {
+    color:#f0d5b0 !important; background:#38251b !important; border-color:#987451 !important;
+  }
+
   #lottoGame .lotto-play-stats span {
     padding:5px 8px; border:1px solid #d4b27b; border-radius:8px;
     background:#f8e7c8; color:#432a15; font-size:12px;
@@ -3464,6 +3475,7 @@
       </div>
       <div id="onlineLottoPlayCurrentBall" class="lotto-current-ball">—</div>
     </div>
+    <button type="button" id="onlineLottoVoiceToggle" class="lotto-voice-toggle" aria-pressed="true">🔊 Озвучка: ВКЛ</button>
     <div class="lotto-play-stats">
       <span>Билет: <b id="onlineLottoPlayStake">0 AC</b></span>
       <span>Банк: <b id="onlineLottoPlayPot">0 AC</b></span>
@@ -8161,10 +8173,120 @@ let onlineLottoStateTimer = null;
 let onlineLottoLobbyTimer = null;
 let onlineLottoActionBusy = false;
 
+// Голосовое объявление выпавших чисел: по умолчанию включено.
+let lottoVoiceEnabled = true;
+let lottoVoiceLastRoomId = null;
+let lottoVoiceLastDrawCount = 0;
+try {
+  const savedLottoVoice = localStorage.getItem("allcoinsLottoVoiceEnabled");
+  if (savedLottoVoice === "false") lottoVoiceEnabled = false;
+} catch (error) {
+  // Настройка останется включённой на время текущего открытия.
+}
+
 function setOnlineLottoStatus(targetId, message) {
   const element = $(targetId);
   if (element) element.textContent = message || "";
 }
+
+function updateLottoVoiceButton() {
+  const button = $("onlineLottoVoiceToggle");
+  if (!button) return;
+  const supported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  button.disabled = !supported;
+  button.textContent = !supported
+    ? "🔇 Озвучка недоступна в этом браузере"
+    : lottoVoiceEnabled ? "🔊 Озвучка чисел: ВКЛ" : "🔇 Озвучка чисел: ВЫКЛ";
+  button.setAttribute("aria-pressed", String(lottoVoiceEnabled));
+  button.title = lottoVoiceEnabled
+    ? "Числа будут произноситься вслух по-русски"
+    : "Нажми, чтобы включить голосовое объявление чисел";
+}
+
+function getLottoRussianVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  return voices.find(voice => /^ru([_-]|$)/i.test(voice.lang || "")) || null;
+}
+
+function speakLottoText(text) {
+  if (!lottoVoiceEnabled || !("speechSynthesis" in window) ||
+      !("SpeechSynthesisUtterance" in window) || !text) return false;
+  try {
+    const synthesis = window.speechSynthesis;
+    // Новое объявление не должно вставать в длинную очередь после возврата из фона.
+    synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ru-RU";
+    utterance.rate = 0.88;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    const russianVoice = getLottoRussianVoice();
+    if (russianVoice) utterance.voice = russianVoice;
+    synthesis.speak(utterance);
+    return true;
+  } catch (error) {
+    console.warn("Не удалось озвучить число лото:", error.message || error);
+    return false;
+  }
+}
+
+const lottoRussianNumberWords = [
+  "", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять",
+  "десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать",
+  "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"
+];
+
+function lottoNumberToWords(number) {
+  const value = Number(number);
+  if (!Number.isInteger(value) || value < 1 || value > 90) return String(number);
+  if (value < 20) return lottoRussianNumberWords[value];
+  const tensWords = {
+    20: "двадцать", 30: "тридцать", 40: "сорок", 50: "пятьдесят",
+    60: "шестьдесят", 70: "семьдесят", 80: "восемьдесят", 90: "девяносто"
+  };
+  const tens = Math.floor(value / 10) * 10;
+  const units = value % 10;
+  return units ? tensWords[tens] + " " + lottoRussianNumberWords[units] : tensWords[tens];
+}
+
+function announceLottoDraw(room) {
+  if (!room || !onlineLottoRoomId) return;
+  const roomId = String(room.id || onlineLottoRoomId);
+  const drawn = Array.isArray(room.drawnNumbers) ? room.drawnNumbers.map(Number) : [];
+
+  if (lottoVoiceLastRoomId !== roomId) {
+    lottoVoiceLastRoomId = roomId;
+    lottoVoiceLastDrawCount = 0;
+  }
+  if (drawn.length <= lottoVoiceLastDrawCount) return;
+
+  // Если игрок вошёл посреди розыгрыша, объявляем только последнее число, а не всю историю.
+  lottoVoiceLastDrawCount = drawn.length;
+  if (room.status !== "playing" || !lottoVoiceEnabled) return;
+
+  const number = drawn[drawn.length - 1];
+  speakLottoText("Внимание. Номер " + lottoNumberToWords(number) + ".");
+}
+
+function toggleLottoVoice() {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    setOnlineLottoStatus("onlineLottoPlayStatus", "В этом браузере нет голосового озвучивания.");
+    updateLottoVoiceButton();
+    return;
+  }
+  lottoVoiceEnabled = !lottoVoiceEnabled;
+  try { localStorage.setItem("allcoinsLottoVoiceEnabled", String(lottoVoiceEnabled)); } catch {}
+  if (!lottoVoiceEnabled) {
+    window.speechSynthesis.cancel();
+  } else {
+    // Первое включение происходит непосредственно после нажатия — это помогает
+    // Android/Telegram разрешить голосовой вывод звука.
+    speakLottoText("Озвучивание чисел включено.");
+  }
+  updateLottoVoiceButton();
+}
+
 
 function formatLottoSeconds(value) {
   const seconds = Math.max(0, Number(value) || 0);
@@ -8283,6 +8405,8 @@ function renderOnlineLottoRooms() {
 
 async function openOnlineLottoRoom(roomId) {
   onlineLottoRoomId = String(roomId);
+  lottoVoiceLastRoomId = onlineLottoRoomId;
+  lottoVoiceLastDrawCount = 0;
   $("onlineLottoLobbyView").classList.add("hidden");
   $("onlineLottoRoomView").classList.remove("hidden");
   $("onlineLottoPlayView").classList.add("hidden");
@@ -8310,6 +8434,7 @@ async function loadOnlineLottoState(silent) {
       render();
     }
     renderOnlineLottoRoom(result.room, result.tickets || []);
+    announceLottoDraw({ ...result.room, id: onlineLottoRoomId });
     const statusId = result.room.status === "playing" || result.room.status === "finished"
       ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
     if (result.room.status === "finished") {
@@ -8504,6 +8629,8 @@ $("onlineLottoRoomsBack").onclick = async () => {
 };
 $("onlineLottoRoomRefresh").onclick = () => loadOnlineLottoState(false);
 $("onlineLottoPlayRefresh").onclick = () => loadOnlineLottoState(false);
+$("onlineLottoVoiceToggle").onclick = toggleLottoVoice;
+updateLottoVoiceButton();
 $("onlineLottoPlayBack").onclick = async () => {
   if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
   onlineLottoStateTimer = null;
