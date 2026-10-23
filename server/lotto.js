@@ -307,7 +307,7 @@ export function createLottoRouter(options) {
         "ORDER BY CASE r.status WHEN 'waiting' THEN 0 WHEN 'playing' THEN 1 ELSE 2 END, r.stake ASC, r.created_at DESC LIMIT 100",
         [String(user.id)]
       );
-      const playerResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+      const playerResult = await pool.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO UPDATE SET updated_at = NOW() RETURNING balance", [String(user.id)]);
       return res.json({
         ok: true,
         rooms: result.rows.map(room => ({
