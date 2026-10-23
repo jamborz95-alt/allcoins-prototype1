@@ -8167,6 +8167,7 @@ function renderOnlineLottoRooms() {
     meta.textContent = statusText + " · игроков: " + Number(room.playersCount || 0) +
       " · билетов: " + Number(room.ticketCount || 0) +
       " · банк: " + Number(room.pot || 0).toLocaleString("ru-RU") + " AC" +
+      (room.status === "finished" && Number(room.prize || 0) > 0 ? " · приз: " + Number(room.prize).toLocaleString("ru-RU") + " AC" : "") +
       (Number(room.myTickets || 0) ? " · твоих билетов: " + Number(room.myTickets) + "/3" : "");
     main.appendChild(title);
     main.appendChild(meta);
@@ -8243,7 +8244,9 @@ function renderOnlineLottoRoom(room, tickets) {
   buyButton.disabled = room.status !== "waiting" || tickets.length >= 3 || onlineLottoActionBusy;
   buyButton.textContent = tickets.length >= 3
     ? "✓ Куплено 3 из 3 билетов"
-    : "🎟 Купить билет · " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+    : room.status !== "waiting"
+      ? "Продажа билетов закрыта"
+      : "🎟 Купить билет · " + Number(room.stake).toLocaleString("ru-RU") + " AC";
   const ticketsRoot = $("onlineLottoTickets");
   ticketsRoot.textContent = "";
   if (!tickets.length) {
@@ -8300,9 +8303,11 @@ function renderOnlineLottoRoom(room, tickets) {
     const seconds = Math.max(0, Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000));
     setOnlineLottoStatus("onlineLottoRoomStatus", "Раунд начнётся через " + formatLottoSeconds(seconds) + ". В продаже билеты до старта.");
   } else if (room.status === "playing") {
-    setOnlineLottoStatus("onlineLottoRoomStatus", room.autoPlay
-      ? "Автоматический режим: выпавшие числа на твоих билетах отмечаются сами."
-      : "Твой ход: нажимай на числа, которые уже выпали и подсвечены жёлтым.");
+    setOnlineLottoStatus("onlineLottoRoomStatus", tickets.length === 0
+      ? "Раунд уже идёт, но у тебя нет билетов в этой комнате."
+      : room.autoPlay
+        ? "Автоматический режим: выпавшие числа на твоих билетах отмечаются сами."
+        : "Твой ход: нажимай на числа, которые уже выпали и подсвечены жёлтым.");
   } else {
     setOnlineLottoStatus("onlineLottoRoomStatus", room.resultNote || "Раунд завершён.");
   }
