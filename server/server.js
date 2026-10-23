@@ -211,7 +211,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.2.0"
+      version: "1.3.0"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
