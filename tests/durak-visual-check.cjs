@@ -125,6 +125,50 @@ const path = require("node:path");
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(out, "02-game-before-drag.png"), fullPage: true });
 
+    // A landing placeholder must retain the source card's visual classes.
+    // Dropping "image-card" here used to change the upper frame/corner right at touchdown.
+    const landingArtworkAudit = await page.evaluate(async () => {
+      const gameRoot = document.getElementById("durakGame");
+      const host = document.createElement("div");
+      Object.assign(host.style, {
+        position: "fixed", left: "-1000px", top: "0",
+        width: "65px", height: "96px", overflow: "hidden"
+      });
+      gameRoot.appendChild(host);
+      const source = createDurakCardElement({ id: "landing-artwork-audit", rank: "Д", suit: "♥" });
+      Object.assign(source.style, {
+        position: "relative", width: "65px", height: "96px",
+        minWidth: "65px", maxWidth: "65px", flex: "none"
+      });
+      host.appendChild(source);
+      const landing = createDurakLandingTarget("attack", source);
+      const target = landing?.element;
+      await Promise.all([
+        waitForDurakCardImagesReady(source),
+        waitForDurakCardImagesReady(target)
+      ]);
+      const result = {
+        sourceImageCard: source.classList.contains("image-card"),
+        targetImageCard: !!target?.classList.contains("image-card"),
+        sourceRed: source.classList.contains("red"),
+        targetRed: !!target?.classList.contains("red"),
+        sourceImageLoaded: !!source.querySelector("img") && source.querySelector("img").naturalWidth > 0,
+        targetImageLoaded: !!target?.querySelector("img") && target.querySelector("img").naturalWidth > 0,
+        sourceBorder: getComputedStyle(source).border,
+        targetBorder: target ? getComputedStyle(target).border : ""
+      };
+      landing?.cleanup();
+      host.remove();
+      return result;
+    });
+    fs.writeFileSync(path.join(out, "landing-artwork-audit.json"), JSON.stringify(landingArtworkAudit, null, 2));
+    if (!landingArtworkAudit.sourceImageCard || !landingArtworkAudit.targetImageCard ||
+        landingArtworkAudit.sourceRed !== landingArtworkAudit.targetRed ||
+        !landingArtworkAudit.sourceImageLoaded || !landingArtworkAudit.targetImageLoaded ||
+        landingArtworkAudit.sourceBorder !== landingArtworkAudit.targetBorder) {
+      throw new Error("Временная карта на столе меняет оформление верхнего угла при посадке: " +
+        JSON.stringify(landingArtworkAudit));
+    }
 
     // During a rematch, the opponent's seat itself must show a ready checkmark.
     const readyBadgeAudit = await page.evaluate(() => {
@@ -551,20 +595,41 @@ const path = require("node:path");
     // The card must visibly travel along a broad arc, not merely blink into the table.
     await page.waitForTimeout(260);
     const incomingMid = await incomingFlyer.boundingBox();
+    const incomingFlightTiming = await page.evaluate(() => {
+      const card = document.querySelector('.durak-flying-card[data-incoming-attack="true"]');
+      const animation = card?.getAnimations().find(item => item.effect && item.effect.getTiming);
+      return {
+        durationMs: animation?.effect?.getTiming()?.duration ?? null,
+        imageCardClass: !!card?.classList.contains("image-card"),
+        imageObjectFit: card?.querySelector("img") ? getComputedStyle(card.querySelector("img")).objectFit : null
+      };
+    });
     const incomingTravelDistance = incomingStart && incomingMid
       ? Math.hypot(incomingMid.x - incomingStart.x, incomingMid.y - incomingStart.y)
       : 0;
     fs.writeFileSync(path.join(out, "opponent-attack-flight.json"), JSON.stringify({
       start: incomingStart,
       midpoint: incomingMid,
-      travelDistancePx: incomingTravelDistance
+      travelDistancePx: incomingTravelDistance,
+      timing: incomingFlightTiming
     }, null, 2));
     if (!incomingMid || incomingTravelDistance < 10) {
       throw new Error("Летящая карта соперника должна заметно смещаться к столу во время анимации: " +
         JSON.stringify({ incomingStart, incomingMid, incomingTravelDistance }));
     }
-    // Wait beyond the full 640ms flight plus its cleanup buffer before checking landing.
-    await page.waitForTimeout(520);
+    if (incomingFlightTiming.durationMs !== 1280 || !incomingFlightTiming.imageCardClass) {
+      throw new Error("Полёт соперника должен длиться 1280 мс и сохранять оформление карты до посадки: " +
+        JSON.stringify(incomingFlightTiming));
+    }
+    // At roughly 760ms the slowed flight must still be in the air, not already snapped onto the table.
+    await page.waitForTimeout(500);
+    if (!(await incomingFlyer.count())) {
+      throw new Error("Замедленная анимация соперника завершилась раньше времени");
+    }
+    await page.waitForFunction(
+      () => !document.querySelector('.durak-flying-card[data-incoming-attack="true"]'),
+      { timeout: 4000 }
+    );
     const incomingEnd = await page.evaluate(() => {
       const card = document.querySelector('#durakTable .durak-card[data-card-id="incoming-attack-1"]');
       if (!card) return null;
