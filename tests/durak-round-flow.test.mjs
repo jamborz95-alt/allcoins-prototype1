@@ -69,9 +69,9 @@ test("drag-and-drop sends a deliberate throw from any direction to the correct t
   assert.match(frontend, /const acceptedDropGesture = droppedOnTable \|\| throwDistance >= 24/);
   assert.match(frontend, /const canAttack = isAttacker &&[\s\S]*?intentionalThrow && acceptedDropGesture/);
   assert.match(frontend, /const canDefend = !canTransfer && isDefender && game\.phase === "defense" &&[\s\S]*?intentionalThrow && acceptedDropGesture/);
-  assert.match(frontend, /const flightDuration = Math\\.round\\(150 - throwPower \\* 30\\)/);
-  assert.match(frontend, /function promoteDurakFlightCardToTable\\(flyer, targetElement\\)/);
-  assert.match(frontend, /const reusableDurakTableCards = new Map\\(\\)/);
+  assert.match(frontend, /const flightDuration = Math\.round\(150 - throwPower \* 30\)/);
+  assert.match(frontend, /function promoteDurakFlightCardToTable\(flyer, targetElement\)/);
+  assert.match(frontend, /const reusableDurakTableCards = new Map\(\)/);
   assert.match(frontend, /return !pair\?\.querySelector\('\.durak-card\[data-table-card-type="defense"\]'\)/);
   assert.doesNotMatch(frontend, /const canAttack = isAttacker && \(game\.phase === "attack" \|\| game\.phase === "defense"\) && droppedOnTable/);
 });
