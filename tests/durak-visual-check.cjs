@@ -360,13 +360,18 @@ const path = require("node:path");
     const flyerAtRelease = await flyer.boundingBox();
     // Карта должна продолжать движение после отпускания, а затем быстро
     // смениться видимой картой в точке посадки (без зависшей копии над столом).
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(55);
     const flyerInFlight = await flyer.boundingBox();
     await page.screenshot({ path: path.join(out, "04-game-in-flight-after-release.png"), fullPage: true });
     const animationMoved = Boolean(
       flyerAtRelease && flyerInFlight &&
       (Math.abs(flyerInFlight.x - flyerAtRelease.x) > 3 ||
        Math.abs(flyerInFlight.y - flyerAtRelease.y) > 3)
+    );
+    const flyerShrankToTableSize = Boolean(
+      flyerAtRelease && flyerInFlight &&
+      flyerInFlight.width < flyerAtRelease.width * 0.95 &&
+      flyerInFlight.height < flyerAtRelease.height * 0.95
     );
     await page.waitForTimeout(140);
     const optimisticLanding = await page.evaluate(() => {
@@ -453,6 +458,7 @@ const path = require("node:path");
     const animationDiagnostics = {
       flyerPresentImmediatelyAfterRelease: Boolean(flyerAtRelease),
       flyerMovedDuringReleaseAnimation: animationMoved,
+      flyerShrankToTableSizeDuringReleaseAnimation: flyerShrankToTableSize,
       optimisticLandingVisibleBeforeServerReply: Boolean(optimisticLanding?.visible),
       optimisticLanding,
       flyerAtRelease,
@@ -468,6 +474,10 @@ const path = require("node:path");
     }
     if (!animationMoved) {
       throw new Error("Карта не перемещалась после отпускания пальца: анимация приземления не подтверждена");
+    }
+    if (!flyerShrankToTableSize) {
+      throw new Error("Летящая карта осталась размером руки и должна плавно уменьшиться до размера ячейки стола: " +
+        JSON.stringify({ flyerAtRelease, flyerInFlight }));
     }
     if (!optimisticLanding?.visible) {
       throw new Error("Карта не закрепилась в точке посадки до ответа сервера");
