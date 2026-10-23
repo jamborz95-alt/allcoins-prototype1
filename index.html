@@ -3166,19 +3166,15 @@ let durakRematchStartRetryAt = 0;
 // Это учитывает мобильные CSS-размеры и изменения ширины экрана.
 function syncDurakTableCardSizes() {
   const gameRoot = document.getElementById("durakGame");
-  const hand = document.getElementById("durakHand");
-  const sample = hand?.querySelector(".durak-card.premium-card");
-  if (!gameRoot || !sample) return;
+  if (!gameRoot) return;
 
-  const computed = window.getComputedStyle(sample);
-  const width = Number.parseFloat(computed.width);
-  const height = Number.parseFloat(computed.height);
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-
-  // Оставляем место под вторую карту, её наклон и тень,
-  // чтобы защита не касалась следующей атакующей карты.
-  const offset = Math.max(22, Math.round(width * 0.40));
+  // Возвращаем прежний размер карт на столе: 56 × 84 px.
+  // Размер карт в руке не влияет на размеры карт на столе.
+  const width = 56;
+  const height = 84;
+  const offset = 22;
   const pairWidth = width + offset + 12;
+
   gameRoot.style.setProperty("--durak-hand-card-width", width + "px");
   gameRoot.style.setProperty("--durak-hand-card-height", height + "px");
   gameRoot.style.setProperty("--durak-table-card-offset", offset + "px");
