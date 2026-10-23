@@ -623,11 +623,11 @@ const path = require("node:path");
       throw new Error("Летящая карта соперника должна заметно смещаться к столу во время анимации: " +
         JSON.stringify({ incomingStart, incomingMid, incomingTravelDistance }));
     }
-    if (incomingFlightTiming.durationMs !== 1280 || !incomingFlightTiming.imageCardClass) {
-      throw new Error("Полёт соперника должен длиться 1280 мс и сохранять оформление карты до посадки: " +
+    if (incomingFlightTiming.durationMs !== 1160 || !incomingFlightTiming.imageCardClass) {
+      throw new Error("Полёт соперника должен длиться 1160 мс и сохранять оформление карты до посадки: " +
         JSON.stringify(incomingFlightTiming));
     }
-    // At roughly 760ms the slowed flight must still be in the air, not already snapped onto the table.
+    // At roughly 760ms the slightly faster flight must still be in the air, not already snapped onto the table.
     await page.waitForTimeout(500);
     if (!(await incomingFlyer.count())) {
       throw new Error("Замедленная анимация соперника завершилась раньше времени");
@@ -662,7 +662,7 @@ const path = require("node:path");
     }
 
     // Defence played by the opponent must fly from the defender's seat to the attack card.
-    // This uses the same visible 1280ms flight as an incoming attack.
+    // This uses the same visible 1160ms flight as an incoming attack.
     currentGame.table = [
       {
         attack: { id: "local-attack-for-defense", rank: "10", suit: "♠" },
@@ -715,8 +715,8 @@ const path = require("node:path");
       throw new Error("Лицо карты защиты должно быть загружено и полностью видно в полёте: " +
         JSON.stringify(incomingDefenseImage));
     }
-    if (incomingDefenseImage.durationMs !== 1280 || incomingDefenseDistance < 10) {
-      throw new Error("Анимация защиты должна лететь к столу 1280 мс как атака: " +
+    if (incomingDefenseImage.durationMs !== 1160 || incomingDefenseDistance < 10) {
+      throw new Error("Анимация защиты должна лететь к столу 1160 мс как атака: " +
         JSON.stringify({ incomingDefenseImage, incomingDefenseDistance }));
     }
     await page.waitForTimeout(500);
