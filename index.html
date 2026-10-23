@@ -5660,7 +5660,9 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       if (targetElement?.dataset.optimisticLanding === "true" &&
           targetElement.isConnected && flyer.isConnected) {
         const finalClassName = targetElement.className
-          .replace(/\\bdurak-landing-target\\b/g, "")
+          .split(/\s+/)
+          .filter(className => className && className !== "durak-landing-target")
+          .join(" ");
           .trim();
         const finalLeft = targetElement.style.left || "0px";
         const finalTop = targetElement.style.top || "0px";
