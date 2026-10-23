@@ -3164,22 +3164,92 @@ let durakRematchStartRetryAt = 0;
 
 // Размер карт на столе всегда берём из реально отображаемой карты в руке.
 // Это учитывает мобильные CSS-размеры и изменения ширины экрана.
-function syncDurakTableCardSizes() {
-  const gameRoot = document.getElementById("durakGame");
-  if (!gameRoot) return;
+// Жёсткая фиксация размера карт на столе.
+// В старых правилах CSS есть несколько более ранних размеров (68×100 и 65×96),
+// из-за которых карта после первого отображения могла неожиданно вырасти.
+// Inline !important и наблюдатель не позволяют стилям/перерисовке менять размер.
+let durakTableSizeObserver = null;
 
-  // Возвращаем прежний размер карт на столе: 56 × 84 px.
-  // Размер карт в руке не влияет на размеры карт на столе.
+function lockDurakTableCardSize(element, property, value) {
+  if (!element) return;
+  const current = element.style.getPropertyValue(property).trim();
+  const priority = element.style.getPropertyPriority(property);
+  if (current !== value || priority !== "important") {
+    element.style.setProperty(property, value, "important");
+  }
+}
+
+function applyDurakTableCardSizeLocks() {
+  const gameRoot = document.getElementById("durakGame");
+  const table = document.getElementById("durakTable");
+  if (!gameRoot || !table) return;
+
   const width = 56;
   const height = 84;
   const offset = 22;
-  const pairWidth = width + offset + 12;
+  const pairWidth = 90;
+  const pairHeight = 88;
 
-  gameRoot.style.setProperty("--durak-hand-card-width", width + "px");
-  gameRoot.style.setProperty("--durak-hand-card-height", height + "px");
-  gameRoot.style.setProperty("--durak-table-card-offset", offset + "px");
-  gameRoot.style.setProperty("--durak-table-pair-width", pairWidth + "px");
-  gameRoot.style.setProperty("--durak-table-pair-height", (height + 4) + "px");
+  lockDurakTableCardSize(gameRoot, "--durak-hand-card-width", width + "px");
+  lockDurakTableCardSize(gameRoot, "--durak-hand-card-height", height + "px");
+  lockDurakTableCardSize(gameRoot, "--durak-table-card-offset", offset + "px");
+  lockDurakTableCardSize(gameRoot, "--durak-table-pair-width", pairWidth + "px");
+  lockDurakTableCardSize(gameRoot, "--durak-table-pair-height", pairHeight + "px");
+
+  table.querySelectorAll(".durak-table-pair").forEach(pair => {
+    lockDurakTableCardSize(pair, "width", pairWidth + "px");
+    lockDurakTableCardSize(pair, "min-width", pairWidth + "px");
+    lockDurakTableCardSize(pair, "max-width", pairWidth + "px");
+    lockDurakTableCardSize(pair, "flex", "0 0 " + pairWidth + "px");
+    lockDurakTableCardSize(pair, "height", pairHeight + "px");
+    lockDurakTableCardSize(pair, "min-height", pairHeight + "px");
+    lockDurakTableCardSize(pair, "max-height", pairHeight + "px");
+    lockDurakTableCardSize(pair, "overflow", "visible");
+  });
+
+  table.querySelectorAll(".durak-card.table-card").forEach(card => {
+    lockDurakTableCardSize(card, "width", width + "px");
+    lockDurakTableCardSize(card, "min-width", width + "px");
+    lockDurakTableCardSize(card, "max-width", width + "px");
+    lockDurakTableCardSize(card, "flex", "0 0 " + width + "px");
+    lockDurakTableCardSize(card, "height", height + "px");
+    lockDurakTableCardSize(card, "min-height", height + "px");
+    lockDurakTableCardSize(card, "max-height", height + "px");
+    lockDurakTableCardSize(card, "box-sizing", "border-box");
+    lockDurakTableCardSize(card, "overflow", "hidden");
+
+    const image = card.querySelector("img");
+    if (image) {
+      lockDurakTableCardSize(image, "width", "100%");
+      lockDurakTableCardSize(image, "min-width", "100%");
+      lockDurakTableCardSize(image, "max-width", "100%");
+      lockDurakTableCardSize(image, "height", "100%");
+      lockDurakTableCardSize(image, "min-height", "100%");
+      lockDurakTableCardSize(image, "max-height", "100%");
+      lockDurakTableCardSize(image, "object-fit", "fill");
+      lockDurakTableCardSize(image, "object-position", "center");
+      lockDurakTableCardSize(image, "margin", "0");
+      lockDurakTableCardSize(image, "padding", "0");
+    }
+  });
+}
+
+function syncDurakTableCardSizes() {
+  applyDurakTableCardSizeLocks();
+
+  const table = document.getElementById("durakTable");
+  if (table && !durakTableSizeObserver && typeof MutationObserver !== "undefined") {
+    durakTableSizeObserver = new MutationObserver(() => {
+      // Reapply only fixed dimensions after a table rerender or inline style change.
+      window.requestAnimationFrame(applyDurakTableCardSizeLocks);
+    });
+    durakTableSizeObserver.observe(table, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["style", "class"]
+    });
+  }
 }
 
 window.addEventListener("resize", () => {
