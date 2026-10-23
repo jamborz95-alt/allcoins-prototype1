@@ -2125,9 +2125,16 @@
     <label class="muted">🃏 Колода карт</label>
 
     <select id="durakDeck">
-      <option value="24">24 карты (с 9 до туза)</option>
+      <option value="24">24</option>
       <option value="36" selected>36 карт</option>
       <option value="52">52 карты</option>
+    </select>
+
+    <label class="muted">🎴 Режим игры</label>
+
+    <select id="durakMode">
+      <option value="throw-in" selected>Подкидной</option>
+      <option value="transfer">Переводной</option>
     </select>
 
     <label class="muted">⚡ Скорость игры</label>
@@ -3456,7 +3463,8 @@ info.innerHTML =
   "<b>" + (room.name || ("Комната #" + (index + 1))) + "</b><br>" +
   "<span class='muted small'>" +
   (room.playersCount ?? 1) + " из " + room.players +
-  " игроков · Колода: " + (Number(room.deck) || 36) + " карт · Ставка: " + room.stake + " AC</span>";
+  " игроков · Режим: " + (room.mode === "transfer" ? "Переводной" : "Подкидной") +
+  " · Колода: " + (Number(room.deck) || 36) + " карт · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
@@ -3598,7 +3606,7 @@ async function durakAction(action, requestedCardIds = null) {
   if (durakActionInProgress) return;
 
   if (
-    (action === "attack" || action === "defend") &&
+    (action === "attack" || action === "defend" || action === "transfer") &&
     !selectedDurakCardId
   ) {
     alert("Сначала выбери карту.");
@@ -3616,7 +3624,7 @@ async function durakAction(action, requestedCardIds = null) {
               ).map(card => String(card.dataset.cardId));
               return grouped.length ? [...new Set(grouped)] : [String(selectedDurakCardId)];
             })())
-      : action === "defend" && selectedDurakCardId
+      : (action === "defend" || action === "transfer") && selectedDurakCardId
         ? [String(selectedDurakCardId)]
         : [];
   const actionCardId = actionCardIds[0] || null;
@@ -6147,13 +6155,18 @@ if (Array.isArray(game.hand)) {
 
         const isDefender = Number(game.playerIndex) === Number(game.defenderIndex);
         const isAttacker = Number(game.playerIndex) === Number(game.attackerIndex);
-        const canDefend = isDefender && game.phase === "defense" &&
+        const canTransfer = game.mode === "transfer" && isDefender &&
+          game.phase === "defense" && intentionalThrow &&
+          Array.isArray(game.table) && game.table.length > 0 &&
+          game.table.every(item => item.attack && !item.defense) &&
+          game.table.some(item => String(item.attack.rank) === String(cardElement.dataset.rank));
+        const canDefend = !canTransfer && isDefender && game.phase === "defense" &&
           !!targetCard && intentionalThrow;
         const canAttack = isAttacker &&
           (game.phase === "attack" || game.phase === "defense" || game.phase === "takePending") &&
           intentionalThrow;
 
-        if (!canDefend && !canAttack) {
+        if (!canTransfer && !canDefend && !canAttack) {
           cardElement.style.opacity = "";
           cardElement.style.transition = "";
           cardElement.style.transform = "";
@@ -6202,9 +6215,10 @@ if (Array.isArray(game.hand)) {
         // Реалистичный короткий шорох движения и контакт карты со столом.
         playDurakSound("slide");
         playDurakSound(canDefend ? "beat" : "card");
+        const draggedAction = canTransfer ? "transfer" : canDefend ? "defend" : "attack";
         await durakAction(
-          canDefend ? "defend" : "attack",
-          canDefend ? [String(card.id)] : draggedGroupIds
+          draggedAction,
+          (canDefend || canTransfer) ? [String(card.id)] : draggedGroupIds
         );
       };
       const cancelCard = (cancelEvent) => {
@@ -6933,6 +6947,7 @@ $("createRoom").onclick = async () => {
 const deck = Number($("durakDeck").value);
 const speed = $("durakSpeed").value;
 const privacy = $("durakPrivacy").value;
+const mode = $("durakMode").value === "transfer" ? "transfer" : "throw-in";
   const roomName =
     $("roomName").value.trim() || "Комната ALLCOINS";
 
@@ -6996,7 +7011,8 @@ if (stake > state.balance) {
   stake: stake,
   deck: deck,
   speed: speed,
-  privacy: privacy
+  privacy: privacy,
+  mode: mode
 });
 
     if (!result.ok || !result.room) {
@@ -7014,6 +7030,7 @@ if (stake > state.balance) {
       players: Number(room.max_players || roomCapacity),
       playersCount: 1,
       deck: Number(room.deck) || deck,
+      mode: room.mode === "transfer" ? "transfer" : "throw-in",
       stake: Number(room.stake),
       status: "waiting",
       isOwner: true
@@ -7179,7 +7196,8 @@ async function openDurakWaitingRoom(room) {
   // скрыто: иначе оно визуально накрывает панель и кнопку «Начать игру».
   $("durakBoard").style.display = "none";
   $("durakGameStatus").textContent =
-    "🃏 " + (room.name || "Комната ALLCOINS") + " · Подключаем игроков...";
+    "🃏 " + (room.name || "Комната ALLCOINS") +
+    " · " + (room.mode === "transfer" ? "Переводной" : "Подкидной") + " · Подключаем игроков...";
   $("durakTrump").style.display = "none";
   $("durakTable").textContent = "Ожидаем игроков...";
   $("durakHand").style.display = "none";
@@ -7648,6 +7666,7 @@ async function loadDurakRooms() {
       players: Number(room.max_players),
       playersCount: Number(room.players_count),
       deck: Number(room.deck) || 36,
+      mode: room.mode === "transfer" ? "transfer" : "throw-in",
 stake: Number(room.stake),
 status: room.status,
 isOwner: room.is_owner
