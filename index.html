@@ -3158,6 +3158,8 @@
 const API = "https://allcoins-server.onrender.com";
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
+let durakLastGameStatus = null;
+let durakLastGameWasTimeoutLoser = false;
 let durakRematchStartInProgress = false;
 let durakRematchStartRoomId = null;
 let durakRematchStartRetryAt = 0;
@@ -5236,6 +5238,9 @@ async function loadDurakGame(roomId) {
       );
       return;
     }
+
+    durakLastGameStatus = game.status || null;
+    durakLastGameWasTimeoutLoser = game.status === "finished" && game.finishedReason === "timeout" && game.isLoser === true;
 
     // Опрос мог начаться до броска карты и вернуться посреди анимации.
     // В таком случае не трогаем DOM, а откладываем перерисовку до конца хода.
@@ -7817,8 +7822,48 @@ $("openDurak").onclick = () => {
   $("durakBoard").style.display = "none";
 };
 
+// Возврат в ALLCOINS; после завершения партии сначала возвращаемся в меню Дурака.
+function returnDurakToRoomMenu() {
+  if (durakWaitingRefreshTimer !== null) {
+    clearInterval(durakWaitingRefreshTimer);
+    durakWaitingRefreshTimer = null;
+  }
+  durakWaitingRoom = null;
+  currentDurakRoomId = null;
+  durakLastGameStatus = null;
+  durakLastGameWasTimeoutLoser = false;
+  const game = $("durakGame");
+  game.style.display = "block";
+  game.classList.add("durak-fullscreen");
+  $("durakEntry").style.display = "none";
+  $("durakRoomActions").style.display = "flex";
+  $("durakWaitingPanel").style.display = "none";
+  $("durakCreatePanel").style.display = "none";
+  $("durakRoomsPanel").style.display = "none";
+  $("durakBoard").style.display = "none";
+  showStatus("durakGameStatus", "Партия завершена. Создай новую комнату или найди другую.");
+}
+
+function handleDurakFinishedBack() {
+  if (durakLastGameStatus !== "finished") return false;
+  returnDurakToRoomMenu();
+  return true;
+}
+
+window.addEventListener("popstate", () => {
+  if (handleDurakFinishedBack()) {
+    history.pushState({ allcoinsDurak: true }, "", location.href);
+  }
+});
+if (tg?.BackButton && typeof tg.BackButton.onClick === "function") {
+  tg.BackButton.onClick(() => {
+    if (handleDurakFinishedBack()) tg.BackButton.hide();
+  });
+}
+
 // Возврат в ALLCOINS
 $("durakBack").onclick = () => {
+  if (handleDurakFinishedBack()) return;
   const game = $("durakGame");
 
   // Останавливаем обновление комнаты ожидания и сбрасываем активную партию,
