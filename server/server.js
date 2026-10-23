@@ -2329,6 +2329,36 @@ if (action === "beat") {
           if (!openItem) break;
           const bot = game.players[botIndex];
           const defenseIndex = chooseBotDefenseIndex(bot.hand, openItem.attack, game.trumpSuit);
+
+          // В режиме «Переводной» бот переводит атаку, если не может побить её
+          // и у следующего игрока достаточно карт, чтобы принять весь стол.
+          if (
+            defenseIndex < 0 &&
+            game.mode === "transfer" &&
+            game.table.length > 0 &&
+            game.table.every(item => item.attack && !item.defense)
+          ) {
+            const ranksOnTable = new Set(game.table.map(item => String(item.attack.rank)));
+            const transferIndex = bot.hand.findIndex(card => ranksOnTable.has(String(card.rank)));
+            const nextDefenderIndex = nextActivePlayer(botIndex, [botIndex]);
+            const nextDefender = game.players[nextDefenderIndex];
+            if (
+              transferIndex >= 0 &&
+              nextDefender &&
+              nextDefenderIndex !== botIndex &&
+              nextDefender.hand.length >= game.table.length + 1
+            ) {
+              const transferCard = bot.hand.splice(transferIndex, 1)[0];
+              game.table.push({ attack: transferCard, defense: null });
+              game.attackerIndex = botIndex;
+              game.defenderIndex = nextDefenderIndex;
+              game.defenderHandAtRoundStart = nextDefender.hand.length;
+              game.takePending = false;
+              game.phase = "defense";
+              break;
+            }
+          }
+
           if (defenseIndex >= 0) {
             openItem.defense = bot.hand.splice(defenseIndex, 1)[0];
             game.phase = game.table.some(item => item.attack && !item.defense)
