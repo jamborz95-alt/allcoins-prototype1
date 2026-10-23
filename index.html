@@ -4979,6 +4979,14 @@ function flushDurakGameReloadIfIdle() {
 }
 
 async function loadDurakGame(roomId) {
+  // Пока идёт перелёт карт при раздаче, не перерисовываем руку:
+  // иначе новый PNG может на мгновение показаться в руке, а затем повторно
+  // стартовать анимация той же карты из колоды. Следующий обычный опрос обновит состояние.
+  if (durakDealAnimationActive &&
+      String(roomId) === String(currentDurakRoomId)) {
+    return;
+  }
+
   // Не запускаем новое обновление во время перетаскивания или исполнения хода.
   if ((durakCardDragging || durakActionInProgress) &&
       String(roomId) === String(currentDurakRoomId)) {
@@ -7721,13 +7729,52 @@ if (gamesSection) {
     text-align: center !important;
   }
 /* Новой карте нельзя появляться в руке до старта перелёта из колоды. */
-#durakGame .durak-card.durak-deal-hidden {
+#durakGame #durakHand .durak-card.durak-deal-hidden,
+#durakGame #durakHand .durak-card[data-durak-deal-pending="true"] {
   visibility: hidden !important;
   opacity: 0 !important;
   transform: rotateY(88deg) !important;
   transform-origin: center center !important;
   transition: none !important;
   pointer-events: none !important;
+}
+/* Квадраты игроков и ники остаются читаемыми после создания комнаты и в партии. */
+#durakGame.durak-fullscreen .durak-player {
+  min-width: 0 !important;
+  width: min(34vw, 136px) !important;
+  max-width: 136px !important;
+  min-height: 46px !important;
+  padding: 6px 7px !important;
+  box-sizing: border-box !important;
+}
+#durakGame.durak-fullscreen .durak-player .durak-player-name {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+#durakWaitingPanel #durakWaitingPlayers .durak-waiting-seat {
+  min-width: 0 !important;
+  min-height: 58px !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+#durakWaitingPanel #durakWaitingPlayers .durak-waiting-seat .durak-player-name {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
 }
 /* Показываем ник целиком, переносим длинные имена вместо многоточия. */
 #durakGame .durak-player-name {
