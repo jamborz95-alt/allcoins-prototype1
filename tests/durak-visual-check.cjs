@@ -667,7 +667,7 @@ const path = require("node:path");
     }
 
     // Defence played by the opponent must fly from the defender's seat to the attack card.
-    // This uses the same visible 1160ms flight as an incoming attack.
+    // This uses the same visible 580ms flight as an incoming attack.
     currentGame.table = [
       {
         attack: { id: "local-attack-for-defense", rank: "10", suit: "♠" },
@@ -730,7 +730,7 @@ const path = require("node:path");
         JSON.stringify({ incomingDefenseImage, incomingDefenseDistance }));
     }
     await page.waitForTimeout(100);
-    if (!(await incomingDefenseFlyer.count())) {}
+    if (!(await incomingDefenseFlyer.count())) {
       throw new Error("Анимация защиты соперника завершилась раньше времени");
     }
     await page.waitForFunction(
