@@ -8117,7 +8117,7 @@ async function loadOnlineLottoRooms() {
   try {
     const result = await apiRequest("/api/lotto/rooms/list");
     onlineLottoLobbyRoomsCache = Array.isArray(result.rooms) ? result.rooms : [];
-    if (Number.isFinite(Number(result.balance))) {
+    if (result.balance != null && Number.isFinite(Number(result.balance))) {
       state.balance = Number(result.balance);
       $("onlineLottoBalance").textContent = state.balance.toLocaleString("ru-RU");
       render();
