@@ -4367,95 +4367,148 @@ let durakLastRenderedTakePending = false;
 let durakLastRenderedAttackerIndex = null;
 let durakLastRenderedDefenderIndex = null;
 
-function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
+// Не показываем полупустой/недекодированный PNG в момент посадки карты.
+async function waitForDurakCardImagesReady(element, timeoutMs = 700) {
+  const images = Array.from(element?.querySelectorAll("img") || []);
+  await Promise.all(images.map(async image => {
+    if (!image.getAttribute("src")) return;
+
+    if (!image.complete) {
+      await new Promise(resolve => {
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          image.removeEventListener("load", done);
+          image.removeEventListener("error", done);
+          resolve();
+        };
+        const timeout = setTimeout(done, timeoutMs);
+        image.addEventListener("load", done, { once: true });
+        image.addEventListener("error", done, { once: true });
+        if (image.complete) done();
+      });
+    }
+
+    if (image.complete && image.naturalWidth > 0 && typeof image.decode === "function") {
+      await Promise.race([
+        image.decode().catch(() => {}),
+        new Promise(resolve => setTimeout(resolve, timeoutMs))
+      ]);
+    }
+  }));
+}
+
+async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   if (!targetCard || !attackerSeat ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  // Размеры карточки фиксируются ДО замера траектории. Иначе flyer запоминает
-  // старые 68×100 px, пока сама цель позже уменьшается до 56×84 px.
-  applyDurakTableCardSizeLocks();
-  const targetRect = targetCard.getBoundingClientRect();
-  const seatRect = attackerSeat.getBoundingClientRect();
-  if (!targetRect.width || !targetRect.height || !seatRect.width || !seatRect.height) return;
 
+  // Скрываем цель и удерживаем счётчик анимации, пока изображение готовится.
+  // Тогда очередной опрос не сотрёт карту посреди подготовки её лицевой стороны.
+  durakIncomingAttackAnimations += 1;
   targetCard.style.visibility = "hidden";
   targetCard.style.opacity = "0";
   targetCard.style.transition = "none";
 
-  const flyer = targetCard.cloneNode(true);
-  copyDurakComputedStyles(targetCard, flyer);
-  flyer.classList.add("durak-flying-card");
-  flyer.classList.remove("selected", "is-dragging", "dragging");
-  flyer.dataset.incomingAttack = "true";
-  Object.assign(flyer.style, {
-    position: "fixed",
-    left: (seatRect.left + seatRect.width / 2 - targetRect.width / 2) + "px",
-    top: (seatRect.bottom - Math.min(8, seatRect.height * 0.12) - targetRect.height / 2) + "px",
-    width: targetRect.width + "px",
-    height: targetRect.height + "px",
-    minWidth: "0",
-    maxWidth: "none",
-    minHeight: "0",
-    maxHeight: "none",
-    boxSizing: "border-box",
-    margin: "0",
-    pointerEvents: "none",
-    zIndex: "2147483647",
-    overflow: "hidden",
-    transformOrigin: "center center",
-    transform: "translate3d(0,0,0) rotate(-11deg) scale(.68)",
-    transition: "none",
-    willChange: "transform",
-    visibility: "visible",
-    opacity: "1"
-  });
-  const image = flyer.querySelector("img");
-  if (image) Object.assign(image.style, {
-    width: "100%", height: "100%", minWidth: "0", minHeight: "0",
-    maxWidth: "100%", maxHeight: "100%", objectFit: "fill"
-  });
-  document.body.appendChild(flyer);
-  durakIncomingAttackAnimations += 1;
-
-  const from = flyer.getBoundingClientRect();
-  const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
-  const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-  const duration = 405;
+  let flyer = null;
   let timer = null;
   let flightAnimation = null;
   let finished = false;
-  const cleanup = () => {
-    if (timer !== null) clearTimeout(timer);
-  };
   const finish = () => {
     if (finished) return;
     finished = true;
-    cleanup();
+    if (timer !== null) clearTimeout(timer);
     if (flightAnimation) flightAnimation.cancel();
-    flyer.remove();
+    flyer?.remove();
     if (targetCard.isConnected) {
       targetCard.style.visibility = "visible";
       targetCard.style.opacity = "1";
       targetCard.style.transition = "";
     }
     durakIncomingAttackAnimations = Math.max(0, durakIncomingAttackAnimations - 1);
-    if (durakIncomingAttackAnimations === 0) {
-      flushDurakGameReloadIfIdle();
-    }
+    if (durakIncomingAttackAnimations === 0) flushDurakGameReloadIfIdle();
   };
-  window.setTimeout(() => {
-    if (!flyer.isConnected) return finish();
-    requestAnimationFrame(() => {
-      const arcHeight = Math.min(40, Math.max(16, Math.abs(dx) * 0.055 + Math.abs(dy) * 0.025));
-      flightAnimation = flyer.animate([
-        { offset: 0, transform: "translate3d(0,0,0) rotate(-11deg) scale(.68)" },
-        { offset: 0.32, transform: `translate3d(${dx * 0.32}px,${dy * 0.32 - arcHeight}px,0) rotate(-6deg) scale(.82)` },
-        { offset: 0.72, transform: `translate3d(${dx * 0.72}px,${dy * 0.72 - arcHeight * 0.55}px,0) rotate(3deg) scale(.94)` },
-        { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(0deg) scale(1)` }
-      ], { duration, easing: "cubic-bezier(.18,.72,.24,1)", fill: "forwards" });
-      flightAnimation.onfinish = () => playDurakSound("card");
-      timer = window.setTimeout(finish, duration + 90);
+
+  try {
+    await waitForDurakCardImagesReady(targetCard);
+    if (!targetCard.isConnected || !attackerSeat.isConnected) {
+      finish();
+      return;
+    }
+
+    // Измеряем конечную точку лишь после декодирования лица и фиксации размеров.
+    applyDurakTableCardSizeLocks();
+    const targetRect = targetCard.getBoundingClientRect();
+    const seatRect = attackerSeat.getBoundingClientRect();
+    if (!targetRect.width || !targetRect.height || !seatRect.width || !seatRect.height) {
+      finish();
+      return;
+    }
+
+    flyer = targetCard.cloneNode(true);
+    copyDurakComputedStyles(targetCard, flyer);
+    flyer.classList.add("durak-flying-card");
+    flyer.classList.remove("selected", "is-dragging", "dragging");
+    flyer.dataset.incomingAttack = "true";
+    Object.assign(flyer.style, {
+      position: "fixed",
+      left: (seatRect.left + seatRect.width / 2 - targetRect.width / 2) + "px",
+      top: (seatRect.bottom - Math.min(8, seatRect.height * 0.12) - targetRect.height / 2) + "px",
+      width: targetRect.width + "px",
+      height: targetRect.height + "px",
+      minWidth: "0",
+      maxWidth: "none",
+      minHeight: "0",
+      maxHeight: "none",
+      boxSizing: "border-box",
+      margin: "0",
+      pointerEvents: "none",
+      zIndex: "2147483647",
+      overflow: "hidden",
+      transformOrigin: "center center",
+      transform: "translate3d(0,0,0) rotate(-11deg) scale(.68)",
+      transition: "none",
+      willChange: "transform",
+      visibility: "visible",
+      opacity: "1"
     });
-  }, Math.max(0, delayMs));
+    const image = flyer.querySelector("img");
+    if (image) Object.assign(image.style, {
+      display: "block",
+      width: "100%", height: "100%", minWidth: "0", minHeight: "0",
+      maxWidth: "100%", maxHeight: "100%", objectFit: "fill",
+      objectPosition: "center", margin: "0", padding: "0"
+    });
+    await waitForDurakCardImagesReady(flyer);
+    if (!targetCard.isConnected) {
+      finish();
+      return;
+    }
+    document.body.appendChild(flyer);
+
+    const from = flyer.getBoundingClientRect();
+    const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
+    const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
+    const duration = 405;
+    timer = window.setTimeout(() => {
+      if (!flyer?.isConnected) return finish();
+      requestAnimationFrame(() => {
+        const arcHeight = Math.min(40, Math.max(16, Math.abs(dx) * 0.055 + Math.abs(dy) * 0.025));
+        flightAnimation = flyer.animate([
+          { offset: 0, transform: "translate3d(0,0,0) rotate(-11deg) scale(.68)" },
+          { offset: 0.32, transform: `translate3d(${dx * 0.32}px,${dy * 0.32 - arcHeight}px,0) rotate(-6deg) scale(.82)` },
+          { offset: 0.72, transform: `translate3d(${dx * 0.72}px,${dy * 0.72 - arcHeight * 0.55}px,0) rotate(3deg) scale(.94)` },
+          { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(0deg) scale(1)` }
+        ], { duration, easing: "cubic-bezier(.18,.72,.24,1)", fill: "forwards" });
+        flightAnimation.onfinish = () => playDurakSound("card");
+        timer = window.setTimeout(finish, duration + 90);
+      });
+    }, Math.max(0, delayMs));
+  } catch (error) {
+    console.warn("Не удалось подготовить карту соперника к анимации:", error);
+    finish();
+  }
 }
 
 // Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
@@ -4919,10 +4972,22 @@ function createDurakLandingTarget(action, sourceCard = null) {
 }
 
 // После отпускания продолжаем движение той же визуальной карты до точного места посадки.
-function animateDurakCardToTarget(cardElement, targetElement) {
+async function animateDurakCardToTarget(cardElement, targetElement) {
   if (!cardElement || !targetElement) {
     if (durakPendingDragFlyer) durakPendingDragFlyer.remove();
     durakPendingDragFlyer = null;
+    return Promise.resolve();
+  }
+
+  // Сначала декодируем лицо и у источника, и у скрытой цели — не показываем
+  // на столе промежуточный белый/частично отрисованный кадр PNG.
+  await Promise.all([
+    waitForDurakCardImagesReady(cardElement),
+    waitForDurakCardImagesReady(targetElement)
+  ]);
+  if (!cardElement.isConnected || !targetElement.isConnected) {
+    if (durakPendingDragFlyer === cardElement) durakPendingDragFlyer = null;
+    if (cardElement.isConnected && cardElement.classList.contains("durak-flying-card")) cardElement.remove();
     return Promise.resolve();
   }
 
@@ -6462,6 +6527,51 @@ if (Array.isArray(game.hand)) {
     flushDurakGameReloadIfIdle();
   }
 }
+// Готовность к повторной партии отображаем непосредственно у каждого игрока за столом.
+function syncDurakRematchReadyBadges(roomPlayers, roomStatus) {
+  const seats = Array.from(document.querySelectorAll("#durakPlayers .durak-player[data-player-index]"));
+  const rematchLobbyVisible = roomStatus === "finished" || roomStatus === "waiting";
+
+  seats.forEach(seat => {
+    let badge = seat.querySelector(".durak-ready-badge");
+    if (!rematchLobbyVisible || !Array.isArray(roomPlayers)) {
+      badge?.remove();
+      return;
+    }
+
+    const index = Number(seat.dataset.playerIndex);
+    const seatName = seat.querySelector(".durak-player-name")?.textContent?.trim() || "";
+    let player = Number.isInteger(index) ? roomPlayers[index] : null;
+
+    // Обычно оба API возвращают игроков в порядке joined_at. При несовпадении
+    // проверяем, что текущая плашка действительно относится к этому игроку.
+    if (!player || (!!seat.classList.contains("active") !== (player.isMe === true))) {
+      player = roomPlayers.find(candidate =>
+        seat.classList.contains("active")
+          ? candidate.isMe === true
+          : candidate.isMe !== true && String(candidate.label || "").trim() === seatName
+      ) || null;
+    }
+    if (!player) {
+      badge?.remove();
+      return;
+    }
+
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "durak-ready-badge";
+      badge.setAttribute("aria-live", "polite");
+    }
+    const isReady = player.isReady === true;
+    badge.classList.toggle("is-ready", isReady);
+    badge.textContent = isReady ? "✅ ГОТОВ" : "⏳ ЖДЁТ";
+    badge.setAttribute("aria-label", isReady ? "Игрок готов к следующей партии" : "Игрок ещё не готов");
+
+    const backs = seat.querySelector(".durak-card-backs");
+    seat.insertBefore(badge, backs || null);
+  });
+}
+
 // После финала игроки готовятся повторно прямо на игровом столе.
 async function refreshDurakRematchStatus(roomId) {
   if (!roomId || String(roomId) !== String(currentDurakRoomId)) return;
@@ -6480,6 +6590,8 @@ async function refreshDurakRematchStatus(roomId) {
 
   if (!result?.ok || !result.room || !Array.isArray(result.players)) return;
   if (String(roomId) !== String(currentDurakRoomId)) return;
+
+  syncDurakRematchReadyBadges(result.players, result.room.status);
 
   const me = result.players.find(player => player.isMe === true);
   const total = result.players.length;
@@ -8639,6 +8751,34 @@ if (gamesSection) {
   overflow-wrap: anywhere !important;
   line-height: 1.25 !important;
 }
+</style>
+
+<style id="allcoins-durak-rematch-readiness-badges">
+  #durakGame.durak-fullscreen #durakPlayers .durak-player .durak-ready-badge {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: 100% !important;
+    margin: 3px auto 1px !important;
+    padding: 2px 5px !important;
+    border: 1px solid rgba(255,218,123,.6) !important;
+    border-radius: 5px !important;
+    background: rgba(22,34,37,.94) !important;
+    color: #ffdf8a !important;
+    font: 900 9px/1.15 Arial,Helvetica,sans-serif !important;
+    white-space: nowrap !important;
+    letter-spacing: .1px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2) !important;
+    pointer-events: none !important;
+  }
+  #durakGame.durak-fullscreen #durakPlayers .durak-player .durak-ready-badge.is-ready {
+    border-color: rgba(112,255,168,.9) !important;
+    background: rgba(12,67,48,.96) !important;
+    color: #a5ffc3 !important;
+    box-shadow: 0 0 0 1px rgba(112,255,168,.18), 0 1px 5px rgba(0,0,0,.25) !important;
+  }
 </style>
 </body>
 </html>
