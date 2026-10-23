@@ -4440,8 +4440,10 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
     const target = item?.target;
     if (!target?.isConnected) return;
     savedStyles.set(target, {
-      opacity: target.style.opacity,
-      visibility: target.style.visibility,
+      opacity: target.dataset.durakDealPending === "true" ? "" : target.style.opacity,
+      // Скрытие до вставки предотвращает вспышку; после полёта возвращаем
+      // исходное значение inline-стиля, а не оставляем карту невидимой.
+      visibility: target.dataset.durakDealPending === "true" ? "" : target.style.visibility,
       transform: target.style.transform,
       transition: target.style.transition,
       pointerEvents: target.style.pointerEvents,
@@ -5998,8 +6000,13 @@ if (Array.isArray(game.hand)) {
       newlyDealtHandCards.push(cardElement);
     }
     if (shouldAnimateArrival) {
+      // Прячем карту inline ДО вставки в руку: Telegram Android WebView иногда
+      // успевает показать PNG одним кадром до применения CSS-класса анимации.
       cardElement.classList.add("durak-deal-hidden");
       cardElement.dataset.durakDealPending = "true";
+      cardElement.style.setProperty("visibility", "hidden", "important");
+      cardElement.style.setProperty("opacity", "0", "important");
+      cardElement.style.setProperty("transition", "none", "important");
     }
     $("durakHand").appendChild(cardElement);
   });
@@ -7665,9 +7672,9 @@ if (gamesSection) {
 <style id="allcoins-card-animation-and-player-names-fix">
   /* Игровые квадраты: достаточно ширины для нормальных имён в несколько строк. */
   #durakGame.durak-fullscreen .durak-player {
-    width: min(30vw, 116px) !important;
-    min-width: 82px !important;
-    max-width: 30vw !important;
+    width: min(34vw, 132px) !important;
+    min-width: 94px !important;
+    max-width: 34vw !important;
     min-height: 44px !important;
     padding: 5px 6px !important;
     box-sizing: border-box !important;
