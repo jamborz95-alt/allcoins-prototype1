@@ -5083,6 +5083,11 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   const targetRect = targetElement.getBoundingClientRect();
   const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
   const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
+  // Карта в руке обычно больше, чем её ячейка на столе.
+  // Масштабируем её во время полёта до реальных размеров цели, чтобы большой
+  // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
+  const targetScaleX = targetRect.width / from.width;
+  const targetScaleY = targetRect.height / from.height;
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
@@ -5134,7 +5139,8 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
     flyer.addEventListener("transitionend", onEnd);
     requestAnimationFrame(() => {
       flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(.22,.68,.28,1)";
-      flyer.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(1)`;
+      flyer.style.transform =
+        `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(${targetScaleX},${targetScaleY})`;
       // Android WebView иногда не отправляет transitionend; завершаем быстро,
       // не оставляя карту зависшей в воздухе.
       fallbackTimer = window.setTimeout(finish, flightDuration + 45);
