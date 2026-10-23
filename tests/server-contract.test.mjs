@@ -82,7 +82,7 @@ test("starting a game checks owner, minimum players, and guest readiness", () =>
 
 test("game actions allow only known actions and verify room membership", () => {
   const body = routeBody("/api/durak/action");
-  assert.match(body, /\["attack", "defend", "take", "beat"\]/);
+  assert.match(body, /\["attack", "defend", "transfer", "take", "beat"\]/);
   assert.match(body, /Ты не состоишь в этой комнате/);
   assert.match(body, /Сейчас ход атакующего игрока/);
   assert.match(body, /Защищаться может только отбивающийся игрок/);
