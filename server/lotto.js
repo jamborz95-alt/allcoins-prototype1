@@ -123,7 +123,7 @@ export function createLottoRouter(options) {
         "INSERT INTO lotto_rooms (stake, status, created_at, buy_until) " +
         "SELECT s.stake, 'waiting', NOW(), NOW() + ($2::integer * INTERVAL '1 second') " +
         "FROM unnest($1::bigint[]) AS s(stake) " +
-        "WHERE NOT EXISTS (SELECT 1 FROM lotto_rooms r WHERE r.stake = s.stake AND r.status = 'waiting' AND r.buy_until > NOW()) " +
+        "WHERE NOT EXISTS (SELECT 1 FROM lotto_rooms r WHERE r.stake = s.stake AND r.status = 'waiting' AND (r.buy_until > NOW() OR EXISTS (SELECT 1 FROM lotto_tickets t WHERE t.room_id = r.id))) " +
         "ON CONFLICT DO NOTHING",
         [STAKES.map(String), ROOM_WINDOW_SECONDS]
       );
@@ -154,8 +154,9 @@ export function createLottoRouter(options) {
   }
 
   async function findCompletedTicket(client, roomId) {
+    // Тестовый бот помогает проверить раунд, но никогда не становится победителем.
     const result = await client.query(
-      "SELECT id, telegram_id, numbers, marked_numbers FROM lotto_tickets WHERE room_id = $1 ORDER BY id ASC",
+      "SELECT id, telegram_id, numbers, marked_numbers FROM lotto_tickets WHERE room_id = $1 AND telegram_id > 0 ORDER BY id ASC",
       [String(roomId)]
     );
     for (const ticket of result.rows) {
@@ -192,26 +193,39 @@ export function createLottoRouter(options) {
         "SELECT r.* FROM lotto_rooms r WHERE r.status = 'waiting' AND r.buy_until <= NOW() ORDER BY r.stake ASC FOR UPDATE SKIP LOCKED"
       );
       for (const room of expired.rows) {
-        const ticketCountResult = await client.query(
-          "SELECT COUNT(*)::integer AS ticket_count FROM lotto_tickets WHERE room_id = $1",
+        const participantResult = await client.query(
+          "SELECT COUNT(DISTINCT telegram_id)::integer AS player_count, COUNT(*)::integer AS ticket_count " +
+          "FROM lotto_tickets WHERE room_id = $1",
           [String(room.id)]
         );
-        const ticketCount = Number(ticketCountResult.rows[0].ticket_count) || 0;
-        if (ticketCount === 0) {
+        const playerCount = Number(participantResult.rows[0].player_count) || 0;
+
+        if (playerCount === 0) {
+          // Никто не пришёл — продлеваем эту же комнату и запускаем таймер заново.
           await client.query(
-            "UPDATE lotto_rooms SET status = 'finished', finished_at = NOW(), result_note = $1 WHERE id = $2",
-            ["В комнате никто не купил билет.", String(room.id)]
+            "UPDATE lotto_rooms SET created_at = NOW(), buy_until = NOW() + ($1::integer * INTERVAL '1 second'), " +
+            "started_at = NULL, next_draw_at = NULL, drawn_numbers = '[]'::jsonb, result_note = NULL, finished_at = NULL " +
+            "WHERE id = $2 AND status = 'waiting'",
+            [ROOM_WINDOW_SECONDS, String(room.id)]
           );
-        } else {
-          await client.query(
-            "UPDATE lotto_rooms SET status = 'playing', started_at = NOW(), next_draw_at = NOW() + ($1::integer * INTERVAL '1 second'), drawn_numbers = '[]'::jsonb WHERE id = $2 AND status = 'waiting'",
-            [DRAW_INTERVAL_SECONDS, String(room.id)]
-          );
-          await client.query(
-            "UPDATE lotto_room_players SET auto_play = (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '8 seconds') WHERE room_id = $1",
-            [String(room.id)]
-          );
+          continue;
         }
+
+        if (playerCount < 2) {
+          // Один игрок уже купил билет: не закрываем комнату, а ждём второго.
+          // Когда второй участник купит билет, ближайший запуск планировщика
+          // начнёт розыгрыш сразу, не запуская ещё один трёхминутный отсчёт.
+          continue;
+        }
+
+        await client.query(
+          "UPDATE lotto_rooms SET status = 'playing', started_at = NOW(), next_draw_at = NOW() + ($1::integer * INTERVAL '1 second'), drawn_numbers = '[]'::jsonb WHERE id = $2 AND status = 'waiting'",
+          [DRAW_INTERVAL_SECONDS, String(room.id)]
+        );
+        await client.query(
+          "UPDATE lotto_room_players SET auto_play = (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '8 seconds') WHERE room_id = $1",
+          [String(room.id)]
+        );
       }
 
       const dueRooms = await client.query(
@@ -399,8 +413,9 @@ export function createLottoRouter(options) {
         "r.drawn_numbers, r.pot, r.prize, r.winner_telegram_id, r.result_note, " +
         "(SELECT COUNT(*)::integer FROM lotto_room_players p WHERE p.room_id = r.id) AS players_count, " +
         "(SELECT COUNT(*)::integer FROM lotto_tickets t WHERE t.room_id = r.id) AS ticket_count, " +
-        "(SELECT COUNT(*)::integer FROM lotto_tickets t WHERE t.room_id = r.id AND t.telegram_id = $1) AS my_tickets " +
-        "FROM lotto_rooms r WHERE (r.status = 'waiting' AND r.buy_until > NOW()) " +
+        "(SELECT COUNT(*)::integer FROM lotto_tickets t WHERE t.room_id = r.id AND t.telegram_id = $1) AS my_tickets, " +
+        "EXISTS (SELECT 1 FROM lotto_room_players bp WHERE bp.room_id = r.id AND bp.telegram_id = -1) AS test_bot_joined " +
+        "FROM lotto_rooms r WHERE (r.status = 'waiting' AND (r.buy_until > NOW() OR EXISTS (SELECT 1 FROM lotto_tickets wt WHERE wt.room_id = r.id))) " +
         "OR (r.status IN ('playing','finished') AND EXISTS (SELECT 1 FROM lotto_room_players p WHERE p.room_id = r.id AND p.telegram_id = $1)) " +
         "ORDER BY CASE r.status WHEN 'waiting' THEN 0 WHEN 'playing' THEN 1 ELSE 2 END, r.stake ASC, r.created_at DESC LIMIT 100",
         [String(user.id)]
@@ -422,7 +437,8 @@ export function createLottoRouter(options) {
           resultNote: room.result_note || "",
           playersCount: Number(room.players_count) || 0,
           ticketCount: Number(room.ticket_count) || 0,
-          myTickets: Number(room.my_tickets) || 0
+          myTickets: Number(room.my_tickets) || 0,
+          testBotJoined: room.test_bot_joined === true
         })),
         balance: playerResult.rows.length ? Number(playerResult.rows[0].balance) : null,
         roomWindowSeconds: ROOM_WINDOW_SECONDS
@@ -446,9 +462,22 @@ export function createLottoRouter(options) {
         return fail(res, 404, "Комната лото не найдена.");
       }
       const room = roomResult.rows[0];
-      if (room.status !== "waiting" || new Date(room.buy_until).getTime() <= Date.now()) {
+      if (room.status !== "waiting") {
         await client.query("ROLLBACK");
         return fail(res, 400, "Продажа билетов завершена. Выбери следующую комнату.");
+      }
+      const deadlinePassed = new Date(room.buy_until).getTime() <= Date.now();
+      if (deadlinePassed) {
+        const participants = await client.query(
+          "SELECT COUNT(DISTINCT telegram_id)::integer AS player_count FROM lotto_tickets WHERE room_id = $1",
+          [String(room.id)]
+        );
+        // После окончания отсчёта принимаем второго участника, но не открываем
+        // переполненную комнату повторно.
+        if ((Number(participants.rows[0].player_count) || 0) >= 2) {
+          await client.query("ROLLBACK");
+          return fail(res, 400, "Раунд уже запускается. Выбери комнату из обновлённого списка.");
+        }
       }
       await client.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO NOTHING", [String(user.id)]);
       const ownedResult = await client.query(
@@ -504,6 +533,68 @@ export function createLottoRouter(options) {
     }
   });
 
+  router.post("/test-bot/join", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const user = verifyTelegram(req.body && req.body.initData);
+      if (!user || !user.id) return fail(res, 401, "Открой ALLCOINS через Telegram.");
+      if (!validId(req.body && req.body.roomId)) return fail(res, 400, "Неверный номер комнаты.");
+      await client.query("BEGIN");
+      const roomResult = await client.query("SELECT * FROM lotto_rooms WHERE id = $1 FOR UPDATE", [String(req.body.roomId)]);
+      if (!roomResult.rows.length) {
+        await client.query("ROLLBACK");
+        return fail(res, 404, "Комната лото не найдена.");
+      }
+      const room = roomResult.rows[0];
+      if (room.status !== "waiting") {
+        await client.query("ROLLBACK");
+        return fail(res, 400, "Тест-бота можно добавить только до начала розыгрыша.");
+      }
+      const ownerTicket = await client.query(
+        "SELECT 1 FROM lotto_tickets WHERE room_id = $1 AND telegram_id = $2 LIMIT 1",
+        [String(room.id), String(user.id)]
+      );
+      if (!ownerTicket.rows.length) {
+        await client.query("ROLLBACK");
+        return fail(res, 400, "Сначала купи свой билет, затем добавь тест-бота.");
+      }
+      const existingBot = await client.query(
+        "SELECT id FROM lotto_tickets WHERE room_id = $1 AND telegram_id = -1 LIMIT 1",
+        [String(room.id)]
+      );
+      if (existingBot.rows.length) {
+        await client.query("COMMIT");
+        return res.json({ ok: true, alreadyJoined: true, message: "Тест-бот уже находится в комнате." });
+      }
+
+      const botGrid = makeTicketGrid();
+      await client.query(
+        "INSERT INTO lotto_room_players (room_id, telegram_id, display_name, last_seen_at, auto_play) " +
+        "VALUES ($1, -1, '🤖 Тест-бот', NULL, TRUE) ON CONFLICT (room_id, telegram_id) DO NOTHING",
+        [String(room.id)]
+      );
+      await client.query(
+        "INSERT INTO lotto_tickets (room_id, telegram_id, ticket_no, numbers, marked_numbers) " +
+        "VALUES ($1, -1, 1, $2::jsonb, '[]'::jsonb) ON CONFLICT (room_id, telegram_id, ticket_no) DO NOTHING",
+        [String(room.id), JSON.stringify(botGrid)]
+      );
+      // Тестовый билет бесплатный, не пополняет банк и исключён из определения победителя.
+      // Запускаем проверочный раунд сразу, чтобы не ждать оставшийся таймер.
+      await client.query(
+        "UPDATE lotto_rooms SET buy_until = NOW() WHERE id = $1 AND status = 'waiting'",
+        [String(room.id)]
+      );
+      await client.query("COMMIT");
+      return res.json({ ok: true, alreadyJoined: false, message: "Тест-бот добавлен. Розыгрыш запускается." });
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch {}
+      console.error("Lotto test bot error:", error.message);
+      return fail(res, 500, "Не удалось добавить тест-бота.");
+    } finally {
+      client.release();
+    }
+  });
+
   router.post("/room/state", async (req, res) => {
     try {
       const user = verifyTelegram(req.body && req.body.initData);
@@ -534,6 +625,10 @@ export function createLottoRouter(options) {
         "SELECT display_name FROM lotto_room_players WHERE room_id = $1 AND telegram_id = $2",
         [String(room.id), String(room.winner_telegram_id)]
       );
+      const testBotResult = await pool.query(
+        "SELECT EXISTS (SELECT 1 FROM lotto_room_players WHERE room_id = $1 AND telegram_id = -1) AS joined",
+        [String(room.id)]
+      );
       const playerResultBalance = await pool.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO UPDATE SET updated_at = NOW() RETURNING balance", [String(user.id)]);
       const countResult = await pool.query(
         "SELECT COUNT(DISTINCT telegram_id)::integer AS players_count, COUNT(*)::integer AS ticket_count FROM lotto_tickets WHERE room_id = $1",
@@ -559,7 +654,8 @@ export function createLottoRouter(options) {
           resultNote: room.result_note || "",
           playersCount: Number(countResult.rows[0].players_count) || 0,
           ticketCount: Number(countResult.rows[0].ticket_count) || 0,
-          autoPlay: playerResult.rows.length ? playerResult.rows[0].auto_play === true : false
+          autoPlay: playerResult.rows.length ? playerResult.rows[0].auto_play === true : false,
+          testBotJoined: testBotResult.rows[0].joined === true
         },
         tickets: ticketsResult.rows.map(ticket => ({
           id: String(ticket.id),
