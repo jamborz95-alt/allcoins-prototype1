@@ -126,6 +126,28 @@ const path = require("node:path");
     await page.screenshot({ path: path.join(out, "02-game-before-drag.png"), fullPage: true });
 
 
+    // During a rematch, the opponent's seat itself must show a ready checkmark.
+    const readyBadgeAudit = await page.evaluate(() => {
+      syncDurakRematchReadyBadges([
+        { label: "Ты", isMe: true, isReady: false },
+        { label: "Соперник", isMe: false, isReady: true }
+      ], "finished");
+      const seat = document.querySelector('#durakPlayers .durak-player[data-player-index="1"]');
+      const badge = seat?.querySelector(".durak-ready-badge");
+      const result = {
+        badgeText: badge?.textContent || "",
+        badgeReadyClass: !!badge?.classList.contains("is-ready"),
+        opponentName: seat?.querySelector(".durak-player-name")?.textContent || ""
+      };
+      syncDurakRematchReadyBadges([], "playing");
+      return result;
+    });
+    fs.writeFileSync(path.join(out, "rematch-ready-badge.json"), JSON.stringify(readyBadgeAudit, null, 2));
+    if (readyBadgeAudit.badgeText !== "✅ ГОТОВ" || !readyBadgeAudit.badgeReadyClass ||
+        readyBadgeAudit.opponentName !== "Соперник") {
+      throw new Error("У готового противника не отображается галочка рядом с его местом: " + JSON.stringify(readyBadgeAudit));
+    }
+
     // Check ALLCOINS hand ordering and the new table wordmark before interacting.
     const handDisplay = await page.evaluate(() => {
       const normalizeSuit = value => ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" }[String(value)] || String(value));
@@ -492,7 +514,8 @@ const path = require("node:path");
     currentGame.attackerIndex = 1;
     currentGame.defenderIndex = 0;
     currentGame.phase = "defense";
-    currentGame.table = [{ attack: { id: "incoming-attack-1", rank: "9", suit: "♣" }, defense: null }];
+    // Queen of hearts uses the user's custom PNG, so this also checks artwork readiness.
+    currentGame.table = [{ attack: { id: "incoming-attack-1", rank: "Д", suit: "♥" }, defense: null }];
     await page.evaluate(() => loadDurakGame("visual-test-room"));
     await page.waitForTimeout(70);
     const incomingFlyer = page.locator('.durak-flying-card[data-incoming-attack="true"]');
@@ -507,10 +530,22 @@ const path = require("node:path");
       if (!card) return null;
       const style = getComputedStyle(card);
       const rect = card.getBoundingClientRect();
-      return { visible: style.visibility !== "hidden" && Number(style.opacity) > 0.9, x: rect.x, y: rect.y };
+      const image = card.querySelector("img");
+      const imageRect = image?.getBoundingClientRect();
+      return {
+        visible: style.visibility !== "hidden" && Number(style.opacity) > 0.9,
+        x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+        imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+        imageNaturalWidth: image?.naturalWidth || 0,
+        imageFitsCard: !image || (imageRect.width >= rect.width - 1 && imageRect.height >= rect.height - 1)
+      };
     });
     if (!incomingStart || !incomingEnd?.visible || await incomingFlyer.count() !== 0) {
       throw new Error("Анимация атаки соперника не завершилась посадкой карты на стол");
+    }
+    if (!incomingEnd.imageLoaded || !incomingEnd.imageFitsCard ||
+        Math.abs(incomingEnd.width - 56) > 0.5 || Math.abs(incomingEnd.height - 84) > 0.5) {
+      throw new Error("После анимации лицо карты должно быть полностью загружено и занять всю карту 56×84: " + JSON.stringify(incomingEnd));
     }
 
     // Regression check for the video layout:
