@@ -3175,11 +3175,14 @@ function syncDurakTableCardSizes() {
   const height = Number.parseFloat(computed.height);
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
 
-  const offset = Math.max(14, Math.round(width * 0.32));
+  // Оставляем место под вторую карту, её наклон и тень,
+  // чтобы защита не касалась следующей атакующей карты.
+  const offset = Math.max(22, Math.round(width * 0.40));
+  const pairWidth = width + offset + 12;
   gameRoot.style.setProperty("--durak-hand-card-width", width + "px");
   gameRoot.style.setProperty("--durak-hand-card-height", height + "px");
   gameRoot.style.setProperty("--durak-table-card-offset", offset + "px");
-  gameRoot.style.setProperty("--durak-table-pair-width", (width + offset) + "px");
+  gameRoot.style.setProperty("--durak-table-pair-width", pairWidth + "px");
   gameRoot.style.setProperty("--durak-table-pair-height", (height + 4) + "px");
 }
 
@@ -8441,8 +8444,8 @@ if (gamesSection) {
   #durakGame.durak-fullscreen {
     --durak-hand-card-width: 56px;
     --durak-hand-card-height: 84px;
-    --durak-table-card-offset: 18px;
-    --durak-table-pair-width: 74px;
+    --durak-table-card-offset: 22px;
+    --durak-table-pair-width: 90px;
     --durak-table-pair-height: 88px;
   }
   #durakGame.durak-fullscreen #durakTable {
