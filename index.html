@@ -4782,9 +4782,10 @@ function initDurakSoundToggle() {
 }
 initDurakSoundToggle();
 
-// Следим за новыми атакующими картами, чтобы анимировать только свежие броски соперника.
+// Следим за новыми картами атаки и защиты, чтобы они летели от игрока к столу.
 let durakKnownAttackCardIds = new Set();
-// Пока атакующая карта летит к столу, опрос сервера не должен стирать её копию.
+let durakKnownDefenseCardIds = new Set();
+// Пока карта соперника летит к столу, опрос сервера не должен стирать её копию.
 let durakIncomingAttackAnimations = 0;
 let durakTableHistoryRoomId = null;
 let durakLastRenderedGameRoomId = null;
@@ -4825,8 +4826,8 @@ async function waitForDurakCardImagesReady(element, timeoutMs = 700) {
   }));
 }
 
-async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
-  if (!targetCard || !attackerSeat ||
+async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0, cardType = "attack") {
+  if (!targetCard || !playerSeat ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   // Скрываем цель и удерживаем счётчик анимации, пока изображение готовится.
@@ -4857,7 +4858,7 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
 
   try {
     await waitForDurakCardImagesReady(targetCard);
-    if (!targetCard.isConnected || !attackerSeat.isConnected) {
+    if (!targetCard.isConnected || !playerSeat.isConnected) {
       finish();
       return;
     }
@@ -4865,7 +4866,7 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
     // Измеряем конечную точку лишь после декодирования лица и фиксации размеров.
     applyDurakTableCardSizeLocks();
     const targetRect = targetCard.getBoundingClientRect();
-    const seatRect = attackerSeat.getBoundingClientRect();
+    const seatRect = playerSeat.getBoundingClientRect();
     if (!targetRect.width || !targetRect.height || !seatRect.width || !seatRect.height) {
       finish();
       return;
@@ -4875,13 +4876,17 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
     copyDurakComputedStyles(targetCard, flyer);
     flyer.classList.add("durak-flying-card");
     flyer.classList.remove("selected", "is-dragging", "dragging");
-    flyer.dataset.incomingAttack = "true";
+    if (cardType === "defense") {
+      flyer.dataset.incomingDefense = "true";
+    } else {
+      flyer.dataset.incomingAttack = "true";
+    }
     Object.assign(flyer.style, {
       position: "fixed",
-      left: (((attackerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().left ?? (seatRect.left + seatRect.width / 2)) +
-        ((attackerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().width || 0) / 2)) - targetRect.width / 2) + "px",
-      top: (((attackerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().top ?? (seatRect.bottom - Math.min(8, seatRect.height * 0.12))) +
-        ((attackerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().height || 0) / 2)) - targetRect.height / 2) + "px",
+      left: (((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().left ?? (seatRect.left + seatRect.width / 2)) +
+        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().width || 0) / 2)) - targetRect.width / 2) + "px",
+      top: (((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().top ?? (seatRect.bottom - Math.min(8, seatRect.height * 0.12))) +
+        ((playerSeat.querySelector(".durak-card-backs")?.getBoundingClientRect().height || 0) / 2)) - targetRect.height / 2) + "px",
       width: targetRect.width + "px",
       height: targetRect.height + "px",
       minWidth: "0",
@@ -4913,7 +4918,8 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
       visibility: "visible",
       width: "100%", height: "100%", minWidth: "0", minHeight: "0",
       maxWidth: "100%", maxHeight: "100%", objectFit: "fill",
-      objectPosition: "center", margin: "0", padding: "0"
+      objectPosition: "center", margin: "0", padding: "0",
+      transform: "none"
     });
     // Attach the transparent copy before decoding: some mobile WebViews do not
     // finish decoding cloned <img> elements until they are connected to the DOM.
@@ -4930,8 +4936,21 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
     const from = flyer.getBoundingClientRect();
     const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
     const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-    // Сделать бросок соперника таким же читаемым, как раздачу:
-    // более длинная дуга, видимый наклон и короткий акцент в момент посадки.
+    // Атака и защита используют один маршрут и одну длительность.
+    // Завершаем вращение под тем же углом, что и карта на столе, без скачка угла.
+    const targetTransform = window.getComputedStyle(targetCard).transform;
+    let landingRotation = 0;
+    const targetMatrix = targetTransform && targetTransform !== "none"
+      ? targetTransform.match(/^matrix\(([^)]+)\)$/)
+      : null;
+    if (targetMatrix) {
+      const values = targetMatrix[1].split(",").map(Number);
+      if (values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1])) {
+        landingRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
+      }
+    }
+    const rotationAt78 = landingRotation * 0.75 - 1.5;
+    const rotationAt94 = landingRotation * 0.75 + 0.5;
     const duration = 1280;
     timer = window.setTimeout(() => {
       if (!flyer?.isConnected) return finish();
@@ -4941,9 +4960,9 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
           { offset: 0, transform: "translate3d(0,0,0) rotate(-16deg) scale(.62)" },
           { offset: 0.18, transform: `translate3d(${dx * 0.18}px,${dy * 0.18 - arcHeight}px,0) rotate(-10deg) scale(.78)` },
           { offset: 0.48, transform: `translate3d(${dx * 0.48}px,${dy * 0.48 - arcHeight * 1.12}px,0) rotate(-4deg) scale(.94)` },
-          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.38}px,0) rotate(-1.5deg) scale(.985)` },
-          { offset: 0.94, transform: `translate3d(${dx * 0.94}px,${dy * 0.94}px,0) rotate(.5deg) scale(1)` },
-          { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(0deg) scale(1)` }
+          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.38}px,0) rotate(${rotationAt78}deg) scale(.985)` },
+          { offset: 0.94, transform: `translate3d(${dx * 0.94}px,${dy * 0.94}px,0) rotate(${rotationAt94}deg) scale(1)` },
+          { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(${landingRotation}deg) scale(1)` }
         ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
         flightAnimation.onfinish = () => {
           playDurakSound("card");
@@ -4953,9 +4972,18 @@ async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs 
       });
     }, Math.max(0, delayMs));
   } catch (error) {
-    console.warn("Не удалось подготовить карту соперника к анимации:", error);
+    console.warn("Не удалось подготовить входящую карту к анимации:", error);
     finish();
   }
+}
+
+
+// Сохраняем прежнюю точку входа и темп атаки, но общий механизм доступен и защите.
+async function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
+  return animateIncomingDurakTableCard(targetCard, attackerSeat, delayMs, "attack");
+}
+async function animateIncomingDurakDefenseCard(targetCard, defenderSeat, delayMs = 0) {
+  return animateIncomingDurakTableCard(targetCard, defenderSeat, delayMs, "defense");
 }
 
 // Раздаёт карты по очереди: рубашки летят от видимой стопки к местам игроков,
@@ -5366,9 +5394,15 @@ function createDurakLandingTarget(action, sourceCard = null) {
     if (image) {
       image.style.width = "100%";
       image.style.height = "100%";
+      image.style.minWidth = "100%";
+      image.style.minHeight = "100%";
       image.style.maxWidth = "100%";
       image.style.maxHeight = "100%";
-      image.style.objectFit = "contain";
+      image.style.objectFit = "fill";
+      image.style.objectPosition = "center";
+      image.style.transform = "none";
+      image.style.margin = "0";
+      image.style.padding = "0";
     }
     return card;
   };
@@ -5531,6 +5565,26 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   // Плавный непрерывный полёт прямо в точку стола: без зависания над целью
   // и без отдельной паузы перед посадкой. Скорый бросок короче, обычный заметнее.
   const flightDuration = Math.round(150 - throwPower * 30);
+  // Карта в руке немного увеличена внутри рамки. Убираем это увеличение
+  // плавно в течение полёта, а не одним кадром при приземлении — угол не пропадает.
+  if (flyerImage) {
+    const imageTransformAtStart = window.getComputedStyle(flyerImage).transform;
+    if (imageTransformAtStart && imageTransformAtStart !== "none") {
+      try {
+        flyerImage.animate([
+          { transform: imageTransformAtStart },
+          { transform: "scale(1)" }
+        ], {
+          duration: flightDuration,
+          easing: "cubic-bezier(.22,.68,.28,1)",
+          fill: "forwards"
+        });
+      } catch (imageAnimationError) {
+        console.warn("Не удалось плавно выровнять изображение карты:", imageAnimationError);
+        flyerImage.style.transform = "none";
+      }
+    }
+  }
   let targetRotation = 0;
   if (targetElement.classList.contains("durak-landing-target")) {
     const targetTransform = window.getComputedStyle(targetElement).transform;
@@ -5763,19 +5817,34 @@ async function loadDurakGame(roomId) {
         .filter(id => id !== undefined && id !== null)
         .map(String)
     );
+    const liveDefenseIds = new Set(
+      (Array.isArray(game.table) ? game.table : [])
+        .map(item => item?.defense?.id)
+        .filter(id => id !== undefined && id !== null)
+        .map(String)
+    );
     let incomingAttackIds = [];
+    let incomingDefenseIds = [];
     if (String(durakTableHistoryRoomId) !== String(roomId)) {
       durakTableHistoryRoomId = roomId;
-      // Если игрок открыл комнату в момент чужой атаки, первые карты тоже должны прилететь.
+      // Если игрок открыл комнату в момент уже начавшегося хода,
+      // существующие атаки и защиты тоже плавно прилетают с мест игроков.
       incomingAttackIds = [...liveAttackIds];
+      incomingDefenseIds = [...liveDefenseIds];
       durakKnownAttackCardIds = new Set(liveAttackIds);
+      durakKnownDefenseCardIds = new Set(liveDefenseIds);
     } else {
       incomingAttackIds = [...liveAttackIds].filter(id => !durakKnownAttackCardIds.has(id));
+      incomingDefenseIds = [...liveDefenseIds].filter(id => !durakKnownDefenseCardIds.has(id));
       durakKnownAttackCardIds = new Set(liveAttackIds);
+      durakKnownDefenseCardIds = new Set(liveDefenseIds);
     }
     const attacksFromOpponent =
       game.status === "playing" &&
       Number(game.attackerIndex) !== Number(game.playerIndex);
+    const defensesFromOpponent =
+      game.status === "playing" &&
+      Number(game.defenderIndex) !== Number(game.playerIndex);
 
     // Убираем временные копии анимации перед отрисовкой подтверждённого состояния.
     // Если Android Telegram WebView пропустил завершение анимации, большая карта
@@ -6261,6 +6330,19 @@ if (attacksFromOpponent && incomingAttackIds.length) {
       $("durakTable").querySelectorAll('.durak-card[data-table-card-type="attack"]')
     ).find(element => String(element.dataset.cardId) === String(id));
     if (targetCard) animateIncomingDurakAttackCard(targetCard, attackerSeat, index * 110);
+  });
+}
+
+// Защита соперника летит с его места поверх соответствующей атакующей карты.
+if (defensesFromOpponent && incomingDefenseIds.length) {
+  const defenderSeat = playersBox?.querySelector(
+    '[data-player-index="' + String(game.defenderIndex) + '"]'
+  );
+  incomingDefenseIds.forEach((id, index) => {
+    const targetCard = Array.from(
+      $("durakTable").querySelectorAll('.durak-card[data-table-card-type="defense"]')
+    ).find(element => String(element.dataset.cardId) === String(id));
+    if (targetCard) animateIncomingDurakDefenseCard(targetCard, defenderSeat, index * 110);
   });
 }
 
