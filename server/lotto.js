@@ -164,8 +164,9 @@ export function createLottoRouter(options) {
   async function runScheduler() {
     if (schedulerBusy) return;
     schedulerBusy = true;
-    const client = await pool.connect();
+    let client = null;
     try {
+      client = await pool.connect();
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(71582932)");
 
@@ -196,7 +197,7 @@ export function createLottoRouter(options) {
       }
 
       const dueRooms = await client.query(
-        "SELECT r.* FROM lotto_rooms r WHERE r.status = 'playing' AND r.next_draw_at <= NOW() ORDER BY r.next_draw_at ASC FOR UPDATE SKIP LOCKED LIMIT 25"
+        "SELECT r.* FROM lotto_rooms r WHERE r.status = 'playing' AND r.next_draw_at <= NOW() ORDER BY r.next_draw_at ASC LIMIT 25 FOR UPDATE SKIP LOCKED"
       );
       for (const room of dueRooms.rows) {
         const alreadyDrawn = Array.isArray(room.drawn_numbers) ? room.drawn_numbers.map(Number) : [];
@@ -242,10 +243,10 @@ export function createLottoRouter(options) {
       }
       await client.query("COMMIT");
     } catch (error) {
-      try { await client.query("ROLLBACK"); } catch {}
+      if (client) { try { await client.query("ROLLBACK"); } catch {} }
       console.error("Lotto scheduler error:", error.message);
     } finally {
-      client.release();
+      if (client) client.release();
       schedulerBusy = false;
     }
     try { await ensureLobbyRooms(); } catch (error) {
@@ -351,6 +352,7 @@ export function createLottoRouter(options) {
         await client.query("ROLLBACK");
         return fail(res, 400, "Продажа билетов завершена. Выбери следующую комнату.");
       }
+      await client.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO NOTHING", [String(user.id)]);
       const ownedResult = await client.query(
         "SELECT COUNT(*)::integer AS count FROM lotto_tickets WHERE room_id = $1 AND telegram_id = $2",
         [String(room.id), String(user.id)]
