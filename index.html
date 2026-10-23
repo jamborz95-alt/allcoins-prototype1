@@ -8229,8 +8229,8 @@ function speakLottoText(text) {
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "ru-RU";
-    utterance.rate = 0.88;
-    utterance.pitch = 1.0;
+    utterance.rate = 0.82;
+    utterance.pitch = 1.03;
     utterance.volume = 1.0;
     const russianVoice = getLottoRussianVoice();
     if (russianVoice) utterance.voice = russianVoice;
@@ -8313,7 +8313,7 @@ function announceLottoDraw(room) {
 
   const number = drawn[drawn.length - 1];
   if (supportsNativeLottoSpeech()) {
-    speakLottoText("Внимание. Номер " + lottoNumberToWords(number) + ".");
+    speakLottoText(lottoNumberToWords(number) + ".");
   } else {
     playLottoVoiceAudio(number, false);
   }
