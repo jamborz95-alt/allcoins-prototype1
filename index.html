@@ -6342,6 +6342,8 @@ if (Array.isArray(game.hand)) {
         // Не сбрасываем текст/disabled здесь — состояние готовности приходит с сервера.
         void refreshDurakRematchStatus(roomId);
       } else {
+        durakRematchStartRoomId = null;
+        durakRematchStartRetryAt = 0;
         rematchButton.style.display = "none";
         rematchButton.disabled = false;
         rematchButton.textContent = "🔁 Готов к следующей игре";
@@ -6425,8 +6427,11 @@ async function refreshDurakRematchStatus(roomId) {
           durakLastRenderedGameRoomId = null;
 
           showStatus("durakGameStatus", "🎮 Все готовы! Раздаём карты для следующей партии…");
-          durakGameReloadRequested = true;
-          durakGameReloadRoomId = roomId;
+          window.setTimeout(() => {
+            if (String(currentDurakRoomId) === String(roomId)) {
+              loadDurakGame(roomId);
+            }
+          }, 120);
         } catch (error) {
           console.warn("Не удалось автоматически запустить следующую партию:", error);
           button.disabled = false;
