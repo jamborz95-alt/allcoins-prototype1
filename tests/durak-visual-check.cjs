@@ -425,7 +425,7 @@ const path = require("node:path");
     );
     await page.waitForTimeout(140);
     const optimisticLanding = await page.evaluate(() => {
-      const element = document.querySelector('#durakTable .durak-landing-target[data-optimistic-landing="true"]');
+      const element = document.querySelector('#durakTable .durak-card.table-card[data-optimistic-landing="true"]');
       if (!element) return null;
       const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
