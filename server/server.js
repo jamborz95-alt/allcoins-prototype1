@@ -414,10 +414,10 @@ if (!user || !user.id) {
     const stake = Number(req.body.stake);
 const deck = Number(req.body.deck ?? 36);
 const speed = req.body.speed === "fast" ? "fast" : "normal";
-    if (![36, 52].includes(deck)) {
+    if (![24, 36, 52].includes(deck)) {
       return res.status(400).json({
         ok: false,
-        error: "Выбери колоду на 36 или 52 карты"
+        error: "Выбери колоду на 24, 36 или 52 карты"
       });
     }
 const privacy = req.body.privacy === "private" ? "private" : "public";
@@ -425,6 +425,15 @@ const privacy = req.body.privacy === "private" ? "private" : "public";
       return res.status(400).json({
         ok: false,
         error: "Количество игроков должно быть от 2 до 6"
+      });
+    }
+    const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
+    if (maxPlayers > maxPlayersForDeck) {
+      return res.status(400).json({
+        ok: false,
+        error: deck === 24
+          ? "С колодой на 24 карты можно играть максимум втроём"
+          : "С колодой на 36 карт можно играть максимум впятером"
       });
     }
 
@@ -526,6 +535,7 @@ app.post("/api/durak/rooms/list", async (req, res) => {
      r.name,
      r.max_players,
      r.stake,
+     r.deck,
      r.status,
      (r.owner_telegram_id = $1::bigint) AS is_owner,
      COUNT(p.telegram_id)::INTEGER AS players_count
@@ -631,7 +641,7 @@ app.post("/api/durak/rooms/join", async (req, res) => {
     }
 
     const roomResult = await pool.query(
-      `SELECT id, name, max_players, stake, status
+      `SELECT id, name, max_players, stake, deck, status
        FROM durak_rooms
        WHERE id = $1`,
       [roomId]
@@ -1112,16 +1122,21 @@ app.post("/api/durak/rooms/start", async (req, res) => {
       });
     }
     const selectedDeck = Number(room.deck);
-    if (![36, 52].includes(selectedDeck)) {
+    if (![24, 36, 52].includes(selectedDeck)) {
       return res.status(400).json({
         ok: false,
         error: "В комнате выбрана неподдерживаемая колода. Создай новую комнату."
       });
     }
-    if (total > 5 && selectedDeck !== 52) {
+    const maxPlayersForDeck = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
+    if (total > maxPlayersForDeck) {
       return res.status(400).json({
         ok: false,
-        error: "Для игры шестью игроками выбери колоду на 52 карты."
+        error: selectedDeck === 24
+          ? "В колоде на 24 карты максимум 3 игрока"
+          : selectedDeck === 36
+            ? "Для игры шестью игроками выбери колоду на 52 карты."
+            : "Слишком много игроков для выбранной колоды."
       });
     }
     // Проверяем готовность всех игроков, кроме создателя
@@ -1378,7 +1393,8 @@ app.post("/api/durak/game", async (req, res) => {
           [roomId]
         );
         const deckSize = Number(room.deck);
-        if ([36, 52].includes(deckSize) && playersResult.rows.length >= 2 && playersResult.rows.length <= 6) {
+        const recoveredPlayerLimit = deckSize === 24 ? 3 : deckSize === 36 ? 5 : 6;
+        if ([24, 36, 52].includes(deckSize) && playersResult.rows.length >= 2 && playersResult.rows.length <= recoveredPlayerLimit) {
           const shuffled = shuffleDurakDeck(createDurakDeck(deckSize), crypto.randomInt);
           const dealt = dealInitialHands(shuffled, playersResult.rows.length, 6);
           const players = playersResult.rows.map((row, index) => ({ telegramId: String(row.telegram_id), hand: dealt.hands[index] }));
