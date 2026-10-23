@@ -772,7 +772,7 @@ app.post("/api/durak/rooms/players", async (req, res) => {
     : String(player.display_name || "").trim() ||
       (String(player.telegram_id) === String(user.id) ? "Ты" : "Игрок " + (index + 1)),
   isOwner: player.is_owner,
-  isReady: player.is_owner || player.is_ready,
+  isReady: room.status === "finished" ? player.is_ready : (player.is_owner || player.is_ready),
   isMe: String(player.telegram_id) === String(user.id)
 }));
 
@@ -812,7 +812,7 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
 
     const roomId = req.body?.roomId;
 
-    if (!roomId || !/^\d+$/.test(String(roomId))) {
+    if (!roomId || !/^\\d+$/.test(String(roomId))) {
       return res.status(400).json({
         ok: false,
         error: "Неверный номер комнаты"
@@ -834,15 +834,18 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
     }
 
     const room = roomResult.rows[0];
+    const isRematch = room.status === "finished";
 
-    if (room.status !== "waiting") {
+    if (room.status !== "waiting" && !isRematch) {
       return res.status(400).json({
         ok: false,
-        error: "Комната уже не ожидает игроков"
+        error: "Партия ещё идёт. Повторная готовность доступна после её завершения."
       });
     }
 
-    if (String(room.owner_telegram_id) === String(user.id)) {
+    // В первой партии создатель запускает игру сам. После завершения
+    // все игроки, включая создателя, должны подтвердить новую партию.
+    if (!isRematch && String(room.owner_telegram_id) === String(user.id)) {
       return res.status(400).json({
         ok: false,
         error: "Создателю комнаты не нужно нажимать «Готов»"
@@ -854,7 +857,7 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
        SET is_ready = TRUE
        WHERE room_id = $1 AND telegram_id = $2
        RETURNING telegram_id`,
-      [roomId, user.id]
+      [roomId, String(user.id)]
     );
 
     if (updateResult.rows.length === 0) {
@@ -864,9 +867,61 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
       });
     }
 
+    if (!isRematch) {
+      return res.json({
+        ok: true,
+        message: "Вы готовы к игре!"
+      });
+    }
+
+    // Бот считается готовым автоматически; все реальные игроки должны
+    // нажать «Готов к следующей игре» именно после окончания текущей партии.
+    const readinessResult = await pool.query(
+      `SELECT
+         COUNT(*)::INTEGER AS total_players,
+         COUNT(*) FILTER (
+           WHERE telegram_id = 0 OR is_ready = TRUE
+         )::INTEGER AS ready_players
+       FROM durak_room_players
+       WHERE room_id = $1`,
+      [roomId]
+    );
+
+    const totalPlayers = Number(readinessResult.rows[0]?.total_players || 0);
+    const readyPlayers = Number(readinessResult.rows[0]?.ready_players || 0);
+    const allReady = totalPlayers >= 2 && readyPlayers === totalPlayers;
+    let roomStatus = "finished";
+
+    if (allReady) {
+      const reopenResult = await pool.query(
+        `UPDATE durak_rooms
+         SET status = 'waiting'
+         WHERE id = $1 AND status = 'finished'
+         RETURNING id`,
+        [roomId]
+      );
+
+      if (reopenResult.rows.length > 0) {
+        roomStatus = "waiting";
+      } else {
+        const currentRoom = await pool.query(
+          "SELECT status FROM durak_rooms WHERE id = $1",
+          [roomId]
+        );
+        roomStatus = currentRoom.rows[0]?.status || "finished";
+      }
+    }
+
     return res.json({
       ok: true,
-      message: "Вы готовы к игре!"
+      rematch: true,
+      allReady,
+      readyPlayers,
+      totalPlayers,
+      roomStatus,
+      message: allReady
+        ? "Все готовы! Запускаем следующую партию в этой же комнате."
+        : "Готовность отмечена. Ожидаем остальных игроков."
     });
   } catch (error) {
     console.error("Ошибка готовности игрока:", error);
@@ -877,6 +932,7 @@ app.post("/api/durak/rooms/ready", async (req, res) => {
     });
   }
 });
+
 app.post("/api/durak/rooms/start", async (req, res) => {
   let client;
   let transactionOpen = false;
@@ -1147,6 +1203,15 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
         error: "Не удалось запустить игру"
       });
     }
+
+    // Готовность текущей партии не переносим в следующую: после финала
+    // все реальные игроки должны снова нажать «Готов».
+    await client.query(
+      `UPDATE durak_room_players
+       SET is_ready = FALSE
+       WHERE room_id = $1 AND telegram_id <> 0`,
+      [roomId]
+    );
 
     await client.query("COMMIT");
     transactionOpen = false;
