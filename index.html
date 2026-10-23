@@ -4356,17 +4356,26 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
-const DURAK_CARD_ASSET_VERSION = "20261022-deal-preloaded-visibility-v4";
+const DURAK_CARD_ASSET_VERSION = "20261023-cards-folder-png-v1";
 const DURAK_CARD_ASSETS = [
+  "10-clubs.png",
+  "10-diamonds.png",
+  "10-hearts.png",
+  "10-spades.png",
+  "ace-clubs.png",
   "ace-diamonds.png",
   "ace-hearts.png",
   "ace-spades.png",
+  "jack-clubs.png",
   "jack-diamonds.png",
   "jack-hearts.png",
   "jack-spades.png",
+  "king-clubs.png",
   "king-diamonds.png",
   "king-hearts.png",
   "king-spades-2.png",
+  "queen-clubs.png",
+  "queen-diamonds.png",
   "queen-hearts.png",
   "queen-spades.png"
 ];
@@ -4415,40 +4424,35 @@ if (["♥", "♡", "♦", "♢"].includes(suit)) {
 }
   cardElement.dataset.cardId = String(card.id);
 cardElement.style.touchAction = "none";
-  // Подбираем готовое изображение для нужной карты
-const rankImageNames = {
-  "2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9","10":"10",
-  "В":"jack","J":"jack",
-  "Д":"queen","Q":"queen",
-  "К":"king","K":"king",
-  "Т":"ace","ТУЗ":"ace","A":"ace"
-};
-const suitImageNames = {
-  "♠":"spades","♤":"spades","SPADES":"spades",
-  "♥":"hearts","♡":"hearts","HEARTS":"hearts",
-  "♦":"diamonds","♢":"diamonds","DIAMONDS":"diamonds",
-  "♣":"clubs","♧":"clubs","CLUBS":"clubs"
-};
-const existingPngFaces = {
-  "ace-diamonds.svg":"ace-diamonds.png",
-  "ace-spades.svg":"ace-spades.png",
-  "ace-hearts.svg":"ace-hearts.png",
-  "jack-spades.svg":"jack-spades.png",
-  "jack-hearts.svg":"jack-hearts.png",
-  "jack-diamonds.svg":"jack-diamonds.png",
-  "queen-spades.svg":"queen-spades.png",
-  "queen-hearts.svg":"queen-hearts.png",
-  "king-spades.svg":"king-spades-2.png",
-  "king-hearts.svg":"king-hearts.png",
-  "king-diamonds.svg":"king-diamonds.png"
-};
-const rankImageName = rankImageNames[rank.toUpperCase()];
-const suitImageName = suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
-const svgFilename = rankImageName && suitImageName ? rankImageName + "-" + suitImageName + ".svg" : null;
-const imageName = svgFilename ? (existingPngFaces[svgFilename] || null) : null;
-
-
-  if (imageName) {
+  // Сначала используем PNG из папки cards. Для ещё не созданных PNG сохраняем
+  // обычное обозначение карты, чтобы игровая логика продолжала работать без изменений.
+  const normalizedRank = rank.trim().toUpperCase();
+  const rankImageNames = {
+    "2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9","10":"10",
+    "В":"jack","J":"jack","ВАЛЕТ":"jack","JACK":"jack",
+    "Д":"queen","Q":"queen","ДАМА":"queen","QUEEN":"queen",
+    "К":"king","K":"king","КОРОЛЬ":"king","KING":"king",
+    "Т":"ace","ТУЗ":"ace","A":"ace","ACE":"ace"
+  };
+  const suitImageNames = {
+    "♠":"spades","♤":"spades","SPADES":"spades",
+    "♥":"hearts","♡":"hearts","HEARTS":"hearts",
+    "♦":"diamonds","♢":"diamonds","DIAMONDS":"diamonds",
+    "♣":"clubs","♧":"clubs","CLUBS":"clubs"
+  };
+  const rankImageName = rankImageNames[normalizedRank];
+  const suitImageName = suitImageNames[normalizedCardSuit] ||
+    suitImageNames[normalizedCardSuit.toUpperCase()] ||
+    suitImageNames[suit] ||
+    suitImageNames[suit.toUpperCase()];
+  const candidateImageName = rankImageName && suitImageName
+    ? rankImageName + "-" + suitImageName + ".png"
+    : null;
+  // В репозитории пиковый король сохранён под именем king-spades-2.png.
+  const imageName = candidateImageName === "king-spades.png"
+    ? "king-spades-2.png"
+    : candidateImageName;
+  if (imageName && DURAK_CARD_ASSETS.includes(imageName)) {
     const image = document.createElement("img");
 
     // Источник совпадает с уже загруженным и декодированным PNG в кеше.
