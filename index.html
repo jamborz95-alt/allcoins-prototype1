@@ -2112,6 +2112,17 @@
     border:1px solid #ac8251 !important;
   }
   #lottoGame .lotto-small-note { font-size:12px; line-height:1.45; color:#fff1d8; margin:8px 2px; }
+  /* Lotto gameplay: compact three-ticket view and complete draw history. */
+  #lottoGame.lotto-playing #onlineLottoTickets {
+    display:grid; grid-template-columns:1fr; gap:8px; width:100%;
+  }
+  #lottoGame.lotto-playing .lotto-ticket { margin:0; padding:7px; }
+  #lottoGame.lotto-playing .lotto-ticket-grid { gap:2px; }
+  #lottoGame.lotto-playing .lotto-number { min-width:0; padding:4px 0; font-size:clamp(12px,3.5vw,19px); }
+  #lottoGame.lotto-playing .lotto-called-strip { display:flex; flex-wrap:wrap; gap:4px; max-height:24vh; overflow:auto; }
+  #lottoGame.lotto-playing .lotto-called-chip { width:28px; height:28px; flex:0 0 28px; }
+  #lottoGame.lotto-playing .lotto-number:not(.lotto-empty) { cursor:pointer; }
+
   @media (max-width:390px) {
     #lottoGame.lotto-fullscreen { padding-left:8px !important; padding-right:8px !important; }
     #lottoGame .lotto-room-card { padding:8px; gap:7px; }
@@ -3384,7 +3395,7 @@
     </div>
     <div id="onlineLottoRoomStatus" class="lotto-status">Ожидаем начало раунда.</div>
     <button type="button" id="onlineLottoBuyTicket" class="lotto-action">🎟 Купить билет</button>
-    <div class="lotto-small-note">Во время игры нажимай на число в билете, когда оно выпало. Подсвеченные жёлтым числа уже назывались. Фиолетовая отметка означает, что число зачёркнуто.</div>
+    <div class="lotto-small-note">Во время игры сам проверяй выпавшие числа и отмечай их в билетах. Подсказок о совпадениях нет. Фиолетовая отметка означает, что число зачёркнуто.</div>
     <div id="onlineLottoTickets"></div>
     <button type="button" id="onlineLottoRoomRefresh" class="lotto-light-button">↻ Обновить поле</button>
   </div>
@@ -8228,7 +8239,11 @@ async function loadOnlineLottoState(silent) {
 }
 
 function renderOnlineLottoRoom(room, tickets) {
-  $("onlineLottoRoomTitle").textContent = "🎱 Лото · комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+  const isLottoPlaying = room.status === "playing";
+  $("lottoGame").classList.toggle("lotto-playing", isLottoPlaying);
+  $("onlineLottoRoomTitle").textContent = isLottoPlaying
+    ? "🎱 ИГРА ИДЁТ · " + Number(room.stake).toLocaleString("ru-RU") + " AC"
+    : "🎱 Лото · комната " + Number(room.stake).toLocaleString("ru-RU") + " AC";
   $("onlineLottoStake").textContent = Number(room.stake).toLocaleString("ru-RU") + " AC";
   $("onlineLottoPot").textContent = Number(room.pot || 0).toLocaleString("ru-RU") + " AC";
   $("onlineLottoOwned").textContent = tickets.length + " / 3";
@@ -8237,7 +8252,7 @@ function renderOnlineLottoRoom(room, tickets) {
   $("onlineLottoCurrentBall").textContent = drawn.length ? String(drawn[drawn.length - 1]) : "—";
   const strip = $("onlineLottoCalledStrip");
   strip.textContent = "";
-  drawn.slice(-10).reverse().forEach((number, index) => {
+  drawn.slice().reverse().forEach((number, index) => {
     const chip = document.createElement("span");
     chip.className = "lotto-called-chip" + (index === 0 ? " latest" : "");
     chip.textContent = String(number);
@@ -8286,15 +8301,15 @@ function renderOnlineLottoRoom(room, tickets) {
         }
         const isMarked = marked.has(Number(number));
         const isCalled = drawn.includes(Number(number));
-        const canManualMark = room.status === "playing" && isCalled && !isMarked && !room.autoPlay && !onlineLottoActionBusy;
-        const cell = document.createElement(canManualMark ? "button" : "div");
-        if (canManualMark) {
+        const manualGameCell = room.status === "playing" && !room.autoPlay && !onlineLottoActionBusy && !isMarked;
+        const cell = document.createElement(manualGameCell ? "button" : "div");
+        if (manualGameCell) {
           cell.type = "button";
+          cell.setAttribute("aria-label", "Отметить число " + Number(number));
           cell.onclick = () => markOnlineLottoNumber(ticket.id, Number(number));
         }
         cell.className = "lotto-number";
         if (isMarked) cell.classList.add("lotto-marked");
-        else if (canManualMark) cell.classList.add("lotto-markable");
         cell.textContent = String(number);
         grid.appendChild(cell);
       });
