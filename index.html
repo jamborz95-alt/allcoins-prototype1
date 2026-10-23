@@ -8097,6 +8097,7 @@ function openOnlineLotto() {
   loadOnlineLottoRooms();
   if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
     tg.BackButton.show();
+    if (typeof tg.BackButton.offClick === "function") tg.BackButton.offClick(closeOnlineLotto);
     tg.BackButton.onClick(closeOnlineLotto);
   }
 }
@@ -8202,7 +8203,7 @@ async function loadOnlineLottoState(silent) {
     }
     renderOnlineLottoRoom(result.room, result.tickets || []);
     if (result.room.status === "finished") {
-      if (result.room.winnerTelegramId && String(result.room.winnerTelegramId) === String(state.user && state.user.id)) {
+      if (result.room.winnerIsMe === true) {
         setOnlineLottoStatus("onlineLottoRoomStatus", "🎉 Ты выиграл " + Number(result.room.prize || 0).toLocaleString("ru-RU") + " AC! " + (result.room.resultNote || ""));
       } else {
         setOnlineLottoStatus("onlineLottoRoomStatus", (result.room.winnerName ? "Победитель: " + result.room.winnerName + ". " : "") + (result.room.resultNote || "Раунд завершён."));
