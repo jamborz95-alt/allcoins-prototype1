@@ -8716,6 +8716,29 @@ async function deleteOnlineLottoReport(roomId, button) {
   }
 }
 
+
+async function deleteAllOnlineLottoReports() {
+  const button = $("onlineLottoDeleteAllReports");
+  if (!button || button.disabled) return;
+  const reportCount = onlineLottoLobbyRoomsCache.filter(room => room.status === "finished").length;
+  if (!reportCount) {
+    setOnlineLottoStatus("onlineLottoLobbyStatus", "У тебя пока нет отчётов для удаления.");
+    return;
+  }
+  if (!window.confirm("Удалить все " + reportCount + " отчётов из твоего списка? Это не повлияет на отчёты других игроков.")) return;
+  button.disabled = true;
+  button.textContent = "Удаляем все отчёты…";
+  try {
+    const result = await apiRequest("/api/lotto/report/delete-all", {});
+    setOnlineLottoStatus("onlineLottoLobbyStatus", result.message || "Все отчёты удалены.");
+    await loadOnlineLottoRooms();
+  } catch (error) {
+    setOnlineLottoStatus("onlineLottoLobbyStatus", String(error.message || error).slice(0, 180));
+  } finally {
+    button.disabled = false;
+    button.textContent = "🗑 Удалить все отчёты";
+  }
+}
 async function openOnlineLottoRoom(roomId) {
   onlineLottoRoomId = String(roomId);
   lottoVoiceLastRoomId = onlineLottoRoomId;
@@ -8998,6 +9021,7 @@ $("onlineLottoPlayBack").onclick = async () => {
   if (!onlineLottoLobbyTimer) onlineLottoLobbyTimer = setInterval(loadOnlineLottoRooms, 15000);
 };
 $("onlineLottoBuyTicket").onclick = buyOnlineLottoTicket;
+$("onlineLottoDeleteAllReports").onclick = deleteAllOnlineLottoReports;
 $("onlineLottoTestBot").onclick = addOnlineLottoTestBot;
 
 
