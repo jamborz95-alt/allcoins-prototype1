@@ -3459,6 +3459,7 @@
       </div>
       <div id="onlineLottoCalledStrip" class="lotto-called-strip"></div>
     </div>
+    <button type="button" id="onlineLottoVoiceToggleWaiting" class="lotto-voice-toggle" aria-pressed="true">🔊 Проверить голос · ВКЛ</button>
     <div id="onlineLottoRoomStatus" class="lotto-status">Ожидаем начало раунда.</div>
     <button type="button" id="onlineLottoBuyTicket" class="lotto-action">🎟 Купить билет</button>
     <div class="lotto-small-note">Во время игры сам проверяй выпавшие числа и отмечай их в билетах. Подсказок о совпадениях нет. Фиолетовая отметка означает, что число зачёркнуто.</div>
@@ -8189,18 +8190,24 @@ function setOnlineLottoStatus(targetId, message) {
   if (element) element.textContent = message || "";
 }
 
+let lottoVoiceGestureTested = false;
+
 function updateLottoVoiceButton() {
-  const button = $("onlineLottoVoiceToggle");
-  if (!button) return;
   const supported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
-  button.disabled = !supported;
-  button.textContent = !supported
-    ? "🔇 Озвучка недоступна в этом браузере"
-    : lottoVoiceEnabled ? "🔊 Озвучка чисел: ВКЛ" : "🔇 Озвучка чисел: ВЫКЛ";
-  button.setAttribute("aria-pressed", String(lottoVoiceEnabled));
-  button.title = lottoVoiceEnabled
-    ? "Числа будут произноситься вслух по-русски"
-    : "Нажми, чтобы включить голосовое объявление чисел";
+  ["onlineLottoVoiceToggle", "onlineLottoVoiceToggleWaiting"].forEach(id => {
+    const button = $(id);
+    if (!button) return;
+    button.disabled = !supported;
+    button.textContent = !supported
+      ? "🔇 Озвучка недоступна в этом браузере"
+      : lottoVoiceEnabled
+        ? (lottoVoiceGestureTested ? "🔊 Озвучка чисел: ВКЛ" : "🔊 Проверить голос · ВКЛ")
+        : "🔇 Озвучка чисел: ВЫКЛ";
+    button.setAttribute("aria-pressed", String(lottoVoiceEnabled));
+    button.title = lottoVoiceEnabled
+      ? "Первое нажатие проверит голос и подготовит звук; дальше кнопка включает или выключает озвучивание."
+      : "Нажми, чтобы включить голосовое объявление чисел";
+  });
 }
 
 function getLottoRussianVoice() {
@@ -8275,13 +8282,19 @@ function toggleLottoVoice() {
     updateLottoVoiceButton();
     return;
   }
+  // Первый тап служит проверкой динамика и разблокирует голос в Android/Telegram.
+  if (lottoVoiceEnabled && !lottoVoiceGestureTested) {
+    lottoVoiceGestureTested = true;
+    speakLottoText("Озвучивание чисел включено.");
+    updateLottoVoiceButton();
+    return;
+  }
   lottoVoiceEnabled = !lottoVoiceEnabled;
   try { localStorage.setItem("allcoinsLottoVoiceEnabled", String(lottoVoiceEnabled)); } catch {}
   if (!lottoVoiceEnabled) {
     window.speechSynthesis.cancel();
   } else {
-    // Первое включение происходит непосредственно после нажатия — это помогает
-    // Android/Telegram разрешить голосовой вывод звука.
+    lottoVoiceGestureTested = true;
     speakLottoText("Озвучивание чисел включено.");
   }
   updateLottoVoiceButton();
@@ -8630,6 +8643,7 @@ $("onlineLottoRoomsBack").onclick = async () => {
 $("onlineLottoRoomRefresh").onclick = () => loadOnlineLottoState(false);
 $("onlineLottoPlayRefresh").onclick = () => loadOnlineLottoState(false);
 $("onlineLottoVoiceToggle").onclick = toggleLottoVoice;
+$("onlineLottoVoiceToggleWaiting").onclick = toggleLottoVoice;
 updateLottoVoiceButton();
 $("onlineLottoPlayBack").onclick = async () => {
   if (onlineLottoStateTimer) clearInterval(onlineLottoStateTimer);
