@@ -1051,7 +1051,8 @@ app.post("/api/durak/rooms/start", async (req, res) => {
      privacy,
      status
    FROM durak_rooms
-   WHERE id = $1`,
+   WHERE id = $1
+   FOR UPDATE`,
   [roomId]
 ); 
 
