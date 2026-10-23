@@ -9,6 +9,13 @@ test("36-card deck has 36 unique cards and correct ranks", () => {
   assert.deepEqual(new Set(deck.map(card => card.rank)), new Set(["6", "7", "8", "9", "10", "В", "Д", "К", "Т"]));
 });
 
+test("24-card deck has 24 unique cards from nine through ace", () => {
+  const deck = createDurakDeck(24);
+  assert.equal(deck.length, 24);
+  assert.equal(new Set(deck.map(card => card.id)).size, 24);
+  assert.deepEqual(new Set(deck.map(card => card.rank)), new Set(["9", "10", "В", "Д", "К", "Туз"]));
+});
+
 test("52-card deck has 52 unique cards", () => {
   const deck = createDurakDeck(52);
   assert.equal(deck.length, 52);
@@ -18,8 +25,17 @@ test("52-card deck has 52 unique cards", () => {
 });
 
 test("deck factory rejects unsupported deck sizes instead of silently using 36 cards", () => {
-  assert.throws(() => createDurakDeck(24), /36 или 52/);
-  assert.throws(() => createDurakDeck(40), /36 или 52/);
+  assert.throws(() => createDurakDeck(40), /24, 36 или 52/);
+  assert.throws(() => createDurakDeck(0), /24, 36 или 52/);
+});
+
+test("24-card deck deals up to three players and cannot deal four", () => {
+  const dealt = dealInitialHands(createDurakDeck(24), 3, 6);
+  assert.deepEqual(dealt.hands.map(hand => hand.length), [6, 6, 6]);
+  assert.equal(dealt.deck.length, 6);
+  assert.equal(dealt.deck.at(-1).id, dealt.trumpCard.id);
+  assert.equal(new Set([...dealt.hands.flat(), ...dealt.deck].map(card => card.id)).size, 24);
+  assert.throws(() => dealInitialHands(createDurakDeck(24), 4, 6), /недостаточно карт/);
 });
 
 test("52-card deck can deal six players and still leave the trump card", () => {
