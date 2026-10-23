@@ -2027,7 +2027,18 @@
     <!-- КАРТОЧКА ДУРАКА НА СТРАНИЦЕ ИГРЫ -->
 <div class="card" id="durakEntry">
 
-  <h3>🃏 Дурак Онлайн</h3>
+  <div class="durak-entry-brand">
+    <div class="durak-entry-emblem" aria-hidden="true">
+      <span class="durak-entry-card durak-entry-card-back">♠</span>
+      <span class="durak-entry-card durak-entry-card-front">A<span>♥</span></span>
+      <span class="durak-entry-spark">✦</span>
+    </div>
+    <div class="durak-entry-heading">
+      <div class="durak-entry-kicker">ALLCOINS • CARD GAME</div>
+      <h3>ДУРАК <span>ОНЛАЙН</span></h3>
+      <div class="durak-entry-subtitle">Классическая карточная игра</div>
+    </div>
+  </div>
 
   <p class="muted">
     Создавай комнаты, выбирай ставку AC и играй с другими игроками.
@@ -7811,6 +7822,140 @@ if (gamesSection) {
     letter-spacing: normal !important;
     text-shadow: none !important;
     -webkit-text-stroke: 0 !important;
+  }
+</style>
+
+<style id="allcoins-durak-game-entry-brand">
+  /* Премиальная карточка игры в разделе «Игры» */
+  #durakEntry {
+    position: relative !important;
+    overflow: hidden !important;
+    padding: 17px !important;
+    border: 1px solid rgba(220,180,76,.72) !important;
+    border-radius: 18px !important;
+    background:
+      radial-gradient(ellipse at 12% 0%, rgba(213,168,58,.2), transparent 54%),
+      linear-gradient(135deg, #102d35 0%, #0a1828 58%, #17172b 100%) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 8px 24px rgba(0,0,0,.28) !important;
+  }
+  #durakEntry::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(230,194,107,.16);
+    border-radius: 13px;
+    pointer-events: none;
+  }
+  #durakEntry .durak-entry-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    margin-bottom: 14px;
+  }
+  #durakEntry .durak-entry-emblem {
+    position: relative;
+    flex: 0 0 84px;
+    width: 84px;
+    height: 94px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    background: linear-gradient(145deg, rgba(244,208,119,.17), rgba(9,19,32,.2));
+    border: 1px solid rgba(229,191,95,.35);
+  }
+  #durakEntry .durak-entry-card {
+    position: absolute;
+    width: 43px;
+    height: 62px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 29px;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,.35);
+  }
+  #durakEntry .durak-entry-card-back {
+    transform: rotate(-15deg) translate(-9px, 1px);
+    color: #f1d17d;
+    background: linear-gradient(145deg,#193e58,#0b1b32);
+    border: 1px solid #d8b45d;
+  }
+  #durakEntry .durak-entry-card-front {
+    transform: rotate(12deg) translate(10px, 3px);
+    flex-direction: column;
+    gap: 0;
+    color: #b9273d;
+    background: linear-gradient(145deg,#fffef7,#e8e2d1);
+    border: 1px solid #d8c78d;
+    line-height: 1;
+  }
+  #durakEntry .durak-entry-card-front span {
+    font-size: 20px;
+    line-height: 1;
+  }
+  #durakEntry .durak-entry-spark {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    color: #f4d780;
+    font-size: 16px;
+    text-shadow: 0 0 9px rgba(244,215,128,.5);
+  }
+  #durakEntry .durak-entry-heading { min-width: 0; }
+  #durakEntry .durak-entry-kicker {
+    color: #e6c878;
+    font: 700 9px/1.3 Arial, Helvetica, sans-serif;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  #durakEntry .durak-entry-heading h3 {
+    margin: 0 !important;
+    color: #fff6db !important;
+    font: 800 clamp(19px, 5vw, 25px)/1.05 Arial, Helvetica, sans-serif !important;
+    letter-spacing: .5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,.35);
+  }
+  #durakEntry .durak-entry-heading h3 span {
+    display: block;
+    margin-top: 4px;
+    color: #e6c16a;
+    font-size: .76em;
+    letter-spacing: 3px;
+  }
+  #durakEntry .durak-entry-subtitle {
+    margin-top: 8px;
+    color: #b9d1d0;
+    font: 400 11px/1.3 Arial, Helvetica, sans-serif;
+  }
+  #durakEntry > p {
+    position: relative;
+    z-index: 1;
+    color: #d0dedb !important;
+    line-height: 1.45;
+  }
+  #durakEntry #openDurak {
+    position: relative;
+    z-index: 1;
+    min-height: 48px;
+    border: 1px solid #f0d27d !important;
+    border-radius: 12px !important;
+    background: linear-gradient(110deg,#f5dc91,#d2a33c 60%,#a87523) !important;
+    color: #172334 !important;
+    font-weight: 800 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 4px 12px rgba(0,0,0,.24) !important;
+  }
+  @media (max-width: 360px) {
+    #durakEntry { padding: 13px !important; }
+    #durakEntry .durak-entry-brand { gap: 10px; }
+    #durakEntry .durak-entry-emblem { flex-basis: 72px; width: 72px; height: 84px; }
+    #durakEntry .durak-entry-card { width: 36px; height: 54px; font-size: 25px; }
+    #durakEntry .durak-entry-kicker { letter-spacing: 1px; font-size: 8px; }
   }
 </style>
 </body>
