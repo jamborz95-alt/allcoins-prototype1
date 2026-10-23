@@ -552,7 +552,9 @@ const path = require("node:path");
         x: rect.x, y: rect.y, width: rect.width, height: rect.height,
         imageLoaded: !image || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
         imageNaturalWidth: image?.naturalWidth || 0,
-        imageFitsCard: !image || (imageRect.width >= rect.width - 1 && imageRect.height >= rect.height - 1)
+        imageRect: imageRect ? { width: imageRect.width, height: imageRect.height } : null,
+        // Keep the image inside the card's 1px border; the border itself is not image area.
+        imageFitsCard: !image || (imageRect.width >= rect.width - 3 && imageRect.height >= rect.height - 3)
       };
     });
     if (!incomingStart || !incomingEnd?.visible || await incomingFlyer.count() !== 0) {
