@@ -701,7 +701,88 @@ app.post("/api/durak/rooms/join", async (req, res) => {
       error: "Не удалось присоединиться к комнате"
     });
   }
-});// Начало игры Дурак Онлайн
+});
+
+// Покинуть комнату ожидания до начала игры.
+// Создатель закрывает всю ожидающую комнату, обычный игрок освобождает своё место.
+app.post("/api/durak/rooms/leave", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) {
+      return res.status(401).json({ ok: false, error: "Необходимо войти через Telegram" });
+    }
+
+    const roomId = req.body?.roomId;
+    if (!roomId || !/^\\d+$/.test(String(roomId))) {
+      return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+    }
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+
+    const roomResult = await client.query(
+      `SELECT id, owner_telegram_id, status FROM durak_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (roomResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+
+    const room = roomResult.rows[0];
+    if (room.status !== "waiting") {
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Выйти можно только до начала игры" });
+    }
+
+    const telegramId = String(user.id);
+    const membership = await client.query(
+      `SELECT 1 FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2 FOR UPDATE`,
+      [roomId, telegramId]
+    );
+    if (membership.rows.length === 0) {
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+      return res.status(403).json({ ok: false, error: "Ты уже не состоишь в этой комнате" });
+    }
+
+    const isOwner = String(room.owner_telegram_id) === telegramId;
+    if (isOwner) {
+      await client.query(`DELETE FROM durak_room_players WHERE room_id = $1`, [roomId]);
+      await client.query(`DELETE FROM durak_rooms WHERE id = $1 AND status = 'waiting'`, [roomId]);
+    } else {
+      await client.query(
+        `DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2`,
+        [roomId, telegramId]
+      );
+    }
+
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.json({
+      ok: true,
+      ownerLeft: isOwner,
+      message: isOwner ? "Комната закрыта. Ты вышел из комнаты." : "Ты вышел из комнаты."
+    });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Leave Durak room error:", error.message || error);
+    if (!res.headersSent) {
+      return res.status(500).json({ ok: false, error: "Не удалось выйти из комнаты" });
+    }
+  } finally {
+    client?.release();
+  }
+});
+
+// Начало игры Дурак Онлайн
 // Получить список игроков комнаты и их готовность
 app.post("/api/durak/rooms/players", async (req, res) => {
   try {
