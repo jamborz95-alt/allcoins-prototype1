@@ -11,6 +11,24 @@ export function createLottoRouter(options) {
   const verifyTelegram = options.verifyTelegram;
   let schedulerTimer = null;
   let schedulerBusy = false;
+  const lottoVoiceCache = new Map();
+
+  const lottoNumberWords = [
+    "", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять",
+    "десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать",
+    "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"
+  ];
+
+  function lottoNumberInWords(number) {
+    if (number < 20) return lottoNumberWords[number];
+    const tensWords = {
+      20: "двадцать", 30: "тридцать", 40: "сорок", 50: "пятьдесят",
+      60: "шестьдесят", 70: "семьдесят", 80: "восемьдесят", 90: "девяносто"
+    };
+    const tens = Math.floor(number / 10) * 10;
+    const units = number % 10;
+    return units ? tensWords[tens] + " " + lottoNumberWords[units] : tensWords[tens];
+  }
 
   function fail(res, status, error) {
     return res.status(status).json({ ok: false, error: error });
@@ -290,6 +308,67 @@ export function createLottoRouter(options) {
       if (typeof schedulerTimer.unref === "function") schedulerTimer.unref();
     }
   };
+
+  // Голосовой файл для Android/Telegram WebView, где Web Speech API может отсутствовать.
+  // Ограничиваем параметры: только один из 90 номеров либо фиксированная проверочная фраза.
+  router.get("/voice", async (req, res) => {
+    try {
+      const isTest = String(req.query.test || "") === "1";
+      const number = Number(req.query.number);
+      if (!isTest && (!Number.isInteger(number) || number < 1 || number > 90)) {
+        return res.status(400).json({ ok: false, error: "Неверный номер для озвучивания." });
+      }
+
+      const cacheKey = isTest ? "test" : String(number);
+      const cached = lottoVoiceCache.get(cacheKey);
+      if (cached) {
+        res.set("Content-Type", "audio/mpeg");
+        res.set("Cache-Control", "public, max-age=86400");
+        res.set("X-Content-Type-Options", "nosniff");
+        return res.status(200).send(cached);
+      }
+
+      const phrase = isTest
+        ? "Озвучивание чисел включено."
+        : "Внимание. Номер " + lottoNumberInWords(number) + ".";
+      const ttsUrl = new URL("https://translate.googleapis.com/translate_tts");
+      ttsUrl.searchParams.set("client", "gtx");
+      ttsUrl.searchParams.set("ie", "UTF-8");
+      ttsUrl.searchParams.set("tl", "ru");
+      ttsUrl.searchParams.set("q", phrase);
+
+      const upstream = await fetch(ttsUrl, {
+        method: "GET",
+        headers: {
+          "Accept": "audio/mpeg,audio/*;q=0.9,*/*;q=0.5",
+          "User-Agent": "Mozilla/5.0"
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!upstream.ok) {
+        console.warn("Lotto TTS upstream responded:", upstream.status);
+        return res.status(502).json({ ok: false, error: "Не удалось получить голосовой файл." });
+      }
+
+      const contentType = String(upstream.headers.get("content-type") || "").toLowerCase();
+      const audioBytes = Buffer.from(await upstream.arrayBuffer());
+      if (!audioBytes.length || audioBytes.length > 1024 * 1024 ||
+          (contentType && !contentType.includes("audio") && !contentType.includes("octet-stream"))) {
+        console.warn("Lotto TTS returned an unexpected response:", contentType, audioBytes.length);
+        return res.status(502).json({ ok: false, error: "Сервис не вернул аудио." });
+      }
+
+      // Кэшируем голос каждой цифры, чтобы один и тот же номер не синтезировался повторно.
+      lottoVoiceCache.set(cacheKey, audioBytes);
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400");
+      res.set("X-Content-Type-Options", "nosniff");
+      return res.status(200).send(audioBytes);
+    } catch (error) {
+      console.error("Lotto voice error:", error.message);
+      return res.status(502).json({ ok: false, error: "Голосовая озвучка временно недоступна." });
+    }
+  });
 
   router.post("/rooms/list", async (req, res) => {
     try {
