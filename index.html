@@ -2111,6 +2111,21 @@
     border:1px solid #ac8251 !important;
   }
   #lottoGame .lotto-small-note { font-size:12px; line-height:1.45; color:#fff1d8; margin:8px 2px; }
+  #lottoGame .lotto-instructions {
+    margin:9px 0 12px; border:1px solid #c49a5b; border-radius:11px;
+    background:linear-gradient(145deg,#3b2518,#52331f); color:#fff0cf;
+    overflow:hidden; font-size:12px; line-height:1.5;
+  }
+  #lottoGame .lotto-instructions summary {
+    padding:11px 12px; cursor:pointer; color:#ffe1a2; font-size:13px;
+    font-weight:900; list-style:none;
+  }
+  #lottoGame .lotto-instructions summary::-webkit-details-marker { display:none; }
+  #lottoGame .lotto-instructions summary::after { content:"＋"; float:right; color:#ffe1a2; }
+  #lottoGame .lotto-instructions[open] summary::after { content:"−"; }
+  #lottoGame .lotto-instructions-body { padding:0 12px 12px; }
+  #lottoGame .lotto-instructions-body b { display:block; margin-top:7px; color:#ffe1a2; }
+  #lottoGame .lotto-instructions-body p { margin:4px 0 8px; color:#fff2dd; }
   /* Отдельный экран раунда: номер, история тиража и сразу все купленные билеты. */
   #lottoGame .lotto-play-heading {
     display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -3438,7 +3453,18 @@
 
   <div id="onlineLottoLobbyView">
     <div class="lotto-section-heading">Комнаты и ставки</div>
-    <div class="lotto-explain">Выбери комнату по цене билета. Раунд начинается автоматически через 3 минуты после открытия комнаты. Если при старте тебя нет в игре, билеты будут отмечать выпавшие числа автоматически.</div>
+    <div class="lotto-explain">Выбери комнату по цене билета. Раунд начинается автоматически через 3 минуты после открытия комнаты. Если ты остаёшься в комнате — отмечай совпадения сам; если выходишь из игры, билет через несколько секунд переключится на автоматические отметки.</div>
+    <details class="lotto-instructions">
+      <summary>📘 Инструкция по игре в лото</summary>
+      <div class="lotto-instructions-body">
+        <b>Ручной режим</b>
+        <p>Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.</p>
+        <b>Автоматический режим</b>
+        <p>Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.</p>
+        <b>Отчёт</b>
+        <p>Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате ставки.</p>
+      </div>
+    </details>
     <button type="button" id="onlineLottoRefresh" class="lotto-light-button">↻ Обновить комнаты</button>
     <div id="onlineLottoRoomsList" class="lotto-rooms-list"></div>
     <div id="onlineLottoLobbyStatus" class="lotto-status">Загружаем комнаты…</div>
@@ -3487,7 +3513,17 @@
     <div id="onlineLottoPlayStatus" class="lotto-status">Ожидаем розыгрыш…</div>
     <div class="lotto-play-tickets-label">Твои билеты · до 3</div>
     <div id="onlineLottoPlayTickets" class="lotto-play-tickets"></div>
-    <div class="lotto-small-note">Сверяй выпавшие числа сверху и сам нажимай совпадения на билетах. Совпадающие числа не выделяются и не подсказываются заранее.</div>
+    <details class="lotto-instructions">
+      <summary>📘 Инструкция: ручная и автоматическая игра</summary>
+      <div class="lotto-instructions-body">
+        <b>Ручная игра</b>
+        <p>Оставайся на экране комнаты во время розыгрыша. Каждые 3 секунды выпадает новое число. Если оно есть на твоём билете, нажми на него сам. Фиолетовая отметка означает, что число закрыто. Пока ты в игре, приложение не закрывает совпадения вместо тебя.</p>
+        <b>Автоматическая игра</b>
+        <p>Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности билет перейдёт в автоматический режим: совпавшие номера будут отмечаться сами, даже если тебя нет в игре.</p>
+        <b>Как посмотреть отчёт</b>
+        <p>Вернись в Лото Онлайн и открой ту же комнату. Ты увидишь историю выпавших чисел, отметки на билете, итог раунда и информацию о выигрыше или возврате ставки. До 3 билетов в одной комнате играют по одному и тому же режиму.</p>
+      </div>
+    </details>
     <button type="button" id="onlineLottoPlayRefresh" class="lotto-light-button">↻ Обновить игру</button>
   </div>
 </div>
@@ -8594,10 +8630,13 @@ function renderOnlineLottoRoom(room, tickets) {
     const markCount = document.createElement("span");
     const ticketValues = (ticket.numbers || []).flat().filter(n => Number.isInteger(n));
     const marked = new Set((ticket.markedNumbers || []).map(Number));
-    // Keep the display correct for any draw already saved before this update.
-    ticketValues.forEach(number => {
-      if (drawnNumbersForTickets.has(Number(number))) marked.add(Number(number));
-    });
+    // In automatic mode, reflect every drawn match immediately. In manual mode,
+    // only persisted/player-selected marks are shown until the player taps a number.
+    if (room.autoPlay === true) {
+      ticketValues.forEach(number => {
+        if (drawnNumbersForTickets.has(Number(number))) marked.add(Number(number));
+      });
+    }
     markCount.textContent = marked.size + " / " + ticketValues.length;
     ticketTitle.appendChild(ticketName);
     ticketTitle.appendChild(markCount);
@@ -8615,8 +8654,15 @@ function renderOnlineLottoRoom(room, tickets) {
         }
 
         const isMarked = marked.has(Number(number));
-        // Совпавшие с тиражом числа отображаются закрытыми автоматически.
-        const cell = document.createElement("div");
+        // Онлайн-игрок нажимает совпадения сам; автоматический режим не ждёт нажатий.
+        const canManualMark = room.status === "playing" &&
+          room.autoPlay !== true && !onlineLottoActionBusy && !isMarked;
+        const cell = document.createElement(canManualMark ? "button" : "div");
+        if (canManualMark) {
+          cell.type = "button";
+          cell.setAttribute("aria-label", "Отметить выпавшее число " + Number(number));
+          cell.onclick = () => markOnlineLottoNumber(ticket.id, Number(number));
+        }
         cell.className = "lotto-number";
         if (isMarked) cell.classList.add("lotto-marked");
         cell.textContent = String(number);
@@ -8633,7 +8679,9 @@ function renderOnlineLottoRoom(room, tickets) {
   } else if (room.status === "playing") {
     setOnlineLottoStatus(statusId, tickets.length === 0
       ? "Раунд уже идёт, но у тебя нет билетов в этой комнате."
-      : "Выпавшие числа автоматически закрываются на всех твоих билетах."
+      : room.autoPlay === true
+        ? "Автоматический режим: совпадения на билетах закрываются сами. Можно вернуться позже и посмотреть отчёт."
+        : "Ручной режим: нажимай на каждое выпавшее число, которое есть на твоих билетах."
     );
   } else {
     setOnlineLottoStatus(statusId, room.resultNote || "Раунд завершён.");
