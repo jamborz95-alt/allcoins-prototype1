@@ -330,6 +330,12 @@ export function createLottoRouter(options) {
       "numbers JSONB NOT NULL, marked_numbers JSONB NOT NULL DEFAULT '[]'::jsonb, bought_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "UNIQUE (room_id, telegram_id, ticket_no))"
     );
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS lotto_report_deletions (" +
+      "room_id BIGINT NOT NULL REFERENCES lotto_rooms(id) ON DELETE CASCADE, " +
+      "telegram_id BIGINT NOT NULL, deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "PRIMARY KEY (room_id, telegram_id))"
+    );
     await pool.query("CREATE INDEX IF NOT EXISTS lotto_rooms_status_stake_idx ON lotto_rooms(status, stake, buy_until)");
     await pool.query("CREATE INDEX IF NOT EXISTS lotto_tickets_room_idx ON lotto_tickets(room_id)");
     await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS lotto_one_waiting_per_stake_idx ON lotto_rooms(stake) WHERE status = 'waiting'");
@@ -410,13 +416,15 @@ export function createLottoRouter(options) {
       await ensureLobbyRooms();
       const result = await pool.query(
         "SELECT r.id, r.stake, r.status, r.created_at, r.buy_until, r.started_at, r.next_draw_at, " +
-        "r.drawn_numbers, r.pot, r.prize, r.winner_telegram_id, r.result_note, " +
+        "r.drawn_numbers, r.pot, r.prize, r.winner_telegram_id, r.result_note, r.finished_at, " +
+        "(SELECT wp.display_name FROM lotto_room_players wp WHERE wp.room_id = r.id AND wp.telegram_id = r.winner_telegram_id LIMIT 1) AS winner_name, " +
         "(SELECT COUNT(*)::integer FROM lotto_room_players p WHERE p.room_id = r.id) AS players_count, " +
         "(SELECT COUNT(*)::integer FROM lotto_tickets t WHERE t.room_id = r.id) AS ticket_count, " +
         "(SELECT COUNT(*)::integer FROM lotto_tickets t WHERE t.room_id = r.id AND t.telegram_id = $1) AS my_tickets, " +
         "EXISTS (SELECT 1 FROM lotto_room_players bp WHERE bp.room_id = r.id AND bp.telegram_id = -1) AS test_bot_joined " +
         "FROM lotto_rooms r WHERE (r.status = 'waiting' AND (r.buy_until > NOW() OR EXISTS (SELECT 1 FROM lotto_tickets wt WHERE wt.room_id = r.id))) " +
-        "OR (r.status IN ('playing','finished') AND EXISTS (SELECT 1 FROM lotto_room_players p WHERE p.room_id = r.id AND p.telegram_id = $1)) " +
+        "OR (r.status IN ('playing','finished') AND EXISTS (SELECT 1 FROM lotto_room_players p WHERE p.room_id = r.id AND p.telegram_id = $1) " +
+        "AND (r.status <> 'finished' OR NOT EXISTS (SELECT 1 FROM lotto_report_deletions rd WHERE rd.room_id = r.id AND rd.telegram_id = $1))) " +
         "ORDER BY CASE r.status WHEN 'waiting' THEN 0 WHEN 'playing' THEN 1 ELSE 2 END, r.stake ASC, r.created_at DESC LIMIT 100",
         [String(user.id)]
       );
@@ -435,6 +443,10 @@ export function createLottoRouter(options) {
           pot: Number(room.pot) || 0,
           prize: Number(room.prize) || 0,
           resultNote: room.result_note || "",
+          finishedAt: room.finished_at,
+          drawnNumbers: Array.isArray(room.drawn_numbers) ? room.drawn_numbers.map(Number) : [],
+          winnerIsMe: room.winner_telegram_id != null && String(room.winner_telegram_id) === String(user.id),
+          winnerName: room.winner_name || null,
           playersCount: Number(room.players_count) || 0,
           ticketCount: Number(room.ticket_count) || 0,
           myTickets: Number(room.my_tickets) || 0,
@@ -530,6 +542,39 @@ export function createLottoRouter(options) {
       return fail(res, 500, "Не удалось купить билет.");
     } finally {
       client.release();
+    }
+  });
+
+  router.post("/report/delete", async (req, res) => {
+    try {
+      const user = verifyTelegram(req.body && req.body.initData);
+      if (!user || !user.id) return fail(res, 401, "Открой ALLCOINS через Telegram.");
+      if (!validId(req.body && req.body.roomId)) return fail(res, 400, "Неверный номер отчёта.");
+      const roomId = String(req.body.roomId);
+      const roomResult = await pool.query(
+        "SELECT status FROM lotto_rooms WHERE id = $1",
+        [roomId]
+      );
+      if (!roomResult.rows.length) return fail(res, 404, "Отчёт не найден.");
+      if (roomResult.rows[0].status !== "finished") {
+        return fail(res, 400, "Удалить можно только отчёт завершённой партии.");
+      }
+      const ticketResult = await pool.query(
+        "SELECT 1 FROM lotto_tickets WHERE room_id = $1 AND telegram_id = $2 LIMIT 1",
+        [roomId, String(user.id)]
+      );
+      if (!ticketResult.rows.length) {
+        return fail(res, 403, "Можно удалять только свои отчёты.");
+      }
+      await pool.query(
+        "INSERT INTO lotto_report_deletions (room_id, telegram_id, deleted_at) VALUES ($1, $2, NOW()) " +
+        "ON CONFLICT (room_id, telegram_id) DO UPDATE SET deleted_at = NOW()",
+        [roomId, String(user.id)]
+      );
+      return res.json({ ok: true, roomId, message: "Отчёт удалён из твоего списка." });
+    } catch (error) {
+      console.error("Lotto report deletion error:", error.message);
+      return fail(res, 500, "Не удалось удалить отчёт.");
     }
   });
 
