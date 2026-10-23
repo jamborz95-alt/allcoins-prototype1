@@ -2049,6 +2049,22 @@
     background:linear-gradient(#ffe7a8,#deb25a) !important; color:#42240d !important;
     border:1px solid #a9712a !important; font-size:12px; max-width:110px;
   }
+  #lottoGame .lotto-report-section-heading { margin-top:24px; padding-top:14px; border-top:1px solid #c79b5b; }
+  #lottoGame .lotto-reports-list { display:flex; flex-direction:column; gap:10px; margin:10px 0 18px; }
+  #lottoGame .lotto-report-card { padding:12px; border:2px solid; border-radius:14px; box-shadow:0 4px 8px #451c0c44; }
+  #lottoGame .lotto-report-card.report-won { background:linear-gradient(145deg,#e7ffe9,#bceac3); border-color:#208a45; color:#123c20; }
+  #lottoGame .lotto-report-card.report-lost { background:linear-gradient(145deg,#fff0ef,#f5c8c8); border-color:#c43e42; color:#541b20; }
+  #lottoGame .lotto-report-top { display:flex; align-items:flex-start; gap:10px; justify-content:space-between; }
+  #lottoGame .lotto-report-title { font-weight:1000; font-size:15px; line-height:1.3; overflow-wrap:anywhere; }
+  #lottoGame .lotto-report-badge { display:inline-block; margin-bottom:5px; padding:4px 7px; border-radius:7px; font-size:11px; font-weight:1000; }
+  #lottoGame .report-won .lotto-report-badge { background:#16843e; color:#fff; }
+  #lottoGame .report-lost .lotto-report-badge { background:#bd3035; color:#fff; }
+  #lottoGame .lotto-report-meta { margin-top:5px; font-size:12px; line-height:1.45; opacity:.9; }
+  #lottoGame .lotto-report-view { margin-top:10px; width:100%; min-height:40px; padding:9px 11px !important; border-radius:9px !important; background:#fff8e9 !important; color:#3b281a !important; border:1px solid #997247 !important; font-size:12px !important; }
+  #lottoGame .lotto-report-details { margin-top:10px; padding-top:10px; border-top:1px solid currentColor; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+  #lottoGame .lotto-report-details .lotto-report-drawn { margin-top:7px; line-height:1.7; }
+  #lottoGame .lotto-report-delete { display:block; width:100%; margin-top:10px; padding:10px !important; border-radius:9px !important; background:#6d2528 !important; color:#fff !important; border:1px solid #471418 !important; font-size:12px !important; }
+  #lottoGame .lotto-report-empty { padding:12px; border:1px dashed #bd935a; border-radius:11px; color:#ffebce; font-size:12px; line-height:1.5; }
   #lottoGame .lotto-status {
     min-height:22px; padding:9px 11px; margin:10px 0; border-radius:10px;
     color:#fff4d6; background:#43281dba; font-size:13px; line-height:1.45;
@@ -3468,6 +3484,9 @@
     <button type="button" id="onlineLottoRefresh" class="lotto-light-button">↻ Обновить комнаты</button>
     <div id="onlineLottoRoomsList" class="lotto-rooms-list"></div>
     <div id="onlineLottoLobbyStatus" class="lotto-status">Загружаем комнаты…</div>
+    <div class="lotto-section-heading lotto-report-section-heading">Отчёт</div>
+    <div class="lotto-explain">Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.</div>
+    <div id="onlineLottoReportsList" class="lotto-reports-list"></div>
   </div>
 
   <div id="onlineLottoRoomView" class="hidden">
@@ -8530,7 +8549,9 @@ async function loadOnlineLottoRooms() {
       render();
     }
     renderOnlineLottoRooms();
-    setOnlineLottoStatus("onlineLottoLobbyStatus", "Комнат: " + onlineLottoLobbyRoomsCache.length + ". Новые комнаты появляются каждые 3 минуты.");
+    const activeCount = onlineLottoLobbyRoomsCache.filter(room => room.status !== "finished").length;
+    const reportCount = onlineLottoLobbyRoomsCache.filter(room => room.status === "finished").length;
+    setOnlineLottoStatus("onlineLottoLobbyStatus", "Открытых комнат: " + activeCount + " · отчётов: " + reportCount + ". Комнаты обновляются автоматически.");
   } catch (error) {
     setOnlineLottoStatus("onlineLottoLobbyStatus", "Не удалось загрузить комнаты: " + String(error.message || error).slice(0, 180));
   }
@@ -8538,15 +8559,21 @@ async function loadOnlineLottoRooms() {
 
 function renderOnlineLottoRooms() {
   const list = $("onlineLottoRoomsList");
+  const reportsList = $("onlineLottoReportsList");
   list.textContent = "";
-  if (!onlineLottoLobbyRoomsCache.length) {
+  reportsList.textContent = "";
+
+  const activeRooms = onlineLottoLobbyRoomsCache.filter(room => room.status !== "finished");
+  const reports = onlineLottoLobbyRoomsCache.filter(room => room.status === "finished");
+
+  if (!activeRooms.length) {
     const empty = document.createElement("div");
     empty.className = "lotto-status";
-    empty.textContent = "Пока нет доступных комнат. Список обновится автоматически.";
+    empty.textContent = "Нет открытых партий. Список обновится автоматически.";
     list.appendChild(empty);
-    return;
   }
-  onlineLottoLobbyRoomsCache.forEach(room => {
+
+  activeRooms.forEach(room => {
     const card = document.createElement("div");
     card.className = "lotto-room-card";
     const ball = document.createElement("div");
@@ -8564,13 +8591,10 @@ function renderOnlineLottoRooms() {
       ? (deadlinePassed && Number(room.playersCount || 0) > 0
           ? "Время вышло · ждём второго игрока"
           : "Старт через " + formatLottoSeconds(Math.ceil((new Date(room.buyUntil).getTime() - Date.now()) / 1000)))
-      : room.status === "playing"
-        ? "Игра идёт · выпало " + Number(room.drawnCount || 0) + " из 90"
-        : (room.resultNote || "Раунд завершён");
+      : "Игра идёт · выпало " + Number(room.drawnCount || 0) + " из 90";
     meta.textContent = statusText + " · игроков: " + Number(room.playersCount || 0) +
       " · билетов: " + Number(room.ticketCount || 0) +
       " · банк: " + Number(room.pot || 0).toLocaleString("ru-RU") + " AC" +
-      (room.status === "finished" && Number(room.prize || 0) > 0 ? " · приз: " + Number(room.prize).toLocaleString("ru-RU") + " AC" : "") +
       (room.testBotJoined === true ? " · 🤖 тест-бот" : "") +
       (Number(room.myTickets || 0) ? " · твоих билетов: " + Number(room.myTickets) + "/3" : "");
     main.appendChild(title);
@@ -8580,13 +8604,113 @@ function renderOnlineLottoRooms() {
     button.className = "lotto-room-open";
     button.textContent = room.status === "waiting"
       ? (Number(room.myTickets || 0) ? "Открыть" : "Войти")
-      : room.status === "playing" ? "Играть" : "Результат";
+      : "Играть";
     button.onclick = () => openOnlineLottoRoom(room.id);
     card.appendChild(ball);
     card.appendChild(main);
     card.appendChild(button);
     list.appendChild(card);
   });
+
+  if (!reports.length) {
+    const empty = document.createElement("div");
+    empty.className = "lotto-report-empty";
+    empty.textContent = "Здесь появятся завершённые партии, в которых участвовали твои билеты.";
+    reportsList.appendChild(empty);
+    return;
+  }
+
+  reports.forEach(room => {
+    const won = room.winnerIsMe === true;
+    const card = document.createElement("article");
+    card.className = "lotto-report-card " + (won ? "report-won" : "report-lost");
+
+    const top = document.createElement("div");
+    top.className = "lotto-report-top";
+    const main = document.createElement("div");
+    main.style.minWidth = "0";
+    const badge = document.createElement("div");
+    badge.className = "lotto-report-badge";
+    badge.textContent = won ? "🏆 ПОБЕДА" : "❌ БЕЗ ПОБЕДЫ";
+    const title = document.createElement("div");
+    title.className = "lotto-report-title";
+    title.textContent = "Партия · ставка " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+    const meta = document.createElement("div");
+    meta.className = "lotto-report-meta";
+    const finishedDate = room.finishedAt ? new Date(room.finishedAt) : new Date(room.createdAt);
+    meta.textContent = (Number.isFinite(finishedDate.getTime()) ? finishedDate.toLocaleString("ru-RU") + " · " : "") +
+      "Твои билеты: " + Number(room.myTickets || 0) +
+      " · банк: " + Number(room.pot || 0).toLocaleString("ru-RU") + " AC";
+    main.appendChild(badge);
+    main.appendChild(title);
+    main.appendChild(meta);
+    top.appendChild(main);
+    card.appendChild(top);
+
+    const viewButton = document.createElement("button");
+    viewButton.type = "button";
+    viewButton.className = "lotto-report-view";
+    viewButton.textContent = "Посмотреть отчёт";
+    const details = document.createElement("div");
+    details.className = "lotto-report-details hidden";
+    const outcome = document.createElement("div");
+    outcome.textContent = won
+      ? "Результат: ты выиграл эту партию."
+      : "Результат: в этой партии ты не выиграл.";
+    const winner = document.createElement("div");
+    winner.textContent = room.winnerName
+      ? "Победитель: " + (won ? "ты" : room.winnerName) + "."
+      : (won ? "Победитель: ты." : "Победитель в отчёте не указан.");
+    const resultNote = document.createElement("div");
+    resultNote.textContent = "Итог: " + (room.resultNote || "Партия завершена.");
+    const prize = document.createElement("div");
+    prize.textContent = "Твой приз: " + (won ? Number(room.prize || 0) : 0).toLocaleString("ru-RU") + " AC.";
+    const drawn = document.createElement("div");
+    drawn.className = "lotto-report-drawn";
+    const drawnNumbers = Array.isArray(room.drawnNumbers) ? room.drawnNumbers.map(Number) : [];
+    drawn.textContent = "Выпавшие числа (" + drawnNumbers.length + "/90): " +
+      (drawnNumbers.length ? drawnNumbers.join(", ") : "данные о числах не сохранились.");
+    details.appendChild(outcome);
+    details.appendChild(winner);
+    details.appendChild(resultNote);
+    details.appendChild(prize);
+    details.appendChild(drawn);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "lotto-report-delete";
+    deleteButton.textContent = "🗑 Удалить просмотренный отчёт";
+    deleteButton.onclick = () => deleteOnlineLottoReport(room.id, deleteButton);
+    details.appendChild(deleteButton);
+
+    viewButton.onclick = () => {
+      const nowHidden = details.classList.toggle("hidden");
+      viewButton.textContent = nowHidden ? "Посмотреть отчёт" : "Скрыть отчёт";
+    };
+
+    card.appendChild(viewButton);
+    card.appendChild(details);
+    reportsList.appendChild(card);
+  });
+}
+
+async function deleteOnlineLottoReport(roomId, button) {
+  if (!roomId || (button && button.disabled)) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Удаляем отчёт…";
+  }
+  try {
+    const result = await apiRequest("/api/lotto/report/delete", { roomId: String(roomId) });
+    setOnlineLottoStatus("onlineLottoLobbyStatus", result.message || "Отчёт удалён.");
+    await loadOnlineLottoRooms();
+  } catch (error) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "🗑 Удалить просмотренный отчёт";
+    }
+    setOnlineLottoStatus("onlineLottoLobbyStatus", String(error.message || error).slice(0, 180));
+  }
 }
 
 async function openOnlineLottoRoom(roomId) {
