@@ -2132,7 +2132,7 @@
   }
   #lottoGame .lotto-play-called-strip {
     display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:3px;
-    max-height:92px; overflow-y:auto; padding:6px;
+    max-height:62px; overflow-y:auto; padding:5px;
     background:#4a291cbb; border:1px solid #d5b27a; border-radius:10px;
   }
   #lottoGame .lotto-play-called-strip .lotto-called-chip {
@@ -2146,7 +2146,7 @@
   #lottoGame .lotto-play-tickets .lotto-ticket-title { margin:0 0 4px; font-size:11px; }
   #lottoGame .lotto-play-tickets .lotto-ticket-grid { gap:1px; padding:1px; }
   #lottoGame .lotto-play-tickets .lotto-number {
-    aspect-ratio:1.25 / 1; font-size:clamp(11px,3.3vw,16px) !important;
+    aspect-ratio:1.5 / 1; font-size:clamp(11px,3.1vw,15px) !important;
     -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
   }
   #lottoGame .lotto-play-tickets .lotto-number:focus,
@@ -8469,6 +8469,7 @@ async function buyOnlineLottoTicket() {
 async function markOnlineLottoNumber(ticketId, number) {
   if (!onlineLottoRoomId || onlineLottoActionBusy) return;
   onlineLottoActionBusy = true;
+  let markError = "";
   try {
     const result = await apiRequest("/api/lotto/number/mark", {
       roomId: onlineLottoRoomId,
@@ -8476,12 +8477,12 @@ async function markOnlineLottoNumber(ticketId, number) {
       number: number
     });
     if (result.won) setOnlineLottoStatus("onlineLottoPlayStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
-    await loadOnlineLottoState(true);
   } catch (error) {
-    setOnlineLottoStatus("onlineLottoPlayStatus", String(error.message || error).slice(0, 180));
+    markError = String(error.message || error).slice(0, 180);
   } finally {
     onlineLottoActionBusy = false;
     await loadOnlineLottoState(true);
+    if (markError) setOnlineLottoStatus("onlineLottoPlayStatus", markError);
   }
 }
 
