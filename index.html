@@ -8192,36 +8192,40 @@ function setOnlineLottoStatus(targetId, message) {
 
 let lottoVoiceGestureTested = false;
 
+function supportsNativeLottoSpeech() {
+  return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+}
+
+let lottoVoiceAudio = null;
+
 function updateLottoVoiceButton() {
-  const supported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  const supported = supportsNativeLottoSpeech() || typeof Audio !== "undefined";
   ["onlineLottoVoiceToggle", "onlineLottoVoiceToggleWaiting"].forEach(id => {
     const button = $(id);
     if (!button) return;
     button.disabled = !supported;
     button.textContent = !supported
-      ? "🔇 Озвучка недоступна в этом браузере"
+      ? "🔇 Звук недоступен"
       : lottoVoiceEnabled
         ? (lottoVoiceGestureTested ? "🔊 Озвучка чисел: ВКЛ" : "🔊 Проверить голос · ВКЛ")
         : "🔇 Озвучка чисел: ВЫКЛ";
     button.setAttribute("aria-pressed", String(lottoVoiceEnabled));
     button.title = lottoVoiceEnabled
-      ? "Первое нажатие проверит голос и подготовит звук; дальше кнопка включает или выключает озвучивание."
+      ? "Нажми для проверки звука. Если системный голос недоступен, приложение воспроизведёт голосовой MP3."
       : "Нажми, чтобы включить голосовое объявление чисел";
   });
 }
 
 function getLottoRussianVoice() {
-  if (!("speechSynthesis" in window)) return null;
+  if (!supportsNativeLottoSpeech()) return null;
   const voices = window.speechSynthesis.getVoices() || [];
   return voices.find(voice => /^ru([_-]|$)/i.test(voice.lang || "")) || null;
 }
 
 function speakLottoText(text) {
-  if (!lottoVoiceEnabled || !("speechSynthesis" in window) ||
-      !("SpeechSynthesisUtterance" in window) || !text) return false;
+  if (!lottoVoiceEnabled || !supportsNativeLottoSpeech() || !text) return false;
   try {
     const synthesis = window.speechSynthesis;
-    // Новое объявление не должно вставать в длинную очередь после возврата из фона.
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "ru-RU";
@@ -8233,7 +8237,42 @@ function speakLottoText(text) {
     synthesis.speak(utterance);
     return true;
   } catch (error) {
-    console.warn("Не удалось озвучить число лото:", error.message || error);
+    console.warn("Системное голосовое озвучивание лото недоступно:", error.message || error);
+    return false;
+  }
+}
+
+function playLottoVoiceAudio(number, isTest = false) {
+  if (!lottoVoiceEnabled || typeof Audio === "undefined") return false;
+  try {
+    if (!lottoVoiceAudio) {
+      lottoVoiceAudio = new Audio();
+      lottoVoiceAudio.preload = "auto";
+    }
+    lottoVoiceAudio.pause();
+    try { lottoVoiceAudio.currentTime = 0; } catch {}
+    lottoVoiceAudio.onerror = () => {
+      const statusId = onlineLottoRoomCache && onlineLottoRoomCache.status !== "waiting"
+        ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
+      setOnlineLottoStatus(statusId, "Не удалось загрузить голос. Проверь интернет и попробуй нажать «Проверить голос» ещё раз.");
+    };
+    const query = isTest
+      ? "?test=1"
+      : "?number=" + encodeURIComponent(String(number));
+    lottoVoiceAudio.src = API + "/api/lotto/voice" + query;
+    lottoVoiceAudio.load();
+    const playPromise = lottoVoiceAudio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(error => {
+        console.warn("Не удалось запустить MP3-озвучивание лото:", error.message || error);
+        const statusId = onlineLottoRoomCache && onlineLottoRoomCache.status !== "waiting"
+          ? "onlineLottoPlayStatus" : "onlineLottoRoomStatus";
+        setOnlineLottoStatus(statusId, "Нажми кнопку проверки голоса перед началом игры, чтобы разрешить звук на телефоне.");
+      });
+    }
+    return true;
+  } catch (error) {
+    console.warn("MP3-озвучивание лото недоступно:", error.message || error);
     return false;
   }
 }
@@ -8268,38 +8307,54 @@ function announceLottoDraw(room) {
   }
   if (drawn.length <= lottoVoiceLastDrawCount) return;
 
-  // Если игрок вошёл посреди розыгрыша, объявляем только последнее число, а не всю историю.
+  // При входе в середине розыгрыша объявляем только последнее число.
   lottoVoiceLastDrawCount = drawn.length;
   if (room.status !== "playing" || !lottoVoiceEnabled) return;
 
   const number = drawn[drawn.length - 1];
-  speakLottoText("Внимание. Номер " + lottoNumberToWords(number) + ".");
+  if (supportsNativeLottoSpeech()) {
+    speakLottoText("Внимание. Номер " + lottoNumberToWords(number) + ".");
+  } else {
+    playLottoVoiceAudio(number, false);
+  }
 }
 
 function toggleLottoVoice() {
-  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-    setOnlineLottoStatus("onlineLottoPlayStatus", "В этом браузере нет голосового озвучивания.");
+  const supported = supportsNativeLottoSpeech() || typeof Audio !== "undefined";
+  if (!supported) {
+    setOnlineLottoStatus("onlineLottoRoomStatus", "На этом устройстве не поддерживается воспроизведение звука.");
     updateLottoVoiceButton();
     return;
   }
-  // Первый тап служит проверкой динамика и разблокирует голос в Android/Telegram.
+
+  // Первый тап запускает короткую проверочную фразу прямо по нажатию,
+  // разблокируя HTMLAudio в Telegram WebView.
   if (lottoVoiceEnabled && !lottoVoiceGestureTested) {
     lottoVoiceGestureTested = true;
-    speakLottoText("Озвучивание чисел включено.");
+    if (supportsNativeLottoSpeech()) {
+      speakLottoText("Озвучивание чисел включено.");
+    } else {
+      playLottoVoiceAudio(null, true);
+    }
     updateLottoVoiceButton();
     return;
   }
+
   lottoVoiceEnabled = !lottoVoiceEnabled;
   try { localStorage.setItem("allcoinsLottoVoiceEnabled", String(lottoVoiceEnabled)); } catch {}
   if (!lottoVoiceEnabled) {
-    window.speechSynthesis.cancel();
+    if (supportsNativeLottoSpeech()) window.speechSynthesis.cancel();
+    if (lottoVoiceAudio) {
+      lottoVoiceAudio.pause();
+      try { lottoVoiceAudio.currentTime = 0; } catch {}
+    }
   } else {
     lottoVoiceGestureTested = true;
-    speakLottoText("Озвучивание чисел включено.");
+    if (supportsNativeLottoSpeech()) speakLottoText("Озвучивание чисел включено.");
+    else playLottoVoiceAudio(null, true);
   }
   updateLottoVoiceButton();
 }
-
 
 function formatLottoSeconds(value) {
   const seconds = Math.max(0, Number(value) || 0);
