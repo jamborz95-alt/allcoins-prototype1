@@ -4370,6 +4370,9 @@ let durakLastRenderedDefenderIndex = null;
 function animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs = 0) {
   if (!targetCard || !attackerSeat ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  // Размеры карточки фиксируются ДО замера траектории. Иначе flyer запоминает
+  // старые 68×100 px, пока сама цель позже уменьшается до 56×84 px.
+  applyDurakTableCardSizeLocks();
   const targetRect = targetCard.getBoundingClientRect();
   const seatRect = attackerSeat.getBoundingClientRect();
   if (!targetRect.width || !targetRect.height || !seatRect.width || !seatRect.height) return;
@@ -4922,6 +4925,10 @@ function animateDurakCardToTarget(cardElement, targetElement) {
     durakPendingDragFlyer = null;
     return Promise.resolve();
   }
+
+  // Перед замером финальной точки исправляем любые временные inline-размеры
+  // скрытой цели; летящая карта должна прилететь в тот же размер, что и цель.
+  applyDurakTableCardSizeLocks();
 
   // Используем тот же элемент, который пользователь перетащил пальцем:
   // так не возникает второй большой карты поверх игрового поля.
