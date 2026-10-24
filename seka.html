@@ -315,11 +315,16 @@
     margin:0 !important;
     padding:4px 0 0 !important;
   }
-  body.seka-playing #roomPanel > #waitingActions:not(.hidden) #leaveRoomButton {
-    width:min(100%,320px);
+  body.seka-playing #roomPanel > #waitingActions:not(.hidden) #leaveRoomButton,
+  body.seka-playing #roomPanel > #waitingActions:not(.hidden) #rematchButton {
+    flex:1 1 45%;
+    width:auto !important;
+    max-width:320px;
     min-height:40px;
-    padding:8px 12px;
+    padding:8px 10px;
   }
+  #rematchButton { grid-column:1/-1; }
+  #rematchButton:disabled { opacity:.68; }
   @media (max-height:650px) {
     body.seka-playing #gameWrap.table:not(.hidden) {
       gap:3px;
@@ -646,6 +651,7 @@
     <div id="waitingActions" class="button-row">
       <button type="button" id="addBotButton" class="hidden">🤖 Добавить бота для проверки</button>
       <button type="button" id="startGameButton" class="primary hidden">▶ Начать игру</button>
+      <button type="button" id="rematchButton" class="primary hidden">🔄 Рематч</button>
       <button type="button" id="leaveRoomButton" class="ghost">Выйти из комнаты</button>
     </div>
     <div class="status" id="roomStatus" aria-live="polite"></div>
@@ -1040,6 +1046,18 @@
     $("addBotButton").disabled = busy;
     $("startGameButton").classList.toggle("hidden", !(waiting && room.isOwner));
     $("startGameButton").disabled = (state.players || []).length < 2;
+    const finished = !!(game && game.status === "finished" && room.status === "finished");
+    const humanPlayers = (state.players || []).filter(player =>
+      String(player.telegramId) !== "0" && !player.isBot
+    );
+    const rematchVotes = Array.isArray(game && game.rematchVotes) ? game.rematchVotes.map(String) : [];
+    const readyCount = humanPlayers.filter(player => rematchVotes.includes(String(player.telegramId))).length;
+    const hasVotedForRematch = rematchVotes.includes(tgUserId);
+    $("rematchButton").classList.toggle("hidden", !finished);
+    $("rematchButton").textContent = hasVotedForRematch
+      ? "✓ Готов к рематчу (" + readyCount + "/" + humanPlayers.length + ")"
+      : "🔄 Рематч (" + readyCount + "/" + humanPlayers.length + ")";
+    $("rematchButton").disabled = busy || hasVotedForRematch || humanPlayers.length < 1;
     $("leaveRoomButton").textContent = playing ? "Игра идёт" : "Выйти из комнаты";
     $("leaveRoomButton").disabled = playing;
     if (waiting) {
@@ -1139,6 +1157,28 @@
     }
   }
 
+  async function requestRematch() {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    $("rematchButton").disabled = true;
+    setStatus("roomStatus", "Запрашиваем рематч…");
+    try {
+      const result = await api("/rooms/rematch", { roomId: currentRoomId });
+      await refreshRoomState();
+      if (result.started) {
+        setStatus("roomStatus", "Рематч начался! Новые карты уже розданы.");
+      } else {
+        setStatus("roomStatus", result.message || "Готовность сохранена. Ждём остальных игроков.");
+      }
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+      try { await refreshRoomState(); } catch (_) {}
+    } finally {
+      busy = false;
+      if (currentState) renderRoom(currentState);
+    }
+  }
+
   async function sendAction(action, amount) {
     if (!currentRoomId || busy) return;
     busy = true;
@@ -1212,6 +1252,7 @@
   $("filterTier").addEventListener("change", () => loadRooms(false));
   $("addBotButton").addEventListener("click", addBot);
   $("startGameButton").addEventListener("click", startGame);
+  $("rematchButton").addEventListener("click", requestRematch);
   $("leaveRoomButton").addEventListener("click", leaveRoom);
   $("refreshStateButton").addEventListener("click", () => refreshRoomState().catch(error => setStatus("roomStatus", error.message, true)));
   $("foldButton").addEventListener("click", () => sendAction("fold"));
