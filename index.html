@@ -3630,7 +3630,7 @@
         <button type="button" data-stake-preset="500000" aria-pressed="false">500 тыс.</button>
         <button type="button" data-stake-preset="1000000" aria-pressed="false">1 млн</button>
       </div>
-      <label for="twentyOneRoomStake">Или введи ставку вручную (100–1 000 000 AC)</label>
+      <label for="twentyOneRoomStake">Сумма ставки (от 100 до 1 000 000 AC)</label>
       <input id="twentyOneRoomStake" type="number" min="100" max="1000000" step="1" inputmode="numeric" value="100">
       <button type="button" id="twentyOneCreateRoom" class="twentyone-primary full">Создать комнату</button>
       <div id="twentyOneCreateStatus" class="twentyone-room-status" aria-live="polite"></div>
@@ -3687,6 +3687,10 @@
       <button type="button" id="twentyOneRoomHit" class="twentyone-primary">＋ Ещё карту</button>
       <button type="button" id="twentyOneRoomStand" class="twentyone-secondary">✋ Хватит</button>
     </div>
+    <section id="twentyOneRoomRematchArea" class="twentyone-rematch-area" style="display:none;" aria-live="polite">
+      <button type="button" id="twentyOneRoomRematch" class="twentyone-primary full">✅ Готов к реваншу</button>
+      <div id="twentyOneRoomRematchStatus" class="twentyone-room-status"></div>
+    </section>
     <button type="button" id="twentyOneRoomBackToLobby" class="twentyone-secondary full" style="display:none;">↩ Выйти в лобби</button>
   </section>
 
@@ -3697,6 +3701,11 @@
     #twentyOneGame .twentyone-room-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:8px 0; }
     #twentyOneGame .twentyone-room-menu button { min-width:0; min-height:42px; padding:10px; font-size:12px; }
     #twentyOneGame .twentyone-subpanel { margin-top:12px; padding-top:12px; border-top:1px solid #3b514f; }
+    #twentyOneGame .twentyone-room-fixed-seats { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:40px; margin:6px 0 12px; padding:9px 11px; border:1px solid #465b64; border-radius:10px; background:#101b28; color:#c6d2d3; font-size:12px; }
+    #twentyOneGame .twentyone-room-fixed-seats b { color:#f0d58a; font-size:13px; white-space:nowrap; }
+    #twentyOneGame .twentyone-rematch-area { flex:0 0 auto; margin:2px 0 0; padding:9px; border:1px solid rgba(240,213,138,.38); border-radius:12px; background:rgba(12,31,29,.86); }
+    #twentyOneGame .twentyone-rematch-area button { min-height:46px; font-size:14px; font-weight:900; }
+    #twentyOneGame .twentyone-rematch-area button:disabled { background:#203c34; color:#c8d7c7; border-color:#627865; opacity:1; }
     #twentyOneGame .twentyone-subpanel label { display:block; font-size:12px; color:#cad7d7; margin:8px 0 3px; }
     #twentyOneGame .twentyone-subpanel input:not([type=range]), #twentyOneGame .twentyone-subpanel select { width:100%; min-height:40px; margin:3px 0 7px; padding:9px 10px; border:1px solid #465b64; border-radius:9px; background:#101b28; color:#fff; }
     #twentyOneGame .twentyone-subpanel input[type=range] { width:100%; margin:8px 0; }
@@ -3805,10 +3814,16 @@
       margin:0;
       padding:8px 10px;
     }
-    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-dealer {
-      flex:0 0 auto;
-      padding:2px 0;
-    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBoardTitle { order:0; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomPlayerCount { order:1; }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-dealer { order:2; flex:0 0 auto; padding:2px 0; }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-divider { order:3; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomPlayers { order:4; flex:1 1 auto; min-height:0; align-content:start; overflow-y:auto; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomMyHandPanel { order:5; flex:0 0 auto; margin-top:auto; padding-bottom:9px; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomStatus { order:6; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomActions { order:7; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomRematchArea { order:7; }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBackToLobby { order:8; }
     #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-divider {
       flex:0 0 auto;
       margin:0;
@@ -10339,14 +10354,33 @@ function renderTwentyOneRoomBoard(result) {
   });
 
   if (game.status === "finished") {
+    const roomMembers = Array.isArray(result.players) ? result.players : [];
+    const readyCount = roomMembers.filter(player => player && player.isReady).length;
+    const meInRoom = roomMembers.find(player => player && player.isMe);
+    const meReady = Boolean(meInRoom && meInRoom.isReady);
+    const deadlineMs = room.rematchDeadlineAt ? Date.parse(room.rematchDeadlineAt) : NaN;
+    const secondsLeft = Number.isFinite(deadlineMs) ? Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000)) : null;
+    const countdown = secondsLeft === null ? "" : String(Math.floor(secondsLeft / 60)).padStart(2, "0") + ":" + String(secondsLeft % 60).padStart(2, "0");
+    $("twentyOneRoomRematchArea").style.display = "block";
+    $("twentyOneRoomRematch").style.display = "block";
+    $("twentyOneRoomRematch").disabled = meReady || twentyOneRoomReadyBusy;
+    $("twentyOneRoomRematch").textContent = meReady ? "✅ Ты готов — ждём игроков" : "✅ Готов к реваншу";
+    const rematchStatus = room.rematchDeadlineAt
+      ? "Готовы к реваншу: " + readyCount + " из " + roomMembers.length + ". До старта: " + countdown + ". Если таймер закончится, сыграют те, кто нажал «Готов»."
+      : "Нажми «Готов к реваншу». Если готовы будут не все, через 01:00 начнётся новый раунд с готовыми игроками.";
+    $("twentyOneRoomRematchStatus").textContent = (result.rematchMessage ? result.rematchMessage + " " : "") + rematchStatus;
     $("twentyOneRoomStatus").textContent = game.message || "Раунд завершён.";
     $("twentyOneRoomActions").style.display = "none";
     $("twentyOneRoomBackToLobby").style.display = "block";
   } else {
-    $("twentyOneRoomStatus").textContent = game.currentPlayerIsMe
-      ? "Твой ход. Выбери «Ещё карту» или «Хватит»."
-      : "Ход игрока: " + (game.currentPlayerLabel || "ожидание") + ". " + (game.message || "");
-    $("twentyOneRoomActions").style.display = "grid";
+    $("twentyOneRoomRematchArea").style.display = "none";
+    $("twentyOneRoomRematch").disabled = false;
+    $("twentyOneRoomStatus").textContent = game.isCurrentUserParticipant === false
+      ? "Раунд начался без тебя: ты не нажал «Готов к реваншу». Дождись завершения и сможешь сыграть следующий."
+      : (game.currentPlayerIsMe
+        ? "Твой ход. Выбери «Ещё карту» или «Хватит»."
+        : "Ход игрока: " + (game.currentPlayerLabel || "ожидание") + ". " + (game.message || ""));
+    $("twentyOneRoomActions").style.display = game.isCurrentUserParticipant === false ? "none" : "grid";
     $("twentyOneRoomHit").disabled = !game.currentPlayerIsMe || twentyOneRoomActionBusy;
     $("twentyOneRoomStand").disabled = !game.currentPlayerIsMe || twentyOneRoomActionBusy;
     $("twentyOneRoomBackToLobby").style.display = "none";
@@ -10372,7 +10406,7 @@ async function refreshTwentyOneRoomState() {
   } else if (result.room.status === "playing" || result.room.status === "finished") {
     setTwentyOneVisibleView("twentyOneRoomBoard");
     if (result.game) renderTwentyOneRoomBoard(result);
-    if (result.room.status === "finished") stopTwentyOneRoomPolling();
+    // Keep polling a finished table so the one-minute rematch timer can fire.
   }
 }
 async function beginTwentyOneRoomPolling() {
@@ -10385,7 +10419,7 @@ async function beginTwentyOneRoomPolling() {
   $("twentyOneRoomBoard").style.display = "none";
   try {
     await refreshTwentyOneRoomState();
-    if (twentyOneRoomSnapshot?.room?.status !== "finished") {
+    if (currentTwentyOneRoomId) {
       twentyOneRoomPollTimer = setInterval(() => {
         refreshTwentyOneRoomState().catch(error => {
           $("twentyOneRoomStatus").textContent = error.message || "Нет связи с комнатой. Повторяем подключение…";
@@ -10418,7 +10452,7 @@ $("twentyOneSoloPlay").addEventListener("click", () => {
 $("twentyOneCreateRoom").addEventListener("click", async () => {
   const button = $("twentyOneCreateRoom");
   const stake = Number($("twentyOneRoomStake").value);
-  const maxPlayers = Number($("twentyOneRoomPlayers").value);
+  const maxPlayers = 5;
   const name = $("twentyOneRoomName").value.trim() || "Комната 21 Очко";
   if (!Number.isInteger(stake) || stake < 100 || stake > 1000000) {
     $("twentyOneCreateStatus").textContent = "Ставка должна быть целым числом от 100 до 1 000 000 AC.";
@@ -10449,6 +10483,28 @@ $("twentyOneRoomStart").addEventListener("click", async () => {
     $("twentyOneWaitingStatus").textContent = error.message || "Не удалось начать раунд.";
   } finally {
     button.disabled = false;
+  }
+});
+let twentyOneRoomReadyBusy = false;
+$("twentyOneRoomRematch").addEventListener("click", async () => {
+  if (!currentTwentyOneRoomId || twentyOneRoomReadyBusy) return;
+  twentyOneRoomReadyBusy = true;
+  $("twentyOneRoomRematch").disabled = true;
+  $("twentyOneRoomRematch").textContent = "⏳ Сохраняем готовность…";
+  $("twentyOneRoomRematchStatus").textContent = "Отмечаем тебя готовым к следующему раунду…";
+  try {
+    const result = await apiRequest("/api/twentyone/rooms/rematch-ready", { roomId: currentTwentyOneRoomId });
+    if (Number.isFinite(Number(result.balance))) {
+      state.balance = Number(result.balance);
+      $("twentyOneBalance").textContent = state.balance.toLocaleString("ru-RU");
+      render();
+    }
+    await refreshTwentyOneRoomState();
+  } catch (error) {
+    $("twentyOneRoomRematchStatus").textContent = error.message || "Не удалось подтвердить готовность.";
+  } finally {
+    twentyOneRoomReadyBusy = false;
+    if (twentyOneRoomSnapshot?.game?.status === "finished") renderTwentyOneRoomBoard(twentyOneRoomSnapshot);
   }
 });
 async function leaveTwentyOneRoom({ quiet = false } = {}) {
