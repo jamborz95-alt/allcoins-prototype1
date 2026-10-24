@@ -70,6 +70,17 @@ test("initial game deals three cards, puts antes in the pot and starts with firs
   assert.equal(game.currentPlayerTelegramId, "1");
 });
 
+test("test bot receives three cards but does not add virtual AC to the real pot", () => {
+  const game = createSekaGame([
+    { telegramId: "123", label: "Игрок" },
+    { telegramId: "0", label: "🤖 Бот проверки", isBot: true }
+  ], 100, () => 0.5);
+  assert.equal(game.players.length, 2);
+  assert.equal(game.players[1].isBot, true);
+  assert.equal(game.players[1].hand.length, 3);
+  assert.equal(game.pot, 100);
+});
+
 test("all active players must act and match the current bet before automatic showdown", () => {
   const game = {
     currentBet: 200,
@@ -97,6 +108,12 @@ test("the main Games tab links to a separate Seka page with all five stake range
   assert.match(page, /без верхнего лимита/);
   assert.match(page, /\/rooms\/create/);
   assert.match(page, /\/rooms\/action/);
+  assert.match(page, /\/rooms\/add-bot/);
+  assert.match(page, /id="addBotButton"/);
+  assert.match(page, /Добавить бота для проверки/);
+  const router = await readFile(new URL("../server/seka-router.js", import.meta.url), "utf8");
+  assert.match(router, /async function runSekaBots/);
+  assert.match(router, /\/rooms\/add-bot/);
   const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]);
   assert.ok(scripts.length > 0, "страница должна иметь рабочий игровой скрипт");
   for (const script of scripts) assert.doesNotThrow(() => new Function(script), "игровой JavaScript должен разбираться без синтаксических ошибок");
