@@ -3178,6 +3178,25 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.28) !important;
 }
 
+/* Устойчивое приземление: карта не должна после посадки «проседать» и подпрыгивать.
+   Движение выполняется только летящей копией; оставшаяся на столе карта неподвижна. */
+#durakGame.durak-fullscreen #durakTable .durak-card.table-card {
+  animation: none !important;
+  transition: none !important;
+  translate: none !important;
+  scale: none !important;
+}
+#durakGame.durak-fullscreen #durakTable .durak-card.table-card:not(.durak-flying-card) {
+  transform: none !important;
+  filter: none !important;
+  margin-bottom: 0 !important;
+}
+#durakGame.durak-fullscreen #durakTable .durak-card.table-card > img {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
 /* ALLCOINS: cards on the table match the current size of cards in the hand (56×84). */
 #durakGame.durak-fullscreen #durakTable .durak-table-pair .durak-card.table-card {
   flex: 0 0 56px !important;
@@ -5406,8 +5425,9 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
         landingRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
       }
     }
-    const rotationAt78 = landingRotation * 0.75 - 1.5;
-    const rotationAt94 = landingRotation * 0.75 + 0.5;
+    // Угол на последних кадрах не меняется рывком: финиш совпадает с углом карты на столе.
+    const rotationAt78 = landingRotation * 0.78;
+    const rotationAt94 = landingRotation * 0.94;
     const duration = 580;
     timer = window.setTimeout(() => {
       if (!flyer?.isConnected) return finish();
@@ -5417,7 +5437,7 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
           { offset: 0, transform: `translate3d(0,0,0) rotate(-16deg) scale(${landingScaleX * 0.62},${landingScaleY * 0.62})` },
           { offset: 0.18, transform: `translate3d(${dx * 0.18}px,${dy * 0.18 - arcHeight}px,0) rotate(-10deg) scale(${landingScaleX * 0.78},${landingScaleY * 0.78})` },
           { offset: 0.48, transform: `translate3d(${dx * 0.48}px,${dy * 0.48 - arcHeight * 1.12}px,0) rotate(-4deg) scale(${landingScaleX * 0.94},${landingScaleY * 0.94})` },
-          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.38}px,0) rotate(${rotationAt78}deg) scale(${landingScaleX * 0.985},${landingScaleY * 0.985})` },
+          { offset: 0.78, transform: `translate3d(${dx * 0.78}px,${dy * 0.78 - arcHeight * 0.22}px,0) rotate(${rotationAt78}deg) scale(${landingScaleX},${landingScaleY})` },
           { offset: 0.94, transform: `translate3d(${dx * 0.94}px,${dy * 0.94}px,0) rotate(${rotationAt94}deg) scale(${landingScaleX},${landingScaleY})` },
           { offset: 1, transform: `translate3d(${dx}px,${dy}px,0) rotate(${landingRotation}deg) scale(${landingScaleX},${landingScaleY})` }
         ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
