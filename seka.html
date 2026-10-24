@@ -636,7 +636,7 @@
       </div>
       <div id="actionArea" class="action-area">
         <div class="raise-row">
-          <div><label for="raiseAmount">Новая ставка всего (AC)</label><input id="raiseAmount" type="number" min="200" step="1" inputmode="numeric" value="200" autocomplete="off"></div>
+          <div><label for="raiseAmount">Новая ставка всего (AC)</label><input id="raiseAmount" type="text" inputmode="numeric" pattern="[0-9]*" value="200" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
           <button type="button" class="primary" id="raiseButton">Повысить</button>
         </div>
         <div class="action-buttons">
@@ -1053,7 +1053,7 @@
     const raw = input.value.trim();
     const amount = Number(raw);
     const bounds = getRaiseBounds(currentState);
-    if (raw === "" || !Number.isSafeInteger(amount)) {
+    if (raw === "" || !/^\d+$/.test(raw) || !Number.isSafeInteger(amount)) {
       setStatus("roomStatus", "Введи итоговую ставку целым числом AC.", true);
       input.focus();
       return;
@@ -1152,19 +1152,12 @@
       const isMyTurn = playing && !!game.isYourTurn;
       const raiseBounds = getRaiseBounds(state);
       const raiseInput = $("raiseAmount");
-      raiseInput.min = String(raiseBounds.minTarget);
-      raiseInput.max = raiseBounds.maxTarget == null ? "" : String(raiseBounds.maxTarget);
-      // Опрос комнаты идёт часто. Не трогаем поле, пока человек печатает,
-      // и не заменяем пустую строку числом между Backspace и следующей цифрой.
-      if (document.activeElement !== raiseInput && raiseInput.value.trim() !== "") {
-        const enteredTarget = Number(raiseInput.value);
-        if (!Number.isSafeInteger(enteredTarget) || enteredTarget < raiseBounds.minTarget) {
-          raiseInput.value = String(raiseBounds.minTarget);
-        } else if (raiseBounds.maxTarget != null && enteredTarget > raiseBounds.maxTarget &&
-                   raiseBounds.maxTarget >= raiseBounds.minTarget) {
-          raiseInput.value = String(raiseBounds.maxTarget);
-        }
-      }
+      // Не меняем value вообще при фоновом обновлении состояния комнаты.
+      // На Android Telegram WebView фокус иногда теряется во время ввода:
+      // автоподстановка минимума тут же возвращала удалённые цифры.
+      // Любую пустую/неполную/недопустимую сумму проверяем только по нажатию «Повысить».
+      raiseInput.dataset.minTarget = String(raiseBounds.minTarget);
+      raiseInput.dataset.maxTarget = raiseBounds.maxTarget == null ? "" : String(raiseBounds.maxTarget);
       const canRaise = raiseBounds.maxTarget == null || raiseBounds.maxTarget >= raiseBounds.minTarget;
       $("raiseButton").disabled = !isMyTurn || !canRaise;
       $("foldButton").disabled = !isMyTurn;
