@@ -466,8 +466,10 @@
     const room = state.room;
     const game = state.game;
     $("roomTitle").textContent = room.name;
-    $("roomSubtitle").textContent = "Комната #" + room.id + " · " + roomLimitText(room);
-    $("roomStatusChip").textContent = room.status === "waiting" ? "Ожидание" : room.status === "playing" ? "Игра идёт" : "Завершена";
+    $("roomSubtitle").textContent = "Комната #" + room.id + " · " + roomLimitText(room) +
+      (game && game.testMode ? " · ТЕСТ БЕЗ СПИСАНИЯ AC" : "");
+    $("roomStatusChip").textContent = game && game.testMode ? "Режим проверки" :
+      room.status === "waiting" ? "Ожидание" : room.status === "playing" ? "Игра идёт" : "Завершена";
     $("roomAnte").textContent = fmt(room.ante) + " AC";
     $("roomBet").textContent = fmt(game ? game.currentBet : room.ante) + " AC";
     $("roomCount").textContent = String((state.players || []).length) + "/" + String(room.maxPlayers);
@@ -488,9 +490,11 @@
     $("leaveRoomButton").textContent = playing ? "Игра идёт" : "Выйти из комнаты";
     $("leaveRoomButton").disabled = playing;
     if (waiting) {
-      $("waitingText").textContent = room.isOwner
-        ? "Пригласи игроков. Начать партию можно, когда за столом будут минимум два человека."
-        : "Ждём, пока создатель комнаты запустит игру.";
+      $("waitingText").textContent = hasBot
+        ? "Бот добавлен. Это режим проверки: AC не списываются и не начисляются. Нажми «Начать игру»."
+        : room.isOwner
+          ? "Пригласи игроков или добавь бота для проверки. Начать партию можно, когда за столом будут минимум два человека."
+          : "Ждём, пока создатель комнаты запустит игру.";
     } else if (!game) {
       $("waitingText").textContent = "Ожидаем состояние партии…";
     } else if (game.status === "finished") {
