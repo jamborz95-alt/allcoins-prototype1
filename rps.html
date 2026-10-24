@@ -76,6 +76,8 @@
     .result-choice b { font-size:13px; }
     .result-payout { margin-top:11px; color:#d0e1d8; font-size:12px; line-height:1.55; }
     .round-note { margin-top:12px; padding:10px; border:1px dashed #3f546b; border-radius:12px; color:#c6d4e4; font-size:12px; line-height:1.5; }
+    .bot-test-button { display:block; width:100%; margin-top:12px; min-height:48px; border:1px solid #d2b96d; background:linear-gradient(135deg,#2a3f52,#14273a); color:#f7df9b; box-shadow:inset 0 1px 0 #ffffff12; }
+    .bot-test-caption { margin-top:7px; color:#aebed0; font-size:11px; line-height:1.45; }
     .room-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
     .room-actions button { width:100%; }
     .secondary { background:#17283c; }
@@ -277,9 +279,11 @@
     const players = Array.isArray(room.players) ? room.players : [];
     const submitted = new Set(round ? round.submittedIds : []);
     $("playersList").innerHTML = players.map(player => {
-      let note = player.isOwner ? "Создатель комнаты" : "Участник";
+      let note = player.isBot ? "Тестовый бот · без списания AC" : (player.isOwner ? "Создатель комнаты" : "Участник");
       let state = "";
-      if (player.waitingNextRound) {
+      if (player.isBot) {
+        state = player.hasSubmitted ? "Выбрал" : "Готовит ход";
+      } else if (player.waitingNextRound) {
         state = "Со следующего раунда";
         note = "Подключился во время раунда";
       } else if (round && player.inCurrentRound) {
@@ -288,7 +292,7 @@
         state = "Ожидание";
       }
       if (player.isMe) note = "Это ты" + (player.isOwner ? " · создатель" : "");
-      return '<div class="player-row"><div class="player-symbol">' + (player.waitingNextRound ? "↗" : (player.isOwner ? "♛" : "●")) + '</div>' +
+      return '<div class="player-row"><div class="player-symbol">' + (player.isBot ? "🤖" : (player.waitingNextRound ? "↗" : (player.isOwner ? "♛" : "●"))) + '</div>' +
         '<div class="player-detail"><div class="player-name">' + escapeHtml(player.displayName) + (player.isMe ? " (ты)" : "") + '</div>' +
         '<div class="player-note">' + escapeHtml(note) + '</div></div><div class="player-state">' + escapeHtml(state) + '</div></div>';
     }).join("");
@@ -304,10 +308,12 @@
     const heading = isDraw
       ? "Раунд " + result.roundNumber + " — ничья"
       : "Раунд " + result.roundNumber + " — победа!";
-    const summary = isDraw
-      ? "Все ставки возвращены участникам."
-      : "Победител" + (Array.isArray(result.winnerLabels) && result.winnerLabels.length > 1 ? "и" : "ь") + ": " +
-        (Array.isArray(result.winnerLabels) ? result.winnerLabels.map(escapeHtml).join(", ") : "—");
+    const summary = result.testMode
+      ? "Тестовый раунд с ботом. Баланс AC не изменён."
+      : isDraw
+        ? "Все ставки возвращены участникам."
+        : "Победител" + (Array.isArray(result.winnerLabels) && result.winnerLabels.length > 1 ? "и" : "ь") + ": " +
+          (Array.isArray(result.winnerLabels) ? result.winnerLabels.map(escapeHtml).join(", ") : "—");
     const choicesHtml = (Array.isArray(result.choices) ? result.choices : []).map(item =>
       '<div class="result-choice"><span>' + escapeHtml(item.label) + '</span><b>' +
       escapeHtml(item.symbol || (choices[item.choice] && choices[item.choice].symbol)) + ' ' +
@@ -319,14 +325,16 @@
     $("lastResult").innerHTML = '<div class="result-card' + (isDraw ? ' draw' : '') + '">' +
       '<div class="result-title">' + escapeHtml(heading) + '</div><div class="round-copy">' + summary + '</div>' +
       '<div class="result-choices">' + choicesHtml + '</div>' +
-      '<div class="result-payout">' + (isDraw ? "Возврат ставок: " : "Выплаты: ") + (payoutHtml || "—") + '</div></div>';
+      '<div class="result-payout">' + (result.testMode ? "Режим проверки: списания и выплаты отключены." : (isDraw ? "Возврат ставок: " : "Выплаты: ") + (payoutHtml || "—")) + '</div></div>';
   }
 
   function renderChoices(room, round) {
     const area = $("choiceArea");
     const me = (room.players || []).find(player => player.isMe);
     if (room.status === "waiting" || !round) {
-      area.innerHTML = '<div class="round-note">Раунд начнётся автоматически, когда в комнате будет минимум два игрока.</div>';
+      const canAddBot = Boolean(room.isOwner && !room.hasBot && Number(room.playersCount) < 3);
+      area.innerHTML = '<div class="round-note">Раунд начнётся автоматически, когда в комнате будет минимум два игрока.</div>' +
+        (canAddBot ? '<button type="button" class="bot-test-button" data-add-bot>🤖 Добавить бота для проверки</button><div class="bot-test-caption">Бот играет автоматически. В тестовом режиме AC не списываются и не начисляются.</div>' : "");
       return;
     }
     if (me && me.waitingNextRound) {
@@ -395,6 +403,23 @@
     }
   }
 
+  async function addTestBot() {
+    if (!roomId || busy) return;
+    busy = true;
+    const button = document.querySelector("[data-add-bot]");
+    if (button) button.disabled = true;
+    try {
+      await api("rooms/add-bot", { roomId });
+      showStatus("roomStatus", "Бот подключён. Это тестовый режим: баланс AC не изменяется.", "success");
+      await refreshState();
+    } catch (error) {
+      showStatus("roomStatus", error.message, "error");
+      await refreshState();
+    } finally {
+      busy = false;
+    }
+  }
+
   async function submitChoice(choice) {
     if (!roomId || busy) return;
     busy = true;
@@ -437,6 +462,11 @@
   });
 
   document.addEventListener("click", event => {
+    const botButton = event.target.closest("[data-add-bot]");
+    if (botButton && !botButton.disabled) {
+      addTestBot();
+      return;
+    }
     const joinButton = event.target.closest("[data-join-room]");
     if (joinButton && !joinButton.disabled) {
       enterRoom(joinButton.getAttribute("data-join-room"), true).catch(error => {
