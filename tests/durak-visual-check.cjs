@@ -242,7 +242,7 @@ const path = require("node:path");
     assert.equal(checkerPieceLogoDiagnostics.logosWithSvg, 24, "Логотип должен быть готов для всех обычных шашек");
     assert.equal(checkerPieceLogoDiagnostics.visibleLogos, 24,
       "Все обычные шашки должны показывать логотип: " + JSON.stringify(checkerPieceLogoDiagnostics));
-    assert.ok(checkerPieceLogoDiagnostics.kingMarks >= 0, "Отрисовка короны должна быть доступна для дамок"); 
+    assert.equal(checkerPieceLogoDiagnostics.kingMarks, 24, "На каждой шашке должен быть подготовлен SVG значок дамки"); 
     assert.equal(checkerPieceLogoDiagnostics.kingsShowCrownInsteadOfLogo, true,
       "На дамке корона должна заменять логотип, а не накладываться на него");
     await checkersPage.screenshot({ path: path.join(out, "checkers-allcoins-piece-logos.png"), fullPage: true });
