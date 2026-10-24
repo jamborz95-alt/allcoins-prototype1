@@ -2542,25 +2542,29 @@ async function ensureTwentyOnePlayer(client, user) {
 
 async function creditTwentyOneWinners(client, gameState, roomId) {
   if (!gameState || gameState.status !== "finished" || gameState.settlementApplied) return;
+  const stake = Math.max(0, Math.floor(Number(gameState.stake) || 0));
   const winners = (gameState.players || []).filter(player =>
     player.status === "won" && Math.max(0, Math.floor(Number(player.payout) || 0)) > 0
   );
-  const grossPayout = winners.reduce((sum, player) =>
-    sum + Math.max(0, Math.floor(Number(player.payout) || 0)), 0
+  // 21 Ochko payout includes returning the winner's own stake. Calculate the fee
+  // only from the actual profit above that stake, not from the returned stake.
+  const grossProfit = winners.reduce((sum, player) =>
+    sum + Math.max(0, Math.floor(Number(player.payout) || 0) - stake), 0
   );
-  const commission = grossPayout > 0 ? await recordGameCommission(client, {
+  const commission = grossProfit > 0 ? await recordGameCommission(client, {
     game: "twentyone",
     eventKey: "twentyone:" + String(roomId) + ":" +
       String(gameState.commissionEventId || gameState.startedAt || "legacy"),
-    grossAmount: grossPayout
+    grossAmount: grossProfit
   }) : { amount: 0 };
-  let feeRemaining = Math.min(grossPayout, Math.max(0, Math.floor(Number(commission.amount) || 0)));
-  let grossRemaining = grossPayout;
+  let feeRemaining = Math.min(grossProfit, Math.max(0, Math.floor(Number(commission.amount) || 0)));
+  let profitRemaining = grossProfit;
 
   for (const player of gameState.players || []) {
     const gross = Math.max(0, Math.floor(Number(player.payout) || 0));
     if (player.status !== "won" || gross <= 0) continue;
-    const feeShare = grossRemaining > 0 ? Math.floor(feeRemaining * gross / grossRemaining) : 0;
+    const playerProfit = Math.max(0, gross - stake);
+    const feeShare = profitRemaining > 0 ? Math.floor(feeRemaining * playerProfit / profitRemaining) : 0;
     const allocatedFee = winners.indexOf(player) === winners.length - 1 ? feeRemaining : feeShare;
     const payout = Math.max(0, gross - allocatedFee);
     const credited = await client.query(
@@ -2573,10 +2577,11 @@ async function creditTwentyOneWinners(client, gameState, roomId) {
     player.commissionAmount = allocatedFee;
     player.payout = payout;
     feeRemaining -= allocatedFee;
-    grossRemaining -= gross;
+    profitRemaining -= playerProfit;
   }
   gameState.commissionPercent = 5;
   gameState.commissionAmount = Math.max(0, Math.floor(Number(commission.amount) || 0));
+  gameState.commissionGrossAmount = grossProfit;
   gameState.settlementApplied = true;
 }
 
