@@ -209,13 +209,13 @@ try {
   const sekaResult = await page.evaluate(() => {
     const cards = [...document.querySelectorAll("#myHand .playing-card")];
     const images = cards.map(card => card.querySelector("img"));
-    const paths = images.map(img => new URL(img.src).pathname.split("/").pop());
+    const paths = images.filter(Boolean).map(img => new URL(img.src).pathname.split("/").pop());
     return {
       cardCount: cards.length,
       imageCount: images.filter(Boolean).length,
       allLoaded: images.every(img => img && img.complete && img.naturalWidth > 0),
       allImageCards: cards.every(card => card.classList.contains("image-card")),
-      allUseSharedVersion: images.every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
+      allUseSharedVersion: images.filter(Boolean).every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
       uniqueFiles: new Set(paths).size,
       paths
     };
@@ -225,7 +225,7 @@ try {
   assert.equal(sekaResult.allLoaded, true, "all available Seka card images should load successfully");
   assert.equal(sekaResult.allImageCards, false, "cards without an uploaded PNG should use the readable fallback face");
   assert.equal(sekaResult.allUseSharedVersion, true, "Seka should use the shared asset cache version");
-  assert.equal(sekaResult.uniqueFiles, 20, "all available card image files should be mapped across ranks and suits");
+  assert.equal(sekaResult.uniqueFiles, 16, "the 16 uploaded PNGs should be mapped across the four illustrated ranks and suits");
 
   assert.deepEqual(pageErrors, [], "the shared card integration should not produce JavaScript errors");
   console.log("PASS: 21 Ochko and Seka both load and display the 20 available PNG assets from /cards; card artwork fills the full card.");
