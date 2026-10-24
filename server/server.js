@@ -7,6 +7,7 @@ import { createLottoRouter } from "./lotto.js";
 import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "./twentyone-rules.js";
 import { createSekaRouter } from "./seka-router.js";
 import { createRpsRouter } from "./rps-router.js";
+import { createUnoRouter } from "./uno-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -211,6 +212,9 @@ app.use("/api/seka", sekaRouter);
 
 const rpsRouter = createRpsRouter({ pool, verifyTelegram });
 app.use("/api/rps", rpsRouter);
+
+const unoRouter = createUnoRouter({ pool, verifyTelegram });
+app.use("/api/uno", unoRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3315,6 +3319,8 @@ async function startServer() {
     console.log("Lotto Online tables and scheduler are ready");
     await sekaRouter.initialize();
     console.log("Seka Online tables are ready");
+    await unoRouter.initialize();
+    console.log("UNO Online tables are ready");
   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_rooms (
