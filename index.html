@@ -10859,244 +10859,6 @@ $("refreshDurakRooms").onclick = async () => {
     alert("Не удалось обновить список комнат.");
   }
 };
-// ===== ALLCOINS PREMIUM — ПРЕДПРОСМОТР КАРТ =====
-function showAllcoinsCardPreview() {
-  const oldPreview = document.getElementById("allcoinsCardPreview");
-  if (oldPreview) oldPreview.remove();
-
-  const preview = document.createElement("div");
-  preview.id = "allcoinsCardPreview";
-
-  preview.style.cssText = `
-    position: relative;
-    margin: 16px 0;
-    padding: 16px;
-    background: #101010;
-    color: #e5c46b;
-    border: 1px solid #d4af37;
-    border-radius: 14px;
-  `;
-
-  const title = document.createElement("h3");
-  title.textContent = "◆ ALLCOINS PREMIUM";
-  title.style.cssText =
-    "text-align:center;color:#e5c46b;margin:0 0 14px";
-
-  const subtitle = document.createElement("p");
-  subtitle.textContent = "Предпросмотр дизайна карт";
-  subtitle.style.cssText =
-    "text-align:center;color:#aaa;font-size:13px";
-
-  const row = document.createElement("div");
-  row.style.cssText =
-    "display:flex;justify-content:center;gap:8px;flex-wrap:wrap";
-
-  const suits = [
-    { rank: "A", suit: "♠", red: false },
-    { rank: "K", suit: "♥", red: true },
-    { rank: "Q", suit: "♦", red: true },
-    { rank: "J", suit: "♣", red: false }
-  ];
-
-  suits.forEach(item => {
-    const card = document.createElement("div");
-
-    card.style.cssText = `
-      position:relative;
-      width:78px;
-      height:116px;
-      box-sizing:border-box;
-      border: 2px solid #d4af37;
-border-radius: 9px;
-box-shadow:
-  inset 0 0 0 1px rgba(212,175,55,0.22),
-  inset 0 0 8px rgba(212,175,55,0.08),
-  0 3px 7px rgba(0,0,0,0.45);
-      background:linear-gradient(145deg,#181818,#050505,#111111);
-      color:${item.red ? "#d84b55" : "#e5c46b"};
-      font-family:Georgia,serif;
-      box-shadow:inset 0 0 0 1px rgba(212,175,55,.18);
-    `;
-
-    // Верхний левый угол: значение + масть
-const corner = document.createElement("div");
-
-corner.style.cssText = `
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1px;
-  line-height: 1;
-  font-size: 18px;
-font-weight: 900;
-  z-index: 3;
-`;
-
-const cornerRank = document.createElement("span");
-cornerRank.textContent = item.rank;
-
-const cornerSuit = document.createElement("span");
-cornerSuit.textContent = item.suit;
-cornerSuit.style.fontSize = "16px";
-
-corner.append(cornerRank, cornerSuit);
-
-// Центральная масть
-const suit = document.createElement("div");
-suit.textContent = item.suit;
-
-suit.style.cssText = `
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 42px;
-  z-index: 1;
-`;
-
-// Нижний правый угол: значение + масть
-const bottomCorner = document.createElement("div");
-
-bottomCorner.style.cssText = `
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1px;
-  line-height: 1;
-  font-size: 18px;
-  font-weight: 900;
-  transform: rotate(180deg);
-  transform-origin: center;
-  z-index: 3;
-`;
-
-const bottomRank = document.createElement("span");
-bottomRank.textContent = item.rank;
-
-const bottomSuit = document.createElement("span");
-bottomSuit.textContent = item.suit;
-bottomSuit.style.fontSize = "16px";
-
-bottomCorner.append(bottomRank, bottomSuit);
-
-// Золотая маркировка ALLCOINS
-const brand = document.createElement("div");
-brand.textContent = "AC";
-brand.style.cssText = `
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 7px;
-  letter-spacing: 1px;
-  opacity: 0.7;
-  pointer-events: none;
-`;
-// Классические фигурные карты ALLCOINS
-if (["J", "Q", "K"].includes(item.rank)) {
-  suit.style.display = "none";
-
-  const portrait = document.createElement("div");
-  portrait.style.cssText = `
-    position: absolute;
-    inset: 24px 7px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #d4af37;
-    border-radius: 5px;
-    background: linear-gradient(145deg, #222, #080808);
-    color: ${item.red ? "#d84b55" : "#e5c46b"};
-    text-align: center;
-    z-index: 2;
-    overflow: hidden;
-  `;
-
-  const crown = document.createElement("div");
-  crown.textContent = item.rank === "K" ? "♛" :
-                      item.rank === "Q" ? "♕" : "♔";
-  crown.style.cssText = `
-    font-size: 24px;
-    line-height: 1;
-    margin-bottom: 3px;
-  `;
-
-  const figure = document.createElement("div");
-  figure.textContent = item.rank === "K" ? "♚" :
-                       item.rank === "Q" ? "♛" : "♞";
-  figure.style.cssText = `
-    font-size: 32px;
-    line-height: 1;
-  `;
-
-  const label = document.createElement("div");
-  label.textContent = item.rank === "K" ? "КОРОЛЬ" :
-                      item.rank === "Q" ? "ДАМА" : "ВАЛЕТ";
-  label.style.cssText = `
-    font-size: 7px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-top: 4px;
-  `;
-
-  portrait.append(crown, figure, label);
-  card.appendChild(portrait);
-}
-card.append(corner, suit, bottomCorner, brand);
-    row.appendChild(card);
-  });
-
-  const close = document.createElement("button");
-  close.type = "button";
-  close.textContent = "Закрыть предпросмотр";
-  close.style.cssText =
-    "display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #d4af37;border-radius:8px;background:#202020;color:#e5c46b";
-  close.onclick = () => preview.remove();
-
-  preview.append(title, subtitle, row, close);
-
-  const games = document.getElementById("games");
-  if (games) {
-    games.appendChild(preview);
-  } else {
-    document.body.appendChild(preview);
-  }
-    }
-// ===== КНОПКА ПРЕДПРОСМОТРА =====
-const previewButton = document.createElement("button");
-
-previewButton.type = "button";
-previewButton.textContent = "🃏 Посмотреть карты ALLCOINS Premium";
-
-previewButton.style.cssText = `
-  display: block;
-  width: 100%;
-  margin: 16px 0;
-  padding: 14px;
-  border: 1px solid #d4af37;
-  border-radius: 10px;
-  background: #101010;
-  color: #e5c46b;
-  font-weight: bold;
-`;
-
-previewButton.onclick = showAllcoinsCardPreview;
-
-const gamesSection = document.getElementById("games");
-
-if (gamesSection) {
-  gamesSection.appendChild(previewButton);
-}
 </script>
 
 
@@ -12415,6 +12177,146 @@ if (gamesSection) {
     .seka-mini-card.back { left:8px; top:10px; transform:rotate(-13deg); color:#f0d48e; background:repeating-linear-gradient(45deg,#17314a 0 4px,#214d66 4px 8px); }
     .seka-mini-card.front { right:7px; top:5px; transform:rotate(9deg); color:#9f2432; background:#fff4db; }
   </style>
+
+
+<style id="allcoins-gold-game-logos">
+  /* Единый авторский стиль значков игр: тёмная эмаль, золотая рамка и тонкий внутренний кант. */
+  #games #lottoEntry .lotto-entry-appicon,
+  #games #twentyOneEntry .twentyone-entry-appicon,
+  #games #sekaEntry .seka-entry-appicon {
+    position:relative !important;
+    isolation:isolate !important;
+    display:block !important;
+    flex:0 0 82px !important;
+    width:82px !important;
+    height:82px !important;
+    min-width:82px !important;
+    min-height:82px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    margin:0 auto !important;
+    border:1px solid rgba(244,213,133,.9) !important;
+    border-radius:21px !important;
+    background:
+      radial-gradient(circle at 50% 28%,rgba(222,178,72,.27),transparent 47%),
+      linear-gradient(145deg,#1b4960 0%,#0c1c30 62%,#25172b 100%) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 4px 10px rgba(0,0,0,.27) !important;
+  }
+  #games #lottoEntry .lotto-entry-appicon::before,
+  #games #twentyOneEntry .twentyone-entry-appicon::before,
+  #games #sekaEntry .seka-entry-appicon::before {
+    content:"";
+    position:absolute;
+    inset:4px;
+    z-index:6;
+    border:1px solid rgba(244,213,133,.28);
+    border-radius:16px;
+    pointer-events:none;
+  }
+  #games #lottoEntry .lotto-entry-appicon::after,
+  #games #twentyOneEntry .twentyone-entry-appicon::after,
+  #games #sekaEntry .seka-entry-appicon::after {
+    content:"✦";
+    position:absolute;
+    top:5px;
+    right:7px;
+    z-index:8;
+    color:#f6d981;
+    font:700 10px/1 Georgia,"Times New Roman",serif;
+    text-shadow:0 0 8px rgba(246,217,129,.65);
+    pointer-events:none;
+  }
+
+  /* Лото: три золотых шара в рамке того же размера, что и у Дурака. */
+  #games #lottoEntry .lotto-entry-ball {
+    position:absolute !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    min-height:34px !important;
+    box-sizing:border-box !important;
+    border:2px solid #ffe8b1 !important;
+    border-radius:50% !important;
+    color:#4b2c12 !important;
+    font-size:14px !important;
+    font-weight:1000 !important;
+    line-height:1 !important;
+    background:radial-gradient(circle at 30% 25%,#fff9df,#edc46c 68%,#b97931) !important;
+    box-shadow:0 3px 5px #4b1e0a66 !important;
+  }
+  #games #lottoEntry .lotto-entry-ball.one { left:5px !important; top:8px !important; }
+  #games #lottoEntry .lotto-entry-ball.two { right:5px !important; top:19px !important; }
+  #games #lottoEntry .lotto-entry-ball.three { left:24px !important; bottom:4px !important; }
+
+  /* 21 Очко: две игровые карты с золотой обводкой и авторской рубашкой. */
+  #games #twentyOneEntry .twentyone-mini-card {
+    position:absolute !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:37px !important;
+    height:53px !important;
+    box-sizing:border-box !important;
+    border:1px solid #e8c978 !important;
+    border-radius:5px !important;
+    box-shadow:0 3px 7px rgba(0,0,0,.43) !important;
+    font-family:Georgia,"Times New Roman",serif !important;
+    font-weight:900 !important;
+    line-height:1 !important;
+  }
+  #games #twentyOneEntry .twentyone-mini-card.back {
+    left:10px !important;
+    top:13px !important;
+    z-index:1 !important;
+    transform:rotate(-14deg) !important;
+    color:#f4d796 !important;
+    background:repeating-linear-gradient(45deg,#173e42 0 3px,#21585a 3px 5px) !important;
+  }
+  #games #twentyOneEntry .twentyone-mini-card.front {
+    right:10px !important;
+    top:15px !important;
+    z-index:2 !important;
+    transform:rotate(10deg) !important;
+    color:#8f2430 !important;
+    background:linear-gradient(145deg,#fffef6,#ead8b4) !important;
+    font-size:17px !important;
+  }
+
+  /* Сека: рубашка и лицевая карта выдержаны в том же золотом стиле. */
+  #games #sekaEntry .seka-mini-card {
+    position:absolute !important;
+    display:grid !important;
+    place-items:center !important;
+    width:37px !important;
+    height:53px !important;
+    box-sizing:border-box !important;
+    border:1px solid #e8c978 !important;
+    border-radius:5px !important;
+    font-family:Georgia,"Times New Roman",serif !important;
+    font-size:18px !important;
+    font-weight:900 !important;
+    box-shadow:0 3px 7px rgba(0,0,0,.43) !important;
+  }
+  #games #sekaEntry .seka-mini-card.back {
+    left:10px !important;
+    top:13px !important;
+    z-index:1 !important;
+    transform:rotate(-14deg) !important;
+    color:#f0d48e !important;
+    background:repeating-linear-gradient(45deg,#17314a 0 4px,#214d66 4px 8px) !important;
+  }
+  #games #sekaEntry .seka-mini-card.front {
+    right:10px !important;
+    top:15px !important;
+    z-index:2 !important;
+    transform:rotate(10deg) !important;
+    color:#9f2432 !important;
+    background:linear-gradient(145deg,#fff4db,#e7d2a5) !important;
+  }
+</style>
 
 </body>
 </html>

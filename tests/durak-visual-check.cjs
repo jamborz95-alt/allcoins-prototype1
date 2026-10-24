@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -112,6 +113,94 @@ const path = require("node:path");
     await page.waitForTimeout(700);
     await page.locator('.nav [data-page="games"]').click();
     await page.waitForTimeout(150);
+
+    // Regression check for the four game logos and removal of the old card-preview section.
+    const gamesIconDiagnostics = await page.evaluate(() => {
+      const definitions = [
+        { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
+        { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
+        { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
+        { id: "sekaEntry", selector: ".seka-entry-appicon", title: "Сека Онлайн" }
+      ];
+      const icons = definitions.map(def => {
+        const tile = document.getElementById(def.id);
+        const icon = tile?.querySelector(def.selector);
+        const rect = icon?.getBoundingClientRect();
+        const style = icon ? getComputedStyle(icon) : null;
+        const innerFrame = icon ? getComputedStyle(icon, "::before") : null;
+        return {
+          id: def.id,
+          title: tile?.querySelector(".game-app-title")?.textContent?.trim() || null,
+          visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+          width: rect?.width ?? null,
+          height: rect?.height ?? null,
+          borderWidth: style?.borderTopWidth || null,
+          borderColor: style?.borderTopColor || null,
+          radius: style?.borderTopLeftRadius || null,
+          hasGoldInnerFrame: Boolean(innerFrame && innerFrame.borderTopStyle === "solid" && innerFrame.borderTopWidth === "1px"),
+          background: style?.backgroundImage || null
+        };
+      });
+      return {
+        gamesSectionVisible: Boolean(document.getElementById("games") && !document.getElementById("games").classList.contains("hidden")),
+        tiles: document.querySelectorAll("#games .games-app-grid > .game-app-tile").length,
+        icons,
+        previewButtonCount: [...document.querySelectorAll("#games button")].filter(button =>
+          /посмотреть карты allcoins premium/i.test(button.textContent || "")
+        ).length,
+        previewPanelCount: document.querySelectorAll("#allcoinsCardPreview").length,
+        previewFunctionType: typeof window.showAllcoinsCardPreview,
+        sekaHref: document.getElementById("openSeka")?.getAttribute("href") || null,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+        url: location.href
+      };
+    });
+    fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
+    assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
+    assert.equal(gamesIconDiagnostics.tiles, 4, "В разделе должны остаться четыре игровые плитки");
+    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн"]);
+    for (const icon of gamesIconDiagnostics.icons) {
+      assert.equal(icon.visible, true, icon.id + ": значок не виден");
+      assert.ok(Math.abs(icon.width - 82) <= 1 && Math.abs(icon.height - 82) <= 1,
+        icon.id + ": размер значка отличается от общего 82×82: " + JSON.stringify(icon));
+      assert.equal(icon.borderWidth, "1px", icon.id + ": нет тонкой рамки");
+      assert.match(icon.borderColor, /244,\s*213,\s*133/, icon.id + ": рамка не золотая");
+      assert.equal(icon.radius, "21px", icon.id + ": радиус рамки отличается от Дурака Онлайн");
+      assert.equal(icon.hasGoldInnerFrame, true, icon.id + ": отсутствует внутренний золотой кант");
+      assert.notEqual(icon.background, "none", icon.id + ": отсутствует фон логотипа");
+    }
+    assert.equal(gamesIconDiagnostics.previewButtonCount, 0, "Старая кнопка просмотра премиум-карт ещё показывается");
+    assert.equal(gamesIconDiagnostics.previewPanelCount, 0, "На странице осталась панель предпросмотра карт");
+    assert.equal(gamesIconDiagnostics.previewFunctionType, "undefined", "Код удалённого предпросмотра остался доступен");
+    assert.equal(gamesIconDiagnostics.sekaHref, "./seka.html?v=20261024-editable-bets2",
+      "Адрес отдельной страницы Сека изменился");
+    assert.equal(gamesIconDiagnostics.documentWidth, gamesIconDiagnostics.viewportWidth,
+      "Появилась горизонтальная прокрутка в разделе игр");
+    assert.equal(new URL(gamesIconDiagnostics.url).pathname, "/index.html",
+      "При открытии раздела игр изменился адрес приложения");
+    await page.locator("#games").screenshot({ path: path.join(out, "01-games-icons-mobile.png") });
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.waitForTimeout(100);
+    const smallViewport = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      icons: [...document.querySelectorAll("#games .game-app-tile")].map(tile => {
+        const icon = tile.querySelector(".durak-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon");
+        const r = icon?.getBoundingClientRect();
+        return { id: tile.id, width: r?.width ?? null, height: r?.height ?? null };
+      })
+    }));
+    fs.writeFileSync(path.join(out, "games-icons-small-viewport.json"), JSON.stringify(smallViewport, null, 2));
+    assert.equal(smallViewport.documentWidth, smallViewport.viewportWidth, "На экране 360px появилась горизонтальная прокрутка");
+    for (const icon of smallViewport.icons) {
+      assert.ok(Math.abs(icon.width - 82) <= 1 && Math.abs(icon.height - 82) <= 1,
+        icon.id + ": неверный размер на узком экране: " + JSON.stringify(icon));
+    }
+    await page.locator("#games").screenshot({ path: path.join(out, "01b-games-icons-small-mobile.png") });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(100);
     await page.screenshot({ path: path.join(out, "01-games-mobile.png"), fullPage: true });
 
     // Feed a deterministic game state into the real production renderer and real card pointer handlers.
