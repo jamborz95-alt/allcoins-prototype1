@@ -5487,11 +5487,17 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
       className !== "durak-flying-card" &&
       className !== "durak-pickup-hold-card")
     .join(" ");
-  // Inline left/top могут отсутствовать: тогда координаты пары задаёт CSS.
-  // Берём вычисленную позицию, чтобы после полёта карта не смещалась к (0, 0).
+  // Важно: inline top/left скрытой цели могут временно содержать 7px,
+  // но CSS игрового стола уже ставит эту карту на top:0. Если сохранить inline
+  // число, после посадки она на миг опустится на 7px, а следующий render поднимет её.
+  // Берём реальные вычисленные координаты CSS — это точная точка, где карта видна.
   const targetComputedStyle = window.getComputedStyle(targetElement);
-  const finalLeft = targetElement.style.left || targetComputedStyle.left || "0px";
-  const finalTop = targetElement.style.top || targetComputedStyle.top || "0px";
+  const finalLeft = targetComputedStyle.left !== "auto"
+    ? targetComputedStyle.left
+    : (targetElement.style.left || "0px");
+  const finalTop = targetComputedStyle.top !== "auto"
+    ? targetComputedStyle.top
+    : (targetElement.style.top || "0px");
   const finalWidth = targetElement.offsetWidth || targetElement.getBoundingClientRect().width;
   const finalHeight = targetElement.offsetHeight || targetElement.getBoundingClientRect().height;
 
