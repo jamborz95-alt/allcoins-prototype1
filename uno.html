@@ -731,13 +731,13 @@
         window.setTimeout(() => element.removeEventListener("click", blockClick, true), 800);
       }
 
-      function attachUnoCardDrag(element, card, canPlay) {
-        if (!canPlay) return;
+      function attachUnoCardDrag(element, card, allowDrag) {
+        if (!allowDrag) return;
         element.style.setProperty("touch-action", "none", "important");
 
         element.addEventListener("pointerdown", function (downEvent) {
           if ((downEvent.pointerType === "mouse" && downEvent.button !== 0) ||
-              state.busy || state.cardDragging || !canPlay) return;
+              state.busy || state.cardDragging || !allowDrag) return;
 
           downEvent.preventDefault();
           const pointerId = downEvent.pointerId;
@@ -970,8 +970,9 @@
         game.hand.forEach(card => {
           const canPlay = turn && playableOnClient(card, game);
           const element = cardElement(card, { interactive: true, playable: turn ? canPlay : false });
-          element.disabled = !canPlay;
-          attachUnoCardDrag(element, card, canPlay);
+          element.disabled = false;
+          element.setAttribute("aria-disabled", canPlay ? "false" : "true");
+          attachUnoCardDrag(element, card, turn);
           element.addEventListener("click", function (event) {
             if (canPlay) playCard(card);
           });
