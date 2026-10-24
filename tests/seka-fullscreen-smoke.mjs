@@ -172,10 +172,7 @@ try {
   assert.match(await page.locator("#rematchButton").textContent(), /Рематч/,
     "a rematch button should be visible after the round ends");
   await page.locator("#rematchButton").click();
-  await page.waitForFunction(() => rematchButtonState());
-  function rematchButtonState() {
-    return rematchStarted && document.querySelector("#gameTurnLabel")?.textContent !== "Партия завершена";
-  }
+  await page.waitForFunction(() => document.querySelector("#gameTurnLabel")?.textContent === "Ваш ход");
   assert.equal(rematchStarted, true, "the rematch button should call the rematch endpoint");
   assert.equal(gameFinished, false, "a successful rematch should start a new round");
   assert.deepEqual(pageErrors, [], "the Seka page should not produce JavaScript errors");
