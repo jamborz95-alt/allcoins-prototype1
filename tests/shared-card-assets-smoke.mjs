@@ -172,7 +172,7 @@ try {
     return {
       cardCount: cards.length,
       imageCount: images.filter(Boolean).length,
-      allLoaded: images.every(img => img && img.complete && img.naturalWidth > 0),
+      allLoaded: images.filter(Boolean).every(img => img.complete && img.naturalWidth > 0),
       allImageCards: cards.every(card => card.classList.contains("image-card")),
       allUseSharedVersion: images.filter(Boolean).every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
       objectFits: [...new Set(styles.map(style => style.objectFit))],
