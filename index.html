@@ -5487,8 +5487,11 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
       className !== "durak-flying-card" &&
       className !== "durak-pickup-hold-card")
     .join(" ");
-  const finalLeft = targetElement.style.left || "0px";
-  const finalTop = targetElement.style.top || "0px";
+  // Inline left/top могут отсутствовать: тогда координаты пары задаёт CSS.
+  // Берём вычисленную позицию, чтобы после полёта карта не смещалась к (0, 0).
+  const targetComputedStyle = window.getComputedStyle(targetElement);
+  const finalLeft = targetElement.style.left || targetComputedStyle.left || "0px";
+  const finalTop = targetElement.style.top || targetComputedStyle.top || "0px";
   const finalWidth = targetElement.offsetWidth || targetElement.getBoundingClientRect().width;
   const finalHeight = targetElement.offsetHeight || targetElement.getBoundingClientRect().height;
 
@@ -6153,8 +6156,9 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       resolve();
     };
     const onEnd = (event) => {
-      if (event.target === flyer &&
-          ["left", "top", "width", "height"].includes(event.propertyName)) finish();
+      // Ждём завершения изменения высоты — все четыре перехода стартуют вместе.
+      // Не заканчиваем полёт по первому случайно пришедшему transitionend.
+      if (event.target === flyer && event.propertyName === "height") finish();
     };
 
     flyer.addEventListener("transitionend", onEnd);
