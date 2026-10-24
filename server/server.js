@@ -2713,7 +2713,7 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
             status: player.status,
             hand: revealHand ? player.hand : [],
             cardsCount: Array.isArray(player.hand) ? player.hand.length : 0,
-            score: revealHand ? scoreTwentyOneHand(player.hand || []) : null,
+            score: scoreTwentyOneHand(player.hand || []),
             payout: revealAll ? Number(player.payout || 0) : 0
           };
         });
