@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../server/server.js", import.meta.url), "utf8");
 const clientSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const twentyOneRulesSource = await readFile(new URL("../server/twentyone-rules.js", import.meta.url), "utf8");
+import { createTwentyOneDeck, createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "../server/twentyone-rules.js";
 
 function routeBody(path) {
   const marker = `app.post("${path}", async (req, res) => {`;
@@ -20,24 +22,10 @@ test("Durak room creation validates Telegram identity, players, and stake", () =
   assert.match(body, /max_players/);
   assert.match(body, /stake/);
   assert.match(body, /\[24, 36, 52\]\.includes\(deck\)/);
-  assert.match(body, /const maxPlayersForDeck = deck === 24 \? 3 : 5/);
+  assert.match(body, /const maxPlayersForDeck = deck === 24 \? 3 : deck === 36 \? 5 : 6/);
   assert.match(body, /С колодой на 24 карты можно играть максимум втроём/);
-  assert.match(body, /maxPlayers < 2 \|\| maxPlayers > 5/);
-  assert.match(body, /stake < 100 \|\| stake > 1000000/);
   assert.match(body, /INSERT INTO durak_rooms/);
   assert.match(body, /INSERT INTO durak_room_players/);
-});
-
-test("Durak lobby exposes stake ranges through 1,000,000 AC and caps room size at five", () => {
-  assert.match(clientSource, /id="durakStakeFilters"/);
-  assert.match(clientSource, /data-stake-filter="100-999"/);
-  assert.match(clientSource, /data-stake-filter="1000-9999"/);
-  assert.match(clientSource, /data-stake-filter="10000-99999"/);
-  assert.match(clientSource, /data-stake-filter="100000-499999"/);
-  assert.match(clientSource, /data-stake-filter="500000-1000000"/);
-  assert.match(clientSource, /data-stake-preset="1000000"/);
-  assert.match(clientSource, /max="1000000"/);
-  assert.doesNotMatch(clientSource, /<option value="6">6 игроков<\/option>/);
 });
 
 test("only the room owner can add the test bot while the room is waiting", () => {
@@ -53,7 +41,6 @@ test("joining a room checks membership, room state, and capacity", () => {
   const body = routeBody("/api/durak/rooms/join");
   assert.match(body, /room\.status !== "waiting"/);
   assert.match(body, /Комната заполнена/);
-  assert.match(body, /Math\.min\(5, Number\(room\.max_players\) \|\| 2\)/);
   assert.match(body, /INSERT INTO durak_room_players/);
 });
 
@@ -78,9 +65,9 @@ test("starting a game checks owner, minimum players, and guest readiness", () =>
   assert.match(body, /Начать игру может только создатель комнаты/);
   assert.match(body, /total < 2/);
   assert.match(body, /\[24, 36, 52\]\.includes\(selectedDeck\)/);
-  assert.match(body, /const maxPlayersForDeck = selectedDeck === 24 \? 3 : 5/);
+  assert.match(body, /const maxPlayersForDeck = selectedDeck === 24 \? 3 : selectedDeck === 36 \? 5 : 6/);
   assert.match(body, /В колоде на 24 карты максимум 3 игрока/);
-  assert.match(body, /В комнате может быть максимум 5 игроков/);
+  assert.match(body, /Для игры шестью игроками выбери колоду на 52 карты/);
   assert.match(body, /readyGuests < totalGuests/);
   assert.match(body, /createDurakDeck/);
   assert.match(body, /dealInitialHands\(deck, playersResult\.rows\.length, 6\)/);
@@ -158,4 +145,93 @@ test("a pending Durak refresh never redraws the table over a card drag or throw"
   assert.ok(loadStart !== -1 && gameFetch !== -1 && renderGuard !== -1 && flyingCardCleanup !== -1);
   assert.ok(gameFetch < renderGuard && renderGuard < flyingCardCleanup,
     "a poll that finishes mid-throw must defer before removing the flyer or rebuilding the table");
+});
+
+
+test("21 Ochko has five-seat rooms, stake presets and public stake filters", () => {
+  assert.match(clientSource, /id="twentyOneRoomPlayers"/);
+  assert.match(clientSource, /<option value="5">5 игроков<\/option>/);
+  assert.match(clientSource, /id="twentyOneStakeFilters"/);
+  assert.match(clientSource, /data-stake-filter="100-999"/);
+  assert.match(clientSource, /data-stake-filter="1000-9999"/);
+  assert.match(clientSource, /data-stake-filter="10000-99999"/);
+  assert.match(clientSource, /data-stake-filter="100000-499999"/);
+  assert.match(clientSource, /data-stake-filter="500000-1000000"/);
+  assert.match(clientSource, /data-stake-preset="1000000"/);
+  assert.match(clientSource, /id="twentyOneSoloStakePresets"/);
+  assert.match(clientSource, /max="1000000"/);
+  assert.doesNotMatch(clientSource, /id="durakStakeFilters"/);
+});
+
+test("21 Ochko room creation authenticates users and limits room size and stakes", () => {
+  const body = routeBody("/api/twentyone/rooms/create");
+  assert.match(body, /verifyTelegram\(req\.body\?\.initData\)/);
+  assert.match(body, /maxPlayers < 1 \|\| maxPlayers > 5/);
+  assert.match(body, /stake < 100 \|\| stake > 1000000/);
+  assert.match(body, /INSERT INTO twentyone_rooms/);
+  assert.match(body, /INSERT INTO twentyone_room_players/);
+});
+
+test("21 Ochko lobby and room joining enforce membership, room state and capacity", () => {
+  const listBody = routeBody("/api/twentyone/rooms/list");
+  assert.match(listBody, /status = 'waiting'/);
+  assert.match(listBody, /COUNT\(p\.telegram_id\) < r\.max_players/);
+  const joinBody = routeBody("/api/twentyone/rooms/join");
+  assert.match(joinBody, /room\.status !== "waiting"/);
+  assert.match(joinBody, /Комната заполнена/);
+  assert.match(joinBody, /max_players/);
+  assert.match(joinBody, /INSERT INTO twentyone_room_players/);
+});
+
+test("21 Ochko starts shared server rounds, debits each stake once, and settles winners", () => {
+  const body = routeBody("/api/twentyone/rooms/start");
+  assert.match(body, /Начать раунд может только создатель комнаты/);
+  assert.match(body, /WHERE id = \$1 FOR UPDATE/);
+  assert.match(body, /balance >= \$1/);
+  assert.match(body, /createTwentyOneRound/);
+  assert.match(body, /INSERT INTO twentyone_games/);
+  assert.match(body, /creditTwentyOneWinners/);
+  assert.match(body, /await client\.query\("BEGIN"\)/);
+  assert.match(body, /await client\.query\("COMMIT"\)/);
+  assert.match(body, /await client\.query\("ROLLBACK"\)/);
+});
+
+test("21 Ochko actions verify the current turn and protect hidden dealer and opponent cards", () => {
+  const actionBody = routeBody("/api/twentyone/rooms/action");
+  assert.match(actionBody, /applyTwentyOneAction/);
+  assert.match(actionBody, /Ты не состоишь в этой комнате/);
+  assert.match(actionBody, /FOR UPDATE/);
+  const stateBody = routeBody("/api/twentyone/rooms/state");
+  assert.match(stateBody, /revealAll = raw\.status === "finished"/);
+  assert.match(stateBody, /21-dealer-hidden-card/);
+  assert.match(stateBody, /revealHand \? player\.hand : \[\]/);
+  assert.match(stateBody, /cardsCount/);
+});
+
+test("21 Ochko rules deal 36 cards, score court cards, and enforce turn order", () => {
+  const deck = createTwentyOneDeck(() => 0.5);
+  assert.equal(deck.length, 36);
+  assert.equal(new Set(deck.map(card => card.id)).size, 36);
+  assert.equal(scoreTwentyOneHand([
+    { rank: "A" }, { rank: "10" }
+  ]), 21);
+  assert.equal(scoreTwentyOneHand([
+    { rank: "J" }, { rank: "Q" }, { rank: "K" }, { rank: "6" }
+  ]), 15);
+  assert.match(twentyOneRulesSource, /if \(player\.score === 21\)/);
+  const game = createTwentyOneRound([
+    { telegramId: "101", label: "Игрок 1" },
+    { telegramId: "202", label: "Игрок 2" }
+  ], 500, () => 0.37);
+  if (game.status === "playing") {
+    const firstTurn = game.currentPlayerTelegramId;
+    const wrongTurn = firstTurn === "101" ? "202" : "101";
+    assert.throws(() => applyTwentyOneAction(game, wrongTurn, "stand"), /Сейчас ход другого игрока/);
+    while (game.status === "playing") {
+      applyTwentyOneAction(game, game.currentPlayerTelegramId, "stand");
+    }
+  }
+  assert.equal(game.status, "finished");
+  assert.equal(game.players.length, 2);
+  assert.ok(game.players.every(player => Number.isInteger(player.payout) && player.payout >= 0));
 });
