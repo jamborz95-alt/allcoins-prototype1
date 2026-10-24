@@ -181,13 +181,28 @@ try {
   const createCall = owner.apiCalls.find(call => call.path === "/api/rps/rooms/create");
   assert.equal(createCall?.body?.stake, 500, "Комната должна получать заданную ставку числом");
   assert.equal(await owner.page.locator("#roomNumber").innerText(), "Комната #42");
+  const roomBounds = await owner.page.locator("#roomView").evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    return { position: getComputedStyle(node).position, width: Math.round(rect.width), height: Math.round(rect.height) };
+  });
+  assert.equal(roomBounds.position, "fixed", "Экран игры должен занимать весь экран");
+  assert.equal(roomBounds.width, 390, "Комната должна занимать всю ширину мобильного экрана");
   await owner.page.locator("[data-add-bot]").click();
   await owner.page.locator("[data-choice]").first().waitFor();
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/add-bot"), "Кнопка должна отправить запрос добавления бота");
   assert.equal(await owner.page.getByText("Бот проверки", { exact: false }).count() > 0, true, "Бот должен отображаться среди игроков");
   assert.equal(await owner.page.locator("[data-choice]").count(), 3, "После добавления бота должны отображаться три жеста");
   await owner.page.locator('[data-choice="rock"]').click();
+  assert.match(await owner.page.locator('[data-choice="rock"]').getAttribute("class"), /selected/,
+    "Выбранный жест должен подсвечиваться до нажатия «Готово»");
+  assert.equal(await owner.page.locator("[data-ready-choice]").isEnabled(), true,
+    "Кнопка «Готово» должна включаться после выбора жеста");
+  await owner.page.locator("[data-ready-choice]").click();
   await owner.page.getByText("Тестовый раунд с ботом. Баланс AC не изменён.", { exact: false }).waitFor();
+  assert.equal(await owner.page.locator("#gameTable .table-card").count(), 2,
+    "После готовности жесты игрока и бота должны появиться на игровом столе");
+  assert.match(await owner.page.locator("#gameTable").innerText(), /Камень|Ножницы|Бумага/,
+    "На игровом столе должны быть видны раскрытые жесты");
   assert.equal((await owner.page.locator("#topBalance").innerText()).replace(/\\s/g, ""), "10000",
     "Тестовый раунд с ботом не должен менять баланс пользователя");
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/choose"),
@@ -200,6 +215,10 @@ try {
   await third.page.locator('[data-join-room="77"]').click();
   await third.page.getByText("Со следующего раунда", { exact: false }).first().waitFor();
   await third.page.getByText("Ты подключился во время текущего раунда", { exact: false }).waitFor();
+  assert.equal(await third.page.locator('.player-row[data-player-id="101"] .ready-check.is-ready').count(), 1,
+    "Другой игрок должен видеть галочку рядом с участником, который уже готов");
+  assert.equal(await third.page.locator('.player-row[data-player-id="202"] .ready-check.is-ready').count(), 0,
+    "У ещё не готового противника галочка не должна отображаться");
   assert.equal(await third.page.locator("[data-choice]").count(), 0,
     "Третий игрок не должен получать ход в середине уже начавшегося раунда");
   assert.ok(third.apiCalls.some(call => call.path === "/api/rps/rooms/join"),
