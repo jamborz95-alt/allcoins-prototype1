@@ -277,6 +277,8 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       message: String(game.message || ""),
       settlementApplied: Boolean(game.settlementApplied),
       revealHands: revealed,
+      rematchVotes: Array.isArray(game.rematchVotes) ? game.rematchVotes.map(String) : [],
+      roundNumber: Math.max(1, Number(game.roundNumber) || 1),
       players: (game.players || []).map(player => {
         const showHand = revealed || String(player.telegramId) === String(userId);
         return {
@@ -609,6 +611,139 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       const status = error.statusCode || 500;
       if (status === 500) console.error("Start Seka room error:", error.message || error);
       return res.status(status).json({ ok: false, error: error.message || "Не удалось начать игру Сека" });
+    } finally {
+      client?.release();
+    }
+  });
+
+  router.post("/rooms/rematch", async (req, res) => {
+    const user = authenticatedUser(req, res);
+    if (!user) return;
+    let client;
+    let transactionOpen = false;
+    try {
+      const roomId = req.body?.roomId;
+      if (!roomId || !/^\d+$/.test(String(roomId))) {
+        throw new SekaHttpError(400, "Неверный номер комнаты");
+      }
+      client = await pool.connect();
+      await client.query("BEGIN");
+      transactionOpen = true;
+
+      const room = await getRoomRow(client, roomId, true);
+      if (!room) throw new SekaHttpError(404, "Комната не найдена");
+      if (room.status !== "finished") {
+        throw new SekaHttpError(409, "Рематч доступен после завершения партии");
+      }
+
+      const gameResult = await client.query(
+        "SELECT game_state FROM seka_games WHERE room_id = $1 FOR UPDATE",
+        [roomId]
+      );
+      if (!gameResult.rows.length || !gameResult.rows[0].game_state) {
+        throw new SekaHttpError(404, "Не найдены результаты завершённой партии");
+      }
+      const previousGame = gameResult.rows[0].game_state;
+      if (previousGame.status !== "finished") {
+        throw new SekaHttpError(409, "Предыдущая партия ещё не завершена");
+      }
+
+      const membersResult = await client.query(
+        `SELECT rp.telegram_id, rp.display_name, pl.balance
+         FROM seka_room_players rp
+         JOIN players pl ON pl.telegram_id = rp.telegram_id
+         WHERE rp.room_id = $1
+         ORDER BY rp.joined_at ASC
+         FOR UPDATE OF rp, pl`,
+        [roomId]
+      );
+      const members = membersResult.rows;
+      if (!members.some(member => String(member.telegram_id) === String(user.id))) {
+        throw new SekaHttpError(403, "Ты не состоишь в этой комнате");
+      }
+      if (members.length < 2) {
+        throw new SekaHttpError(400, "Для рематча нужны минимум два игрока в комнате");
+      }
+      if (members.length > Number(room.max_players)) {
+        throw new SekaHttpError(400, "В комнате слишком много игроков");
+      }
+
+      const eligibleIds = members
+        .filter(member => String(member.telegram_id) !== SEKA_BOT_ID)
+        .map(member => String(member.telegram_id));
+      if (!eligibleIds.length) throw new SekaHttpError(400, "Для рематча нужен хотя бы один реальный игрок");
+      const validOldVotes = Array.isArray(previousGame.rematchVotes)
+        ? previousGame.rematchVotes.map(String).filter(id => eligibleIds.includes(id))
+        : [];
+      const votes = [...new Set([...validOldVotes, String(user.id)])];
+      const everyoneReady = eligibleIds.every(id => votes.includes(id));
+
+      if (!everyoneReady) {
+        previousGame.rematchVotes = votes;
+        await client.query(
+          "UPDATE seka_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1",
+          [roomId, JSON.stringify(previousGame)]
+        );
+        await client.query("COMMIT");
+        transactionOpen = false;
+        return res.json({
+          ok: true,
+          started: false,
+          readyCount: votes.length,
+          totalPlayers: eligibleIds.length,
+          message: "Готовность к рематчу сохранена. Ждём остальных игроков."
+        });
+      }
+
+      const testMode = Boolean(previousGame.testMode) ||
+        members.some(member => String(member.telegram_id) === SEKA_BOT_ID);
+      if (!testMode) {
+        for (const member of members) {
+          if (Number(member.balance) < Number(room.ante)) {
+            throw new SekaHttpError(
+              400,
+              "У игрока " + String(member.display_name || "Игрок") +
+              " недостаточно AC для новой партии. Взнос: " +
+              Number(room.ante).toLocaleString("ru-RU") + " AC."
+            );
+          }
+        }
+        for (const member of members) {
+          await chargePlayer(client, member.telegram_id, Number(room.ante));
+        }
+      }
+
+      const nextGame = createSekaGame(members.map(member => ({
+        telegramId: String(member.telegram_id),
+        label: String(member.display_name || "Игрок"),
+        isBot: String(member.telegram_id) === SEKA_BOT_ID
+      })), Number(room.ante));
+      nextGame.testMode = testMode;
+      nextGame.roundNumber = Math.max(1, Number(previousGame.roundNumber) || 1) + 1;
+      if (testMode) nextGame.pot = Number(room.ante) * nextGame.players.length;
+
+      await runSekaBots(client, room, nextGame);
+      await client.query(
+        "UPDATE seka_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1",
+        [roomId, JSON.stringify(nextGame)]
+      );
+      await client.query("UPDATE seka_rooms SET status = 'playing' WHERE id = $1", [roomId]);
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return res.json({
+        ok: true,
+        started: true,
+        roomId: String(roomId),
+        roundNumber: nextGame.roundNumber,
+        message: "Рематч начался! Карты розданы заново."
+      });
+    } catch (error) {
+      if (client && transactionOpen) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+      }
+      const status = error.statusCode || 500;
+      if (status === 500) console.error("Seka rematch error:", error.message || error);
+      return res.status(status).json({ ok: false, error: error.message || "Не удалось начать рематч в Секе" });
     } finally {
       client?.release();
     }
