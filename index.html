@@ -5042,6 +5042,8 @@ let durakAnimatedCardIds = new Set();
 let durakAnimationRoomId = null;
 // Пока последовательная раздача идёт, не запускаем поверх неё новый визуальный кадр партии.
 let durakDealAnimationActive = false;
+// Не допускаем повторную перерисовку игрового поля во время ухода отбитых карт.
+let durakDiscardAnimationActive = false;
 let durakDealAnimationToken = 0;
 
 const DURAK_DECK_PILE_PATTERN = "repeating-linear-gradient(45deg, transparent 0 1.2px, rgba(72,139,100,.92) 1.2px 1.65px, transparent 1.65px 2.8px), repeating-linear-gradient(-45deg, transparent 0 1.2px, rgba(194,112,123,.78) 1.2px 1.65px, transparent 1.65px 2.8px), #f4f3e8";
@@ -5619,102 +5621,113 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
 async function animateDurakDiscardedTableCards(previousTableCardOrigins) {
   if (!(previousTableCardOrigins instanceof Map) || !previousTableCardOrigins.size) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (durakDiscardAnimationActive) return;
 
   const sources = Array.from(previousTableCardOrigins.values())
     .filter(source => source?.element && Number.isFinite(source.x) &&
       Number.isFinite(source.y) && Number(source.width) > 0 && Number(source.height) > 0);
   if (!sources.length) return;
 
-  const duration = 560;
-  const stagger = 45;
-  await Promise.all(sources.map((source, index) => new Promise(resolve => {
-    const flyer = source.element;
-    const width = Number(source.width);
-    const height = Number(source.height);
-    const startLeft = Number(source.x) - width / 2;
-    const startTop = Number(source.y) - height / 2;
-    const endLeft = window.innerWidth + 24 + (index % 3) * 7;
-    const endTop = startTop + 55 + ((index % 5) - 2) * 12;
-    const dx = endLeft - startLeft;
-    const dy = endTop - startTop;
-    let delayTimer = null;
-    let fallbackTimer = null;
-    let animation = null;
-    let finished = false;
+  durakDiscardAnimationActive = true;
+  try {
+    const duration = 560;
+    const stagger = 38;
+    await Promise.all(sources.map((source, index) => new Promise(resolve => {
+      const flyer = source.element;
+      const width = Number(source.width);
+      const height = Number(source.height);
+      const startLeft = Number(source.x) - width / 2;
+      const startTop = Number(source.y) - height / 2;
+      const endLeft = window.innerWidth + 24 + (index % 3) * 7;
+      const endTop = startTop + 55 + ((index % 5) - 2) * 12;
+      const dx = endLeft - startLeft;
+      const dy = endTop - startTop;
+      let delayTimer = null;
+      let fallbackTimer = null;
+      let animation = null;
+      let finished = false;
 
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      if (delayTimer !== null) window.clearTimeout(delayTimer);
-      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
-      if (animation) {
-        animation.onfinish = null;
-        try { animation.cancel(); } catch (_) {}
-      }
-      flyer.remove();
-      resolve();
-    };
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        if (delayTimer !== null) window.clearTimeout(delayTimer);
+        if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+        if (animation) {
+          animation.onfinish = null;
+          try { animation.cancel(); } catch (_) {}
+        }
+        flyer.remove();
+        resolve();
+      };
 
-    flyer.classList.remove("table-card", "durak-landing-target",
-      "durak-pickup-hold-card", "durak-flying-card");
-    flyer.classList.add("durak-discard-flyer");
-    [
-      ["position", "fixed"],
-      ["left", startLeft + "px"],
-      ["top", startTop + "px"],
-      ["width", width + "px"],
-      ["height", height + "px"],
-      ["min-width", width + "px"],
-      ["min-height", height + "px"],
-      ["max-width", width + "px"],
-      ["max-height", height + "px"],
-      ["margin", "0"],
-      ["padding", "0"],
-      ["box-sizing", "border-box"],
-      ["overflow", "hidden"],
-      ["opacity", "1"],
-      ["visibility", "visible"],
-      ["pointer-events", "none"],
-      ["z-index", "2147483001"],
-      ["transform", "none"],
-      ["transform-origin", "center center"],
-      ["transition", "none"],
-      ["will-change", "transform, opacity"],
-      ["backface-visibility", "hidden"]
-    ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
-
-    const image = flyer.querySelector("img");
-    if (image) {
+      flyer.classList.remove("table-card", "durak-landing-target",
+        "durak-pickup-hold-card", "durak-flying-card");
+      flyer.classList.add("durak-discard-flyer");
       [
-        ["display", "block"], ["width", "100%"], ["height", "100%"],
-        ["min-width", "0"], ["min-height", "0"],
-        ["max-width", "100%"], ["max-height", "100%"],
-        ["object-fit", "contain"], ["object-position", "center"],
-        ["margin", "0"], ["padding", "0"], ["transform", "none"]
-      ].forEach(([property, value]) => image.style.setProperty(property, value, "important"));
-    }
+        ["position", "fixed"],
+        ["left", startLeft + "px"],
+        ["top", startTop + "px"],
+        ["width", width + "px"],
+        ["height", height + "px"],
+        ["min-width", width + "px"],
+        ["min-height", height + "px"],
+        ["max-width", width + "px"],
+        ["max-height", height + "px"],
+        ["margin", "0"],
+        ["padding", "0"],
+        ["box-sizing", "border-box"],
+        ["overflow", "hidden"],
+        ["visibility", "visible"],
+        ["pointer-events", "none"],
+        ["z-index", "2147483001"],
+        ["transform-origin", "center center"],
+        ["transition", "none"],
+        ["will-change", "transform, opacity"],
+        ["backface-visibility", "hidden"]
+      ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
 
-    document.body.appendChild(flyer);
-    delayTimer = window.setTimeout(() => {
-      if (!flyer.isConnected) {
-        finish();
-        return;
+      // ВАЖНО: transform и opacity нельзя закреплять через !important —
+      // это блокирует кадры Web Animations API и карта визуально не летит.
+      flyer.style.removeProperty("transform");
+      flyer.style.removeProperty("opacity");
+      flyer.style.setProperty("transform", "none");
+      flyer.style.setProperty("opacity", "1");
+
+      const image = flyer.querySelector("img");
+      if (image) {
+        [
+          ["display", "block"], ["width", "100%"], ["height", "100%"],
+          ["min-width", "0"], ["min-height", "0"],
+          ["max-width", "100%"], ["max-height", "100%"],
+          ["object-fit", "contain"], ["object-position", "center"],
+          ["margin", "0"], ["padding", "0"], ["transform", "none"]
+        ].forEach(([property, value]) => image.style.setProperty(property, value, "important"));
       }
-      try {
-        animation = flyer.animate([
-          { offset: 0, transform: "translate3d(0,0,0) rotate(0deg) scale(1)", opacity: 1 },
-          { offset: 0.22, transform: "translate3d(" + (dx * 0.22) + "px," + (dy * 0.12 - 10) + "px,0) rotate(4deg) scale(.98)", opacity: 1 },
-          { offset: 0.68, transform: "translate3d(" + (dx * 0.68) + "px," + (dy * 0.62) + "px,0) rotate(14deg) scale(.78)", opacity: .78 },
-          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(24deg) scale(.56)", opacity: 0 }
-        ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
-        animation.onfinish = finish;
-        fallbackTimer = window.setTimeout(finish, duration + 180);
-      } catch (error) {
-        console.warn("Не удалось анимировать уход отбитой карты:", error);
-        finish();
-      }
-    }, index * stagger);
-  })));
+
+      document.body.appendChild(flyer);
+      delayTimer = window.setTimeout(() => {
+        if (!flyer.isConnected) {
+          finish();
+          return;
+        }
+        try {
+          animation = flyer.animate([
+            { offset: 0, transform: "translate3d(0,0,0) rotate(0deg) scale(1)", opacity: 1 },
+            { offset: 0.22, transform: "translate3d(" + (dx * 0.22) + "px," + (dy * 0.12 - 10) + "px,0) rotate(4deg) scale(.98)", opacity: 1 },
+            { offset: 0.68, transform: "translate3d(" + (dx * 0.68) + "px," + (dy * 0.62) + "px,0) rotate(14deg) scale(.78)", opacity: .78 },
+            { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(24deg) scale(.56)", opacity: 0 }
+          ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
+          animation.onfinish = finish;
+          fallbackTimer = window.setTimeout(finish, duration + 180);
+        } catch (error) {
+          console.warn("Не удалось анимировать уход отбитой карты:", error);
+          finish();
+        }
+      }, index * stagger);
+    })));
+  } finally {
+    durakDiscardAnimationActive = false;
+  }
 }
 
 function revealPendingDurakDealTargets(dealTargets) {
@@ -6364,7 +6377,7 @@ let durakGameReloadRoomId = null;
 // Отложенное обновление не должно перерисовывать стол поверх движения карты.
 function flushDurakGameReloadIfIdle() {
   if (!durakGameReloadRequested || durakGameLoadInProgress ||
-      durakCardDragging || durakActionInProgress ||
+      durakCardDragging || durakActionInProgress || durakDiscardAnimationActive ||
       durakIncomingAttackAnimations > 0) return;
 
   const reloadRoomId = durakGameReloadRoomId || currentDurakRoomId;
@@ -6388,6 +6401,14 @@ function flushDurakGameReloadIfIdle() {
 }
 
 async function loadDurakGame(roomId) {
+  // Пока отбитые карты уходят за пределы экрана, не перестраиваем стол и не обрываем движение.
+  if (durakDiscardAnimationActive &&
+      String(roomId) === String(currentDurakRoomId)) {
+    durakGameReloadRequested = true;
+    durakGameReloadRoomId = roomId;
+    return;
+  }
+
   // Не пересоздаём стол, пока карта соперника летит на него:
   // иначе очередной опрос может удалить видимый летящий экземпляр.
   if (durakIncomingAttackAnimations > 0 &&
@@ -6561,21 +6582,12 @@ async function loadDurakGame(roomId) {
     // Если все пары прошлого стола были побиты и сервер очистил их без взятия,
     // это сброс отбоя. Сохраняем исходные карты для плавного ухода со стола.
     const previousTableSourceCards = Array.from(previousTableCardOrigins.values());
-    const previousAttackIds = previousTableSourceCards
-      .filter(source => source?.element?.dataset?.tableCardType === "attack")
-      .map(source => String(source.element.dataset.cardId || ""))
-      .filter(Boolean);
-    const previousDefenseIds = new Set(previousTableSourceCards
-      .filter(source => source?.element?.dataset?.tableCardType === "defense")
-      .map(source => String(source.element.dataset.cardId || ""))
-      .filter(Boolean));
-    const previousTableWasFullyBeaten =
-      previousAttackIds.length > 0 &&
-      previousDefenseIds.size >= previousAttackIds.length;
+    // Если старый стол полностью очищен и это не взятие карт,
+    // проигрываем уход карт как сброс отбоя. Не полагаемся на количество
+    // пар: клиент мог пропустить промежуточное состояние сервера.
     const shouldAnimateBeatenTableDiscard =
       pickupRoomMatches &&
       pickupOldTableFullyRemoved &&
-      previousTableWasFullyBeaten &&
       game.status === "playing" &&
       !shouldHoldTableCardsForPickup &&
       game.takePending !== true &&
