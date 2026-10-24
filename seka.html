@@ -693,6 +693,8 @@
   };
   function cardImageName(card) {
     const rank = String(card?.rank ?? "").trim().toUpperCase();
+    // Until all four 10 PNGs are uploaded, render them as readable text cards instead of broken images.
+    if (rank === "10") return null;
     const suit = String(card?.suit ?? "").trim();
     const normalizedSuit = ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" })[suit] || suit;
     const rankName = rankImageNames[rank];
