@@ -733,7 +733,7 @@
 
       function attachUnoCardDrag(element, card, canPlay) {
         if (!canPlay) return;
-        element.style.touchAction = "none";
+        element.style.setProperty("touch-action", "none", "important");
 
         element.addEventListener("pointerdown", function (downEvent) {
           if ((downEvent.pointerType === "mouse" && downEvent.button !== 0) ||
@@ -764,9 +764,9 @@
               cancelAnimationFrame(rafId);
               rafId = 0;
             }
-            document.removeEventListener("pointermove", moveCard);
-            document.removeEventListener("pointerup", releaseCard);
-            document.removeEventListener("pointercancel", cancelCard);
+            window.removeEventListener("pointermove", moveCard, true);
+            window.removeEventListener("pointerup", releaseCard, true);
+            window.removeEventListener("pointercancel", cancelCard, true);
             element.removeEventListener("lostpointercapture", lostPointer);
           }
 
@@ -932,9 +932,9 @@
             void cancelCard(event);
           }
 
-          document.addEventListener("pointermove", moveCard, { passive: false });
-          document.addEventListener("pointerup", releaseCard);
-          document.addEventListener("pointercancel", cancelCard);
+          window.addEventListener("pointermove", moveCard, { capture: true, passive: false });
+          window.addEventListener("pointerup", releaseCard, true);
+          window.addEventListener("pointercancel", cancelCard, true);
           element.addEventListener("lostpointercapture", lostPointer, { once: true });
         });
       }
