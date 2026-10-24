@@ -76,6 +76,10 @@
     .playing-card { position:relative; overflow:hidden; width:clamp(58px,17vw,78px); aspect-ratio:2/3; flex-shrink:0; background:#fffdf5; color:#17191f; border:1px solid #e4d7b5; border-radius:7px; box-shadow:0 4px 9px #0006; }
     .playing-card.red { color:#b32635; }
     .playing-card .card-art { display:block; width:100%; height:100%; object-fit:fill; transform:scale(1.03); transform-origin:center; }
+    .playing-card.card-small { width:34px; aspect-ratio:2/3; border-radius:4px; }
+    .playing-card.card-small .card-fallback { padding:2px; }
+    .playing-card.card-small .card-fallback .rank { font-size:10px; }
+    .playing-card.card-small .card-fallback .suit { font-size:15px; }
     .card-fallback { position:absolute; inset:0; padding:5px 5px 4px; display:flex; flex-direction:column; justify-content:space-between; font-weight:900; background:linear-gradient(135deg,#fffef9,#f0e7d0); }
     .card-fallback .rank { font-size:clamp(15px,4vw,20px); line-height:1; }
     .card-fallback .suit { align-self:center; font-size:clamp(22px,6vw,31px); }
@@ -245,6 +249,12 @@
   };
   let currentRoomId = null;
   let currentRoomData = null;
+  function saveCurrentRoom(id) {
+    try {
+      if (id) localStorage.setItem("allcoinsSekaRoomId", String(id));
+      else localStorage.removeItem("allcoinsSekaRoomId");
+    } catch (_) {}
+  }
   let currentState = null;
   let busy = false;
   let pollBusy = false;
@@ -380,6 +390,7 @@
         stake: Number($("anteInput").value)
       });
       currentRoomId = String(result.room.id);
+      saveCurrentRoom(currentRoomId);
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
       setStatus("createStatus", "");
@@ -399,6 +410,7 @@
       setStatus("lobbyStatus", "Входим в комнату…");
       await api("/rooms/join", { roomId: String(roomId) });
       currentRoomId = String(roomId);
+      saveCurrentRoom(currentRoomId);
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
       setStatus("lobbyStatus", "");
@@ -559,6 +571,7 @@
     try {
       await api("/rooms/leave", { roomId: currentRoomId });
       currentRoomId = null;
+      saveCurrentRoom(null);
       currentRoomData = null;
       currentState = null;
       $("roomPanel").classList.add("hidden");
@@ -616,7 +629,28 @@
     if (typeof tg.BackButton.onClick === "function") tg.BackButton.onClick(goBack);
   }
 
-  loadProfile().then(() => loadRooms(false)).catch(error => {
+  try {
+    const savedRoomId = localStorage.getItem("allcoinsSekaRoomId");
+    if (savedRoomId && /^\d+$/.test(savedRoomId)) currentRoomId = savedRoomId;
+  } catch (_) {}
+  loadProfile().then(async () => {
+    if (currentRoomId) {
+      $("lobbyPanel").classList.add("hidden");
+      $("roomPanel").classList.remove("hidden");
+      try {
+        await refreshRoomState();
+      } catch (error) {
+        currentRoomId = null;
+        saveCurrentRoom(null);
+        $("roomPanel").classList.add("hidden");
+        $("lobbyPanel").classList.remove("hidden");
+        setStatus("lobbyStatus", "Сохранённая комната больше недоступна. " + error.message, true);
+        await loadRooms(false);
+      }
+    } else {
+      await loadRooms(false);
+    }
+  }).catch(error => {
     setStatus("lobbyStatus", error.message, true);
     $("roomsList").innerHTML = '<div class="empty">Открой мини-приложение через @allcoins95_bot и обнови страницу.</div>';
   });

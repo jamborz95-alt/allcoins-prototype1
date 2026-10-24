@@ -33,6 +33,12 @@ test("three sixes are the strongest set and three aces are next", () => {
   ]).score, 33);
 });
 
+test("two aces always score 22 and do not add the third card's suit value", () => {
+  assert.deepEqual(scoreSekaHand([
+    { rank: "A", suit: "♥" }, { rank: "A", suit: "♦" }, { rank: "K", suit: "♥" }
+  ]), { score: 22, type: 2, label: "Два туза" });
+});
+
 test("the seven of clubs completes a pair into a set", () => {
   assert.deepEqual(scoreSekaHand([
     { rank: "9", suit: "♠" }, { rank: "9", suit: "♥" }, { rank: "7", suit: "♣" }

@@ -51,10 +51,10 @@ export function scoreSekaHand(cards = []) {
     }
   }
 
-  let best = { score: 0, type: 1, label: "Старшая карта" };
   if (ranks.filter(rank => rank === "A").length >= 2) {
-    best = { score: 22, type: 2, label: "Два туза" };
+    return { score: 22, type: 2, label: "Два туза" };
   }
+  let best = { score: 0, type: 1, label: "Старшая карта" };
 
   const suitTotals = new Map();
   for (const card of cards) {
