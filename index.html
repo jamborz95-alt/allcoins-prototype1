@@ -2253,6 +2253,33 @@
   #games .lotto-entry-ball.two { right:1px; top:18px; }
   #games .lotto-entry-ball.three { left:18px; bottom:0; }
 </style>
+
+<style id="allcoins-shared-card-artwork">
+  /* 21 Очко использует те же PNG из /cards, что и Дурак Онлайн.
+     Заполняем картой всю карточку: без уменьшенной картинки и внутренних полей. */
+  #twentyOneGame .durak-card.premium-card.image-card {
+    padding:0 !important;
+    overflow:hidden !important;
+    background:#fffdf8 !important;
+  }
+  #twentyOneGame .durak-card.premium-card.image-card > img {
+    display:block !important;
+    width:100% !important;
+    min-width:100% !important;
+    max-width:none !important;
+    height:100% !important;
+    min-height:100% !important;
+    max-height:none !important;
+    margin:0 !important;
+    padding:0 !important;
+    object-fit:fill !important;
+    object-position:center !important;
+    transform:scale(1.06) !important;
+    transform-origin:center center !important;
+    image-rendering:auto !important;
+  }
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -4717,7 +4744,7 @@ function copyDurakComputedStyles(source, target) {
 // Начинаем скачивать PNG сразу при открытии приложения, а перед показом партии
 // ждём окончания загрузки, чтобы изображения не появлялись по одной во время игры.
 // Bump this value whenever files in /cards are replaced. Telegram WebView may cache card images by URL.
-const DURAK_CARD_ASSET_VERSION = "20261023-cards-folder-png-v1";
+const DURAK_CARD_ASSET_VERSION = "20261024-shared-cards-v2";
 const DURAK_CARD_ASSETS = [
   "10-clubs.png",
   "10-diamonds.png",
