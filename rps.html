@@ -116,6 +116,118 @@
       .join-button { min-width:69px; padding:8px 9px; }
       .room-actions { grid-template-columns:1fr; }
     }
+
+    /* Immersive RPS arena: hide lobby chrome once a room is open. */
+    html, body { width:100%; height:100%; min-height:100%; }
+    body.in-game { padding:0 !important; overflow:hidden; }
+    body.in-game > .app { width:100%; max-width:none; height:100%; margin:0; }
+    body.in-game > .app > header, body.in-game > .app > #backToGames { display:none !important; }
+    #roomView[hidden] { display:none !important; }
+    #roomView:not([hidden]) { display:flex; }
+    #roomView {
+      position:fixed; inset:0; z-index:1000; width:100vw; height:100vh; height:100dvh;
+      flex-direction:column; overflow:hidden; overscroll-behavior:none; padding:0; margin:0;
+      background:radial-gradient(ellipse at 50% 45%,#173b32 0%,#0b201e 58%,#060e17 100%);
+    }
+    #roomView > .room-panel {
+      width:100%; max-width:none; height:100%; min-height:0; flex:1 1 auto;
+      display:flex; flex-direction:column; justify-content:space-between; align-items:stretch;
+      gap:12px; overflow:hidden; position:relative;
+      margin:0; padding:max(58px,calc(env(safe-area-inset-top) + 52px)) max(11px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(11px,env(safe-area-inset-left));
+      border:0; border-radius:0; background:transparent; box-shadow:none;
+    }
+    #roomView .room-top { display:none !important; }
+    #roomStatus:not(.error) { display:none !important; }
+    #roomStatus.error {
+      position:absolute; z-index:5; top:max(48px,calc(env(safe-area-inset-top) + 43px));
+      left:12px; right:56px; margin:0; box-shadow:0 7px 22px #0008;
+    }
+    #roomView .players {
+      display:flex; flex:0 0 auto; justify-content:center; align-items:center; gap:10px;
+      width:100%; margin:0; padding:0;
+    }
+    #roomView .player-row {
+      position:relative; display:flex; flex:0 1 104px; flex-direction:column;
+      justify-content:center; align-items:center; gap:6px; width:min(26vw,104px);
+      max-width:104px; min-width:0; aspect-ratio:1 / 1; padding:9px 5px 7px;
+      border:1px solid #dfc47780; border-radius:18px;
+      background:linear-gradient(155deg,#192d36f2,#0b1724f5);
+      box-shadow:0 7px 18px #0004,inset 0 1px 0 #ffffff13; text-align:center;
+    }
+    #roomView .player-symbol {
+      display:grid; flex:0 0 36px; width:36px; height:36px; place-items:center;
+      border:1px solid #e5c87978; border-radius:12px; background:linear-gradient(145deg,#38433a,#1b2d30);
+      color:#f6d991; font-size:18px; font-weight:1000;
+    }
+    #roomView .player-detail { width:100%; flex:0 1 auto; min-width:0; text-align:center; }
+    #roomView .player-name {
+      display:-webkit-box; width:100%; overflow:hidden; overflow-wrap:anywhere;
+      -webkit-box-orient:vertical; -webkit-line-clamp:2; line-height:1.15;
+      color:#f3f5f7; font-size:11px; font-weight:900; text-overflow:ellipsis;
+    }
+    #roomView .player-note, #roomView .player-state { display:none !important; }
+    #roomView .player-ready { position:absolute; z-index:2; top:5px; right:5px; gap:0; }
+    #roomView .ready-check { width:22px; height:22px; border-radius:50%; border-color:#667a88; background:#0b1824; font-size:15px; }
+    #roomView .ready-check.is-ready { color:#071a12; border-color:#84edb6; background:#84edb6; box-shadow:0 0 15px #6ce6ab66; }
+    #roomView .game-table {
+      display:flex; flex:1 1 auto; flex-direction:column; justify-content:center;
+      width:100%; min-height:145px; margin:0; padding:clamp(13px,3.5vh,28px) 12px;
+      border:2px solid #a9d1b145; border-radius:30px;
+      background:radial-gradient(ellipse at 50% 43%,#287456 0%,#1b5b43 48%,#10382e 100%);
+      box-shadow:inset 0 0 0 5px #e2f6d90a,inset 0 0 34px #041d16b8,0 12px 28px #0005;
+    }
+    #roomView .game-table-heading, #roomView .table-caption { display:none !important; }
+    #roomView .table-choices { width:100%; grid-template-columns:repeat(auto-fit,minmax(76px,1fr)); gap:clamp(7px,2vw,14px); align-items:center; justify-content:center; }
+    #roomView .table-card {
+      min-width:0; min-height:clamp(112px,20vh,176px); padding:11px 5px;
+      border:1px solid #f0d58f99; border-radius:19px;
+      background:linear-gradient(160deg,#102d23e8,#0a241de8);
+      box-shadow:0 7px 15px #03170f55; overflow:hidden;
+    }
+    #roomView .table-card.winner { border-color:#ffe5a0; box-shadow:0 0 0 2px #f4da8c50,0 0 23px #f0ce6d44; }
+    #roomView .table-player-label { font-size:10px; color:#e0ebdf; }
+    #roomView .table-hand { margin:5px 0; font-size:clamp(43px,12vw,68px); line-height:1.05; }
+    #roomView .table-choice-label { font-size:11px; }
+    #roomView #gameTable:not(.has-result) .table-player-label,
+    #roomView #gameTable:not(.has-result) .table-choice-label { display:none; }
+    #roomView #gameTable:not(.has-result) .table-card { min-height:clamp(100px,17vh,145px); }
+    #roomView #lastResult { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); clip-path:inset(50%); white-space:nowrap; border:0; }
+    #roomView #choiceArea {
+      display:flex; flex:0 0 auto; flex-direction:column; justify-content:center; gap:7px;
+      width:100%; min-height:100px; margin:0; padding:0;
+    }
+    #roomView .round-card { margin:0; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+    #roomView .round-title, #roomView .round-copy { display:none !important; }
+    #roomView .choice-grid { width:100%; gap:8px; margin:0; }
+    #roomView .choice-button {
+      display:flex; min-height:92px; padding:11px 3px; gap:7px;
+      border:1px solid #c4d1d67d; border-radius:19px;
+      background:linear-gradient(155deg,#243d4b,#122633); box-shadow:0 6px 16px #0003;
+    }
+    #roomView .choice-button.selected { border:2px solid #f5dc8d; padding:10px 2px; background:linear-gradient(145deg,#75602e,#293b38); box-shadow:0 0 0 2px #f5dc8d29,0 0 22px #f3d78324; }
+    #roomView .choice-emoji { font-size:clamp(34px,9vw,48px); }
+    #roomView .choice-name { font-size:11px; color:#f1e8ca; }
+    #roomView .ready-button { width:min(100%,250px); min-height:44px; margin:2px auto 0; border-radius:14px; }
+    #roomView .round-note { width:48px; min-height:44px; margin:0 auto; padding:9px; border:1px solid #e8c7776e; border-radius:15px; background:#142c28; color:#e8c777; text-align:center; font-size:20px; line-height:24px; }
+    #roomView .bot-test-button { width:min(100%,180px); min-height:42px; margin:0 auto; padding:8px 12px; border-radius:14px; background:linear-gradient(135deg,#293e46,#152b2a); }
+    #roomView .bot-test-caption, #roomView .room-actions { display:none !important; }
+    #roomView .exit-game {
+      position:absolute; z-index:6; top:max(10px,env(safe-area-inset-top)); right:max(10px,env(safe-area-inset-right));
+      width:38px; height:38px; min-height:38px; padding:0; display:grid; place-items:center;
+      border:1px solid #d9d6be66; border-radius:50%; background:#101e26c9; color:#e6e9e6;
+      font-size:24px; line-height:1; box-shadow:0 4px 13px #0004;
+    }
+    @media(max-height:650px) {
+      #roomView > .room-panel { gap:8px; padding-top:max(50px,calc(env(safe-area-inset-top) + 44px)); padding-bottom:max(8px,env(safe-area-inset-bottom)); }
+      #roomView .player-row { flex-basis:85px; width:min(25vw,85px); }
+      #roomView .player-symbol { flex-basis:30px; width:30px; height:30px; }
+      #roomView .game-table { min-height:110px; padding:10px 8px; }
+      #roomView .table-card { min-height:92px; }
+      #roomView #choiceArea { min-height:82px; }
+      #roomView .choice-button { min-height:72px; }
+      #roomView .choice-emoji { font-size:34px; }
+    }
+
   </style>
 </head>
 <body>
@@ -150,6 +262,7 @@
   </section>
 
   <section id="roomView" hidden>
+    <button type="button" class="exit-game" id="leaveRoom" aria-label="Выйти из комнаты" title="Выйти">×</button>
     <div class="panel room-panel">
       <div class="room-top">
         <div>
@@ -162,14 +275,9 @@
       <div id="roomStatus" class="status show" role="status">Подключаюсь к комнате…</div>
       <div id="playersList" class="players"></div>
       <div id="gameTable" class="game-table" aria-live="polite"></div>
-      <div id="lastResult"></div>
+      <div id="lastResult" aria-live="polite"></div>
       <div id="choiceArea"></div>
-      <div class="room-actions">
-        <button type="button" class="secondary" id="refreshState">↻ Обновить</button>
-        <button type="button" class="secondary" id="leaveRoom">Выйти из комнаты</button>
-      </div>
     </div>
-    <p class="footnote">Если третий игрок вошёл во время раунда, он увидит статус «со следующего раунда». Чужой выбор не раскрывается до завершения раунда.</p>
   </section>
 </div>
 
@@ -237,10 +345,12 @@
     selectedChoice = null;
     selectedRoundNumber = null;
     sessionStorage.removeItem("allcoins-rps-room-id");
+    document.body.classList.remove("in-game");
   }
   function showRoom() {
     $("lobbyView").hidden = true;
     $("roomView").hidden = false;
+    document.body.classList.add("in-game");
   }
 
   async function loadRooms() {
@@ -305,76 +415,65 @@
   function renderPlayers(room, round) {
     const players = Array.isArray(room.players) ? room.players : [];
     $("playersList").innerHTML = players.map(player => {
-      let note = player.isBot ? "Тестовый бот · без списания AC" : (player.isOwner ? "Создатель комнаты" : "Участник");
-      let stateLabel = "Ждёт начала";
-      let isReady = Boolean(round && player.inCurrentRound && player.hasSubmitted);
-      if (player.waitingNextRound) {
-        stateLabel = "Со следующего раунда";
-        note = "Подключился во время раунда";
-      } else if (round && player.inCurrentRound) {
-        stateLabel = isReady ? "Готов" : "Выбирает";
-      }
-      if (player.isMe) note = "Это ты" + (player.isOwner ? " · создатель" : "");
-      return '<div class="player-row" data-player-id="' + escapeHtml(player.telegramId) + '">' +
-        '<div class="player-symbol">' + (player.isBot ? "🤖" : (player.waitingNextRound ? "↗" : (player.isOwner ? "♛" : "●"))) + '</div>' +
-        '<div class="player-detail"><div class="player-name">' + escapeHtml(player.displayName) + (player.isMe ? " (ты)" : "") + '</div>' +
+      const isReady = Boolean(round && player.inCurrentRound && player.hasSubmitted);
+      const avatar = player.isBot
+        ? "🤖"
+        : player.waitingNextRound
+          ? "↗"
+          : String(player.displayName || "И").trim().slice(0, 1).toLocaleUpperCase("ru-RU");
+      const name = String(player.displayName || "Игрок");
+      const note = player.isBot ? "Тестовый бот · без списания AC" : (player.isOwner ? "Создатель комнаты" : "Участник");
+      const stateLabel = player.waitingNextRound ? "Со следующего раунда" : (isReady ? "Готов" : "Выбирает");
+      return '<div class="player-row" data-player-id="' + escapeHtml(player.telegramId) + '" aria-label="' + escapeHtml(name + (isReady ? ", готов" : "")) + '">' +
+        '<div class="player-symbol">' + escapeHtml(avatar) + '</div>' +
+        '<div class="player-detail"><div class="player-name">' + escapeHtml(name) + (player.isMe ? " (ты)" : "") + '</div>' +
         '<div class="player-note">' + escapeHtml(note) + '</div></div>' +
         '<div class="player-ready"><span class="ready-check' + (isReady ? ' is-ready' : '') + '" aria-label="' + (isReady ? 'Готов' : 'Ещё не готов') + '">' + (isReady ? "✓" : "○") + '</span>' +
         '<span class="player-state">' + escapeHtml(stateLabel) + '</span></div></div>';
     }).join("");
-    if (!players.length) $("playersList").innerHTML = '<div class="empty">Игроков пока нет.</div>';
+    if (!players.length) $("playersList").innerHTML = "";
   }
 
   function renderResult(result) {
+    const node = $("lastResult");
     if (!result) {
-      $("lastResult").innerHTML = "";
+      node.textContent = "";
       return;
     }
     const isDraw = result.outcome === "draw";
-    const heading = isDraw
-      ? "Раунд " + result.roundNumber + " — ничья"
-      : "Раунд " + result.roundNumber + " — победа!";
     const summary = result.testMode
       ? "Тестовый раунд с ботом. Баланс AC не изменён."
       : isDraw
-        ? "Все ставки возвращены участникам."
-        : "Победител" + (Array.isArray(result.winnerLabels) && result.winnerLabels.length > 1 ? "и" : "ь") + ": " +
-          (Array.isArray(result.winnerLabels) ? result.winnerLabels.map(escapeHtml).join(", ") : "—");
-    const payoutHtml = (Array.isArray(result.payouts) ? result.payouts : []).map(item =>
-      escapeHtml(item.label) + ': +' + formatAmount(item.amount) + ' AC'
-    ).join("<br>");
-    $("lastResult").innerHTML = '<div class="result-card' + (isDraw ? ' draw' : '') + '">' +
-      '<div class="result-title">' + escapeHtml(heading) + '</div><div class="round-copy">' + summary + '</div>' +
-      '<div class="result-payout">' + (result.testMode ? "Режим проверки: списания и выплаты отключены." : (isDraw ? "Возврат ставок: " : "Выплаты: ") + (payoutHtml || "—")) + '</div></div>';
+        ? "Ничья. Ставки возвращены участникам."
+        : "Раунд " + result.roundNumber + " завершён. Победитель: " +
+          (Array.isArray(result.winnerLabels) ? result.winnerLabels.join(", ") : "—");
+    node.textContent = summary;
   }
 
   function renderGameTable(result, room) {
     const table = $("gameTable");
     if (result && Array.isArray(result.choices) && result.choices.length) {
+      table.classList.add("has-result");
       const winnerIds = new Set((result.winnerTelegramIds || []).map(String));
-      const choicesHtml = result.choices.map(item => {
+      table.innerHTML = '<div class="table-choices">' + result.choices.map(item => {
         const player = (room.players || []).find(entry => String(entry.telegramId) === String(item.telegramId));
-        const label = player && player.isMe ? "ТВОЙ ВЫБОР" : (player ? player.displayName : item.label);
+        const label = player && player.isMe ? "Ты" : (player ? player.displayName : item.label);
         const won = winnerIds.has(String(item.telegramId));
         const symbol = item.symbol || (choices[item.choice] && choices[item.choice].symbol) || "✊";
-        const choiceLabel = item.choiceLabel || (choices[item.choice] && choices[item.choice].label) || "Выбор";
+        const choiceLabel = item.choiceLabel || (choices[item.choice] && choices[item.choice].label) || "";
         return '<div class="table-card' + (won ? ' winner' : '') + '">' +
           '<span class="table-player-label">' + escapeHtml(label) + '</span>' +
           '<span class="table-hand">' + escapeHtml(symbol) + '</span>' +
           '<span class="table-choice-label">' + escapeHtml(choiceLabel) + '</span></div>';
-      }).join("");
-      const outcomeLabel = result.outcome === "draw" ? "Ничья" : "Победитель выделен золотым";
-      table.innerHTML = '<div class="game-table-heading">ИГРОВОЙ СТОЛ · РАУНД ' + escapeHtml(result.roundNumber) + '</div>' +
-        '<div class="table-choices">' + choicesHtml + '</div>' +
-        '<div class="table-caption">' + outcomeLabel + (result.testMode ? ' · тренировочный раунд' : '') + '</div>';
+      }).join("") + '</div>';
       return;
     }
-    table.innerHTML = '<div class="game-table-heading">ИГРОВОЙ СТОЛ</div>' +
-      '<div class="table-choices">' +
-      '<div class="table-card waiting"><span class="table-player-label">СОПЕРНИК</span><span class="table-hand">❔</span><span class="table-choice-label">Ожидание</span></div>' +
-      '<div class="table-versus">VS</div>' +
-      '<div class="table-card waiting"><span class="table-player-label">ТВОЙ ВЫБОР</span><span class="table-hand">❔</span><span class="table-choice-label">Ещё не выбран</span></div>' +
-      '</div><div class="table-caption">Жесты откроются на столе, когда все игроки выберут и нажмут «Готово».</div>';
+    table.classList.remove("has-result");
+    const activePlayers = (room.players || []).filter(player => player.inCurrentRound);
+    const placeholderCount = Math.max(2, Math.min(3, activePlayers.length || 2));
+    table.innerHTML = '<div class="table-choices">' + Array.from({length:placeholderCount}, () =>
+      '<div class="table-card waiting" aria-label="Ход ожидается"><span class="table-hand">?</span></div>'
+    ).join("") + '</div>';
   }
 
   function renderChoices(room, round) {
@@ -382,27 +481,26 @@
     const me = (room.players || []).find(player => player.isMe);
     if (room.status === "waiting" || !round) {
       const canAddBot = Boolean(room.isOwner && !room.hasBot && Number(room.playersCount) < 3);
-      area.innerHTML = '<div class="round-note">Раунд начнётся автоматически, когда в комнате будет минимум два игрока.</div>' +
-        (canAddBot ? '<button type="button" class="bot-test-button" data-add-bot>🤖 Добавить бота для проверки</button><div class="bot-test-caption">Бот играет автоматически. В тестовом режиме AC не списываются и не начисляются.</div>' : "");
+      area.innerHTML = canAddBot
+        ? '<button type="button" class="bot-test-button" data-add-bot aria-label="Добавить бота для проверки">🤖 Проверка</button>'
+        : "";
       return;
     }
     if (me && me.waitingNextRound) {
-      area.innerHTML = '<div class="round-note">Ты подключился во время текущего раунда. Начнёшь играть со следующего раунда.</div>';
+      area.innerHTML = "";
     } else if (round.canChoose) {
-      const selectedLabel = selectedChoice ? choices[selectedChoice].label : "Сначала выбери жест";
-      const opponentReady = (room.players || []).some(player => !player.isMe && player.inCurrentRound && player.hasSubmitted);
-      area.innerHTML = '<div class="round-card"><div class="round-title">Раунд ' + escapeHtml(round.number) + ': твой выбор</div>' +
-        '<div class="round-copy">' + (opponentReady ? 'Соперник уже готов ✓. Выбери жест и нажми «Готово».' : 'Выбери один жест, затем нажми «Готово». Чужие ответы будут показаны только после готовности всех игроков.') + '</div>' +
+      area.innerHTML = '<div class="round-card">' +
         '<div class="choice-grid">' +
-        '<button type="button" class="choice-button' + (selectedChoice === "rock" ? ' selected' : '') + '" data-choice="rock" aria-pressed="' + (selectedChoice === "rock") + '"><span class="choice-emoji">✊</span><span class="choice-name">Камень</span></button>' +
-        '<button type="button" class="choice-button' + (selectedChoice === "paper" ? ' selected' : '') + '" data-choice="paper" aria-pressed="' + (selectedChoice === "paper") + '"><span class="choice-emoji">✋</span><span class="choice-name">Бумага</span></button>' +
-        '<button type="button" class="choice-button' + (selectedChoice === "scissors" ? ' selected' : '') + '" data-choice="scissors" aria-pressed="' + (selectedChoice === "scissors") + '"><span class="choice-emoji">✌️</span><span class="choice-name">Ножницы</span></button>' +
-        '</div><div class="round-copy" id="selectedChoiceLabel">' + escapeHtml(selectedLabel) + '</div>' +
-        '<button type="button" class="primary ready-button" data-ready-choice' + (selectedChoice ? '' : ' disabled') + '>✅ Готово</button></div>';
+        '<button type="button" class="choice-button' + (selectedChoice === "rock" ? ' selected' : '') + '" data-choice="rock" aria-label="Камень" aria-pressed="' + (selectedChoice === "rock") + '"><span class="choice-emoji">✊</span><span class="choice-name">Камень</span></button>' +
+        '<button type="button" class="choice-button' + (selectedChoice === "paper" ? ' selected' : '') + '" data-choice="paper" aria-label="Бумага" aria-pressed="' + (selectedChoice === "paper") + '"><span class="choice-emoji">✋</span><span class="choice-name">Бумага</span></button>' +
+        '<button type="button" class="choice-button' + (selectedChoice === "scissors" ? ' selected' : '') + '" data-choice="scissors" aria-label="Ножницы" aria-pressed="' + (selectedChoice === "scissors") + '"><span class="choice-emoji">✌️</span><span class="choice-name">Ножницы</span></button>' +
+        '</div>' +
+        (selectedChoice ? '<button type="button" class="primary ready-button" data-ready-choice>✓ Готово</button>' : '') +
+        '</div>';
     } else if (round.submittedByMe) {
-      area.innerHTML = '<div class="round-note">✅ Ты готов! Ждём остальных игроков. Твой жест появится на столе, когда все нажмут «Готово».</div>';
+      area.innerHTML = '<div class="round-note" aria-label="Ты готов, ожидаем остальных">✓</div>';
     } else {
-      area.innerHTML = '<div class="round-note">В этом раунде не получится сделать ход. Обновление состояния комнаты…</div>';
+      area.innerHTML = "";
     }
   }
 
@@ -521,7 +619,6 @@
 
   $("createRoom").addEventListener("click", createRoom);
   $("refreshRooms").addEventListener("click", loadRooms);
-  $("refreshState").addEventListener("click", refreshState);
   $("leaveRoom").addEventListener("click", leaveRoom);
   $("backToGames").addEventListener("click", () => {
     if (window.history.length > 1) window.history.back();
