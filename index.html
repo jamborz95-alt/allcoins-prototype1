@@ -5428,7 +5428,7 @@ async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0
     const dx = endLeft - startLeft;
     const dy = endTop - startTop;
     const arcHeight = Math.min(58, Math.max(22, Math.abs(dx) * 0.055 + Math.abs(dy) * 0.025));
-    const duration = 500;
+    const duration = 580;
     const frames = [0, 0.2, 0.48, 0.76, 0.92, 1].map(offset => {
       const left = startLeft + dx * offset;
       const top = startTop + dy * offset - Math.sin(Math.PI * offset) * arcHeight;
