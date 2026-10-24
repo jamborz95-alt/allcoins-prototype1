@@ -439,9 +439,46 @@ const path = require("node:path");
         height: element.offsetHeight
       };
     });
+    const optimisticLandingPositions = await page.evaluate(() =>
+      [...document.querySelectorAll('#durakTable .durak-card.table-card[data-optimistic-landing="true"]')]
+        .map(card => {
+          const r = card.getBoundingClientRect();
+          return { id: String(card.dataset.cardId || ""), x: r.x, y: r.y, width: r.width, height: r.height };
+        })
+    );
     await page.screenshot({ path: path.join(out, "04b-game-card-landed-before-server-reply.png"), fullPage: true });
     await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(out, "05-game-after-drop.png"), fullPage: true });
+    const confirmedLandingPositions = await page.evaluate((ids) =>
+      ids.map(oldCard => {
+        const card = [...document.querySelectorAll('#durakTable .durak-card.table-card[data-card-id]')]
+          .find(element => String(element.dataset.cardId || "") === oldCard.id);
+        if (!card) return { id: oldCard.id, missing: true };
+        const r = card.getBoundingClientRect();
+        return { id: oldCard.id, x: r.x, y: r.y, width: r.width, height: r.height };
+      }), optimisticLandingPositions
+    );
+    const landingPositionDeltas = optimisticLandingPositions.map(oldCard => {
+      const current = confirmedLandingPositions.find(item => item.id === oldCard.id);
+      if (!current || current.missing) return { id: oldCard.id, missingAfterServerReply: true };
+      return {
+        id: oldCard.id,
+        dx: Number((current.x - oldCard.x).toFixed(2)),
+        dy: Number((current.y - oldCard.y).toFixed(2)),
+        before: { x: oldCard.x, y: oldCard.y },
+        after: { x: current.x, y: current.y }
+      };
+    });
+    fs.writeFileSync(path.join(out, "landing-position-stability.json"), JSON.stringify({
+      beforeServerReply: optimisticLandingPositions,
+      afterServerReply: confirmedLandingPositions,
+      deltas: landingPositionDeltas
+    }, null, 2));
+    if (!optimisticLandingPositions.length || landingPositionDeltas.some(item =>
+        item.missingAfterServerReply || Math.abs(item.dx) > 1 || Math.abs(item.dy) > 1)) {
+      throw new Error("Карта прыгает после ответа сервера: координаты до/после обновления должны совпадать с точностью 1px. " +
+        JSON.stringify(landingPositionDeltas));
+    }
 
     // Regression guard: after the initial landing and the server-confirmed redraw,
     // table cards must remain 56×84 instead of expanding to the old 68×100 hand size.
@@ -513,6 +550,9 @@ const path = require("node:path");
       flyerShrankToTableSizeDuringReleaseAnimation: flyerShrankToTableSize,
       optimisticLandingVisibleBeforeServerReply: Boolean(optimisticLanding?.visible),
       optimisticLanding,
+      optimisticLandingPositions,
+      confirmedLandingPositions,
+      landingPositionDeltas,
       flyerAtRelease,
       flyerInFlight
     };
