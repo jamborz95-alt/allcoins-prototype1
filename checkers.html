@@ -210,6 +210,7 @@
       var busy = false;
       var finished = false;
       var botTimer = null;
+      var gameSession = 0;
       var telegram = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
       var personName = "Игрок";
       if (telegram) {
@@ -341,6 +342,7 @@
       $("resultToLobby").addEventListener("click", showLobby);
 
       function showLobby() {
+        gameSession += 1;
         if (botTimer) clearTimeout(botTimer);
         botTimer = null;
         busy = false;
@@ -352,6 +354,7 @@
         }
       }
       function startGame(selectedStake) {
+        gameSession += 1;
         stake = normalizeStake(selectedStake);
         $("gameStake").textContent = formatNumber(stake);
         $("lobbyScreen").classList.add("hidden");
@@ -492,7 +495,7 @@
             cell.className = "square " + (((r + c) % 2 === 1) ? "dark" : "light");
             cell.dataset.r = String(r);
             cell.dataset.c = String(c);
-            cell.setAttribute("aria-label", "Клетка " + String.fromCharCode(аChar(c)) + (8-r));
+            cell.setAttribute("aria-label", "Клетка " + String.fromCharCode(97 + c) + (8-r));
             if (selectedPos && selectedPos.r === r && selectedPos.c === c) cell.classList.add("selected");
             if (destinations.has(r + "," + c)) cell.classList.add("legal");
             if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) cell.classList.add("last-move");
@@ -509,7 +512,6 @@
         $("humanCount").textContent = String(countPieces("w"));
         $("botCount").textContent = String(countPieces("b"));
       }
-      function аChar(c) { return "abcdefgh".charCodeAt(c); }
       function updateStatus(status, hint) {
         $("turnStatus").textContent = status;
         $("moveHint").textContent = hint || "";
@@ -575,7 +577,8 @@
         turn = "b";
         busy = true;
         updateStatus("Ходит бот…", "Бот выбирает ход.");
-        botTimer = setTimeout(function () { botTurn(); }, 480);
+        var scheduledSession = gameSession;
+        botTimer = setTimeout(function () { botTurn(scheduledSession); }, 480);
       }
       function finishIfNoMoves(colorToMove) {
         if (countPieces(colorToMove) === 0 || getAllMoves(board, colorToMove).length === 0) {
@@ -586,9 +589,9 @@
         return false;
       }
       function sleep(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
-      async function botTurn() {
+      async function botTurn(sessionId) {
         botTimer = null;
-        if (finished) { busy = false; return; }
+        if (sessionId !== gameSession || finished) { return; }
         var moves = getAllMoves(board, "b");
         if (!moves.length) {
           busy = false;
@@ -607,6 +610,7 @@
         var from = {r:move.from.r,c:move.from.c};
         var moving = board[from.r][from.c];
         for (var i = 0; i < move.path.length; i++) {
+          if (sessionId !== gameSession || finished) return;
           var to = move.path[i];
           var captured = move.captures[i];
           board[from.r][from.c] = null;
@@ -617,7 +621,7 @@
           from = {r:to.r,c:to.c};
           renderBoard();
           await sleep(move.path.length > 1 ? 220 : 330);
-          if (finished) return;
+          if (sessionId !== gameSession || finished) return;
         }
         selectedPos = null;
         selectedMoves = [];
