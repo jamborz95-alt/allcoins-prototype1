@@ -2420,6 +2420,21 @@
       <span class="game-app-title">Камень Ножницы Бумага</span>
     </a>
   </div>
+  <div class="game-app-tile" id="checkersEntry">
+    <a id="openCheckers" class="game-app-launch checkers-launch-link" href="./checkers.html" aria-label="Открыть игру Шашки Онлайн">
+      <span class="checkers-entry-appicon" aria-hidden="true">
+        <span class="checkers-board-mini">
+          <i class="l"></i><i class="d"></i><i class="l"></i><i class="d"></i>
+          <i class="d"></i><i class="l"></i><i class="d"></i><i class="l"></i>
+          <i class="l"></i><i class="d"></i><i class="l"></i><i class="d"></i>
+          <i class="d"></i><i class="l"></i><i class="d"></i><i class="l"></i>
+        </span>
+        <span class="checkers-piece-mini black"></span>
+        <span class="checkers-piece-mini white"></span>
+      </span>
+      <span class="game-app-title">Шашки Онлайн</span>
+    </a>
+  </div>
 </div>
 
 <!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАКА -->
@@ -12729,6 +12744,79 @@ $("refreshDurakRooms").onclick = async () => {
   }
   @media (prefers-reduced-motion: reduce) {
     #durakGame .durak-ready-badge.durak-taking-badge { animation: none !important; }
+  }
+</style>
+
+<style id="allcoins-checkers-entry-style">
+  #games #checkersEntry .checkers-launch-link {
+    color:inherit !important;
+    text-decoration:none !important;
+  }
+  #games #checkersEntry .checkers-entry-appicon {
+    position:relative !important;
+    display:block !important;
+    flex:0 0 88px !important;
+    width:88px !important;
+    height:88px !important;
+    min-width:88px !important;
+    min-height:88px !important;
+    overflow:hidden !important;
+    border:1px solid #c7a45c !important;
+    border-radius:22px !important;
+    background:linear-gradient(145deg,#21354b,#0c1627) !important;
+    box-shadow:0 6px 15px #0005 !important;
+  }
+  #games #checkersEntry .checkers-board-mini {
+    position:absolute !important;
+    left:18px !important;
+    top:15px !important;
+    display:grid !important;
+    grid-template-columns:repeat(4,10px) !important;
+    grid-template-rows:repeat(4,10px) !important;
+    transform:rotate(-7deg) !important;
+    border:2px solid #d4b876 !important;
+    box-shadow:0 3px 7px #0008 !important;
+  }
+  #games #checkersEntry .checkers-board-mini i { display:block !important; width:10px !important; height:10px !important; }
+  #games #checkersEntry .checkers-board-mini i.l { background:#e8d4ad !important; }
+  #games #checkersEntry .checkers-board-mini i.d { background:#41616c !important; }
+  #games #checkersEntry .checkers-piece-mini {
+    position:absolute !important;
+    display:block !important;
+    width:25px !important;
+    height:25px !important;
+    border-radius:50% !important;
+    border:2px solid #a58445 !important;
+    box-shadow:0 3px 5px #0008,inset 0 2px 2px #ffffff55 !important;
+  }
+  #games #checkersEntry .checkers-piece-mini.black {
+    right:11px !important;
+    top:13px !important;
+    background:radial-gradient(circle at 35% 25%,#607993,#172436 70%) !important;
+    border-color:#0c1420 !important;
+  }
+  #games #checkersEntry .checkers-piece-mini.white {
+    right:14px !important;
+    bottom:12px !important;
+    background:radial-gradient(circle at 35% 25%,#fff5d8,#c8a56c 70%) !important;
+  }
+  #games #checkersEntry .checkers-launch-link:active { transform:scale(.96) !important; opacity:.84 !important; }
+  @media (max-width:360px) {
+    #games #checkersEntry .checkers-entry-appicon {
+      flex-basis:74px !important;
+      width:74px !important;
+      height:74px !important;
+      min-width:74px !important;
+      min-height:74px !important;
+      border-radius:19px !important;
+    }
+    #games #checkersEntry .checkers-board-mini {
+      left:14px !important; top:13px !important;
+      grid-template-columns:repeat(4,8px) !important;
+      grid-template-rows:repeat(4,8px) !important;
+    }
+    #games #checkersEntry .checkers-board-mini i { width:8px !important; height:8px !important; }
+    #games #checkersEntry .checkers-piece-mini { width:21px !important; height:21px !important; }
   }
 </style>
 
