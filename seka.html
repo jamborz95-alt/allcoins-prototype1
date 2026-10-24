@@ -1193,6 +1193,7 @@
       try { await refreshRoomState(); } catch (_) {}
     } finally {
       busy = false;
+      if (currentState) renderRoom(currentState);
     }
   }
 
