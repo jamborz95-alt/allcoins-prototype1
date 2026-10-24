@@ -772,6 +772,52 @@
     const ranks = { "A":"Т", "K":"К", "Q":"Д", "J":"В" };
     return ranks[String(card.rank)] || String(card.rank);
   }
+
+  // Счёт отображается локально только по собственным картам игрока.
+  // Эта функция не участвует в серверном определении победителя.
+  function scoreMySekaHand(cards) {
+    if (!Array.isArray(cards) || cards.length !== 3) return null;
+    const rankOf = card => String(card && card.rank || "").toUpperCase();
+    const suitOf = card => String(card && card.suit || "");
+    const points = card => {
+      const rank = rankOf(card);
+      if (rank === "A" || rank === "Т" || rank === "ТУЗ") return 11;
+      if (["10", "J", "Q", "K"].includes(rank)) return 10;
+      const value = Number(rank);
+      return Number.isFinite(value) ? value : 0;
+    };
+    const tripletValue = rank => rank === "6" ? 34 : rank === "A" ? 33 : points({ rank }) * 3;
+    const ranks = cards.map(rankOf);
+    const counts = new Map();
+    ranks.forEach(rank => counts.set(rank, (counts.get(rank) || 0) + 1));
+    if (counts.size === 1) {
+      const rank = ranks[0];
+      return { score: tripletValue(rank), label: "Три " + rank };
+    }
+    const jokerIndex = cards.findIndex(card => rankOf(card) === "7" && suitOf(card) === "♣");
+    if (jokerIndex >= 0) {
+      const others = cards.filter((card, index) => index !== jokerIndex).map(rankOf);
+      if (others[0] === others[1]) return { score: tripletValue(others[0]), label: "Тройка с джокером" };
+    }
+    if (ranks.filter(rank => rank === "A").length >= 2) return { score: 22, label: "Два туза" };
+    let best = { score: 0, type: 1, label: "Старшая карта" };
+    const totals = new Map();
+    for (const card of cards) {
+      const suit = suitOf(card);
+      const value = rankOf(card) === "7" && suit === "♣" ? 11 : points(card);
+      totals.set(suit, (totals.get(suit) || 0) + value);
+    }
+    for (const [suit, total] of totals.entries()) {
+      const count = cards.filter(card => suitOf(card) === suit).length;
+      if (count >= 2 && (best.type < 2 || total > best.score)) best = { score: total, type: 2, label: "Одна масть" };
+    }
+    if (best.type < 2) {
+      const highest = cards.reduce((max, card) => Math.max(max,
+        rankOf(card) === "7" && suitOf(card) === "♣" ? 11 : points(card)), 0);
+      best = { score: highest, type: 1, label: "Старшая карта" };
+    }
+    return { score: best.score, label: best.label };
+  }
   function cardMarkup(card, compact) {
     const imageName = cardImageName(card);
     const red = ["♥", "♡", "♦", "♢"].includes(String(card.suit)) ? " red" : "";
@@ -1008,12 +1054,13 @@
         (game.isYourTurn ? "Ваш ход" : "Ход игрока: " + ((game.players || []).find(p => String(p.telegramId) === String(game.currentPlayerTelegramId)) || {}).label);
       const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
       $("myHand").innerHTML = me && me.hand ? me.hand.map(card => cardMarkup(card, false)).join("") : "";
-      const hasOwnScore = !!(me && me.handType && me.score !== null && me.score !== undefined);
-      $("myHandScore").textContent = hasOwnScore ? fmt(me.score) + " очков" : "—";
-      $("myHandType").textContent = hasOwnScore ? me.handType :
+      const ownScore = me && me.hand ? scoreMySekaHand(me.hand) : null;
+      const hasOwnScore = !!ownScore;
+      $("myHandScore").textContent = hasOwnScore ? fmt(ownScore.score) + " очков" : "—";
+      $("myHandType").textContent = hasOwnScore ? ownScore.label :
         (game.status === "finished" && !game.revealHands ? "Карты соперников остались закрыты" : "Подсчитываем комбинацию");
       $("myHandCaption").setAttribute("aria-label", hasOwnScore
-        ? "Ваша комбинация: " + me.handType + ", " + fmt(me.score) + " очков"
+        ? "Ваша комбинация: " + ownScore.label + ", " + fmt(ownScore.score) + " очков"
         : "Ожидаем подсчёт комбинации");
       const actionArea = $("actionArea");
       actionArea.classList.toggle("hidden", !playing);
