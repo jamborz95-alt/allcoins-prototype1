@@ -178,6 +178,38 @@ try {
     "opponents' cards should stay face down while their score is visible");
   assert.equal(await page.locator("#twentyOneRoomMyCards .twentyone-card").count(), 2,
     "the active player's own two cards should appear in a dedicated hand area");
+  const onlineRoomHandCardStyle = await page.evaluate(() => {
+    const hand = document.querySelector("#twentyOneRoomMyCards");
+    const card = document.createElement("div");
+    card.className = "durak-card premium-card image-card twentyone-card";
+    card.style.position = "absolute";
+    card.style.left = "-9999px";
+    const image = document.createElement("img");
+    card.appendChild(image);
+    hand.appendChild(card);
+    const cardStyle = getComputedStyle(card);
+    const imageStyle = getComputedStyle(image);
+    const result = {
+      width: cardStyle.width,
+      height: cardStyle.height,
+      overflow: cardStyle.overflow,
+      imageWidth: imageStyle.width,
+      imageHeight: imageStyle.height,
+      objectFit: imageStyle.objectFit,
+      transform: imageStyle.transform
+    };
+    card.remove();
+    return result;
+  });
+  assert.equal(onlineRoomHandCardStyle.width, "63px",
+    "online room hand cards should use the same full card width as Durak Online");
+  assert.equal(onlineRoomHandCardStyle.height, "94px",
+    "online room hand cards should use the full card height, not a shrunken image inside");
+  assert.equal(onlineRoomHandCardStyle.objectFit, "fill",
+    "the card artwork should fill the card canvas instead of being reduced by contain");
+  assert.notEqual(onlineRoomHandCardStyle.transform, "none",
+    "the artwork should be slightly enlarged to remove inner transparent-looking margins");
+
   assert.match(await page.locator("#twentyOneRoomMyScore").innerText(), /СЧЁТ: 10 \/ 21/,
     "the active player's current score should be visibly shown above their hand");
   assert.equal(await page.locator("#twentyOneRoomMyHandPanel").evaluate(el => getComputedStyle(el).order), "5",
