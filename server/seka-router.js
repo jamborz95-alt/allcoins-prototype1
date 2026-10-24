@@ -414,7 +414,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     let transactionOpen = false;
     try {
       const roomId = req.body?.roomId;
-      if (!roomId || !/^\\d+$/.test(String(roomId))) throw new SekaHttpError(400, "Неверный номер комнаты");
+      if (!roomId || !/^\d+$/.test(String(roomId))) throw new SekaHttpError(400, "Неверный номер комнаты");
       client = await pool.connect();
       await client.query("BEGIN");
       transactionOpen = true;
