@@ -139,6 +139,7 @@ const path = require("node:path");
       taskCount: document.querySelectorAll("#clickerTasksList .task-item").length,
       navActive: document.querySelector('.nav [data-page="tasks"]')?.classList.contains("active") || false,
       navLabel: document.querySelector('.nav [data-page="tasks"]')?.textContent?.trim() || "",
+      taskTop: document.getElementById("tasks")?.getBoundingClientRect().top ?? null,
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth
     }));
@@ -147,6 +148,8 @@ const path = require("node:path");
     assert.equal(taskDiagnostics.taskCount, 4, "На странице должны быть четыре тестовых задания");
     assert.equal(taskDiagnostics.navActive, true, "Кнопка «Задание» должна отмечаться активной");
     assert.match(taskDiagnostics.navLabel, /Задание/, "На нижней панели должна быть кнопка «Задание»");
+    assert.ok(taskDiagnostics.taskTop !== null && taskDiagnostics.taskTop < 150,
+      "Страница заданий должна начинаться сразу под логотипом, без пустого экрана сверху: " + JSON.stringify(taskDiagnostics));
     assert.equal(taskDiagnostics.documentWidth, taskDiagnostics.viewportWidth, "Страница заданий не должна создавать горизонтальную прокрутку");
 
     await page.evaluate(() => { for (let i = 0; i < 10; i++) recordClickerTap(); });
