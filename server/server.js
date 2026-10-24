@@ -2703,8 +2703,15 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
       if (gameResult.rows.length) {
         const raw = gameResult.rows[0].game_state;
         const revealAll = raw.status === "finished";
-        const publicPlayers = (raw.players || []).map(player => {
-          const isMe = String(player.telegramId) === String(user.id);
+        const rawPlayers = Array.isArray(raw.players) ? raw.players : [];
+        // The membership check above proves who is viewing this room. If its owner
+        // started a two-seat room before anyone else joined, the sole room member
+        // is still entitled to see their own cards in the game state.
+        const requesterIsOnlyGamePlayer = rawPlayers.length === 1 &&
+          playerRows.length === 1 &&
+          String(playerRows[0].telegram_id) === String(user.id);
+        const publicPlayers = rawPlayers.map(player => {
+          const isMe = String(player.telegramId) === String(user.id) || requesterIsOnlyGamePlayer;
           const revealHand = revealAll || isMe;
           return {
             label: String(player.label || "Игрок"),

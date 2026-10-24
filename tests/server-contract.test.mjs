@@ -203,6 +203,8 @@ test("21 Ochko actions verify the current turn and protect hidden dealer and opp
   assert.match(actionBody, /FOR UPDATE/);
   const stateBody = routeBody("/api/twentyone/rooms/state");
   assert.match(stateBody, /revealAll = raw\.status === "finished"/);
+  assert.match(stateBody, /requesterIsOnlyGamePlayer/);
+  assert.match(stateBody, /playerRows\.length === 1/);
   assert.match(stateBody, /21-dealer-hidden-card/);
   assert.match(stateBody, /revealHand \? player\.hand : \[\]/);
   assert.match(stateBody, /cardsCount/);
