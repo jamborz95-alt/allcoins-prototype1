@@ -93,6 +93,8 @@
     .raise-row button { align-self:end; }
     .button-row { display:flex; gap:8px; margin-top:10px; }
     .button-row > * { flex:1; }
+    #waitingActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    #leaveRoomButton { grid-column:1/-1; }
     .rule-list { padding-left:19px; margin:7px 0 0; color:#c3cede; font-size:12px; line-height:1.6; }
     .footer-note { text-align:center; color:#63768e; font-size:10px; margin:14px 0 4px; line-height:1.5; }
     @media (max-width:360px) {
@@ -216,6 +218,7 @@
       </div>
     </div>
     <div id="waitingActions" class="button-row">
+      <button type="button" id="addBotButton" class="hidden">🤖 Добавить бота для проверки</button>
       <button type="button" id="startGameButton" class="primary hidden">▶ Начать игру</button>
       <button type="button" id="leaveRoomButton" class="ghost">Выйти из комнаты</button>
     </div>
@@ -450,7 +453,7 @@
         backs = '<div class="seat-cards">' + (gamePlayer.hand || []).map(card => cardMarkup(card, true)).join("") + '</div>';
       }
       return '<div class="player-row' + (isCurrent ? " current" : "") + (folded ? " folded" : "") + '">' +
-        '<div class="avatar">' + (isMine ? "Я" : String(index + 1)) + '</div><div class="player-main"><strong>' +
+        '<div class="avatar">' + (isMine ? "Я" : (String(player.telegramId) === "0" || player.isBot ? "🤖" : String(index + 1))) + '</div><div class="player-main"><strong>' +
         escapeHtml(player.label) + (isMine ? " · Вы" : "") + '</strong><small>' + details +
         (gamePlayer ? "" : " · Баланс: " + fmt(player.balance) + " AC") + '</small></div>' + backs + '</div>';
     }).join("");
@@ -475,6 +478,11 @@
     $("waitingText").classList.toggle("hidden", playing);
     $("gameWrap").classList.toggle("hidden", !game);
     $("waitingActions").classList.toggle("hidden", playing);
+    const hasBot = (state.players || []).some(player =>
+      String(player.telegramId) === "0" || player.isBot
+    );
+    $("addBotButton").classList.toggle("hidden", !(waiting && room.isOwner && !hasBot));
+    $("addBotButton").disabled = busy;
     $("startGameButton").classList.toggle("hidden", !(waiting && room.isOwner));
     $("startGameButton").disabled = (state.players || []).length < 2;
     $("leaveRoomButton").textContent = playing ? "Игра идёт" : "Выйти из комнаты";
@@ -526,6 +534,23 @@
     if (!currentRoomId) return;
     const result = await api("/rooms/state", { roomId: currentRoomId });
     renderRoom(result);
+  }
+
+  async function addBot() {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    $("addBotButton").disabled = true;
+    setStatus("roomStatus", "Добавляем тестового бота…");
+    try {
+      await api("/rooms/add-bot", { roomId: currentRoomId });
+      await refreshRoomState();
+      setStatus("roomStatus", "Бот добавлен. Можно начинать проверку игры.");
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+    } finally {
+      busy = false;
+      if ($("addBotButton")) $("addBotButton").disabled = false;
+    }
   }
 
   async function startGame() {
@@ -617,6 +642,7 @@
   $("createRoomButton").addEventListener("click", createRoom);
   $("refreshRoomsButton").addEventListener("click", () => loadRooms(false));
   $("filterTier").addEventListener("change", () => loadRooms(false));
+  $("addBotButton").addEventListener("click", addBot);
   $("startGameButton").addEventListener("click", startGame);
   $("leaveRoomButton").addEventListener("click", leaveRoom);
   $("refreshStateButton").addEventListener("click", () => refreshRoomState().catch(error => setStatus("roomStatus", error.message, true)));
