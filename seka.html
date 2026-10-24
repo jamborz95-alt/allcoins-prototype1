@@ -436,12 +436,16 @@
       if (gamePlayer) {
         details = folded ? "Пас · выбыл из торгов" : "В банке: " + fmt(gamePlayer.contribution) + " AC";
         if (game.status === "finished") {
-          details += " · " + escapeHtml(gamePlayer.handType || "Карты") + " · " + fmt(gamePlayer.score) + " очков";
+          if (game.revealHands && gamePlayer.score !== null && gamePlayer.score !== undefined) {
+            details += " · " + escapeHtml(gamePlayer.handType || "Комбинация") + " · " + fmt(gamePlayer.score) + " очков";
+          } else {
+            details += " · Карты закрыты";
+          }
           if (gamePlayer.payout) details += " · +" + fmt(gamePlayer.payout) + " AC";
         } else if (isCurrent) details = "Сейчас ходит · " + details;
       }
       let backs = "";
-      if (gamePlayer && !isMine && (!game || game.status !== "finished")) backs = backsMarkup(gamePlayer.cardCount);
+      if (gamePlayer && !isMine && (!game || game.status !== "finished" || !(gamePlayer.hand || []).length)) backs = backsMarkup(gamePlayer.cardCount);
       else if (gamePlayer && !isMine && game.status === "finished") {
         backs = '<div class="seat-cards">' + (gamePlayer.hand || []).map(card => cardMarkup(card, true)).join("") + '</div>';
       }
@@ -495,7 +499,7 @@
       const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
       $("myHand").innerHTML = me && me.hand ? me.hand.map(card => cardMarkup(card, false)).join("") : "";
       $("myHandCaption").textContent = game.status === "finished"
-        ? ((me && me.handType) ? me.handType + " · " + fmt(me.score) + " очков" : "Карты открыты")
+        ? (game.revealHands ? ((me && me.handType) ? me.handType + " · " + fmt(me.score) + " очков" : "Карты открыты") : "Карты соперников остались закрыты после пасов.")
         : "Карты видны только вам до вскрытия.";
       const actionArea = $("actionArea");
       actionArea.classList.toggle("hidden", !playing);

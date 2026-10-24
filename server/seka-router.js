@@ -125,6 +125,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
   }
 
   async function finishByFold(client, game, winner) {
+    game.revealHands = false;
     await creditWinners(
       client,
       game,
@@ -134,6 +135,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
   }
 
   async function finishByShowdown(client, game, openerLabel = "") {
+    game.revealHands = true;
     const active = activeSekaPlayers(game);
     if (!active.length) throw new SekaHttpError(500, "В партии не осталось игроков");
     let winners = [active[0]];
@@ -177,7 +179,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
 
   function publicGame(game, userId) {
     if (!game) return null;
-    const revealed = game.status === "finished";
+    const revealed = game.status === "finished" && game.revealHands === true;
     return {
       status: game.status,
       pot: Number(game.pot || 0),
@@ -189,6 +191,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       payouts: game.payouts || [],
       message: String(game.message || ""),
       settlementApplied: Boolean(game.settlementApplied),
+      revealHands: revealed,
       players: (game.players || []).map(player => {
         const showHand = revealed || String(player.telegramId) === String(userId);
         return {
