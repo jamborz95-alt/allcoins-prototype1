@@ -97,6 +97,7 @@ export function createSekaGame(players, ante, random = Math.random) {
   const gamePlayers = players.map((player, index) => ({
     telegramId: String(player.telegramId),
     label: String(player.label || "Игрок"),
+    isBot: Boolean(player.isBot || String(player.telegramId) === "0"),
     seatNo: index,
     hand: [deck.pop(), deck.pop(), deck.pop()],
     folded: false,
@@ -110,7 +111,8 @@ export function createSekaGame(players, ante, random = Math.random) {
     status: "playing",
     deckCount: deck.length,
     players: gamePlayers,
-    pot: Number(ante) * gamePlayers.length,
+    // Test bots do not stake real AC. Only actual players' ante goes into the pot.
+    pot: gamePlayers.filter(player => !player.isBot).reduce((sum, player) => sum + Number(ante), 0),
     ante: Number(ante),
     currentBet: Number(ante),
     currentPlayerIndex: 0,
