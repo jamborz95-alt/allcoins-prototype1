@@ -145,6 +145,19 @@ const path = require("node:path");
         gamesSectionVisible: Boolean(document.getElementById("games") && !document.getElementById("games").classList.contains("hidden")),
         tiles: document.querySelectorAll("#games .games-app-grid > .game-app-tile").length,
         icons,
+        durakLauncher: (() => {
+          const el = document.getElementById("openDurak");
+          const style = el ? getComputedStyle(el) : null;
+          return style ? {
+            backgroundImage: style.backgroundImage,
+            backgroundColor: style.backgroundColor,
+            borderTopWidth: style.borderTopWidth,
+            borderTopStyle: style.borderTopStyle,
+            boxShadow: style.boxShadow,
+            minHeight: style.minHeight,
+            borderRadius: style.borderTopLeftRadius
+          } : null;
+        })(),
         previewButtonCount: [...document.querySelectorAll("#games button")].filter(button =>
           /посмотреть карты allcoins premium/i.test(button.textContent || "")
         ).length,
@@ -160,6 +173,15 @@ const path = require("node:path");
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
     assert.equal(gamesIconDiagnostics.tiles, 4, "В разделе должны остаться четыре игровые плитки");
     assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн"]);
+    assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
+    assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
+      "На значке Дурак Онлайн остался старый золотой градиент");
+    assert.equal(gamesIconDiagnostics.durakLauncher.backgroundColor, "rgba(0, 0, 0, 0)",
+      "Фон кнопки Дурак Онлайн должен быть прозрачным, как у остальных игр");
+    assert.equal(gamesIconDiagnostics.durakLauncher.borderTopWidth, "0px",
+      "На кнопке Дурак Онлайн осталась отдельная рамка");
+    assert.equal(gamesIconDiagnostics.durakLauncher.boxShadow, "none",
+      "На кнопке Дурак Онлайн осталась отдельная тень");
     for (const icon of gamesIconDiagnostics.icons) {
       assert.equal(icon.visible, true, icon.id + ": значок не виден");
       assert.ok(Math.abs(icon.width - 82) <= 1 && Math.abs(icon.height - 82) <= 1,
