@@ -109,6 +109,57 @@ const path = require("node:path");
   });
 
   try {
+    // Checkers pieces must each carry the ALLCOINS logo, on both white and black disks.
+    const checkersPage = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 1,
+      isMobile: true,
+      hasTouch: true
+    });
+    await checkersPage.addInitScript(() => {
+      window.Telegram = { WebApp: { initData: "", ready() {}, expand() {}, BackButton: { show() {}, hide() {} } } };
+    });
+    await checkersPage.route("**/telegram-web-app.js", route => route.fulfill({
+      status: 200, contentType: "application/javascript", body: "// Telegram WebApp mocked for checkers visual test.\\n"
+    }));
+    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo5",
+      { waitUntil: "domcontentloaded", timeout: 30000 });
+    await checkersPage.locator("#startBot").click();
+    await checkersPage.waitForFunction(() => document.querySelectorAll("#board .piece").length === 24 &&
+      document.querySelectorAll("#board .piece-logo svg").length === 24, { timeout: 10000 });
+    const checkerPieceLogoDiagnostics = await checkersPage.evaluate(() => {
+      const pieces = Array.from(document.querySelectorAll("#board .piece"));
+      const logos = Array.from(document.querySelectorAll("#board .piece-logo"));
+      return {
+        pieces: pieces.length,
+        logos: logos.length,
+        whitePieces: pieces.filter(piece => piece.classList.contains("white")).length,
+        blackPieces: pieces.filter(piece => piece.classList.contains("black")).length,
+        logosWithSvg: logos.filter(logo => logo.querySelector("svg")).length,
+        visibleLogos: logos.filter(logo => {
+          const r = logo.getBoundingClientRect();
+          return r.width >= 10 && r.height >= 10 && getComputedStyle(logo).visibility !== "hidden";
+        }).length,
+        crownsDoNotReplaceLogos: Array.from(document.querySelectorAll("#board .piece.king"))
+          .every(piece => Boolean(piece.querySelector(".piece-logo svg")))
+      };
+    });
+    fs.writeFileSync(path.join(out, "checkers-piece-logo-report.json"),
+      JSON.stringify(checkerPieceLogoDiagnostics, null, 2));
+    assert.equal(checkerPieceLogoDiagnostics.pieces, 24,
+      "На начальной доске должно быть 24 шашки: " + JSON.stringify(checkerPieceLogoDiagnostics));
+    assert.equal(checkerPieceLogoDiagnostics.logos, 24,
+      "На каждой шашке должен быть логотип ALLCOINS: " + JSON.stringify(checkerPieceLogoDiagnostics));
+    assert.equal(checkerPieceLogoDiagnostics.whitePieces, 12, "Должно быть 12 белых шашек");
+    assert.equal(checkerPieceLogoDiagnostics.blackPieces, 12, "Должно быть 12 чёрных шашек");
+    assert.equal(checkerPieceLogoDiagnostics.logosWithSvg, 24, "Логотип должен быть SVG на каждой шашке");
+    assert.equal(checkerPieceLogoDiagnostics.visibleLogos, 24,
+      "Все логотипы на шашках должны быть видимыми: " + JSON.stringify(checkerPieceLogoDiagnostics));
+    assert.equal(checkerPieceLogoDiagnostics.crownsDoNotReplaceLogos, true,
+      "Дамки должны сохранять логотип под короной");
+    await checkersPage.screenshot({ path: path.join(out, "checkers-allcoins-piece-logos.png"), fullPage: true });
+    await checkersPage.close();
+
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(700);
 
