@@ -122,11 +122,89 @@ const path = require("node:path");
     await checkersPage.route("**/telegram-web-app.js", route => route.fulfill({
       status: 200, contentType: "application/javascript", body: "// Telegram WebApp mocked for checkers visual test.\\n"
     }));
-    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo5",
+    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo6",
       { waitUntil: "domcontentloaded", timeout: 30000 });
     await checkersPage.locator("#startBot").click();
     await checkersPage.waitForFunction(() => document.querySelectorAll("#board .piece").length === 24 &&
       document.querySelectorAll("#board .piece-logo svg").length === 24, { timeout: 10000 });
+    const initialCheckersDiagnostics = await checkersPage.evaluate(() => {
+      const pieces = Array.from(document.querySelectorAll("#board .piece"));
+      const row = piece => Number(piece.closest(".square")?.dataset.r);
+      const crownProbe = pieces[0];
+      crownProbe.classList.add("king");
+      const crown = getComputedStyle(crownProbe, "::after");
+      return {
+        pieces: pieces.length,
+        whiteBottom: pieces.filter(piece => piece.classList.contains("white") && row(piece) >= 5).length,
+        blackTop: pieces.filter(piece => piece.classList.contains("black") && row(piece) <= 2).length,
+        humanColorNote: document.getElementById("humanColorNote")?.textContent,
+        botColorNote: document.getElementById("botColorNote")?.textContent,
+        turnStatus: document.getElementById("turnStatus")?.textContent,
+        crownContent: crown.content,
+        crownWidth: crown.width,
+        crownHeight: crown.height,
+        crownTop: crown.top,
+        crownLeft: crown.left,
+        crownZIndex: crown.zIndex,
+        logoUnderCrown: Boolean(crownProbe.querySelector(".piece-logo svg"))
+      };
+    });
+    assert.equal(initialCheckersDiagnostics.pieces, 24, "Первая партия должна начинаться с 24 шашек");
+    assert.equal(initialCheckersDiagnostics.whiteBottom, 12, "В первой партии белые должны быть у игрока снизу");
+    assert.equal(initialCheckersDiagnostics.blackTop, 12, "В первой партии чёрные должны быть у соперника сверху");
+    assert.match(initialCheckersDiagnostics.humanColorNote, /белыми/, "Игрок должен видеть подпись белых");
+    assert.match(initialCheckersDiagnostics.botColorNote, /чёрные/, "Соперник должен видеть подпись чёрных");
+    assert.match(initialCheckersDiagnostics.crownContent, /♛/, "На дамке должен появляться значок короны");
+    assert.equal(initialCheckersDiagnostics.crownWidth, "68%", "Значок дамки должен закрывать верхнюю часть логотипа");
+    assert.equal(initialCheckersDiagnostics.crownZIndex, "4", "Значок дамки должен быть поверх логотипа");
+    assert.equal(initialCheckersDiagnostics.logoUnderCrown, true, "Корона должна накладываться на логотип, не удаляя его");
+
+    await checkersPage.locator("#newGame").click();
+    await checkersPage.waitForTimeout(100);
+    const blackRematchDiagnostics = await checkersPage.evaluate(() => {
+      const pieces = Array.from(document.querySelectorAll("#board .piece"));
+      const row = piece => Number(piece.closest(".square")?.dataset.r);
+      return {
+        whiteTop: pieces.filter(piece => piece.classList.contains("white") && row(piece) <= 2).length,
+        blackBottom: pieces.filter(piece => piece.classList.contains("black") && row(piece) >= 5).length,
+        humanColorNote: document.getElementById("humanColorNote")?.textContent,
+        botColorNote: document.getElementById("botColorNote")?.textContent,
+        turnStatus: document.getElementById("turnStatus")?.textContent,
+        bottomBlackLogos: pieces.filter(piece => piece.classList.contains("black") && row(piece) >= 5)
+          .filter(piece => Boolean(piece.querySelector(".piece-logo svg"))).length
+      };
+    });
+    fs.writeFileSync(path.join(out, "checkers-black-rematch-report.json"), JSON.stringify(blackRematchDiagnostics, null, 2));
+    assert.equal(blackRematchDiagnostics.whiteTop, 12, "После рематча белые должны перейти к сопернику");
+    assert.equal(blackRematchDiagnostics.blackBottom, 12, "После рематча игрок должен получить чёрные шашки");
+    assert.match(blackRematchDiagnostics.humanColorNote, /чёрными/, "Подпись игрока должна поменяться на чёрные");
+    assert.match(blackRematchDiagnostics.botColorNote, /белые/, "Подпись соперника должна поменяться на белые");
+    assert.match(blackRematchDiagnostics.turnStatus, /чёрные/, "Игрок с чёрными шашками должен ходить первым");
+    assert.equal(blackRematchDiagnostics.bottomBlackLogos, 12, "Логотип должен остаться на всех чёрных шашках после рематча");
+
+    // The king crown must visibly cover the top peak of the ALLCOINS mark.
+    await checkersPage.locator("#board .piece.black").first().evaluate(piece => piece.classList.add("king"));
+    await checkersPage.screenshot({ path: path.join(out, "checkers-black-rematch-crown-logo.png"), fullPage: true });
+
+    // The next rematch restores white, and the visible "Играть ещё" button also alternates to black.
+    await checkersPage.locator("#newGame").click();
+    const whiteAgainDiagnostics = await checkersPage.evaluate(() => ({
+      whiteBottom: Array.from(document.querySelectorAll("#board .piece.white"))
+        .filter(piece => Number(piece.closest(".square")?.dataset.r) >= 5).length,
+      turnStatus: document.getElementById("turnStatus")?.textContent
+    }));
+    assert.equal(whiteAgainDiagnostics.whiteBottom, 12, "Следующий рематч должен вернуть белые игроку");
+    assert.match(whiteAgainDiagnostics.turnStatus, /белые/);
+    await checkersPage.locator("#resultOverlay").evaluate(el => el.classList.remove("hidden"));
+    await checkersPage.locator("#playAgain").click();
+    const playAgainDiagnostics = await checkersPage.evaluate(() => ({
+      blackBottom: Array.from(document.querySelectorAll("#board .piece.black"))
+        .filter(piece => Number(piece.closest(".square")?.dataset.r) >= 5).length,
+      humanColorNote: document.getElementById("humanColorNote")?.textContent
+    }));
+    assert.equal(playAgainDiagnostics.blackBottom, 12, "Кнопка «Играть ещё» должна переключать цвет игрока");
+    assert.match(playAgainDiagnostics.humanColorNote, /чёрными/);
+
     const checkerPieceLogoDiagnostics = await checkersPage.evaluate(() => {
       const pieces = Array.from(document.querySelectorAll("#board .piece"));
       const logos = Array.from(document.querySelectorAll("#board .piece-logo"));
