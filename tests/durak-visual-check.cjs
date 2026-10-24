@@ -111,6 +111,36 @@ const path = require("node:path");
   try {
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(700);
+
+    // Main tap target must render as a round ALLCOINS logo without changing clicker behavior.
+    const clickerOrbDiagnostics = await page.evaluate(() => {
+      const button = document.getElementById("tapButton");
+      const rect = button?.getBoundingClientRect();
+      const style = button ? getComputedStyle(button) : null;
+      return {
+        visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+        width: rect?.width ?? null,
+        height: rect?.height ?? null,
+        borderRadius: style?.borderRadius || null,
+        logoSvg: Boolean(button?.querySelector(".tap-orb-logo svg")),
+        wordmark: button?.querySelector(".tap-orb-wordmark")?.textContent?.trim() || null,
+        reward: button?.querySelector(".tap-orb-reward")?.textContent?.trim().replace(/\\s+/g, " ") || null,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth
+      };
+    });
+    fs.writeFileSync(path.join(out, "clicker-round-logo-report.json"), JSON.stringify(clickerOrbDiagnostics, null, 2));
+    assert.equal(clickerOrbDiagnostics.visible, true, "Круглая кнопка кликера должна отображаться");
+    assert.ok(Math.abs(clickerOrbDiagnostics.width - clickerOrbDiagnostics.height) <= 1,
+      "Кнопка кликера должна быть круглой: " + JSON.stringify(clickerOrbDiagnostics));
+    assert.match(clickerOrbDiagnostics.borderRadius, /50%/, "Кнопка кликера должна иметь радиус круга");
+    assert.equal(clickerOrbDiagnostics.logoSvg, true, "В круге кликера должен отображаться фирменный SVG-логотип");
+    assert.equal(clickerOrbDiagnostics.wordmark, "ALLCOINS", "Внутри круга должна быть надпись ALLCOINS");
+    assert.match(clickerOrbDiagnostics.reward, /\+100\\s*AC/, "Награда +100 AC должна оставаться видимой");
+    assert.equal(clickerOrbDiagnostics.documentWidth, clickerOrbDiagnostics.viewportWidth,
+      "Круг кликера не должен вызывать горизонтальную прокрутку");
+    await page.screenshot({ path: path.join(out, "00-clicker-round-logo-mobile.png"), fullPage: true });
+
     await page.locator('.nav [data-page="games"]').click();
     await page.waitForTimeout(150);
 
