@@ -258,7 +258,7 @@
       <div class="section-title"><span>🌐 Открытые комнаты</span><button type="button" class="secondary" id="refreshRooms" style="min-height:36px;padding:7px 10px;font-size:12px">↻ Обновить</button></div>
       <div id="roomsList" class="room-list"><div class="empty">Загружаю список комнат…</div></div>
     </div>
-    <p class="footnote">AC — виртуальные монеты ALLCOINS, не деньги. Ставки списываются одновременно после выбора всех игроков. При ничьей ставки возвращаются; победители делят общий банк.</p>
+    <p class="footnote">AC — виртуальные монеты ALLCOINS, не деньги. При победе удерживается комиссия проекта 5% от общего банка; при ничьей ставки возвращаются. В режиме проверки с ботом списаний, выплат и комиссии нет.</p>
   </section>
 
   <section id="roomView" hidden>
@@ -447,7 +447,10 @@
         ? "Ничья. Ставки возвращены участникам."
         : "Раунд " + result.roundNumber + " завершён. Победитель: " +
           (Array.isArray(result.winnerLabels) ? result.winnerLabels.join(", ") : "—");
-    node.textContent = summary;
+    const commissionNote = !result.testMode && Number(result.commissionAmount) > 0
+      ? " Комиссия проекта 5%: " + formatAmount(result.commissionAmount) + " AC."
+      : "";
+    node.textContent = summary + commissionNote;
   }
 
   function renderGameTable(result, room) {
