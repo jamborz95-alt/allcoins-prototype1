@@ -9466,6 +9466,29 @@ function applyTwentyOneHandFan(container, cardIndex, cardCount) {
   container.style.zIndex = String(cardIndex + 1);
 }
 
+function buildTwentyOneFallbackFace(element, card) {
+  element.classList.remove("image-card", "twentyone-card-face-down");
+  element.textContent = "";
+  const rank = String(card.rank || "");
+  const suit = String(card.suit || "");
+  if (["♥", "♡", "♦", "♢"].includes(suit)) element.classList.add("red");
+  const corner = document.createElement("span");
+  corner.className = "card-corner";
+  const rankLabel = document.createElement("span");
+  rankLabel.className = "card-rank";
+  rankLabel.textContent = rank;
+  const cornerSuit = document.createElement("span");
+  cornerSuit.className = "corner-suit";
+  cornerSuit.textContent = suit;
+  corner.append(rankLabel, cornerSuit);
+  const center = document.createElement("span");
+  center.className = "card-suit";
+  center.textContent = suit;
+  const opposite = corner.cloneNode(true);
+  opposite.className = "card-corner card-corner-bottom";
+  element.append(corner, center, opposite);
+}
+
 function renderTwentyOneCardRow(containerId, cards, options = {}) {
   const container = $(containerId);
   if (!container) return;
@@ -9481,6 +9504,11 @@ function renderTwentyOneCardRow(containerId, cards, options = {}) {
     applyTwentyOneHandFan(element, index, cards.length);
     if (containerId === "twentyOneDealerCards" && options.revealSecondDealerCard && index === 1) {
       element.classList.add("twentyone-card-reveal");
+    }
+    const image = element.querySelector("img");
+    if (image && !hiddenDealerCard) {
+      // If a PNG is unavailable in a slow WebView, the card still shows its rank and suit.
+      image.addEventListener("error", () => buildTwentyOneFallbackFace(element, card), { once:true });
     }
     container.appendChild(element);
   });
