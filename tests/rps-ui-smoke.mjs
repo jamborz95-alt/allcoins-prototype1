@@ -188,7 +188,7 @@ try {
   assert.equal(await owner.page.locator("[data-choice]").count(), 3, "После добавления бота должны отображаться три жеста");
   await owner.page.locator('[data-choice="rock"]').click();
   await owner.page.getByText("Тестовый раунд с ботом. Баланс AC не изменён.", { exact: false }).waitFor();
-  assert.equal(await owner.page.locator("#topBalance").innerText(), "10 000",
+  assert.equal((await owner.page.locator("#topBalance").innerText()).replace(/\\s/g, ""), "10000",
     "Тестовый раунд с ботом не должен менять баланс пользователя");
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/choose"),
     "Ход пользователя должен быть отправлен на API");
