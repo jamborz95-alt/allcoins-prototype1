@@ -242,7 +242,10 @@ test("21 Ochko rules deal 36 cards, score court cards, and enforce turn order", 
 test("21 Ochko shows player count and all scores without exposing opponent hands", () => {
   assert.match(clientSource, /id="twentyOneRoomPlayerCount"/);
   assert.match(clientSource, /Игроков в раунде:/);
-  assert.match(clientSource, /const roomPlayerCount = Array\.isArray\(game\?\.players\)/);
+  assert.match(clientSource, /const roomPlayerCount = players\.length \|\| Number\(room\.playersCount \|\| 0\)/);
+  assert.match(clientSource, /id="twentyOneRoomMyHandPanel"/);
+  assert.match(clientSource, /id="twentyOneRoomMyCards"/);
+  assert.match(clientSource, /id="twentyOneRoomMyScore"/);
   assert.match(clientSource, /stateLabel\.textContent = scoreText \+ " · " \+ stateNote/);
   const body = routeBody("/api/twentyone/rooms/state");
   assert.match(body, /score: scoreTwentyOneHand\(player\.hand \|\| \[\]\)/);
