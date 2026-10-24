@@ -108,10 +108,16 @@ test("the main Games tab links to a separate Seka page with all five stake range
   assert.match(page, /без верхнего лимита/);
   assert.match(page, /\/rooms\/create/);
   assert.match(page, /\/rooms\/action/);
+  assert.match(page, /\/rooms\/rematch/);
+  assert.match(page, /id="rematchButton"/);
+  assert.match(page, /Рематч/);
   assert.match(page, /\/rooms\/add-bot/);
   assert.match(page, /id="addBotButton"/);
   assert.match(page, /Добавить бота для проверки/);
   const router = await readFile(new URL("../server/seka-router.js", import.meta.url), "utf8");
+  assert.match(router, /router\.post\("\/rooms\/rematch"/);
+  assert.match(router, /Готовность к рематчу сохранена/);
+  assert.match(router, /Предыдущая партия ещё не завершена/);
   assert.match(router, /async function runSekaBots/);
   assert.match(router, /\/rooms\/add-bot/);
   assert.match(router, /game\.testMode = testMode/);
