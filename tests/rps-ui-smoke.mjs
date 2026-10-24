@@ -41,6 +41,7 @@ try {
     const pageErrors = [];
     const apiCalls = [];
     let mockBotAdded = false;
+    let mockChoiceMade = false;
     page.on("pageerror", error => pageErrors.push(error.message));
 
     await page.route("https://telegram.org/**", route => route.fulfill({
@@ -106,7 +107,7 @@ try {
             ok: true, balance: 10000,
             room: {
               id: "42", name: "Комната КНБ", ownerTelegramId: "101", stake: 500,
-              maxPlayers: 3, status: "playing", currentRound: 1, playersCount: 2,
+              maxPlayers: 3, status: "playing", currentRound: mockChoiceMade ? 2 : 1, playersCount: 2,
               isOwner: true, hasBot: true, testMode: true,
               players: [
                 { telegramId: "101", displayName: "Первый Игрок", joinedRound: 1,
@@ -115,8 +116,16 @@ try {
                   isMe: false, isOwner: false, isBot: true, inCurrentRound: true, waitingNextRound: false, hasSubmitted: false }
               ]
             },
-            round: { number: 1, status: "playing", participantIds: ["101", "0"], submittedIds: [], submittedCount: 0, submittedByMe: false, canChoose: true },
-            lastResult: null
+            round: { number: mockChoiceMade ? 2 : 1, status: "playing", participantIds: ["101", "0"], submittedIds: [], submittedCount: 0, submittedByMe: false, canChoose: true },
+            lastResult: mockChoiceMade ? {
+              roundNumber: 1, outcome: "win", winningChoice: "rock",
+              winnerTelegramIds: ["101"], winnerLabels: ["Первый Игрок"],
+              choices: [
+                { telegramId: "101", label: "Первый Игрок", choice: "rock", choiceLabel: "Камень", symbol: "✊" },
+                { telegramId: "0", label: "🤖 Бот проверки", choice: "scissors", choiceLabel: "Ножницы", symbol: "✌️" }
+              ],
+              pot: 0, stake: 500, testMode: true, payouts: [], finishedAt: new Date().toISOString()
+            } : null
           });
         }
         if (String(body.roomId) === "77" && userId === 303) {
@@ -148,7 +157,8 @@ try {
         return json({ ok: true, message: "Ты вышел из комнаты." });
       }
       if (url.pathname === "/api/rps/rooms/choose") {
-        return json({ ok: true, resolved: false, message: "Ход принят." });
+        mockChoiceMade = true;
+        return json({ ok: true, resolved: true, result: { testMode: true } });
       }
       return json({ ok: true, balance: 10000, rooms: [] });
     });
@@ -176,7 +186,13 @@ try {
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/add-bot"), "Кнопка должна отправить запрос добавления бота");
   assert.equal(await owner.page.getByText("Бот проверки", { exact: false }).count() > 0, true, "Бот должен отображаться среди игроков");
   assert.equal(await owner.page.locator("[data-choice]").count(), 3, "После добавления бота должны отображаться три жеста");
-  assert.deepEqual(owner.pageErrors, [], "Не должно быть ошибок JavaScript в сценарии создания комнаты и бота");
+  await owner.page.locator('[data-choice="rock"]').click();
+  await owner.page.getByText("Тестовый раунд с ботом. Баланс AC не изменён.", { exact: false }).waitFor();
+  assert.equal(await owner.page.locator("#topBalance").innerText(), "10 000",
+    "Тестовый раунд с ботом не должен менять баланс пользователя");
+  assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/choose"),
+    "Ход пользователя должен быть отправлен на API");
+  assert.deepEqual(owner.pageErrors, [], "Не должно быть ошибок JavaScript в сценарии создания комнаты, бота и тестового раунда");
 
   // A third entrant can join an active room but is not offered a move until the next round.
   const third = await newPlayerPage(303, "Третий Игрок");
@@ -190,7 +206,7 @@ try {
     "Присоединение к комнате должно быть отправлено на API");
   assert.deepEqual(third.pageErrors, [], "Не должно быть ошибок JavaScript у третьего игрока");
 
-  console.log("PASS: RPS game opens from Games, creates a room with the selected stake, and a third player waits for the next round.");
+  console.log("PASS: RPS game opens from Games, creates a room, adds the test bot, finishes a practice round without changing AC, and keeps a third player for the next round.");
 } finally {
   if (browser) await browser.close();
   await Promise.all(contexts.map(context => context.close().catch(() => {})));
