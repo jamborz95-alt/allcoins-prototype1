@@ -95,8 +95,9 @@ try {
         settlementApplied: false, revealHands: false,
         players: [
           { telegramId: "12345", label: "Тестовый игрок", isBot: false, folded: false,
-            contribution: 100, hand: [{ rank: "9", suit: "♠" }], score: null,
-            payout: 0, cardCount: 1, handType: null },
+            contribution: 100, hand: [
+              { rank: "9", suit: "♠" }, { rank: "8", suit: "♠" }, { rank: "7", suit: "♠" }
+            ], score: null, payout: 0, cardCount: 3, handType: null },
           { telegramId: "0", label: "🤖 Бот ALLCOINS", isBot: true, folded: false,
             contribution: 100, hand: [], score: null, payout: 0, cardCount: 3, handType: null }
         ]
@@ -135,8 +136,18 @@ try {
     "room details should be hidden during the fullscreen game");
   assert.equal(await page.locator("#gameWrap").evaluate((el) => getComputedStyle(el).display), "grid",
     "the actual game table should fill the fullscreen layout");
-  assert.equal(await page.locator("#myHand .playing-card").count(), 1,
-    "the player's hand should remain visible in fullscreen");
+  assert.equal(await page.locator("#myHand .playing-card").count(), 3,
+    "all three cards in the player's hand should remain visible in fullscreen");
+  assert.equal(await page.locator("#myHandScore").textContent(), "24 очков",
+    "the player should see their own numeric combination score before showdown");
+  assert.equal(await page.locator("#myHandType").textContent(), "Одна масть",
+    "the player should see the type of their own combination before showdown");
+  assert.equal(await page.locator("#gamePlayerSeats .game-player-seat").count(), 2,
+    "both player nicknames should be rendered around the table");
+  assert.equal(await page.locator("#gamePlayerSeats .seat-bottom").count(), 1,
+    "the current player should be seated at the bottom of the table");
+  assert.equal(await page.locator("#gamePlayerSeats .seat-top-center").count(), 1,
+    "the opponent should be seated across the table");
   assert.notEqual(await page.locator("#raiseButton").evaluate((el) => getComputedStyle(el).display), "none",
     "betting controls should remain available in fullscreen");
   assert.deepEqual(pageErrors, [], "the Seka page should not produce JavaScript errors");
