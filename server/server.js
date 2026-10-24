@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex, expireDurakTurnIfNeeded } from "./durak-rules.js";
 import { createLottoRouter } from "./lotto.js";
 import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "./twentyone-rules.js";
+import { createSekaRouter } from "./seka-router.js";
 
 const { Pool } = pg;
 const app = express();
@@ -197,6 +198,9 @@ async function getPlayer(req, res) {
 const lottoRouter = createLottoRouter({ pool, verifyTelegram });
 app.use("/api/lotto", lottoRouter);
 
+const sekaRouter = createSekaRouter({ pool, verifyTelegram });
+app.use("/api/seka", sekaRouter);
+
 app.get("/", (req, res) => {
   res.json({
     app: "ALLCOINS",
@@ -212,7 +216,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.3.0"
+      version: "1.4.0"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
@@ -3223,6 +3227,8 @@ async function startServer() {
 
     await lottoRouter.initialize();
     console.log("Lotto Online tables and scheduler are ready");
+    await sekaRouter.initialize();
+    console.log("Seka Online tables are ready");
   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_rooms (

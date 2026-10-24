@@ -2317,6 +2317,12 @@
       <span class="game-app-title">21 Очко</span>
     </button>
   </div>
+  <div class="game-app-tile" id="sekaEntry">
+    <button type="button" id="openSeka" class="game-app-launch" aria-label="Открыть игру Сека Онлайн">
+      <span class="seka-entry-appicon" aria-hidden="true"><span class="seka-mini-card back">♣</span><span class="seka-mini-card front">СЕ</span></span>
+      <span class="game-app-title">Сека Онлайн</span>
+    </button>
+  </div>
 </div>
 
 <!-- ОТДЕЛЬНЫЙ ЭКРАН ДУРАКА -->
@@ -10588,6 +10594,7 @@ function closeTwentyOneGame() {
 }
 
 $("openTwentyOne").onclick = openTwentyOneGame;
+$("openSeka").onclick = () => { window.location.href = "./seka.html?v=20261024-seka"; };
 $("twentyOneBack").onclick = closeTwentyOneGame;
 $("twentyOneDeal").onclick = startTwentyOneRound;
 $("twentyOneHit").onclick = hitTwentyOne;
@@ -12313,7 +12320,13 @@ if (gamesSection) {
       max-height:86px !important;
     }
   }
-</style>
+
+    .games-app-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .seka-entry-appicon { position:relative; display:block; width:74px; height:72px; margin:0 auto 6px; }
+    .seka-mini-card { position:absolute; width:38px; height:53px; border-radius:7px; border:1px solid #e8c978; display:grid; place-items:center; font-weight:900; font-size:18px; box-shadow:0 5px 10px #0006; }
+    .seka-mini-card.back { left:8px; top:10px; transform:rotate(-13deg); color:#f0d48e; background:repeating-linear-gradient(45deg,#17314a 0 4px,#214d66 4px 8px); }
+    .seka-mini-card.front { right:7px; top:5px; transform:rotate(9deg); color:#9f2432; background:#fff4db; }
+  </style>
 
 </body>
 </html>
