@@ -122,7 +122,7 @@ const path = require("node:path");
     await checkersPage.route("**/telegram-web-app.js", route => route.fulfill({
       status: 200, contentType: "application/javascript", body: "// Telegram WebApp mocked for checkers visual test.\\n"
     }));
-    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo7",
+    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo8",
       { waitUntil: "domcontentloaded", timeout: 30000 });
     await checkersPage.locator("#startBot").click();
     await checkersPage.waitForFunction(() => document.querySelectorAll("#board .piece").length === 24 &&
@@ -132,7 +132,10 @@ const path = require("node:path");
       const row = piece => Number(piece.closest(".square")?.dataset.r);
       const crownProbe = pieces[0];
       crownProbe.classList.add("king");
-      const crown = getComputedStyle(crownProbe, "::after");
+      const crownMark = crownProbe.querySelector(".piece-king-mark");
+      const crown = crownMark ? getComputedStyle(crownMark) : null;
+      const logo = crownProbe.querySelector(".piece-logo");
+      const logoStyle = logo ? getComputedStyle(logo) : null;
       return {
         pieces: pieces.length,
         whiteBottom: pieces.filter(piece => piece.classList.contains("white") && row(piece) >= 5).length,
@@ -140,14 +143,13 @@ const path = require("node:path");
         humanColorNote: document.getElementById("humanColorNote")?.textContent,
         botColorNote: document.getElementById("botColorNote")?.textContent,
         turnStatus: document.getElementById("turnStatus")?.textContent,
-        crownContent: crown.content,
-        crownWidth: crown.width,
-        crownHeight: crown.height,
-        crownTop: crown.top,
-        crownLeft: crown.left,
-        crownZIndex: crown.zIndex,
-        crownFontSize: crown.fontSize,
-        logoUnderCrown: Boolean(crownProbe.querySelector(".piece-logo svg"))
+        crownHasSvg: Boolean(crownMark?.querySelector("svg path")),
+        crownDisplay: crown?.display || null,
+        crownWidth: crown?.width || null,
+        crownHeight: crown?.height || null,
+        crownZIndex: crown?.zIndex || null,
+        crownBorderRadius: crown?.borderRadius || null,
+        logoDisplay: logoStyle?.display || null
       };
     });
     assert.equal(initialCheckersDiagnostics.pieces, 24, "Первая партия должна начинаться с 24 шашек");
@@ -155,12 +157,13 @@ const path = require("node:path");
     assert.equal(initialCheckersDiagnostics.blackTop, 12, "В первой партии чёрные должны быть у соперника сверху");
     assert.match(initialCheckersDiagnostics.humanColorNote, /белыми/, "Игрок должен видеть подпись белых");
     assert.match(initialCheckersDiagnostics.botColorNote, /чёрные/, "Соперник должен видеть подпись чёрных");
-    assert.match(initialCheckersDiagnostics.crownContent, /♛/, "На дамке должен появляться значок короны");
-    assert.ok(parseFloat(initialCheckersDiagnostics.crownWidth) > 10 && parseFloat(initialCheckersDiagnostics.crownWidth) < 30, "Значок дамки должен быть увеличен и закрывать верхнюю часть логотипа: " + JSON.stringify(initialCheckersDiagnostics));
-    assert.ok(parseFloat(initialCheckersDiagnostics.crownTop) < 0, "Корона должна заходить сверху на логотип шашки");
-    assert.equal(initialCheckersDiagnostics.crownZIndex, "4", "Значок дамки должен быть поверх логотипа");
-    assert.ok(parseFloat(initialCheckersDiagnostics.crownFontSize) >= 14, "Значок дамки должен быть крупным и заметным: " + JSON.stringify(initialCheckersDiagnostics));
-    assert.equal(initialCheckersDiagnostics.logoUnderCrown, true, "Корона должна накладываться на логотип, не удаляя его");
+    assert.equal(initialCheckersDiagnostics.crownHasSvg, true, "На дамке должен появляться фирменный значок короны");
+    assert.equal(initialCheckersDiagnostics.crownDisplay, "grid", "Значок дамки должен отображаться вместо логотипа");
+    assert.ok(parseFloat(initialCheckersDiagnostics.crownWidth) > 10 && parseFloat(initialCheckersDiagnostics.crownHeight) > 10,
+      "Значок дамки должен занимать место логотипа: " + JSON.stringify(initialCheckersDiagnostics));
+    assert.equal(initialCheckersDiagnostics.crownZIndex, "4", "Значок дамки должен быть поверх внутреннего слоя шашки");
+    assert.match(initialCheckersDiagnostics.crownBorderRadius, /50%/, "Значок дамки должен быть круглым медальоном");
+    assert.equal(initialCheckersDiagnostics.logoDisplay, "none", "На дамке логотип ALLCOINS должен скрываться под значком короны");
 
     await checkersPage.locator("#newGame").click();
     await checkersPage.waitForTimeout(100);
@@ -217,12 +220,15 @@ const path = require("node:path");
         whitePieces: pieces.filter(piece => piece.classList.contains("white")).length,
         blackPieces: pieces.filter(piece => piece.classList.contains("black")).length,
         logosWithSvg: logos.filter(logo => logo.querySelector("svg")).length,
+        kingMarks: document.querySelectorAll("#board .piece-king-mark svg path").length,
         visibleLogos: logos.filter(logo => {
           const r = logo.getBoundingClientRect();
-          return r.width >= 10 && r.height >= 10 && getComputedStyle(logo).visibility !== "hidden";
+          return r.width >= 10 && r.height >= 10 && getComputedStyle(logo).display !== "none" &&
+            getComputedStyle(logo).visibility !== "hidden";
         }).length,
-        crownsDoNotReplaceLogos: Array.from(document.querySelectorAll("#board .piece.king"))
-          .every(piece => Boolean(piece.querySelector(".piece-logo svg")))
+        kingsShowCrownInsteadOfLogo: Array.from(document.querySelectorAll("#board .piece.king"))
+          .every(piece => getComputedStyle(piece.querySelector(".piece-logo")).display === "none" &&
+            getComputedStyle(piece.querySelector(".piece-king-mark")).display === "grid")
       };
     });
     fs.writeFileSync(path.join(out, "checkers-piece-logo-report.json"),
@@ -233,11 +239,12 @@ const path = require("node:path");
       "На каждой шашке должен быть логотип ALLCOINS: " + JSON.stringify(checkerPieceLogoDiagnostics));
     assert.equal(checkerPieceLogoDiagnostics.whitePieces, 12, "Должно быть 12 белых шашек");
     assert.equal(checkerPieceLogoDiagnostics.blackPieces, 12, "Должно быть 12 чёрных шашек");
-    assert.equal(checkerPieceLogoDiagnostics.logosWithSvg, 24, "Логотип должен быть SVG на каждой шашке");
+    assert.equal(checkerPieceLogoDiagnostics.logosWithSvg, 24, "Логотип должен быть готов для всех обычных шашек");
     assert.equal(checkerPieceLogoDiagnostics.visibleLogos, 24,
-      "Все логотипы на шашках должны быть видимыми: " + JSON.stringify(checkerPieceLogoDiagnostics));
-    assert.equal(checkerPieceLogoDiagnostics.crownsDoNotReplaceLogos, true,
-      "Дамки должны сохранять логотип под короной");
+      "Все обычные шашки должны показывать логотип: " + JSON.stringify(checkerPieceLogoDiagnostics));
+    assert.ok(checkerPieceLogoDiagnostics.kingMarks >= 0, "Отрисовка короны должна быть доступна для дамок"); 
+    assert.equal(checkerPieceLogoDiagnostics.kingsShowCrownInsteadOfLogo, true,
+      "На дамке корона должна заменять логотип, а не накладываться на него");
     await checkersPage.screenshot({ path: path.join(out, "checkers-allcoins-piece-logos.png"), fullPage: true });
     await checkersPage.close();
 
