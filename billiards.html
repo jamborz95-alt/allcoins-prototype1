@@ -128,7 +128,7 @@
     </div>
     <div class="gameMsg" id="gameMessage">Прицелься и отпусти, чтобы ударить.</div>
     <div class="gameActions">
-      <button class="secondary" id="centerCueBtn" type="button">🎯 Установить биток</button>
+      <button class="secondary" id="centerCueBtn" type="button">🎯 Сбросить прицел</button>
       <button class="goldbtn" id="rematchBtn" type="button">Новый раунд</button>
     </div>
     <div class="ruleNote">Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку. Попадание битка в лузу передаёт ход.</div>
@@ -206,7 +206,7 @@
       async function refreshWaiting(quiet){
         if(!state.room||state.stage!=="waiting"||state.roomBusy)return;state.roomBusy=true;
         try{const data=await api("/rooms/state",{roomId:state.room.id});state.room=data.room;state.players=data.players||[];
-          if(state.room.status==="playing"){showStage("game");const g=await api("/game/state",{roomId:state.room.id});state.game=g.game;state.lastAnimatedSeq=Number(state.game.lastShot?.seq||0);drawTable();renderGameUI();return;}
+          if(state.room.status==="playing"){showStage("game");const g=await api("/game/state",{roomId:state.room.id});state.game=g.game;state.lastAnimatedSeq=0;drawTable();renderGameUI();return;}
           if(state.room.status==="finished"){state.room=null;showStage("lobby");await loadRooms(true);return;}
           renderWaiting();
         }catch(e){if(!quiet)setWaitingStatus(e.message,true);}finally{state.roomBusy=false;}
@@ -229,6 +229,11 @@
       function setMessage(message,bad){$("gameMessage").textContent=message||"";$("gameMessage").style.color=bad?"#ffd0d7":"#e1f1e8";}
       function renderGameUI(){
         if(!state.game)return;const g=state.game;
+        const incomingShot=g.lastShot;
+        if(incomingShot&&Number(incomingShot.seq)>state.lastAnimatedSeq&&state.animatingSeq===null){
+          state.lastAnimatedSeq=Number(incomingShot.seq);
+          startShotAnimation(incomingShot);
+        }
         $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"");$("bankValue").textContent=amount(g.pot)+" AC";
         const row=$("playerRow");row.innerHTML="";
         g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?"ТВОЙ ХОД":"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
@@ -315,7 +320,7 @@
         catch(e){setMessage(e.message,true);await refreshGame(true);}
         finally{state.busy=false;renderGameUI();}
       }
-      async function placeCue(){if(!canShoot())return;const balls=state.game.balls;const cue=balls.find(b=>b.id==="cue");if(!cue)return;cue.x=190;cue.y=220;setMessage("Биток установлен в стартовой зоне. Сделай удар.");drawTable();}
+      async function placeCue(){state.aim=null;$("powerFill").style.width="0%";setMessage(currentPlayerIsMe()?"Прицел сброшен. Потяни от битка в направлении удара.":"Сейчас ход соперника.");drawTable();}
       async function backToLobby(){
         if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}
         state.room=null;state.players=[];state.game=null;state.aim=null;state.visualBalls=null;state.lastAnimatedSeq=0;showStage("lobby");await loadRooms(true);
