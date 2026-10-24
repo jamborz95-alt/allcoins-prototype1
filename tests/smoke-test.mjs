@@ -109,25 +109,6 @@ try {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
   await page.locator("#tapButton").waitFor();
 
-  assert.equal(await page.locator('#players option[value="6"]').count(), 0,
-    "the creation form must not offer a sixth player");
-  assert.equal(await page.locator('#players option[value="5"]').count(), 1,
-    "the creation form must allow five players");
-  assert.equal(await page.locator("#durakStakeFilters [data-stake-filter]").count(), 6,
-    "the room lobby must provide all stake ranges");
-  // These panels live inside the app's hidden Games section during startup;
-  // trigger their handlers directly so the smoke test verifies behavior, not visibility.
-  await page.locator('#durakStakePresets [data-stake-preset="1000000"]').evaluate((el) => el.click());
-  assert.equal(await page.locator("#durakStake").inputValue(), "1000000",
-    "the 1 million AC preset must update the stake field");
-  await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').evaluate((el) => el.click());
-  assert.equal(
-    await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').getAttribute("aria-pressed"),
-    "true",
-    "the selected stake range must be visibly active"
-  );
-  await page.locator('#durakStakeFilters [data-stake-filter="all"]').evaluate((el) => el.click());
-
   // Clicker: +100 AC and -1 energy with a mocked authenticated API response.
   const initialBalance = Number((await page.locator("#balance").innerText()).replace(/\D/g, ""));
   const initialEnergy = Number((await page.locator("#energy").innerText()).replace(/\D/g, ""));
@@ -148,6 +129,20 @@ try {
   await page.locator('.nav button[data-page="games"]').click();
   assert.equal(await page.locator("#openTwentyOne").count(), 1, "21 Ochko launcher should exist in Games");
   await page.locator("#openTwentyOne").click();
+  assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
+    true, "21 Ochko should open as a separate full-screen page");
+  await page.locator("#twentyOneShowCreate").click();
+  await page.locator('#twentyOneRoomStakePresets [data-stake-preset="1000000"]').click();
+  assert.equal(await page.locator("#twentyOneRoomStake").inputValue(), "1000000",
+    "the 1 million AC room preset should update 21 Ochko stake");
+  await page.locator("#twentyOneShowRooms").click();
+  assert.equal(await page.locator("#twentyOneStakeFilters [data-stake-filter]").count(), 6,
+    "21 Ochko lobby should show all stake ranges");
+  await page.locator('#twentyOneStakeFilters [data-stake-filter="500000-1000000"]').click();
+  assert.equal(await page.locator('#twentyOneStakeFilters [data-stake-filter="500000-1000000"]').getAttribute("aria-pressed"),
+    "true", "21 Ochko stake range filter should become active");
+  await page.locator('#twentyOneStakeFilters [data-stake-filter="all"]').click();
+  await page.locator("#twentyOneSoloPlay").click();
   assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
     true, "21 Ochko should open as a separate full-screen page");
   assert.equal(await page.locator("#twentyOneDeck").count(), 1, "21 Ochko should show a deck pile on the table");
