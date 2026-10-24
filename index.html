@@ -9770,6 +9770,10 @@ function resetTwentyOneRound() {
 function openTwentyOneGame() {
   $("twentyOneGame").style.display = "block";
   $("twentyOneGame").classList.add("twentyone-fullscreen");
+  // These areas inherit the global .hidden utility from the shared app template;
+  // explicitly reveal them when the standalone 21 page opens.
+  $("twentyOneGame").querySelectorAll(".twentyone-player-area").forEach(area => area.classList.remove("hidden"));
+  $("twentyOneGame").querySelectorAll(".twentyone-divider").forEach(divider => divider.classList.remove("hidden"));
   $("twentyOneBalance").textContent = Number(state.balance || 0).toLocaleString("ru-RU");
   resetTwentyOneRound();
   if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
