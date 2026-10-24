@@ -136,7 +136,8 @@ test("incoming Durak cards land without a transform-scale rebound", async () => 
   assert.match(animation, /flightAnimation\.cancel\(\)/);
   assert.match(animation, /left: \(finalRect\.left/);
   assert.doesNotMatch(animation, /transform:\s*[^;\n]*(?:scale\(|rotate\()/,
-    "landing must not animate a transform scale/rotation that can snap after the flight");});
+    "landing must not animate a transform scale/rotation that can snap after the flight");
+});
 
 test("the player with the lowest trump starts the game", () => {
   const hands = [
