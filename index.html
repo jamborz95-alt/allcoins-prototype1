@@ -13052,16 +13052,25 @@ $("refreshDurakRooms").onclick = async () => {
   #games #checkersEntry .checkers-entry-appicon {
     position:relative !important;
     display:block !important;
-    flex:0 0 88px !important;
-    width:88px !important;
-    height:88px !important;
-    min-width:88px !important;
-    min-height:88px !important;
+    flex:0 0 82px !important;
+    width:82px !important;
+    height:82px !important;
+    min-width:82px !important;
+    min-height:82px !important;
     overflow:hidden !important;
-    border:1px solid #c7a45c !important;
-    border-radius:22px !important;
+    border:1px solid #f4d585 !important;
+    border-radius:21px !important;
     background:linear-gradient(145deg,#21354b,#0c1627) !important;
     box-shadow:0 6px 15px #0005 !important;
+  }
+  #games #checkersEntry .checkers-entry-appicon::before {
+    content:"" !important;
+    position:absolute !important;
+    inset:5px !important;
+    border:1px solid rgba(244,213,133,.58) !important;
+    border-radius:15px !important;
+    pointer-events:none !important;
+    z-index:4 !important;
   }
   #games #checkersEntry .checkers-board-mini {
     position:absolute !important;
@@ -13107,6 +13116,7 @@ $("refreshDurakRooms").onclick = async () => {
       min-height:74px !important;
       border-radius:19px !important;
     }
+    #games #checkersEntry .checkers-entry-appicon::before { inset:4px !important; border-radius:14px !important; }
     #games #checkersEntry .checkers-board-mini {
       left:14px !important; top:13px !important;
       grid-template-columns:repeat(4,8px) !important;
