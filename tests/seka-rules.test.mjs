@@ -97,4 +97,7 @@ test("the main Games tab links to a separate Seka page with all five stake range
   assert.match(page, /без верхнего лимита/);
   assert.match(page, /\/rooms\/create/);
   assert.match(page, /\/rooms\/action/);
+  const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]);
+  assert.ok(scripts.length > 0, "страница должна иметь рабочий игровой скрипт");
+  for (const script of scripts) assert.doesNotThrow(() => new Function(script), "игровой JavaScript должен разбираться без синтаксических ошибок");
 });
