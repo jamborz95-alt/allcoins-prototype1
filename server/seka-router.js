@@ -382,8 +382,9 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       client = await pool.connect();
       await client.query("BEGIN");
       transactionOpen = true;
-      const balance = await ensurePlayer(client, user);
-      if (balance < ante) throw new SekaHttpError(400, "На балансе недостаточно AC для начальной ставки этой комнаты.");
+      // Room creation itself does not deduct AC. Real-money-free bot practice can use any tier;
+      // normal multiplayer games still validate everyone's balance when the round starts.
+      await ensurePlayer(client, user);
       const inserted = await client.query(
         `INSERT INTO seka_rooms (name, owner_telegram_id, limit_tier, min_bet, max_bet, ante, max_players, status)
          VALUES ($1, $2, $3, $4, $5, $6, 6, 'waiting')
