@@ -125,6 +125,20 @@ test("Durak card landing keeps card proportions and handles unavailable card PNG
     "card artwork should not keep a copied hand transform after landing on the table");
 });
 
+test("incoming Durak cards land without a transform-scale rebound", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const start = html.indexOf('async function animateIncomingDurakTableCard(targetCard, playerSeat, delayMs = 0, cardType = "attack") {');
+  const end = html.indexOf("\n\n// Сохраняем прежнюю точку входа и темп атаки", start);
+  assert.ok(start >= 0 && end > start, "incoming card animation should exist");
+  const animation = html.slice(start, end);
+  assert.match(animation, /Math\.sin\(Math\.PI \* offset\)/,
+    "the card should follow one smooth arc that ends exactly at the table point");
+  assert.match(animation, /flightAnimation\.cancel\(\)/);
+  assert.match(animation, /left: \(finalRect\.left/);
+  assert.doesNotMatch(animation, /scale\(|rotate\(/,
+    "landing must not use a transform scale/rotation that can snap after the flight");
+});
+
 test("the player with the lowest trump starts the game", () => {
   const hands = [
     [{ id: "king-trump", rank: "К", suit: "♥" }],
