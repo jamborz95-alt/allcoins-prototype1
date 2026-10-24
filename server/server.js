@@ -8,6 +8,7 @@ import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "
 import { createSekaRouter } from "./seka-router.js";
 import { createRpsRouter } from "./rps-router.js";
 import { createUnoRouter } from "./uno-router.js";
+import { createBilliardsRouter } from "./billiards-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -215,6 +216,9 @@ app.use("/api/rps", rpsRouter);
 
 const unoRouter = createUnoRouter({ pool, verifyTelegram });
 app.use("/api/uno", unoRouter);
+
+const billiardsRouter = createBilliardsRouter({ pool, verifyTelegram });
+app.use("/api/billiards", billiardsRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3321,6 +3325,8 @@ async function startServer() {
     console.log("Seka Online tables are ready");
     await unoRouter.initialize();
     console.log("UNO Online tables are ready");
+    await billiardsRouter.initialize();
+    console.log("Billiards Online tables are ready");
   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_rooms (
