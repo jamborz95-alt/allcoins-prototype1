@@ -114,14 +114,61 @@ const path = require("node:path");
     await page.locator('.nav [data-page="games"]').click();
     await page.waitForTimeout(150);
 
-    // Regression check for the four game logos and removal of the old card-preview section.
+    // Regression checks for the clicker brand, task flow, six game tiles and card-preview removal.
+    const clickerBrandDiagnostics = await page.evaluate(() => {
+      const brand = document.getElementById("allcoinsBrand");
+      const rect = brand?.getBoundingClientRect();
+      return {
+        visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+        title: brand?.querySelector(".brand-type strong")?.textContent?.trim() || null,
+        tagline: brand?.querySelector(".brand-type small")?.textContent?.trim() || null,
+        svgMark: Boolean(brand?.querySelector(".brand-mark svg")),
+        width: rect?.width ?? null
+      };
+    });
+    fs.writeFileSync(path.join(out, "clicker-brand-report.json"), JSON.stringify(clickerBrandDiagnostics, null, 2));
+    assert.equal(clickerBrandDiagnostics.visible, true, "Логотип ALLCOINS должен быть виден на главном экране");
+    assert.equal(clickerBrandDiagnostics.title, "ALLCOINS", "В логотипе должно быть название ALLCOINS");
+    assert.ok(clickerBrandDiagnostics.svgMark, "В логотипе должен быть фирменный SVG-знак");
+    assert.ok(clickerBrandDiagnostics.tagline.includes("CLICKER"), "Подпись логотипа должна обозначать кликер");
+
+    await page.locator('.nav [data-page="tasks"]').click();
+    await page.waitForTimeout(100);
+    const taskDiagnostics = await page.evaluate(() => ({
+      visible: Boolean(document.getElementById("tasks") && !document.getElementById("tasks").classList.contains("hidden")),
+      taskCount: document.querySelectorAll("#clickerTasksList .task-item").length,
+      navActive: document.querySelector('.nav [data-page="tasks"]')?.classList.contains("active") || false,
+      navLabel: document.querySelector('.nav [data-page="tasks"]')?.textContent?.trim() || "",
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth
+    }));
+    fs.writeFileSync(path.join(out, "clicker-tasks-report.json"), JSON.stringify(taskDiagnostics, null, 2));
+    assert.equal(taskDiagnostics.visible, true, "Кнопка «Задание» должна открывать страницу заданий");
+    assert.equal(taskDiagnostics.taskCount, 4, "На странице должны быть четыре тестовых задания");
+    assert.equal(taskDiagnostics.navActive, true, "Кнопка «Задание» должна отмечаться активной");
+    assert.match(taskDiagnostics.navLabel, /Задание/, "На нижней панели должна быть кнопка «Задание»");
+    assert.equal(taskDiagnostics.documentWidth, taskDiagnostics.viewportWidth, "Страница заданий не должна создавать горизонтальную прокрутку");
+
+    await page.evaluate(() => { for (let i = 0; i < 10; i++) recordClickerTap(); });
+    await page.waitForTimeout(50);
+    const tapTaskButton = page.locator('#clickerTasksList [data-claim-task="tap10"]');
+    assert.equal(await tapTaskButton.isEnabled(), true, "Задание за 10 нажатий должно стать доступным");
+    await tapTaskButton.click();
+    await page.waitForTimeout(50);
+    assert.match(await page.locator("#clickerTaskStatus").textContent(), /\+250 AC/, "Получение награды за задание должно показывать подтверждение");
+    assert.equal(await page.locator("#clickerTaskSummary").textContent(), "1 / 4", "Счётчик должен обновиться после получения награды");
+    await page.screenshot({ path: path.join(out, "00-clicker-tasks-mobile.png"), fullPage: true });
+
+    await page.locator('.nav [data-page="games"]').click();
+    await page.waitForTimeout(150);
     const gamesIconDiagnostics = await page.evaluate(() => {
       const definitions = [
         { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
         { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
         { id: "sekaEntry", selector: ".seka-entry-appicon", title: "Сека Онлайн" },
-        { id: "rpsEntry", selector: ".rps-entry-appicon", title: "Камень Ножницы Бумага" }
+        { id: "rpsEntry", selector: ".rps-entry-appicon", title: "Камень Ножницы Бумага" },
+        { id: "checkersEntry", selector: ".checkers-entry-appicon", title: "Шашки Онлайн" }
       ];
       const icons = definitions.map(def => {
         const tile = document.getElementById(def.id);
@@ -176,8 +223,8 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
-    assert.equal(gamesIconDiagnostics.tiles, 5, "В разделе должны отображаться пять игровых плиток");
-    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага"]);
+    assert.equal(gamesIconDiagnostics.tiles, 6, "В разделе должны отображаться шесть игровых плиток");
+    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
     assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
     assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
       "На значке Дурак Онлайн остался старый золотой градиент");
@@ -218,7 +265,7 @@ const path = require("node:path");
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       icons: [...document.querySelectorAll("#games .game-app-tile")].map(tile => {
-        const icon = tile.querySelector(".durak-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon");
+        const icon = tile.querySelector(".durak-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
         const r = icon?.getBoundingClientRect();
         return { id: tile.id, width: r?.width ?? null, height: r?.height ?? null };
       })
