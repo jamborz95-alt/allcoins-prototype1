@@ -3,9 +3,9 @@ const MAX_BIGINT = 9223372036854775807n;
 
 export function configuredAdminTelegramId() {
   const value = String(process.env.ADMIN_TELEGRAM_ID || "").trim();
-  return /^\d{1,20}$/.test(value) && BigInt(value) > 0n && BigInt(value) <= MAX_BIGINT
-    ? value
-    : null;
+  if (!/^\d{1,20}$/.test(value)) return null;
+  const numeric = BigInt(value);
+  return numeric > 0n && numeric <= MAX_BIGINT ? numeric.toString() : null;
 }
 
 export function calculateGameCommission(grossAmount) {
