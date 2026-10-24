@@ -9492,6 +9492,7 @@ function renderTwentyOneTable(revealDealer = true) {
     hideSecondDealerCard: dealerWasHidden,
     revealSecondDealerCard: revealDealer && twentyOneRevealDealerCard
   });
+  if (revealDealer && twentyOneRevealDealerCard) twentyOneRevealDealerCard = false;
   renderTwentyOneCardRow("twentyOnePlayerCards", twentyOnePlayerHand);
   const dealerScore = twentyOneHandScore(twentyOneDealerHand);
   const playerScore = twentyOneHandScore(twentyOnePlayerHand);
@@ -11284,7 +11285,7 @@ if (gamesSection) {
     40% { transform:translateY(-50%) rotate(-3deg) scale(1.035); }
     100% { transform:translateY(-50%) rotate(0deg) scale(1); }
   }
-  #twentyOneGame .twentyone-card-flight {
+  .twentyone-card-flight {
     position:fixed !important;
     display:block !important;
     flex:none !important;
