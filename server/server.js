@@ -4,6 +4,7 @@ import pg from "pg";
 import crypto from "node:crypto";
 import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHands, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex, expireDurakTurnIfNeeded } from "./durak-rules.js";
 import { createLottoRouter } from "./lotto.js";
+import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "./twentyone-rules.js";
 
 const { Pool } = pg;
 const app = express();
@@ -426,26 +427,26 @@ const speed = req.body.speed === "fast" ? "fast" : "normal";
     }
 const privacy = req.body.privacy === "private" ? "private" : "public";
 const mode = req.body.mode === "transfer" ? "transfer" : "throw-in";
-    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 5) {
+    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
       return res.status(400).json({
         ok: false,
-        error: "Количество мест в комнате должно быть от 2 до 5"
+        error: "Количество игроков должно быть от 2 до 6"
       });
     }
-    const maxPlayersForDeck = deck === 24 ? 3 : 5;
+    const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
     if (maxPlayers > maxPlayersForDeck) {
       return res.status(400).json({
         ok: false,
         error: deck === 24
           ? "С колодой на 24 карты можно играть максимум втроём"
-          : "В комнате может быть максимум 5 игроков"
+          : "С колодой на 36 карт можно играть максимум впятером"
       });
     }
 
-    if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
+    if (!Number.isSafeInteger(stake) || stake < 1) {
       return res.status(400).json({
         ok: false,
-        error: "Ставка должна быть целым числом от 100 до 1 000 000 AC"
+        error: "Ставка должна быть целым числом больше нуля"
       });
     }
 
@@ -692,8 +693,7 @@ app.post("/api/durak/rooms/join", async (req, res) => {
       [roomId]
     );
 
-    const effectiveRoomCapacity = Math.min(5, Number(room.max_players) || 2);
-    if (countResult.rows[0].total >= effectiveRoomCapacity) {
+    if (countResult.rows[0].total >= room.max_players) {
       return res.status(400).json({
         ok: false,
         error: "Комната заполнена"
@@ -1137,13 +1137,15 @@ app.post("/api/durak/rooms/start", async (req, res) => {
         error: "В комнате выбрана неподдерживаемая колода. Создай новую комнату."
       });
     }
-    const maxPlayersForDeck = selectedDeck === 24 ? 3 : 5;
+    const maxPlayersForDeck = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
     if (total > maxPlayersForDeck) {
       return res.status(400).json({
         ok: false,
         error: selectedDeck === 24
           ? "В колоде на 24 карты максимум 3 игрока"
-          : "В комнате может быть максимум 5 игроков."
+          : selectedDeck === 36
+            ? "Для игры шестью игроками выбери колоду на 52 карты."
+            : "Слишком много игроков для выбранной колоды."
       });
     }
     // Проверяем готовность всех игроков, кроме создателя
@@ -2455,6 +2457,530 @@ if (action === "beat") {
 });
 
 
+
+// ===== 21 ОЧКО: ОНЛАЙН-КОМНАТЫ И СОВМЕСТНЫЕ РАУНДЫ =====
+
+function validTwentyOneRoomId(roomId) {
+  return Boolean(roomId && /^\d+$/.test(String(roomId)));
+}
+
+function mapTwentyOneRoom(row, userId) {
+  return {
+    id: String(row.id),
+    name: String(row.name || "Комната 21 Очко"),
+    maxPlayers: Number(row.max_players),
+    stake: Number(row.stake),
+    status: String(row.status),
+    isOwner: String(row.owner_telegram_id) === String(userId),
+    playersCount: Number(row.players_count ?? 0)
+  };
+}
+
+async function ensureTwentyOnePlayer(client, user) {
+  const profile = await client.query(
+    `INSERT INTO players (telegram_id)
+     VALUES ($1)
+     ON CONFLICT (telegram_id) DO UPDATE SET updated_at = NOW()
+     RETURNING balance`,
+    [String(user.id)]
+  );
+  return Number(profile.rows[0]?.balance ?? 0);
+}
+
+async function creditTwentyOneWinners(client, gameState) {
+  if (!gameState || gameState.status !== "finished" || gameState.settlementApplied) return;
+  for (const player of gameState.players || []) {
+    const payout = Math.max(0, Math.floor(Number(player.payout) || 0));
+    if (player.status !== "won" || payout <= 0) continue;
+    const credited = await client.query(
+      `UPDATE players SET balance = balance + $1, updated_at = NOW()
+       WHERE telegram_id = $2 RETURNING balance`,
+      [payout, String(player.telegramId)]
+    );
+    if (!credited.rows.length) throw new Error("Не найден баланс победителя 21 Очко");
+  }
+  gameState.settlementApplied = true;
+}
+
+async function cleanupExpiredTwentyOneRooms() {
+  await pool.query(`
+    DELETE FROM twentyone_rooms r
+    WHERE r.status = 'waiting'
+      AND r.created_at < NOW() - INTERVAL '12 minutes'
+  `);
+}
+
+app.post("/api/twentyone/rooms/create", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+
+    const name = String(req.body?.name || "").trim().slice(0, 30) || "Комната 21 Очко";
+    const maxPlayers = Number(req.body?.maxPlayers);
+    const stake = Number(req.body?.stake);
+    if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 5) {
+      return res.status(400).json({ ok: false, error: "В комнате 21 Очко можно выбрать от 1 до 5 игроков" });
+    }
+    if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
+      return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом от 100 до 1 000 000 AC" });
+    }
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const balance = await ensureTwentyOnePlayer(client, user);
+    if (balance < stake) {
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Недостаточно AC для выбранной ставки" });
+    }
+
+    const roomResult = await client.query(
+      `INSERT INTO twentyone_rooms (name, owner_telegram_id, max_players, stake, status)
+       VALUES ($1, $2, $3, $4, 'waiting')
+       RETURNING id, name, owner_telegram_id, max_players, stake, status`,
+      [name, String(user.id), maxPlayers, stake]
+    );
+    const room = roomResult.rows[0];
+    await client.query(
+      `INSERT INTO twentyone_room_players (room_id, telegram_id, display_name)
+       VALUES ($1, $2, $3)`,
+      [room.id, String(user.id), user.first_name || user.username || "Игрок"]
+    );
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.json({ ok: true, room: mapTwentyOneRoom({ ...room, players_count: 1 }, user.id) });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Create 21 Ochko room error:", error.message || error);
+    if (!res.headersSent) return res.status(500).json({ ok: false, error: "Не удалось создать комнату 21 Очко" });
+  } finally {
+    client?.release();
+  }
+});
+
+app.post("/api/twentyone/rooms/list", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    await cleanupExpiredTwentyOneRooms();
+    const result = await pool.query(
+      `SELECT r.id, r.name, r.owner_telegram_id, r.max_players, r.stake, r.status,
+              COUNT(p.telegram_id)::INTEGER AS players_count
+       FROM twentyone_rooms r
+       LEFT JOIN twentyone_room_players p ON p.room_id = r.id
+       WHERE r.status = 'waiting'
+       GROUP BY r.id
+       HAVING COUNT(p.telegram_id) < r.max_players
+       ORDER BY r.stake ASC, r.created_at DESC
+       LIMIT 100`,
+      []
+    );
+    return res.json({ ok: true, rooms: result.rows.map(row => mapTwentyOneRoom(row, user.id)) });
+  } catch (error) {
+    console.error("List 21 Ochko rooms error:", error.message || error);
+    return res.status(500).json({ ok: false, error: "Не удалось загрузить комнаты 21 Очко" });
+  }
+});
+
+app.post("/api/twentyone/rooms/join", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, name, owner_telegram_id, max_players, stake, status
+       FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    const room = roomResult.rows[0];
+    if (room.status !== "waiting") {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Раунд уже начался. Выбери другую комнату." });
+    }
+
+    const member = await client.query(
+      `SELECT 1 FROM twentyone_room_players WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, String(user.id)]
+    );
+    if (!member.rows.length) {
+      const countResult = await client.query(
+        `SELECT COUNT(*)::INTEGER AS total FROM twentyone_room_players WHERE room_id = $1`,
+        [roomId]
+      );
+      if (Number(countResult.rows[0].total) >= Number(room.max_players)) {
+        await client.query("ROLLBACK"); transactionOpen = false;
+        return res.status(400).json({ ok: false, error: "Комната заполнена" });
+      }
+      const balance = await ensureTwentyOnePlayer(client, user);
+      if (balance < Number(room.stake)) {
+        await client.query("ROLLBACK"); transactionOpen = false;
+        return res.status(400).json({ ok: false, error: "Недостаточно AC для входа в эту комнату" });
+      }
+      await client.query(
+        `INSERT INTO twentyone_room_players (room_id, telegram_id, display_name)
+         VALUES ($1, $2, $3)`,
+        [roomId, String(user.id), user.first_name || user.username || "Игрок"]
+      );
+    }
+    const countResult = await client.query(
+      `SELECT COUNT(*)::INTEGER AS total FROM twentyone_room_players WHERE room_id = $1`,
+      [roomId]
+    );
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.json({ ok: true, room: mapTwentyOneRoom({ ...room, players_count: countResult.rows[0].total }, user.id) });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Join 21 Ochko room error:", error.message || error);
+    if (!res.headersSent) return res.status(500).json({ ok: false, error: "Не удалось войти в комнату 21 Очко" });
+  } finally {
+    client?.release();
+  }
+});
+
+app.post("/api/twentyone/rooms/state", async (req, res) => {
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+
+    const roomResult = await pool.query(
+      `SELECT r.id, r.name, r.owner_telegram_id, r.max_players, r.stake, r.status,
+              COUNT(rp.telegram_id)::INTEGER AS players_count
+       FROM twentyone_rooms r
+       LEFT JOIN twentyone_room_players rp ON rp.room_id = r.id
+       WHERE r.id = $1
+       GROUP BY r.id`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    const roomRow = roomResult.rows[0];
+    const membership = await pool.query(
+      `SELECT 1 FROM twentyone_room_players WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, String(user.id)]
+    );
+    if (!membership.rows.length) return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате" });
+
+    const playerRows = await pool.query(
+      `SELECT p.telegram_id, p.display_name, (p.telegram_id = r.owner_telegram_id) AS is_owner
+       FROM twentyone_room_players p
+       JOIN twentyone_rooms r ON r.id = p.room_id
+       WHERE p.room_id = $1
+       ORDER BY p.joined_at ASC`,
+      [roomId]
+    );
+    const players = playerRows.rows.map((player, index) => ({
+      label: String(player.display_name || "").trim() || (index === 0 ? "Создатель" : "Игрок " + (index + 1)),
+      isOwner: Boolean(player.is_owner),
+      isMe: String(player.telegram_id) === String(user.id)
+    }));
+
+    let game = null;
+    if (roomRow.status === "playing" || roomRow.status === "finished") {
+      const gameResult = await pool.query(
+        `SELECT game_state FROM twentyone_games WHERE room_id = $1`,
+        [roomId]
+      );
+      if (gameResult.rows.length) {
+        const raw = gameResult.rows[0].game_state;
+        const revealAll = raw.status === "finished";
+        const publicPlayers = (raw.players || []).map(player => {
+          const isMe = String(player.telegramId) === String(user.id);
+          const revealHand = revealAll || isMe;
+          return {
+            label: String(player.label || "Игрок"),
+            isMe,
+            isOwner: String(player.telegramId) === String(roomRow.owner_telegram_id),
+            status: player.status,
+            hand: revealHand ? player.hand : [],
+            cardsCount: Array.isArray(player.hand) ? player.hand.length : 0,
+            score: revealHand ? scoreTwentyOneHand(player.hand || []) : null,
+            payout: revealAll ? Number(player.payout || 0) : 0
+          };
+        });
+        const dealerHand = revealAll
+          ? raw.dealerHand
+          : [
+              ...(Array.isArray(raw.dealerHand) && raw.dealerHand.length ? [raw.dealerHand[0]] : []),
+              { id: "21-dealer-hidden-card", rank: "", suit: "" }
+            ].slice(0, 2);
+        const currentPlayer = (raw.players || []).find(p => String(p.telegramId) === String(raw.currentPlayerTelegramId));
+        game = {
+          status: raw.status,
+          stake: Number(raw.stake || roomRow.stake),
+          deckCount: Array.isArray(raw.deck) ? raw.deck.length : 0,
+          dealerHand,
+          dealerScore: revealAll ? scoreTwentyOneHand(raw.dealerHand || []) : null,
+          players: publicPlayers,
+          currentPlayerLabel: currentPlayer?.label || "",
+          currentPlayerIsMe: String(raw.currentPlayerTelegramId) === String(user.id),
+          message: String(raw.message || ""),
+          settlementApplied: Boolean(raw.settlementApplied)
+        };
+      }
+    }
+    const balanceResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+    return res.json({
+      ok: true,
+      room: mapTwentyOneRoom(roomRow, user.id),
+      players,
+      game,
+      balance: Number(balanceResult.rows[0]?.balance ?? 0)
+    });
+  } catch (error) {
+    console.error("Get 21 Ochko room state error:", error.message || error);
+    return res.status(500).json({ ok: false, error: "Не удалось обновить комнату 21 Очко" });
+  }
+});
+
+app.post("/api/twentyone/rooms/start", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, owner_telegram_id, max_players, stake, status
+       FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    const room = roomResult.rows[0];
+    if (String(room.owner_telegram_id) !== String(user.id)) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(403).json({ ok: false, error: "Начать раунд может только создатель комнаты" });
+    }
+    if (room.status !== "waiting") {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Раунд уже начался" });
+    }
+
+    const playersResult = await client.query(
+      `SELECT rp.telegram_id, rp.display_name, pl.balance
+       FROM twentyone_room_players rp
+       JOIN players pl ON pl.telegram_id = rp.telegram_id
+       WHERE rp.room_id = $1
+       ORDER BY rp.joined_at ASC
+       FOR UPDATE OF rp, pl`,
+      [roomId]
+    );
+    const members = playersResult.rows;
+    if (members.length < 1) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Сначала войди в комнату" });
+    }
+    if (members.length > Number(room.max_players) || members.length > 5) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "В комнате может быть максимум 5 игроков" });
+    }
+    const stake = Number(room.stake);
+    const poorPlayer = members.find(player => Number(player.balance) < stake);
+    if (poorPlayer) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({
+        ok: false,
+        error: "У одного из игроков недостаточно AC для ставки " + stake.toLocaleString("ru-RU")
+      });
+    }
+
+    for (const player of members) {
+      const debit = await client.query(
+        `UPDATE players SET balance = balance - $1, updated_at = NOW()
+         WHERE telegram_id = $2 AND balance >= $1 RETURNING balance`,
+        [stake, String(player.telegram_id)]
+      );
+      if (!debit.rows.length) throw new Error("Не удалось списать ставку у всех игроков");
+    }
+    let gameState = createTwentyOneRound(
+      members.map(player => ({
+        telegramId: String(player.telegram_id),
+        label: String(player.display_name || "Игрок")
+      })),
+      stake
+    );
+    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+    await client.query(
+      `INSERT INTO twentyone_games (room_id, game_state, updated_at)
+       VALUES ($1, $2::jsonb, NOW())
+       ON CONFLICT (room_id) DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()`,
+      [roomId, JSON.stringify(gameState)]
+    );
+    await client.query(
+      `UPDATE twentyone_rooms SET status = $2 WHERE id = $1`,
+      [roomId, gameState.status === "finished" ? "finished" : "playing"]
+    );
+    await client.query("COMMIT");
+    transactionOpen = false;
+    const balanceResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+    return res.json({ ok: true, status: gameState.status, balance: Number(balanceResult.rows[0]?.balance ?? 0) });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Start 21 Ochko room error:", error.message || error);
+    if (!res.headersSent) return res.status(500).json({ ok: false, error: error.message || "Не удалось начать раунд 21 Очко" });
+  } finally {
+    client?.release();
+  }
+});
+
+app.post("/api/twentyone/rooms/action", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    const action = String(req.body?.action || "");
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+    if (!["hit", "stand"].includes(action)) return res.status(400).json({ ok: false, error: "Недопустимое действие" });
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, status FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    if (roomResult.rows[0].status !== "playing") {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Раунд уже завершён" });
+    }
+    const membership = await client.query(
+      `SELECT 1 FROM twentyone_room_players WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, String(user.id)]
+    );
+    if (!membership.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате" });
+    }
+    const gameResult = await client.query(
+      `SELECT game_state FROM twentyone_games WHERE room_id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!gameResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Партия не найдена" });
+    }
+    const gameState = gameResult.rows[0].game_state;
+    applyTwentyOneAction(gameState, String(user.id), action);
+    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+    await client.query(
+      `UPDATE twentyone_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1`,
+      [roomId, JSON.stringify(gameState)]
+    );
+    if (gameState.status === "finished") {
+      await client.query(`UPDATE twentyone_rooms SET status = 'finished' WHERE id = $1`, [roomId]);
+    }
+    await client.query("COMMIT");
+    transactionOpen = false;
+    const balanceResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+    return res.json({ ok: true, status: gameState.status, message: gameState.message, balance: Number(balanceResult.rows[0]?.balance ?? 0) });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("21 Ochko action error:", error.message || error);
+    if (!res.headersSent) {
+      const message = String(error.message || "Не удалось выполнить ход");
+      const status = /Сейчас ход|Сейчас не твой ход|Раунд уже завершён|Недопустимое действие/.test(message) ? 409 : 500;
+      return res.status(status).json({ ok: false, error: message });
+    }
+  } finally {
+    client?.release();
+  }
+});
+
+app.post("/api/twentyone/rooms/leave", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, owner_telegram_id, status FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    const room = roomResult.rows[0];
+    if (room.status === "playing") {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Нельзя выйти из активного раунда. Дождись его завершения." });
+    }
+    const member = await client.query(
+      `SELECT 1 FROM twentyone_room_players WHERE room_id = $1 AND telegram_id = $2 FOR UPDATE`,
+      [roomId, String(user.id)]
+    );
+    if (!member.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате" });
+    }
+
+    const isOwner = String(room.owner_telegram_id) === String(user.id);
+    if (isOwner) {
+      await client.query(`DELETE FROM twentyone_rooms WHERE id = $1`, [roomId]);
+    } else {
+      await client.query(
+        `DELETE FROM twentyone_room_players WHERE room_id = $1 AND telegram_id = $2`,
+        [roomId, String(user.id)]
+      );
+    }
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.json({ ok: true, ownerLeft: isOwner });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Leave 21 Ochko room error:", error.message || error);
+    if (!res.headersSent) return res.status(500).json({ ok: false, error: "Не удалось выйти из комнаты 21 Очко" });
+  } finally {
+    client?.release();
+  }
+});
+
+
 async function startServer() {
   try {
     await pool.query(`
@@ -2538,6 +3064,37 @@ async function startServer() {
       ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'throw-in'
     `);
     console.log("Durak games table is ready");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS twentyone_rooms (
+        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        name TEXT NOT NULL,
+        owner_telegram_id BIGINT NOT NULL,
+        max_players INTEGER NOT NULL CHECK (max_players BETWEEN 1 AND 5),
+        stake BIGINT NOT NULL CHECK (stake BETWEEN 100 AND 1000000),
+        status TEXT NOT NULL DEFAULT 'waiting'
+          CHECK (status IN ('waiting', 'playing', 'finished')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS twentyone_room_players (
+        room_id BIGINT NOT NULL REFERENCES twentyone_rooms(id) ON DELETE CASCADE,
+        telegram_id BIGINT NOT NULL,
+        display_name TEXT,
+        joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (room_id, telegram_id)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS twentyone_games (
+        room_id BIGINT PRIMARY KEY REFERENCES twentyone_rooms(id) ON DELETE CASCADE,
+        game_state JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log("21 Ochko room tables are ready");
+
 
     const durakRoomCleanupTimer = setInterval(() => {
       cleanupExpiredEmptyDurakRooms().catch((error) => {
