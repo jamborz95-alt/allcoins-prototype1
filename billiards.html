@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Бильярд Онлайн — ALLCOINS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{color-scheme:dark;--gold:#efd28b;--gold2:#a87b31;--mint:#67f5b5;--bg:#080f19;--panel:#111d2e;--line:#2c3e55;--muted:#a9b8cd}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(ellipse at 50% -8%,#253b50 0,#111b2b 42%,#070c14 100%);color:#f7f9fc}
+    body{padding:max(8px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom))}
+    button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:not-allowed}
+    .app{max-width:1000px;margin:0 auto}.topbar{display:flex;align-items:center;gap:10px;margin:4px 0 16px}
+    .back{flex:0 0 43px;width:43px;height:43px;border:1px solid #43566d;border-radius:13px;background:#17263a;color:#eef4fc;font-size:23px;font-weight:900}
+    .brand{width:47px;height:47px;flex:0 0 47px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#f7dd98,#a8792e);box-shadow:0 8px 22px #0005;font-size:28px}
+    h1{font-size:clamp(20px,5vw,28px);margin:0 0 4px;font-weight:950}.sub{font-size:12px;color:var(--muted);line-height:1.4}
+    .brandTag{border:1px solid #66532f;background:#211f1a;color:var(--gold);border-radius:11px;padding:8px 9px;text-align:center;font-size:10px;font-weight:900;white-space:nowrap}
+    .brandTag b{display:block;font-size:14px;margin-bottom:2px}
+    .status{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#101b2a;color:#d4e1ef;font-size:12px;line-height:1.5;margin-bottom:13px}
+    .dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--mint);box-shadow:0 0 9px #67f5b588}
+    .grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:13px;align-items:start}
+    .panel{border:1px solid #2c3b52;border-radius:18px;background:linear-gradient(145deg,#172438f5,#0d1725f7);box-shadow:0 12px 32px #0002;padding:15px;margin-bottom:13px}
+    .panelhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.panelhead h2{margin:0;font-size:17px}
+    .muted{color:var(--muted)}.tiny{font-size:11px;line-height:1.5}
+    label{display:block;margin:11px 0 6px;color:#c0ccdc;font-size:12px}
+    input{width:100%;min-height:45px;border:1px solid #394e68;border-radius:11px;background:#091421;color:#fff;padding:10px 12px;outline:none}
+    input:focus{border-color:var(--gold);box-shadow:0 0 0 2px #efd28b22}
+    .primary,.secondary,.goldbtn{min-height:44px;border-radius:12px;padding:10px 13px;font-weight:900;border:1px solid transparent}
+    .primary{background:linear-gradient(135deg,#83ffd0,#42d99b);color:#09271d;box-shadow:0 5px 18px #32db9b24}
+    .goldbtn{background:linear-gradient(135deg,#f5dc96,#b58a40);border-color:#f3d994;color:#251b0c}
+    .secondary{background:#1c2c42;color:#f4f7fb;border-color:#40546f}.danger{background:#311b25;color:#ffd9df;border-color:#704050}.full{width:100%}
+    .stakes{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}.stakePreset{background:#112033;color:#dce7f4;border:1px solid #3a5067;border-radius:9px;min-height:34px;padding:6px 10px;font-size:11px;font-weight:900}
+    .stakePreset.active{background:#e9ca80;color:#241b0d;border-color:#f2d996}
+    .hint{font-size:11px;color:#aabbd0;line-height:1.5;margin-top:6px}
+    .rooms{display:grid;gap:9px}.room{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid #33465c;border-radius:13px;background:linear-gradient(120deg,#101d2d,#0d1725)}
+    .roomname{font-weight:900;overflow-wrap:anywhere;margin-bottom:5px}.roommeta{font-size:11px;line-height:1.55;color:#adbed2}
+    .room button{padding:9px 12px;min-width:70px}.empty{padding:20px 12px;text-align:center;border:1px dashed #37485c;border-radius:13px;color:#96a9c0;font-size:12px;line-height:1.6}
+    .hidden{display:none!important}.waiting{max-width:740px;margin:0 auto}.roomtitle{font-size:22px;font-weight:950;overflow-wrap:anywhere}.stakebadge{display:inline-flex;border:1px solid #705b34;background:#211f19;border-radius:10px;padding:8px 10px;color:var(--gold);font-size:13px;font-weight:900}
+    .seatGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}.seat{padding:12px;border:1px solid #364a61;border-radius:13px;background:#0c1928;min-height:64px}
+    .seat b{display:block;font-size:13px;margin-bottom:5px}.seat small{color:#a6b8cd;font-size:11px}.waitActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+    #gameView{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain;padding:max(8px,env(safe-area-inset-top)) 9px max(9px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 40%,#1d403c 0,#102723 58%,#07151a 100%)}
+    .gameTop{display:flex;align-items:center;gap:8px;min-height:41px}.gameTop .back{width:39px;flex-basis:39px;height:39px}
+    .gameTitle{min-width:0;flex:1}.gameTitle strong{display:block;font-size:15px}.gameTitle span{font-size:10px;color:#b0cfc4}
+    .bank{border:1px solid #c9a85a;background:#102a25;border-radius:10px;padding:7px 9px;text-align:right;color:#f7d98c;white-space:nowrap;font-size:11px;font-weight:900}.bank small{display:block;color:#b2cabe;font-size:9px;margin-bottom:2px}
+    .opponentRow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:7px 0;min-height:55px}
+    .playerChip{min-width:116px;max-width:48%;padding:7px 11px;border:1px solid #5d8677;background:#082b27;border-radius:11px;text-align:center}
+    .playerChip.active{border-color:#ffe38a;box-shadow:0 0 0 1px #ffe38a77,0 0 15px #ffe38a22}.playerChip b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.playerChip small{display:block;font-size:10px;color:#c1d8ce;margin-top:4px}
+    .tableWrap{width:100%;max-width:940px;margin:0 auto;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+    #poolCanvas{display:block;width:100%;height:auto;aspect-ratio:800/440;max-height:calc(100dvh - 260px);border-radius:15px;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 10px 30px #0007}
+    .aimPanel{width:100%;max-width:940px;margin:8px auto 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .aimText{min-width:0;font-size:11px;line-height:1.45;color:#d9e9e1}.power{flex:0 0 125px;height:8px;border:1px solid #9bbaaa;border-radius:8px;overflow:hidden;background:#06211a}.powerFill{height:100%;width:0;background:linear-gradient(90deg,#65edb2,#f6d87f);transition:width .05s linear}
+    .gameMsg{width:100%;max-width:940px;margin:7px auto 0;min-height:28px;padding:7px 10px;border:1px solid #67937d70;border-radius:10px;background:#06251f66;color:#e1f1e8;font-size:11px;line-height:1.45;text-align:center}
+    .gameActions{width:100%;max-width:940px;margin:8px auto 0;display:flex;justify-content:center;gap:8px}.gameActions button{min-height:37px;padding:8px 14px;font-size:12px}
+    .ruleNote{text-align:center;font-size:9px;color:#a6c6b9;margin:5px auto 0;max-width:940px;line-height:1.4}
+    .endResult{max-width:550px;width:100%;margin:8px auto;padding:14px;border:1px solid #f2d48c;border-radius:17px;background:#092f27ee;text-align:center;box-shadow:0 12px 32px #0005}.endResult h2{color:#ffdf8e;font-size:22px;margin:0 0 7px}.endResult p{font-size:12px;color:#d3e6d9;line-height:1.5;margin:0 0 13px}
+    @media(max-width:680px){body{padding-left:9px;padding-right:9px}.topbar{gap:8px}.brandTag{padding:7px 8px}.grid{grid-template-columns:1fr;gap:0}.panel{padding:13px}.panelhead h2{font-size:16px}.room button{min-width:66px}.seatGrid{gap:7px}.seat{padding:10px}.playerChip{min-width:98px}.aimPanel{gap:7px}.power{flex-basis:95px}.gameActions button{flex:1;padding:8px 9px}}
+    @media(max-height:650px){#gameView{padding-top:max(4px,env(safe-area-inset-top));padding-bottom:max(4px,env(safe-area-inset-bottom))}.gameTop{min-height:34px}.gameTop .back{height:33px}.opponentRow{min-height:42px;padding:4px 0}.playerChip{padding:5px 8px}.tableWrap{flex:1;min-height:0}#poolCanvas{max-height:calc(100dvh - 190px)}.aimPanel{margin-top:4px}.gameMsg{margin-top:4px;padding:5px}.gameActions{margin-top:4px}.ruleNote{display:none}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="app" id="lobbyView">
+    <header class="topbar">
+      <button class="back" id="backAllcoins" type="button" aria-label="Назад в ALLCOINS">‹</button>
+      <div class="brand" aria-hidden="true">🎱</div>
+      <div style="min-width:0;flex:1"><h1>Бильярд Онлайн</h1><div class="sub">Американский пул · 2 игрока · комнаты на AC</div></div>
+      <div class="brandTag"><b>AC</b>от 100</div>
+    </header>
+    <div class="status" id="globalStatus" role="status"><span class="dot"></span><span>Подключаем комнаты…</span></div>
+    <section class="grid" id="lobbyGrid">
+      <div class="panel">
+        <div class="panelhead"><h2>＋ Создать комнату</h2><span class="muted tiny">2 игрока</span></div>
+        <label for="roomName">Название комнаты</label>
+        <input id="roomName" maxlength="30" value="Бильярд ALLCOINS" placeholder="Например, Комната друзей">
+        <label for="roomStake">Ставка за игрока (AC)</label>
+        <input id="roomStake" type="number" min="100" step="1" inputmode="numeric" value="100">
+        <div class="stakes">
+          <button type="button" class="stakePreset active" data-stake="100">100</button>
+          <button type="button" class="stakePreset" data-stake="500">500</button>
+          <button type="button" class="stakePreset" data-stake="1000">1 000</button>
+          <button type="button" class="stakePreset" data-stake="10000">10 000</button>
+          <button type="button" class="stakePreset" data-stake="1000000">1 000 000</button>
+        </div>
+        <div class="hint">Минимальная ставка — 100 AC. Верхнего лимита нет: доступная ставка зависит от баланса игроков. Ставка списывается только при начале партии.</div>
+        <button class="primary full" id="createRoomBtn" type="button" style="margin-top:13px">Создать комнату</button>
+      </div>
+      <div class="panel">
+        <div class="panelhead"><h2>🎱 Открытые комнаты</h2><button id="refreshRoomsBtn" class="secondary" type="button">Обновить</button></div>
+        <div id="roomsList" class="rooms"><div class="empty">Загружаем комнаты…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="waiting hidden" id="waitingView">
+    <header class="topbar">
+      <button class="back" id="waitingBackBtn" type="button" aria-label="Назад">‹</button>
+      <div class="brand">🎱</div>
+      <div style="min-width:0;flex:1"><h1>Комната бильярда</h1><div class="sub">Дождись второго игрока</div></div>
+      <div class="stakebadge" id="waitingStake">100 AC</div>
+    </header>
+    <div class="panel">
+      <div class="panelhead"><h2 id="waitingRoomName">Бильярд ALLCOINS</h2><span class="muted tiny" id="waitingCount">1 / 2 игрока</span></div>
+      <div class="seatGrid" id="seatGrid"></div>
+      <div class="hint">Оба игрока должны иметь достаточно AC для ставки. Когда оба будут в комнате, создатель сможет начать игру.</div>
+      <div class="waitActions">
+        <button class="primary" id="startGameBtn" type="button">Начать игру</button>
+        <button class="secondary" id="leaveRoomBtn" type="button">Выйти из комнаты</button>
+      </div>
+      <div class="status hidden" id="waitingStatus" style="margin-top:12px;margin-bottom:0"></div>
+    </div>
+  </section>
+
+  <section id="gameView" class="hidden" aria-label="Игра в бильярд">
+    <div class="gameTop">
+      <button class="back" id="gameBackBtn" type="button" aria-label="Назад в лобби">‹</button>
+      <div class="gameTitle"><strong>БИЛЬЯРД ONLINE</strong><span id="gameRoomLabel">Комната</span></div>
+      <div class="bank"><small>БАНК</small><span id="bankValue">200 AC</span></div>
+    </div>
+    <div class="opponentRow" id="playerRow"></div>
+    <div class="tableWrap"><canvas id="poolCanvas" width="800" height="440" aria-label="Бильярдный стол. Потяни от битка в сторону удара"></canvas></div>
+    <div class="aimPanel">
+      <div class="aimText" id="aimText">Твой ход. Коснись стола и потяни в направлении удара.</div>
+      <div class="power"><div id="powerFill" class="powerFill"></div></div>
+    </div>
+    <div class="gameMsg" id="gameMessage">Прицелься и отпусти, чтобы ударить.</div>
+    <div class="gameActions">
+      <button class="secondary" id="centerCueBtn" type="button">🎯 Установить биток</button>
+      <button class="goldbtn" id="rematchBtn" type="button">Новый раунд</button>
+    </div>
+    <div class="ruleNote">Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку. Попадание битка в лузу передаёт ход.</div>
+    <div class="endResult hidden" id="endResult">
+      <h2 id="endTitle">🏆 Победа!</h2><p id="endCopy"></p>
+      <button class="primary full" id="endLobbyBtn" type="button">Вернуться к комнатам</button>
+    </div>
+  </section>
+
+  <script>
+    (function(){
+      "use strict";
+      const API = "https://allcoins-server.onrender.com/api/billiards";
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+      if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
+      const $ = id => document.getElementById(id);
+      const W=800,H=440,R=10;
+      const POCKETS=[{x:31,y:31},{x:400,y:25},{x:769,y:31},{x:31,y:409},{x:400,y:415},{x:769,y:409}];
+      const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#e9e8df",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#e9e8df",8:"#15171d"};
+      const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
+      let pointerDown=null;
+
+      function amount(v){const n=Number(v);return Number.isFinite(n)?Math.round(n).toLocaleString("ru-RU"):"—";}
+      function setStatus(message,bad){const h=$("globalStatus");h.innerHTML='<span class="dot" style="'+(bad?"background:#ff6b79":"")+'"></span><span></span>';h.lastElementChild.textContent=message;}
+      function setWaitingStatus(message,bad){const h=$("waitingStatus");h.classList.remove("hidden");h.style.borderColor=bad?"#9e4654":"#2c3e55";h.style.color=bad?"#ffd0d7":"#d4e1ef";h.innerHTML='<span class="dot" style="'+(bad?"background:#ff6b79":"")+'"></span><span></span>';h.lastElementChild.textContent=message;}
+      function apiError(data){return new Error(data&&data.error?data.error:"Сервер не смог выполнить запрос.");}
+      async function api(path,payload){
+        if(!state.initData)throw new Error("Открой Бильярд из приложения ALLCOINS внутри Telegram.");
+        const response=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:state.initData},payload||{}))});
+        let data;try{data=await response.json();}catch(_){throw new Error("Сервер вернул некорректный ответ.");}
+        if(!response.ok||data.ok===false)throw apiError(data);return data;
+      }
+      function stopPolling(){if(state.pollTimer)clearInterval(state.pollTimer);state.pollTimer=null;}
+      function startPolling(){stopPolling();state.pollTimer=setInterval(function(){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game")refreshGame(true);},650);}
+      function showStage(stage){
+        state.stage=stage;$("lobbyView").classList.toggle("hidden",stage!=="lobby");$("waitingView").classList.toggle("hidden",stage!=="waiting");$("gameView").classList.toggle("hidden",stage!=="game");
+        if(stage==="game"){$("gameView").scrollTop=0;requestAnimationFrame(()=>drawTable());}
+        startPolling();
+      }
+      function roomRow(room){
+        const row=document.createElement("div");row.className="room";
+        const info=document.createElement("div"),name=document.createElement("div"),meta=document.createElement("div");
+        name.className="roomname";name.textContent=room.name||"Бильярд";meta.className="roommeta";
+        meta.textContent=(room.playersCount||0)+" / 2 игрока · ставка "+amount(room.stake)+" AC · создатель: "+(room.ownerName||"Игрок");
+        info.append(name,meta);const join=document.createElement("button");join.className="primary";join.type="button";join.textContent="Войти";join.addEventListener("click",()=>joinRoom(room.id));row.append(info,join);return row;
+      }
+      async function loadRooms(quiet){
+        if(state.stage!=="lobby"||state.roomBusy)return;state.roomBusy=true;
+        try{const data=await api("/rooms/list",{});const host=$("roomsList");host.innerHTML="";
+          if(!data.rooms||!data.rooms.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="Свободных комнат пока нет. Создай свою и пригласи второго игрока.";host.appendChild(empty);}
+          else data.rooms.forEach(room=>host.appendChild(roomRow(room)));
+          setStatus("Сервер бильярда подключён · комнаты обновляются автоматически.");
+        }catch(e){if(!quiet)setStatus(e.message,true);const host=$("roomsList");host.innerHTML="";const empty=document.createElement("div");empty.className="empty";empty.textContent=e.message||"Не удалось загрузить комнаты.";host.appendChild(empty);}
+        finally{state.roomBusy=false;}
+      }
+      function renderWaiting(){
+        if(!state.room)return;$("waitingRoomName").textContent=state.room.name;$("waitingStake").textContent=amount(state.room.stake)+" AC";$("waitingCount").textContent=state.players.length+" / 2 игрока";
+        const host=$("seatGrid");host.innerHTML="";
+        for(let i=0;i<2;i++){const p=state.players[i];const seat=document.createElement("div");seat.className="seat";const b=document.createElement("b"),small=document.createElement("small");b.textContent=p?(p.isYou?"Вы · "+p.name:p.name):"Ожидание игрока…";small.textContent=p?(p.isOwner?"Создатель комнаты":"Готов к игре"):"Место свободно";seat.append(b,small);host.appendChild(seat);}
+        $("startGameBtn").disabled=!state.room.isOwner||state.players.length!==2||state.busy;
+        $("startGameBtn").textContent=state.players.length===2?"Начать игру":"Ждём второго игрока";
+      }
+      async function createRoom(){
+        if(state.busy)return;const stake=String($("roomStake").value||"").trim();
+        if(!/^\d+$/.test(stake)||BigInt(stake)<100n||BigInt(stake)>9007199254740991n){setStatus("Укажи ставку от 100 AC. Верхнего лимита нет.",true);return;}
+        state.busy=true;$("createRoomBtn").disabled=true;
+        try{const data=await api("/rooms/create",{name:$("roomName").value,stake});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus("Комната создана. Пригласи второго игрока.");}
+        catch(e){setStatus(e.message,true);}finally{state.busy=false;$("createRoomBtn").disabled=false;}
+      }
+      async function joinRoom(roomId){
+        if(state.busy)return;state.busy=true;
+        try{const data=await api("/rooms/join",{roomId});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus("Ты вошёл в комнату.");}
+        catch(e){setStatus(e.message,true);}finally{state.busy=false;}
+      }
+      async function refreshWaiting(quiet){
+        if(!state.room||state.stage!=="waiting"||state.roomBusy)return;state.roomBusy=true;
+        try{const data=await api("/rooms/state",{roomId:state.room.id});state.room=data.room;state.players=data.players||[];
+          if(state.room.status==="playing"){showStage("game");const g=await api("/game/state",{roomId:state.room.id});state.game=g.game;state.lastAnimatedSeq=Number(state.game.lastShot?.seq||0);drawTable();renderGameUI();return;}
+          if(state.room.status==="finished"){state.room=null;showStage("lobby");await loadRooms(true);return;}
+          renderWaiting();
+        }catch(e){if(!quiet)setWaitingStatus(e.message,true);}finally{state.roomBusy=false;}
+      }
+      async function leaveRoom(){
+        if(!state.room||state.busy)return;state.busy=true;
+        try{await api("/rooms/leave",{roomId:state.room.id});state.room=null;state.players=[];showStage("lobby");setStatus("Ты вышел из комнаты.");await loadRooms(true);}
+        catch(e){setWaitingStatus(e.message,true);}finally{state.busy=false;}
+      }
+      async function startGame(){
+        if(!state.room||state.busy)return;state.busy=true;$("startGameBtn").disabled=true;
+        try{const data=await api("/rooms/start",{roomId:state.room.id});state.game=data.game;showStage("game");state.lastAnimatedSeq=0;renderGameUI();setMessage(data.message||"Партия началась.");}
+        catch(e){setWaitingStatus(e.message,true);renderWaiting();}finally{state.busy=false;}
+      }
+      async function refreshGame(quiet){
+        if(!state.room||state.stage!=="game"||state.roomBusy)return;state.roomBusy=true;
+        try{const data=await api("/game/state",{roomId:state.room.id});state.game=data.game;renderGameUI();}
+        catch(e){if(!quiet)setMessage(e.message,true);}finally{state.roomBusy=false;}
+      }
+      function setMessage(message,bad){$("gameMessage").textContent=message||"";$("gameMessage").style.color=bad?"#ffd0d7":"#e1f1e8";}
+      function renderGameUI(){
+        if(!state.game)return;const g=state.game;
+        $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"");$("bankValue").textContent=amount(g.pot)+" AC";
+        const row=$("playerRow");row.innerHTML="";
+        g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?"ТВОЙ ХОД":"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
+        const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
+        $("aimText").textContent=state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни в направлении удара":"Ход соперника · наблюдай за ударом"));
+        $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
+        $("rematchBtn").classList.toggle("hidden",g.status!=="finished");
+        $("endResult").classList.toggle("hidden",g.status!=="finished");
+        if(g.status==="finished"){$("endTitle").textContent=g.winnerId===g.players.find(p=>p.isYou)?.id?"🏆 Ты выиграл!":"🎱 "+(g.winnerName||"Соперник")+" выиграл";$("endCopy").textContent="Банк "+amount(g.pot)+" AC · выплата победителю "+amount(g.payout)+" AC после комиссии.";}
+        if(state.animatingSeq===null)drawTable();
+      }
+
+      function cloneBalls(balls){return balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:Number(b.x),y:Number(b.y),active:Boolean(b.active)}));}
+      function createPhysics(sourceBalls,angle,power){
+        const balls=cloneBalls(sourceBalls).map(b=>({...b,vx:0,vy:0}));const cue=balls.find(b=>b.id==="cue"&&b.active);
+        if(cue){const speed=3.7+Math.max(4,Math.min(100,Number(power)||0))*0.16;cue.vx=Math.cos(angle)*speed;cue.vy=Math.sin(angle)*speed;}
+        return{balls,pocketedIds:[],scratch:false,frames:0};
+      }
+      function stepPhysics(physics){
+        const balls=physics.balls;let maxSpeed=0;
+        for(const b of balls){if(!b.active)continue;b.x+=b.vx;b.y+=b.vy;
+          const pocket=POCKETS.find(p=>Math.hypot(b.x-p.x,b.y-p.y)<21.5);
+          if(pocket){b.active=false;b.vx=0;b.vy=0;physics.pocketedIds.push(b.id);if(b.id==="cue")physics.scratch=true;continue;}
+          if(b.x<42){b.x=42;b.vx=Math.abs(b.vx)*.92;}if(b.x>758){b.x=758;b.vx=-Math.abs(b.vx)*.92;}
+          if(b.y<42){b.y=42;b.vy=Math.abs(b.vy)*.92;}if(b.y>398){b.y=398;b.vy=-Math.abs(b.vy)*.92;}
+        }
+        for(let i=0;i<balls.length;i++){const a=balls[i];if(!a.active)continue;for(let j=i+1;j<balls.length;j++){const b=balls[j];if(!b.active)continue;
+          const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<=0||d>=R*2)continue;const nx=dx/d,ny=dy/d,overlap=R*2-d;
+          a.x-=nx*(overlap/2+.02);a.y-=ny*(overlap/2+.02);b.x+=nx*(overlap/2+.02);b.y+=ny*(overlap/2+.02);
+          const relative=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(relative>0){a.vx-=relative*nx;a.vy-=relative*ny;b.vx+=relative*nx;b.vy+=relative*ny;}
+        }}
+        for(const b of balls){if(!b.active)continue;b.vx*=.9885;b.vy*=.9885;const speed=Math.hypot(b.vx,b.vy);if(speed<.07){b.vx=0;b.vy=0;}else maxSpeed=Math.max(maxSpeed,speed);}
+        physics.frames++;return maxSpeed<.07||physics.frames>=900;
+      }
+      function physicsToBalls(physics){return physics.balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:b.x,y:b.y,active:Boolean(b.active)}));}
+      function startShotAnimation(shot){
+        if(!shot||!shot.startBalls||!shot.endBalls)return;
+        state.animatingSeq=Number(shot.seq);state.visualBalls=cloneBalls(shot.startBalls);state.aim=null;$("powerFill").style.width="0%";renderGameUI();
+        const physics=createPhysics(shot.startBalls,Number(shot.angle),Number(shot.power));let previous=0;
+        function frame(now){if(state.stage!=="game"){state.animatingSeq=null;state.visualBalls=null;return;}
+          const steps=previous===0?1:2;previous=now;let finished=false;for(let i=0;i<steps;i++){finished=stepPhysics(physics);if(finished)break;}
+          state.visualBalls=physicsToBalls(physics);drawTable();
+          if(!finished){state.raf=requestAnimationFrame(frame);return;}
+          state.visualBalls=cloneBalls(shot.endBalls);state.animatingSeq=null;state.raf=0;drawTable();renderGameUI();
+        }
+        if(state.raf)cancelAnimationFrame(state.raf);state.raf=requestAnimationFrame(frame);
+      }
+      function drawTable(){
+        const canvas=$("poolCanvas");if(!canvas)return;const ctx=canvas.getContext("2d");ctx.clearRect(0,0,W,H);
+        const wood=ctx.createLinearGradient(0,0,W,H);wood.addColorStop(0,"#e8c481");wood.addColorStop(.42,"#8a562c");wood.addColorStop(1,"#3b2115");
+        roundedRect(ctx,1,1,W-2,H-2,20,wood);roundedRect(ctx,20,19,W-40,H-38,16,"#18251c");
+        const felt=ctx.createRadialGradient(400,220,40,400,220,400);felt.addColorStop(0,"#237c5e");felt.addColorStop(.68,"#126047");felt.addColorStop(1,"#073d30");roundedRect(ctx,35,34,W-70,H-68,12,felt);
+        ctx.strokeStyle="#d7b76d";ctx.lineWidth=5;roundedRectStroke(ctx,38,37,W-76,H-74,12);
+        POCKETS.forEach(p=>{ctx.beginPath();ctx.fillStyle="#030706";ctx.arc(p.x,p.y,18,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.strokeStyle="#b98a49";ctx.lineWidth=3;ctx.arc(p.x,p.y,18,0,Math.PI*2);ctx.stroke();});
+        ctx.globalAlpha=.25;ctx.strokeStyle="#dcf4d8";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(240,42);ctx.lineTo(240,398);ctx.stroke();ctx.beginPath();ctx.arc(240,220,4,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+        const balls=state.visualBalls||(state.game&&state.game.balls)||[];
+        balls.forEach(ball=>{if(!ball.active)return;drawBall(ctx,ball);});
+        if(state.aim&&state.game&&state.animatingSeq===null&&!state.busy){
+          const cue=balls.find(b=>b.id==="cue"&&b.active);if(cue){const dx=state.aim.x-cue.x,dy=state.aim.y-cue.y,dist=Math.hypot(dx,dy);if(dist>3){
+            const angle=Math.atan2(dy,dx);ctx.save();ctx.setLineDash([7,7]);ctx.strokeStyle="#eafff5cc";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(cue.x,cue.y);ctx.lineTo(cue.x+Math.cos(angle)*350,cue.y+Math.sin(angle)*350);ctx.stroke();ctx.setLineDash([]);
+            ctx.strokeStyle="#ebd3a0";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(cue.x-Math.cos(angle)*28,cue.y-Math.sin(angle)*28);ctx.lineTo(cue.x-Math.cos(angle)*(72+Math.min(dist,150)*.12),cue.y-Math.sin(angle)*(72+Math.min(dist,150)*.12));ctx.stroke();ctx.restore();
+          }}
+        }
+      }
+      function roundedRect(ctx,x,y,w,h,r,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
+      function roundedRectStroke(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.stroke();}
+      function drawBall(ctx,b){
+        const x=b.x,y=b.y;if(b.type==="stripe"){ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fillStyle=COLORS[b.number]||"#fff";ctx.fill();ctx.save();ctx.beginPath();ctx.arc(x,y,R-0.5,0,Math.PI*2);ctx.clip();ctx.fillStyle="#f6f5ed";ctx.fillRect(x-R,y-4,R*2,8);ctx.restore();}
+        else{ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);const g=ctx.createRadialGradient(x-3,y-4,1,x,y,R+1);if(b.id==="cue"){g.addColorStop(0,"#fff");g.addColorStop(1,"#bac5cd");}else if(b.type==="eight"){g.addColorStop(0,"#555");g.addColorStop(1,"#030507");}else{g.addColorStop(0,"#fff3a8");g.addColorStop(.28,COLORS[b.number]||"#ddd");g.addColorStop(1,"#15191e");}ctx.fillStyle=g;ctx.fill();}
+        if(b.type!=="cue"){ctx.beginPath();ctx.arc(x,y,5.7,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.fillStyle="#12171d";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(b.number),x,y+.2);}
+        ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();
+      }
+      function pointerCoords(e){const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
+      function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
+      function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
+      function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);$("poolCanvas").setPointerCapture?.(e.pointerId);drawTable();}
+      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){const p=state.aim;const d=Math.hypot(p.x-cue.x,p.y-cue.y);$("powerFill").style.width=Math.min(100,Math.max(0,d/1.5))+"%";}drawTable();}
+      async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
+        const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width="0%";return;}
+        const power=Math.max(4,Math.min(100,(dist-12)*.65));const angle=Math.atan2(dy,dx);await shoot(angle,power);
+      }
+      async function shoot(angle,power){if(!state.room||!canShoot())return;state.busy=true;setMessage("Удар…");renderGameUI();
+        try{const data=await api("/game/shot",{roomId:state.room.id,angle,power});state.game=data.game;renderGameUI();}
+        catch(e){setMessage(e.message,true);await refreshGame(true);}
+        finally{state.busy=false;renderGameUI();}
+      }
+      async function placeCue(){if(!canShoot())return;const balls=state.game.balls;const cue=balls.find(b=>b.id==="cue");if(!cue)return;cue.x=190;cue.y=220;setMessage("Биток установлен в стартовой зоне. Сделай удар.");drawTable();}
+      async function backToLobby(){
+        if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}
+        state.room=null;state.players=[];state.game=null;state.aim=null;state.visualBalls=null;state.lastAnimatedSeq=0;showStage("lobby");await loadRooms(true);
+      }
+      async function startRematch(){
+        // The result can be viewed; create a fresh public room for the next game.
+        state.room=null;state.players=[];state.game=null;state.visualBalls=null;state.lastAnimatedSeq=0;showStage("lobby");
+        $("roomName").value="Бильярд ALLCOINS";$("roomStake").value="100";markStakePreset();await loadRooms(true);setStatus("Создай новую комнату для следующей партии.");
+      }
+      function markStakePreset(){const value=Number($("roomStake").value);document.querySelectorAll(".stakePreset").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.stake)===value));}
+      $("roomStake").addEventListener("input",markStakePreset);document.querySelectorAll(".stakePreset").forEach(btn=>btn.addEventListener("click",()=>{$("roomStake").value=btn.dataset.stake;markStakePreset();}));
+      $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
+      $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
+      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
+      $("poolCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
+      window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
+      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game")refreshGame(true);}});
+      (async function init(){if(tg){try{tg.ready();tg.expand();}catch(_){}}
+        await loadRooms(false);startPolling();
+      })();
+    })();
+  </script>
+</body>
+</html>
