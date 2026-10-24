@@ -4050,6 +4050,7 @@ function applyDurakTableCardSizeLocks() {
       lockDurakTableCardSize(image, "max-height", "100%");
       lockDurakTableCardSize(image, "object-fit", "fill");
       lockDurakTableCardSize(image, "object-position", "center");
+      lockDurakTableCardSize(image, "transform", "none");
       lockDurakTableCardSize(image, "margin", "0");
       lockDurakTableCardSize(image, "padding", "0");
     }
@@ -4834,19 +4835,58 @@ function preloadDurakCardAssets() {
 
 // ===== ALLCOINS PREMIUM CARD FACTORY =====
 
+function appendDurakFallbackCardFace(cardElement, rank, suit) {
+  if (!cardElement || cardElement.querySelector(".card-corner")) return;
+
+  const corner = document.createElement("span");
+  corner.className = "card-corner";
+  const rankLabel = document.createElement("span");
+  rankLabel.className = "card-rank";
+  rankLabel.textContent = rank;
+  const cornerSuit = document.createElement("span");
+  cornerSuit.className = "corner-suit";
+  cornerSuit.textContent = suit;
+  corner.appendChild(rankLabel);
+  corner.appendChild(document.createElement("br"));
+  corner.appendChild(cornerSuit);
+
+  const center = document.createElement("span");
+  center.className = "card-suit";
+  center.textContent = suit;
+
+  const oppositeCorner = document.createElement("span");
+  oppositeCorner.className = "card-corner card-corner-bottom";
+  const oppositeRank = document.createElement("span");
+  oppositeRank.className = "card-rank";
+  oppositeRank.textContent = rank;
+  const oppositeSuit = document.createElement("span");
+  oppositeSuit.className = "corner-suit";
+  oppositeSuit.textContent = suit;
+  oppositeCorner.appendChild(oppositeRank);
+  oppositeCorner.appendChild(document.createElement("br"));
+  oppositeCorner.appendChild(oppositeSuit);
+
+  cardElement.appendChild(corner);
+  cardElement.appendChild(center);
+  cardElement.appendChild(oppositeCorner);
+  if (["J", "Q", "K"].includes(String(rank).toUpperCase())) {
+    const court = document.createElement("span");
+    court.className = "card-court";
+    court.textContent = String(rank).toUpperCase();
+    cardElement.appendChild(court);
+  }
+}
+
 function createDurakCardElement(card) {
   const rank = String(card.rank || "");
   const suit = String(card.suit || "");
   const normalizedCardSuit = ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" })[suit] || suit;
   const cardElement = document.createElement("div");
   cardElement.className = "durak-card premium-card";
-if (["♥", "♡", "♦", "♢"].includes(suit)) {
-  cardElement.classList.add("red");
-}
+  if (["♥", "♡", "♦", "♢"].includes(suit)) cardElement.classList.add("red");
   cardElement.dataset.cardId = String(card.id);
-cardElement.style.touchAction = "none";
-  // Сначала используем PNG из папки cards. Для ещё не созданных PNG сохраняем
-  // обычное обозначение карты, чтобы игровая логика продолжала работать без изменений.
+  cardElement.style.touchAction = "none";
+
   const normalizedRank = rank.trim().toUpperCase();
   const rankImageNames = {
     "2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9","10":"10",
@@ -4869,80 +4909,41 @@ cardElement.style.touchAction = "none";
   const candidateImageName = rankImageName && suitImageName
     ? rankImageName + "-" + suitImageName + ".png"
     : null;
-  // В репозитории пиковый король сохранён под именем king-spades-2.png.
   const imageName = candidateImageName === "king-spades.png"
     ? "king-spades-2.png"
     : candidateImageName;
+
   if (imageName && DURAK_CARD_ASSETS.includes(imageName)) {
-    const image = document.createElement("img");
-
-    // Источник совпадает с уже загруженным и декодированным PNG в кеше.
-    // Это убирает повторную задержку декодирования в момент перелёта карты.
     const preloadedImage = durakPreloadedCardImages.get(imageName);
-    image.decoding = "sync";
-    image.loading = "eager";
-    image.src = preloadedImage?.currentSrc || preloadedImage?.src ||
-      ("cards/" + imageName + "?v=" + DURAK_CARD_ASSET_VERSION);
-    image.alt = rank + " " + suit;
-    image.draggable = false;
-
-    image.onerror = () => {
-      image.remove();
-      cardElement.classList.remove("image-card");
-    };
-
-    cardElement.classList.add("image-card");
-    cardElement.appendChild(image);
-
-    return cardElement;
+    // Если предварительный запрос уже подтвердил 404/битый PNG, показываем
+    // запасную лицевую сторону сразу — не вставляем пустую карту на стол.
+    const preloadFailed = !!(preloadedImage && preloadedImage.complete &&
+      preloadedImage.naturalWidth <= 0);
+    if (!preloadFailed) {
+      const image = document.createElement("img");
+      image.decoding = "async";
+      image.loading = "eager";
+      image.fetchPriority = "high";
+      image.src = preloadedImage?.currentSrc || preloadedImage?.src ||
+        ("cards/" + imageName + "?v=" + DURAK_CARD_ASSET_VERSION);
+      image.alt = rank + " " + suit;
+      image.draggable = false;
+      image.onerror = () => {
+        if (!image.isConnected) return;
+        image.remove();
+        cardElement.classList.remove("image-card");
+        cardElement.style.setProperty("background", "#fffdf8", "important");
+        cardElement.style.setProperty("border", "1px solid #d5d1c8", "important");
+        cardElement.style.setProperty("box-shadow", "0 4px 7px rgba(0,0,0,.3)", "important");
+        appendDurakFallbackCardFace(cardElement, rank, suit);
+      };
+      cardElement.classList.add("image-card");
+      cardElement.appendChild(image);
+      return cardElement;
+    }
   }
 
-  // Обычный дизайн для карт, изображения которых пока нет
-  const corner = document.createElement("span");
-  corner.className = "card-corner";
-
-  const rankLabel = document.createElement("span");
-  rankLabel.className = "card-rank";
-  rankLabel.textContent = rank;
-
-  const cornerSuit = document.createElement("span");
-  cornerSuit.className = "corner-suit";
-  cornerSuit.textContent = suit;
-
-  corner.appendChild(rankLabel);
-  corner.appendChild(document.createElement("br"));
-  corner.appendChild(cornerSuit);
-
-  const center = document.createElement("span");
-  center.className = "card-suit";
-  center.textContent = suit;
-
-  const oppositeCorner = document.createElement("span");
-  oppositeCorner.className = "card-corner card-corner-bottom";
-
-  const oppositeRank = document.createElement("span");
-  oppositeRank.className = "card-rank";
-  oppositeRank.textContent = rank;
-
-  const oppositeSuit = document.createElement("span");
-  oppositeSuit.className = "corner-suit";
-  oppositeSuit.textContent = suit;
-
-  oppositeCorner.appendChild(oppositeRank);
-  oppositeCorner.appendChild(document.createElement("br"));
-  oppositeCorner.appendChild(oppositeSuit);
-
-  cardElement.appendChild(corner);
-  cardElement.appendChild(center);
-  cardElement.appendChild(oppositeCorner);
-
-  if (["J", "Q", "K"].includes(rank.toUpperCase())) {
-    const court = document.createElement("span");
-    court.className = "card-court";
-    court.textContent = rank.toUpperCase();
-    cardElement.appendChild(court);
-  }
-
+  appendDurakFallbackCardFace(cardElement, rank, suit);
   return cardElement;
 }
 
@@ -5498,7 +5499,7 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
       ["min-width", "100%"], ["min-height", "100%"],
       ["max-width", "100%"], ["max-height", "100%"],
       ["object-fit", "fill"], ["object-position", "center"],
-      ["margin", "0"], ["padding", "0"]
+      ["transform", "none"], ["margin", "0"], ["padding", "0"]
     ].forEach(([property, value]) => landedImage.style.setProperty(property, value, "important"));
   }
 
@@ -6086,8 +6087,12 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
   // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
   // getBoundingClientRect includes the card's final angle. Scale to its CSS box
   // instead, so the last frame and the resting card occupy exactly the same size.
-  const targetScaleX = (targetElement.offsetWidth || targetRect.width) / from.width;
-  const targetScaleY = (targetElement.offsetHeight || targetRect.height) / from.height;
+  const targetWidth = targetElement.offsetWidth || targetRect.width;
+  const targetScale = targetWidth / from.width;
+  // Рука и стол используют одинаковое отношение сторон (2:3), поэтому
+  // равномерный scale не деформирует карту и убирает эффект «прижатия».
+  const targetScaleX = targetScale;
+  const targetScaleY = targetScale;
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
   // Возвращаем прежнюю плавную скорость: карта заметно летит к столу,
@@ -7402,7 +7407,7 @@ if (Array.isArray(game.hand)) {
     const cardWidth = count
       ? Math.floor(Math.min(90, Math.max(54, available / (1 + Math.max(0, count - 1) * 0.60))))
       : 54;
-    const cardHeight = Math.round(cardWidth * 1.62);
+    const cardHeight = Math.round(cardWidth * 1.5);
     const step = count > 1
       ? Math.max(6, Math.min(cardWidth * 0.78, (available - cardWidth) / (count - 1)))
       : cardWidth;
