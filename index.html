@@ -6600,9 +6600,10 @@ async function loadDurakGame(roomId) {
           game.takePending === true;
         if (opponentIsTaking) {
           playerTag.classList.add("taking");
+          // Используем ту же плашку и позицию, где отображается «ГОТОВ» у игрока.
           const takeStatus = document.createElement("span");
-          takeStatus.className = "durak-player-take-status";
-          takeStatus.textContent = "Беру";
+          takeStatus.className = "durak-ready-badge durak-taking-badge";
+          takeStatus.textContent = "✋ БЕРУ";
           takeStatus.setAttribute("aria-label", "Соперник берёт карты");
           playerTag.appendChild(takeStatus);
         }
@@ -12544,28 +12545,20 @@ $("refreshDurakRooms").onclick = async () => {
     border-color: #ffb66e !important;
     box-shadow: 0 0 0 2px rgba(255, 166, 92, .28), 0 0 14px rgba(255, 103, 75, .42) !important;
   }
-  #durakGame .durak-player-take-status {
-    display: block;
-    max-width: 100%;
-    margin-top: 4px;
-    padding: 3px 8px;
-    border: 1px solid rgba(255, 185, 112, .95);
-    border-radius: 7px;
-    background: linear-gradient(180deg, #8d3627, #5d201d);
-    color: #fff4df;
-    font-size: 11px;
-    line-height: 1.1;
-    font-weight: 900;
-    letter-spacing: .02em;
-    white-space: nowrap;
-    animation: durakTakingPulse 1.05s ease-in-out infinite alternate;
+  /* «БЕРУ» использует то же место и основу оформления, что и «ГОТОВ». */
+  #durakGame.durak-fullscreen #durakPlayers .durak-player .durak-ready-badge.durak-taking-badge {
+    border-color: rgba(255, 176, 104, .98) !important;
+    background: linear-gradient(180deg, #963c28, #5f211d) !important;
+    color: #fff2dc !important;
+    box-shadow: 0 0 0 1px rgba(255, 162, 92, .22), 0 1px 5px rgba(0,0,0,.28) !important;
+    animation: durakTakingPulse 1.05s ease-in-out infinite alternate !important;
   }
   @keyframes durakTakingPulse {
     from { filter: brightness(1); }
     to { filter: brightness(1.28); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #durakGame .durak-player-take-status { animation: none; }
+    #durakGame .durak-ready-badge.durak-taking-badge { animation: none !important; }
   }
 </style>
 
