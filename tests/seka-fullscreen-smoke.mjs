@@ -27,6 +27,8 @@ try {
   let gameStarted = false;
   let gameFinished = false;
   let rematchStarted = false;
+  let currentBet = 100;
+  let lastRaiseAmount = null;
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.route("https://telegram.org/**", (route) => route.fulfill({
@@ -79,6 +81,12 @@ try {
       return json({ ok: true, roomId: "321", started: true });
     }
     if (pathname === "/api/seka/rooms/action") {
+      const payload = request.postDataJSON();
+      if (payload.action === "raise") {
+        lastRaiseAmount = Number(payload.amount);
+        currentBet += lastRaiseAmount;
+        return json({ ok: true, status: "playing", message: "Ставка принята" });
+      }
       gameFinished = true;
       return json({ ok: true, status: "finished", message: "Тестовая партия завершена" });
     }
@@ -103,13 +111,13 @@ try {
         status: gameFinished ? "finished" : gameStarted ? "playing" : "waiting", isOwner: true
       };
       const game = gameStarted ? {
-        status: gameFinished ? "finished" : "playing", testMode: true, pot: 200, ante: 100, currentBet: 100,
+        status: gameFinished ? "finished" : "playing", testMode: true, pot: 200, ante: 100, currentBet,
         currentPlayerTelegramId: "12345", isYourTurn: true,
         winnerTelegramIds: [], payouts: [], message: gameFinished ? "Тестовая партия завершена" : "Тестовая партия началась",
         settlementApplied: gameFinished, revealHands: gameFinished, rematchVotes: [], roundNumber: rematchStarted ? 2 : 1,
         players: [
           { telegramId: "12345", label: "Тестовый игрок", isBot: false, folded: false,
-            contribution: 100, hand: [
+            contribution: currentBet, hand: [
               { rank: "9", suit: "♠" }, { rank: "8", suit: "♠" }, { rank: "7", suit: "♠" }
             ], score: null, payout: 0, cardCount: 3, handType: null },
           { telegramId: "0", label: "🤖 Бот ALLCOINS", isBot: true, folded: false,
@@ -164,6 +172,19 @@ try {
     "the opponent should be seated across the table");
   assert.notEqual(await page.locator("#raiseButton").evaluate((el) => getComputedStyle(el).display), "none",
     "betting controls should remain available in fullscreen");
+  assert.match(await page.locator('label[for="raiseAmount"]').textContent(), /Новая ставка/,
+    "the betting field should ask for the final bet amount, not an increment");
+  await page.locator("#raiseAmount").fill("");
+  await page.locator("#raiseAmount").fill("1000");
+  // The room is polled every 1.8 seconds; a refresh must not overwrite an amount
+  // that is being typed into the focused input.
+  await page.waitForTimeout(1900);
+  assert.equal(await page.locator("#raiseAmount").inputValue(), "1000",
+    "polling must preserve a custom bet while the player edits it");
+  await page.locator("#raiseButton").click();
+  await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent === "");
+  assert.equal(lastRaiseAmount, 900,
+    "entering a final bet of 1,000 AC from a current 100 AC bet must send only the 900 AC increase");
 
   await page.locator("#openButton").click();
   await page.waitForFunction(() => document.querySelector("#rematchButton")?.classList.contains("hidden") === false);
@@ -177,7 +198,7 @@ try {
   assert.equal(gameFinished, false, "a successful rematch should start a new round");
   assert.deepEqual(pageErrors, [], "the Seka page should not produce JavaScript errors");
 
-  console.log("PASS: Seka fullscreen layout shows the player's numeric hand score and player seats, then offers a working rematch button after the round.");
+  console.log("PASS: Seka fullscreen shows scores and player seats, preserves custom editable bets during polling, converts a 1,000 AC target to the correct increase, and offers a working rematch.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
