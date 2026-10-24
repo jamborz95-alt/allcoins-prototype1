@@ -6,6 +6,19 @@ import assert from "node:assert/strict";
 
 const root = process.cwd();
 const html = await readFile(resolve(root, "index.html"));
+
+const htmlSource = html.toString("utf8");
+const dropAnimationStart = htmlSource.indexOf("async function animateDurakCardToTarget(cardElement, targetElement) {");
+const dropAnimationEnd = htmlSource.indexOf("\\nlet durakGameLoadInProgress = false;", dropAnimationStart);
+assert.ok(dropAnimationStart >= 0 && dropAnimationEnd > dropAnimationStart,
+  "Durak hand-to-table animation should exist.");
+const durakDropAnimation = htmlSource.slice(dropAnimationStart, dropAnimationEnd);
+assert.match(durakDropAnimation, /left " \\+ flightDuration/);
+assert.match(durakDropAnimation, /height " \\+ flightDuration/);
+assert.doesNotMatch(durakDropAnimation, /flyerImage\\.animate\\s*\\(/,
+  "The card face must not run an independent scale animation during landing.");
+assert.doesNotMatch(durakDropAnimation, /transform:\\s*["'`]translate3d\\([^\n]*scale\\(/,
+  "The hand-to-table flight must not finish with a transform scale jump.");
 const server = createServer((req, res) => {
   res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
   res.end(html);
