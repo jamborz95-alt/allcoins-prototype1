@@ -718,6 +718,15 @@
     const n = Number(value || 0);
     return Number.isFinite(n) ? Math.floor(n).toLocaleString("ru-RU") : "0";
   }
+  function sekaScoreWord(value) {
+    const n = Math.abs(Math.floor(Number(value) || 0));
+    const lastTwo = n % 100;
+    if (lastTwo >= 11 && lastTwo <= 14) return "очков";
+    const last = n % 10;
+    if (last === 1) return "очко";
+    if (last >= 2 && last <= 4) return "очка";
+    return "очков";
+  }
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
       return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[ch];
@@ -1056,11 +1065,11 @@
       $("myHand").innerHTML = me && me.hand ? me.hand.map(card => cardMarkup(card, false)).join("") : "";
       const ownScore = me && me.hand ? scoreMySekaHand(me.hand) : null;
       const hasOwnScore = !!ownScore;
-      $("myHandScore").textContent = hasOwnScore ? fmt(ownScore.score) + " очков" : "—";
+      $("myHandScore").textContent = hasOwnScore ? fmt(ownScore.score) + " " + sekaScoreWord(ownScore.score) : "—";
       $("myHandType").textContent = hasOwnScore ? ownScore.label :
         (game.status === "finished" && !game.revealHands ? "Карты соперников остались закрыты" : "Подсчитываем комбинацию");
       $("myHandCaption").setAttribute("aria-label", hasOwnScore
-        ? "Ваша комбинация: " + ownScore.label + ", " + fmt(ownScore.score) + " очков"
+        ? "Ваша комбинация: " + ownScore.label + ", " + fmt(ownScore.score) + " " + sekaScoreWord(ownScore.score)
         : "Ожидаем подсчёт комбинации");
       const actionArea = $("actionArea");
       actionArea.classList.toggle("hidden", !playing);
