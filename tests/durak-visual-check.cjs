@@ -122,7 +122,7 @@ const path = require("node:path");
     await checkersPage.route("**/telegram-web-app.js", route => route.fulfill({
       status: 200, contentType: "application/javascript", body: "// Telegram WebApp mocked for checkers visual test.\\n"
     }));
-    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo6",
+    await checkersPage.goto("http://127.0.0.1:4173/checkers.html?v=20261024-allcoins-logo7",
       { waitUntil: "domcontentloaded", timeout: 30000 });
     await checkersPage.locator("#startBot").click();
     await checkersPage.waitForFunction(() => document.querySelectorAll("#board .piece").length === 24 &&
@@ -146,6 +146,7 @@ const path = require("node:path");
         crownTop: crown.top,
         crownLeft: crown.left,
         crownZIndex: crown.zIndex,
+        crownFontSize: crown.fontSize,
         logoUnderCrown: Boolean(crownProbe.querySelector(".piece-logo svg"))
       };
     });
@@ -158,6 +159,7 @@ const path = require("node:path");
     assert.ok(parseFloat(initialCheckersDiagnostics.crownWidth) > 10 && parseFloat(initialCheckersDiagnostics.crownWidth) < 30, "Значок дамки должен быть увеличен и закрывать верхнюю часть логотипа: " + JSON.stringify(initialCheckersDiagnostics));
     assert.ok(parseFloat(initialCheckersDiagnostics.crownTop) < 0, "Корона должна заходить сверху на логотип шашки");
     assert.equal(initialCheckersDiagnostics.crownZIndex, "4", "Значок дамки должен быть поверх логотипа");
+    assert.ok(parseFloat(initialCheckersDiagnostics.crownFontSize) >= 14, "Значок дамки должен быть крупным и заметным: " + JSON.stringify(initialCheckersDiagnostics));
     assert.equal(initialCheckersDiagnostics.logoUnderCrown, true, "Корона должна накладываться на логотип, не удаляя его");
 
     await checkersPage.locator("#newGame").click();
