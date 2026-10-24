@@ -220,7 +220,7 @@ const path = require("node:path");
         whitePieces: pieces.filter(piece => piece.classList.contains("white")).length,
         blackPieces: pieces.filter(piece => piece.classList.contains("black")).length,
         logosWithSvg: logos.filter(logo => logo.querySelector("svg")).length,
-        kingMarks: document.querySelectorAll("#board .piece-king-mark svg path").length,
+        kingMarks: document.querySelectorAll("#board .piece-king-mark svg").length,
         visibleLogos: logos.filter(logo => {
           const r = logo.getBoundingClientRect();
           return r.width >= 10 && r.height >= 10 && getComputedStyle(logo).display !== "none" &&
