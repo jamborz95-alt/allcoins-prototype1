@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Камень Ножницы Бумага — ALLCOINS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { color-scheme:dark; --gold:#e8c777; --gold2:#a77a31; --panel:#121d2d; --line:#2c4058; --muted:#aab8ca; --green:#69e8b4; --red:#ff9090; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:#080f1d; color:#f7f8fb; font-family:Arial,Helvetica,sans-serif; }
+    body { padding:max(10px,env(safe-area-inset-top)) 12px max(22px,env(safe-area-inset-bottom)); background:radial-gradient(ellipse at 50% -10%,#1b3853 0%,#0a1424 46%,#070c16 100%); }
+    button,input { font:inherit; }
+    button { min-height:44px; border:1px solid #455c76; color:#fff; border-radius:13px; padding:11px 14px; background:#22354d; font-weight:800; cursor:pointer; touch-action:manipulation; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .app { max-width:640px; margin:0 auto; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:3px 0 18px; }
+    .brand { font-size:14px; letter-spacing:1.5px; font-weight:1000; color:#f2d894; }
+    .balance-badge { display:flex; align-items:center; gap:7px; padding:7px 11px; border:1px solid #3e5c70; border-radius:999px; color:#d9fbe9; background:#10271f; font-size:13px; font-weight:800; white-space:nowrap; }
+    .balance-badge strong { color:#8af5c5; font-variant-numeric:tabular-nums; }
+    .panel { margin:0 0 14px; padding:16px; border:1px solid rgba(137,168,199,.22); border-radius:18px; background:linear-gradient(150deg,rgba(25,42,63,.96),rgba(13,23,38,.98)); box-shadow:0 10px 28px #0003,inset 0 1px 0 #ffffff0b; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:5px; font-size:25px; line-height:1.15; letter-spacing:-.4px; }
+    h2 { margin-bottom:8px; font-size:18px; }
+    .subtitle { color:var(--muted); font-size:13px; line-height:1.5; margin:0; }
+    .back { width:100%; margin-bottom:15px; text-align:left; background:transparent; border-color:#40556c; }
+    .section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 0 13px; font-weight:900; font-size:16px; }
+    .field-label { display:block; margin:0 0 7px; font-size:13px; font-weight:800; color:#dbe4ef; }
+    .stake-field { display:flex; align-items:center; gap:9px; }
+    input[type=number] { width:100%; min-width:0; height:48px; border:1px solid #455c76; border-radius:12px; padding:0 13px; background:#081321; color:white; outline:none; font-size:17px; font-weight:800; }
+    input:focus { border-color:var(--gold); box-shadow:0 0 0 2px #e8c77720; }
+    .ac-chip { color:#f1d48e; font-weight:900; }
+    .hint { margin:8px 0 0; font-size:12px; line-height:1.45; color:var(--muted); }
+    .primary { background:linear-gradient(135deg,#f2d98f,#b3873c); border-color:#f1d18a; color:#211909; box-shadow:0 4px 13px #8a672d35; }
+    .wide { width:100%; margin-top:13px; }
+    .room-list { display:grid; gap:10px; }
+    .room-card { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px; border:1px solid #344960; border-radius:14px; background:linear-gradient(130deg,#16283c,#101b2b); }
+    .room-info { min-width:0; }
+    .room-name { margin-bottom:5px; font-weight:900; font-size:14px; overflow-wrap:anywhere; }
+    .room-meta { color:var(--muted); font-size:12px; line-height:1.55; }
+    .join-button { flex:0 0 auto; min-width:79px; padding:9px 12px; }
+    .empty { padding:18px 8px; color:var(--muted); text-align:center; font-size:13px; line-height:1.5; }
+    .status { display:none; margin-top:12px; padding:10px 12px; border:1px solid #3e5873; border-radius:12px; color:#dce8f5; background:#0d1929; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
+    .status.show { display:block; }
+    .status.error { color:#ffc4c4; border-color:#814d58; background:#2a151d; }
+    .status.success { color:#baf5d8; border-color:#396a59; background:#10271f; }
+    .room-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .room-number { display:inline-flex; align-items:center; margin-top:7px; padding:5px 9px; border:1px solid #5b4c2e; border-radius:999px; background:#302718; color:#f3d895; font-size:12px; font-weight:900; }
+    .stake-big { flex:0 0 auto; text-align:right; }
+    .stake-big span { display:block; color:var(--muted); font-size:11px; }
+    .stake-big strong { display:block; margin-top:3px; color:#f4d88f; font-size:16px; font-variant-numeric:tabular-nums; }
+    .players { display:grid; gap:8px; margin:15px 0 0; }
+    .player-row { display:flex; align-items:center; gap:10px; min-width:0; padding:10px 11px; border:1px solid #30445a; border-radius:12px; background:#0e1a2a; }
+    .player-symbol { flex:0 0 34px; width:34px; height:34px; display:grid; place-items:center; border:1px solid #5d5940; border-radius:11px; background:#24291f; color:#f4d68b; font-size:17px; font-weight:900; }
+    .player-detail { flex:1; min-width:0; }
+    .player-name { font-size:13px; font-weight:900; overflow-wrap:anywhere; }
+    .player-note { margin-top:3px; color:var(--muted); font-size:11px; line-height:1.35; }
+    .player-state { flex:0 0 auto; max-width:104px; text-align:right; color:#b9d7cb; font-size:11px; line-height:1.35; }
+    .round-card { margin-top:15px; padding:14px; border:1px solid #57492b; border-radius:16px; background:linear-gradient(145deg,#262218,#111b27 72%); }
+    .round-title { font-weight:1000; color:#f6d991; font-size:16px; }
+    .round-copy { margin-top:6px; color:#c5d1df; font-size:12px; line-height:1.5; }
+    .choice-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; }
+    .choice-button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-width:0; min-height:104px; padding:10px 4px; border-color:#4d6074; background:linear-gradient(150deg,#21354b,#132235); }
+    .choice-button:active { transform:scale(.97); }
+    .choice-emoji { display:block; font-size:31px; line-height:1; filter:drop-shadow(0 2px 3px #0008); }
+    .choice-name { font-size:12px; font-weight:900; }
+    .result-card { margin-top:14px; padding:14px; border:1px solid #3a6858; border-radius:15px; background:linear-gradient(145deg,#122c25,#101b2a); }
+    .result-card.draw { border-color:#655939; background:linear-gradient(145deg,#2b271a,#121b29); }
+    .result-title { color:#b9f5d7; font-size:16px; font-weight:1000; }
+    .result-card.draw .result-title { color:#f4d990; }
+    .result-choices { display:grid; gap:7px; margin-top:11px; }
+    .result-choice { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 9px; border-radius:10px; background:#07151b77; font-size:12px; }
+    .result-choice b { font-size:13px; }
+    .result-payout { margin-top:11px; color:#d0e1d8; font-size:12px; line-height:1.55; }
+    .round-note { margin-top:12px; padding:10px; border:1px dashed #3f546b; border-radius:12px; color:#c6d4e4; font-size:12px; line-height:1.5; }
+    .room-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
+    .room-actions button { width:100%; }
+    .secondary { background:#17283c; }
+    .footnote { padding:0 3px; color:#8799b1; font-size:11px; line-height:1.55; }
+    @media(max-width:380px) {
+      body { padding-left:9px; padding-right:9px; }
+      .panel { padding:13px; }
+      h1 { font-size:22px; }
+      .choice-grid { gap:5px; }
+      .choice-button { min-height:98px; }
+      .choice-emoji { font-size:27px; }
+      .choice-name { font-size:11px; }
+      .room-card { padding:10px; }
+      .join-button { min-width:69px; padding:8px 9px; }
+      .room-actions { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">◆ ALLCOINS</div>
+    <div class="balance-badge">Баланс <strong id="topBalance">0</strong> AC</div>
+  </header>
+
+  <button type="button" class="back" id="backToGames">← Назад к играм</button>
+
+  <section id="lobbyView">
+    <div class="panel">
+      <h1>✊ Камень · Ножницы · Бумага</h1>
+      <p class="subtitle">Онлайн-комнаты до 3 игроков. Два участника могут начать сразу; третий подключается к следующему раунду.</p>
+      <div style="height:16px"></div>
+      <label for="stakeInput" class="field-label">Ставка за раунд</label>
+      <div class="stake-field">
+        <input id="stakeInput" type="number" inputmode="numeric" min="100" step="1" value="100" autocomplete="off" aria-label="Ставка в AC">
+        <span class="ac-chip">AC</span>
+      </div>
+      <p class="hint">Минимум 100 AC. Верхнего лимита в настройке нет; у каждого участника должна быть доступна выбранная ставка, когда все сделают ход.</p>
+      <button type="button" class="primary wide" id="createRoom">＋ Создать комнату</button>
+      <div id="lobbyStatus" class="status" role="status"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><span>🌐 Открытые комнаты</span><button type="button" class="secondary" id="refreshRooms" style="min-height:36px;padding:7px 10px;font-size:12px">↻ Обновить</button></div>
+      <div id="roomsList" class="room-list"><div class="empty">Загружаю список комнат…</div></div>
+    </div>
+    <p class="footnote">AC — виртуальные монеты ALLCOINS, не деньги. Ставки списываются одновременно после выбора всех игроков. При ничьей ставки возвращаются; победители делят общий банк.</p>
+  </section>
+
+  <section id="roomView" hidden>
+    <div class="panel">
+      <div class="room-top">
+        <div>
+          <h1>✊ Камень · Ножницы · Бумага</h1>
+          <p class="subtitle">Комната онлайн · общий ход скрыт до завершения выбора.</p>
+          <div class="room-number" id="roomNumber">Комната #—</div>
+        </div>
+        <div class="stake-big"><span>Ставка раунда</span><strong id="roomStake">100 AC</strong><span style="margin-top:7px">Раунд <b id="roundNumber">1</b></span></div>
+      </div>
+      <div id="roomStatus" class="status show" role="status">Подключаюсь к комнате…</div>
+      <div id="playersList" class="players"></div>
+      <div id="lastResult"></div>
+      <div id="choiceArea"></div>
+      <div class="room-actions">
+        <button type="button" class="secondary" id="refreshState">↻ Обновить</button>
+        <button type="button" class="secondary" id="leaveRoom">Выйти из комнаты</button>
+      </div>
+    </div>
+    <p class="footnote">Если третий игрок вошёл во время раунда, он увидит статус «со следующего раунда». Чужой выбор не раскрывается до завершения раунда.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const API_BASE = "https://allcoins-server.onrender.com";
+  const telegram = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (telegram) {
+    try { telegram.ready(); telegram.expand(); } catch (_) {}
+  }
+  const $ = id => document.getElementById(id);
+  const choices = {
+    rock: { label: "Камень", symbol: "✊" },
+    paper: { label: "Бумага", symbol: "✋" },
+    scissors: { label: "Ножницы", symbol: "✌️" }
+  };
+  let roomId = null;
+  let lastState = null;
+  let busy = false;
+  let pollBusy = false;
+  let roomListBusy = false;
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch]));
+  }
+  function formatAmount(value) {
+    const number = Number(value || 0);
+    return Number.isFinite(number) ? new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(number) : "0";
+  }
+  function showStatus(id, message, kind) {
+    const node = $(id);
+    node.textContent = String(message || "");
+    node.className = "status show" + (kind ? " " + kind : "");
+  }
+  function initData() {
+    return telegram && typeof telegram.initData === "string" ? telegram.initData : "";
+  }
+  async function api(path, body) {
+    const response = await fetch(API_BASE + "/api/rps/" + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({}, body || {}, { initData: initData() }))
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) {
+      const error = new Error(data.error || "Не удалось связаться с сервером игры.");
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+  function setBalance(value) {
+    $("topBalance").textContent = formatAmount(value);
+  }
+  function showLobby() {
+    $("lobbyView").hidden = false;
+    $("roomView").hidden = true;
+    roomId = null;
+    lastState = null;
+    sessionStorage.removeItem("allcoins-rps-room-id");
+  }
+  function showRoom() {
+    $("lobbyView").hidden = true;
+    $("roomView").hidden = false;
+  }
+
+  async function loadRooms() {
+    if (roomListBusy || roomId) return;
+    roomListBusy = true;
+    try {
+      const data = await api("rooms/list");
+      setBalance(data.balance);
+      const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+      if (!rooms.length) {
+        $("roomsList").innerHTML = '<div class="empty">Пока нет открытых комнат. Создай первую и пригласи игроков.</div>';
+      } else {
+        $("roomsList").innerHTML = rooms.map(room => {
+          const count = Number(room.playersCount || 0);
+          const full = count >= Number(room.maxPlayers || 3) && !room.isMember;
+          const action = room.isMember ? "Открыть" : (full ? "Полная" : "Войти");
+          return '<div class="room-card">' +
+            '<div class="room-info"><div class="room-name">' + escapeHtml(room.name) + ' #' + escapeHtml(room.id) + '</div>' +
+            '<div class="room-meta">Ставка: <b>' + formatAmount(room.stake) + ' AC</b><br>' +
+            'Игроки: ' + count + '/3 · ' + (room.status === "playing" ? "идёт игра" : "ожидает игроков") + '</div></div>' +
+            '<button type="button" class="join-button' + (full ? ' secondary' : ' primary') + '" data-join-room="' + escapeHtml(room.id) + '"' + (full ? ' disabled' : '') + '>' + action + '</button>' +
+            '</div>';
+        }).join("");
+      }
+    } catch (error) {
+      $("roomsList").innerHTML = '<div class="empty">Не удалось загрузить комнаты: ' + escapeHtml(error.message) + '</div>';
+    } finally {
+      roomListBusy = false;
+    }
+  }
+
+  async function createRoom() {
+    if (busy) return;
+    busy = true;
+    $("createRoom").disabled = true;
+    try {
+      const raw = $("stakeInput").value.trim();
+      const stake = Number(raw);
+      if (!Number.isSafeInteger(stake) || stake < 100) {
+        throw new Error("Укажи целую ставку не меньше 100 AC.");
+      }
+      const data = await api("rooms/create", { stake });
+      showStatus("lobbyStatus", "Комната создана. Открываю её…", "success");
+      await enterRoom(data.roomId, false);
+    } catch (error) {
+      showStatus("lobbyStatus", error.message, "error");
+    } finally {
+      busy = false;
+      $("createRoom").disabled = false;
+    }
+  }
+
+  async function enterRoom(id, join) {
+    const targetId = String(id);
+    if (join) await api("rooms/join", { roomId: targetId });
+    roomId = targetId;
+    sessionStorage.setItem("allcoins-rps-room-id", roomId);
+    showRoom();
+    await refreshState();
+  }
+
+  function renderPlayers(room, round) {
+    const players = Array.isArray(room.players) ? room.players : [];
+    const submitted = new Set(round ? round.submittedIds : []);
+    $("playersList").innerHTML = players.map(player => {
+      let note = player.isOwner ? "Создатель комнаты" : "Участник";
+      let state = "";
+      if (player.waitingNextRound) {
+        state = "Со следующего раунда";
+        note = "Подключился во время раунда";
+      } else if (round && player.inCurrentRound) {
+        state = player.hasSubmitted ? "Ход принят" : "Выбирает";
+      } else if (room.status === "waiting") {
+        state = "Ожидание";
+      }
+      if (player.isMe) note = "Это ты" + (player.isOwner ? " · создатель" : "");
+      return '<div class="player-row"><div class="player-symbol">' + (player.waitingNextRound ? "↗" : (player.isOwner ? "♛" : "●")) + '</div>' +
+        '<div class="player-detail"><div class="player-name">' + escapeHtml(player.displayName) + (player.isMe ? " (ты)" : "") + '</div>' +
+        '<div class="player-note">' + escapeHtml(note) + '</div></div><div class="player-state">' + escapeHtml(state) + '</div></div>';
+    }).join("");
+    if (!players.length) $("playersList").innerHTML = '<div class="empty">Игроков пока нет.</div>';
+  }
+
+  function renderResult(result) {
+    if (!result) {
+      $("lastResult").innerHTML = "";
+      return;
+    }
+    const isDraw = result.outcome === "draw";
+    const heading = isDraw
+      ? "Раунд " + result.roundNumber + " — ничья"
+      : "Раунд " + result.roundNumber + " — победа!";
+    const summary = isDraw
+      ? "Все ставки возвращены участникам."
+      : "Победител" + (Array.isArray(result.winnerLabels) && result.winnerLabels.length > 1 ? "и" : "ь") + ": " +
+        (Array.isArray(result.winnerLabels) ? result.winnerLabels.map(escapeHtml).join(", ") : "—");
+    const choicesHtml = (Array.isArray(result.choices) ? result.choices : []).map(item =>
+      '<div class="result-choice"><span>' + escapeHtml(item.label) + '</span><b>' +
+      escapeHtml(item.symbol || (choices[item.choice] && choices[item.choice].symbol)) + ' ' +
+      escapeHtml(item.choiceLabel || (choices[item.choice] && choices[item.choice].label)) + '</b></div>'
+    ).join("");
+    const payoutHtml = (Array.isArray(result.payouts) ? result.payouts : []).map(item =>
+      escapeHtml(item.label) + ': +' + formatAmount(item.amount) + ' AC'
+    ).join("<br>");
+    $("lastResult").innerHTML = '<div class="result-card' + (isDraw ? ' draw' : '') + '">' +
+      '<div class="result-title">' + escapeHtml(heading) + '</div><div class="round-copy">' + summary + '</div>' +
+      '<div class="result-choices">' + choicesHtml + '</div>' +
+      '<div class="result-payout">' + (isDraw ? "Возврат ставок: " : "Выплаты: ") + (payoutHtml || "—") + '</div></div>';
+  }
+
+  function renderChoices(room, round) {
+    const area = $("choiceArea");
+    const me = (room.players || []).find(player => player.isMe);
+    if (room.status === "waiting" || !round) {
+      area.innerHTML = '<div class="round-note">Раунд начнётся автоматически, когда в комнате будет минимум два игрока.</div>';
+      return;
+    }
+    if (me && me.waitingNextRound) {
+      area.innerHTML = '<div class="round-note">Ты подключился во время текущего раунда. Начнёшь играть со следующего раунда.</div>';
+    } else if (round.canChoose) {
+      area.innerHTML = '<div class="round-card"><div class="round-title">Раунд ' + escapeHtml(round.number) + ': твой выбор</div>' +
+        '<div class="round-copy">Выбери один жест. Пока все не выберут, никто не увидит чужие ответы.</div>' +
+        '<div class="choice-grid">' +
+        '<button type="button" class="choice-button" data-choice="rock"><span class="choice-emoji">✊</span><span class="choice-name">Камень</span></button>' +
+        '<button type="button" class="choice-button" data-choice="scissors"><span class="choice-emoji">✌️</span><span class="choice-name">Ножницы</span></button>' +
+        '<button type="button" class="choice-button" data-choice="paper"><span class="choice-emoji">✋</span><span class="choice-name">Бумага</span></button>' +
+        '</div></div>';
+    } else if (round.submittedByMe) {
+      area.innerHTML = '<div class="round-note">Твой выбор принят и скрыт. Ждём остальных игроков — ставку спишут только после всех выборов.</div>';
+    } else {
+      area.innerHTML = '<div class="round-note">В этом раунде не получится сделать ход. Обновление состояния комнаты…</div>';
+    }
+  }
+
+  function renderState(data) {
+    lastState = data;
+    setBalance(data.balance);
+    const room = data.room;
+    const round = data.round;
+    $("roomNumber").textContent = "Комната #" + room.id;
+    $("roomStake").textContent = formatAmount(room.stake) + " AC";
+    $("roundNumber").textContent = String(room.currentRound);
+    renderPlayers(room, round);
+    renderResult(data.lastResult);
+
+    if (room.status === "waiting") {
+      showStatus("roomStatus", room.playersCount < 2
+        ? "Ждём второго игрока. Как только он войдёт, раунд начнётся."
+        : "Комната готова. Начинаем раунд.", "");
+    } else if (round && round.canChoose) {
+      showStatus("roomStatus", "Раунд " + round.number + " идёт. Сделай выбор, чтобы продолжить.", "");
+    } else if (round && round.submittedByMe) {
+      showStatus("roomStatus", "Ход принят. Ждём остальных; выборы пока скрыты.", "success");
+    } else {
+      const me = room.players.find(player => player.isMe);
+      if (me && me.waitingNextRound) {
+        showStatus("roomStatus", "Ты подключился во время раунда и вступишь в игру со следующего раунда.", "");
+      } else {
+        showStatus("roomStatus", "Обновляю состояние раунда…", "");
+      }
+    }
+    renderChoices(room, round);
+  }
+
+  async function refreshState() {
+    if (!roomId || pollBusy) return;
+    pollBusy = true;
+    try {
+      const data = await api("rooms/state", { roomId });
+      renderState(data);
+    } catch (error) {
+      showStatus("roomStatus", error.message, "error");
+      if (error.status === 403 || error.status === 404) {
+        sessionStorage.removeItem("allcoins-rps-room-id");
+        roomId = null;
+        showLobby();
+        await loadRooms();
+      }
+    } finally {
+      pollBusy = false;
+    }
+  }
+
+  async function submitChoice(choice) {
+    if (!roomId || busy) return;
+    busy = true;
+    document.querySelectorAll("[data-choice]").forEach(button => { button.disabled = true; });
+    try {
+      await api("rooms/choose", { roomId, choice });
+      await refreshState();
+    } catch (error) {
+      showStatus("roomStatus", error.message, "error");
+      await refreshState();
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function leaveRoom() {
+    if (!roomId || busy) return;
+    busy = true;
+    $("leaveRoom").disabled = true;
+    try {
+      await api("rooms/leave", { roomId });
+      showLobby();
+      showStatus("lobbyStatus", "Ты вышел из комнаты.", "success");
+      await loadRooms();
+    } catch (error) {
+      showStatus("roomStatus", error.message, "error");
+    } finally {
+      busy = false;
+      $("leaveRoom").disabled = false;
+    }
+  }
+
+  $("createRoom").addEventListener("click", createRoom);
+  $("refreshRooms").addEventListener("click", loadRooms);
+  $("refreshState").addEventListener("click", refreshState);
+  $("leaveRoom").addEventListener("click", leaveRoom);
+  $("backToGames").addEventListener("click", () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = "./index.html";
+  });
+
+  document.addEventListener("click", event => {
+    const joinButton = event.target.closest("[data-join-room]");
+    if (joinButton && !joinButton.disabled) {
+      enterRoom(joinButton.getAttribute("data-join-room"), true).catch(error => {
+        showStatus("lobbyStatus", error.message, "error");
+        if (!roomId) loadRooms();
+      });
+      return;
+    }
+    const choiceButton = event.target.closest("[data-choice]");
+    if (choiceButton && !choiceButton.disabled) {
+      submitChoice(choiceButton.getAttribute("data-choice"));
+    }
+  });
+
+  async function initialize() {
+    const savedRoomId = sessionStorage.getItem("allcoins-rps-room-id");
+    if (savedRoomId) {
+      roomId = savedRoomId;
+      showRoom();
+      await refreshState();
+      if (roomId) return;
+    }
+    showLobby();
+    await loadRooms();
+  }
+
+  initialize();
+  window.setInterval(() => {
+    if (roomId) refreshState();
+    else loadRooms();
+  }, 2200);
+})();
+</script>
+</body>
+</html>
