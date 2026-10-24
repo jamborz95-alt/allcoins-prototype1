@@ -111,8 +111,14 @@ test("Durak card landing keeps card proportions and handles unavailable card PNG
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /const cardHeight = Math\.round\(cardWidth \* 1\.5\)/,
     "cards in hand and on the table should share the same 2:3 ratio");
-  assert.match(html, /const targetScaleX = targetScale;\s*const targetScaleY = targetScale;/,
-    "throw animation should scale uniformly instead of squeezing cards");
+  const throwStart = html.indexOf("async function animateDurakCardToTarget(cardElement, targetElement) {");
+  const throwEnd = html.indexOf("\nlet durakGameLoadInProgress = false;", throwStart);
+  assert.ok(throwStart >= 0 && throwEnd > throwStart, "throw animation should exist");
+  const throwAnimation = html.slice(throwStart, throwEnd);
+  assert.match(throwAnimation, /width .*flightDuration/);
+  assert.match(throwAnimation, /height .*flightDuration/);
+  assert.doesNotMatch(throwAnimation, /targetScaleX|flyerImage\.animate/,
+    "landing must animate the whole card box, not a nested scale transform");
   assert.match(html, /image\.onerror = \(\) => \{[\s\S]*?appendDurakFallbackCardFace\(cardElement, rank, suit\);/,
     "a missing or delayed PNG should fall back to a visible classic card face");
   assert.match(html, /lockDurakTableCardSize\(image, "transform", "none"\)/,
