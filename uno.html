@@ -93,6 +93,14 @@
     .pile-caption{font-size:10px;letter-spacing:.7px;text-transform:uppercase;font-weight:900;color:#c3dfce;text-shadow:0 1px 2px #0008}
     .pile-count{position:absolute;top:-6px;right:-7px;z-index:5;min-width:23px;height:23px;border:2px solid #e7d092;border-radius:50%;background:#102b28;color:#ffdc89;display:grid;place-items:center;font-size:10px;font-weight:1000}
     .draw-pile{border:0;background:transparent;padding:0;border-radius:12px;box-shadow:none}
+    #discardPile{position:relative;flex:0 0 68px;width:68px;height:101px;overflow:visible;isolation:isolate}
+    #discardPile .discard-stack-card{position:absolute!important;margin:0;flex:none;pointer-events:none}
+    #discardPile .discard-stack-card:not(.discard-stack-top){box-shadow:0 3px 7px #00110c66}
+    #discardPile .discard-stack-top{z-index:5}
+    .uno-hand.animating{pointer-events:none!important}
+    .uno-flight-layer{position:fixed!important;pointer-events:none!important;z-index:2147483647!important;margin:0!important;padding:0!important;overflow:visible!important;will-change:left,top,width,height,transform;backface-visibility:hidden}
+    .uno-flight-face{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;box-sizing:border-box!important;margin:0!important;padding:0!important;backface-visibility:hidden!important}
+    .uno-flight-face.front{transform:rotateY(180deg)!important}
     .draw-pile:disabled{opacity:.52}
     .uno-card{--face:#d82937;position:relative;display:block;flex:0 0 auto;width:68px;height:101px;overflow:hidden;padding:0;border:2px solid #fff;border-radius:10px;background:var(--face);color:white;box-shadow:0 6px 12px #00110c6b,inset 0 0 0 1px #0002;isolation:isolate;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:transform .13s ease,filter .13s ease,box-shadow .13s ease}
     .uno-card.red{--face:#e52d3d;background:linear-gradient(145deg,#f75359,#b80827)}
@@ -282,7 +290,11 @@
         gamePollBusy: false,
         selectedPendingCard: null,
         error: "",
-        busy: false
+        busy: false,
+        renderedGame: null,
+        cardAnimationInProgress: false,
+        renderQueued: false,
+        lastDraggedPlayCardId: null
       };
       const colors = ["red", "blue", "green", "yellow"];
       const colorNames = { red: "Красный", blue: "Синий", green: "Зелёный", yellow: "Жёлтый" };
@@ -370,6 +382,11 @@
       }
 
       function showStage(stage) {
+        if (stage === "game" && state.stage !== "game") {
+          state.renderedGame = null;
+          state.renderQueued = false;
+          state.lastDraggedPlayCardId = null;
+        }
         state.stage = stage;
         $("lobbyView").classList.toggle("hidden", stage === "game");
         $("lobbyGrid").classList.toggle("hidden", stage !== "lobby");
@@ -599,6 +616,7 @@
         const opts = options || {};
         const button = document.createElement(opts.interactive ? "button" : "div");
         button.className = "uno-card " + (card.color || "wild");
+        button.dataset.cardId = String(card.id);
         if (opts.interactive) {
           button.type = "button";
           button.setAttribute("aria-label", describeCard(card));
@@ -646,6 +664,7 @@
         for (const p of state.game.players) {
           const item = document.createElement("div");
           item.className = "opponent" + (p.isCurrent ? " active" : "") + (p.isYou ? " you" : "");
+          item.dataset.playerKey = String(p.id ?? p.playerId ?? p.name ?? "");
           const avatar = document.createElement("div");
           avatar.className = "op-avatar";
           avatar.textContent = p.isYou ? "●" : (p.bot ? "🤖" : String((p.name || "И").trim().charAt(0) || "И").toUpperCase());
@@ -889,7 +908,7 @@
             }
 
             // Отпустили на столе: плавно доводим карту до стопки сброса.
-            const targetCard = discardHost && discardHost.querySelector(".uno-card");
+            const targetCard = discardHost && (discardHost.querySelector(".discard-stack-top") || discardHost.lastElementChild);
             const targetRect = targetCard ? targetCard.getBoundingClientRect() :
               (discardHost ? discardHost.getBoundingClientRect() : originRect);
             const endWidth = targetRect.width || originRect.width;
@@ -905,11 +924,13 @@
             state.cardDragging = false;
             state.cardDropPending = true;
             try {
+              state.lastDraggedPlayCardId = String(card.id);
               await playCard(card);
             } finally {
               state.cardDropPending = false;
               if (element.isConnected) restoreSource();
               if (state.game && state.stage === "game") renderGame();
+              state.lastDraggedPlayCardId = null;
             }
           }
 
@@ -939,9 +960,358 @@
         });
       }
 
+
+      function unoRect(element) {
+        if (!element || !element.isConnected) return null;
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+      }
+
+      function captureUnoAnimationRects() {
+        const hand = new Map();
+        document.querySelectorAll("#unoHand [data-card-id]").forEach(element => {
+          const rect = unoRect(element);
+          if (rect) hand.set(String(element.dataset.cardId), rect);
+        });
+        const opponents = new Map();
+        document.querySelectorAll("#opponents .opponent[data-player-key]").forEach(element => {
+          const rect = unoRect(element);
+          if (rect) opponents.set(String(element.dataset.playerKey), rect);
+        });
+        return {
+          deck: unoRect(document.querySelector("#drawPileBtn .uno-card")),
+          hand,
+          opponents
+        };
+      }
+
+      function unoRenderSnapshot(game) {
+        if (!game) return null;
+        return {
+          status: String(game.status || ""),
+          hand: Array.isArray(game.hand) ? game.hand.map(card => ({ id: String(card.id), card })) : [],
+          discard: Array.isArray(game.discard) ? game.discard.map(card => ({ id: String(card.id), card })) : [],
+          players: Array.isArray(game.players) ? game.players.map(player => ({
+            id: String(player.id ?? player.playerId ?? player.name ?? ""),
+            isYou: Boolean(player.isYou),
+            isCurrent: Boolean(player.isCurrent),
+            handCount: Number(player.handCount || 0)
+          })) : []
+        };
+      }
+
+      function findUnoCardElement(root, cardId) {
+        if (!root || cardId == null) return null;
+        return Array.from(root.querySelectorAll("[data-card-id]"))
+          .find(element => String(element.dataset.cardId) === String(cardId)) || null;
+      }
+
+      function createUnoAnimationJobs(previous, next, oldRects) {
+        const jobs = [];
+        const deckElement = document.querySelector("#drawPileBtn .uno-card");
+        const handHost = $("unoHand");
+        const discardHost = $("discardPile");
+        const reducedMotion = window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const previousHandIds = new Set((previous && previous.hand || []).map(item => item.id));
+        const nextHand = next.hand || [];
+        const newHand = nextHand.filter(item => !previousHandIds.has(item.id));
+        const isFirstRender = !previous;
+
+        // Initial deal and later draws travel visibly from the deck to the hand.
+        newHand.forEach((item, index) => {
+          const target = findUnoCardElement(handHost, item.id);
+          if (!target || !oldRects.deck || !deckElement) return;
+          jobs.push({
+            kind: "draw-to-hand",
+            sourceElement: deckElement,
+            targetElement: target,
+            startRect: oldRects.deck,
+            delay: isFirstRender ? index * 62 : index * 72,
+            duration: isFirstRender ? 285 : 335,
+            useCardBack: true
+          });
+        });
+
+        // When an opponent takes cards, animate card backs from the deck toward their seat.
+        if (previous) {
+          const previousPlayers = new Map(previous.players.map(player => [player.id, player]));
+          for (const player of next.players) {
+            if (player.isYou) continue;
+            const old = previousPlayers.get(player.id);
+            if (!old || player.handCount <= old.handCount) continue;
+            const seatRect = oldRects.opponents.get(player.id);
+            if (!seatRect || !oldRects.deck || !deckElement) continue;
+            const amount = Math.min(3, player.handCount - old.handCount);
+            const endRect = {
+              left: seatRect.left + seatRect.width / 2 - 20,
+              top: seatRect.top + seatRect.height / 2 - 29,
+              width: 40,
+              height: 58
+            };
+            for (let n = 0; n < amount; n++) {
+              jobs.push({
+                kind: "deck-to-opponent",
+                sourceElement: deckElement,
+                targetElement: null,
+                startRect: oldRects.deck,
+                endRect,
+                delay: 35 + n * 82,
+                duration: 310,
+                useCardBack: true
+              });
+            }
+          }
+        }
+
+        const previousTop = previous && previous.discard.length ? previous.discard[previous.discard.length - 1] : null;
+        const nextTop = next.discard.length ? next.discard[next.discard.length - 1] : null;
+        const topChanged = nextTop && (!previousTop || previousTop.id !== nextTop.id);
+
+        if (topChanged) {
+          const target = findUnoCardElement(discardHost, nextTop.id);
+          if (target) {
+            const topId = String(nextTop.id);
+            const wasInOwnHand = previousHandIds.has(topId);
+            const draggedAlready = String(state.lastDraggedPlayCardId || "") === topId;
+
+            // The drag gesture already carries this card to the discard pile.
+            if (!draggedAlready) {
+              let startRect = null;
+              let useCardBack = false;
+              let flipFromBack = false;
+              let delay = 0;
+              let duration = 385;
+
+              if (wasInOwnHand) {
+                startRect = oldRects.hand.get(topId) || oldRects.deck;
+              } else if (!previous) {
+                // Starting card is turned up from the deck.
+                startRect = oldRects.deck;
+                useCardBack = true;
+                flipFromBack = true;
+                delay = 260;
+                duration = 430;
+              } else {
+                const oldCurrentOpponent = previous.players.find(player => player.isCurrent && !player.isYou);
+                startRect = oldCurrentOpponent ? oldRects.opponents.get(oldCurrentOpponent.id) : null;
+                useCardBack = true;
+                flipFromBack = true;
+                if (!startRect) startRect = oldRects.deck;
+              }
+
+              if (startRect) {
+                jobs.push({
+                  kind: wasInOwnHand ? "hand-to-discard" : (previous ? "opponent-to-discard" : "opening-discard"),
+                  sourceElement: useCardBack ? deckElement : target,
+                  targetElement: target,
+                  startRect,
+                  delay,
+                  duration,
+                  useCardBack,
+                  flipFromBack
+                });
+              }
+            }
+          }
+        }
+
+        return reducedMotion ? [] : jobs;
+      }
+
+      function unoWait(ms) {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+      }
+
+      function restoreUnoElementVisibility(element, oldVisibility, oldOpacity) {
+        if (!element || !element.isConnected) return;
+        if (oldVisibility) element.style.setProperty("visibility", oldVisibility.value, oldVisibility.priority);
+        else element.style.removeProperty("visibility");
+        if (oldOpacity) element.style.setProperty("opacity", oldOpacity.value, oldOpacity.priority);
+        else element.style.removeProperty("opacity");
+      }
+
+      async function animateUnoCardFlight(job) {
+        await unoWait(job.delay || 0);
+        const source = job.sourceElement;
+        const target = job.targetElement;
+        const endRect = job.endRect || unoRect(target);
+        if (!source || !endRect) return;
+
+        const oldVisibility = target ? {
+          value: target.style.getPropertyValue("visibility"),
+          priority: target.style.getPropertyPriority("visibility")
+        } : null;
+        const oldOpacity = target ? {
+          value: target.style.getPropertyValue("opacity"),
+          priority: target.style.getPropertyPriority("opacity")
+        } : null;
+        if (target) target.style.setProperty("visibility", "hidden", "important");
+
+        const sourceRect = job.startRect || unoRect(source);
+        if (!sourceRect) {
+          restoreUnoElementVisibility(target, oldVisibility, oldOpacity);
+          return;
+        }
+
+        const endWidth = endRect.width;
+        const endHeight = endRect.height;
+        const startWidth = job.kind === "opponent-to-discard"
+          ? Math.max(38, endWidth * 0.68)
+          : sourceRect.width;
+        const startHeight = job.kind === "opponent-to-discard"
+          ? Math.max(56, endHeight * 0.68)
+          : sourceRect.height;
+        const startLeft = sourceRect.left + sourceRect.width / 2 - startWidth / 2;
+        const startTop = sourceRect.top + sourceRect.height / 2 - startHeight / 2;
+        const endLeft = endRect.left + (endRect.width - endWidth) / 2;
+        const endTop = endRect.top + (endRect.height - endHeight) / 2;
+
+        let flyer = null;
+        let flip = false;
+        try {
+          if (job.flipFromBack && target) {
+            flyer = document.createElement("div");
+            flyer.className = "uno-flight-layer";
+            flyer.style.position = "fixed";
+            flyer.style.left = startLeft + "px";
+            flyer.style.top = startTop + "px";
+            flyer.style.width = startWidth + "px";
+            flyer.style.height = startHeight + "px";
+            flyer.style.perspective = "900px";
+            flyer.style.transformStyle = "preserve-3d";
+
+            const back = source.cloneNode(true);
+            const front = target.cloneNode(true);
+            copyUnoCardStyles(source, back);
+            copyUnoCardStyles(target, front);
+            [back, front].forEach(face => {
+              face.classList.remove("playable", "not-playable", "selected-draw", "discard-stack-card", "discard-stack-top");
+              face.classList.add("uno-flight-face");
+              face.disabled = true;
+              face.style.setProperty("position", "absolute", "important");
+              face.style.setProperty("left", "0", "important");
+              face.style.setProperty("top", "0", "important");
+              face.style.setProperty("width", "100%", "important");
+              face.style.setProperty("height", "100%", "important");
+              face.style.setProperty("min-width", "0", "important");
+              face.style.setProperty("min-height", "0", "important");
+              face.style.setProperty("max-width", "none", "important");
+              face.style.setProperty("max-height", "none", "important");
+              face.style.setProperty("margin", "0", "important");
+              face.style.setProperty("pointer-events", "none", "important");
+              face.style.setProperty("animation", "none", "important");
+              face.style.setProperty("visibility", "visible", "important");
+              face.style.setProperty("opacity", "1", "important");
+            });
+            back.classList.remove("front");
+            front.classList.add("front");
+            flyer.append(back, front);
+            flip = true;
+          } else {
+            const visualSource = job.useCardBack ? source : (target || source);
+            flyer = visualSource.cloneNode(true);
+            copyUnoCardStyles(visualSource, flyer);
+            flyer.classList.remove("playable", "not-playable", "selected-draw", "discard-stack-card", "discard-stack-top");
+            flyer.classList.add("uno-flight-layer");
+            flyer.disabled = true;
+            flyer.style.setProperty("visibility", "visible", "important");
+            flyer.style.setProperty("opacity", "1", "important");
+          }
+
+          flyer.removeAttribute("id");
+          Object.assign(flyer.style, {
+            position: "fixed",
+            left: startLeft + "px",
+            top: startTop + "px",
+            width: startWidth + "px",
+            height: startHeight + "px",
+            minWidth: "0",
+            minHeight: "0",
+            maxWidth: "none",
+            maxHeight: "none",
+            boxSizing: "border-box",
+            margin: "0",
+            padding: "0",
+            zIndex: "2147483647",
+            pointerEvents: "none",
+            transition: "none",
+            animation: "none",
+            transformOrigin: "center center",
+            willChange: "left,top,width,height,transform",
+            opacity: "1"
+          });
+          ["position", "left", "top", "width", "height", "min-width", "min-height",
+            "max-width", "max-height", "margin", "padding", "z-index", "pointer-events",
+            "box-sizing", "transition", "animation"].forEach(property => {
+            flyer.style.setProperty(property, flyer.style.getPropertyValue(property), "important");
+          });
+          if (flip) {
+            flyer.style.setProperty("perspective", "900px", "important");
+            flyer.style.setProperty("transform-style", "preserve-3d", "important");
+          }
+          document.body.appendChild(flyer);
+
+          if (typeof flyer.animate === "function") {
+            const frames = flip ? [
+              { left: startLeft + "px", top: startTop + "px", width: startWidth + "px", height: startHeight + "px", transform: "rotateY(0deg) rotateZ(-9deg) scale(.95)" },
+              { left: (startLeft + endLeft) / 2 + "px", top: (startTop + endTop) / 2 - 18 + "px", width: (startWidth + endWidth) / 2 + "px", height: (startHeight + endHeight) / 2 + "px", transform: "rotateY(92deg) rotateZ(5deg) scale(1.06)", offset: .52 },
+              { left: endLeft + "px", top: endTop + "px", width: endWidth + "px", height: endHeight + "px", transform: "rotateY(180deg) rotateZ(0deg) scale(1)" }
+            ] : [
+              { left: startLeft + "px", top: startTop + "px", width: startWidth + "px", height: startHeight + "px", transform: "rotateZ(-5deg) scale(.98)" },
+              { left: (startLeft + endLeft) / 2 + "px", top: (startTop + endTop) / 2 - 13 + "px", width: (startWidth + endWidth) / 2 + "px", height: (startHeight + endHeight) / 2 + "px", transform: "rotateZ(2deg) scale(1.04)", offset: .72 },
+              { left: endLeft + "px", top: endTop + "px", width: endWidth + "px", height: endHeight + "px", transform: "rotateZ(0deg) scale(1)" }
+            ];
+            const animation = flyer.animate(frames, {
+              duration: job.duration || 360,
+              easing: "cubic-bezier(.18,.72,.22,1)",
+              fill: "forwards"
+            });
+            await animation.finished.catch(() => {});
+          } else {
+            await unoWait(job.duration || 360);
+          }
+        } catch (error) {
+          console.warn("UNO card animation failed:", error);
+        } finally {
+          if (flyer) flyer.remove();
+          restoreUnoElementVisibility(target, oldVisibility, oldOpacity);
+        }
+      }
+
+      async function runUnoCardAnimations(jobs) {
+        if (!jobs || !jobs.length) return;
+        state.cardAnimationInProgress = true;
+        $("unoHand").classList.add("animating");
+        $("drawBtn").disabled = true;
+        $("drawPileBtn").disabled = true;
+        $("passBtn").disabled = true;
+        try {
+          await Promise.all(jobs.map(job => animateUnoCardFlight(job)));
+        } finally {
+          state.cardAnimationInProgress = false;
+          $("unoHand").classList.remove("animating");
+          if (state.stage === "game" && state.game) {
+            state.renderQueued = false;
+            renderGame();
+          }
+        }
+      }
+
       function renderGame() {
         const game = state.game;
-        if (!game || state.cardDragging || state.cardDropPending) return;
+        if (!game) return;
+        if (state.cardDragging || state.cardDropPending) return;
+        if (state.cardAnimationInProgress) {
+          state.renderQueued = true;
+          return;
+        }
+
+        const previous = state.renderedGame;
+        const oldRects = captureUnoAnimationRects();
+        const nextSnapshot = unoRenderSnapshot(game);
+
         $("gameRoomLabel").textContent = (state.room ? state.room.name : "Комната УНО") + " · #" + (state.room ? state.room.id : "");
         $("bankCaption").textContent = game.mode === "bots" ? "ТРЕНИРОВКА" : "БАНК КОМНАТЫ";
         $("bankValue").textContent = game.mode === "bots" ? "без ставки" : formatAmount(game.pot || game.stake) + " AC";
@@ -950,8 +1320,19 @@
 
         const discardHost = $("discardPile");
         discardHost.innerHTML = "";
-        const top = game.discard && game.discard.length ? game.discard[game.discard.length - 1] : null;
-        if (top) discardHost.appendChild(cardElement(top, { interactive: false }));
+        const visibleDiscard = (game.discard || []).slice(-3);
+        visibleDiscard.forEach((item, index) => {
+          const element = cardElement(item, { interactive: false });
+          element.classList.add("discard-stack-card");
+          const distanceFromTop = visibleDiscard.length - index - 1;
+          element.style.setProperty("left", (distanceFromTop * 2) + "px");
+          element.style.setProperty("top", (-distanceFromTop * 2) + "px");
+          element.style.setProperty("z-index", String(index + 1));
+          element.style.setProperty("transform", distanceFromTop ? "rotate(" + (distanceFromTop * -2) + "deg)" : "rotate(0deg)");
+          if (distanceFromTop === 0) element.classList.add("discard-stack-top");
+          discardHost.appendChild(element);
+        });
+
         $("activeColor").innerHTML = "";
         const dot = document.createElement("span");
         dot.className = "color-dot " + (game.currentColor || "red");
@@ -959,7 +1340,6 @@
         text.textContent = "Текущий цвет: " + (colorNames[game.currentColor] || "—");
         $("activeColor").append(dot, text);
 
-        const myTurn = game.status === "playing" && game.currentPlayerId && state.players.length && game.currentPlayerId === (state.myId || "");
         const isCurrent = game.players.some(p => p.isYou && p.isCurrent);
         const turn = isCurrent && game.status === "playing";
         const handHost = $("unoHand");
@@ -967,19 +1347,22 @@
         $("handLabel").textContent = "Твои карты · " + game.hand.length;
         $("turnLabel").textContent = game.status === "finished" ? "ПАРТИЯ ЗАВЕРШЕНА" : (turn ? "ТВОЙ ХОД" : "ХОД СОПЕРНИКА");
         $("turnLabel").style.color = turn ? "#ffe4a1" : "#c7dfd4";
+
         game.hand.forEach(card => {
           const canPlay = turn && playableOnClient(card, game);
           const element = cardElement(card, { interactive: true, playable: turn ? canPlay : false });
           element.disabled = false;
           element.setAttribute("aria-disabled", canPlay ? "false" : "true");
           attachUnoCardDrag(element, card, turn);
-          element.addEventListener("click", function (event) {
-            if (canPlay) playCard(card);
+          element.addEventListener("click", function () {
+            if (canPlay && !state.cardAnimationInProgress) playCard(card);
           });
           handHost.appendChild(element);
         });
-        $("drawPileBtn").disabled = !turn || game.status !== "playing" || Boolean(game.drawnCardId);
-        $("drawBtn").disabled = !turn || game.status !== "playing" || Boolean(game.drawnCardId);
+
+        const drawLocked = !turn || game.status !== "playing" || Boolean(game.drawnCardId);
+        $("drawPileBtn").disabled = drawLocked;
+        $("drawBtn").disabled = drawLocked;
         $("passBtn").classList.toggle("hidden", !turn || !game.drawnCardId);
         $("passBtn").disabled = !turn || !game.drawnCardId;
         $("gameMessage").textContent = game.message || "Ход игры.";
@@ -992,6 +1375,11 @@
           $("drawBtn").disabled = true;
           $("passBtn").classList.add("hidden");
         }
+
+        const jobs = createUnoAnimationJobs(previous, nextSnapshot, oldRects);
+        state.renderedGame = nextSnapshot;
+        if (jobs.length) void runUnoCardAnimations(jobs);
+        else if (state.renderQueued) state.renderQueued = false;
       }
 
       async function refreshGame(quiet) {
