@@ -132,6 +132,10 @@ try {
   assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
     true, "21 Ochko should open as a separate full-screen page");
   await page.locator("#twentyOneShowCreate").click();
+  assert.equal(await page.locator('#twentyOneCreatePanel select#twentyOneRoomPlayers').count(), 0,
+    "21 Ochko creation should not offer player-count selection");
+  assert.match(await page.locator("#twentyOneCreatePanel").innerText(), /До 5 игроков/,
+    "all 21 Ochko rooms should have fixed capacity for five players");
   await page.locator('#twentyOneRoomStakePresets [data-stake-preset="1000000"]').click();
   assert.equal(await page.locator("#twentyOneRoomStake").inputValue(), "1000000",
     "the 1 million AC room preset should update 21 Ochko stake");
@@ -176,6 +180,39 @@ try {
     "the active player's own two cards should appear in a dedicated hand area");
   assert.match(await page.locator("#twentyOneRoomMyScore").innerText(), /СЧЁТ: 10 \/ 21/,
     "the active player's current score should be visibly shown above their hand");
+  assert.equal(await page.locator("#twentyOneRoomMyHandPanel").evaluate(el => getComputedStyle(el).order), "5",
+    "the player's hand should be placed near the bottom of the fullscreen table");
+  assert.equal(await page.locator("#twentyOneRoomPlayers").evaluate(el => getComputedStyle(el).order), "4",
+    "other player panels should be above the player's hand");
+
+  // After a finished round the ready button waits for other players or the one-minute deadline.
+  await page.evaluate(() => window.renderTwentyOneRoomBoard({
+    room: {
+      id:"rematch-test-room", name:"Реванш", stake:500, playersCount:2, maxPlayers:5,
+      status:"finished", rematchDeadlineAt:new Date(Date.now()+45000).toISOString()
+    },
+    players:[
+      {label:"Тестовый игрок",isMe:true,isReady:true},
+      {label:"Соперник 2",isMe:false,isReady:false}
+    ],
+    game:{
+      status:"finished", stake:500,
+      dealerHand:[{id:"rematch-dealer-a",rank:"9",suit:"♠"},{id:"rematch-dealer-b",rank:"7",suit:"♥"}],
+      players:[
+        {label:"Тестовый игрок",isMe:true,status:"lost",hand:[{id:"rematch-own-a",rank:"10",suit:"♣"},{id:"rematch-own-b",rank:"8",suit:"♥"}],score:18,cardsCount:2,payout:0},
+        {label:"Соперник 2",isMe:false,status:"won",hand:[{id:"rematch-other-a",rank:"A",suit:"♠"},{id:"rematch-other-b",rank:"10",suit:"♦"}],score:21,cardsCount:2,payout:1000}
+      ],
+      currentPlayerLabel:"",currentPlayerIsMe:false,message:"Раунд завершён"
+    }
+  }));
+  assert.notEqual(await page.locator("#twentyOneRoomRematchArea").evaluate(el => getComputedStyle(el).display), "none",
+    "the rematch panel should appear after the round");
+  assert.match(await page.locator("#twentyOneRoomRematch").innerText(), /Ты готов/,
+    "a player who pressed ready should see that the room is waiting for others");
+  assert.match(await page.locator("#twentyOneRoomRematchStatus").innerText(), /00:4[0-9]/,
+    "the rematch panel should show the remaining time");
+  assert.equal(await page.locator("#twentyOneRoomRematch").isDisabled(), true,
+    "readiness should not be submitted repeatedly");
 
   // A two-seat room may start while only its owner is connected: still render their hand.
   await page.evaluate(() => window.renderTwentyOneRoomBoard({
