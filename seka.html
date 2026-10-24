@@ -636,7 +636,7 @@
       </div>
       <div id="actionArea" class="action-area">
         <div class="raise-row">
-          <div><label for="raiseAmount">Повысить на (AC)</label><input id="raiseAmount" type="number" min="100" step="1" inputmode="numeric" value="100"></div>
+          <div><label for="raiseAmount">Новая ставка всего (AC)</label><input id="raiseAmount" type="number" min="200" step="1" inputmode="numeric" value="200" autocomplete="off"></div>
           <button type="button" class="primary" id="raiseButton">Повысить</button>
         </div>
         <div class="action-buttons">
@@ -766,11 +766,27 @@
     const input = $("anteInput");
     input.min = String(tier.min);
     input.max = tier.max == null ? "" : String(tier.max);
-    if (!Number.isSafeInteger(Number(input.value)) || Number(input.value) < tier.min ||
-        (tier.max != null && Number(input.value) > tier.max)) input.value = String(tier.min);
-    $("tierInfo").innerHTML = escapeHtml(tier.label) + "<br>Вход: " + fmt(input.value) + " AC";
-    $("raiseAmount").min = String(tier.min);
-    if (Number($("raiseAmount").value) < tier.min) $("raiseAmount").value = String(tier.min);
+
+    // Не подставляем минимум, пока пользователь временно очищает поле для ввода
+    // собственной суммы. Иначе Android/WebView успевает вернуть число между нажатиями.
+    const rawAnte = input.value.trim();
+    if (rawAnte !== "") {
+      const anteValue = Number(rawAnte);
+      if (!Number.isSafeInteger(anteValue) || anteValue < tier.min ||
+          (tier.max != null && anteValue > tier.max)) {
+        if (document.activeElement !== input) input.value = String(tier.min);
+      }
+    }
+    $("tierInfo").innerHTML = escapeHtml(tier.label) + "<br>Вход: " +
+      (input.value.trim() === "" ? "введите сумму" : fmt(input.value) + " AC");
+
+    const raiseInput = $("raiseAmount");
+    if (raiseInput && !currentRoomId) {
+      raiseInput.min = String(tier.min);
+      const rawRaise = raiseInput.value.trim();
+      if (rawRaise !== "" && document.activeElement !== raiseInput &&
+          Number(rawRaise) < tier.min) raiseInput.value = String(tier.min);
+    }
   }
   async function loadProfile() {
     const result = await fetch(API + "/api/auth", {
@@ -1013,6 +1029,48 @@
     }
   }
 
+  // Поле принимает итоговую ставку за круг, а серверу отправляем только добавку.
+  // Максимум учитывает лимит комнаты и доступный баланс конкретного игрока.
+  function getRaiseBounds(state) {
+    const room = state && state.room;
+    const game = state && state.game;
+    if (!room || !game) return { currentBet: 0, minTarget: 100, maxTarget: 1000 };
+    const currentBet = Number(game.currentBet || room.ante || 0);
+    const minTarget = currentBet + Math.max(1, Number(room.minBet || 100));
+    let maxTarget = room.maxBet == null ? null : Number(room.maxBet);
+    const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
+    if (!game.testMode && me) {
+      const affordableTarget = Number(me.contribution || 0) + Math.max(0, Number(state.balance ?? balance ?? 0));
+      maxTarget = maxTarget == null ? affordableTarget : Math.min(maxTarget, affordableTarget);
+    }
+    if (maxTarget != null && !Number.isSafeInteger(maxTarget)) maxTarget = null;
+    return { currentBet, minTarget, maxTarget };
+  }
+
+  function submitRaise() {
+    if (!currentState || !currentState.game) return;
+    const input = $("raiseAmount");
+    const raw = input.value.trim();
+    const amount = Number(raw);
+    const bounds = getRaiseBounds(currentState);
+    if (raw === "" || !Number.isSafeInteger(amount)) {
+      setStatus("roomStatus", "Введи итоговую ставку целым числом AC.", true);
+      input.focus();
+      return;
+    }
+    if (amount < bounds.minTarget) {
+      setStatus("roomStatus", "Минимальная новая ставка — " + fmt(bounds.minTarget) + " AC.", true);
+      input.focus();
+      return;
+    }
+    if (bounds.maxTarget != null && amount > bounds.maxTarget) {
+      setStatus("roomStatus", "Максимальная новая ставка для тебя — " + fmt(bounds.maxTarget) + " AC.", true);
+      input.focus();
+      return;
+    }
+    sendAction("raise", amount - bounds.currentBet);
+  }
+
   function renderRoom(state) {
     currentState = state;
     currentRoomData = state.room;
@@ -1092,7 +1150,23 @@
       const actionArea = $("actionArea");
       actionArea.classList.toggle("hidden", !playing);
       const isMyTurn = playing && !!game.isYourTurn;
-      $("raiseButton").disabled = !isMyTurn;
+      const raiseBounds = getRaiseBounds(state);
+      const raiseInput = $("raiseAmount");
+      raiseInput.min = String(raiseBounds.minTarget);
+      raiseInput.max = raiseBounds.maxTarget == null ? "" : String(raiseBounds.maxTarget);
+      // Опрос комнаты идёт часто. Не трогаем поле, пока человек печатает,
+      // и не заменяем пустую строку числом между Backspace и следующей цифрой.
+      if (document.activeElement !== raiseInput && raiseInput.value.trim() !== "") {
+        const enteredTarget = Number(raiseInput.value);
+        if (!Number.isSafeInteger(enteredTarget) || enteredTarget < raiseBounds.minTarget) {
+          raiseInput.value = String(raiseBounds.minTarget);
+        } else if (raiseBounds.maxTarget != null && enteredTarget > raiseBounds.maxTarget &&
+                   raiseBounds.maxTarget >= raiseBounds.minTarget) {
+          raiseInput.value = String(raiseBounds.maxTarget);
+        }
+      }
+      const canRaise = raiseBounds.maxTarget == null || raiseBounds.maxTarget >= raiseBounds.minTarget;
+      $("raiseButton").disabled = !isMyTurn || !canRaise;
       $("foldButton").disabled = !isMyTurn;
       $("callButton").disabled = !isMyTurn;
       const activePlayers = game.players.filter(p => !p.folded);
@@ -1100,11 +1174,11 @@
       $("openButton").disabled = !isMyTurn;
       $("refreshStateButton").disabled = false;
       $("callButton").textContent = "Поддержать (" + fmt(Math.max(0, Number(game.currentBet) - Number((me || {}).contribution || 0))) + " AC)";
-      $("raiseAmount").min = String(room.minBet);
-      if (Number($("raiseAmount").value) < room.minBet) $("raiseAmount").value = String(room.minBet);
-      $("raiseAmount").disabled = !isMyTurn;
-      $("actionHint").textContent = "Минимальное повышение: " + fmt(room.minBet) + " AC" +
-        (room.maxBet == null ? ". Верхнего лимита нет, но ставка ограничена вашим балансом." : ". Максимальная ставка за круг: " + fmt(room.maxBet) + " AC.");
+      $("raiseAmount").disabled = !isMyTurn || !canRaise;
+      $("actionHint").textContent = "Введи итоговую ставку целиком — не добавку. Минимум: " +
+        fmt(raiseBounds.minTarget) + " AC" +
+        (raiseBounds.maxTarget == null ? ". Верхнего лимита нет, сумма ограничена балансом." :
+          ". Максимум сейчас: " + fmt(raiseBounds.maxTarget) + " AC.");
     } else {
       $("actionArea").classList.add("hidden");
     }
@@ -1258,12 +1332,12 @@
   $("refreshStateButton").addEventListener("click", () => refreshRoomState().catch(error => setStatus("roomStatus", error.message, true)));
   $("foldButton").addEventListener("click", () => sendAction("fold"));
   $("callButton").addEventListener("click", () => sendAction("call"));
-  $("raiseButton").addEventListener("click", () => sendAction("raise", Number($("raiseAmount").value)));
+  $("raiseButton").addEventListener("click", submitRaise);
   $("openButton").addEventListener("click", () => sendAction("open"));
   $("backButton").addEventListener("click", goBack);
 
   updateTierInput();
-  $("raiseAmount").min = "100";
+  $("raiseAmount").min = "200";
   if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
     tg.BackButton.show();
     if (typeof tg.BackButton.onClick === "function") tg.BackButton.onClick(goBack);
