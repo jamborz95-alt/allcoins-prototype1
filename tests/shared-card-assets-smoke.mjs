@@ -38,6 +38,13 @@ try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const pageErrors = [];
+  const cardAssetRequests = [];
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/cards/") && url.pathname.endsWith(".png")) {
+      cardAssetRequests.push(url.pathname);
+    }
+  });
   let roomCreated = false;
   let botAdded = false;
   let gameStarted = false;
@@ -117,7 +124,27 @@ try {
     return json({ ok: true, rooms: [] });
   });
 
-  // 21 Очко: use the shared Durak card factory, then verify the actual PNGs load.
+  // Seka should navigate on a native tap, with no giant Durak PNG downloads competing for attention.
+  await page.goto("http://127.0.0.1:4175/index.html", { waitUntil: "domcontentloaded" });
+  await page.locator("#openSeka").waitFor({ state: "attached" });
+  await page.locator('.nav button[data-page="games"]').click();
+  await page.locator("#openSeka").waitFor({ state: "visible" });
+  const sekaLink = await page.locator("#openSeka").evaluate(el => ({
+    tag: el.tagName,
+    href: el.getAttribute("href"),
+    touchAction: getComputedStyle(el).touchAction
+  }));
+  assert.equal(sekaLink.tag, "A", "Seka launcher should be a native link so taps trigger navigation directly");
+  assert.match(sekaLink.href, /^\.\/seka\.html\?v=/, "Seka link should keep the existing app base URL and open the separate page");
+  assert.equal(sekaLink.touchAction, "manipulation", "Seka link should respond directly to touch");
+  assert.equal(cardAssetRequests.length, 0, "opening ALLCOINS should not download all large Durak card PNGs in the background");
+
+  await Promise.all([
+    page.waitForURL(url => url.pathname.endsWith("/seka.html")),
+    page.locator("#openSeka").click()
+  ]);
+  assert.match(await page.title(), /Сека Онлайн/, "tapping Seka should open its separate page");
+  assert.equal(cardAssetRequests.length, 0, "opening Seka should not trigger Durak-only image preloads");
   await page.goto("http://127.0.0.1:4175/index.html", { waitUntil: "domcontentloaded" });
   await page.locator("#openTwentyOne").waitFor({ state: "attached" });
   await page.locator('.nav button[data-page="games"]').click();
