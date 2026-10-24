@@ -331,6 +331,202 @@
     body.seka-playing #gameWrap #actionArea button { min-height:35px; padding:6px; }
   }
 
+
+  /* Сека: собственная комбинация цифрами и места игроков по периметру стола. */
+  .table-play-area {
+    position:relative;
+    min-height:220px;
+    overflow:hidden;
+    border-radius:16px;
+    background:radial-gradient(ellipse at center,rgba(23,96,77,.38),rgba(10,41,41,0) 76%);
+  }
+  .hand-score {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    margin:4px auto 0;
+    padding:5px 10px;
+    min-height:38px;
+    border:1px solid #9a7b3c;
+    border-radius:10px;
+    background:rgba(7,22,24,.94);
+    color:#e6e9d7;
+    text-align:center;
+    line-height:1.2;
+    font-size:9px;
+  }
+  .hand-score strong {
+    color:#f5d58c;
+    font-size:clamp(16px,2.6vh,21px);
+    line-height:1.05;
+  }
+  .hand-score small {
+    color:#dce9dd;
+    font-size:10px;
+    font-weight:700;
+  }
+
+  body.seka-playing #gameWrap.table:not(.hidden) {
+    grid-template-rows:auto minmax(0,1fr) auto auto !important;
+  }
+  body.seka-playing #gameWrap #tablePlayArea {
+    position:relative !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+  body.seka-playing #gameWrap #potValue {
+    position:absolute !important;
+    z-index:1 !important;
+    top:51% !important;
+    left:50% !important;
+    width:max-content;
+    min-width:104px;
+    max-width:44%;
+    margin:0 !important;
+    padding:7px 10px !important;
+    transform:translate(-50%,-50%) !important;
+    border:1px solid rgba(230,205,135,.65);
+    border-radius:12px;
+    background:rgba(5,28,27,.84);
+    box-shadow:0 3px 10px #0004;
+    pointer-events:none;
+  }
+  body.seka-playing #gameWrap #gameMessage {
+    position:absolute !important;
+    z-index:3;
+    top:2px !important;
+    left:6% !important;
+    width:88% !important;
+    max-height:31px !important;
+    overflow:hidden !important;
+    margin:0 !important;
+    padding:5px 7px !important;
+    border-radius:8px;
+    font-size:10px !important;
+    line-height:1.2 !important;
+    background:rgba(5,25,25,.72);
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats {
+    display:block !important;
+    position:absolute !important;
+    z-index:2;
+    inset:0 !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:0 !important;
+    pointer-events:none;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat {
+    position:absolute !important;
+    display:flex !important;
+    width:min(39%,158px) !important;
+    min-width:0 !important;
+    min-height:39px !important;
+    gap:5px !important;
+    padding:5px 6px !important;
+    border:1px solid rgba(219,199,139,.68) !important;
+    border-radius:9px !important;
+    background:rgba(5,23,27,.91) !important;
+    box-shadow:0 3px 9px #0005;
+    overflow:hidden;
+    pointer-events:auto;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .avatar {
+    width:24px !important;
+    height:24px !important;
+    flex:0 0 24px !important;
+    border-radius:6px !important;
+    font-size:10px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .player-main strong {
+    font-size:clamp(10px,2.5vw,12px) !important;
+    line-height:1.15 !important;
+    overflow-wrap:anywhere;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .player-main small {
+    margin-top:2px !important;
+    font-size:9px !important;
+    line-height:1.15 !important;
+    overflow-wrap:anywhere;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .seat-cards {
+    display:none !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-bottom {
+    left:50% !important;
+    bottom:3px !important;
+    transform:translateX(-50%) !important;
+    width:min(44%,174px) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top,
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-center {
+    top:36px !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    width:min(37%,148px) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-left {
+    top:36px !important;
+    left:2px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-right {
+    top:36px !important;
+    right:2px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-left {
+    left:2px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-right {
+    right:2px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-left-bottom {
+    left:2px !important;
+    bottom:3px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-right-bottom {
+    right:2px !important;
+    bottom:3px !important;
+  }
+  body.seka-playing #gameWrap .hand-score {
+    gap:1px;
+    margin-top:2px;
+    padding:4px 8px;
+    min-height:32px;
+  }
+  body.seka-playing #gameWrap .hand-score strong {
+    font-size:clamp(16px,2.5vh,20px);
+  }
+  body.seka-playing #gameWrap .hand-score small { font-size:9px; }
+
+  @media (max-height:650px) {
+    body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat {
+      min-height:34px !important;
+      padding:4px 5px !important;
+    }
+    body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .avatar {
+      width:21px !important;
+      height:21px !important;
+      flex-basis:21px !important;
+    }
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-center,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-left,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-right {
+      top:32px !important;
+    }
+  }
+
   </style>
 </head>
 <body>
@@ -419,13 +615,19 @@
     <div id="roomPlayers" class="players"></div>
     <div id="gameWrap" class="table hidden">
       <div class="table-head"><span id="gameTurnLabel">Ход игрока</span><span id="deckLabel">36 карт</span></div>
-      <div class="pot" id="potValue">0 AC<small>БАНК</small></div>
-      <div id="gameMessage" class="game-message" aria-live="polite">Карты розданы.</div>
-      <div id="gamePlayerSeats" class="players"></div>
+      <div id="tablePlayArea" class="table-play-area">
+        <div class="pot" id="potValue">0 AC<small>БАНК</small></div>
+        <div id="gameMessage" class="game-message" aria-live="polite">Карты розданы.</div>
+        <div id="gamePlayerSeats" class="game-player-seats"></div>
+      </div>
       <div class="hand-area">
         <h3>ВАШИ КАРТЫ</h3>
         <div id="myHand" class="card-row"></div>
-        <div id="myHandCaption" class="card-caption">Карты видны только вам до вскрытия.</div>
+        <div id="myHandCaption" class="hand-score" aria-live="polite" aria-label="Комбинация вашей руки">
+          <span>ВАША КОМБИНАЦИЯ</span>
+          <strong id="myHandScore">—</strong>
+          <small id="myHandType">Подсчитываем комбинацию</small>
+        </div>
       </div>
       <div id="actionArea" class="action-area">
         <div class="raise-row">
@@ -674,7 +876,18 @@
     const list = state.players || [];
     const game = state.game;
     const gamePlayers = game && game.players ? game.players : [];
-    $("roomPlayers").innerHTML = list.map(function (player, index) {
+    const foundOwnIndex = list.findIndex(player => String(player.telegramId) === tgUserId);
+    const ownIndex = foundOwnIndex >= 0 ? foundOwnIndex : 0;
+    const seatLayouts = {
+      1: ["bottom"],
+      2: ["bottom", "top-center"],
+      3: ["bottom", "top-left", "top-right"],
+      4: ["bottom", "left", "top-center", "right"],
+      5: ["bottom", "left-bottom", "top-left", "top-right", "right-bottom"],
+      6: ["bottom", "left-bottom", "top-left", "top-center", "top-right", "right-bottom"]
+    };
+
+    function playerRow(player, index, seat) {
       const gamePlayer = gamePlayers.find(item => String(item.telegramId) === String(player.telegramId));
       const isCurrent = !!(game && game.status === "playing" &&
         String(game.currentPlayerTelegramId) === String(player.telegramId));
@@ -684,7 +897,7 @@
       if (gamePlayer) {
         details = folded ? "Пас · выбыл из торгов" : "В банке: " + fmt(gamePlayer.contribution) + " AC";
         if (game.status === "finished") {
-          if (game.revealHands && gamePlayer.score !== null && gamePlayer.score !== undefined) {
+          if ((game.revealHands || isMine) && gamePlayer.score !== null && gamePlayer.score !== undefined) {
             details += " · " + escapeHtml(gamePlayer.handType || "Комбинация") + " · " + fmt(gamePlayer.score) + " очков";
           } else {
             details += " · Карты закрыты";
@@ -697,13 +910,24 @@
       else if (gamePlayer && !isMine && game.status === "finished") {
         backs = '<div class="seat-cards">' + (gamePlayer.hand || []).map(card => cardMarkup(card, true)).join("") + '</div>';
       }
-      return '<div class="player-row' + (isCurrent ? " current" : "") + (folded ? " folded" : "") + '">' +
+      const seatClass = seat ? " game-player-seat seat-" + seat : "";
+      return '<div class="player-row' + (isCurrent ? " current" : "") + (folded ? " folded" : "") + seatClass + '">' +
         '<div class="avatar">' + (isMine ? "Я" : (String(player.telegramId) === "0" || player.isBot ? "🤖" : String(index + 1))) + '</div><div class="player-main"><strong>' +
         escapeHtml(player.label) + (isMine ? " · Вы" : "") + '</strong><small>' + details +
         (gamePlayer ? "" : " · Баланс: " + fmt(player.balance) + " AC") + '</small></div>' + backs + '</div>';
+    }
+
+    $("roomPlayers").innerHTML = list.map((player, index) => playerRow(player, index, "")).join("");
+    if (!game || !list.length) {
+      $("gamePlayerSeats").innerHTML = "";
+      return;
+    }
+    const layout = seatLayouts[list.length] || seatLayouts[6];
+    $("gamePlayerSeats").innerHTML = list.map((player, index) => {
+      const relativeIndex = (index - ownIndex + list.length) % list.length;
+      return playerRow(player, index, layout[relativeIndex] || "top-center");
     }).join("");
   }
-
 
   function setSekaFullscreen(active) {
     const wasActive = document.body.classList.contains("seka-playing");
@@ -784,9 +1008,13 @@
         (game.isYourTurn ? "Ваш ход" : "Ход игрока: " + ((game.players || []).find(p => String(p.telegramId) === String(game.currentPlayerTelegramId)) || {}).label);
       const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
       $("myHand").innerHTML = me && me.hand ? me.hand.map(card => cardMarkup(card, false)).join("") : "";
-      $("myHandCaption").textContent = game.status === "finished"
-        ? (game.revealHands ? ((me && me.handType) ? me.handType + " · " + fmt(me.score) + " очков" : "Карты открыты") : "Карты соперников остались закрыты после пасов.")
-        : "Карты видны только вам до вскрытия.";
+      const hasOwnScore = !!(me && me.handType && me.score !== null && me.score !== undefined);
+      $("myHandScore").textContent = hasOwnScore ? fmt(me.score) + " очков" : "—";
+      $("myHandType").textContent = hasOwnScore ? me.handType :
+        (game.status === "finished" && !game.revealHands ? "Карты соперников остались закрыты" : "Подсчитываем комбинацию");
+      $("myHandCaption").setAttribute("aria-label", hasOwnScore
+        ? "Ваша комбинация: " + me.handType + ", " + fmt(me.score) + " очков"
+        : "Ожидаем подсчёт комбинации");
       const actionArea = $("actionArea");
       actionArea.classList.toggle("hidden", !playing);
       const isMyTurn = playing && !!game.isYourTurn;
