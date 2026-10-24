@@ -473,7 +473,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
 
       // Charge everybody together only after every participant has chosen.
       const walletResult = await client.query(
-        "SELECT telegram_id, balance FROM players WHERE telegram_id = ANY($1::TEXT[]) " +
+        "SELECT telegram_id, balance FROM players WHERE telegram_id::TEXT = ANY($1::TEXT[]) " +
         "ORDER BY telegram_id FOR UPDATE",
         [participantIds]
       );
