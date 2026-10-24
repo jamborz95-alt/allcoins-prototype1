@@ -919,10 +919,11 @@
             const endLeft = targetRect.left + (targetRect.width - endWidth) / 2;
             const endTop = targetRect.top + (targetRect.height - endHeight) / 2;
 
-            await animateUnoDragCard(flyer, endLeft, endTop, endWidth, endHeight, 175);
-            if (flyer) flyer.remove();
+            // Быстро и непрерывно доводим карту до верхней карты стопки.
+            await animateUnoDragCard(flyer, endLeft, endTop, endWidth, endHeight, 125);
 
-            // Не показываем карту снова в руке, пока сервер выбирает цвет/принимает ход.
+            // Оставляем летящую карту поверх стола на время запроса к серверу,
+            // чтобы верхняя карта не исчезала на короткое время.
             element.style.opacity = "0";
             state.cardDragging = false;
             state.cardDropPending = true;
@@ -931,8 +932,12 @@
               await playCard(card);
             } finally {
               state.cardDropPending = false;
-              if (element.isConnected) restoreSource();
               if (state.game && state.stage === "game") renderGame();
+
+              // Новая верхняя карта уже находится под летящей копией — убираем её
+              // только после обновления стола, без скачка между двумя картами.
+              if (flyer) flyer.remove();
+              if (element.isConnected) restoreSource();
               state.lastDraggedPlayCardId = null;
             }
           }
@@ -1085,7 +1090,7 @@
               let useCardBack = false;
               let flipFromBack = false;
               let delay = 0;
-              let duration = 385;
+              let duration = 275;
 
               if (wasInOwnHand) {
                 startRect = oldRects.hand.get(topId) || oldRects.deck;
@@ -1095,12 +1100,33 @@
                 useCardBack = true;
                 flipFromBack = true;
                 delay = 260;
-                duration = 430;
+                duration = 340;
               } else {
+                // Polling can return after a bot has played, so the previous
+                // snapshot's current-player flag is not always the actor. Detect who lost a card.
+                const previousPlayersById = new Map(previous.players.map(player => [player.id, player]));
+                const opponentWhoPlayed = next.players.find(player => {
+                  if (player.isYou) return false;
+                  const oldPlayer = previousPlayersById.get(player.id);
+                  return Boolean(oldPlayer && player.handCount < oldPlayer.handCount);
+                });
                 const oldCurrentOpponent = previous.players.find(player => player.isCurrent && !player.isYou);
-                startRect = oldCurrentOpponent ? oldRects.opponents.get(oldCurrentOpponent.id) : null;
-                useCardBack = true;
-                flipFromBack = true;
+                const candidates = [
+                  opponentWhoPlayed && opponentWhoPlayed.id,
+                  oldCurrentOpponent && oldCurrentOpponent.id,
+                  ...previous.players.filter(player => !player.isYou).map(player => player.id)
+                ].filter(Boolean);
+                for (const playerId of candidates) {
+                  const seatRect = oldRects.opponents.get(playerId);
+                  if (seatRect) {
+                    startRect = seatRect;
+                    break;
+                  }
+                }
+                // Show the played face-up card flying from the opponent's seat.
+                // This is more reliable than a cloned back/flip across Telegram WebView layers.
+                useCardBack = false;
+                flipFromBack = false;
                 if (!startRect) startRect = oldRects.deck;
               }
 
@@ -1136,7 +1162,7 @@
       }
 
       async function animateUnoCardFlight(job) {
-        await unoWait(job.delay || 0);
+        if (job.delay > 0) await unoWait(job.delay);
         const source = job.sourceElement;
         const target = job.targetElement;
         const endRect = job.endRect || unoRect(target);
