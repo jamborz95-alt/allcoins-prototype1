@@ -1,5 +1,6 @@
 import express from "express";
 import crypto from "node:crypto";
+import { recordGameCommission } from "./commission.js";
 
 const STAKES = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600, 819200, 1000000];
 const ROOM_WINDOW_SECONDS = 180;
@@ -139,17 +140,28 @@ export function createLottoRouter(options) {
   async function settleWinner(client, room, winnerTicket) {
     const roomId = String(room.id);
     const winnerId = String(winnerTicket.telegram_id);
-    const prize = Math.max(0, Number(room.pot) || 0);
+    const grossPrize = Math.max(0, Number(room.pot) || 0);
+    const commission = grossPrize > 0 ? await recordGameCommission(client, {
+      game: "lotto",
+      eventKey: "lotto:" + roomId,
+      grossAmount: grossPrize
+    }) : { amount: 0 };
+    const commissionAmount = Math.min(grossPrize, Math.max(0, Math.floor(Number(commission.amount) || 0)));
+    const prize = Math.max(0, grossPrize - commissionAmount);
     if (prize > 0) {
       const credited = await client.query(
         "UPDATE players SET balance = balance + $1, updated_at = NOW() WHERE telegram_id = $2 RETURNING balance",
-        [prize, winnerId]
+        [String(prize), winnerId]
       );
       if (!credited.rowCount) throw new Error("Не найден баланс победителя лото");
     }
+    const resultNote = commissionAmount > 0
+      ? "Победа: все числа билета отмечены. Выигрыш после комиссии проекта 5%: " +
+        prize.toLocaleString("ru-RU") + " AC; комиссия: " + commissionAmount.toLocaleString("ru-RU") + " AC."
+      : "Победа: все числа билета отмечены.";
     await client.query(
       "UPDATE lotto_rooms SET status = 'finished', winner_telegram_id = $1, winner_ticket_id = $2, prize = $3, finished_at = NOW(), result_note = $4 WHERE id = $5 AND status = 'playing'",
-      [winnerId, String(winnerTicket.id), prize, "Победа: все числа билета отмечены", roomId]
+      [winnerId, String(winnerTicket.id), String(prize), resultNote, roomId]
     );
   }
 
