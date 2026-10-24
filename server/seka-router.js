@@ -1,4 +1,6 @@
 import express from "express";
+import crypto from "node:crypto";
+import { recordGameCommission } from "./commission.js";
 import {
   createSekaGame,
   scoreSekaHand,
@@ -97,7 +99,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     }
   }
 
-  async function creditWinners(client, game, winners, message) {
+    async function creditWinners(client, game, winners, message) {
     if (game.settlementApplied) return;
     const allWinners = [...new Map(winners.map(player => [String(player.telegramId), player])).values()];
     if (!allWinners.length) throw new SekaHttpError(500, "Не удалось определить победителя партии");
@@ -106,8 +108,17 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       ? []
       : allWinners.filter(player => !player.isBot && String(player.telegramId) !== SEKA_BOT_ID);
     const totalPot = Math.max(0, Math.floor(Number(game.pot) || 0));
-    let remainder = uniqueWinners.length ? totalPot % uniqueWinners.length : 0;
-    const baseShare = uniqueWinners.length ? Math.floor(totalPot / uniqueWinners.length) : 0;
+    const commission = uniqueWinners.length && !game.testMode
+      ? await recordGameCommission(client, {
+          game: "seka",
+          eventKey: "seka:" + String(game.commissionEventId || game.startedAt || game.roundNumber || "legacy"),
+          grossAmount: totalPot
+        })
+      : { amount: 0 };
+    const commissionAmount = Math.min(totalPot, Math.max(0, Math.floor(Number(commission.amount) || 0)));
+    const payoutPool = Math.max(0, totalPot - commissionAmount);
+    let remainder = uniqueWinners.length ? payoutPool % uniqueWinners.length : 0;
+    const baseShare = uniqueWinners.length ? Math.floor(payoutPool / uniqueWinners.length) : 0;
     for (const player of game.players) player.payout = 0;
     const payoutRows = [];
     for (const winner of uniqueWinners) {
@@ -126,12 +137,18 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     game.currentPlayerTelegramId = null;
     game.winnerTelegramIds = allWinners.map(player => String(player.telegramId));
     game.payouts = payoutRows;
+    game.commissionPercent = 5;
+    game.commissionAmount = commissionAmount;
+    game.grossPot = totalPot;
+    game.payoutPool = payoutPool;
     game.settlementApplied = true;
     game.finishedAt = new Date().toISOString();
-    game.message = message;
+    game.message = message + (commissionAmount > 0
+      ? " Комиссия проекта 5%: " + commissionAmount.toLocaleString("ru-RU") + " AC."
+      : "");
   }
 
-  async function finishByFold(client, game, winner) {
+async function finishByFold(client, game, winner) {
     game.revealHands = false;
     await creditWinners(
       client,
@@ -592,6 +609,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         label: String(member.display_name || "Игрок"),
         isBot: String(member.telegram_id) === SEKA_BOT_ID
       })), Number(room.ante));
+      game.commissionEventId = crypto.randomUUID();
       game.testMode = testMode;
       if (testMode) game.pot = Number(room.ante) * game.players.length;
       await runSekaBots(client, room, game);
@@ -718,6 +736,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         label: String(member.display_name || "Игрок"),
         isBot: String(member.telegram_id) === SEKA_BOT_ID
       })), Number(room.ante));
+      nextGame.commissionEventId = crypto.randomUUID();
       nextGame.testMode = testMode;
       nextGame.roundNumber = Math.max(1, Number(previousGame.roundNumber) || 1) + 1;
       if (testMode) nextGame.pot = Number(room.ante) * nextGame.players.length;
