@@ -3601,16 +3601,24 @@
   </details>
 
   <div class="twentyone-table">
-    <section class="twentyone-player-area">
+    <div class="twentyone-felt-brand" aria-hidden="true"><span>ALLCOINS</span><b>21</b><small>THE CARD TABLE</small></div>
+    <div id="twentyOneDeck" class="twentyone-deck-pile" aria-label="Колода. Осталось карт: 36">
+      <span class="twentyone-deck-layer layer-one"></span>
+      <span class="twentyone-deck-layer layer-two"></span>
+      <span class="twentyone-deck-top"><i>✦</i><b>ALLCOINS</b><strong>21</strong><small>♠ ♥ ♦ ♣</small></span>
+      <span id="twentyOneDeckCount" class="twentyone-deck-count">36</span>
+    </div>
+
+    <section class="twentyone-player-area dealer-area">
       <div class="twentyone-seat"><span class="twentyone-seat-dot">♛</span><div><b>Банкир</b><small id="twentyOneDealerScore">Карты банкира</small></div></div>
-      <div id="twentyOneDealerCards" class="twentyone-cards" aria-label="Карты банкира"></div>
+      <div id="twentyOneDealerCards" class="twentyone-cards dealer-cards" aria-label="Карты банкира"></div>
     </section>
 
     <div class="twentyone-divider"><span>21</span></div>
 
-    <section class="twentyone-player-area">
+    <section class="twentyone-player-area player-area">
       <div class="twentyone-seat"><span class="twentyone-seat-dot player">♠</span><div><b>Ты</b><small id="twentyOnePlayerScore">Твои карты</small></div></div>
-      <div id="twentyOnePlayerCards" class="twentyone-cards" aria-label="Твои карты"></div>
+      <div id="twentyOnePlayerCards" class="twentyone-cards player-cards" aria-label="Твои карты"></div>
     </section>
   </div>
 
@@ -9406,6 +9414,9 @@ let twentyOneDealerHand = [];
 let twentyOneStakeValue = 100;
 let twentyOneRoundActive = false;
 let twentyOneRoundSettled = false;
+let twentyOneResolvingRound = false;
+let twentyOneAnimationBusy = false;
+let twentyOneRevealDealerCard = false;
 
 const TWENTY_ONE_RANKS = ["6","7","8","9","10","В","Д","К","Т"];
 const TWENTY_ONE_SUITS = ["♠","♥","♦","♣"];
@@ -9437,39 +9448,160 @@ function twentyOneHandScore(cards) {
   return cards.reduce((total, card) => total + twentyOneCardValue(card), 0);
 }
 
-function renderTwentyOneCardRow(containerId, cards) {
+function createTwentyOneCardBackElement(card) {
+  const element = document.createElement("div");
+  element.className = "durak-card premium-card twentyone-card twentyone-card-face-down";
+  element.dataset.cardId = String(card?.id || "hidden-card");
+  element.setAttribute("aria-label", "Закрытая карта");
+  element.innerHTML = '<span class="twentyone-card-back-art"><i>✦</i><b>ALLCOINS</b><strong>21</strong><small>♠ ♥ ♦ ♣</small></span>';
+  return element;
+}
+
+function applyTwentyOneHandFan(container, cardIndex, cardCount) {
+  const offset = cardIndex - (cardCount - 1) / 2;
+  const angle = Math.max(-15, Math.min(15, offset * 4.2));
+  const lift = Math.abs(offset) * 2.8;
+  container.style.setProperty("--hand-rotation", angle.toFixed(1) + "deg");
+  container.style.setProperty("--hand-lift", lift.toFixed(1) + "px");
+  container.style.zIndex = String(cardIndex + 1);
+}
+
+function renderTwentyOneCardRow(containerId, cards, options = {}) {
   const container = $(containerId);
   if (!container) return;
   container.textContent = "";
-  cards.forEach((card) => {
-    const element = createDurakCardElement(card);
+  cards.forEach((card, index) => {
+    const hiddenDealerCard = options.hideSecondDealerCard &&
+      containerId === "twentyOneDealerCards" && index === 1;
+    const element = hiddenDealerCard
+      ? createTwentyOneCardBackElement(card)
+      : createDurakCardElement(card);
     element.classList.add("twentyone-card");
     element.style.touchAction = "auto";
+    applyTwentyOneHandFan(element, index, cards.length);
+    if (containerId === "twentyOneDealerCards" && options.revealSecondDealerCard && index === 1) {
+      element.classList.add("twentyone-card-reveal");
+    }
     container.appendChild(element);
   });
 }
 
 function renderTwentyOneTable(revealDealer = true) {
-  renderTwentyOneCardRow("twentyOneDealerCards", twentyOneDealerHand);
+  const dealerWasHidden = !revealDealer && twentyOneDealerHand.length > 1;
+  renderTwentyOneCardRow("twentyOneDealerCards", twentyOneDealerHand, {
+    hideSecondDealerCard: dealerWasHidden,
+    revealSecondDealerCard: revealDealer && twentyOneRevealDealerCard
+  });
   renderTwentyOneCardRow("twentyOnePlayerCards", twentyOnePlayerHand);
   const dealerScore = twentyOneHandScore(twentyOneDealerHand);
   const playerScore = twentyOneHandScore(twentyOnePlayerHand);
-  $("twentyOneDealerScore").textContent = revealDealer
-    ? dealerScore + " очк." + (dealerScore === 1 ? "о" : "ов")
-    : "Банкир получил карту";
+  $("twentyOneDealerScore").textContent = dealerWasHidden
+    ? "Одна карта закрыта"
+    : (twentyOneDealerHand.length
+      ? dealerScore + " очк." + (dealerScore === 1 ? "о" : "ов")
+      : "Карты банкира");
   $("twentyOnePlayerScore").textContent = twentyOnePlayerHand.length
     ? playerScore + " очк." + (playerScore === 1 ? "о" : "ов")
     : "Твои карты";
   $("twentyOneBalance").textContent = Number(state.balance || 0).toLocaleString("ru-RU");
-  $("twentyOneDeal").style.display = twentyOneRoundActive || !twentyOneRoundSettled ? "block" : "none";
+  const roundBusy = twentyOneRoundActive || twentyOneResolvingRound;
+  $("twentyOneDeckCount").textContent = twentyOneDeck.length ? String(twentyOneDeck.length) : (roundBusy || twentyOneRoundSettled ? "0" : "36");
+  $("twentyOneDeck").setAttribute("aria-label", "Колода. Осталось карт: " + $("twentyOneDeckCount").textContent);
+  $("twentyOneDeal").style.display = roundBusy || twentyOneRoundSettled ? "none" : "block";
   $("twentyOnePlayActions").style.display = twentyOneRoundActive ? "grid" : "none";
   $("twentyOneNewRound").style.display = twentyOneRoundSettled ? "block" : "none";
-  $("twentyOneStake").disabled = twentyOneRoundActive;
-  $("twentyOneDeal").disabled = twentyOneRoundActive;
+  $("twentyOneStake").disabled = roundBusy;
+  $("twentyOneDeal").disabled = roundBusy;
+  $("twentyOneHit").disabled = !twentyOneRoundActive || twentyOneAnimationBusy;
+  $("twentyOneStand").disabled = !twentyOneRoundActive || twentyOneAnimationBusy;
 }
 
-function startTwentyOneRound() {
-  if (twentyOneRoundActive) return;
+function nextAnimationFrame() {
+  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
+async function animateTwentyOneCardToHand(containerId, cardIndex) {
+  const container = $(containerId);
+  const deckElement = $("twentyOneDeck");
+  if (!container || !deckElement) return;
+  const target = container.querySelectorAll(".twentyone-card")[cardIndex];
+  if (!target) return;
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion || typeof target.animate !== "function") return;
+
+  await nextAnimationFrame();
+  const cardRect = target.getBoundingClientRect();
+  const deckRect = deckElement.getBoundingClientRect();
+  const cardWidth = target.offsetWidth || cardRect.width;
+  const cardHeight = target.offsetHeight || cardRect.height;
+  if (!cardWidth || !cardHeight || !deckRect.width || !cardRect.width) return;
+
+  // Оставляем невидимое место в руке, а тот же DOM-элемент карты летит к нему.
+  const originalInlineStyle = target.getAttribute("style") || "";
+  const placeholder = document.createElement("div");
+  placeholder.className = "twentyone-card-placeholder";
+  placeholder.setAttribute("aria-hidden", "true");
+  const computed = getComputedStyle(target);
+  placeholder.style.cssText = [
+    "flex:0 0 " + cardWidth + "px",
+    "width:" + cardWidth + "px",
+    "height:" + cardHeight + "px",
+    "min-width:" + cardWidth + "px",
+    "margin-right:" + computed.marginRight,
+    "margin-left:" + computed.marginLeft,
+    "visibility:hidden",
+    "pointer-events:none",
+    "transform:none"
+  ].join(";");
+
+  const parent = target.parentNode;
+  if (!parent) return;
+  parent.replaceChild(placeholder, target);
+
+  target.classList.add("twentyone-card-flight");
+  target.style.setProperty("--hand-rotation", "0deg");
+  target.style.setProperty("--hand-lift", "0px");
+  target.style.setProperty("position", "fixed", "important");
+  target.style.setProperty("left", (cardRect.left + (cardRect.width - cardWidth) / 2) + "px", "important");
+  target.style.setProperty("top", (cardRect.top + (cardRect.height - cardHeight) / 2) + "px", "important");
+  target.style.setProperty("width", cardWidth + "px", "important");
+  target.style.setProperty("height", cardHeight + "px", "important");
+  target.style.setProperty("min-width", cardWidth + "px", "important");
+  target.style.setProperty("margin", "0", "important");
+  target.style.setProperty("z-index", "9999", "important");
+  target.style.setProperty("pointer-events", "none", "important");
+  target.style.setProperty("transform", "none", "important");
+  document.body.appendChild(target);
+
+  const dx = deckRect.left + deckRect.width / 2 - (cardRect.left + cardRect.width / 2);
+  const dy = deckRect.top + deckRect.height / 2 - (cardRect.top + cardRect.height / 2);
+  deckElement.classList.add("is-dealing");
+  let flight = null;
+  try {
+    flight = target.animate([
+      { translate: dx + "px " + dy + "px", rotate: "-18deg", scale: 0.82, offset: 0 },
+      { translate: (dx * 0.46) + "px " + (dy * 0.46) + "px", rotate: "-7deg", scale: 0.94, offset: 0.58 },
+      { translate: "0px 0px", rotate: "0deg", scale: 1, offset: 1 }
+    ], { duration: 280, easing: "cubic-bezier(.2,.78,.2,1)", fill: "forwards" });
+    await flight.finished;
+  } catch (_) {
+    // Возвращаем карту в руку и при отменённой анимации/выходе из вкладки.
+  } finally {
+    if (flight) flight.cancel();
+    target.classList.remove("twentyone-card-flight");
+    target.style.cssText = originalInlineStyle;
+    if (placeholder.isConnected) placeholder.replaceWith(target);
+    deckElement.classList.remove("is-dealing");
+  }
+}
+
+function sleepTwentyOne(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function startTwentyOneRound() {
+  if (twentyOneRoundActive || twentyOneResolvingRound) return;
   const stake = Math.max(1, Math.floor(Number($("twentyOneStake").value) || 100));
   if (!Number.isFinite(state.balance) || state.balance < stake) {
     $("twentyOneStatus").textContent = "Недостаточно AC для этой ставки. Выбери меньшую сумму.";
@@ -9480,21 +9612,47 @@ function startTwentyOneRound() {
   state.balance -= stake;
   saveGame();
   twentyOneDeck = makeTwentyOneDeck();
-  twentyOnePlayerHand = [twentyOneDeck.pop()];
-  twentyOneDealerHand = [twentyOneDeck.pop()];
+  // Как за настоящим карточным столом: игроку две карты, банкиру две;
+  // вторая карта банкира лежит рубашкой вверх до решения игрока.
+  twentyOnePlayerHand = [twentyOneDeck.pop(), twentyOneDeck.pop()];
+  twentyOneDealerHand = [twentyOneDeck.pop(), twentyOneDeck.pop()];
   twentyOneRoundActive = true;
   twentyOneRoundSettled = false;
-  $("twentyOneStatus").textContent = "Твой ход. Возьми ещё карту или остановись.";
-  renderTwentyOneTable(true);
+  twentyOneResolvingRound = false;
+  twentyOneAnimationBusy = true;
+  twentyOneRevealDealerCard = false;
+  $("twentyOneStatus").textContent = "Идёт раздача карт…";
+  renderTwentyOneTable(false);
+
+  const dealOrder = [
+    ["twentyOnePlayerCards", 0],
+    ["twentyOneDealerCards", 0],
+    ["twentyOnePlayerCards", 1],
+    ["twentyOneDealerCards", 1]
+  ];
+  for (const [containerId, cardIndex] of dealOrder) {
+    await animateTwentyOneCardToHand(containerId, cardIndex);
+    await sleepTwentyOne(65);
+  }
+
+  twentyOneAnimationBusy = false;
+  renderTwentyOneTable(false);
   if (twentyOneHandScore(twentyOnePlayerHand) === 21) {
-    finishTwentyOneRound("player21");
+    await finishTwentyOneRound("player21");
+  } else {
+    $("twentyOneStatus").textContent = "Твой ход. Карты в руке — выбери «Ещё карту» или «Хватит».";
   }
 }
 
-function finishTwentyOneRound(reason) {
-  if (twentyOneRoundSettled) return;
+async function finishTwentyOneRound(reason) {
+  if (twentyOneRoundSettled || twentyOneResolvingRound) return;
   twentyOneRoundActive = false;
-  twentyOneRoundSettled = true;
+  twentyOneResolvingRound = true;
+  twentyOneAnimationBusy = true;
+  twentyOneRevealDealerCard = true;
+  renderTwentyOneTable(true);
+  await sleepTwentyOne(380);
+
   let playerScore = twentyOneHandScore(twentyOnePlayerHand);
   let dealerScore = twentyOneHandScore(twentyOneDealerHand);
   let won = false;
@@ -9508,6 +9666,9 @@ function finishTwentyOneRound(reason) {
   } else {
     while (dealerScore < 17 && twentyOneDeck.length) {
       twentyOneDealerHand.push(twentyOneDeck.pop());
+      renderTwentyOneTable(true);
+      await animateTwentyOneCardToHand("twentyOneDealerCards", twentyOneDealerHand.length - 1);
+      await sleepTwentyOne(90);
       dealerScore = twentyOneHandScore(twentyOneDealerHand);
     }
     if (dealerScore > 21) {
@@ -9527,25 +9688,37 @@ function finishTwentyOneRound(reason) {
     state.balance += twentyOneStakeValue * 2;
     message += " Начислено " + (twentyOneStakeValue * 2).toLocaleString("ru-RU") + " AC (ставка + выигрыш).";
   }
+  twentyOneRoundSettled = true;
+  twentyOneResolvingRound = false;
+  twentyOneAnimationBusy = false;
   saveGame();
   render();
   renderTwentyOneTable(true);
   $("twentyOneStatus").textContent = message;
 }
 
-function hitTwentyOne() {
-  if (!twentyOneRoundActive || !twentyOneDeck.length) return;
+async function hitTwentyOne() {
+  if (!twentyOneRoundActive || twentyOneAnimationBusy) return;
+  if (!twentyOneDeck.length) {
+    await finishTwentyOneRound("stand");
+    return;
+  }
+  twentyOneAnimationBusy = true;
   twentyOnePlayerHand.push(twentyOneDeck.pop());
-  renderTwentyOneTable(true);
+  renderTwentyOneTable(false);
+  $("twentyOneStatus").textContent = "Карта летит в руку…";
+  await animateTwentyOneCardToHand("twentyOnePlayerCards", twentyOnePlayerHand.length - 1);
+  twentyOneAnimationBusy = false;
+  renderTwentyOneTable(false);
   const score = twentyOneHandScore(twentyOnePlayerHand);
-  if (score > 21) finishTwentyOneRound("bust");
-  else if (score === 21) finishTwentyOneRound("player21");
+  if (score > 21) await finishTwentyOneRound("bust");
+  else if (score === 21) await finishTwentyOneRound("player21");
   else $("twentyOneStatus").textContent = "У тебя " + score + " очков. Ещё карту или хватит?";
 }
 
-function standTwentyOne() {
-  if (!twentyOneRoundActive) return;
-  finishTwentyOneRound("stand");
+async function standTwentyOne() {
+  if (!twentyOneRoundActive || twentyOneAnimationBusy) return;
+  await finishTwentyOneRound("stand");
 }
 
 function resetTwentyOneRound() {
@@ -9554,6 +9727,9 @@ function resetTwentyOneRound() {
   twentyOneDealerHand = [];
   twentyOneRoundActive = false;
   twentyOneRoundSettled = false;
+  twentyOneResolvingRound = false;
+  twentyOneAnimationBusy = false;
+  twentyOneRevealDealerCard = false;
   $("twentyOneStatus").textContent = "Выбери ставку и начни раунд.";
   renderTwentyOneTable(true);
 }
@@ -9587,7 +9763,6 @@ $("twentyOneHit").onclick = hitTwentyOne;
 $("twentyOneStand").onclick = standTwentyOne;
 $("twentyOneNewRound").onclick = resetTwentyOneRound;
 renderTwentyOneTable(true);
-
 
 window.onerror = function(message, source, lineno, colno, error) {
   alert(
@@ -10876,6 +11051,295 @@ if (gamesSection) {
     #twentyOneGame .twentyone-header h2 { font-size:22px; }
     #twentyOneGame .twentyone-header p { font-size:10px; max-width:180px; }
     #twentyOneGame .twentyone-cards .durak-card.premium-card { flex-basis:56px; width:56px; height:84px; min-width:56px; }
+  }
+</style>
+
+
+<style id="allcoins-twentyone-table-animation">
+  /* Стол с бархатным сукном, золотым кантом и постоянно видимой колодой. */
+  #twentyOneGame .twentyone-table {
+    position:relative;
+    isolation:isolate;
+    min-height:330px;
+    overflow:hidden;
+    padding:17px 74px 17px 12px;
+    border:3px solid #c8a15b;
+    border-radius:25px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(63,130,87,.52) 0%, rgba(21,80,58,.25) 42%, transparent 74%),
+      repeating-linear-gradient(112deg, rgba(255,255,255,.018) 0 1px, transparent 1px 5px),
+      radial-gradient(ellipse at 50% 0%, #1f6148 0%, #11432f 53%, #09291f 100%);
+    box-shadow:
+      inset 0 0 0 3px rgba(10,36,27,.88),
+      inset 0 0 0 5px rgba(245,207,131,.28),
+      inset 0 12px 22px rgba(255,255,255,.035),
+      0 10px 24px rgba(0,0,0,.32);
+  }
+  #twentyOneGame .twentyone-table::before {
+    content:"";
+    position:absolute;
+    inset:7px;
+    border:1px solid rgba(238,203,130,.35);
+    border-radius:17px;
+    pointer-events:none;
+    z-index:0;
+  }
+  #twentyOneGame .twentyone-felt-brand {
+    position:absolute;
+    left:50%;
+    top:50%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+    transform:translate(-50%,-50%);
+    color:rgba(235,211,157,.16);
+    font-family:Georgia,serif;
+    text-align:center;
+    pointer-events:none;
+    z-index:0;
+    white-space:nowrap;
+  }
+  #twentyOneGame .twentyone-felt-brand span { font-size:11px; letter-spacing:4px; font-weight:bold; }
+  #twentyOneGame .twentyone-felt-brand b { font-size:64px; line-height:.94; }
+  #twentyOneGame .twentyone-felt-brand small { font-size:8px; letter-spacing:3px; }
+  #twentyOneGame .twentyone-player-area,
+  #twentyOneGame .twentyone-divider { position:relative; z-index:1; }
+  #twentyOneGame .twentyone-player-area { min-height:144px; }
+  #twentyOneGame .twentyone-seat { position:relative; z-index:2; }
+  #twentyOneGame .twentyone-cards {
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    gap:0;
+    min-height:111px;
+    width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:7px 3px 15px;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(222,188,112,.55) transparent;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card {
+    position:relative;
+    display:block;
+    flex:0 0 58px;
+    width:58px;
+    height:87px;
+    min-width:58px;
+    margin-right:-21px;
+    padding:0;
+    overflow:hidden;
+    border:1px solid #dfc17b;
+    border-radius:7px;
+    background:linear-gradient(145deg,#fffdf8,#eadfc8);
+    box-shadow:0 4px 8px rgba(0,0,0,.38), inset 0 0 0 1px rgba(255,255,255,.8);
+    box-sizing:border-box;
+    transform:rotate(var(--hand-rotation,0deg)) translateY(var(--hand-lift,0px)) !important;
+    transform-origin:50% 90%;
+    transition:filter .16s ease;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    object-position:center;
+    image-rendering:auto;
+    backface-visibility:hidden;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card .card-corner {
+    position:absolute;
+    top:4px;
+    left:4px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:1px;
+    font-family:Georgia,"Times New Roman",serif;
+    line-height:1;
+    color:#17251e;
+    z-index:1;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card.red .card-corner,
+  #twentyOneGame .twentyone-cards .durak-card.premium-card.red .card-suit { color:#ba292c; }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card .card-corner-bottom {
+    top:auto;
+    left:auto;
+    right:4px;
+    bottom:4px;
+    transform:rotate(180deg);
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card .card-rank {
+    display:block;
+    font-size:12px;
+    font-weight:800;
+    line-height:1;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card .corner-suit {
+    display:block;
+    font-size:11px;
+    line-height:1;
+  }
+  #twentyOneGame .twentyone-cards .durak-card.premium-card .card-suit {
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:100%;
+    text-align:center;
+    transform:translate(-50%,-50%);
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:30px;
+    line-height:1;
+    color:#17251e;
+  }
+  #twentyOneGame .twentyone-cards .twentyone-card-face-down {
+    border:1px solid #e7ca84;
+    background:repeating-linear-gradient(45deg,#0f4a40 0 3px,#23695a 3px 5px,#154e45 5px 7px);
+    box-shadow:0 4px 8px rgba(0,0,0,.35), inset 0 0 0 2px rgba(245,213,140,.8);
+    color:#f7dda0;
+  }
+  #twentyOneGame .twentyone-card-back-art {
+    position:absolute;
+    inset:4px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    border:1px solid rgba(245,213,140,.8);
+    outline:1px solid rgba(245,213,140,.28);
+    outline-offset:2px;
+    color:#f7dda0;
+    font-family:Georgia,serif;
+    text-align:center;
+    background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(244,217,156,.14) 4px 5px,transparent 5px 9px);
+  }
+  #twentyOneGame .twentyone-card-back-art i { font-size:13px; font-style:normal; }
+  #twentyOneGame .twentyone-card-back-art b { font-size:8px; letter-spacing:1px; }
+  #twentyOneGame .twentyone-card-back-art strong { font-size:23px; line-height:1; }
+  #twentyOneGame .twentyone-card-back-art small { font-size:6px; }
+  #twentyOneGame .twentyone-deck-pile {
+    position:absolute;
+    right:13px;
+    top:50%;
+    width:52px;
+    height:84px;
+    transform:translateY(-50%);
+    z-index:5;
+    filter:drop-shadow(0 5px 4px rgba(0,0,0,.35));
+  }
+  #twentyOneGame .twentyone-deck-layer,
+  #twentyOneGame .twentyone-deck-top {
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    border:1px solid #e4c57f;
+    border-radius:6px;
+    box-sizing:border-box;
+  }
+  #twentyOneGame .twentyone-deck-layer.layer-one {
+    transform:translate(-4px,4px) rotate(-5deg);
+    background:#ddc28d;
+    border-color:#8b6e37;
+  }
+  #twentyOneGame .twentyone-deck-layer.layer-two {
+    transform:translate(-2px,2px) rotate(-2.5deg);
+    background:repeating-linear-gradient(45deg,#d8bb7b 0 3px,#f3dfa9 3px 5px);
+  }
+  #twentyOneGame .twentyone-deck-top {
+    color:#f7d996;
+    background:repeating-linear-gradient(45deg,transparent 0 3px,rgba(248,220,156,.28) 3px 4px,transparent 4px 7px),linear-gradient(145deg,#14584b,#0a332d);
+    box-shadow:inset 0 0 0 2px #0b362e,inset 0 0 0 3px rgba(246,213,145,.8);
+    gap:0;
+  }
+  #twentyOneGame .twentyone-deck-top i { font-size:12px; font-style:normal; }
+  #twentyOneGame .twentyone-deck-top b { font-size:6px; letter-spacing:.5px; }
+  #twentyOneGame .twentyone-deck-top strong { font-family:Georgia,serif; font-size:27px; line-height:1; }
+  #twentyOneGame .twentyone-deck-top small { font-size:6px; }
+  #twentyOneGame .twentyone-deck-count {
+    position:absolute;
+    right:-7px;
+    bottom:-9px;
+    min-width:23px;
+    padding:3px 5px;
+    border:1px solid #f0d48e;
+    border-radius:12px;
+    background:#0c2722;
+    color:#f8d995;
+    font-size:10px;
+    font-weight:900;
+    line-height:1;
+    text-align:center;
+  }
+  #twentyOneGame .twentyone-deck-pile.is-dealing { animation:twentyone-deck-nudge .28s ease-out; }
+  @keyframes twentyone-deck-nudge {
+    0% { transform:translateY(-50%) rotate(0deg) scale(1); }
+    40% { transform:translateY(-50%) rotate(-3deg) scale(1.035); }
+    100% { transform:translateY(-50%) rotate(0deg) scale(1); }
+  }
+  #twentyOneGame .twentyone-card-flight {
+    position:fixed !important;
+    display:block !important;
+    flex:none !important;
+    padding:0 !important;
+    border:1px solid #dfc17b !important;
+    border-radius:7px !important;
+    overflow:hidden !important;
+    background:linear-gradient(145deg,#fffdf8,#eadfc8) !important;
+    box-shadow:0 8px 16px rgba(0,0,0,.42) !important;
+    transform:none !important;
+    transform-origin:center center !important;
+    transition:none !important;
+  }
+  .twentyone-card-flight img {
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    object-fit:contain !important;
+    object-position:center !important;
+  }
+  .twentyone-card-flight .card-corner {
+    position:absolute !important;
+    top:4px !important;
+    left:4px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    font-family:Georgia,"Times New Roman",serif !important;
+    line-height:1 !important;
+    color:#17251e !important;
+  }
+  .twentyone-card-flight.red .card-corner,
+  .twentyone-card-flight.red .card-suit { color:#ba292c !important; }
+  .twentyone-card-flight .card-corner-bottom { top:auto !important; left:auto !important; right:4px !important; bottom:4px !important; transform:rotate(180deg) !important; }
+  .twentyone-card-flight .card-rank { font-size:12px !important; font-weight:800 !important; line-height:1 !important; }
+  .twentyone-card-flight .corner-suit { font-size:11px !important; line-height:1 !important; }
+  .twentyone-card-flight .card-suit { position:absolute !important; top:50% !important; left:50% !important; width:100% !important; text-align:center !important; transform:translate(-50%,-50%) !important; font-family:Georgia,"Times New Roman",serif !important; font-size:30px !important; line-height:1 !important; color:#17251e !important; }
+  .twentyone-card-flight.twentyone-card-face-down { background:repeating-linear-gradient(45deg,#0f4a40 0 3px,#23695a 3px 5px,#154e45 5px 7px) !important; }
+  .twentyone-card-flight.twentyone-card-face-down .twentyone-card-back-art { position:absolute; inset:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #f5d59c; color:#f7dda0; font-family:Georgia,serif; }
+  #twentyOneGame .twentyone-card-reveal { animation:twentyone-card-reveal .42s ease-out both; }
+  @keyframes twentyone-card-reveal {
+    from { rotate:y 88deg; opacity:.5; filter:brightness(.85); }
+    to { rotate:y 0deg; opacity:1; filter:brightness(1); }
+  }
+  @media (max-width:350px) {
+    #twentyOneGame .twentyone-table { padding-left:8px; padding-right:66px; min-height:310px; }
+    #twentyOneGame .twentyone-player-area { min-height:136px; }
+    #twentyOneGame .twentyone-cards .durak-card.premium-card { flex-basis:51px; width:51px; height:77px; min-width:51px; margin-right:-27px; }
+    #twentyOneGame .twentyone-deck-pile { right:10px; width:46px; height:75px; }
+    #twentyOneGame .twentyone-card-back-art strong { font-size:20px; }
+    #twentyOneGame .twentyone-felt-brand b { font-size:51px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #twentyOneGame .twentyone-deck-pile.is-dealing { animation:none; }
+    #twentyOneGame .twentyone-card-reveal { animation:none; }
   }
 </style>
 
