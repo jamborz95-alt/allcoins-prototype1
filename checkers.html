@@ -264,7 +264,7 @@
       var stake = 100;
       var currentRoom = null;
       var board = [];
-      var turn = humanColor;
+      var turn = "w";
       var humanColor = "w";
       var botColor = "b";
       var selectedPos = null;
@@ -707,7 +707,7 @@
         selectedPos = null;
         selectedMoves = [];
         if (finishIfNoMoves(humanColor)) { busy = false; return; }
-        turn = "w";
+        turn = humanColor;
         busy = false;
         renderBoard();
         updateStatus(humanTurnLabel(), "Нажми на свою шашку, затем на подсвеченную клетку.");
