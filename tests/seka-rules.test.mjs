@@ -114,6 +114,9 @@ test("the main Games tab links to a separate Seka page with all five stake range
   const router = await readFile(new URL("../server/seka-router.js", import.meta.url), "utf8");
   assert.match(router, /async function runSekaBots/);
   assert.match(router, /\/rooms\/add-bot/);
+  assert.match(router, /game\.testMode = testMode/);
+  assert.match(router, /if \(!game\.testMode\) await chargePlayer/);
+  assert.match(router, /const uniqueWinners = game\.testMode/);
   const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]);
   assert.ok(scripts.length > 0, "страница должна иметь рабочий игровой скрипт");
   for (const script of scripts) assert.doesNotThrow(() => new Function(script), "игровой JavaScript должен разбираться без синтаксических ошибок");
