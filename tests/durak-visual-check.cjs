@@ -124,7 +124,7 @@ const path = require("node:path");
         borderRadius: style?.borderRadius || null,
         logoSvg: Boolean(button?.querySelector(".tap-orb-logo svg")),
         wordmark: button?.querySelector(".tap-orb-wordmark")?.textContent?.trim() || null,
-        reward: button?.querySelector(".tap-orb-reward")?.textContent?.trim().replace(/\\s+/g, " ") || null,
+        reward: button?.querySelector(".tap-orb-reward")?.textContent?.trim().replace(/\s+/g, " ") || null,
         documentWidth: document.documentElement.scrollWidth,
         viewportWidth: window.innerWidth
       };
@@ -136,7 +136,7 @@ const path = require("node:path");
     assert.match(clickerOrbDiagnostics.borderRadius, /50%/, "Кнопка кликера должна иметь радиус круга");
     assert.equal(clickerOrbDiagnostics.logoSvg, true, "В круге кликера должен отображаться фирменный SVG-логотип");
     assert.equal(clickerOrbDiagnostics.wordmark, "ALLCOINS", "Внутри круга должна быть надпись ALLCOINS");
-    assert.match(clickerOrbDiagnostics.reward, /\+100\\s*AC/, "Награда +100 AC должна оставаться видимой");
+    assert.match(clickerOrbDiagnostics.reward, /\+100.*AC/, "Награда +100 AC должна оставаться видимой");
     assert.equal(clickerOrbDiagnostics.documentWidth, clickerOrbDiagnostics.viewportWidth,
       "Круг кликера не должен вызывать горизонтальную прокрутку");
     await page.screenshot({ path: path.join(out, "00-clicker-round-logo-mobile.png"), fullPage: true });
