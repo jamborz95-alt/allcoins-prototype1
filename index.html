@@ -3615,14 +3615,7 @@
       <h4>＋ Создание комнаты</h4>
       <label for="twentyOneRoomName">Название комнаты</label>
       <input id="twentyOneRoomName" type="text" maxlength="30" placeholder="Например, Комната ALLCOINS">
-      <label for="twentyOneRoomPlayers">Игроков в комнате</label>
-      <select id="twentyOneRoomPlayers">
-        <option value="1">1 игрок</option>
-        <option value="2" selected>2 игрока</option>
-        <option value="3">3 игрока</option>
-        <option value="4">4 игрока</option>
-        <option value="5">5 игроков</option>
-      </select>
+      <div class="twentyone-room-fixed-seats"><span>Мест в каждой комнате</span><b>♟ До 5 игроков</b></div>
       <div class="twentyone-room-stake-summary"><span>Ставка за игрока</span><b><span id="twentyOneRoomStakeValue">100</span> AC</b></div>
       <input id="twentyOneRoomStakeSlider" type="range" min="100" max="1000000" step="100" value="100" aria-label="Размер ставки в комнате">
       <div id="twentyOneRoomStakePresets" class="twentyone-stake-presets" role="group" aria-label="Быстрый выбор ставки для комнаты">
