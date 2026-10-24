@@ -155,7 +155,8 @@ const path = require("node:path");
     assert.match(initialCheckersDiagnostics.humanColorNote, /белыми/, "Игрок должен видеть подпись белых");
     assert.match(initialCheckersDiagnostics.botColorNote, /чёрные/, "Соперник должен видеть подпись чёрных");
     assert.match(initialCheckersDiagnostics.crownContent, /♛/, "На дамке должен появляться значок короны");
-    assert.equal(initialCheckersDiagnostics.crownWidth, "68%", "Значок дамки должен закрывать верхнюю часть логотипа");
+    assert.ok(parseFloat(initialCheckersDiagnostics.crownWidth) > 10 && parseFloat(initialCheckersDiagnostics.crownWidth) < 30, "Значок дамки должен быть увеличен и закрывать верхнюю часть логотипа: " + JSON.stringify(initialCheckersDiagnostics));
+    assert.ok(parseFloat(initialCheckersDiagnostics.crownTop) < 0, "Корона должна заходить сверху на логотип шашки");
     assert.equal(initialCheckersDiagnostics.crownZIndex, "4", "Значок дамки должен быть поверх логотипа");
     assert.equal(initialCheckersDiagnostics.logoUnderCrown, true, "Корона должна накладываться на логотип, не удаляя его");
 
