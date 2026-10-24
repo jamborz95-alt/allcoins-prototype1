@@ -146,18 +146,24 @@ try {
     "dealer should be dealt two cards, including a face-down card");
   assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down").count(), 1,
     "dealer's second card should stay face down during player's turn");
-  const twentyOneCardMetrics = await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => ({
-    rectHeight: el.getBoundingClientRect().height,
-    offsetHeight: el.offsetHeight,
-    computedHeight: getComputedStyle(el).height,
-    display: getComputedStyle(el).display,
-    visibility: getComputedStyle(el).visibility,
-    classes: el.className,
-    inlineStyle: el.getAttribute("style"),
-    parentId: el.parentElement?.id,
-    gameDisplay: getComputedStyle(document.querySelector("#twentyOneGame")).display
-  }));
-  assert.ok(twentyOneCardMetrics.offsetHeight >= 70,
+  const twentyOneCardMetrics = await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => {
+    const chain = [];
+    let node = el;
+    while (node && chain.length < 8) {
+      const style = getComputedStyle(node);
+      chain.push({
+        tag: node.tagName, id: node.id, classes: String(node.className || ""),
+        display: style.display, visibility: style.visibility, height: style.height,
+        offsetHeight: node.offsetHeight, rectHeight: node.getBoundingClientRect().height,
+        zoom: style.zoom, contentVisibility: style.contentVisibility,
+        connected: node.isConnected
+      });
+      node = node.parentElement;
+    }
+    return { chain, inlineStyle: el.getAttribute("style"), transform: getComputedStyle(el).transform,
+      translate: getComputedStyle(el).translate, rotate: getComputedStyle(el).rotate, scale: getComputedStyle(el).scale };
+  });
+  assert.ok(twentyOneCardMetrics.chain[0].rectHeight >= 70,
     "player hand cards should have a visible card-sized layout: " + JSON.stringify(twentyOneCardMetrics));
   await page.locator("#twentyOneBack").click();
 
