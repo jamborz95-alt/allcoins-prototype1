@@ -10317,7 +10317,9 @@ function renderTwentyOneRoomBoard(result) {
     $("twentyOneRoomMyHandTitle").textContent = "Твои карты";
     $("twentyOneRoomMyScore").textContent = "СЧЁТ: — / 21";
     myCards.textContent = "";
-    $("twentyOneRoomMyHandNote").textContent = "Не удалось определить твою руку. Обновляем данные комнаты…";
+    $("twentyOneRoomMyHandNote").textContent = game.isCurrentUserParticipant === false
+      ? "В этом раунде участвуют только игроки, нажавшие «Готов к реваншу»."
+      : "Не удалось определить твою руку. Обновляем данные комнаты…";
   }
 
   // Other participants remain visible below the player's own hand. Their card faces
