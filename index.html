@@ -3680,6 +3680,14 @@
       <div id="twentyOneRoomDealerCards" class="twentyone-cards dealer-cards" aria-label="Карты банкира в онлайн-раунде"></div>
     </div>
     <div class="twentyone-divider"><span>21</span></div>
+    <section id="twentyOneRoomMyHandPanel" class="twentyone-my-hand-panel" aria-live="polite">
+      <div class="twentyone-my-hand-head">
+        <b id="twentyOneRoomMyHandTitle">Твои карты</b>
+        <strong id="twentyOneRoomMyScore">СЧЁТ: — / 21</strong>
+      </div>
+      <div id="twentyOneRoomMyCards" class="twentyone-own-cards" aria-label="Твои карты в онлайн-раунде"></div>
+      <div id="twentyOneRoomMyHandNote" class="twentyone-my-hand-note">Твои карты и очки будут показаны здесь.</div>
+    </section>
     <div id="twentyOneRoomPlayers" class="twentyone-online-players"></div>
     <div id="twentyOneRoomStatus" class="twentyone-room-status" aria-live="polite"></div>
     <div id="twentyOneRoomActions" class="twentyone-action-row">
@@ -3731,7 +3739,28 @@
     #twentyOneGame #twentyOneSoloStakePresets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:6px 0 9px; }
     #twentyOneGame #twentyOneSoloStakePresets button { min-width:0; padding:6px 2px; font-size:10px; min-height:30px; border-radius:8px; background:#132432; color:#eef5f4; border:1px solid #405765; }
     #twentyOneGame #twentyOneSoloStakePresets button.active, #twentyOneGame #twentyOneSoloStakePresets button[aria-pressed=true] { background:#f0d58a; color:#172a28; border-color:#f0d58a; }
-    @media(max-width:360px) { #twentyOneGame .twentyone-online-players { grid-template-columns:1fr; } }
+    #twentyOneGame .twentyone-my-hand-panel {
+      flex:0 0 auto;
+      margin:0;
+      padding:10px 10px 8px;
+      border:1px solid #c9a35e;
+      border-radius:13px;
+      background:linear-gradient(145deg,rgba(34,67,53,.98),rgba(12,31,29,.98));
+      box-shadow:inset 0 0 0 1px rgba(255,230,169,.08),0 5px 16px rgba(0,0,0,.2);
+    }
+    #twentyOneGame .twentyone-my-hand-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+    #twentyOneGame .twentyone-my-hand-head b { color:#ffe3a0; font-size:13px; }
+    #twentyOneGame .twentyone-my-hand-head strong { color:#fff5d6; font-size:14px; font-weight:900; white-space:nowrap; }
+    #twentyOneGame .twentyone-own-cards { display:flex; justify-content:center; align-items:flex-end; flex-wrap:wrap; gap:6px; min-height:88px; padding:2px 0 5px; }
+    #twentyOneGame #twentyOneRoomMyCards .twentyone-card { width:58px!important; height:86px!important; min-width:58px!important; flex:0 0 58px!important; margin:0!important; }
+    #twentyOneGame #twentyOneRoomMyCards .twentyone-card img { display:block; width:100%; height:100%; object-fit:contain; }
+    #twentyOneGame .twentyone-my-hand-note { margin-top:3px; color:#d9e7d9; font-size:11px; text-align:center; line-height:1.4; }
+    @media(max-width:360px) {
+      #twentyOneGame .twentyone-online-players { grid-template-columns:1fr; }
+      #twentyOneGame #twentyOneRoomMyCards .twentyone-card { width:54px!important; height:80px!important; min-width:54px!important; flex-basis:54px!important; }
+      #twentyOneGame .twentyone-my-hand-head b { font-size:12px; }
+      #twentyOneGame .twentyone-my-hand-head strong { font-size:13px; }
+    }
   </style>
 
   <style id="twentyone-online-fullscreen-styles">
@@ -10210,14 +10239,34 @@ function renderTwentyOneOnlineCardRow(container, cards, { hideCards = false, car
   }
 }
 function renderTwentyOneRoomBoard(result) {
-  const room = result.room;
-  const game = result.game;
-  $("twentyOneRoomBoardTitle").textContent = "🂡 " + room.name + " · ставка " + Number(room.stake).toLocaleString("ru-RU") + " AC";
-  const roomPlayerCount = Array.isArray(game?.players) ? game.players.length : Number(room.playersCount || 0);
-  $("twentyOneRoomPlayerCount").textContent = "Игроков в раунде: " + roomPlayerCount + " из " + Number(room.maxPlayers || roomPlayerCount || 0);
+  const room = result.room || {};
+  const game = result.game || {};
+  $("twentyOneRoomBoardTitle").textContent =
+    "🂡 " + (room.name || "21 Очко") + " · ставка " + Number(room.stake || game.stake || 0).toLocaleString("ru-RU") + " AC";
+
+  // In a room created for two players, the owner may start before the second person joins.
+  // Identify the sole real participant from both server lists so their hand never gets
+  // mistaken for a hidden opponent's hand.
+  const gamePlayers = Array.isArray(game.players) ? game.players : [];
+  const roomPlayers = Array.isArray(result.players) ? result.players : [];
+  const viewerRoomMember = roomPlayers.find(player => player && player.isMe);
+  let myPlayer = gamePlayers.find(player => player && player.isMe) || null;
+  if (!myPlayer && viewerRoomMember) {
+    myPlayer = gamePlayers.find(player => String(player.label || "").trim() === String(viewerRoomMember.label || "").trim()) || null;
+  }
+  if (!myPlayer && gamePlayers.length === 1 && roomPlayers.filter(player => player && player.isMe).length === 1) {
+    myPlayer = gamePlayers[0];
+  }
+  const players = gamePlayers.map(player => player === myPlayer ? { ...player, isMe: true } : player);
+  if (myPlayer) myPlayer = players.find(player => player.isMe) || myPlayer;
+
+  const roomPlayerCount = players.length || Number(room.playersCount || 0);
+  $("twentyOneRoomPlayerCount").textContent =
+    "Игроков в раунде: " + roomPlayerCount + " из " + Number(room.maxPlayers || roomPlayerCount || 0);
+
   const dealerCards = $("twentyOneRoomDealerCards");
-  const dealerHand = Array.isArray(game?.dealerHand) ? game.dealerHand : [];
-  const dealerHidden = game?.status !== "finished";
+  const dealerHand = Array.isArray(game.dealerHand) ? game.dealerHand : [];
+  const dealerHidden = game.status !== "finished";
   renderTwentyOneOnlineCardRow(dealerCards, dealerHand, { hideCards: false });
   if (dealerHidden && dealerCards.children.length > 1) {
     const hidden = createTwentyOneCardBackElement({ id: "21-dealer-hidden-card" });
@@ -10225,18 +10274,55 @@ function renderTwentyOneRoomBoard(result) {
     hidden.style.touchAction = "auto";
     dealerCards.replaceChild(hidden, dealerCards.children[1]);
   }
-  $("twentyOneRoomDealerScore").textContent = game?.status === "finished"
+  $("twentyOneRoomDealerScore").textContent = game.status === "finished"
     ? "Счёт банкира: " + twentyOneHandScore(dealerHand) + " очков"
     : "Вторая карта закрыта";
+
+  // The active player's hand gets its own large, high-contrast area at the table.
+  // This keeps cards and score visible even when the room starts with only its owner.
+  const myHandPanel = $("twentyOneRoomMyHandPanel");
+  const myCards = $("twentyOneRoomMyCards");
+  if (myPlayer) {
+    myHandPanel.style.display = "block";
+    $("twentyOneRoomMyHandTitle").textContent = (myPlayer.label || "Твои карты") + " · твоя рука";
+    const myHand = Array.isArray(myPlayer.hand) ? myPlayer.hand : [];
+    const hasScore = myPlayer.score !== null && myPlayer.score !== undefined && Number.isFinite(Number(myPlayer.score));
+    const myScore = hasScore ? Number(myPlayer.score) : twentyOneHandScore(myHand);
+    $("twentyOneRoomMyScore").textContent = "СЧЁТ: " + myScore + " / 21";
+    renderTwentyOneOnlineCardRow(myCards, myHand, { hideCards: false });
+    if (game.status === "finished") {
+      $("twentyOneRoomMyHandNote").textContent = "Раунд завершён · " +
+        (Number(myPlayer.payout) > 0
+          ? "тебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC"
+          : "выигрыш в этом раунде не начислен");
+    } else if (myPlayer.status === "stand") {
+      $("twentyOneRoomMyHandNote").textContent = "Ты остановился на " + myScore + " очках.";
+    } else if (myPlayer.status === "bust") {
+      $("twentyOneRoomMyHandNote").textContent = "Перебор: " + myScore + " очков.";
+    } else if (game.currentPlayerIsMe) {
+      $("twentyOneRoomMyHandNote").textContent = "Твой ход — выбери «Ещё карту» или «Хватит».";
+    } else {
+      $("twentyOneRoomMyHandNote").textContent = "Ожидаем ход другого игрока.";
+    }
+  } else {
+    myHandPanel.style.display = "block";
+    $("twentyOneRoomMyHandTitle").textContent = "Твои карты";
+    $("twentyOneRoomMyScore").textContent = "СЧЁТ: — / 21";
+    myCards.textContent = "";
+    $("twentyOneRoomMyHandNote").textContent = "Не удалось определить твою руку. Обновляем данные комнаты…";
+  }
+
+  // Other participants remain visible below the player's own hand. Their card faces
+  // stay hidden until the round ends.
   const playerContainer = $("twentyOneRoomPlayers");
   playerContainer.textContent = "";
-  (game?.players || []).forEach(player => {
+  players.filter(player => !player.isMe).forEach(player => {
     const card = document.createElement("div");
-    card.className = "twentyone-online-player" + (game.status === "playing" && game.currentPlayerIsMe && player.isMe ? " active" : "");
+    card.className = "twentyone-online-player" + (game.status === "playing" && game.currentPlayerLabel === player.label ? " active" : "");
     const head = document.createElement("div");
     head.className = "twentyone-online-player-head";
     const name = document.createElement("b");
-    name.textContent = player.label + (player.isMe ? " · ты" : "");
+    name.textContent = player.label || "Игрок";
     const stateLabel = document.createElement("small");
     const statusText = { playing:"Ходит", stand:"Остановился", won:"Победа", bust:"Перебор", lost:"Проиграл" };
     const stateNote = game.status === "finished" && Number(player.payout) > 0
@@ -10250,7 +10336,7 @@ function renderTwentyOneRoomBoard(result) {
     head.append(name, stateLabel);
     const row = document.createElement("div");
     row.className = "twentyone-online-cards";
-    const canReveal = game.status === "finished" || player.isMe;
+    const canReveal = game.status === "finished";
     renderTwentyOneOnlineCardRow(row, player.hand || [], {
       hideCards: !canReveal,
       cardCount: Number(player.cardsCount) || 0
@@ -10258,24 +10344,23 @@ function renderTwentyOneRoomBoard(result) {
     card.append(head, row);
     playerContainer.appendChild(card);
   });
-  const myPlayer = (game?.players || []).find(player => player.isMe);
-  if (game?.status === "finished") {
-    $("twentyOneRoomStatus").textContent = (game.message || "Раунд завершён.") +
-      (myPlayer && Number(myPlayer.payout) > 0
-        ? "\nТебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC."
-        : "\nВ этом раунде ставка не возвращается.");
+
+  if (game.status === "finished") {
+    $("twentyOneRoomStatus").textContent = game.message || "Раунд завершён.";
     $("twentyOneRoomActions").style.display = "none";
     $("twentyOneRoomBackToLobby").style.display = "block";
   } else {
-    $("twentyOneRoomStatus").textContent = game?.currentPlayerIsMe
+    $("twentyOneRoomStatus").textContent = game.currentPlayerIsMe
       ? "Твой ход. Выбери «Ещё карту» или «Хватит»."
-      : "Ход игрока: " + (game?.currentPlayerLabel || "ожидание") + ". " + (game?.message || "");
+      : "Ход игрока: " + (game.currentPlayerLabel || "ожидание") + ". " + (game.message || "");
     $("twentyOneRoomActions").style.display = "grid";
-    $("twentyOneRoomHit").disabled = !game?.currentPlayerIsMe || twentyOneRoomActionBusy;
-    $("twentyOneRoomStand").disabled = !game?.currentPlayerIsMe || twentyOneRoomActionBusy;
+    $("twentyOneRoomHit").disabled = !game.currentPlayerIsMe || twentyOneRoomActionBusy;
+    $("twentyOneRoomStand").disabled = !game.currentPlayerIsMe || twentyOneRoomActionBusy;
     $("twentyOneRoomBackToLobby").style.display = "none";
   }
 }
+window.renderTwentyOneRoomBoard = renderTwentyOneRoomBoard;
+window.setTwentyOneVisibleView = setTwentyOneVisibleView;
 async function refreshTwentyOneRoomState() {
   if (!currentTwentyOneRoomId) return;
   const result = await apiRequest("/api/twentyone/rooms/state", { roomId: currentTwentyOneRoomId });

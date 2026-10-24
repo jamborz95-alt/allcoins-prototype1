@@ -172,6 +172,30 @@ try {
     "the third player score should be visible during a round");
   assert.equal(await page.locator("#twentyOneRoomPlayers .twentyone-online-player:nth-child(2) .twentyone-card-face-down").count(), 2,
     "opponents' cards should stay face down while their score is visible");
+  assert.equal(await page.locator("#twentyOneRoomMyCards .twentyone-card").count(), 2,
+    "the active player's own two cards should appear in a dedicated hand area");
+  assert.match(await page.locator("#twentyOneRoomMyScore").innerText(), /СЧЁТ: 10 \/ 21/,
+    "the active player's current score should be visibly shown above their hand");
+
+  // A two-seat room may start while only its owner is connected: still render their hand.
+  await page.evaluate(() => window.renderTwentyOneRoomBoard({
+    room: { id:"test-solo-room", name:"Комната на двоих", stake:500, playersCount:1, maxPlayers:2, status:"playing" },
+    players: [{ label:"Тестовый игрок", isMe:true }],
+    game: {
+      status:"playing", stake:500,
+      dealerHand:[{id:"solo-dealer-a",rank:"8",suit:"♠"},{id:"solo-dealer-b",rank:"K",suit:"♥"}],
+      players:[{label:"Тестовый игрок",isMe:false,status:"playing",hand:[
+        {id:"solo-own-a",rank:"7",suit:"♣"},{id:"solo-own-b",rank:"4",suit:"♥"}
+      ],score:11,cardsCount:2,payout:0}],
+      currentPlayerLabel:"Тестовый игрок",currentPlayerIsMe:true,message:"Твой ход"
+    }
+  }));
+  assert.match(await page.locator("#twentyOneRoomPlayerCount").innerText(), /1 из 2/,
+    "one connected player in a two-seat room should be displayed accurately");
+  assert.equal(await page.locator("#twentyOneRoomMyCards .twentyone-card").count(), 2,
+    "a one-player round in a two-seat room must still show the owner's cards");
+  assert.match(await page.locator("#twentyOneRoomMyScore").innerText(), /СЧЁТ: 11 \/ 21/,
+    "a one-player round in a two-seat room must still show the owner's score");
 
   await page.evaluate(() => window.setTwentyOneVisibleView("twentyOneLobby"));
   await page.locator("#twentyOneSoloPlay").click();
