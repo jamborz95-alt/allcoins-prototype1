@@ -7815,7 +7815,8 @@ function syncDurakRematchReadyBadges(roomPlayers, roomStatus) {
   const rematchLobbyVisible = roomStatus === "finished" || roomStatus === "waiting";
 
   seats.forEach(seat => {
-    let badge = seat.querySelector(".durak-ready-badge");
+    // Не трогаем игровую плашку «БЕРУ»: этот обработчик обновляет только статус готовности к реваншу.
+    let badge = seat.querySelector(".durak-ready-badge:not(.durak-taking-badge)");
     if (!rematchLobbyVisible || !Array.isArray(roomPlayers)) {
       badge?.remove();
       return;
