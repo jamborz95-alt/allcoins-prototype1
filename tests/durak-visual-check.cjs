@@ -157,6 +157,11 @@ const path = require("node:path");
     await page.waitForTimeout(50);
     assert.match(await page.locator("#clickerTaskStatus").textContent(), /\+250 AC/, "Получение награды за задание должно показывать подтверждение");
     assert.equal(await page.locator("#clickerTaskSummary").textContent(), "1 / 4", "Счётчик должен обновиться после получения награды");
+    assert.equal(await page.locator("#balance").textContent(), "10250", "Локальная награда должна отображаться в общем балансе");
+    await page.evaluate(() => { state.balance = 10010; render(); });
+    assert.equal(await page.locator("#balance").textContent(), "10260", "Подтверждённое сервером обновление баланса не должно стирать локальную награду");
+    assert.equal(await page.locator("#profileBalance").textContent(), "10260", "Профиль должен показывать общий отображаемый баланс");
+    assert.equal(await page.locator("#withdrawBalance").textContent(), "10260", "Раздел вывода должен показывать общий отображаемый баланс");
     await page.screenshot({ path: path.join(out, "00-clicker-tasks-mobile.png"), fullPage: true });
 
     await page.locator('.nav [data-page="games"]').click();
