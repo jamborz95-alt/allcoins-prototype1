@@ -1,5 +1,6 @@
 import express from "express";
 import { isRpsChoice, resolveRpsRound } from "./rps-rules.js";
+import { recordGameCommission } from "./commission.js";
 
 const MAX_PLAYERS = 3;
 const MIN_STAKE = 100;
@@ -600,6 +601,15 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         String(row.display_name || "Игрок")
       ]));
       const pot = testMode ? 0 : Number(room.stake) * participantIds.length;
+      const commission = !testMode && resolution.outcome === "win"
+        ? await recordGameCommission(client, {
+            game: "rps",
+            eventKey: "rps:" + String(roomId) + ":" + String(room.current_round),
+            grossAmount: pot
+          })
+        : { amount: 0 };
+      const commissionAmount = Math.max(0, Math.floor(Number(commission.amount) || 0));
+      const payoutPool = Math.max(0, pot - commissionAmount);
       const payouts = [];
       if (testMode) {
         // Never debit, refund, or pay out AC in test-bot mode.
@@ -619,8 +629,8 @@ export function createRpsRouter({ pool, verifyTelegram }) {
           });
         }
       } else {
-        let remainder = pot % resolution.winnerIds.length;
-        const baseShare = Math.floor(pot / resolution.winnerIds.length);
+        let remainder = payoutPool % resolution.winnerIds.length;
+        const baseShare = Math.floor(payoutPool / resolution.winnerIds.length);
         for (const telegramId of resolution.winnerIds) {
           const amount = baseShare + (remainder > 0 ? 1 : 0);
           if (remainder > 0) remainder -= 1;
@@ -654,6 +664,10 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         winnerLabels: resolution.winnerIds.map(id => labels.get(id) || "Игрок"),
         choices: revealedChoices,
         pot,
+        grossPot: pot,
+        commissionPercent: 5,
+        commissionAmount,
+        payoutPool,
         stake: Number(room.stake),
         testMode,
         payouts,
