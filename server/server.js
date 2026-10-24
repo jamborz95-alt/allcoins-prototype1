@@ -2926,7 +2926,9 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
             hand: revealHand ? player.hand : [],
             cardsCount: Array.isArray(player.hand) ? player.hand.length : 0,
             score: scoreTwentyOneHand(player.hand || []),
-            payout: revealAll ? Number(player.payout || 0) : 0
+            payout: revealAll ? Number(player.payout || 0) : 0,
+            grossPayout: revealAll ? Number(player.grossPayout || player.payout || 0) : 0,
+            commissionAmount: revealAll ? Number(player.commissionAmount || 0) : 0
           };
         });
         const dealerHand = revealAll
@@ -2947,7 +2949,9 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
           currentPlayerIsMe: String(raw.currentPlayerTelegramId) === String(user.id),
           isCurrentUserParticipant: rawPlayers.some(player => String(player.telegramId) === String(user.id)),
           message: String(raw.message || ""),
-          settlementApplied: Boolean(raw.settlementApplied)
+          settlementApplied: Boolean(raw.settlementApplied),
+          commissionPercent: Number(raw.commissionPercent || 5),
+          commissionAmount: Number(raw.commissionAmount || 0)
         };
       }
     }
