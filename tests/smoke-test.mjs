@@ -136,16 +136,32 @@ try {
   await page.waitForFunction(() => {
     const playerCards = document.querySelectorAll("#twentyOnePlayerCards .twentyone-card");
     const dealerCards = document.querySelectorAll("#twentyOneDealerCards .twentyone-card");
+    const status = document.querySelector("#twentyOneStatus")?.textContent.trim() || "";
+    const cardFlight = document.querySelector("body > .twentyone-card-flight");
     return playerCards.length === 2 && dealerCards.length === 2 &&
       document.querySelector("#twentyOneDeckCount")?.textContent.trim() === "32" &&
+      !cardFlight && status !== "Идёт раздача карт…" &&
       [...playerCards, ...dealerCards].every(card => getComputedStyle(card).visibility !== "hidden");
-  }, { timeout: 8000 });
+  }, { timeout: 10000 });
   assert.equal(await page.locator("#twentyOnePlayerCards .twentyone-card").count(), 2,
     "player should be dealt two visible cards");
   assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card").count(), 2,
     "dealer should be dealt two cards, including a face-down card");
   assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down").count(), 1,
     "dealer's second card should stay face down during player's turn");
+  assert.match((await page.locator("#twentyOnePlayerScore").innerText()).trim(), /^СЧЁТ: \d+ \/ 21$/,
+    "player's current score should be shown immediately in a clear 21-point label");
+  const scoreStyle = await page.locator("#twentyOnePlayerScore").evaluate(el => {
+    const style = getComputedStyle(el);
+    return { color: style.color, fontSize: parseFloat(style.fontSize), fontWeight: Number(style.fontWeight), visibility: style.visibility };
+  });
+  assert.ok(scoreStyle.fontSize >= 14 && scoreStyle.fontWeight >= 700 && scoreStyle.visibility !== "hidden",
+    "player score must be large, bold and visible: " + JSON.stringify(scoreStyle));
+  assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down strong").count(), 0,
+    "banker's card back must not show the number 21");
+  assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down .twentyone-back-mark").count(), 1,
+    "banker's face-down card should use the decorative ALLCOINS back");
+
   const twentyOneCardMetrics = await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => {
     const chain = [];
     let node = el;
