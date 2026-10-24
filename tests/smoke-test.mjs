@@ -125,6 +125,31 @@ try {
       `navigation should show #${section}`);
   }
 
+  // 21 Ochko: separate page, textured felt table, deck counter and animated initial deal.
+  await page.locator('.nav button[data-page="games"]').click();
+  assert.equal(await page.locator("#openTwentyOne").count(), 1, "21 Ochko launcher should exist in Games");
+  await page.locator("#openTwentyOne").click();
+  assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
+    true, "21 Ochko should open as a separate full-screen page");
+  assert.equal(await page.locator("#twentyOneDeck").count(), 1, "21 Ochko should show a deck pile on the table");
+  await page.locator("#twentyOneDeal").click();
+  await page.waitForFunction(() => {
+    const playerCards = document.querySelectorAll("#twentyOnePlayerCards .twentyone-card");
+    const dealerCards = document.querySelectorAll("#twentyOneDealerCards .twentyone-card");
+    return playerCards.length === 2 && dealerCards.length === 2 &&
+      document.querySelector("#twentyOneDeckCount")?.textContent.trim() === "32" &&
+      [...playerCards, ...dealerCards].every(card => getComputedStyle(card).visibility !== "hidden");
+  }, { timeout: 8000 });
+  assert.equal(await page.locator("#twentyOnePlayerCards .twentyone-card").count(), 2,
+    "player should be dealt two visible cards");
+  assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card").count(), 2,
+    "dealer should be dealt two cards, including a face-down card");
+  assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down").count(), 1,
+    "dealer's second card should stay face down during player's turn");
+  assert.ok(await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => el.getBoundingClientRect().height >= 70),
+    "player hand cards should have a visible card-sized layout");
+  await page.locator("#twentyOneBack").click();
+
   // Durak markup and test-bot control must exist.
   await page.locator('.nav button[data-page="games"]').click();
   assert.equal(await page.locator("#durakGame").count(), 1, "Durak game section should exist");
@@ -329,7 +354,7 @@ try {
     "winning player should see the game result");
 
   assert.deepEqual(pageErrors, [], "page should not produce JavaScript errors");
-  console.log("PASS: clicker, energy, navigation, Durak player names, bot, cards, duplicate-action protection, no page errors");
+  console.log("PASS: clicker, energy, navigation, 21 Ochko table/deal/visible cards, Durak player names, bot, cards, duplicate-action protection, no page errors");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
