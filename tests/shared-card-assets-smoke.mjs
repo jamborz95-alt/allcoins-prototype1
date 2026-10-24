@@ -168,7 +168,7 @@ try {
   const twentyOneResult = await page.evaluate(() => {
     const cards = [...document.querySelectorAll("#twentyOnePlayerCards .durak-card")];
     const images = cards.map(card => card.querySelector("img"));
-    const styles = images.map(img => getComputedStyle(img));
+    const styles = images.filter(Boolean).map(img => getComputedStyle(img));
     return {
       cardCount: cards.length,
       imageCount: images.filter(Boolean).length,
