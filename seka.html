@@ -467,13 +467,34 @@
     "4": { min: 100000, max: 1000000, label: "100 000–1 000 000 AC" },
     "5": { min: 1000000, max: null, label: "От 1 000 000 AC без верхнего лимита" }
   };
-  const imageMap = {
-    "A-♠": "ace-spades.png",
-    "K-♠": "king-spades-2.png",
-    "Q-♥": "queen-hearts.png",
-    "J-♦": "jack-diamonds.png",
-    "J-♥": "jack-hearts.png"
+  // Используем тот же набор PNG, что и в «Дураке Онлайн» и «21 Очко».
+  // Картинки пока есть для 10, туза, валета, дамы и короля во всех мастях.
+  const CARD_ASSET_VERSION = "20261024-shared-cards-v2";
+  const rankImageNames = {
+    "10":"10",
+    "A":"ace", "Т":"ace", "ТУЗ":"ace", "ACE":"ace",
+    "J":"jack", "В":"jack", "ВАЛЕТ":"jack", "JACK":"jack",
+    "Q":"queen", "Д":"queen", "ДАМА":"queen", "QUEEN":"queen",
+    "K":"king", "К":"king", "КОРОЛЬ":"king", "KING":"king"
   };
+  const suitImageNames = {
+    "♠":"spades", "♤":"spades", "SPADES":"spades",
+    "♥":"hearts", "♡":"hearts", "HEARTS":"hearts",
+    "♦":"diamonds", "♢":"diamonds", "DIAMONDS":"diamonds",
+    "♣":"clubs", "♧":"clubs", "CLUBS":"clubs"
+  };
+  function cardImageName(card) {
+    const rank = String(card?.rank ?? "").trim().toUpperCase();
+    const suit = String(card?.suit ?? "").trim();
+    const normalizedSuit = ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" })[suit] || suit;
+    const rankName = rankImageNames[rank];
+    const suitName = suitImageNames[normalizedSuit] ||
+      suitImageNames[normalizedSuit.toUpperCase()] ||
+      suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
+    if (!rankName || !suitName) return null;
+    const filename = rankName + "-" + suitName + ".png";
+    return filename === "king-spades.png" ? "king-spades-2.png" : filename;
+  }
   let currentRoomId = null;
   let currentRoomData = null;
   function saveCurrentRoom(id) {
@@ -550,12 +571,12 @@
     return ranks[String(card.rank)] || String(card.rank);
   }
   function cardMarkup(card, compact) {
-    const key = String(card.rank) + "-" + String(card.suit);
-    const imageName = imageMap[key];
-    const red = card.suit === "♥" || card.suit === "♦" ? " red" : "";
+    const imageName = cardImageName(card);
+    const red = ["♥", "♡", "♦", "♢"].includes(String(card.suit)) ? " red" : "";
     const size = compact ? " card-small" : "";
     if (imageName) {
-      return '<div class="playing-card' + red + size + '"><img class="card-art" src="./cards/' + imageName + '" alt="' +
+      return '<div class="playing-card image-card' + red + size + '"><img class="card-art" loading="eager" decoding="async" src="./cards/' +
+        imageName + '?v=' + CARD_ASSET_VERSION + '" alt="' +
         escapeHtml(cardLabel(card) + card.suit) + '"></div>';
     }
     const label = escapeHtml(cardLabel(card));
