@@ -3674,6 +3674,7 @@
 
   <section id="twentyOneRoomBoard" class="twentyone-room-panel" style="display:none;">
     <h3 id="twentyOneRoomBoardTitle">🂡 21 Очко · Онлайн</h3>
+    <div id="twentyOneRoomPlayerCount" class="twentyone-player-count" aria-live="polite">Игроков в раунде: 0</div>
     <div class="twentyone-online-dealer">
       <div class="twentyone-online-seat"><b>♛ Банкир</b><span id="twentyOneRoomDealerScore">Скрытая карта</span></div>
       <div id="twentyOneRoomDealerCards" class="twentyone-cards dealer-cards" aria-label="Карты банкира в онлайн-раунде"></div>
@@ -3715,6 +3716,7 @@
     #twentyOneGame .twentyone-waiting-players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin:12px 0; }
     #twentyOneGame .twentyone-wait-seat { padding:10px 8px; border:1px solid #445c60; border-radius:10px; background:#0f2028; color:#fff; overflow-wrap:anywhere; font-size:12px; }
     #twentyOneGame .twentyone-wait-seat small { display:block; margin-top:3px; color:#f0d58a; font-size:10px; }
+    #twentyOneGame .twentyone-player-count { display:flex; align-items:center; justify-content:center; margin:0 0 10px; padding:9px 12px; border:1px solid rgba(240,213,138,.42); border-radius:10px; background:rgba(240,213,138,.08); color:#f0d58a; text-align:center; font-size:12px; font-weight:800; letter-spacing:.2px; }
     #twentyOneGame .twentyone-online-dealer { text-align:center; padding:8px 0; }
     #twentyOneGame .twentyone-online-seat { display:flex; justify-content:center; align-items:center; gap:10px; color:#f0d58a; font-size:13px; margin-bottom:7px; }
     #twentyOneGame .twentyone-online-seat span { color:#e6edef; font-size:11px; }
@@ -10117,6 +10119,8 @@ function renderTwentyOneRoomBoard(result) {
   const room = result.room;
   const game = result.game;
   $("twentyOneRoomBoardTitle").textContent = "🂡 " + room.name + " · ставка " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+  const roomPlayerCount = Array.isArray(game?.players) ? game.players.length : Number(room.playersCount || 0);
+  $("twentyOneRoomPlayerCount").textContent = "Игроков в раунде: " + roomPlayerCount + " из " + Number(room.maxPlayers || roomPlayerCount || 0);
   const dealerCards = $("twentyOneRoomDealerCards");
   const dealerHand = Array.isArray(game?.dealerHand) ? game.dealerHand : [];
   const dealerHidden = game?.status !== "finished";
@@ -10144,7 +10148,11 @@ function renderTwentyOneRoomBoard(result) {
     const stateNote = game.status === "finished" && Number(player.payout) > 0
       ? "Победа · +" + Number(player.payout).toLocaleString("ru-RU") + " AC"
       : (statusText[player.status] || "В игре");
-    stateLabel.textContent = (player.score == null ? stateNote : stateNote + " · " + player.score + " очк.");
+    const hasVisibleScore = player.score !== null && player.score !== undefined && Number.isFinite(Number(player.score));
+    const scoreText = hasVisibleScore
+      ? Number(player.score) + (Number(player.score) === 1 ? " очко" : " очков")
+      : "счёт ещё не рассчитан";
+    stateLabel.textContent = scoreText + " · " + stateNote;
     head.append(name, stateLabel);
     const row = document.createElement("div");
     row.className = "twentyone-online-cards";
