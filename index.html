@@ -6013,21 +6013,14 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
     return Promise.resolve();
   }
 
-  // Карта-источник уже видна под пальцем и отрисована. Не задерживаем её
-  // полёт ожиданием декодирования скрытой цели: готовим цель параллельно,
-  // а в конце оставляем летящую карту на месте до готовности чёткого PNG.
   if (!cardElement.isConnected || !targetElement.isConnected) {
     if (durakPendingDragFlyer === cardElement) durakPendingDragFlyer = null;
     if (cardElement.isConnected && cardElement.classList.contains("durak-flying-card")) cardElement.remove();
     return Promise.resolve();
   }
 
-  // Перед замером финальной точки исправляем любые временные inline-размеры
-  // скрытой цели; летящая карта должна прилететь в тот же размер, что и цель.
   applyDurakTableCardSizeLocks();
 
-  // Используем тот же элемент, который пользователь перетащил пальцем:
-  // так не возникает второй большой карты поверх игрового поля.
   const flyer = (
     cardElement.classList.contains("durak-flying-card") &&
     cardElement.isConnected
@@ -6051,106 +6044,81 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       boxSizing: "border-box",
       margin: "0",
       transformOrigin: "center center",
-      transform: "translate3d(0,0,0)",
+      transform: "none",
       transition: "none",
       pointerEvents: "none"
     });
     document.body.appendChild(flyer);
   }
 
-  const from = flyer.getBoundingClientRect();
-  const to = targetElement.getBoundingClientRect();
-  if (!from.width || !from.height || !to.width || !to.height) {
-    if (flyer.isConnected) flyer.remove();
-    return Promise.resolve();
-  }
-
   flyer.classList.add("durak-flying-card");
   flyer.classList.remove("selected", "is-dragging", "dragging");
+  flyer.style.setProperty("transition", "none", "important");
+
+  // Нормализуем увеличенную копию в точке отпускания пальца, сохраняя её
+  // видимый прямоугольник. Не анимируем transform/scale: именно смена масштаба
+  // в последнем кадре давала эффект «прижалась к столу — потом приподнялась».
+  const visibleStartRect = flyer.getBoundingClientRect();
+  if (!visibleStartRect.width || !visibleStartRect.height) {
+    flyer.remove();
+    return Promise.resolve();
+  }
+  const startLeft = visibleStartRect.left;
+  const startTop = visibleStartRect.top;
+  const startWidth = visibleStartRect.width;
+  const startHeight = visibleStartRect.height;
+
   Object.assign(flyer.style, {
     position: "fixed",
-    left: from.left + "px",
-    top: from.top + "px",
-    width: from.width + "px",
-    height: from.height + "px",
+    left: startLeft + "px",
+    top: startTop + "px",
+    width: startWidth + "px",
+    height: startHeight + "px",
+    minWidth: "0",
+    minHeight: "0",
     maxWidth: "none",
     maxHeight: "none",
     boxSizing: "border-box",
     overflow: "hidden",
-    transformOrigin: "center center",
     margin: "0",
     opacity: "1",
     pointerEvents: "none",
+    transformOrigin: "center center",
+    transform: "none",
     animation: "none",
-    willChange: "transform",
-    transform: "translate3d(0,0,0) scale(1)",
-    transition: "none"
+    transition: "none",
+    willChange: "left, top, width, height"
   });
 
+  // Лицо карты не получает отдельную scale-анимацию: меняется только размер
+  // всего прямоугольника карты, поэтому картинка не «дышит» независимо от рамки.
   const flyerImage = flyer.querySelector("img");
   if (flyerImage) {
-    Object.assign(flyerImage.style, {
-      width: "100%",
-      height: "100%",
-      maxWidth: "100%",
-      maxHeight: "100%",
-      objectFit: "fill"
+    [
+      ["width", "100%"], ["height", "100%"],
+      ["min-width", "0"], ["min-height", "0"],
+      ["max-width", "100%"], ["max-height", "100%"],
+      ["object-fit", "fill"], ["object-position", "center"],
+      ["transform", "none"], ["transition", "none"],
+      ["margin", "0"], ["padding", "0"]
+    ].forEach(([property, value]) => {
+      flyerImage.style.setProperty(property, value, "important");
     });
   }
 
   void flyer.getBoundingClientRect();
   const targetRect = targetElement.getBoundingClientRect();
-  const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
-  const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
-  // Карта в руке обычно больше, чем её ячейка на столе.
-  // Масштабируем её во время полёта до реальных размеров цели, чтобы большой
-  // drag-flyer не перекрывал уже посаженную маленькую карту и не исчезал скачком.
-  // getBoundingClientRect includes the card's final angle. Scale to its CSS box
-  // instead, so the last frame and the resting card occupy exactly the same size.
+  if (!targetRect.width || !targetRect.height) {
+    flyer.remove();
+    return Promise.resolve();
+  }
   const targetWidth = targetElement.offsetWidth || targetRect.width;
-  const targetScale = targetWidth / from.width;
-  // Рука и стол используют одинаковое отношение сторон (2:3), поэтому
-  // равномерный scale не деформирует карту и убирает эффект «прижатия».
-  const targetScaleX = targetScale;
-  const targetScaleY = targetScale;
+  const targetHeight = targetElement.offsetHeight || targetRect.height;
+  const endLeft = targetRect.left + (targetRect.width - targetWidth) / 2;
+  const endTop = targetRect.top + (targetRect.height - targetHeight) / 2;
   const throwSpeed = Math.max(0, Number(flyer.dataset.throwSpeed) || 0);
   const throwPower = Math.max(0, Math.min(1, (throwSpeed - 0.35) / 1.8));
-  // Возвращаем прежнюю плавную скорость: карта заметно летит к столу,
-  // но без лишней остановки или дополнительной паузы после касания.
   const flightDuration = Math.round(150 - throwPower * 30);
-  // Карта в руке немного увеличена внутри рамки. Убираем это увеличение
-  // плавно в течение полёта, а не одним кадром при приземлении — угол не пропадает.
-  if (flyerImage) {
-    const imageTransformAtStart = window.getComputedStyle(flyerImage).transform;
-    if (imageTransformAtStart && imageTransformAtStart !== "none") {
-      try {
-        flyerImage.animate([
-          { transform: imageTransformAtStart },
-          { transform: "scale(1)" }
-        ], {
-          duration: flightDuration,
-          easing: "cubic-bezier(.22,.68,.28,1)",
-          fill: "forwards"
-        });
-      } catch (imageAnimationError) {
-        console.warn("Не удалось плавно выровнять изображение карты:", imageAnimationError);
-        flyerImage.style.transform = "none";
-      }
-    }
-  }
-  let targetRotation = 0;
-  if (targetElement.classList.contains("durak-landing-target")) {
-    const targetTransform = window.getComputedStyle(targetElement).transform;
-    const matrix = targetTransform && targetTransform !== "none"
-      ? targetTransform.match(/^matrix\\(([^)]+)\\)$/)
-      : null;
-    if (matrix) {
-      const values = matrix[1].split(",").map(Number);
-      if (values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1])) {
-        targetRotation = Math.atan2(values[1], values[0]) * 180 / Math.PI;
-      }
-    }
-  }
 
   return new Promise((resolve) => {
     let finished = false;
@@ -6164,7 +6132,8 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       finished = true;
       cleanup();
 
-      // Keep the same decoded card node when it becomes a table card.
+      // В момент посадки размеры и координаты уже равны конечному макету.
+      // После замены скрытой цели карта не должна получать ещё один transform.
       if (targetElement?.dataset.optimisticLanding === "true") {
         if (!promoteDurakFlightCardToTable(flyer, targetElement) && flyer.isConnected) {
           flyer.remove();
@@ -6175,17 +6144,24 @@ async function animateDurakCardToTarget(cardElement, targetElement) {
       resolve();
     };
     const onEnd = (event) => {
-      if (event.target === flyer && event.propertyName === "transform") finish();
+      if (event.target === flyer &&
+          ["left", "top", "width", "height"].includes(event.propertyName)) finish();
     };
 
     flyer.addEventListener("transitionend", onEnd);
     requestAnimationFrame(() => {
-      flyer.style.transition = "transform " + flightDuration + "ms cubic-bezier(.22,.68,.28,1)";
-      flyer.style.transform =
-        `translate3d(${dx}px,${dy}px,0) rotate(${targetRotation}deg) scale(${targetScaleX},${targetScaleY})`;
-      // Android WebView иногда не отправляет transitionend; завершаем быстро,
-      // не оставляя карту зависшей в воздухе.
-      fallbackTimer = window.setTimeout(finish, flightDuration + 45);
+      flyer.style.transition =
+        "left " + flightDuration + "ms cubic-bezier(.22,.68,.28,1), " +
+        "top " + flightDuration + "ms cubic-bezier(.22,.68,.28,1), " +
+        "width " + flightDuration + "ms cubic-bezier(.22,.68,.28,1), " +
+        "height " + flightDuration + "ms cubic-bezier(.22,.68,.28,1)";
+      void flyer.getBoundingClientRect();
+      flyer.style.left = endLeft + "px";
+      flyer.style.top = endTop + "px";
+      flyer.style.width = targetWidth + "px";
+      flyer.style.height = targetHeight + "px";
+      // Android WebView иногда пропускает transitionend; всё равно завершаем посадку.
+      fallbackTimer = window.setTimeout(finish, flightDuration + 80);
     });
   });
 }
