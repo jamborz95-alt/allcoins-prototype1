@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createDurakDeck, beatsCard, cardRank, dealInitialHands, shuffleDurakDeck, chooseBotAttackIndex, chooseBotDefenseIndex, chooseStartingPlayerIndex } from "../server/durak-rules.js";
 
 test("a trump beats a non-trump attack", () => {
@@ -104,6 +105,19 @@ test("bot defense uses the lowest trump that can beat a non-trump attack", () =>
   assert.equal(chooseBotDefenseIndex(hand, attack, "♥"), 1);
 });
 
+
+
+test("Durak card landing keeps card proportions and handles unavailable card PNGs", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /const cardHeight = Math\.round\(cardWidth \* 1\.5\)/,
+    "cards in hand and on the table should share the same 2:3 ratio");
+  assert.match(html, /const targetScaleX = targetScale;\s*const targetScaleY = targetScale;/,
+    "throw animation should scale uniformly instead of squeezing cards");
+  assert.match(html, /image\.onerror = \(\) => \{[\s\S]*?appendDurakFallbackCardFace\(cardElement, rank, suit\);/,
+    "a missing or delayed PNG should fall back to a visible classic card face");
+  assert.match(html, /lockDurakTableCardSize\(image, "transform", "none"\)/,
+    "card artwork should not keep a copied hand transform after landing on the table");
+});
 
 test("the player with the lowest trump starts the game", () => {
   const hands = [
