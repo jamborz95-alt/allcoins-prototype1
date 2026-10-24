@@ -148,6 +148,8 @@ const path = require("node:path");
         durakLauncher: (() => {
           const el = document.getElementById("openDurak");
           const style = el ? getComputedStyle(el) : null;
+          const cardBack = document.querySelector("#durakEntry .durak-app-card-back");
+          const cardBackStyle = cardBack ? getComputedStyle(cardBack) : null;
           return style ? {
             backgroundImage: style.backgroundImage,
             backgroundColor: style.backgroundColor,
@@ -155,7 +157,9 @@ const path = require("node:path");
             borderTopStyle: style.borderTopStyle,
             boxShadow: style.boxShadow,
             minHeight: style.minHeight,
-            borderRadius: style.borderTopLeftRadius
+            borderRadius: style.borderTopLeftRadius,
+            cardBackColor: cardBackStyle?.color || null,
+            cardBackBackground: cardBackStyle?.backgroundImage || null
           } : null;
         })(),
         previewButtonCount: [...document.querySelectorAll("#games button")].filter(button =>
@@ -182,6 +186,10 @@ const path = require("node:path");
       "На кнопке Дурак Онлайн осталась отдельная рамка");
     assert.equal(gamesIconDiagnostics.durakLauncher.boxShadow, "none",
       "На кнопке Дурак Онлайн осталась отдельная тень");
+    assert.equal(gamesIconDiagnostics.durakLauncher.cardBackColor, "rgb(200, 219, 227)",
+      "Ярко-золотая масть на рубашке Дурака должна быть заменена спокойным светло-голубым цветом");
+    assert.match(gamesIconDiagnostics.durakLauncher.cardBackBackground, /repeating-linear-gradient/,
+      "Рубашка Дурака должна иметь узор, похожий на другие игровые значки");
     for (const icon of gamesIconDiagnostics.icons) {
       assert.equal(icon.visible, true, icon.id + ": значок не виден");
       assert.ok(Math.abs(icon.width - 82) <= 1 && Math.abs(icon.height - 82) <= 1,
