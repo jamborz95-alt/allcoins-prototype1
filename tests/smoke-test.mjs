@@ -146,8 +146,19 @@ try {
     "dealer should be dealt two cards, including a face-down card");
   assert.equal(await page.locator("#twentyOneDealerCards .twentyone-card-face-down").count(), 1,
     "dealer's second card should stay face down during player's turn");
-  assert.ok(await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => el.getBoundingClientRect().height >= 70),
-    "player hand cards should have a visible card-sized layout");
+  const twentyOneCardMetrics = await page.locator("#twentyOnePlayerCards .twentyone-card").first().evaluate((el) => ({
+    rectHeight: el.getBoundingClientRect().height,
+    offsetHeight: el.offsetHeight,
+    computedHeight: getComputedStyle(el).height,
+    display: getComputedStyle(el).display,
+    visibility: getComputedStyle(el).visibility,
+    classes: el.className,
+    inlineStyle: el.getAttribute("style"),
+    parentId: el.parentElement?.id,
+    gameDisplay: getComputedStyle(document.querySelector("#twentyOneGame")).display
+  }));
+  assert.ok(twentyOneCardMetrics.offsetHeight >= 70,
+    "player hand cards should have a visible card-sized layout: " + JSON.stringify(twentyOneCardMetrics));
   await page.locator("#twentyOneBack").click();
 
   // Durak markup and test-bot control must exist.
