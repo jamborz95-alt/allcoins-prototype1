@@ -40,6 +40,7 @@ try {
     const page = await context.newPage();
     const pageErrors = [];
     const apiCalls = [];
+    let mockBotAdded = false;
     page.on("pageerror", error => pageErrors.push(error.message));
 
     await page.route("https://telegram.org/**", route => route.fulfill({
@@ -79,21 +80,43 @@ try {
       if (url.pathname === "/api/rps/rooms/join") {
         return json({ ok: true, roomId: String(body.roomId), joinedRound: 4 });
       }
+      if (url.pathname === "/api/rps/rooms/add-bot") {
+        mockBotAdded = true;
+        return json({ ok: true, roomId: String(body.roomId), message: "Бот добавлен; баланс не меняется." });
+      }
       if (url.pathname === "/api/rps/rooms/state") {
         if (String(body.roomId) === "42" && userId === 101) {
+          if (!mockBotAdded) {
+            return json({
+              ok: true, balance: 10000,
+              room: {
+                id: "42", name: "Комната КНБ", ownerTelegramId: "101", stake: 500,
+                maxPlayers: 3, status: "waiting", currentRound: 1, playersCount: 1,
+                isOwner: true, hasBot: false, testMode: false,
+                players: [{
+                  telegramId: "101", displayName: "Первый Игрок", joinedRound: 1,
+                  isMe: true, isOwner: true, isBot: false, inCurrentRound: false, waitingNextRound: false,
+                  hasSubmitted: false
+                }]
+              },
+              round: null, lastResult: null
+            });
+          }
           return json({
             ok: true, balance: 10000,
             room: {
               id: "42", name: "Комната КНБ", ownerTelegramId: "101", stake: 500,
-              maxPlayers: 3, status: "waiting", currentRound: 1, playersCount: 1,
-              isOwner: true,
-              players: [{
-                telegramId: "101", displayName: "Первый Игрок", joinedRound: 1,
-                isMe: true, isOwner: true, inCurrentRound: false, waitingNextRound: false,
-                hasSubmitted: false
-              }]
+              maxPlayers: 3, status: "playing", currentRound: 1, playersCount: 2,
+              isOwner: true, hasBot: true, testMode: true,
+              players: [
+                { telegramId: "101", displayName: "Первый Игрок", joinedRound: 1,
+                  isMe: true, isOwner: true, isBot: false, inCurrentRound: true, waitingNextRound: false, hasSubmitted: false },
+                { telegramId: "0", displayName: "🤖 Бот проверки", joinedRound: 1,
+                  isMe: false, isOwner: false, isBot: true, inCurrentRound: true, waitingNextRound: false, hasSubmitted: false }
+              ]
             },
-            round: null, lastResult: null
+            round: { number: 1, status: "playing", participantIds: ["101", "0"], submittedIds: [], submittedCount: 0, submittedByMe: false, canChoose: true },
+            lastResult: null
           });
         }
         if (String(body.roomId) === "77" && userId === 303) {
@@ -148,7 +171,12 @@ try {
   const createCall = owner.apiCalls.find(call => call.path === "/api/rps/rooms/create");
   assert.equal(createCall?.body?.stake, 500, "Комната должна получать заданную ставку числом");
   assert.equal(await owner.page.locator("#roomNumber").innerText(), "Комната #42");
-  assert.deepEqual(owner.pageErrors, [], "Не должно быть ошибок JavaScript в сценарии создания комнаты");
+  await owner.page.locator("[data-add-bot]").click();
+  await owner.page.locator("[data-choice]").first().waitFor();
+  assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/add-bot"), "Кнопка должна отправить запрос добавления бота");
+  assert.equal(await owner.page.getByText("Бот проверки", { exact: false }).count() > 0, true, "Бот должен отображаться среди игроков");
+  assert.equal(await owner.page.locator("[data-choice]").count(), 3, "После добавления бота должны отображаться три жеста");
+  assert.deepEqual(owner.pageErrors, [], "Не должно быть ошибок JavaScript в сценарии создания комнаты и бота");
 
   // A third entrant can join an active room but is not offered a move until the next round.
   const third = await newPlayerPage(303, "Третий Игрок");
