@@ -109,7 +109,7 @@ test("admin endpoint verifies Telegram identity before showing and claiming comm
   assert.notEqual(start, -1, "Admin summary route should exist");
   const end = serverSource.indexOf("\napp.post(", start + marker.length);
   const route = serverSource.slice(start, end < 0 ? serverSource.length : end);
-  assert.match(route, /verifyTelegram\(req\?\.body/);
+  assert.match(route, /verifyTelegram\(req\.body\?\.initData/);
   assert.match(route, /configuredAdminTelegramId\(\)/);
   assert.match(route, /String\(user\.id\) !== adminId/);
   assert.match(route, /claimPendingCommissions\(client, adminId\)/);
