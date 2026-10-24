@@ -4483,6 +4483,11 @@ const clickerTaskDefinitions = [
   { id:"restore", icon:"🔋", title:"Пополнить энергию", description:"Восстанови энергию после её расходования.", reward:200, goal:1, progress:() => clickerTaskState.restoredEnergy ? 1 : 0, done:() => clickerTaskState.restoredEnergy },
   { id:"daily", icon:"🎁", title:"Бонус дня", description:"Получи ежедневный бонус на главной странице.", reward:300, goal:1, progress:() => clickerTaskState.dailyBonus ? 1 : 0, done:() => clickerTaskState.dailyBonus }
 ];
+function getClickerLocalRewardTotal() {
+  return clickerTaskDefinitions.reduce((total, task) => {
+    return total + (clickerTaskState.claimed[task.id] === true ? task.reward : 0);
+  }, 0);
+}
 function saveClickerTaskState() {
   try { localStorage.setItem(CLICKER_TASKS_STORAGE_KEY, JSON.stringify(clickerTaskState)); } catch (_) {}
 }
@@ -4557,8 +4562,7 @@ function renderClickerTasks() {
     const task = clickerTaskDefinitions.find(item => item.id === button.dataset.claimTask);
     if (!task || !task.done() || clickerTaskState.claimed[task.id]) return;
     clickerTaskState.claimed[task.id] = true;
-    // AC-награды здесь являются локальными демонстрационными начислениями.
-    state.balance += task.reward;
+    // Награда остаётся отдельным локальным бонусом, не перезаписывая баланс сервера.
     saveClickerTaskState();
     saveGame();
     render();
@@ -4643,14 +4647,15 @@ function showStatus(id, message) {
 }
 
 function render() {
-  $("balance").textContent = state.balance;
+  const displayedBalance = state.balance + getClickerLocalRewardTotal();
+  $("balance").textContent = displayedBalance;
   $("energy").textContent = state.energy;
   $("energyBar").style.width = state.energy + "%";
   $("tapButton").disabled = state.energy <= 0;
   $("restoreButton").disabled = state.energy >= 100;
   $("tickets").textContent = state.tickets;
-  $("withdrawBalance").textContent = state.balance;
-  $("profileBalance").textContent = state.balance;
+  $("withdrawBalance").textContent = displayedBalance;
+  $("profileBalance").textContent = displayedBalance;
   $("profileEnergy").textContent = state.energy;
 
   $("profileName").textContent =
