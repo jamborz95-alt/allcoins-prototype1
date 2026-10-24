@@ -3734,6 +3734,98 @@
     @media(max-width:360px) { #twentyOneGame .twentyone-online-players { grid-template-columns:1fr; } }
   </style>
 
+  <style id="twentyone-online-fullscreen-styles">
+    /* Онлайн-раунд 21 Очко открывается отдельным полноэкранным игровым экраном. */
+    #twentyOneGame.twentyone-room-playing-fullscreen {
+      padding:0!important;
+      overflow:hidden!important;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen > *:not(#twentyOneRoomBoard) {
+      display:none!important;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBoard {
+      position:fixed;
+      inset:0;
+      z-index:2510;
+      display:flex!important;
+      flex-direction:column;
+      align-items:stretch;
+      gap:8px;
+      width:100vw;
+      height:100vh;
+      height:100dvh;
+      max-width:none;
+      max-height:100dvh;
+      margin:0;
+      padding:max(12px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom));
+      box-sizing:border-box;
+      overflow-x:hidden;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      border:0;
+      border-radius:0;
+      background:
+        radial-gradient(ellipse at 50% 0%,rgba(43,91,73,.92) 0%,rgba(16,44,39,.98) 43%,#071615 100%);
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBoardTitle {
+      flex:0 0 auto;
+      margin:0!important;
+      padding:5px 0 9px;
+      border-bottom:1px solid rgba(240,213,138,.28);
+      text-align:center;
+      font-size:18px;
+      line-height:1.25;
+      overflow-wrap:anywhere;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomPlayerCount {
+      flex:0 0 auto;
+      margin:0;
+      padding:8px 10px;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-dealer {
+      flex:0 0 auto;
+      padding:2px 0;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-divider {
+      flex:0 0 auto;
+      margin:0;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-players {
+      flex:1 0 auto;
+      align-content:start;
+      gap:7px;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-player {
+      padding:7px;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomStatus {
+      flex:0 0 auto;
+      margin:3px 0;
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomActions {
+      position:sticky;
+      bottom:0;
+      z-index:6;
+      flex:0 0 auto;
+      margin:0;
+      padding:8px 0 max(5px,env(safe-area-inset-bottom));
+      background:linear-gradient(180deg,rgba(7,22,21,0),rgba(7,22,21,.96) 28%);
+    }
+    #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBackToLobby {
+      flex:0 0 auto;
+    }
+    @media(max-width:360px) {
+      #twentyOneGame.twentyone-room-playing-fullscreen #twentyOneRoomBoard {
+        padding-left:8px;
+        padding-right:8px;
+      }
+      #twentyOneGame.twentyone-room-playing-fullscreen .twentyone-online-player-head {
+        font-size:10px;
+      }
+    }
+  </style>
+
 
   <div id="twentyOneSoloArea" style="display:none;">
   <div class="twentyone-table">
@@ -9927,6 +10019,8 @@ let selectedTwentyOneStakeFilter = "all";
 let twentyOneRoomList = [];
 
 function setTwentyOneVisibleView(view) {
+  const gamePage = $("twentyOneGame");
+  if (gamePage) gamePage.classList.toggle("twentyone-room-playing-fullscreen", view === "twentyOneRoomBoard");
   for (const id of ["twentyOneLobby", "twentyOneWaitingPanel", "twentyOneRoomBoard", "twentyOneSoloArea"]) {
     const el = $(id);
     if (el) el.style.display = id === view ? "block" : "none";

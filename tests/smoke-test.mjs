@@ -143,6 +143,7 @@ try {
     "true", "21 Ochko stake range filter should become active");
   await page.locator('#twentyOneStakeFilters [data-stake-filter="all"]').click();
   await page.evaluate(() => {
+    window.setTwentyOneVisibleView("twentyOneRoomBoard");
     window.renderTwentyOneRoomBoard({
       room: { id:"test-room", name:"Комната теста", stake:500, playersCount:3, maxPlayers:5, status:"playing" },
       game: {
@@ -157,6 +158,12 @@ try {
       }
     });
   });
+  assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-room-playing-fullscreen")),
+    true, "starting an online 21 round should switch to the separate fullscreen game page");
+  assert.equal(await page.locator("#twentyOneRoomBoard").evaluate((el) => getComputedStyle(el).position),
+    "fixed", "online 21 board should occupy the full viewport");
+  assert.equal(await page.locator("#twentyOneBack").evaluate((el) => getComputedStyle(el).display),
+    "none", "the regular game navigation should be hidden during an online room round");
   assert.match(await page.locator("#twentyOneRoomPlayerCount").innerText(), /3 из 5/,
     "online 21 board should show the number of players in the room");
   assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(1).innerText(), /14 очков/,
@@ -166,7 +173,10 @@ try {
   assert.equal(await page.locator("#twentyOneRoomPlayers .twentyone-online-player:nth-child(2) .twentyone-card-face-down").count(), 2,
     "opponents' cards should stay face down while their score is visible");
 
+  await page.evaluate(() => window.setTwentyOneVisibleView("twentyOneLobby"));
   await page.locator("#twentyOneSoloPlay").click();
+  assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-room-playing-fullscreen")),
+    false, "returning to another 21 Ochko view should leave online fullscreen mode");
   assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
     true, "21 Ochko should open as a separate full-screen page");
   assert.equal(await page.locator("#twentyOneDeck").count(), 1, "21 Ochko should show a deck pile on the table");
