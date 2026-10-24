@@ -8602,8 +8602,12 @@ document.querySelectorAll(".nav button").forEach(button => {
     document.querySelectorAll(".nav button").forEach(item => item.classList.remove("active"));
     button.classList.add("active");
 
-    document.querySelectorAll("section").forEach(section => section.classList.add("hidden"));
-    $(button.dataset.page).classList.remove("hidden");
+    // Hide only the four top-level ALLCOINS pages. Don't hide nested
+    // sections inside separate games (for example, the 21 table/dealer/player areas).
+    ["home", "games", "withdraw", "profile"].forEach(pageId => {
+      const page = $(pageId);
+      if (page) page.classList.toggle("hidden", pageId !== button.dataset.page);
+    });
   };
 });
 
