@@ -162,7 +162,7 @@ try {
   await page.waitForFunction(() => {
     const images = [...document.querySelectorAll("#twentyOnePlayerCards img")];
     return document.querySelectorAll("#twentyOnePlayerCards .durak-card").length === 20 &&
-      images.every(img => img.complete && img.naturalWidth > 0);
+      images.filter(Boolean).every(img => img.complete && img.naturalWidth > 0);
   }, null, { timeout: 15000 });
 
   const twentyOneResult = await page.evaluate(() => {
@@ -174,7 +174,7 @@ try {
       imageCount: images.filter(Boolean).length,
       allLoaded: images.every(img => img && img.complete && img.naturalWidth > 0),
       allImageCards: cards.every(card => card.classList.contains("image-card")),
-      allUseSharedVersion: images.every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
+      allUseSharedVersion: images.filter(Boolean).every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
       objectFits: [...new Set(styles.map(style => style.objectFit))],
       transforms: [...new Set(styles.map(style => style.transform))]
     };
