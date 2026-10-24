@@ -16,6 +16,9 @@ const SEKA_LIMITS = {
   5: { min: 1000000, max: null, label: "От 1 000 000 AC без верхнего лимита" }
 };
 
+const SEKA_BOT_ID = "0";
+const SEKA_BOT_LABEL = "🤖 Бот проверки";
+
 class SekaHttpError extends Error {
   constructor(statusCode, message) {
     super(message);
@@ -96,8 +99,10 @@ export function createSekaRouter({ pool, verifyTelegram }) {
 
   async function creditWinners(client, game, winners, message) {
     if (game.settlementApplied) return;
-    const uniqueWinners = [...new Map(winners.map(player => [String(player.telegramId), player])).values()];
-    if (!uniqueWinners.length) throw new SekaHttpError(500, "Не удалось определить победителя партии");
+    const allWinners = [...new Map(winners.map(player => [String(player.telegramId), player])).values()];
+    if (!allWinners.length) throw new SekaHttpError(500, "Не удалось определить победителя партии");
+    // Бот нужен только для проверки механики и никогда не получает реальные AC.
+    const uniqueWinners = allWinners.filter(player => !player.isBot && String(player.telegramId) !== SEKA_BOT_ID);
     const totalPot = Math.max(0, Math.floor(Number(game.pot) || 0));
     let remainder = uniqueWinners.length ? totalPot % uniqueWinners.length : 0;
     const baseShare = uniqueWinners.length ? Math.floor(totalPot / uniqueWinners.length) : 0;
@@ -117,7 +122,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     game.status = "finished";
     game.currentPlayerIndex = -1;
     game.currentPlayerTelegramId = null;
-    game.winnerTelegramIds = uniqueWinners.map(player => String(player.telegramId));
+    game.winnerTelegramIds = allWinners.map(player => String(player.telegramId));
     game.payouts = payoutRows;
     game.settlementApplied = true;
     game.finishedAt = new Date().toISOString();
@@ -177,6 +182,83 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     game.message = "Ходит " + game.players[nextIndex].label + ". Банк: " + Number(game.pot).toLocaleString("ru-RU") + " AC.";
   }
 
+  async function runSekaBots(client, room, game) {
+    let steps = 0;
+    while (game && game.status === "playing" && steps < 24) {
+      const actorIndex = game.players.findIndex(player =>
+        String(player.telegramId) === String(game.currentPlayerTelegramId)
+      );
+      const actor = game.players[actorIndex];
+      if (!actor || !(actor.isBot || String(actor.telegramId) === SEKA_BOT_ID)) return;
+
+      const active = activeSekaPlayers(game);
+      if (active.length <= 1) {
+        if (active.length === 1) await finishByFold(client, game, active[0]);
+        return;
+      }
+      const currentBet = Number(game.currentBet || 0);
+      const due = Math.max(0, currentBet - Number(actor.contribution || 0));
+      const score = scoreSekaHand(actor.hand);
+      const raiseAmount = Math.max(Number(room.min_bet) || 100, Number(room.ante) || 100);
+      const targetBet = currentBet + raiseAmount;
+      const canRaise = Number.isSafeInteger(targetBet) &&
+        (room.max_bet == null || targetBet <= Number(room.max_bet));
+      let action = "call";
+
+      if (active.length <= 2 && (score.type >= 3 || score.score >= 21 || due === 0)) {
+        action = "open";
+      } else if (canRaise && (score.type >= 3 || score.score >= 28) && Math.random() < 0.45) {
+        action = "raise";
+      } else if (due > 0 && score.score < 13 && currentBet >= Number(room.ante) * 2) {
+        action = "fold";
+      }
+
+      if (action === "fold") {
+        actor.folded = true;
+        actor.acted = true;
+        const stillActive = activeSekaPlayers(game);
+        if (stillActive.length === 1) {
+          await finishByFold(client, game, stillActive[0]);
+        } else {
+          await advanceOrFinish(client, game, actorIndex);
+          game.message = SEKA_BOT_LABEL + " сбросил карты. " + game.message;
+        }
+      } else if (action === "raise") {
+        actor.contribution = targetBet;
+        actor.acted = true;
+        game.currentBet = targetBet;
+        for (const player of game.players) {
+          if (!player.folded) player.acted = String(player.telegramId) === String(actor.telegramId);
+        }
+        await advanceOrFinish(client, game, actorIndex);
+        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " повысил ставку до " +
+          targetBet.toLocaleString("ru-RU") + " AC. " + game.message;
+      } else if (action === "open") {
+        actor.contribution = currentBet;
+        actor.acted = true;
+        await finishByShowdown(client, game, actor.label);
+      } else {
+        // The bot tracks the current bet, but does not deduct or add virtual AC to the pot.
+        actor.contribution = currentBet;
+        actor.acted = true;
+        await advanceOrFinish(client, game, actorIndex);
+        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " поддержал ставку. " + game.message;
+      }
+      steps++;
+    }
+    if (steps >= 24 && game.status === "playing" &&
+        String(game.currentPlayerTelegramId) === SEKA_BOT_ID) {
+      const bot = game.players.find(player => String(player.telegramId) === SEKA_BOT_ID);
+      if (bot && !bot.folded) {
+        bot.folded = true;
+        bot.acted = true;
+        const remaining = activeSekaPlayers(game);
+        if (remaining.length === 1) await finishByFold(client, game, remaining[0]);
+        else await advanceOrFinish(client, game, game.players.indexOf(bot));
+      }
+    }
+  }
+
   function publicGame(game, userId) {
     if (!game) return null;
     const revealed = game.status === "finished" && game.revealHands === true;
@@ -197,6 +279,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         return {
           telegramId: String(player.telegramId),
           label: String(player.label || "Игрок"),
+          isBot: Boolean(player.isBot || String(player.telegramId) === SEKA_BOT_ID),
           seatNo: Number(player.seatNo || 0),
           folded: Boolean(player.folded),
           contribution: Number(player.contribution || 0),
@@ -234,6 +317,12 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY (room_id, telegram_id)
       )`
+    );
+    await pool.query(
+      `INSERT INTO players (telegram_id, balance, energy)
+       VALUES ($1, 0, 0)
+       ON CONFLICT (telegram_id) DO NOTHING`,
+      [SEKA_BOT_ID]
     );
     await pool.query(
       `CREATE TABLE IF NOT EXISTS seka_games (
@@ -313,6 +402,50 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       const status = error.statusCode || 500;
       if (status === 500) console.error("Create Seka room error:", error.message || error);
       return res.status(status).json({ ok: false, error: error.message || "Не удалось создать комнату Сека" });
+    } finally {
+      client?.release();
+    }
+  });
+
+  router.post("/rooms/add-bot", async (req, res) => {
+    const user = authenticatedUser(req, res);
+    if (!user) return;
+    let client;
+    let transactionOpen = false;
+    try {
+      const roomId = req.body?.roomId;
+      if (!roomId || !/^\\d+$/.test(String(roomId))) throw new SekaHttpError(400, "Неверный номер комнаты");
+      client = await pool.connect();
+      await client.query("BEGIN");
+      transactionOpen = true;
+      const room = await getRoomRow(client, roomId, true);
+      if (!room) throw new SekaHttpError(404, "Комната не найдена");
+      if (String(room.owner_telegram_id) !== String(user.id)) {
+        throw new SekaHttpError(403, "Добавить бота может только создатель комнаты");
+      }
+      if (room.status !== "waiting") throw new SekaHttpError(400, "Игра уже началась");
+      const existing = await client.query(
+        "SELECT 1 FROM seka_room_players WHERE room_id = $1 AND telegram_id = $2",
+        [roomId, SEKA_BOT_ID]
+      );
+      if (!existing.rows.length) {
+        const count = await getRoomCounts(client, roomId);
+        if (count >= Number(room.max_players)) throw new SekaHttpError(400, "В комнате нет свободных мест для бота");
+        await client.query(
+          "INSERT INTO seka_room_players (room_id, telegram_id, display_name) VALUES ($1, $2, $3)",
+          [roomId, SEKA_BOT_ID, SEKA_BOT_LABEL]
+        );
+      }
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return res.json({ ok: true, roomId: String(roomId), botAdded: true, label: SEKA_BOT_LABEL });
+    } catch (error) {
+      if (client && transactionOpen) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+      }
+      const status = error.statusCode || 500;
+      if (status === 500) console.error("Add Seka test bot error:", error.message || error);
+      return res.status(status).json({ ok: false, error: error.message || "Не удалось добавить бота для проверки" });
     } finally {
       client?.release();
     }
@@ -429,15 +562,22 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       if (members.length < 2) throw new SekaHttpError(400, "Для начала партии нужны минимум два игрока");
       if (members.length > Number(room.max_players)) throw new SekaHttpError(400, "В комнате слишком много игроков");
       for (const member of members) {
+        if (String(member.telegram_id) === SEKA_BOT_ID) continue;
         if (Number(member.balance) < Number(room.ante)) {
           throw new SekaHttpError(400, "У игрока " + String(member.display_name || "Игрок") + " недостаточно AC. Он должен выйти или пополнить баланс.");
         }
       }
-      for (const member of members) await chargePlayer(client, member.telegram_id, Number(room.ante));
+      for (const member of members) {
+        if (String(member.telegram_id) !== SEKA_BOT_ID) {
+          await chargePlayer(client, member.telegram_id, Number(room.ante));
+        }
+      }
       const game = createSekaGame(members.map(member => ({
         telegramId: String(member.telegram_id),
-        label: String(member.display_name || "Игрок")
+        label: String(member.display_name || "Игрок"),
+        isBot: String(member.telegram_id) === SEKA_BOT_ID
       })), Number(room.ante));
+      await runSekaBots(client, room, game);
       await client.query(
         `INSERT INTO seka_games (room_id, game_state) VALUES ($1, $2::jsonb)
          ON CONFLICT (room_id) DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()`,
@@ -587,6 +727,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         await finishByShowdown(client, game, actor.label);
       }
 
+      await runSekaBots(client, room, game);
       await client.query(
         "UPDATE seka_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1",
         [roomId, JSON.stringify(game)]
