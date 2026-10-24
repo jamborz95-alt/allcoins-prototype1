@@ -166,7 +166,8 @@ test("21 Ochko has five-seat rooms, stake presets and public stake filters", () 
 test("21 Ochko room creation authenticates users and limits room size and stakes", () => {
   const body = routeBody("/api/twentyone/rooms/create");
   assert.match(body, /verifyTelegram\(req\.body\?\.initData\)/);
-  assert.match(body, /maxPlayers < 1 \|\| maxPlayers > 5/);
+  assert.match(body, /const maxPlayers = 5/);
+  assert.doesNotMatch(body, /maxPlayers < 1 \|\| maxPlayers > 5/);
   assert.match(body, /stake < 100 \|\| stake > 1000000/);
   assert.match(body, /INSERT INTO twentyone_rooms/);
   assert.match(body, /INSERT INTO twentyone_room_players/);
@@ -175,12 +176,29 @@ test("21 Ochko room creation authenticates users and limits room size and stakes
 test("21 Ochko lobby and room joining enforce membership, room state and capacity", () => {
   const listBody = routeBody("/api/twentyone/rooms/list");
   assert.match(listBody, /status = 'waiting'/);
-  assert.match(listBody, /COUNT\(p\.telegram_id\) < r\.max_players/);
+  assert.match(listBody, /COUNT\(p\.telegram_id\) < 5/);
   const joinBody = routeBody("/api/twentyone/rooms/join");
   assert.match(joinBody, /room\.status !== "waiting"/);
   assert.match(joinBody, /Комната заполнена/);
   assert.match(joinBody, /max_players/);
   assert.match(joinBody, /INSERT INTO twentyone_room_players/);
+});
+
+test("21 Ochko rooms have five seats and support one-minute ready-based rematches", () => {
+  const createBody = routeBody("/api/twentyone/rooms/create");
+  const listBody = routeBody("/api/twentyone/rooms/list");
+  const stateBody = routeBody("/api/twentyone/rooms/state");
+  const readyBody = routeBody("/api/twentyone/rooms/rematch-ready");
+  assert.match(createBody, /const maxPlayers = 5/);
+  assert.match(listBody, /COUNT\(p\.telegram_id\) < 5/);
+  assert.match(readyBody, /UPDATE twentyone_room_players SET is_ready = TRUE/);
+  assert.match(readyBody, /NOW\(\) \+ INTERVAL '1 minute'/);
+  assert.match(readyBody, /startTwentyOneRematchInTransaction/);
+  assert.match(stateBody, /maybeStartTwentyOneRematchIfDue/);
+  assert.match(stateBody, /isReady: Boolean\(player\.is_ready\)/);
+  assert.match(stateBody, /isCurrentUserParticipant: rawPlayers\.some/);
+  assert.match(source, /ADD COLUMN IF NOT EXISTS rematch_deadline_at TIMESTAMPTZ/);
+  assert.match(source, /ADD COLUMN IF NOT EXISTS is_ready BOOLEAN NOT NULL DEFAULT FALSE/);
 });
 
 test("21 Ochko starts shared server rounds, debits each stake once, and settles winners", () => {
@@ -241,6 +259,9 @@ test("21 Ochko rules deal 36 cards, score court cards, and enforce turn order", 
 
 test("21 Ochko shows player count and all scores without exposing opponent hands", () => {
   assert.match(clientSource, /id="twentyOneRoomPlayerCount"/);
+  assert.match(clientSource, /id="twentyOneRoomMyHandPanel"/);
+  assert.match(clientSource, /id="twentyOneRoomRematch"/);
+  assert.doesNotMatch(clientSource, /id="twentyOneRoomPlayers">\\s*<option/);
   assert.match(clientSource, /Игроков в раунде:/);
   assert.match(clientSource, /const roomPlayerCount = players\.length \|\| Number\(room\.playersCount \|\| 0\)/);
   assert.match(clientSource, /id="twentyOneRoomMyHandPanel"/);
