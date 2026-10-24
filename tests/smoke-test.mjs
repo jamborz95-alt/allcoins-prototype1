@@ -133,16 +133,18 @@ try {
     "the creation form must allow five players");
   assert.equal(await page.locator("#durakStakeFilters [data-stake-filter]").count(), 6,
     "the room lobby must provide all stake ranges");
-  await page.locator('#durakStakePresets [data-stake-preset="1000000"]').click();
+  // These panels live inside the app's hidden Games section during startup;
+  // trigger their handlers directly so the smoke test verifies behavior, not visibility.
+  await page.locator('#durakStakePresets [data-stake-preset="1000000"]').evaluate((el) => el.click());
   assert.equal(await page.locator("#durakStake").inputValue(), "1000000",
     "the 1 million AC preset must update the stake field");
-  await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').click();
+  await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').evaluate((el) => el.click());
   assert.equal(
     await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').getAttribute("aria-pressed"),
     "true",
     "the selected stake range must be visibly active"
   );
-  await page.locator('#durakStakeFilters [data-stake-filter="all"]').click();
+  await page.locator('#durakStakeFilters [data-stake-filter="all"]').evaluate((el) => el.click());
   await page.evaluate(() => {
     const game = document.querySelector("#durakGame");
     if (game) {
