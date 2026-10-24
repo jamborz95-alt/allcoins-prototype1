@@ -161,7 +161,8 @@ try {
   }, cardSet);
   await page.waitForFunction(() => {
     const images = [...document.querySelectorAll("#twentyOnePlayerCards img")];
-    return images.length === 20 && images.every(img => img.complete && img.naturalWidth > 0);
+    return document.querySelectorAll("#twentyOnePlayerCards .durak-card").length === 20 &&
+      images.every(img => img.complete && img.naturalWidth > 0);
   }, null, { timeout: 15000 });
 
   const twentyOneResult = await page.evaluate(() => {
@@ -179,9 +180,9 @@ try {
     };
   });
   assert.equal(twentyOneResult.cardCount, 20, "21 Ochko should render all 20 cards with available shared PNG artwork");
-  assert.equal(twentyOneResult.imageCount, 20, "each mapped 21 Ochko card should contain the shared PNG");
-  assert.equal(twentyOneResult.allLoaded, true, "all 21 Ochko shared PNGs should load successfully");
-  assert.equal(twentyOneResult.allImageCards, true, "the 21 Ochko cards should use the image-card rendering path");
+  assert.equal(twentyOneResult.imageCount, 16, "21 Ochko should use PNGs for the 16 ranks with artwork and readable fallback faces for four missing 10s");
+  assert.equal(twentyOneResult.allLoaded, true, "all available 21 Ochko shared PNGs should load successfully");
+  assert.equal(twentyOneResult.allImageCards, false, "cards without an uploaded PNG should use the readable fallback face");
   assert.equal(twentyOneResult.allUseSharedVersion, true, "21 Ochko should use the shared asset cache version");
   assert.ok(twentyOneResult.objectFits.includes("fill"), "21 Ochko PNGs should fill the card surface without inner shrinkage");
 
@@ -201,7 +202,8 @@ try {
   await page.waitForFunction(() => document.querySelector("#myHand .playing-card.image-card img") !== null);
   await page.waitForFunction(() => {
     const images = [...document.querySelectorAll("#myHand .playing-card img")];
-    return images.length === 20 && images.every(img => img.complete && img.naturalWidth > 0);
+    return document.querySelectorAll("#myHand .playing-card").length === 20 &&
+      images.every(img => img.complete && img.naturalWidth > 0);
   }, null, { timeout: 15000 });
 
   const sekaResult = await page.evaluate(() => {
@@ -219,9 +221,9 @@ try {
     };
   });
   assert.equal(sekaResult.cardCount, 20, "Seka should render the 20 cards with available shared PNG artwork");
-  assert.equal(sekaResult.imageCount, 20, "every tested Seka card should use an image");
-  assert.equal(sekaResult.allLoaded, true, "all Seka card images should load successfully");
-  assert.equal(sekaResult.allImageCards, true, "Seka should use image cards rather than fallback-only cards");
+  assert.equal(sekaResult.imageCount, 16, "Seka should use PNGs for ranks with artwork and readable fallback faces for four missing 10s");
+  assert.equal(sekaResult.allLoaded, true, "all available Seka card images should load successfully");
+  assert.equal(sekaResult.allImageCards, false, "cards without an uploaded PNG should use the readable fallback face");
   assert.equal(sekaResult.allUseSharedVersion, true, "Seka should use the shared asset cache version");
   assert.equal(sekaResult.uniqueFiles, 20, "all available card image files should be mapped across ranks and suits");
 
