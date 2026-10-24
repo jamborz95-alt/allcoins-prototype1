@@ -12268,6 +12268,51 @@ if (gamesSection) {
   @media (max-width:350px) {
     #twentyOneGame #twentyOnePlayerScore { font-size:14px !important; padding:5px 8px !important; }
   }
+
+  /* Онлайн-21: изображения в руке заполняют всю карту, как в «Дураке Онлайн». */
+  #twentyOneGame #twentyOneRoomMyCards .twentyone-card.durak-card.premium-card {
+    position:relative !important;
+    display:block !important;
+    flex:0 0 63px !important;
+    width:63px !important;
+    min-width:63px !important;
+    max-width:63px !important;
+    height:94px !important;
+    min-height:94px !important;
+    max-height:94px !important;
+    box-sizing:border-box !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    border-radius:6px !important;
+  }
+  #twentyOneGame #twentyOneRoomMyCards .twentyone-card.image-card > img {
+    display:block !important;
+    width:100% !important;
+    min-width:100% !important;
+    max-width:none !important;
+    height:100% !important;
+    min-height:100% !important;
+    max-height:none !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    object-fit:fill !important;
+    object-position:center !important;
+    transform:scale(1.06) !important;
+    transform-origin:center center !important;
+    image-rendering:auto !important;
+  }
+  @media (max-width:360px) {
+    #twentyOneGame #twentyOneRoomMyCards .twentyone-card.durak-card.premium-card {
+      flex-basis:58px !important;
+      width:58px !important;
+      min-width:58px !important;
+      max-width:58px !important;
+      height:86px !important;
+      min-height:86px !important;
+      max-height:86px !important;
+    }
+  }
 </style>
 
 </body>
