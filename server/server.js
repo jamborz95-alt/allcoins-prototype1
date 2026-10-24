@@ -7,6 +7,13 @@ import { createLottoRouter } from "./lotto.js";
 import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "./twentyone-rules.js";
 import { createSekaRouter } from "./seka-router.js";
 import { createRpsRouter } from "./rps-router.js";
+import {
+  initializeCommissionTables,
+  recordGameCommission,
+  configuredAdminTelegramId,
+  claimPendingCommissions,
+  getAdminCommissionSummary
+} from "./commission.js";
 
 const { Pool } = pg;
 const app = express();
@@ -29,7 +36,7 @@ const pool = new Pool({
  * Делит банк между реальными победителями один раз на завершённую партию.
  * Функция вызывается внутри открытой PostgreSQL-транзакции.
  */
-async function settleDurakGamePayout(client, gameState) {
+async function settleDurakGamePayout(client, gameState, roomId) {
   const pot = gameState?.pot;
   if (gameState?.status !== "finished" || !pot || pot.settled === true) {
     return pot?.settlement || null;
@@ -41,14 +48,14 @@ async function settleDurakGamePayout(client, gameState) {
       .filter(id => id && id !== "0")
   )];
   const grossPot = Math.max(0, Math.floor(Number(pot.grossPot) || 0));
-  const burnedAmount = Math.min(
-    grossPot,
-    Math.max(0, Math.floor(Number(pot.burnedAmount ?? Math.floor(grossPot * 0.05)) || 0))
-  );
-  const payoutPool = Math.max(
-    0,
-    Math.min(grossPot - burnedAmount, Math.floor(Number(pot.payoutPool ?? grossPot - burnedAmount) || 0))
-  );
+  const commission = await recordGameCommission(client, {
+    game: "durak",
+    eventKey: "durak:" + String(roomId) + ":" +
+      String(pot.commissionEventId || gameState.startedAt || gameState.turnStartedAt || "legacy"),
+    grossAmount: grossPot
+  });
+  const burnedAmount = Math.min(grossPot, Math.max(0, Math.floor(Number(commission.amount) || 0)));
+  const payoutPool = Math.max(0, grossPot - burnedAmount);
   const loserId = gameState.loserTelegramId == null ? "" : String(gameState.loserTelegramId);
 
   let recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
@@ -56,8 +63,6 @@ async function settleDurakGamePayout(client, gameState) {
     String(player.telegramId) !== "0" &&
     String(player.telegramId) !== loserId
   );
-  // Если в партии с ботом реального победителя нет, оставшиеся 95% возвращаются
-  // реальному участнику: бот не получает и не создаёт виртуальные AC.
   if (!recipients.length) {
     recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
       contributors.includes(String(player.telegramId)) && String(player.telegramId) !== "0"
@@ -80,17 +85,20 @@ async function settleDurakGamePayout(client, gameState) {
          RETURNING balance`,
         [amount, String(player.telegramId)]
       );
-      if (!credited.rows.length) {
-        throw new Error("Не найден баланс победителя для выплаты выигрыша");
-      }
+      if (!credited.rows.length) throw new Error("Не найден баланс победителя для выплаты выигрыша");
     }
     winners.push({ telegramId: String(player.telegramId), amount });
   }
 
+  pot.burnedAmount = burnedAmount;
+  pot.payoutPool = payoutPool;
+  pot.commissionAmount = burnedAmount;
+  pot.commissionPercent = 5;
   pot.settled = true;
   pot.settlement = {
     grossPot,
     burnedAmount,
+    commissionAmount: burnedAmount,
     payoutPool,
     settledAt: new Date().toISOString(),
     winners
@@ -98,7 +106,6 @@ async function settleDurakGamePayout(client, gameState) {
   return pot.settlement;
 }
 
-// Проверяем подлинность данных Telegram
 function verifyTelegram(initData) {
   const botToken = process.env.BOT_TOKEN;
 
@@ -250,6 +257,42 @@ app.post("/api/auth", async (req, res) => {
       ok: false,
       error: "Server error"
     });
+  }
+});
+
+
+app.post("/api/admin/summary", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) {
+      return res.status(401).json({ ok: false, error: "Открой ALLCOINS через Telegram." });
+    }
+    const adminId = configuredAdminTelegramId();
+    if (!adminId) {
+      return res.status(503).json({ ok: false, error: "ADMIN_TELEGRAM_ID не настроен в Render." });
+    }
+    if (String(user.id) !== adminId) {
+      return res.status(403).json({ ok: false, error: "Доступ только для администратора." });
+    }
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    await claimPendingCommissions(client, adminId);
+    const summary = await getAdminCommissionSummary(client, adminId);
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return res.json({ ok: true, admin: true, commissionPercent: 5, ...summary });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("Admin commission summary error:", error.message || error);
+    return res.status(500).json({ ok: false, error: "Не удалось загрузить панель комиссий." });
+  } finally {
+    client?.release();
   }
 });
 
@@ -1273,6 +1316,7 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       pot: {
         stakePerPlayer,
         contributors: humanPlayerIds,
+        commissionEventId: crypto.randomUUID(),
         grossPot,
         burnPercent: 5,
         burnedAmount,
@@ -1567,7 +1611,7 @@ app.post("/api/durak/game", async (req, res) => {
           gameState = lockedGame.rows[0].game_state;
           if (gameState?.status === "finished") {
             if (gameState?.pot && gameState.pot.settled !== true) {
-              await settleDurakGamePayout(payoutClient, gameState);
+              await settleDurakGamePayout(payoutClient, gameState, roomId);
             }
             // Тайм-аут: остаток баланса проигравшего делится один раз в этой транзакции.
             if (gameState.finishedReason === "timeout" && gameState.timeoutBalanceSettled !== true) {
@@ -1808,7 +1852,7 @@ app.post("/api/durak/action", async (req, res) => {
 
     const timeoutCheck = expireDurakTurnIfNeeded(game);
     if (timeoutCheck.timedOut) {
-      await settleDurakGamePayout(client, game);
+      await settleDurakGamePayout(client, game, roomId);
       await client.query(
         `UPDATE durak_games
          SET game_state = $1::jsonb, updated_at = NOW()
@@ -2407,7 +2451,7 @@ if (action === "beat") {
 
     // Завершённая партия: сжигаем 5% банка, остаток распределяем победителям.
     if (game.status === "finished") {
-      await settleDurakGamePayout(client, game);
+      await settleDurakGamePayout(client, game, roomId);
       await client.query(
         "UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'",
         [roomId]
@@ -2496,18 +2540,43 @@ async function ensureTwentyOnePlayer(client, user) {
   return Number(profile.rows[0]?.balance ?? 0);
 }
 
-async function creditTwentyOneWinners(client, gameState) {
+async function creditTwentyOneWinners(client, gameState, roomId) {
   if (!gameState || gameState.status !== "finished" || gameState.settlementApplied) return;
+  const winners = (gameState.players || []).filter(player =>
+    player.status === "won" && Math.max(0, Math.floor(Number(player.payout) || 0)) > 0
+  );
+  const grossPayout = winners.reduce((sum, player) =>
+    sum + Math.max(0, Math.floor(Number(player.payout) || 0)), 0
+  );
+  const commission = grossPayout > 0 ? await recordGameCommission(client, {
+    game: "twentyone",
+    eventKey: "twentyone:" + String(roomId) + ":" +
+      String(gameState.commissionEventId || gameState.startedAt || "legacy"),
+    grossAmount: grossPayout
+  }) : { amount: 0 };
+  let feeRemaining = Math.min(grossPayout, Math.max(0, Math.floor(Number(commission.amount) || 0)));
+  let grossRemaining = grossPayout;
+
   for (const player of gameState.players || []) {
-    const payout = Math.max(0, Math.floor(Number(player.payout) || 0));
-    if (player.status !== "won" || payout <= 0) continue;
+    const gross = Math.max(0, Math.floor(Number(player.payout) || 0));
+    if (player.status !== "won" || gross <= 0) continue;
+    const feeShare = grossRemaining > 0 ? Math.floor(feeRemaining * gross / grossRemaining) : 0;
+    const allocatedFee = winners.indexOf(player) === winners.length - 1 ? feeRemaining : feeShare;
+    const payout = Math.max(0, gross - allocatedFee);
     const credited = await client.query(
       `UPDATE players SET balance = balance + $1, updated_at = NOW()
        WHERE telegram_id = $2 RETURNING balance`,
       [payout, String(player.telegramId)]
     );
     if (!credited.rows.length) throw new Error("Не найден баланс победителя 21 Очко");
+    player.grossPayout = gross;
+    player.commissionAmount = allocatedFee;
+    player.payout = payout;
+    feeRemaining -= allocatedFee;
+    grossRemaining -= gross;
   }
+  gameState.commissionPercent = 5;
+  gameState.commissionAmount = Math.max(0, Math.floor(Number(commission.amount) || 0));
   gameState.settlementApplied = true;
 }
 
@@ -2584,7 +2653,8 @@ async function startTwentyOneRematchInTransaction(client, room) {
     })),
     stake
   );
-  if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+  gameState.commissionEventId = crypto.randomUUID();
+  if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState, room.id);
   await client.query(
     `INSERT INTO twentyone_games (room_id, game_state, updated_at)
      VALUES ($1, $2::jsonb, NOW())
@@ -2970,7 +3040,8 @@ app.post("/api/twentyone/rooms/start", async (req, res) => {
       })),
       stake
     );
-    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+    gameState.commissionEventId = crypto.randomUUID();
+    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState, roomId);
     await client.query(
       `INSERT INTO twentyone_games (room_id, game_state, updated_at)
        VALUES ($1, $2::jsonb, NOW())
@@ -3124,7 +3195,7 @@ app.post("/api/twentyone/rooms/action", async (req, res) => {
     }
     const gameState = gameResult.rows[0].game_state;
     applyTwentyOneAction(gameState, String(user.id), action);
-    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+    if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState, roomId);
     await client.query(
       `UPDATE twentyone_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1`,
       [roomId, JSON.stringify(gameState)]
@@ -3228,6 +3299,8 @@ async function startServer() {
     `);
 
     console.log("Players table is ready");
+    await initializeCommissionTables(pool);
+    console.log("Game commission ledger is ready");
 
     await lottoRouter.initialize();
     console.log("Lotto Online tables and scheduler are ready");
