@@ -203,7 +203,7 @@ try {
     "После готовности жесты игрока и бота должны появиться на игровом столе");
   assert.match(await owner.page.locator("#gameTable").innerText(), /Камень|Ножницы|Бумага/,
     "На игровом столе должны быть видны раскрытые жесты");
-  assert.equal((await owner.page.locator("#topBalance").innerText()).replace(/\\s/g, ""), "10000",
+  assert.equal((await owner.page.locator("#topBalance").innerText()).replace(/\D/g, ""), "10000",
     "Тестовый раунд с ботом не должен менять баланс пользователя");
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/choose"),
     "Ход пользователя должен быть отправлен на API");
