@@ -2280,6 +2280,21 @@
   }
 </style>
 
+
+<style id="allcoins-seka-instant-tap">
+  #games a.game-app-launch.seka-launch-link {
+    color:inherit !important;
+    text-decoration:none !important;
+    cursor:pointer !important;
+    touch-action:manipulation !important;
+    -webkit-tap-highlight-color:transparent !important;
+  }
+  #games a.game-app-launch.seka-launch-link:active {
+    transform:scale(.96) !important;
+    opacity:.82 !important;
+  }
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2345,10 +2360,10 @@
     </button>
   </div>
   <div class="game-app-tile" id="sekaEntry">
-    <button type="button" id="openSeka" class="game-app-launch" aria-label="Открыть игру Сека Онлайн">
+    <a id="openSeka" class="game-app-launch seka-launch-link" href="./seka.html?v=20261024-fullscreen1" aria-label="Открыть игру Сека Онлайн">
       <span class="seka-entry-appicon" aria-hidden="true"><span class="seka-mini-card back">♣</span><span class="seka-mini-card front">СЕ</span></span>
       <span class="game-app-title">Сека Онлайн</span>
-    </button>
+    </a>
   </div>
 </div>
 
@@ -4769,35 +4784,53 @@ const DURAK_CARD_ASSETS = [
 ];
 // Держим один предварительно загруженный экземпляр каждого PNG.
 const durakPreloadedCardImages = new Map();
-const durakCardAssetsReady = Promise.all(
-  DURAK_CARD_ASSETS.map(filename => new Promise(resolve => {
-    const image = new Image();
-    image.decoding = "async";
-    image.loading = "eager";
-    const finish = async loaded => {
-      if (loaded && typeof image.decode === "function") {
-        try {
-          // onload означает, что файл скачан; decode() дополнительно ждёт,
-          // пока браузер подготовит изображение к мгновенному отображению.
-          await image.decode();
-        } catch (error) {
-          console.warn("Не удалось заранее декодировать карту:", filename, error);
+let durakCardAssetsReady = null;
+
+// Не скачиваем десятки мегабайт изображений при открытии ALLCOINS.
+// Карты загружаются только когда игрок действительно открывает «Дурак Онлайн».
+function preloadDurakCardAssets() {
+  if (durakCardAssetsReady) return durakCardAssetsReady;
+
+  durakCardAssetsReady = Promise.all(
+    DURAK_CARD_ASSETS.map(filename => new Promise(resolve => {
+      const image = new Image();
+      image.decoding = "async";
+      image.loading = "eager";
+      image.fetchPriority = "low";
+      let finished = false;
+
+      const finish = async loaded => {
+        if (finished) return;
+        finished = true;
+        if (loaded && typeof image.decode === "function") {
+          try {
+            await image.decode();
+          } catch (error) {
+            console.warn("Не удалось заранее декодировать карту:", filename, error);
+          }
         }
-      }
-      resolve({ filename, loaded });
-    };
-    image.onload = () => finish(true);
-    image.onerror = () => {
-      console.warn("Не удалось предварительно загрузить карту:", filename);
-      finish(false);
-    };
-    const url = new URL("cards/" + filename + "?v=" + DURAK_CARD_ASSET_VERSION, document.baseURI).href;
-    durakPreloadedCardImages.set(filename, image);
-    image.src = url;
-    // Подстраховка для уже закешированных изображений в Telegram WebView.
-    if (image.complete && image.naturalWidth > 0) finish(true);
-  }))
-);
+        resolve({ filename, loaded });
+      };
+
+      image.onload = () => finish(true);
+      image.onerror = () => {
+        console.warn("Не удалось предварительно загрузить карту:", filename);
+        finish(false);
+      };
+
+      const url = new URL(
+        "cards/" + filename + "?v=" + DURAK_CARD_ASSET_VERSION,
+        document.baseURI
+      ).href;
+      durakPreloadedCardImages.set(filename, image);
+      image.src = url;
+
+      if (image.complete) finish(image.naturalWidth > 0);
+    }))
+  );
+
+  return durakCardAssetsReady;
+}
 
 // ===== ALLCOINS PREMIUM CARD FACTORY =====
 
@@ -5497,7 +5530,7 @@ async function animateDurakDealSequence(dealTargets, roomId, options = {}) {
   // Карты-цели уже скрыты до вставки в руку, поэтому ожидание не даёт вспышки.
   if (durakCardAssetsReady && typeof durakCardAssetsReady.then === "function") {
     try {
-      await durakCardAssetsReady;
+      await preloadDurakCardAssets();
     } catch (error) {
       console.warn("Не удалось дождаться подготовки изображений карт:", error);
     }
@@ -6208,7 +6241,7 @@ async function loadDurakGame(roomId) {
   durakGameLoadInProgress = true;
   try {
     // Не показываем игровую руку, пока PNG-карты из папки cards не загружены.
-    await durakCardAssetsReady;
+    await preloadDurakCardAssets();
     const game = await apiRequest("/api/durak/game", {
       roomId: roomId
     });
@@ -10621,7 +10654,7 @@ function closeTwentyOneGame() {
 }
 
 $("openTwentyOne").onclick = openTwentyOneGame;
-$("openSeka").onclick = () => { window.location.href = "./seka.html?v=20261024-fullscreen1"; };
+// Сека открывается обычной ссылкой: браузер Telegram начинает переход сразу по касанию.
 $("twentyOneBack").onclick = closeTwentyOneGame;
 $("twentyOneDeal").onclick = startTwentyOneRound;
 $("twentyOneHit").onclick = hitTwentyOne;
@@ -10671,6 +10704,8 @@ if (durakBeatButton) {
 
 // Открытие игры на весь экран
 $("openDurak").onclick = () => {
+  // Готовим PNG в фоне только после входа в Дурак, не задерживая навигацию по ALLCOINS.
+  void preloadDurakCardAssets();
   const game = $("durakGame");
 
   game.style.display = "block";
