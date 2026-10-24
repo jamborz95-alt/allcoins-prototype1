@@ -109,24 +109,6 @@ try {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
   await page.locator("#tapButton").waitFor();
 
-  // The Durak room panels are intentionally hidden until the player opens the game.
-  // Show their actual layout before checking that stake buttons can be tapped.
-  await page.evaluate(() => {
-    const game = document.querySelector("#durakGame");
-    if (game) {
-      game.style.display = "block";
-      game.classList.add("durak-fullscreen");
-    }
-    const entry = document.querySelector("#durakEntry");
-    if (entry) entry.style.display = "none";
-    const actions = document.querySelector("#durakRoomActions");
-    if (actions) actions.style.display = "flex";
-    const createPanel = document.querySelector("#durakCreatePanel");
-    if (createPanel) createPanel.style.display = "block";
-    const roomsPanel = document.querySelector("#durakRoomsPanel");
-    if (roomsPanel) roomsPanel.style.display = "block";
-  });
-
   assert.equal(await page.locator('#players option[value="6"]').count(), 0,
     "the creation form must not offer a sixth player");
   assert.equal(await page.locator('#players option[value="5"]').count(), 1,
@@ -145,13 +127,6 @@ try {
     "the selected stake range must be visibly active"
   );
   await page.locator('#durakStakeFilters [data-stake-filter="all"]').evaluate((el) => el.click());
-  await page.evaluate(() => {
-    const game = document.querySelector("#durakGame");
-    if (game) {
-      game.style.display = "none";
-      game.classList.remove("durak-fullscreen");
-    }
-  });
 
   // Clicker: +100 AC and -1 energy with a mocked authenticated API response.
   const initialBalance = Number((await page.locator("#balance").innerText()).replace(/\D/g, ""));
