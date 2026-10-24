@@ -166,11 +166,11 @@ try {
     "none", "the regular game navigation should be hidden during an online room round");
   assert.match(await page.locator("#twentyOneRoomPlayerCount").innerText(), /3 из 5/,
     "online 21 board should show the number of players in the room");
-  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(1).innerText(), /14 очков/,
+  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(0).innerText(), /14 очков/,
     "the second player score should be visible during a round");
-  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(2).innerText(), /18 очков/,
+  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(1).innerText(), /18 очков/,
     "the third player score should be visible during a round");
-  assert.equal(await page.locator("#twentyOneRoomPlayers .twentyone-online-player:nth-child(2) .twentyone-card-face-down").count(), 2,
+  assert.equal(await page.locator("#twentyOneRoomPlayers .twentyone-online-player:nth-child(1) .twentyone-card-face-down").count(), 2,
     "opponents' cards should stay face down while their score is visible");
   assert.equal(await page.locator("#twentyOneRoomMyCards .twentyone-card").count(), 2,
     "the active player's own two cards should appear in a dedicated hand area");
