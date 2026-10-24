@@ -2468,9 +2468,10 @@ function mapTwentyOneRoom(row, userId) {
   return {
     id: String(row.id),
     name: String(row.name || "Комната 21 Очко"),
-    maxPlayers: Number(row.max_players),
+    maxPlayers: 5,
     stake: Number(row.stake),
     status: String(row.status),
+    rematchDeadlineAt: row.rematch_deadline_at ? new Date(row.rematch_deadline_at).toISOString() : null,
     isOwner: String(row.owner_telegram_id) === String(userId),
     playersCount: Number(row.players_count ?? 0)
   };
@@ -2510,6 +2511,133 @@ async function cleanupExpiredTwentyOneRooms() {
   `);
 }
 
+async function startTwentyOneRematchInTransaction(client, room) {
+  if (!room || room.status !== "finished") return { started: false };
+  const membersResult = await client.query(
+    `SELECT rp.telegram_id, rp.display_name, rp.is_ready, pl.balance
+     FROM twentyone_room_players rp
+     JOIN players pl ON pl.telegram_id = rp.telegram_id
+     WHERE rp.room_id = $1
+     ORDER BY rp.joined_at ASC
+     FOR UPDATE OF rp, pl`,
+    [room.id]
+  );
+  const members = membersResult.rows;
+  const readyMembers = members.filter(player => Boolean(player.is_ready));
+  if (!readyMembers.length) return { started: false, readyCount: 0, playerCount: members.length };
+
+  const deadlineMs = room.rematch_deadline_at ? new Date(room.rematch_deadline_at).getTime() : NaN;
+  const deadlineExpired = Number.isFinite(deadlineMs) && deadlineMs <= Date.now();
+  // A full room group starts immediately when everyone currently in the room is ready.
+  // A single ready player must wait the full minute, even if they are the only member.
+  const allPresentPlayersReady = members.length > 1 && readyMembers.length === members.length;
+  if (!allPresentPlayersReady && !deadlineExpired) {
+    return {
+      started: false,
+      readyCount: readyMembers.length,
+      playerCount: members.length,
+      rematchDeadlineAt: room.rematch_deadline_at || null
+    };
+  }
+
+  const stake = Number(room.stake);
+  const poorPlayer = readyMembers.find(player => Number(player.balance) < stake);
+  if (poorPlayer) {
+    await client.query(
+      `UPDATE twentyone_room_players SET is_ready = FALSE WHERE room_id = $1`,
+      [room.id]
+    );
+    await client.query(
+      `UPDATE twentyone_rooms SET rematch_deadline_at = NULL WHERE id = $1`,
+      [room.id]
+    );
+    return {
+      started: false,
+      readyCount: 0,
+      playerCount: members.length,
+      rematchDeadlineAt: null,
+      message: "У одного из готовых игроков недостаточно AC для ставки. Отметьтесь готовыми ещё раз после пополнения баланса."
+    };
+  }
+
+  for (const player of readyMembers) {
+    const debit = await client.query(
+      `UPDATE players SET balance = balance - $1, updated_at = NOW()
+       WHERE telegram_id = $2 AND balance >= $1 RETURNING balance`,
+      [stake, String(player.telegram_id)]
+    );
+    if (!debit.rows.length) throw new Error("Не удалось списать ставку у готового игрока");
+  }
+
+  const gameState = createTwentyOneRound(
+    readyMembers.map(player => ({
+      telegramId: String(player.telegram_id),
+      label: String(player.display_name || "Игрок")
+    })),
+    stake
+  );
+  if (gameState.status === "finished") await creditTwentyOneWinners(client, gameState);
+  await client.query(
+    `INSERT INTO twentyone_games (room_id, game_state, updated_at)
+     VALUES ($1, $2::jsonb, NOW())
+     ON CONFLICT (room_id) DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()`,
+    [room.id, JSON.stringify(gameState)]
+  );
+  await client.query(
+    `UPDATE twentyone_room_players SET is_ready = FALSE WHERE room_id = $1`,
+    [room.id]
+  );
+  await client.query(
+    `UPDATE twentyone_rooms SET status = $2, rematch_deadline_at = NULL WHERE id = $1`,
+    [room.id, gameState.status === "finished" ? "finished" : "playing"]
+  );
+  return {
+    started: true,
+    status: gameState.status,
+    readyCount: readyMembers.length,
+    playerCount: members.length
+  };
+}
+
+async function maybeStartTwentyOneRematchIfDue(roomId) {
+  let client;
+  let transactionOpen = false;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, owner_telegram_id, max_players, stake, status, rematch_deadline_at
+       FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return null;
+    }
+    const room = roomResult.rows[0];
+    const deadlineMs = room.rematch_deadline_at ? new Date(room.rematch_deadline_at).getTime() : NaN;
+    if (room.status !== "finished" || !Number.isFinite(deadlineMs) || deadlineMs > Date.now()) {
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return null;
+    }
+    const result = await startTwentyOneRematchInTransaction(client, room);
+    await client.query("COMMIT");
+    transactionOpen = false;
+    return result;
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("21 Ochko rematch timer error:", error.message || error);
+    return { message: "Не удалось автоматически начать реванш. Обнови игру и попробуй ещё раз." };
+  } finally {
+    client?.release();
+  }
+}
+
 app.post("/api/twentyone/rooms/create", async (req, res) => {
   let client;
   let transactionOpen = false;
@@ -2518,11 +2646,8 @@ app.post("/api/twentyone/rooms/create", async (req, res) => {
     if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
 
     const name = String(req.body?.name || "").trim().slice(0, 30) || "Комната 21 Очко";
-    const maxPlayers = Number(req.body?.maxPlayers);
+    const maxPlayers = 5;
     const stake = Number(req.body?.stake);
-    if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 5) {
-      return res.status(400).json({ ok: false, error: "В комнате 21 Очко можно выбрать от 1 до 5 игроков" });
-    }
     if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
       return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом от 100 до 1 000 000 AC" });
     }
@@ -2575,7 +2700,7 @@ app.post("/api/twentyone/rooms/list", async (req, res) => {
        LEFT JOIN twentyone_room_players p ON p.room_id = r.id
        WHERE r.status = 'waiting'
        GROUP BY r.id
-       HAVING COUNT(p.telegram_id) < r.max_players
+       HAVING COUNT(p.telegram_id) < 5
        ORDER BY r.stake ASC, r.created_at DESC
        LIMIT 100`,
       []
@@ -2663,8 +2788,9 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
     const roomId = req.body?.roomId;
     if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
 
+    const deadlineResult = await maybeStartTwentyOneRematchIfDue(roomId);
     const roomResult = await pool.query(
-      `SELECT r.id, r.name, r.owner_telegram_id, r.max_players, r.stake, r.status,
+      `SELECT r.id, r.name, r.owner_telegram_id, r.max_players, r.stake, r.status, r.rematch_deadline_at,
               COUNT(rp.telegram_id)::INTEGER AS players_count
        FROM twentyone_rooms r
        LEFT JOIN twentyone_room_players rp ON rp.room_id = r.id
@@ -2681,7 +2807,7 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
     if (!membership.rows.length) return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате" });
 
     const playerRows = await pool.query(
-      `SELECT p.telegram_id, p.display_name, (p.telegram_id = r.owner_telegram_id) AS is_owner
+      `SELECT p.telegram_id, p.display_name, p.is_ready, (p.telegram_id = r.owner_telegram_id) AS is_owner
        FROM twentyone_room_players p
        JOIN twentyone_rooms r ON r.id = p.room_id
        WHERE p.room_id = $1
@@ -2691,7 +2817,8 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
     const players = playerRows.rows.map((player, index) => ({
       label: String(player.display_name || "").trim() || (index === 0 ? "Создатель" : "Игрок " + (index + 1)),
       isOwner: Boolean(player.is_owner),
-      isMe: String(player.telegram_id) === String(user.id)
+      isMe: String(player.telegram_id) === String(user.id),
+      isReady: Boolean(player.is_ready)
     }));
 
     let game = null;
@@ -2740,6 +2867,7 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
           players: publicPlayers,
           currentPlayerLabel: currentPlayer?.label || "",
           currentPlayerIsMe: String(raw.currentPlayerTelegramId) === String(user.id),
+          isCurrentUserParticipant: rawPlayers.some(player => String(player.telegramId) === String(user.id)),
           message: String(raw.message || ""),
           settlementApplied: Boolean(raw.settlementApplied)
         };
@@ -2751,7 +2879,8 @@ app.post("/api/twentyone/rooms/state", async (req, res) => {
       room: mapTwentyOneRoom(roomRow, user.id),
       players,
       game,
-      balance: Number(balanceResult.rows[0]?.balance ?? 0)
+      balance: Number(balanceResult.rows[0]?.balance ?? 0),
+      rematchMessage: deadlineResult?.message || ""
     });
   } catch (error) {
     console.error("Get 21 Ochko room state error:", error.message || error);
@@ -2841,9 +2970,10 @@ app.post("/api/twentyone/rooms/start", async (req, res) => {
       [roomId, JSON.stringify(gameState)]
     );
     await client.query(
-      `UPDATE twentyone_rooms SET status = $2 WHERE id = $1`,
+      `UPDATE twentyone_rooms SET status = $2, rematch_deadline_at = NULL WHERE id = $1`,
       [roomId, gameState.status === "finished" ? "finished" : "playing"]
     );
+    await client.query(`UPDATE twentyone_room_players SET is_ready = FALSE WHERE room_id = $1`, [roomId]);
     await client.query("COMMIT");
     transactionOpen = false;
     const balanceResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
@@ -2854,6 +2984,89 @@ app.post("/api/twentyone/rooms/start", async (req, res) => {
     }
     console.error("Start 21 Ochko room error:", error.message || error);
     if (!res.headersSent) return res.status(500).json({ ok: false, error: error.message || "Не удалось начать раунд 21 Очко" });
+  } finally {
+    client?.release();
+  }
+});
+
+app.post("/api/twentyone/rooms/rematch-ready", async (req, res) => {
+  let client;
+  let transactionOpen = false;
+  try {
+    const user = verifyTelegram(req.body?.initData);
+    if (!user?.id) return res.status(401).json({ ok: false, error: "Не удалось проверить Telegram" });
+    const roomId = req.body?.roomId;
+    if (!validTwentyOneRoomId(roomId)) return res.status(400).json({ ok: false, error: "Неверный номер комнаты" });
+
+    client = await pool.connect();
+    await client.query("BEGIN");
+    transactionOpen = true;
+    const roomResult = await client.query(
+      `SELECT id, owner_telegram_id, max_players, stake, status, rematch_deadline_at
+       FROM twentyone_rooms WHERE id = $1 FOR UPDATE`,
+      [roomId]
+    );
+    if (!roomResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(404).json({ ok: false, error: "Комната не найдена" });
+    }
+    const room = roomResult.rows[0];
+    if (room.status !== "finished") {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(409).json({ ok: false, error: "Реванш можно подготовить после завершения раунда" });
+    }
+
+    const memberResult = await client.query(
+      `SELECT rp.telegram_id, pl.balance
+       FROM twentyone_room_players rp
+       JOIN players pl ON pl.telegram_id = rp.telegram_id
+       WHERE rp.room_id = $1 AND rp.telegram_id = $2
+       FOR UPDATE OF rp, pl`,
+      [roomId, String(user.id)]
+    );
+    if (!memberResult.rows.length) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате" });
+    }
+    if (Number(memberResult.rows[0].balance) < Number(room.stake)) {
+      await client.query("ROLLBACK"); transactionOpen = false;
+      return res.status(400).json({ ok: false, error: "Недостаточно AC для ставки следующего раунда" });
+    }
+
+    await client.query(
+      `UPDATE twentyone_room_players SET is_ready = TRUE
+       WHERE room_id = $1 AND telegram_id = $2`,
+      [roomId, String(user.id)]
+    );
+    const deadlineResult = await client.query(
+      `UPDATE twentyone_rooms
+       SET rematch_deadline_at = COALESCE(rematch_deadline_at, NOW() + INTERVAL '1 minute')
+       WHERE id = $1
+       RETURNING rematch_deadline_at`,
+      [roomId]
+    );
+    room.rematch_deadline_at = deadlineResult.rows[0]?.rematch_deadline_at || room.rematch_deadline_at;
+
+    const rematch = await startTwentyOneRematchInTransaction(client, room);
+    await client.query("COMMIT");
+    transactionOpen = false;
+    const balanceResult = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+    return res.json({
+      ok: true,
+      started: Boolean(rematch.started),
+      status: rematch.status || "finished",
+      readyCount: Number(rematch.readyCount || 0),
+      playerCount: Number(rematch.playerCount || 0),
+      rematchDeadlineAt: rematch.rematchDeadlineAt || room.rematch_deadline_at || null,
+      message: rematch.message || "",
+      balance: Number(balanceResult.rows[0]?.balance ?? 0)
+    });
+  } catch (error) {
+    if (client && transactionOpen) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+    }
+    console.error("21 Ochko rematch ready error:", error.message || error);
+    if (!res.headersSent) return res.status(500).json({ ok: false, error: error.message || "Не удалось подтвердить готовность к реваншу" });
   } finally {
     client?.release();
   }
@@ -3085,6 +3298,13 @@ async function startServer() {
       )
     `);
     await pool.query(`
+      ALTER TABLE twentyone_rooms
+      ADD COLUMN IF NOT EXISTS rematch_deadline_at TIMESTAMPTZ
+    `);
+    await pool.query(`
+      UPDATE twentyone_rooms SET max_players = 5 WHERE max_players <> 5
+    `);
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS twentyone_room_players (
         room_id BIGINT NOT NULL REFERENCES twentyone_rooms(id) ON DELETE CASCADE,
         telegram_id BIGINT NOT NULL,
@@ -3092,6 +3312,10 @@ async function startServer() {
         joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY (room_id, telegram_id)
       )
+    `);
+    await pool.query(`
+      ALTER TABLE twentyone_room_players
+      ADD COLUMN IF NOT EXISTS is_ready BOOLEAN NOT NULL DEFAULT FALSE
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS twentyone_games (
