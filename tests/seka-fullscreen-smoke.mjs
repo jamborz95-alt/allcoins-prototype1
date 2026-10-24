@@ -25,6 +25,8 @@ try {
   let roomCreated = false;
   let botAdded = false;
   let gameStarted = false;
+  let gameFinished = false;
+  let rematchStarted = false;
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.route("https://telegram.org/**", (route) => route.fulfill({
@@ -73,7 +75,19 @@ try {
       // synchronously from the Start button, before this network response.
       await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
       gameStarted = true;
+      gameFinished = false;
       return json({ ok: true, roomId: "321", started: true });
+    }
+    if (pathname === "/api/seka/rooms/action") {
+      gameFinished = true;
+      return json({ ok: true, status: "finished", message: "Тестовая партия завершена" });
+    }
+    if (pathname === "/api/seka/rooms/rematch") {
+      rematchStarted = true;
+      gameFinished = false;
+      gameStarted = true;
+      return json({ ok: true, started: true, roomId: "321", roundNumber: 2,
+        message: "Рематч начался! Карты розданы заново." });
     }
     if (pathname === "/api/seka/rooms/state") {
       const players = [{
@@ -86,13 +100,13 @@ try {
         id: "321", name: "Тестовая Сека", ownerTelegramId: "12345",
         tier: 1, limitLabel: "100–1 000 AC", minBet: 100, maxBet: 1000,
         ante: 100, maxPlayers: 6, playersCount: players.length,
-        status: gameStarted ? "playing" : "waiting", isOwner: true
+        status: gameFinished ? "finished" : gameStarted ? "playing" : "waiting", isOwner: true
       };
       const game = gameStarted ? {
-        status: "playing", testMode: true, pot: 200, ante: 100, currentBet: 100,
+        status: gameFinished ? "finished" : "playing", testMode: true, pot: 200, ante: 100, currentBet: 100,
         currentPlayerTelegramId: "12345", isYourTurn: true,
-        winnerTelegramIds: [], payouts: [], message: "Тестовая партия началась",
-        settlementApplied: false, revealHands: false,
+        winnerTelegramIds: [], payouts: [], message: gameFinished ? "Тестовая партия завершена" : "Тестовая партия началась",
+        settlementApplied: gameFinished, revealHands: gameFinished, rematchVotes: [], roundNumber: rematchStarted ? 2 : 1,
         players: [
           { telegramId: "12345", label: "Тестовый игрок", isBot: false, folded: false,
             contribution: 100, hand: [
@@ -150,9 +164,23 @@ try {
     "the opponent should be seated across the table");
   assert.notEqual(await page.locator("#raiseButton").evaluate((el) => getComputedStyle(el).display), "none",
     "betting controls should remain available in fullscreen");
+
+  await page.locator("#openButton").click();
+  await page.waitForFunction(() => document.querySelector("#rematchButton")?.classList.contains("hidden") === false);
+  assert.equal(await page.locator("#gameTurnLabel").textContent(), "Партия завершена",
+    "the finished round should be shown before offering a rematch");
+  assert.match(await page.locator("#rematchButton").textContent(), /Рематч/,
+    "a rematch button should be visible after the round ends");
+  await page.locator("#rematchButton").click();
+  await page.waitForFunction(() => rematchButtonState());
+  function rematchButtonState() {
+    return rematchStarted && document.querySelector("#gameTurnLabel")?.textContent !== "Партия завершена";
+  }
+  assert.equal(rematchStarted, true, "the rematch button should call the rematch endpoint");
+  assert.equal(gameFinished, false, "a successful rematch should start a new round");
   assert.deepEqual(pageErrors, [], "the Seka page should not produce JavaScript errors");
 
-  console.log("PASS: Seka requests Telegram fullscreen from the Start click before the network response and renders the table, hand and controls in the fullscreen layout.");
+  console.log("PASS: Seka fullscreen layout shows the player's numeric hand score and player seats, then offers a working rematch button after the round.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
