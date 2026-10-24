@@ -2435,6 +2435,7 @@
           <option value="3">3 игрока</option>
           <option value="4">4 игрока</option>
           <option value="5">5 игроков</option>
+          <option value="6">6 игроков</option>
         </select>
       </div>
 
@@ -2453,20 +2454,8 @@
           <b><span id="durakStakeValue">100</span> AC</b>
         </div>
         <input type="range" id="durakStakeSlider" min="100" max="1000000" step="100" value="100">
-        <div class="durak-stake-presets" id="durakStakePresets" role="group" aria-label="Быстрый выбор ставки">
-          <button type="button" data-stake-preset="100" aria-pressed="true">100</button>
-          <button type="button" data-stake-preset="500" aria-pressed="false">500</button>
-          <button type="button" data-stake-preset="1000" aria-pressed="false">1 тыс.</button>
-          <button type="button" data-stake-preset="5000" aria-pressed="false">5 тыс.</button>
-          <button type="button" data-stake-preset="10000" aria-pressed="false">10 тыс.</button>
-          <button type="button" data-stake-preset="50000" aria-pressed="false">50 тыс.</button>
-          <button type="button" data-stake-preset="100000" aria-pressed="false">100 тыс.</button>
-          <button type="button" data-stake-preset="250000" aria-pressed="false">250 тыс.</button>
-          <button type="button" data-stake-preset="500000" aria-pressed="false">500 тыс.</button>
-          <button type="button" data-stake-preset="1000000" aria-pressed="false">1 млн</button>
-        </div>
-        <label class="muted" for="durakStake">Или введи сумму вручную (до 1 000 000 AC)</label>
-        <input type="number" id="durakStake" value="100" min="100" max="1000000" step="1" inputmode="numeric" placeholder="Например, 100000">
+        <label class="muted" for="durakStake">Или введи сумму вручную</label>
+        <input type="number" id="durakStake" value="100" min="100" step="1" inputmode="numeric" placeholder="Например, 100000">
       </div>
 
       <div class="durak-create-field full">
@@ -2499,32 +2488,9 @@
       🔄 Обновить список
     </button>
 
-    <div class="durak-stake-filter-heading">💰 Комнаты по размеру ставки</div>
-    <div id="durakStakeFilters" class="durak-stake-filters" role="group" aria-label="Фильтр комнат по ставке">
-      <button type="button" class="active" data-stake-filter="all" aria-pressed="true">Все ставки</button>
-      <button type="button" data-stake-filter="100-999" aria-pressed="false">100–999</button>
-      <button type="button" data-stake-filter="1000-9999" aria-pressed="false">1 тыс.–9 999</button>
-      <button type="button" data-stake-filter="10000-99999" aria-pressed="false">10 тыс.–99 999</button>
-      <button type="button" data-stake-filter="100000-499999" aria-pressed="false">100 тыс.–499 999</button>
-      <button type="button" data-stake-filter="500000-1000000" aria-pressed="false">500 тыс.–1 млн</button>
-    </div>
-    <div class="durak-stake-filter-note">Выбирай диапазон от 100 до 1 000 000 AC, чтобы быстрее найти подходящую комнату.</div>
     <div id="roomsList"></div>
 
   </div>
-  <style id="durak-stake-lobby-style">
-    #durakGame .durak-stake-filter-heading { margin:14px 0 6px; color:#f0d58a; font-size:13px; font-weight:800; }
-    #durakGame .durak-stake-filters { display:flex; gap:6px; width:100%; margin:0 0 8px; padding:2px 1px 7px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; }
-    #durakGame .durak-stake-filters button { flex:0 0 auto; min-height:34px; padding:8px 10px; border:1px solid #3d5068; border-radius:999px; background:#111c30; color:#dce7f5; font-size:11px; font-weight:800; white-space:nowrap; }
-    #durakGame .durak-stake-filters button.active, #durakGame .durak-stake-filters button[aria-pressed="true"] { border-color:#f0d58a; background:linear-gradient(135deg,#f0d58a,#c99b4a); color:#15231f; box-shadow:0 2px 8px #0003; }
-    #durakGame .durak-stake-filter-note { margin:0 0 8px; color:#9eafc4; font-size:10px; line-height:1.4; }
-    #durakGame .durak-stake-presets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:3px 0 8px; }
-    #durakGame .durak-stake-presets button { min-width:0; min-height:30px; padding:6px 2px; border:1px solid #3e526e; border-radius:8px; background:#101b2d; color:#e8f0fa; font-size:10px; font-weight:800; white-space:nowrap; }
-    #durakGame .durak-stake-presets button.active, #durakGame .durak-stake-presets button[aria-pressed="true"] { border-color:#f0d58a; background:#f0d58a; color:#15231f; }
-    #durakGame #roomsList .room { align-items:flex-start; }
-    #durakGame #roomsList .room > div:first-child { min-width:0; flex:1; overflow-wrap:anywhere; line-height:1.55; }
-    #durakGame #roomsList .room > button { flex:0 0 auto; }
-  </style>
   <style>
     #durakWaitingPlayers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; width:100%; margin:12px 0; position:relative; min-height:0; }
     #durakWaitingPlayers .durak-waiting-seat { position:relative; inset:auto; transform:none; float:none; width:auto; min-width:0; min-height:58px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px 6px; border:1px solid rgba(212,175,55,.55); border-radius:10px; background:rgba(10,25,48,.78); color:#fff; overflow-wrap:anywhere; z-index:auto; }
@@ -3634,6 +3600,140 @@
     </div>
   </details>
 
+
+  <!-- ЛОББИ 21 ОЧКО: комнаты от 100 до 1 000 000 AC -->
+  <section id="twentyOneLobby" class="twentyone-room-panel">
+    <h3>♣ Онлайн-комнаты 21 Очко</h3>
+    <p class="twentyone-room-help">Создай комнату или присоединись к другим игрокам. В одном раунде могут участвовать до 5 игроков, каждый играет против банкира. Ставка списывается при старте раунда.</p>
+    <div class="twentyone-room-menu">
+      <button type="button" id="twentyOneShowCreate" class="twentyone-primary">＋ Создать комнату</button>
+      <button type="button" id="twentyOneShowRooms" class="twentyone-secondary">⌕ Найти комнату</button>
+      <button type="button" id="twentyOneSoloPlay" class="twentyone-secondary">🂡 Играть одному</button>
+    </div>
+
+    <div id="twentyOneCreatePanel" class="twentyone-subpanel" style="display:none;">
+      <h4>＋ Создание комнаты</h4>
+      <label for="twentyOneRoomName">Название комнаты</label>
+      <input id="twentyOneRoomName" type="text" maxlength="30" placeholder="Например, Комната ALLCOINS">
+      <label for="twentyOneRoomPlayers">Игроков в комнате</label>
+      <select id="twentyOneRoomPlayers">
+        <option value="1">1 игрок</option>
+        <option value="2" selected>2 игрока</option>
+        <option value="3">3 игрока</option>
+        <option value="4">4 игрока</option>
+        <option value="5">5 игроков</option>
+      </select>
+      <div class="twentyone-room-stake-summary"><span>Ставка за игрока</span><b><span id="twentyOneRoomStakeValue">100</span> AC</b></div>
+      <input id="twentyOneRoomStakeSlider" type="range" min="100" max="1000000" step="100" value="100" aria-label="Размер ставки в комнате">
+      <div id="twentyOneRoomStakePresets" class="twentyone-stake-presets" role="group" aria-label="Быстрый выбор ставки для комнаты">
+        <button type="button" data-stake-preset="100" aria-pressed="true">100</button>
+        <button type="button" data-stake-preset="500" aria-pressed="false">500</button>
+        <button type="button" data-stake-preset="1000" aria-pressed="false">1 тыс.</button>
+        <button type="button" data-stake-preset="5000" aria-pressed="false">5 тыс.</button>
+        <button type="button" data-stake-preset="10000" aria-pressed="false">10 тыс.</button>
+        <button type="button" data-stake-preset="50000" aria-pressed="false">50 тыс.</button>
+        <button type="button" data-stake-preset="100000" aria-pressed="false">100 тыс.</button>
+        <button type="button" data-stake-preset="250000" aria-pressed="false">250 тыс.</button>
+        <button type="button" data-stake-preset="500000" aria-pressed="false">500 тыс.</button>
+        <button type="button" data-stake-preset="1000000" aria-pressed="false">1 млн</button>
+      </div>
+      <label for="twentyOneRoomStake">Или введи ставку вручную (100–1 000 000 AC)</label>
+      <input id="twentyOneRoomStake" type="number" min="100" max="1000000" step="1" inputmode="numeric" value="100">
+      <button type="button" id="twentyOneCreateRoom" class="twentyone-primary full">Создать комнату</button>
+      <div id="twentyOneCreateStatus" class="twentyone-room-status" aria-live="polite"></div>
+    </div>
+
+    <div id="twentyOneRoomsPanel" class="twentyone-subpanel" style="display:none;">
+      <h4>♧ Доступные комнаты</h4>
+      <button type="button" id="twentyOneRefreshRooms" class="twentyone-secondary full">↻ Обновить список</button>
+      <div class="twentyone-room-filter-title">Комнаты по размеру ставки</div>
+      <div id="twentyOneStakeFilters" class="twentyone-stake-filters" role="group" aria-label="Фильтр комнат по ставке">
+        <button type="button" class="active" data-stake-filter="all" aria-pressed="true">Все ставки</button>
+        <button type="button" data-stake-filter="100-999" aria-pressed="false">100–999</button>
+        <button type="button" data-stake-filter="1000-9999" aria-pressed="false">1 тыс.–9 999</button>
+        <button type="button" data-stake-filter="10000-99999" aria-pressed="false">10 тыс.–99 999</button>
+        <button type="button" data-stake-filter="100000-499999" aria-pressed="false">100 тыс.–499 999</button>
+        <button type="button" data-stake-filter="500000-1000000" aria-pressed="false">500 тыс.–1 млн</button>
+      </div>
+      <div id="twentyOneRoomsList" class="twentyone-rooms-list"></div>
+      <div id="twentyOneRoomsStatus" class="twentyone-room-status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="twentyOneWaitingPanel" class="twentyone-room-panel" style="display:none;">
+    <h3 id="twentyOneWaitingTitle">Комната 21 Очко</h3>
+    <p class="twentyone-room-help" id="twentyOneWaitingSummary"></p>
+    <div id="twentyOneWaitingPlayers" class="twentyone-waiting-players"></div>
+    <p class="twentyone-room-help">Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.</p>
+    <div class="twentyone-room-menu">
+      <button type="button" id="twentyOneRoomStart" class="twentyone-primary">🃏 Начать раунд</button>
+      <button type="button" id="twentyOneRoomLeave" class="twentyone-secondary">🚪 Выйти из комнаты</button>
+    </div>
+    <div id="twentyOneWaitingStatus" class="twentyone-room-status" aria-live="polite"></div>
+  </section>
+
+  <section id="twentyOneRoomBoard" class="twentyone-room-panel" style="display:none;">
+    <h3 id="twentyOneRoomBoardTitle">🂡 21 Очко · Онлайн</h3>
+    <div class="twentyone-online-dealer">
+      <div class="twentyone-online-seat"><b>♛ Банкир</b><span id="twentyOneRoomDealerScore">Скрытая карта</span></div>
+      <div id="twentyOneRoomDealerCards" class="twentyone-cards dealer-cards" aria-label="Карты банкира в онлайн-раунде"></div>
+    </div>
+    <div class="twentyone-divider"><span>21</span></div>
+    <div id="twentyOneRoomPlayers" class="twentyone-online-players"></div>
+    <div id="twentyOneRoomStatus" class="twentyone-room-status" aria-live="polite"></div>
+    <div id="twentyOneRoomActions" class="twentyone-action-row">
+      <button type="button" id="twentyOneRoomHit" class="twentyone-primary">＋ Ещё карту</button>
+      <button type="button" id="twentyOneRoomStand" class="twentyone-secondary">✋ Хватит</button>
+    </div>
+    <button type="button" id="twentyOneRoomBackToLobby" class="twentyone-secondary full" style="display:none;">↩ Выйти в лобби</button>
+  </section>
+
+  <style id="twentyone-room-styles">
+    #twentyOneGame .twentyone-room-panel { margin:12px 0 18px; padding:14px; border:1px solid rgba(212,175,55,.45); border-radius:16px; background:linear-gradient(145deg,rgba(14,34,38,.94),rgba(10,21,31,.98)); color:#f8f5e9; }
+    #twentyOneGame .twentyone-room-panel h3, #twentyOneGame .twentyone-room-panel h4 { margin:0 0 10px; color:#f0d58a; }
+    #twentyOneGame .twentyone-room-help { margin:0 0 12px; color:#c6d2d3; font-size:12px; line-height:1.55; }
+    #twentyOneGame .twentyone-room-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:8px 0; }
+    #twentyOneGame .twentyone-room-menu button { min-width:0; min-height:42px; padding:10px; font-size:12px; }
+    #twentyOneGame .twentyone-subpanel { margin-top:12px; padding-top:12px; border-top:1px solid #3b514f; }
+    #twentyOneGame .twentyone-subpanel label { display:block; font-size:12px; color:#cad7d7; margin:8px 0 3px; }
+    #twentyOneGame .twentyone-subpanel input:not([type=range]), #twentyOneGame .twentyone-subpanel select { width:100%; min-height:40px; margin:3px 0 7px; padding:9px 10px; border:1px solid #465b64; border-radius:9px; background:#101b28; color:#fff; }
+    #twentyOneGame .twentyone-subpanel input[type=range] { width:100%; margin:8px 0; }
+    #twentyOneGame .twentyone-room-stake-summary { display:flex; justify-content:space-between; gap:8px; margin-top:10px; font-size:12px; color:#c6d2d3; }
+    #twentyOneGame .twentyone-room-stake-summary b { color:#f0d58a; }
+    #twentyOneGame .twentyone-stake-presets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:5px 0 8px; }
+    #twentyOneGame .twentyone-stake-presets button { min-width:0; min-height:31px; padding:6px 2px; border-radius:8px; border:1px solid #435b67; background:#132432; color:#ecf5f4; font-size:10px; font-weight:800; }
+    #twentyOneGame .twentyone-stake-presets button.active, #twentyOneGame .twentyone-stake-presets button[aria-pressed=true] { background:#f0d58a; color:#172a28; border-color:#f0d58a; }
+    #twentyOneGame .twentyone-room-filter-title { margin:14px 0 7px; color:#f0d58a; font-weight:800; font-size:12px; }
+    #twentyOneGame .twentyone-stake-filters { display:flex; gap:6px; overflow-x:auto; padding:2px 1px 8px; }
+    #twentyOneGame .twentyone-stake-filters button { flex:0 0 auto; min-height:32px; padding:7px 10px; border:1px solid #405765; border-radius:999px; background:#111f2b; color:#eaf3f3; font-size:10px; white-space:nowrap; }
+    #twentyOneGame .twentyone-stake-filters button.active, #twentyOneGame .twentyone-stake-filters button[aria-pressed=true] { background:#f0d58a; border-color:#f0d58a; color:#172a28; }
+    #twentyOneGame .twentyone-room-row { display:flex; align-items:flex-start; gap:8px; justify-content:space-between; padding:10px; margin-top:8px; border-radius:10px; background:#101c29; border:1px solid #314751; }
+    #twentyOneGame .twentyone-room-row-info { flex:1; min-width:0; overflow-wrap:anywhere; font-size:12px; line-height:1.55; }
+    #twentyOneGame .twentyone-room-row-info small { display:block; color:#bfcecf; font-size:10px; }
+    #twentyOneGame .twentyone-room-row button { flex:0 0 auto; padding:9px 12px; font-size:11px; }
+    #twentyOneGame .twentyone-room-status { margin:9px 0; min-height:18px; color:#9cf0c7; font-size:12px; line-height:1.5; white-space:pre-wrap; }
+    #twentyOneGame .twentyone-waiting-players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin:12px 0; }
+    #twentyOneGame .twentyone-wait-seat { padding:10px 8px; border:1px solid #445c60; border-radius:10px; background:#0f2028; color:#fff; overflow-wrap:anywhere; font-size:12px; }
+    #twentyOneGame .twentyone-wait-seat small { display:block; margin-top:3px; color:#f0d58a; font-size:10px; }
+    #twentyOneGame .twentyone-online-dealer { text-align:center; padding:8px 0; }
+    #twentyOneGame .twentyone-online-seat { display:flex; justify-content:center; align-items:center; gap:10px; color:#f0d58a; font-size:13px; margin-bottom:7px; }
+    #twentyOneGame .twentyone-online-seat span { color:#e6edef; font-size:11px; }
+    #twentyOneGame .twentyone-online-players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    #twentyOneGame .twentyone-online-player { min-width:0; border:1px solid #40565b; border-radius:10px; background:#0d1c24; padding:8px; }
+    #twentyOneGame .twentyone-online-player.active { border-color:#f0d58a; box-shadow:0 0 10px #f0d58a36; }
+    #twentyOneGame .twentyone-online-player-head { font-size:11px; color:#fff; margin-bottom:6px; overflow-wrap:anywhere; }
+    #twentyOneGame .twentyone-online-player-head small { display:block; color:#f0d58a; font-size:10px; margin-top:3px; }
+    #twentyOneGame .twentyone-online-cards { display:flex; gap:2px; flex-wrap:wrap; min-height:55px; align-items:flex-end; }
+    #twentyOneGame .twentyone-online-cards .twentyone-card { width:38px!important; height:56px!important; min-width:38px!important; flex:0 0 38px!important; margin:0!important; }
+    #twentyOneGame #twentyOneRoomDealerCards .twentyone-card { width:49px!important; height:72px!important; min-width:49px!important; flex:0 0 49px!important; }
+    #twentyOneGame #twentyOneSoloStakePresets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:6px 0 9px; }
+    #twentyOneGame #twentyOneSoloStakePresets button { min-width:0; padding:6px 2px; font-size:10px; min-height:30px; border-radius:8px; background:#132432; color:#eef5f4; border:1px solid #405765; }
+    #twentyOneGame #twentyOneSoloStakePresets button.active, #twentyOneGame #twentyOneSoloStakePresets button[aria-pressed=true] { background:#f0d58a; color:#172a28; border-color:#f0d58a; }
+    @media(max-width:360px) { #twentyOneGame .twentyone-online-players { grid-template-columns:1fr; } }
+  </style>
+
+
+  <div id="twentyOneSoloArea" style="display:none;">
   <div class="twentyone-table">
     <div class="twentyone-felt-brand" aria-hidden="true"><span>ALLCOINS</span><b>21</b><small>THE CARD TABLE</small></div>
     <div id="twentyOneDeck" class="twentyone-deck-pile" aria-label="Колода. Осталось карт: 36">
@@ -3659,12 +3759,21 @@
   <div id="twentyOneStatus" class="twentyone-status" aria-live="polite">Выбери ставку и начни раунд.</div>
   <div class="twentyone-controls">
     <label for="twentyOneStake">Ставка</label>
-    <select id="twentyOneStake">
-      <option value="100">100 AC</option>
-      <option value="500">500 AC</option>
-      <option value="1000">1 000 AC</option>
-      <option value="5000">5 000 AC</option>
-    </select>
+    <div class="twentyone-room-stake-summary"><span>Ставка в одиночной игре</span><b><span id="twentyOneStakeValue">100</span> AC</b></div>
+    <input id="twentyOneStakeSlider" type="range" min="100" max="1000000" step="100" value="100" aria-label="Размер одиночной ставки">
+    <div id="twentyOneSoloStakePresets" role="group" aria-label="Быстрый выбор одиночной ставки">
+      <button type="button" data-stake-preset="100" aria-pressed="true">100</button>
+      <button type="button" data-stake-preset="500" aria-pressed="false">500</button>
+      <button type="button" data-stake-preset="1000" aria-pressed="false">1 тыс.</button>
+      <button type="button" data-stake-preset="5000" aria-pressed="false">5 тыс.</button>
+      <button type="button" data-stake-preset="10000" aria-pressed="false">10 тыс.</button>
+      <button type="button" data-stake-preset="50000" aria-pressed="false">50 тыс.</button>
+      <button type="button" data-stake-preset="100000" aria-pressed="false">100 тыс.</button>
+      <button type="button" data-stake-preset="250000" aria-pressed="false">250 тыс.</button>
+      <button type="button" data-stake-preset="500000" aria-pressed="false">500 тыс.</button>
+      <button type="button" data-stake-preset="1000000" aria-pressed="false">1 млн</button>
+    </div>
+    <input id="twentyOneStake" type="number" min="100" max="1000000" step="1" inputmode="numeric" value="100" aria-label="Одиночная ставка в AC">
     <button type="button" id="twentyOneDeal" class="twentyone-primary">🃏 Начать раунд</button>
     <div id="twentyOnePlayActions" class="twentyone-action-row" style="display:none;">
       <button type="button" id="twentyOneHit" class="twentyone-primary">＋ Ещё карту</button>
@@ -3673,6 +3782,7 @@
     <button type="button" id="twentyOneNewRound" class="twentyone-primary" style="display:none;">↻ Новый раунд</button>
   </div>
   <div class="twentyone-footer">Колода из 36 карт · карты взяты из папки <code>cards/</code></div>
+  </div><!-- #twentyOneSoloArea -->
 </div>
 
 <nav class="nav">
@@ -3958,8 +4068,6 @@ function showStatus(id, message) {
   if (element) element.textContent = message;
 }
 
-let selectedDurakStakeFilter = "all";
-
 function render() {
   $("balance").textContent = state.balance;
   $("energy").textContent = state.energy;
@@ -3977,31 +4085,8 @@ function render() {
   $("profileId").textContent = state.user?.id || "не авторизован";
   $("loginStatus").textContent = state.user ? "TELEGRAM" : "ДЕМО";
 
-  const roomsList = $("roomsList");
-  roomsList.innerHTML = "";
-  const allDurakRooms = Array.isArray(state.rooms) ? state.rooms : [];
-  const selectedRange = selectedDurakStakeFilter === "all" ? null : selectedDurakStakeFilter.split("-").map(Number);
-  const visibleDurakRooms = allDurakRooms
-    .filter((room) => {
-      if (!selectedRange) return true;
-      const stakeValue = Number(room.stake) || 0;
-      return stakeValue >= selectedRange[0] && stakeValue <= selectedRange[1];
-    })
-    .sort((a, b) => (Number(a.stake) || 0) - (Number(b.stake) || 0));
-  document.querySelectorAll("#durakStakeFilters [data-stake-filter]").forEach((filterButton) => {
-    const active = filterButton.dataset.stakeFilter === selectedDurakStakeFilter;
-    filterButton.classList.toggle("active", active);
-    filterButton.setAttribute("aria-pressed", String(active));
-  });
-  if (!visibleDurakRooms.length) {
-    const emptyRooms = document.createElement("div");
-    emptyRooms.className = "notice";
-    emptyRooms.textContent = allDurakRooms.length
-      ? "В этом диапазоне пока нет комнат. Выбери другую ставку или обнови список."
-      : "Пока нет открытых комнат. Создай свою или обнови список.";
-    roomsList.appendChild(emptyRooms);
-  }
-  visibleDurakRooms.forEach((room, index) => {
+  $("roomsList").innerHTML = "";
+  state.rooms.forEach((room, index) => {
     const div = document.createElement("div");
     div.className = "room";
 
@@ -4012,7 +4097,7 @@ info.innerHTML =
   (room.playersCount ?? 1) + " из " + room.players +
   " игроков · Режим: " + (room.mode === "transfer" ? "Переводной" : "Подкидной") +
   " · Колода: " + (Number(room.deck) === 24 ? "24 карт" : Number(room.deck) === 52 ? "52 карт" : "36 карт") +
-  " · Ставка: " + (Number(room.stake) || 0).toLocaleString("ru-RU") + " AC</span>";
+  " · Ставка: " + room.stake + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
@@ -7746,50 +7831,30 @@ const durakStakeInput = $("durakStake");
 const durakStakeSlider = $("durakStakeSlider");
 const durakStakeValue = $("durakStakeValue");
 
-function updateDurakStakePresetButtons() {
-  const currentStake = Number(durakStakeInput.value);
-  document.querySelectorAll("#durakStakePresets [data-stake-preset]").forEach((button) => {
-    const active = Number(button.dataset.stakePreset) === currentStake;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
-}
-function setDurakStake(stake) {
-  const amount = Math.max(100, Math.min(1000000, Math.round(Number(stake) || 100)));
-  durakStakeInput.value = String(amount);
-  durakStakeSlider.value = String(Math.max(100, Math.round(amount / 100) * 100));
-  durakStakeValue.textContent = amount.toLocaleString("ru-RU");
-  updateDurakStakePresetButtons();
-}
 durakStakeSlider.addEventListener("input", () => {
   durakStakeInput.value = durakStakeSlider.value;
   durakStakeValue.textContent = Number(durakStakeSlider.value).toLocaleString("ru-RU");
-  updateDurakStakePresetButtons();
-});
-durakStakeInput.addEventListener("input", () => {
-  const stake = Number(durakStakeInput.value);
-  if (!Number.isFinite(stake) || stake < 100) {
-    durakStakeValue.textContent = "100";
-    updateDurakStakePresetButtons();
-    return;
-  }
-  durakStakeValue.textContent = stake.toLocaleString("ru-RU");
-  if (stake <= 1000000) durakStakeSlider.value = String(Math.max(100, Math.round(stake / 100) * 100));
-  updateDurakStakePresetButtons();
-});
-document.querySelectorAll("#durakStakePresets [data-stake-preset]").forEach((button) => {
-  button.addEventListener("click", () => setDurakStake(button.dataset.stakePreset));
-});
-document.querySelectorAll("#durakStakeFilters [data-stake-filter]").forEach((button) => {
-  button.addEventListener("click", () => {
-    selectedDurakStakeFilter = button.dataset.stakeFilter || "all";
-    render();
-  });
 });
 
+durakStakeInput.addEventListener("input", () => {
+  let stake = Number(durakStakeInput.value);
+
+  if (!Number.isFinite(stake) || stake < 100) {
+    durakStakeValue.textContent = "100";
+    return;
+  }
+
+  durakStakeValue.textContent = stake.toLocaleString("ru-RU");
+
+  if (stake <= 1000000) {
+    durakStakeSlider.value = String(
+      Math.max(100, Math.round(stake / 100) * 100)
+    );
+  }
+});
 function syncDurakPlayerChoicesToDeck() {
   const selectedDeck = Number($("durakDeck").value);
-  const maxPlayers = selectedDeck === 24 ? 3 : 5;
+  const maxPlayers = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
   const select = $("players");
   for (const option of select.options) {
     const optionPlayers = Number(option.value);
@@ -7812,23 +7877,23 @@ const mode = $("durakMode").value === "transfer" ? "transfer" : "throw-in";
   const roomName =
     $("roomName").value.trim() || "Комната ALLCOINS";
 
-  if (!Number.isInteger(players) || players < 1 || players > 5) {
-    alert("Выбери от 1 игрока с ботом до 5 участников.");
+  if (!Number.isInteger(players) || players < 1 || players > 6) {
+    alert("Выбери от 1 игрока с ботом до 6 участников.");
     return;
   }
-  const maxPlayersForDeck = deck === 24 ? 3 : 5;
+  const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
   if (players > maxPlayersForDeck) {
     alert(deck === 24
       ? "С колодой на 24 карт можно играть максимум втроём."
-      : "С колодой на 36 или 52 карты можно играть максимум впятером.");
+      : "С колодой на 36 карт можно играть максимум впятером.");
     return;
   }
   const singlePlayerWithBot = players === 1;
   // Серверная схема поддерживает минимум 2 места: для одиночной игры второе место занимает бот.
   const roomCapacity = singlePlayerWithBot ? 2 : players;
 
-if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
-  alert("Ставка должна быть целым числом от 100 до 1 000 000 AC.");
+if (!Number.isSafeInteger(stake) || stake < 100) {
+  alert("Минимальная ставка — 100 AC. Введи целое число.");
   return;
 }
 
@@ -9714,7 +9779,11 @@ function sleepTwentyOne(ms) {
 
 async function startTwentyOneRound() {
   if (twentyOneRoundActive || twentyOneResolvingRound) return;
-  const stake = Math.max(1, Math.floor(Number($("twentyOneStake").value) || 100));
+  const stake = Number($("twentyOneStake").value);
+  if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
+    $("twentyOneStatus").textContent = "Ставка должна быть целым числом от 100 до 1 000 000 AC.";
+    return;
+  }
   if (!Number.isFinite(state.balance) || state.balance < stake) {
     $("twentyOneStatus").textContent = "Недостаточно AC для этой ставки. Выбери меньшую сумму.";
     return;
@@ -9846,14 +9915,416 @@ function resetTwentyOneRound() {
   renderTwentyOneTable(true);
 }
 
+
+// ===== 21 ОЧКО: ЛОББИ И ОНЛАЙН-РАУНД =====
+let currentTwentyOneRoomId = null;
+let twentyOneRoomSnapshot = null;
+let twentyOneRoomPollTimer = null;
+let twentyOneRoomActionBusy = false;
+let selectedTwentyOneStakeFilter = "all";
+let twentyOneRoomList = [];
+
+function setTwentyOneVisibleView(view) {
+  for (const id of ["twentyOneLobby", "twentyOneWaitingPanel", "twentyOneRoomBoard", "twentyOneSoloArea"]) {
+    const el = $(id);
+    if (el) el.style.display = id === view ? "block" : "none";
+  }
+}
+function stopTwentyOneRoomPolling() {
+  if (twentyOneRoomPollTimer !== null) {
+    clearInterval(twentyOneRoomPollTimer);
+    twentyOneRoomPollTimer = null;
+  }
+}
+function setTwentyOneRoomStake(amount) {
+  const value = Math.max(100, Math.min(1000000, Math.round(Number(amount) || 100)));
+  $("twentyOneRoomStake").value = String(value);
+  $("twentyOneRoomStakeSlider").value = String(Math.max(100, Math.round(value / 100) * 100));
+  $("twentyOneRoomStakeValue").textContent = value.toLocaleString("ru-RU");
+  document.querySelectorAll("#twentyOneRoomStakePresets [data-stake-preset]").forEach(button => {
+    const active = Number(button.dataset.stakePreset) === value;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+function setTwentyOneSoloStake(amount) {
+  const value = Math.max(100, Math.min(1000000, Math.round(Number(amount) || 100)));
+  $("twentyOneStake").value = String(value);
+  $("twentyOneStakeSlider").value = String(Math.max(100, Math.round(value / 100) * 100));
+  $("twentyOneStakeValue").textContent = value.toLocaleString("ru-RU");
+  document.querySelectorAll("#twentyOneSoloStakePresets [data-stake-preset]").forEach(button => {
+    const active = Number(button.dataset.stakePreset) === value;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+$("twentyOneRoomStakeSlider").addEventListener("input", () => setTwentyOneRoomStake($("twentyOneRoomStakeSlider").value));
+$("twentyOneRoomStake").addEventListener("input", () => {
+  const value = Number($("twentyOneRoomStake").value);
+  $("twentyOneRoomStakeValue").textContent = Number.isFinite(value) && value >= 100 ? value.toLocaleString("ru-RU") : "100";
+  if (value >= 100 && value <= 1000000) $("twentyOneRoomStakeSlider").value = String(Math.max(100, Math.round(value / 100) * 100));
+  document.querySelectorAll("#twentyOneRoomStakePresets [data-stake-preset]").forEach(button => {
+    const active = Number(button.dataset.stakePreset) === value;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+});
+$("twentyOneStakeSlider").addEventListener("input", () => setTwentyOneSoloStake($("twentyOneStakeSlider").value));
+$("twentyOneStake").addEventListener("input", () => {
+  const value = Number($("twentyOneStake").value);
+  $("twentyOneStakeValue").textContent = Number.isFinite(value) && value >= 100 ? value.toLocaleString("ru-RU") : "100";
+  if (value >= 100 && value <= 1000000) $("twentyOneStakeSlider").value = String(Math.max(100, Math.round(value / 100) * 100));
+  document.querySelectorAll("#twentyOneSoloStakePresets [data-stake-preset]").forEach(button => {
+    const active = Number(button.dataset.stakePreset) === value;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+});
+document.querySelectorAll("#twentyOneRoomStakePresets [data-stake-preset]").forEach(button => {
+  button.addEventListener("click", () => setTwentyOneRoomStake(button.dataset.stakePreset));
+});
+document.querySelectorAll("#twentyOneSoloStakePresets [data-stake-preset]").forEach(button => {
+  button.addEventListener("click", () => setTwentyOneSoloStake(button.dataset.stakePreset));
+});
+document.querySelectorAll("#twentyOneStakeFilters [data-stake-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    selectedTwentyOneStakeFilter = button.dataset.stakeFilter || "all";
+    renderTwentyOneRoomList();
+  });
+});
+
+function renderTwentyOneRoomList() {
+  const container = $("twentyOneRoomsList");
+  container.textContent = "";
+  const selectedRange = selectedTwentyOneStakeFilter === "all"
+    ? null : selectedTwentyOneStakeFilter.split("-").map(Number);
+  const visible = twentyOneRoomList.filter(room => {
+    if (!selectedRange) return true;
+    const stake = Number(room.stake) || 0;
+    return stake >= selectedRange[0] && stake <= selectedRange[1];
+  }).sort((a,b) => (Number(a.stake)||0) - (Number(b.stake)||0));
+  document.querySelectorAll("#twentyOneStakeFilters [data-stake-filter]").forEach(button => {
+    const active = button.dataset.stakeFilter === selectedTwentyOneStakeFilter;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (!visible.length) {
+    const note = document.createElement("div");
+    note.className = "twentyone-room-help";
+    note.textContent = twentyOneRoomList.length
+      ? "В этом диапазоне нет свободных комнат. Выбери другую ставку."
+      : "Свободных комнат пока нет. Создай свою или обнови список.";
+    container.appendChild(note);
+    return;
+  }
+  for (const room of visible) {
+    const row = document.createElement("div");
+    row.className = "twentyone-room-row";
+    const info = document.createElement("div");
+    info.className = "twentyone-room-row-info";
+    const title = document.createElement("b");
+    title.textContent = room.name || "Комната 21 Очко";
+    const details = document.createElement("small");
+    details.textContent = (Number(room.playersCount)||0) + " из " + room.maxPlayers +
+      " игроков · Ставка " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+    info.append(title, details);
+    const join = document.createElement("button");
+    join.type = "button";
+    join.className = "twentyone-primary";
+    join.textContent = "Войти";
+    join.addEventListener("click", async () => {
+      join.disabled = true;
+      try {
+        const result = await apiRequest("/api/twentyone/rooms/join", { roomId: room.id });
+        currentTwentyOneRoomId = String(result.room.id);
+        $("twentyOneRoomsStatus").textContent = "Вход в комнату выполнен.";
+        await beginTwentyOneRoomPolling();
+      } catch (error) {
+        $("twentyOneRoomsStatus").textContent = error.message;
+        join.disabled = false;
+        await loadTwentyOneRooms();
+      }
+    });
+    row.append(info, join);
+    container.appendChild(row);
+  }
+}
+async function loadTwentyOneRooms() {
+  const status = $("twentyOneRoomsStatus");
+  if (status) status.textContent = "Обновляем комнаты…";
+  try {
+    const result = await apiRequest("/api/twentyone/rooms/list");
+    twentyOneRoomList = Array.isArray(result.rooms) ? result.rooms : [];
+    renderTwentyOneRoomList();
+    if (status) status.textContent = "";
+  } catch (error) {
+    twentyOneRoomList = [];
+    renderTwentyOneRoomList();
+    if (status) status.textContent = error.message || "Не удалось загрузить комнаты.";
+  }
+}
+function showTwentyOneLobby() {
+  stopTwentyOneRoomPolling();
+  currentTwentyOneRoomId = null;
+  twentyOneRoomSnapshot = null;
+  setTwentyOneVisibleView("twentyOneLobby");
+  $("twentyOneCreatePanel").style.display = "none";
+  $("twentyOneRoomsPanel").style.display = "none";
+  $("twentyOneWaitingPanel").style.display = "none";
+  $("twentyOneRoomBoard").style.display = "none";
+  $("twentyOneCreateStatus").textContent = "";
+  loadTwentyOneRooms();
+}
+function renderTwentyOneWaiting(result) {
+  const room = result.room;
+  $("twentyOneWaitingTitle").textContent = "♣ " + room.name;
+  $("twentyOneWaitingSummary").textContent =
+    "Ставка: " + Number(room.stake).toLocaleString("ru-RU") + " AC на игрока · " +
+    result.players.length + " из " + room.maxPlayers + " игроков";
+  const container = $("twentyOneWaitingPlayers");
+  container.textContent = "";
+  result.players.forEach((player, index) => {
+    const seat = document.createElement("div");
+    seat.className = "twentyone-wait-seat";
+    const name = document.createElement("span");
+    name.textContent = player.label || ("Игрок " + (index + 1));
+    const badge = document.createElement("small");
+    badge.textContent = player.isOwner ? "Создатель комнаты" : (player.isMe ? "Ты в комнате" : "Готов к раунду");
+    seat.append(name, badge);
+    container.appendChild(seat);
+  });
+  $("twentyOneRoomStart").style.display = room.isOwner ? "block" : "none";
+  $("twentyOneRoomStart").disabled = !room.isOwner;
+  $("twentyOneRoomLeave").style.display = "block";
+  $("twentyOneWaitingStatus").textContent = "";
+}
+function renderTwentyOneOnlineCardRow(container, cards, { hideCards = false, cardCount = 0 } = {}) {
+  container.textContent = "";
+  const data = Array.isArray(cards) ? cards : [];
+  const total = hideCards ? Math.max(0, Number(cardCount) || 0) : data.length;
+  for (let index = 0; index < total; index++) {
+    const card = hideCards ? { id: "21-hidden-" + index, rank: "", suit: "" } : data[index];
+    const element = hideCards ? createTwentyOneCardBackElement(card) : createDurakCardElement(card);
+    element.classList.add("twentyone-card");
+    element.style.touchAction = "auto";
+    applyTwentyOneHandFan(element, index, total);
+    const image = element.querySelector("img");
+    if (image && !hideCards) image.addEventListener("error", () => buildTwentyOneFallbackFace(element, card), { once: true });
+    container.appendChild(element);
+  }
+}
+function renderTwentyOneRoomBoard(result) {
+  const room = result.room;
+  const game = result.game;
+  $("twentyOneRoomBoardTitle").textContent = "🂡 " + room.name + " · ставка " + Number(room.stake).toLocaleString("ru-RU") + " AC";
+  const dealerCards = $("twentyOneRoomDealerCards");
+  const dealerHand = Array.isArray(game?.dealerHand) ? game.dealerHand : [];
+  const dealerHidden = game?.status !== "finished";
+  renderTwentyOneOnlineCardRow(dealerCards, dealerHand, { hideCards: false });
+  if (dealerHidden && dealerCards.children.length > 1) {
+    const hidden = createTwentyOneCardBackElement({ id: "21-dealer-hidden-card" });
+    hidden.classList.add("twentyone-card");
+    hidden.style.touchAction = "auto";
+    dealerCards.replaceChild(hidden, dealerCards.children[1]);
+  }
+  $("twentyOneRoomDealerScore").textContent = game?.status === "finished"
+    ? "Счёт банкира: " + twentyOneHandScore(dealerHand) + " очков"
+    : "Вторая карта закрыта";
+  const playerContainer = $("twentyOneRoomPlayers");
+  playerContainer.textContent = "";
+  (game?.players || []).forEach(player => {
+    const card = document.createElement("div");
+    card.className = "twentyone-online-player" + (game.status === "playing" && game.currentPlayerIsMe && player.isMe ? " active" : "");
+    const head = document.createElement("div");
+    head.className = "twentyone-online-player-head";
+    const name = document.createElement("b");
+    name.textContent = player.label + (player.isMe ? " · ты" : "");
+    const stateLabel = document.createElement("small");
+    const statusText = { playing:"Ходит", stand:"Остановился", won:"Победа", bust:"Перебор", lost:"Проиграл" };
+    const stateNote = game.status === "finished" && Number(player.payout) > 0
+      ? "Победа · +" + Number(player.payout).toLocaleString("ru-RU") + " AC"
+      : (statusText[player.status] || "В игре");
+    stateLabel.textContent = (player.score == null ? stateNote : stateNote + " · " + player.score + " очк.");
+    head.append(name, stateLabel);
+    const row = document.createElement("div");
+    row.className = "twentyone-online-cards";
+    const canReveal = game.status === "finished" || player.isMe;
+    renderTwentyOneOnlineCardRow(row, player.hand || [], {
+      hideCards: !canReveal,
+      cardCount: Number(player.cardsCount) || 0
+    });
+    card.append(head, row);
+    playerContainer.appendChild(card);
+  });
+  const myPlayer = (game?.players || []).find(player => player.isMe);
+  if (game?.status === "finished") {
+    $("twentyOneRoomStatus").textContent = (game.message || "Раунд завершён.") +
+      (myPlayer && Number(myPlayer.payout) > 0
+        ? "\nТебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC."
+        : "\nВ этом раунде ставка не возвращается.");
+    $("twentyOneRoomActions").style.display = "none";
+    $("twentyOneRoomBackToLobby").style.display = "block";
+  } else {
+    $("twentyOneRoomStatus").textContent = game?.currentPlayerIsMe
+      ? "Твой ход. Выбери «Ещё карту» или «Хватит»."
+      : "Ход игрока: " + (game?.currentPlayerLabel || "ожидание") + ". " + (game?.message || "");
+    $("twentyOneRoomActions").style.display = "grid";
+    $("twentyOneRoomHit").disabled = !game?.currentPlayerIsMe || twentyOneRoomActionBusy;
+    $("twentyOneRoomStand").disabled = !game?.currentPlayerIsMe || twentyOneRoomActionBusy;
+    $("twentyOneRoomBackToLobby").style.display = "none";
+  }
+}
+async function refreshTwentyOneRoomState() {
+  if (!currentTwentyOneRoomId) return;
+  const result = await apiRequest("/api/twentyone/rooms/state", { roomId: currentTwentyOneRoomId });
+  twentyOneRoomSnapshot = result;
+  if (Number.isFinite(Number(result.balance))) {
+    state.balance = Number(result.balance);
+    $("twentyOneBalance").textContent = state.balance.toLocaleString("ru-RU");
+    render();
+  }
+  if (result.room.status === "waiting") {
+    setTwentyOneVisibleView("twentyOneWaitingPanel");
+    renderTwentyOneWaiting(result);
+    if (twentyOneRoomPollTimer === null) {
+      // The timer will be installed by beginTwentyOneRoomPolling below.
+    }
+  } else if (result.room.status === "playing" || result.room.status === "finished") {
+    setTwentyOneVisibleView("twentyOneRoomBoard");
+    if (result.game) renderTwentyOneRoomBoard(result);
+    if (result.room.status === "finished") stopTwentyOneRoomPolling();
+  }
+}
+async function beginTwentyOneRoomPolling() {
+  stopTwentyOneRoomPolling();
+  $("twentyOneLobby").style.display = "none";
+  $("twentyOneCreatePanel").style.display = "none";
+  $("twentyOneRoomsPanel").style.display = "none";
+  $("twentyOneSoloArea").style.display = "none";
+  $("twentyOneWaitingPanel").style.display = "block";
+  $("twentyOneRoomBoard").style.display = "none";
+  try {
+    await refreshTwentyOneRoomState();
+    if (twentyOneRoomSnapshot?.room?.status !== "finished") {
+      twentyOneRoomPollTimer = setInterval(() => {
+        refreshTwentyOneRoomState().catch(error => {
+          $("twentyOneRoomStatus").textContent = error.message || "Нет связи с комнатой. Повторяем подключение…";
+          $("twentyOneWaitingStatus").textContent = error.message || "";
+        });
+      }, 2200);
+    }
+  } catch (error) {
+    $("twentyOneWaitingStatus").textContent = error.message || "Не удалось открыть комнату.";
+  }
+}
+$("twentyOneShowCreate").addEventListener("click", () => {
+  $("twentyOneCreatePanel").style.display = "block";
+  $("twentyOneRoomsPanel").style.display = "none";
+  $("twentyOneCreateStatus").textContent = "";
+});
+$("twentyOneShowRooms").addEventListener("click", async () => {
+  $("twentyOneCreatePanel").style.display = "none";
+  $("twentyOneRoomsPanel").style.display = "block";
+  await loadTwentyOneRooms();
+});
+$("twentyOneRefreshRooms").addEventListener("click", loadTwentyOneRooms);
+$("twentyOneSoloPlay").addEventListener("click", () => {
+  stopTwentyOneRoomPolling();
+  currentTwentyOneRoomId = null;
+  twentyOneRoomSnapshot = null;
+  setTwentyOneVisibleView("twentyOneSoloArea");
+  resetTwentyOneRound();
+});
+$("twentyOneCreateRoom").addEventListener("click", async () => {
+  const button = $("twentyOneCreateRoom");
+  const stake = Number($("twentyOneRoomStake").value);
+  const maxPlayers = Number($("twentyOneRoomPlayers").value);
+  const name = $("twentyOneRoomName").value.trim() || "Комната 21 Очко";
+  if (!Number.isInteger(stake) || stake < 100 || stake > 1000000) {
+    $("twentyOneCreateStatus").textContent = "Ставка должна быть целым числом от 100 до 1 000 000 AC.";
+    return;
+  }
+  button.disabled = true;
+  $("twentyOneCreateStatus").textContent = "Создаём комнату…";
+  try {
+    const result = await apiRequest("/api/twentyone/rooms/create", { name, stake, maxPlayers });
+    currentTwentyOneRoomId = String(result.room.id);
+    await beginTwentyOneRoomPolling();
+  } catch (error) {
+    $("twentyOneCreateStatus").textContent = error.message || "Не удалось создать комнату.";
+  } finally {
+    button.disabled = false;
+  }
+});
+$("twentyOneRoomStart").addEventListener("click", async () => {
+  if (!currentTwentyOneRoomId) return;
+  const button = $("twentyOneRoomStart");
+  button.disabled = true;
+  $("twentyOneWaitingStatus").textContent = "Проверяем балансы и раздаём карты…";
+  try {
+    const result = await apiRequest("/api/twentyone/rooms/start", { roomId: currentTwentyOneRoomId });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    await refreshTwentyOneRoomState();
+  } catch (error) {
+    $("twentyOneWaitingStatus").textContent = error.message || "Не удалось начать раунд.";
+  } finally {
+    button.disabled = false;
+  }
+});
+async function leaveTwentyOneRoom({ quiet = false } = {}) {
+  if (!currentTwentyOneRoomId) {
+    showTwentyOneLobby();
+    return;
+  }
+  const roomId = currentTwentyOneRoomId;
+  try {
+    await apiRequest("/api/twentyone/rooms/leave", { roomId });
+    stopTwentyOneRoomPolling();
+    currentTwentyOneRoomId = null;
+    twentyOneRoomSnapshot = null;
+    showTwentyOneLobby();
+  } catch (error) {
+    if (!quiet) $("twentyOneRoomStatus").textContent = error.message || "Не удалось выйти из комнаты.";
+    throw error;
+  }
+}
+$("twentyOneRoomLeave").addEventListener("click", async () => {
+  try { await leaveTwentyOneRoom(); } catch (_) {}
+});
+$("twentyOneRoomBackToLobby").addEventListener("click", async () => {
+  try { await leaveTwentyOneRoom(); } catch (_) {}
+});
+async function sendTwentyOneRoomAction(action) {
+  if (!currentTwentyOneRoomId || twentyOneRoomActionBusy) return;
+  if (!twentyOneRoomSnapshot?.game?.currentPlayerIsMe) {
+    $("twentyOneRoomStatus").textContent = "Сейчас ход другого игрока.";
+    return;
+  }
+  twentyOneRoomActionBusy = true;
+  $("twentyOneRoomHit").disabled = true;
+  $("twentyOneRoomStand").disabled = true;
+  try {
+    const result = await apiRequest("/api/twentyone/rooms/action", { roomId: currentTwentyOneRoomId, action });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    await refreshTwentyOneRoomState();
+  } catch (error) {
+    $("twentyOneRoomStatus").textContent = error.message || "Не удалось выполнить ход.";
+    await refreshTwentyOneRoomState().catch(() => {});
+  } finally {
+    twentyOneRoomActionBusy = false;
+    if (twentyOneRoomSnapshot?.room?.status === "playing") renderTwentyOneRoomBoard(twentyOneRoomSnapshot);
+  }
+}
+$("twentyOneRoomHit").addEventListener("click", () => sendTwentyOneRoomAction("hit"));
+$("twentyOneRoomStand").addEventListener("click", () => sendTwentyOneRoomAction("stand"));
+
 function openTwentyOneGame() {
   $("twentyOneGame").style.display = "block";
   $("twentyOneGame").classList.add("twentyone-fullscreen");
-  // These areas inherit the global .hidden utility from the shared app template;
-  // explicitly reveal them when the standalone 21 page opens.
   $("twentyOneGame").querySelectorAll(".twentyone-player-area").forEach(area => area.classList.remove("hidden"));
   $("twentyOneGame").querySelectorAll(".twentyone-divider").forEach(divider => divider.classList.remove("hidden"));
   $("twentyOneBalance").textContent = Number(state.balance || 0).toLocaleString("ru-RU");
+  showTwentyOneLobby();
   resetTwentyOneRound();
   if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
     if (typeof tg.BackButton.offClick === "function") tg.BackButton.offClick(closeTwentyOneGame);
@@ -9863,6 +10334,12 @@ function openTwentyOneGame() {
 }
 
 function closeTwentyOneGame() {
+  if (currentTwentyOneRoomId && twentyOneRoomSnapshot?.room?.status === "playing") {
+    $("twentyOneRoomStatus").textContent = "Сначала заверши текущий раунд, затем выйди из комнаты.";
+    return;
+  }
+  if (currentTwentyOneRoomId) leaveTwentyOneRoom({ quiet:true }).catch(() => {});
+  stopTwentyOneRoomPolling();
   $("twentyOneGame").classList.remove("twentyone-fullscreen");
   $("twentyOneGame").style.display = "none";
   if (tg && tg.BackButton) {
