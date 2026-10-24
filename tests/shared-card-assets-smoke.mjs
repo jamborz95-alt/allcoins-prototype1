@@ -217,12 +217,13 @@ try {
       allImageCards: cards.every(card => card.classList.contains("image-card")),
       allUseSharedVersion: images.filter(Boolean).every(img => new URL(img.src).searchParams.get("v") === "20261024-shared-cards-v2"),
       uniqueFiles: new Set(paths).size,
-      paths
+      paths,
+      imageStates: images.filter(Boolean).map(img => ({ path: new URL(img.src).pathname, complete: img.complete, naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }))
     };
   });
   assert.equal(sekaResult.cardCount, 20, "Seka should render the 20 cards with available shared PNG artwork");
   assert.equal(sekaResult.imageCount, 16, "Seka should use PNGs for ranks with artwork and readable fallback faces for four missing 10s");
-  assert.equal(sekaResult.allLoaded, true, "all available Seka card images should load successfully");
+  assert.equal(sekaResult.allLoaded, true, "all available Seka card images should load successfully: " + JSON.stringify(sekaResult.imageStates));
   assert.equal(sekaResult.allImageCards, false, "cards without an uploaded PNG should use the readable fallback face");
   assert.equal(sekaResult.allUseSharedVersion, true, "Seka should use the shared asset cache version");
   assert.equal(sekaResult.uniqueFiles, 16, "the 16 uploaded PNGs should be mapped across the four illustrated ranks and suits");
