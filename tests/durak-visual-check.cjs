@@ -131,6 +131,8 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "clicker-round-logo-report.json"), JSON.stringify(clickerOrbDiagnostics, null, 2));
     assert.equal(clickerOrbDiagnostics.visible, true, "Круглая кнопка кликера должна отображаться");
+    assert.ok(clickerOrbDiagnostics.width >= 209 && clickerOrbDiagnostics.width <= 211,
+      "Кликер на обычном мобильном экране должен быть немного увеличен до 210px: " + JSON.stringify(clickerOrbDiagnostics));
     assert.ok(Math.abs(clickerOrbDiagnostics.width - clickerOrbDiagnostics.height) <= 1,
       "Кнопка кликера должна быть круглой: " + JSON.stringify(clickerOrbDiagnostics));
     assert.match(clickerOrbDiagnostics.borderRadius, /50%/, "Кнопка кликера должна иметь радиус круга");
@@ -140,6 +142,24 @@ const path = require("node:path");
     assert.equal(clickerOrbDiagnostics.documentWidth, clickerOrbDiagnostics.viewportWidth,
       "Круг кликера не должен вызывать горизонтальную прокрутку");
     await page.screenshot({ path: path.join(out, "00-clicker-round-logo-mobile.png"), fullPage: true });
+    await page.setViewportSize({ width: 360, height: 800 });
+    const compactClickerDiagnostics = await page.evaluate(() => {
+      const button = document.getElementById("tapButton");
+      const rect = button?.getBoundingClientRect();
+      return {
+        width: rect?.width ?? null,
+        height: rect?.height ?? null,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth
+      };
+    });
+    assert.ok(compactClickerDiagnostics.width >= 191 && compactClickerDiagnostics.width <= 193 &&
+      Math.abs(compactClickerDiagnostics.width - compactClickerDiagnostics.height) <= 1,
+      "Узкий экран должен показывать круглый кликер размером 192px: " + JSON.stringify(compactClickerDiagnostics));
+    assert.equal(compactClickerDiagnostics.documentWidth, compactClickerDiagnostics.viewportWidth,
+      "Увеличенный кликер не должен вызывать горизонтальную прокрутку на узком экране");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(100);
 
     await page.locator('.nav [data-page="games"]').click();
     await page.waitForTimeout(150);
