@@ -444,6 +444,7 @@
           });
           state.room = data.room;
           state.players = data.players || [];
+          rememberMyId();
           renderWaiting();
           showStage("waiting");
           setStatus("Комната создана. Ожидаем игроков.");
@@ -463,6 +464,7 @@
           const data = await api("/rooms/join", { roomId: String(roomId) });
           state.room = data.room;
           state.players = data.players || [];
+          rememberMyId();
           renderWaiting();
           showStage("waiting");
         } catch (error) {
@@ -532,6 +534,7 @@
           const data = await api("/rooms/state", { roomId: state.room.id });
           state.room = data.room;
           state.players = data.players || [];
+          rememberMyId();
           if (state.room.status === "playing") {
             showStage("game");
             await refreshGame(false);
