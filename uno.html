@@ -125,7 +125,8 @@
     .hand-zone{flex:0 0 auto;width:100%;max-width:900px;margin:0 auto}
     .hand-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#d4e8dc;font-size:11px;font-weight:900;padding:3px 3px}
     .uno-hand{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;overscroll-behavior-x:contain;padding:7px 3px 12px;min-height:96px;scrollbar-width:thin;scrollbar-color:#61917f transparent}
-    .uno-hand .uno-card{width:57px;height:84px;border-radius:8px;border-width:1.5px}
+    .uno-hand .uno-card{width:57px;height:84px;border-radius:8px;border-width:1.5px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+    .uno-hand .uno-card:active{cursor:grabbing}
     .uno-hand .card-center{font-size:35px}
     .uno-hand .card-center.action{font-size:27px}
     .uno-hand .card-center.word{font-size:10px}
@@ -668,9 +669,279 @@
         }
       }
 
+
+      // Перетаскивание карт в УНО работает так же, как в «Дурак Онлайн»:
+      // карта отделяется от руки, следует за пальцем и играет только при отпускании на столе.
+      function copyUnoCardStyles(source, target) {
+        const computed = getComputedStyle(source);
+        for (let i = 0; i < computed.length; i++) {
+          const property = computed[i];
+          target.style.setProperty(property, computed.getPropertyValue(property));
+        }
+        const sourceChildren = source.children;
+        const targetChildren = target.children;
+        for (let i = 0; i < Math.min(sourceChildren.length, targetChildren.length); i++) {
+          copyUnoCardStyles(sourceChildren[i], targetChildren[i]);
+        }
+      }
+
+      function unoPointInside(element, x, y) {
+        if (!element) return false;
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 &&
+          x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+      }
+
+      function animateUnoDragCard(flyer, left, top, width, height, duration) {
+        if (!flyer) return Promise.resolve();
+        const startLeft = parseFloat(flyer.style.left) || 0;
+        const startTop = parseFloat(flyer.style.top) || 0;
+        const startWidth = parseFloat(flyer.style.width) || flyer.getBoundingClientRect().width;
+        const startHeight = parseFloat(flyer.style.height) || flyer.getBoundingClientRect().height;
+        const startTransform = flyer.style.transform || "none";
+        if (typeof flyer.animate === "function") {
+          try {
+            const animation = flyer.animate([
+              { left: startLeft + "px", top: startTop + "px", width: startWidth + "px", height: startHeight + "px", transform: startTransform },
+              { left: left + "px", top: top + "px", width: width + "px", height: height + "px", transform: "rotate(0deg) scale(1)" }
+            ], { duration, easing: "cubic-bezier(.18,.72,.22,1)", fill: "forwards" });
+            return animation.finished.catch(function () {});
+          } catch (_) {}
+        }
+        return new Promise(resolve => {
+          flyer.style.transition = "left " + duration + "ms cubic-bezier(.18,.72,.22,1),top " + duration + "ms cubic-bezier(.18,.72,.22,1),width " + duration + "ms cubic-bezier(.18,.72,.22,1),height " + duration + "ms cubic-bezier(.18,.72,.22,1),transform " + duration + "ms cubic-bezier(.18,.72,.22,1)";
+          requestAnimationFrame(() => {
+            flyer.style.left = left + "px";
+            flyer.style.top = top + "px";
+            flyer.style.width = width + "px";
+            flyer.style.height = height + "px";
+            flyer.style.transform = "rotate(0deg) scale(1)";
+          });
+          window.setTimeout(resolve, duration + 35);
+        });
+      }
+
+      function suppressUnoCardClick(element) {
+        const blockClick = function (event) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          element.removeEventListener("click", blockClick, true);
+        };
+        element.addEventListener("click", blockClick, true);
+        window.setTimeout(() => element.removeEventListener("click", blockClick, true), 800);
+      }
+
+      function attachUnoCardDrag(element, card, canPlay) {
+        if (!canPlay) return;
+        element.style.touchAction = "none";
+
+        element.addEventListener("pointerdown", function (downEvent) {
+          if ((downEvent.pointerType === "mouse" && downEvent.button !== 0) ||
+              state.busy || state.cardDragging || !canPlay) return;
+
+          downEvent.preventDefault();
+          const pointerId = downEvent.pointerId;
+          const startX = downEvent.clientX;
+          const startY = downEvent.clientY;
+          const originRect = element.getBoundingClientRect();
+          const offsetX = startX - originRect.left;
+          const offsetY = startY - originRect.top;
+          let dragging = false;
+          let flyer = null;
+          let rafId = 0;
+          let latestX = startX;
+          let latestY = startY;
+          let lastX = startX;
+          let tilt = 0;
+          const originalOpacity = element.style.opacity;
+          const originalTransition = element.style.transition;
+
+          state.cardDragging = true;
+          try { element.setPointerCapture(pointerId); } catch (_) {}
+
+          function removePointerListeners() {
+            if (rafId) {
+              cancelAnimationFrame(rafId);
+              rafId = 0;
+            }
+            document.removeEventListener("pointermove", moveCard);
+            document.removeEventListener("pointerup", releaseCard);
+            document.removeEventListener("pointercancel", cancelCard);
+            element.removeEventListener("lostpointercapture", lostPointer);
+          }
+
+          function restoreSource() {
+            if (!element.isConnected) return;
+            element.style.opacity = originalOpacity;
+            element.style.transition = originalTransition;
+          }
+
+          function makeFlyer() {
+            flyer = element.cloneNode(true);
+            flyer.removeAttribute("id");
+            flyer.disabled = true;
+            copyUnoCardStyles(element, flyer);
+            flyer.classList.add("uno-drag-flyer");
+            Object.assign(flyer.style, {
+              position: "fixed",
+              left: originRect.left + "px",
+              top: originRect.top + "px",
+              width: originRect.width + "px",
+              height: originRect.height + "px",
+              minWidth: originRect.width + "px",
+              minHeight: originRect.height + "px",
+              maxWidth: originRect.width + "px",
+              maxHeight: originRect.height + "px",
+              boxSizing: "border-box",
+              margin: "0",
+              padding: "0",
+              zIndex: "2147483647",
+              pointerEvents: "none",
+              transition: "none",
+              animation: "none",
+              transform: "rotate(0deg) scale(1.025)",
+              transformOrigin: "center center",
+              willChange: "left,top,width,height,transform",
+              opacity: "1"
+            });
+            flyer.style.setProperty("position", "fixed", "important");
+            flyer.style.setProperty("z-index", "2147483647", "important");
+            flyer.style.setProperty("pointer-events", "none", "important");
+            flyer.style.setProperty("transition", "none", "important");
+            flyer.style.setProperty("animation", "none", "important");
+            document.body.appendChild(flyer);
+            element.style.transition = "none";
+            element.style.opacity = "0.12";
+          }
+
+          function moveCard(moveEvent) {
+            if (moveEvent.pointerId !== pointerId) return;
+            moveEvent.preventDefault();
+            latestX = moveEvent.clientX;
+            latestY = moveEvent.clientY;
+            if (!dragging && Math.hypot(latestX - startX, latestY - startY) > 6) {
+              dragging = true;
+              makeFlyer();
+            }
+            if (!dragging || !flyer || rafId) return;
+            tilt = Math.max(-5, Math.min(5, (latestX - lastX) * 0.22));
+            lastX = latestX;
+            rafId = requestAnimationFrame(() => {
+              rafId = 0;
+              if (!flyer || !flyer.isConnected) return;
+              flyer.style.left = (latestX - offsetX) + "px";
+              flyer.style.top = (latestY - offsetY) + "px";
+              flyer.style.transform = "rotate(" + tilt + "deg) scale(1.025)";
+            });
+          }
+
+          async function releaseCard(upEvent) {
+            if (upEvent.pointerId !== pointerId) return;
+            latestX = upEvent.clientX;
+            latestY = upEvent.clientY;
+            removePointerListeners();
+            suppressUnoCardClick(element);
+
+            if (!dragging) {
+              state.cardDragging = false;
+              restoreSource();
+              const latestGame = state.game;
+              const stillPlayable = latestGame &&
+                latestGame.players.some(player => player.isYou && player.isCurrent) &&
+                latestGame.status === "playing" &&
+                playableOnClient(card, latestGame);
+              if (stillPlayable) await playCard(card);
+              else if (state.game) renderGame();
+              return;
+            }
+
+            if (rafId) {
+              cancelAnimationFrame(rafId);
+              rafId = 0;
+            }
+            if (flyer) {
+              flyer.style.left = (latestX - offsetX) + "px";
+              flyer.style.top = (latestY - offsetY) + "px";
+              flyer.style.transform = "rotate(" + tilt + "deg) scale(1.025)";
+            }
+
+            const latestGame = state.game;
+            const stillPlayable = latestGame &&
+              latestGame.players.some(player => player.isYou && player.isCurrent) &&
+              latestGame.status === "playing" &&
+              playableOnClient(card, latestGame);
+            const tableZone = document.querySelector(".table-zone");
+            const felt = document.querySelector(".table-felt");
+            const discardHost = $("discardPile");
+            const overTable = unoPointInside(tableZone, latestX, latestY) ||
+              unoPointInside(felt, latestX, latestY) ||
+              unoPointInside(discardHost, latestX, latestY);
+
+            if (!stillPlayable || !overTable || !flyer) {
+              if (flyer) {
+                await animateUnoDragCard(flyer, originRect.left, originRect.top, originRect.width, originRect.height, 165);
+                flyer.remove();
+              }
+              state.cardDragging = false;
+              restoreSource();
+              if (state.game) renderGame();
+              return;
+            }
+
+            // Отпустили на столе: плавно доводим карту до стопки сброса.
+            const targetCard = discardHost && discardHost.querySelector(".uno-card");
+            const targetRect = targetCard ? targetCard.getBoundingClientRect() :
+              (discardHost ? discardHost.getBoundingClientRect() : originRect);
+            const endWidth = targetRect.width || originRect.width;
+            const endHeight = targetRect.height || originRect.height;
+            const endLeft = targetRect.left + (targetRect.width - endWidth) / 2;
+            const endTop = targetRect.top + (targetRect.height - endHeight) / 2;
+
+            await animateUnoDragCard(flyer, endLeft, endTop, endWidth, endHeight, 175);
+            if (flyer) flyer.remove();
+
+            // Не показываем карту снова в руке, пока сервер выбирает цвет/принимает ход.
+            element.style.opacity = "0";
+            state.cardDragging = false;
+            state.cardDropPending = true;
+            try {
+              await playCard(card);
+            } finally {
+              state.cardDropPending = false;
+              if (element.isConnected) restoreSource();
+              if (state.game && state.stage === "game") renderGame();
+            }
+          }
+
+          async function cancelCard(cancelEvent) {
+            if (cancelEvent.pointerId !== pointerId) return;
+            removePointerListeners();
+            if (dragging && flyer) {
+              await animateUnoDragCard(flyer, originRect.left, originRect.top, originRect.width, originRect.height, 150);
+              flyer.remove();
+            } else if (flyer) flyer.remove();
+            state.cardDragging = false;
+            restoreSource();
+            if (state.game) renderGame();
+          }
+
+          function lostPointer(event) {
+            if (event.pointerId !== pointerId) return;
+            // pointerup удаляет этот обработчик первым, так что сюда попадаем
+            // только при неожиданной потере касания/захвата.
+            void cancelCard(event);
+          }
+
+          document.addEventListener("pointermove", moveCard, { passive: false });
+          document.addEventListener("pointerup", releaseCard);
+          document.addEventListener("pointercancel", cancelCard);
+          element.addEventListener("lostpointercapture", lostPointer, { once: true });
+        });
+      }
+
       function renderGame() {
         const game = state.game;
-        if (!game) return;
+        if (!game || state.cardDragging || state.cardDropPending) return;
         $("gameRoomLabel").textContent = (state.room ? state.room.name : "Комната УНО") + " · #" + (state.room ? state.room.id : "");
         $("bankCaption").textContent = game.mode === "bots" ? "ТРЕНИРОВКА" : "БАНК КОМНАТЫ";
         $("bankValue").textContent = game.mode === "bots" ? "без ставки" : formatAmount(game.pot || game.stake) + " AC";
@@ -700,7 +971,10 @@
           const canPlay = turn && playableOnClient(card, game);
           const element = cardElement(card, { interactive: true, playable: turn ? canPlay : false });
           element.disabled = !canPlay;
-          element.addEventListener("click", function () { if (canPlay) playCard(card); });
+          attachUnoCardDrag(element, card, canPlay);
+          element.addEventListener("click", function (event) {
+            if (canPlay) playCard(card);
+          });
           handHost.appendChild(element);
         });
         $("drawPileBtn").disabled = !turn || game.status !== "playing" || Boolean(game.drawnCardId);
