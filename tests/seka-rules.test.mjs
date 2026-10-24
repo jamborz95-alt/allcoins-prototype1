@@ -114,7 +114,8 @@ test("the main Games tab links to a separate Seka page with all five stake range
   assert.match(page, /Новая ставка всего \(AC\)/);
   assert.match(page, /function getRaiseBounds\(state\)/);
   assert.match(page, /function submitRaise\(\)/);
-  assert.match(page, /Не трогаем поле, пока человек печатает/);
+  assert.match(page, /type="text" inputmode="numeric" pattern="\[0-9\]\*"/);
+  assert.match(page, /Не меняем value вообще при фоновом обновлении состояния комнаты/);
   assert.match(page, /sendAction\("raise", amount - bounds\.currentBet\)/);
   assert.match(page, /\/rooms\/add-bot/);
   assert.match(page, /id="addBotButton"/);
