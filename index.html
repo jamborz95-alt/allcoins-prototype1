@@ -2340,11 +2340,159 @@
   }
 </style>
 
+<style id="allcoins-clicker-brand-and-tasks">
+  /* ALLCOINS clicker — polished wordmark */
+  #allcoinsBrand.brand-lockup {
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    min-width:0 !important;
+    color:#fff !important;
+    font-size:inherit !important;
+    font-weight:inherit !important;
+    padding:0 !important;
+  }
+  #allcoinsBrand .brand-mark {
+    display:block !important;
+    flex:0 0 50px !important;
+    width:50px !important;
+    height:50px !important;
+    filter:drop-shadow(0 5px 9px rgba(0,0,0,.3));
+  }
+  #allcoinsBrand .brand-mark svg { display:block !important; width:100% !important; height:100% !important; }
+  #allcoinsBrand .brand-type { display:flex !important; flex-direction:column !important; gap:3px !important; min-width:0 !important; }
+  #allcoinsBrand .brand-type strong {
+    color:#f2d58d !important;
+    font-size:24px !important;
+    font-weight:950 !important;
+    letter-spacing:1.4px !important;
+    line-height:1 !important;
+    text-shadow:0 2px 10px rgba(228,196,117,.16);
+  }
+  #allcoinsBrand .brand-type small {
+    color:#8cf7c8 !important;
+    font-size:8px !important;
+    font-weight:800 !important;
+    letter-spacing:1.6px !important;
+    line-height:1.2 !important;
+    white-space:nowrap !important;
+  }
+  header:has(#allcoinsBrand) {
+    padding:4px 0 12px !important;
+    border-bottom:1px solid rgba(100,245,181,.12) !important;
+    margin-bottom:18px !important;
+  }
+  #loginStatus {
+    flex:0 0 auto;
+    border:1px solid rgba(103,245,181,.2) !important;
+    background:linear-gradient(135deg,#1c3542,#17243a) !important;
+    color:#9bf8ce !important;
+    font-weight:800 !important;
+    letter-spacing:.5px;
+  }
+
+  /* Tasks page and premium-looking mission cards */
+  #tasks { padding-bottom:16px; }
+  #tasks .task-intro {
+    display:flex; align-items:center; gap:13px;
+    padding:15px; margin-bottom:12px;
+    border:1px solid rgba(103,245,181,.22); border-radius:18px;
+    background:radial-gradient(circle at 0 0,rgba(103,245,181,.13),transparent 58%),linear-gradient(135deg,#172b3b,#151e33);
+  }
+  #tasks .task-intro-mark {
+    display:grid; place-items:center; flex:0 0 46px; width:46px; height:46px;
+    border-radius:15px; color:#f4d88f; font-size:27px;
+    background:linear-gradient(145deg,#283f45,#132535);
+    border:1px solid rgba(228,196,117,.55);
+    box-shadow:inset 0 1px 0 #ffffff1c,0 4px 12px #0003;
+  }
+  #tasks .task-intro strong { display:block; font-size:15px; color:#f7f8fc; }
+  #tasks .task-intro p { margin:5px 0 0; font-size:12px; line-height:1.45; color:#a6b4cc; }
+  #tasks .task-summary {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:13px 15px; margin-bottom:12px; border-radius:15px;
+    border:1px solid #303e55; background:#111b2d;
+  }
+  #tasks .task-summary div:first-child { display:flex; flex-direction:column; gap:4px; }
+  #tasks .task-summary strong { color:#8cf7c8; font-size:20px; letter-spacing:.3px; }
+  #tasks .task-summary-icon { font-size:26px; }
+  #tasks .clicker-tasks-list { display:grid; gap:10px; }
+  #tasks .task-item {
+    display:grid; grid-template-columns:46px minmax(0,1fr); gap:11px;
+    padding:13px; border:1px solid #2c3b54; border-radius:16px;
+    background:linear-gradient(145deg,#18243a,#111a2b);
+    box-shadow:0 5px 13px rgba(0,0,0,.12);
+  }
+  #tasks .task-icon {
+    display:grid; place-items:center; width:44px; height:44px; border-radius:14px;
+    background:linear-gradient(145deg,#243e48,#18273a);
+    border:1px solid rgba(228,196,117,.33); font-size:22px;
+  }
+  #tasks .task-content { min-width:0; }
+  #tasks .task-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  #tasks .task-title { font-size:13px; line-height:1.35; font-weight:900; color:#f6f7fb; }
+  #tasks .task-reward { flex:0 0 auto; color:#f0d58a; font-size:11px; font-weight:900; white-space:nowrap; }
+  #tasks .task-description { margin:5px 0 8px; color:#a6b4cc; font-size:11px; line-height:1.4; }
+  #tasks .task-progress-row { display:flex; justify-content:space-between; gap:8px; color:#98a9c2; font-size:10px; margin-bottom:5px; }
+  #tasks .task-progress-track { width:100%; height:5px; overflow:hidden; border-radius:10px; background:#303d52; }
+  #tasks .task-progress-fill { height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#47dca1,#c1ff8a); transition:width .2s ease; }
+  #tasks .task-item-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; }
+  #tasks .task-state { font-size:10px; font-weight:800; color:#8292aa; }
+  #tasks .task-state.is-ready { color:#8cf7c8; }
+  #tasks .task-claim {
+    min-height:36px !important; padding:8px 12px !important; border-radius:10px !important;
+    font-size:11px !important; background:#26344e !important; color:#fff !important;
+    border:1px solid #3a4a68 !important;
+  }
+  #tasks .task-claim.is-ready { color:#071b17 !important; border:0 !important; background:linear-gradient(110deg,#b4ff9b,#67f5b5) !important; }
+  #tasks .task-claim.is-claimed { background:#173d36 !important; color:#8cf7c8 !important; border-color:#2c6858 !important; }
+  #tasks .task-claim:disabled { opacity:.5; }
+  #tasks .task-disclaimer { margin-top:12px; }
+  #tasks .status { color:#8cf7c8; }
+  .nav-inner { gap:0 !important; }
+  .nav button { min-width:0 !important; flex:1 1 0 !important; padding-left:1px !important; padding-right:1px !important; font-size:10px !important; white-space:nowrap; }
+  .nav button span { font-size:19px !important; margin-bottom:3px !important; }
+  @media (max-width:360px) {
+    #allcoinsBrand.brand-lockup { gap:7px !important; }
+    #allcoinsBrand .brand-mark { flex-basis:43px !important; width:43px !important; height:43px !important; }
+    #allcoinsBrand .brand-type strong { font-size:20px !important; letter-spacing:1px !important; }
+    #allcoinsBrand .brand-type small { font-size:7px !important; letter-spacing:1px !important; }
+    #loginStatus { padding:6px 8px !important; font-size:10px !important; }
+    #tasks .task-item { grid-template-columns:40px minmax(0,1fr); gap:9px; padding:11px; }
+    #tasks .task-icon { width:39px; height:39px; font-size:19px; }
+    #tasks .task-reward { font-size:10px; }
+    .nav button { font-size:9px !important; }
+    .nav button span { font-size:18px !important; }
+  }
+</style>
+
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="logo">◆ ALLCOINS</div>
+    <div class="logo brand-lockup" id="allcoinsBrand" aria-label="ALLCOINS кликер">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 56 56" focusable="false">
+          <defs>
+            <linearGradient id="allcoinsLogoGold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff0b2"/>
+              <stop offset=".5" stop-color="#e5bd61"/>
+              <stop offset="1" stop-color="#a57429"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="52" height="52" rx="17" fill="#102331" stroke="#315f5a" stroke-width="1.5"/>
+          <circle cx="28" cy="28" r="19.5" fill="#0c1b29" stroke="url(#allcoinsLogoGold)" stroke-width="1.6"/>
+          <circle cx="28" cy="28" r="15.5" fill="none" stroke="#67f5b5" stroke-opacity=".65" stroke-width=".9"/>
+          <path d="M15.5 36.5 27.8 14.5 40.5 36.5 M20.5 28.5 H35.4" fill="none" stroke="url(#allcoinsLogoGold)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="28" cy="28.5" r="2.2" fill="#67f5b5"/>
+          <path d="M38.5 12.5 40 9.5 41.5 12.5 44.5 14 41.5 15.5 40 18.5 38.5 15.5 35.5 14Z" fill="#67f5b5"/>
+        </svg>
+      </span>
+      <span class="brand-type">
+        <strong>ALLCOINS</strong>
+        <small>CLICKER · PLAY · EARN</small>
+      </span>
+    </div>
     <div class="badge" id="loginStatus">ДЕМО</div>
   </header>
 
@@ -4066,12 +4214,31 @@
   </div><!-- #twentyOneSoloArea -->
 </div>
 
+  <section id="tasks" class="hidden">
+    <div class="section-title">🎯 Задания</div>
+    <div class="task-intro">
+      <div class="task-intro-mark" aria-hidden="true">✦</div>
+      <div>
+        <strong>Твои цели ALLCOINS</strong>
+        <p>Выполняй задания, открывай награды и развивай свой баланс.</p>
+      </div>
+    </div>
+    <div class="task-summary">
+      <div><span class="muted">Выполнено заданий</span><strong id="clickerTaskSummary">0 / 4</strong></div>
+      <div class="task-summary-icon" aria-hidden="true">🏆</div>
+    </div>
+    <div id="clickerTasksList" class="clicker-tasks-list"></div>
+    <div class="notice task-disclaimer">Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.</div>
+    <div class="status" id="clickerTaskStatus" aria-live="polite"></div>
+  </section>
+
 <nav class="nav">
   <div class="nav-inner">
     <button class="active" data-page="home"><span>🏠</span>Главная</button>
     <button data-page="games"><span>🎮</span>Игры</button>
     <button data-page="withdraw"><span>💳</span>Вывод</button>
     <button data-page="profile"><span>👤</span>Профиль</button>
+    <button data-page="tasks"><span>🎯</span>Задание</button>
   </div>
 </nav>
 
@@ -4292,9 +4459,132 @@ try {
 
 const $ = id => document.getElementById(id);
 
+// Состояние тестовых заданий кликера хранится отдельно, чтобы прогресс не исчезал.
+const CLICKER_TASKS_STORAGE_KEY = "allcoinsClickerTasksV1";
+function loadClickerTaskState() {
+  const defaults = { taps: 0, restoredEnergy: false, dailyBonus: false, claimed: {} };
+  try {
+    const saved = JSON.parse(localStorage.getItem(CLICKER_TASKS_STORAGE_KEY) || "null");
+    if (!saved || typeof saved !== "object") return defaults;
+    return {
+      taps: Math.max(0, Math.floor(Number(saved.taps) || 0)),
+      restoredEnergy: saved.restoredEnergy === true,
+      dailyBonus: saved.dailyBonus === true,
+      claimed: saved.claimed && typeof saved.claimed === "object" ? saved.claimed : {}
+    };
+  } catch (_) {
+    return defaults;
+  }
+}
+const clickerTaskState = loadClickerTaskState();
+const clickerTaskDefinitions = [
+  { id:"tap10", icon:"👆", title:"Первый разгон", description:"Нажми кнопку TAP 10 раз.", reward:250, goal:10, progress:() => Math.min(clickerTaskState.taps,10), done:() => clickerTaskState.taps >= 10 },
+  { id:"tap25", icon:"⚡", title:"Энергия действия", description:"Соверши 25 нажатий по кнопке TAP.", reward:500, goal:25, progress:() => Math.min(clickerTaskState.taps,25), done:() => clickerTaskState.taps >= 25 },
+  { id:"restore", icon:"🔋", title:"Пополнить энергию", description:"Восстанови энергию после её расходования.", reward:200, goal:1, progress:() => clickerTaskState.restoredEnergy ? 1 : 0, done:() => clickerTaskState.restoredEnergy },
+  { id:"daily", icon:"🎁", title:"Бонус дня", description:"Получи ежедневный бонус на главной странице.", reward:300, goal:1, progress:() => clickerTaskState.dailyBonus ? 1 : 0, done:() => clickerTaskState.dailyBonus }
+];
+function saveClickerTaskState() {
+  try { localStorage.setItem(CLICKER_TASKS_STORAGE_KEY, JSON.stringify(clickerTaskState)); } catch (_) {}
+}
+function renderClickerTasks() {
+  const root = $("clickerTasksList");
+  if (!root) return;
+  root.textContent = "";
+  let claimedCount = 0;
+  clickerTaskDefinitions.forEach(task => {
+    const claimed = clickerTaskState.claimed[task.id] === true;
+    const progress = Math.max(0, Math.min(task.goal, Number(task.progress()) || 0));
+    const completed = task.done();
+    if (claimed) claimedCount++;
+    const item = document.createElement("article");
+    item.className = "task-item";
+    const icon = document.createElement("div");
+    icon.className = "task-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = task.icon;
+    const content = document.createElement("div");
+    content.className = "task-content";
+    const head = document.createElement("div");
+    head.className = "task-head";
+    const title = document.createElement("div");
+    title.className = "task-title";
+    title.textContent = task.title;
+    const reward = document.createElement("div");
+    reward.className = "task-reward";
+    reward.textContent = "+" + task.reward.toLocaleString("ru-RU") + " AC";
+    head.append(title, reward);
+    const description = document.createElement("p");
+    description.className = "task-description";
+    description.textContent = task.description;
+    const progressRow = document.createElement("div");
+    progressRow.className = "task-progress-row";
+    const progressLabel = document.createElement("span");
+    progressLabel.textContent = "Прогресс";
+    const progressText = document.createElement("span");
+    progressText.textContent = progress + " / " + task.goal;
+    progressRow.append(progressLabel, progressText);
+    const track = document.createElement("div");
+    track.className = "task-progress-track";
+    track.setAttribute("role", "progressbar");
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", String(task.goal));
+    track.setAttribute("aria-valuenow", String(progress));
+    const fill = document.createElement("div");
+    fill.className = "task-progress-fill";
+    fill.style.width = Math.round((progress / task.goal) * 100) + "%";
+    track.appendChild(fill);
+    const bottom = document.createElement("div");
+    bottom.className = "task-item-bottom";
+    const stateLabel = document.createElement("span");
+    stateLabel.className = "task-state" + (claimed ? " is-ready" : completed ? " is-ready" : "");
+    stateLabel.textContent = claimed ? "НАГРАДА ПОЛУЧЕНА" : completed ? "ГОТОВО К ПОЛУЧЕНИЮ" : "В ПРОЦЕССЕ";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "task-claim" + (claimed ? " is-claimed" : completed ? " is-ready" : "");
+    button.dataset.claimTask = task.id;
+    button.textContent = claimed ? "✓ Получено" : completed ? "Забрать" : "Выполняй";
+    button.disabled = claimed || !completed;
+    bottom.append(stateLabel, button);
+    content.append(head, description, progressRow, track, bottom);
+    item.append(icon, content);
+    root.appendChild(item);
+  });
+  const summary = $("clickerTaskSummary");
+  if (summary) summary.textContent = claimedCount + " / " + clickerTaskDefinitions.length;
+  root.onclick = event => {
+    const button = event.target.closest("[data-claim-task]");
+    if (!button || button.disabled) return;
+    const task = clickerTaskDefinitions.find(item => item.id === button.dataset.claimTask);
+    if (!task || !task.done() || clickerTaskState.claimed[task.id]) return;
+    clickerTaskState.claimed[task.id] = true;
+    // AC-награды здесь являются локальными демонстрационными начислениями.
+    state.balance += task.reward;
+    saveClickerTaskState();
+    saveGame();
+    render();
+    renderClickerTasks();
+    showStatus("clickerTaskStatus", "Получено +" + task.reward.toLocaleString("ru-RU") + " AC за задание «" + task.title + "».");
+  };
+}
+function recordClickerTap() {
+  clickerTaskState.taps += 1;
+  saveClickerTaskState();
+  renderClickerTasks();
+}
+function markClickerEnergyRestored() {
+  clickerTaskState.restoredEnergy = true;
+  saveClickerTaskState();
+  renderClickerTasks();
+}
+function markClickerDailyBonusReceived() {
+  clickerTaskState.dailyBonus = true;
+  saveClickerTaskState();
+  renderClickerTasks();
+}
+
 // Переключение главных разделов ALLCOINS (работает и в демо-режиме).
 function switchAllcoinsPage(pageName) {
-  const validPages = ["home", "games", "withdraw", "profile"];
+  const validPages = ["home", "games", "withdraw", "profile", "tasks"];
   if (!validPages.includes(pageName)) return;
 
   validPages.forEach((name) => {
@@ -4307,6 +4597,8 @@ function switchAllcoinsPage(pageName) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-current", active ? "page" : "false");
   });
+
+  if (pageName === "tasks") renderClickerTasks();
 
   try {
     if (typeof tg !== "undefined" && tg && typeof tg.HapticFeedback?.selectionChanged === "function") {
@@ -8267,6 +8559,7 @@ $("tapButton").onclick = async () => {
   if (!state.user) {
     state.energy -= 1;
     state.balance += 100;
+    recordClickerTap();
     showStatus("homeStatus", "+100 AC · Демо-режим");
     render();
     return;
@@ -8287,6 +8580,7 @@ $("tapButton").onclick = async () => {
     if (result.ok && result.player) {
       state.balance = Number(result.player.balance);
       state.energy = Number(result.player.energy);
+      recordClickerTap();
       showStatus("homeStatus", "+100 AC");
     } else {
       state.balance = oldBalance;
@@ -8313,6 +8607,7 @@ $("restoreButton").onclick = async () => {
   // Это не выдаёт реальные награды и нужно для проверки прототипа.
   if (!state.user) {
     state.energy = 100;
+    markClickerEnergyRestored();
     showStatus("homeStatus", "Энергия восстановлена · Демо-режим");
     render();
     return;
@@ -8345,6 +8640,7 @@ $("restoreButton").onclick = async () => {
         state.balance = Number(result.player.balance);
       }
 
+      markClickerEnergyRestored();
       render();
       alert("Энергия восстановлена!");
     } else {
@@ -8374,6 +8670,7 @@ $("dailyButton").onclick = async () => {
     }
 
     if (result.ok) {
+      markClickerDailyBonusReceived();
       showStatus("homeStatus", "Ежедневный бонус: +500 AC!");
     } else {
       showStatus(
