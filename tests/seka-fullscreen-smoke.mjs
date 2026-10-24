@@ -138,7 +138,7 @@ try {
     "the actual game table should fill the fullscreen layout");
   assert.equal(await page.locator("#myHand .playing-card").count(), 3,
     "all three cards in the player's hand should remain visible in fullscreen");
-  assert.equal(await page.locator("#myHandScore").textContent(), "24 очков",
+  assert.equal(await page.locator("#myHandScore").textContent(), "24 очка",
     "the player should see their own numeric combination score before showdown");
   assert.equal(await page.locator("#myHandType").textContent(), "Одна масть",
     "the player should see the type of their own combination before showdown");
