@@ -142,6 +142,30 @@ try {
   assert.equal(await page.locator('#twentyOneStakeFilters [data-stake-filter="500000-1000000"]').getAttribute("aria-pressed"),
     "true", "21 Ochko stake range filter should become active");
   await page.locator('#twentyOneStakeFilters [data-stake-filter="all"]').click();
+  await page.evaluate(() => {
+    window.renderTwentyOneRoomBoard({
+      room: { id:"test-room", name:"Комната теста", stake:500, playersCount:3, maxPlayers:5, status:"playing" },
+      game: {
+        status:"playing", stake:500,
+        dealerHand:[{id:"dealer-a",rank:"8",suit:"♠"},{id:"dealer-b",rank:"K",suit:"♥"}],
+        players:[
+          {label:"Тестовый игрок",isMe:true,status:"playing",hand:[{id:"own-a",rank:"6",suit:"♣"},{id:"own-b",rank:"4",suit:"♥"}],score:10,cardsCount:2,payout:0},
+          {label:"Соперник 2",isMe:false,status:"playing",hand:[],score:14,cardsCount:2,payout:0},
+          {label:"Соперник 3",isMe:false,status:"stand",hand:[],score:18,cardsCount:3,payout:0}
+        ],
+        currentPlayerLabel:"Соперник 2",currentPlayerIsMe:false,message:"Ход соперника"
+      }
+    });
+  });
+  assert.match(await page.locator("#twentyOneRoomPlayerCount").innerText(), /3 из 5/,
+    "online 21 board should show the number of players in the room");
+  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(1).innerText(), /14 очков/,
+    "the second player score should be visible during a round");
+  assert.match(await page.locator("#twentyOneRoomPlayers .twentyone-online-player").nth(2).innerText(), /18 очков/,
+    "the third player score should be visible during a round");
+  assert.equal(await page.locator("#twentyOneRoomPlayers .twentyone-online-player:nth-child(2) .twentyone-card-face-down").count(), 2,
+    "opponents' cards should stay face down while their score is visible");
+
   await page.locator("#twentyOneSoloPlay").click();
   assert.equal(await page.locator("#twentyOneGame").evaluate((el) => el.classList.contains("twentyone-fullscreen")),
     true, "21 Ochko should open as a separate full-screen page");
