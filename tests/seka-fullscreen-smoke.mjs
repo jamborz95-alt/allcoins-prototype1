@@ -175,12 +175,21 @@ try {
   assert.match(await page.locator('label[for="raiseAmount"]').textContent(), /Новая ставка/,
     "the betting field should ask for the final bet amount, not an increment");
   await page.locator("#raiseAmount").fill("");
+  // Android's numeric keyboard can briefly drop focus while the player is
+  // clearing the field. Even an empty, blurred field must remain empty on poll.
+  await page.locator("#actionHint").click();
+  await page.waitForTimeout(1900);
+  assert.equal(await page.locator("#raiseAmount").inputValue(), "",
+    "polling must not restore a deleted number while the field is empty");
   await page.locator("#raiseAmount").fill("1000");
-  // The room is polled every 1.8 seconds; a refresh must not overwrite an amount
-  // that is being typed into the focused input.
+  // The room is polled every 1.8 seconds; a refresh must not overwrite a custom bet.
   await page.waitForTimeout(1900);
   assert.equal(await page.locator("#raiseAmount").inputValue(), "1000",
     "polling must preserve a custom bet while the player edits it");
+  await page.locator("#actionHint").click();
+  await page.waitForTimeout(1900);
+  assert.equal(await page.locator("#raiseAmount").inputValue(), "1000",
+    "polling must not overwrite the custom value after focus moves away");
   await page.locator("#raiseButton").click();
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent === "");
   assert.equal(lastRaiseAmount, 900,
