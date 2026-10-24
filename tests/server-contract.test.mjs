@@ -20,10 +20,24 @@ test("Durak room creation validates Telegram identity, players, and stake", () =
   assert.match(body, /max_players/);
   assert.match(body, /stake/);
   assert.match(body, /\[24, 36, 52\]\.includes\(deck\)/);
-  assert.match(body, /const maxPlayersForDeck = deck === 24 \? 3 : deck === 36 \? 5 : 6/);
+  assert.match(body, /const maxPlayersForDeck = deck === 24 \? 3 : 5/);
   assert.match(body, /С колодой на 24 карты можно играть максимум втроём/);
+  assert.match(body, /maxPlayers < 2 \|\| maxPlayers > 5/);
+  assert.match(body, /stake < 100 \|\| stake > 1000000/);
   assert.match(body, /INSERT INTO durak_rooms/);
   assert.match(body, /INSERT INTO durak_room_players/);
+});
+
+test("Durak lobby exposes stake ranges through 1,000,000 AC and caps room size at five", () => {
+  assert.match(clientSource, /id="durakStakeFilters"/);
+  assert.match(clientSource, /data-stake-filter="100-999"/);
+  assert.match(clientSource, /data-stake-filter="1000-9999"/);
+  assert.match(clientSource, /data-stake-filter="10000-99999"/);
+  assert.match(clientSource, /data-stake-filter="100000-499999"/);
+  assert.match(clientSource, /data-stake-filter="500000-1000000"/);
+  assert.match(clientSource, /data-stake-preset="1000000"/);
+  assert.match(clientSource, /max="1000000"/);
+  assert.doesNotMatch(clientSource, /<option value="6">6 игроков<\/option>/);
 });
 
 test("only the room owner can add the test bot while the room is waiting", () => {
@@ -39,6 +53,7 @@ test("joining a room checks membership, room state, and capacity", () => {
   const body = routeBody("/api/durak/rooms/join");
   assert.match(body, /room\.status !== "waiting"/);
   assert.match(body, /Комната заполнена/);
+  assert.match(body, /Math\.min\(5, Number\(room\.max_players\) \|\| 2\)/);
   assert.match(body, /INSERT INTO durak_room_players/);
 });
 
@@ -63,9 +78,9 @@ test("starting a game checks owner, minimum players, and guest readiness", () =>
   assert.match(body, /Начать игру может только создатель комнаты/);
   assert.match(body, /total < 2/);
   assert.match(body, /\[24, 36, 52\]\.includes\(selectedDeck\)/);
-  assert.match(body, /const maxPlayersForDeck = selectedDeck === 24 \? 3 : selectedDeck === 36 \? 5 : 6/);
+  assert.match(body, /const maxPlayersForDeck = selectedDeck === 24 \? 3 : 5/);
   assert.match(body, /В колоде на 24 карты максимум 3 игрока/);
-  assert.match(body, /Для игры шестью игроками выбери колоду на 52 карты/);
+  assert.match(body, /В комнате может быть максимум 5 игроков/);
   assert.match(body, /readyGuests < totalGuests/);
   assert.match(body, /createDurakDeck/);
   assert.match(body, /dealInitialHands\(deck, playersResult\.rows\.length, 6\)/);

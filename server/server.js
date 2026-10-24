@@ -426,26 +426,26 @@ const speed = req.body.speed === "fast" ? "fast" : "normal";
     }
 const privacy = req.body.privacy === "private" ? "private" : "public";
 const mode = req.body.mode === "transfer" ? "transfer" : "throw-in";
-    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
+    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 5) {
       return res.status(400).json({
         ok: false,
-        error: "Количество игроков должно быть от 2 до 6"
+        error: "Количество мест в комнате должно быть от 2 до 5"
       });
     }
-    const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
+    const maxPlayersForDeck = deck === 24 ? 3 : 5;
     if (maxPlayers > maxPlayersForDeck) {
       return res.status(400).json({
         ok: false,
         error: deck === 24
           ? "С колодой на 24 карты можно играть максимум втроём"
-          : "С колодой на 36 карт можно играть максимум впятером"
+          : "В комнате может быть максимум 5 игроков"
       });
     }
 
-    if (!Number.isSafeInteger(stake) || stake < 1) {
+    if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
       return res.status(400).json({
         ok: false,
-        error: "Ставка должна быть целым числом больше нуля"
+        error: "Ставка должна быть целым числом от 100 до 1 000 000 AC"
       });
     }
 
@@ -692,7 +692,8 @@ app.post("/api/durak/rooms/join", async (req, res) => {
       [roomId]
     );
 
-    if (countResult.rows[0].total >= room.max_players) {
+    const effectiveRoomCapacity = Math.min(5, Number(room.max_players) || 2);
+    if (countResult.rows[0].total >= effectiveRoomCapacity) {
       return res.status(400).json({
         ok: false,
         error: "Комната заполнена"
@@ -1136,15 +1137,13 @@ app.post("/api/durak/rooms/start", async (req, res) => {
         error: "В комнате выбрана неподдерживаемая колода. Создай новую комнату."
       });
     }
-    const maxPlayersForDeck = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
+    const maxPlayersForDeck = selectedDeck === 24 ? 3 : 5;
     if (total > maxPlayersForDeck) {
       return res.status(400).json({
         ok: false,
         error: selectedDeck === 24
           ? "В колоде на 24 карты максимум 3 игрока"
-          : selectedDeck === 36
-            ? "Для игры шестью игроками выбери колоду на 52 карты."
-            : "Слишком много игроков для выбранной колоды."
+          : "В комнате может быть максимум 5 игроков."
       });
     }
     // Проверяем готовность всех игроков, кроме создателя

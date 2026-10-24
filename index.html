@@ -2435,7 +2435,6 @@
           <option value="3">3 игрока</option>
           <option value="4">4 игрока</option>
           <option value="5">5 игроков</option>
-          <option value="6">6 игроков</option>
         </select>
       </div>
 
@@ -2454,8 +2453,20 @@
           <b><span id="durakStakeValue">100</span> AC</b>
         </div>
         <input type="range" id="durakStakeSlider" min="100" max="1000000" step="100" value="100">
-        <label class="muted" for="durakStake">Или введи сумму вручную</label>
-        <input type="number" id="durakStake" value="100" min="100" step="1" inputmode="numeric" placeholder="Например, 100000">
+        <div class="durak-stake-presets" id="durakStakePresets" role="group" aria-label="Быстрый выбор ставки">
+          <button type="button" data-stake-preset="100" aria-pressed="true">100</button>
+          <button type="button" data-stake-preset="500" aria-pressed="false">500</button>
+          <button type="button" data-stake-preset="1000" aria-pressed="false">1 тыс.</button>
+          <button type="button" data-stake-preset="5000" aria-pressed="false">5 тыс.</button>
+          <button type="button" data-stake-preset="10000" aria-pressed="false">10 тыс.</button>
+          <button type="button" data-stake-preset="50000" aria-pressed="false">50 тыс.</button>
+          <button type="button" data-stake-preset="100000" aria-pressed="false">100 тыс.</button>
+          <button type="button" data-stake-preset="250000" aria-pressed="false">250 тыс.</button>
+          <button type="button" data-stake-preset="500000" aria-pressed="false">500 тыс.</button>
+          <button type="button" data-stake-preset="1000000" aria-pressed="false">1 млн</button>
+        </div>
+        <label class="muted" for="durakStake">Или введи сумму вручную (до 1 000 000 AC)</label>
+        <input type="number" id="durakStake" value="100" min="100" max="1000000" step="1" inputmode="numeric" placeholder="Например, 100000">
       </div>
 
       <div class="durak-create-field full">
@@ -2488,9 +2499,32 @@
       🔄 Обновить список
     </button>
 
+    <div class="durak-stake-filter-heading">💰 Комнаты по размеру ставки</div>
+    <div id="durakStakeFilters" class="durak-stake-filters" role="group" aria-label="Фильтр комнат по ставке">
+      <button type="button" class="active" data-stake-filter="all" aria-pressed="true">Все ставки</button>
+      <button type="button" data-stake-filter="100-999" aria-pressed="false">100–999</button>
+      <button type="button" data-stake-filter="1000-9999" aria-pressed="false">1 тыс.–9 999</button>
+      <button type="button" data-stake-filter="10000-99999" aria-pressed="false">10 тыс.–99 999</button>
+      <button type="button" data-stake-filter="100000-499999" aria-pressed="false">100 тыс.–499 999</button>
+      <button type="button" data-stake-filter="500000-1000000" aria-pressed="false">500 тыс.–1 млн</button>
+    </div>
+    <div class="durak-stake-filter-note">Выбирай диапазон от 100 до 1 000 000 AC, чтобы быстрее найти подходящую комнату.</div>
     <div id="roomsList"></div>
 
   </div>
+  <style id="durak-stake-lobby-style">
+    #durakGame .durak-stake-filter-heading { margin:14px 0 6px; color:#f0d58a; font-size:13px; font-weight:800; }
+    #durakGame .durak-stake-filters { display:flex; gap:6px; width:100%; margin:0 0 8px; padding:2px 1px 7px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; }
+    #durakGame .durak-stake-filters button { flex:0 0 auto; min-height:34px; padding:8px 10px; border:1px solid #3d5068; border-radius:999px; background:#111c30; color:#dce7f5; font-size:11px; font-weight:800; white-space:nowrap; }
+    #durakGame .durak-stake-filters button.active, #durakGame .durak-stake-filters button[aria-pressed="true"] { border-color:#f0d58a; background:linear-gradient(135deg,#f0d58a,#c99b4a); color:#15231f; box-shadow:0 2px 8px #0003; }
+    #durakGame .durak-stake-filter-note { margin:0 0 8px; color:#9eafc4; font-size:10px; line-height:1.4; }
+    #durakGame .durak-stake-presets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin:3px 0 8px; }
+    #durakGame .durak-stake-presets button { min-width:0; min-height:30px; padding:6px 2px; border:1px solid #3e526e; border-radius:8px; background:#101b2d; color:#e8f0fa; font-size:10px; font-weight:800; white-space:nowrap; }
+    #durakGame .durak-stake-presets button.active, #durakGame .durak-stake-presets button[aria-pressed="true"] { border-color:#f0d58a; background:#f0d58a; color:#15231f; }
+    #durakGame #roomsList .room { align-items:flex-start; }
+    #durakGame #roomsList .room > div:first-child { min-width:0; flex:1; overflow-wrap:anywhere; line-height:1.55; }
+    #durakGame #roomsList .room > button { flex:0 0 auto; }
+  </style>
   <style>
     #durakWaitingPlayers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; width:100%; margin:12px 0; position:relative; min-height:0; }
     #durakWaitingPlayers .durak-waiting-seat { position:relative; inset:auto; transform:none; float:none; width:auto; min-width:0; min-height:58px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px 6px; border:1px solid rgba(212,175,55,.55); border-radius:10px; background:rgba(10,25,48,.78); color:#fff; overflow-wrap:anywhere; z-index:auto; }
@@ -3924,6 +3958,8 @@ function showStatus(id, message) {
   if (element) element.textContent = message;
 }
 
+let selectedDurakStakeFilter = "all";
+
 function render() {
   $("balance").textContent = state.balance;
   $("energy").textContent = state.energy;
@@ -3941,8 +3977,31 @@ function render() {
   $("profileId").textContent = state.user?.id || "не авторизован";
   $("loginStatus").textContent = state.user ? "TELEGRAM" : "ДЕМО";
 
-  $("roomsList").innerHTML = "";
-  state.rooms.forEach((room, index) => {
+  const roomsList = $("roomsList");
+  roomsList.innerHTML = "";
+  const allDurakRooms = Array.isArray(state.rooms) ? state.rooms : [];
+  const selectedRange = selectedDurakStakeFilter === "all" ? null : selectedDurakStakeFilter.split("-").map(Number);
+  const visibleDurakRooms = allDurakRooms
+    .filter((room) => {
+      if (!selectedRange) return true;
+      const stakeValue = Number(room.stake) || 0;
+      return stakeValue >= selectedRange[0] && stakeValue <= selectedRange[1];
+    })
+    .sort((a, b) => (Number(a.stake) || 0) - (Number(b.stake) || 0));
+  document.querySelectorAll("#durakStakeFilters [data-stake-filter]").forEach((filterButton) => {
+    const active = filterButton.dataset.stakeFilter === selectedDurakStakeFilter;
+    filterButton.classList.toggle("active", active);
+    filterButton.setAttribute("aria-pressed", String(active));
+  });
+  if (!visibleDurakRooms.length) {
+    const emptyRooms = document.createElement("div");
+    emptyRooms.className = "notice";
+    emptyRooms.textContent = allDurakRooms.length
+      ? "В этом диапазоне пока нет комнат. Выбери другую ставку или обнови список."
+      : "Пока нет открытых комнат. Создай свою или обнови список.";
+    roomsList.appendChild(emptyRooms);
+  }
+  visibleDurakRooms.forEach((room, index) => {
     const div = document.createElement("div");
     div.className = "room";
 
@@ -3953,7 +4012,7 @@ info.innerHTML =
   (room.playersCount ?? 1) + " из " + room.players +
   " игроков · Режим: " + (room.mode === "transfer" ? "Переводной" : "Подкидной") +
   " · Колода: " + (Number(room.deck) === 24 ? "24 карт" : Number(room.deck) === 52 ? "52 карт" : "36 карт") +
-  " · Ставка: " + room.stake + " AC</span>";
+  " · Ставка: " + (Number(room.stake) || 0).toLocaleString("ru-RU") + " AC</span>";
 
     const button = document.createElement("button");
 button.textContent = "Войти";
@@ -7687,30 +7746,50 @@ const durakStakeInput = $("durakStake");
 const durakStakeSlider = $("durakStakeSlider");
 const durakStakeValue = $("durakStakeValue");
 
+function updateDurakStakePresetButtons() {
+  const currentStake = Number(durakStakeInput.value);
+  document.querySelectorAll("#durakStakePresets [data-stake-preset]").forEach((button) => {
+    const active = Number(button.dataset.stakePreset) === currentStake;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+function setDurakStake(stake) {
+  const amount = Math.max(100, Math.min(1000000, Math.round(Number(stake) || 100)));
+  durakStakeInput.value = String(amount);
+  durakStakeSlider.value = String(Math.max(100, Math.round(amount / 100) * 100));
+  durakStakeValue.textContent = amount.toLocaleString("ru-RU");
+  updateDurakStakePresetButtons();
+}
 durakStakeSlider.addEventListener("input", () => {
   durakStakeInput.value = durakStakeSlider.value;
   durakStakeValue.textContent = Number(durakStakeSlider.value).toLocaleString("ru-RU");
+  updateDurakStakePresetButtons();
 });
-
 durakStakeInput.addEventListener("input", () => {
-  let stake = Number(durakStakeInput.value);
-
+  const stake = Number(durakStakeInput.value);
   if (!Number.isFinite(stake) || stake < 100) {
     durakStakeValue.textContent = "100";
+    updateDurakStakePresetButtons();
     return;
   }
-
   durakStakeValue.textContent = stake.toLocaleString("ru-RU");
-
-  if (stake <= 1000000) {
-    durakStakeSlider.value = String(
-      Math.max(100, Math.round(stake / 100) * 100)
-    );
-  }
+  if (stake <= 1000000) durakStakeSlider.value = String(Math.max(100, Math.round(stake / 100) * 100));
+  updateDurakStakePresetButtons();
 });
+document.querySelectorAll("#durakStakePresets [data-stake-preset]").forEach((button) => {
+  button.addEventListener("click", () => setDurakStake(button.dataset.stakePreset));
+});
+document.querySelectorAll("#durakStakeFilters [data-stake-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedDurakStakeFilter = button.dataset.stakeFilter || "all";
+    render();
+  });
+});
+
 function syncDurakPlayerChoicesToDeck() {
   const selectedDeck = Number($("durakDeck").value);
-  const maxPlayers = selectedDeck === 24 ? 3 : selectedDeck === 36 ? 5 : 6;
+  const maxPlayers = selectedDeck === 24 ? 3 : 5;
   const select = $("players");
   for (const option of select.options) {
     const optionPlayers = Number(option.value);
@@ -7733,23 +7812,23 @@ const mode = $("durakMode").value === "transfer" ? "transfer" : "throw-in";
   const roomName =
     $("roomName").value.trim() || "Комната ALLCOINS";
 
-  if (!Number.isInteger(players) || players < 1 || players > 6) {
-    alert("Выбери от 1 игрока с ботом до 6 участников.");
+  if (!Number.isInteger(players) || players < 1 || players > 5) {
+    alert("Выбери от 1 игрока с ботом до 5 участников.");
     return;
   }
-  const maxPlayersForDeck = deck === 24 ? 3 : deck === 36 ? 5 : 6;
+  const maxPlayersForDeck = deck === 24 ? 3 : 5;
   if (players > maxPlayersForDeck) {
     alert(deck === 24
       ? "С колодой на 24 карт можно играть максимум втроём."
-      : "С колодой на 36 карт можно играть максимум впятером.");
+      : "С колодой на 36 или 52 карты можно играть максимум впятером.");
     return;
   }
   const singlePlayerWithBot = players === 1;
   // Серверная схема поддерживает минимум 2 места: для одиночной игры второе место занимает бот.
   const roomCapacity = singlePlayerWithBot ? 2 : players;
 
-if (!Number.isSafeInteger(stake) || stake < 100) {
-  alert("Минимальная ставка — 100 AC. Введи целое число.");
+if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
+  alert("Ставка должна быть целым числом от 100 до 1 000 000 AC.");
   return;
 }
 

@@ -109,6 +109,23 @@ try {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
   await page.locator("#tapButton").waitFor();
 
+  assert.equal(await page.locator('#players option[value="6"]').count(), 0,
+    "the creation form must not offer a sixth player");
+  assert.equal(await page.locator('#players option[value="5"]').count(), 1,
+    "the creation form must allow five players");
+  assert.equal(await page.locator("#durakStakeFilters [data-stake-filter]").count(), 6,
+    "the room lobby must provide all stake ranges");
+  await page.locator('#durakStakePresets [data-stake-preset="1000000"]').click();
+  assert.equal(await page.locator("#durakStake").inputValue(), "1000000",
+    "the 1 million AC preset must update the stake field");
+  await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').click();
+  assert.equal(
+    await page.locator('#durakStakeFilters [data-stake-filter="500000-1000000"]').getAttribute("aria-pressed"),
+    "true",
+    "the selected stake range must be visibly active"
+  );
+  await page.locator('#durakStakeFilters [data-stake-filter="all"]').click();
+
   // Clicker: +100 AC and -1 energy with a mocked authenticated API response.
   const initialBalance = Number((await page.locator("#balance").innerText()).replace(/\D/g, ""));
   const initialEnergy = Number((await page.locator("#energy").innerText()).replace(/\D/g, ""));
