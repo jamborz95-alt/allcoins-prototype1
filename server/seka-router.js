@@ -102,7 +102,9 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     const allWinners = [...new Map(winners.map(player => [String(player.telegramId), player])).values()];
     if (!allWinners.length) throw new SekaHttpError(500, "Не удалось определить победителя партии");
     // Бот нужен только для проверки механики и никогда не получает реальные AC.
-    const uniqueWinners = allWinners.filter(player => !player.isBot && String(player.telegramId) !== SEKA_BOT_ID);
+    const uniqueWinners = game.testMode
+      ? []
+      : allWinners.filter(player => !player.isBot && String(player.telegramId) !== SEKA_BOT_ID);
     const totalPot = Math.max(0, Math.floor(Number(game.pot) || 0));
     let remainder = uniqueWinners.length ? totalPot % uniqueWinners.length : 0;
     const baseShare = uniqueWinners.length ? Math.floor(totalPot / uniqueWinners.length) : 0;
@@ -264,6 +266,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
     const revealed = game.status === "finished" && game.revealHands === true;
     return {
       status: game.status,
+      testMode: Boolean(game.testMode),
       pot: Number(game.pot || 0),
       ante: Number(game.ante || 0),
       currentBet: Number(game.currentBet || 0),
@@ -561,22 +564,22 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       const members = membersResult.rows;
       if (members.length < 2) throw new SekaHttpError(400, "Для начала партии нужны минимум два игрока");
       if (members.length > Number(room.max_players)) throw new SekaHttpError(400, "В комнате слишком много игроков");
-      for (const member of members) {
-        if (String(member.telegram_id) === SEKA_BOT_ID) continue;
-        if (Number(member.balance) < Number(room.ante)) {
-          throw new SekaHttpError(400, "У игрока " + String(member.display_name || "Игрок") + " недостаточно AC. Он должен выйти или пополнить баланс.");
+      const testMode = members.some(member => String(member.telegram_id) === SEKA_BOT_ID);
+      if (!testMode) {
+        for (const member of members) {
+          if (Number(member.balance) < Number(room.ante)) {
+            throw new SekaHttpError(400, "У игрока " + String(member.display_name || "Игрок") + " недостаточно AC. Он должен выйти или пополнить баланс.");
+          }
         }
-      }
-      for (const member of members) {
-        if (String(member.telegram_id) !== SEKA_BOT_ID) {
-          await chargePlayer(client, member.telegram_id, Number(room.ante));
-        }
+        for (const member of members) await chargePlayer(client, member.telegram_id, Number(room.ante));
       }
       const game = createSekaGame(members.map(member => ({
         telegramId: String(member.telegram_id),
         label: String(member.display_name || "Игрок"),
         isBot: String(member.telegram_id) === SEKA_BOT_ID
       })), Number(room.ante));
+      game.testMode = testMode;
+      if (testMode) game.pot = Number(room.ante) * game.players.length;
       await runSekaBots(client, room, game);
       await client.query(
         `INSERT INTO seka_games (room_id, game_state) VALUES ($1, $2::jsonb)
@@ -692,7 +695,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
         }
       } else if (action === "call") {
         const due = Math.max(0, currentBet - Number(actor.contribution || 0));
-        await chargePlayer(client, actor.telegramId, due);
+        if (!game.testMode) await chargePlayer(client, actor.telegramId, due);
         actor.contribution = currentBet;
         actor.acted = true;
         game.pot = Number(game.pot) + due;
@@ -708,7 +711,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
           throw new SekaHttpError(400, "В этой комнате максимальная ставка — " + Number(room.max_bet).toLocaleString("ru-RU") + " AC");
         }
         const due = Math.max(0, targetBet - Number(actor.contribution || 0));
-        await chargePlayer(client, actor.telegramId, due);
+        if (!game.testMode) await chargePlayer(client, actor.telegramId, due);
         game.pot = Number(game.pot) + due;
         game.currentBet = targetBet;
         actor.contribution = targetBet;
@@ -720,7 +723,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       } else if (action === "open") {
         if (liveCount > 2) throw new SekaHttpError(400, "Вскрыться можно, когда в игре осталось два игрока");
         const due = Math.max(0, currentBet - Number(actor.contribution || 0));
-        await chargePlayer(client, actor.telegramId, due);
+        if (!game.testMode) await chargePlayer(client, actor.telegramId, due);
         actor.contribution = currentBet;
         actor.acted = true;
         game.pot = Number(game.pot) + due;
