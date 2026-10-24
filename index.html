@@ -2295,6 +2295,51 @@
   }
 </style>
 
+
+<style id="allcoins-rps-game-logo">
+  #games #rpsEntry .rps-entry-appicon {
+    position:relative !important; isolation:isolate !important; display:block !important;
+    flex:0 0 82px !important; width:82px !important; height:82px !important;
+    min-width:82px !important; min-height:82px !important; box-sizing:border-box !important;
+    overflow:hidden !important; margin:0 auto !important;
+    border:1px solid rgba(244,213,133,.9) !important; border-radius:21px !important;
+    background:radial-gradient(circle at 50% 28%,rgba(222,178,72,.27),transparent 47%),
+      linear-gradient(145deg,#1b4960 0%,#0c1c30 62%,#25172b 100%) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 4px 10px rgba(0,0,0,.27) !important;
+  }
+  #games #rpsEntry .rps-entry-appicon::before {
+    content:""; position:absolute; inset:4px; z-index:5;
+    border:1px solid rgba(244,213,133,.28); border-radius:16px; pointer-events:none;
+  }
+  #games #rpsEntry .rps-entry-appicon::after {
+    content:"✦"; position:absolute; top:5px; right:7px; z-index:8;
+    color:#f6d981; font:700 10px/1 Georgia,"Times New Roman",serif;
+    text-shadow:0 0 8px rgba(246,217,129,.65); pointer-events:none;
+  }
+  #games #rpsEntry .rps-hand {
+    position:absolute; z-index:2; display:flex; align-items:center; justify-content:center;
+    width:32px; height:34px; font-size:27px; line-height:1;
+    filter:drop-shadow(0 3px 3px rgba(0,0,0,.42));
+    font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;
+  }
+  #games #rpsEntry .rps-hand.rock { left:8px; bottom:13px; transform:rotate(-14deg); }
+  #games #rpsEntry .rps-hand.paper { left:27px; top:14px; transform:rotate(8deg); }
+  #games #rpsEntry .rps-hand.scissors { right:4px; bottom:10px; transform:rotate(13deg); }
+  #games a.game-app-launch.rps-launch-link { color:inherit !important; text-decoration:none !important; }
+  #games a.game-app-launch.rps-launch-link:active { transform:scale(.96) !important; opacity:.82 !important; }
+  @media (max-width:360px) {
+    #games #rpsEntry .rps-entry-appicon {
+      flex-basis:74px !important; width:74px !important; height:74px !important;
+      min-width:74px !important; min-height:74px !important; border-radius:19px !important;
+    }
+    #games #rpsEntry .rps-entry-appicon::before { border-radius:14px; }
+    #games #rpsEntry .rps-hand { width:29px; height:31px; font-size:24px; }
+    #games #rpsEntry .rps-hand.rock { left:7px; bottom:10px; }
+    #games #rpsEntry .rps-hand.paper { left:24px; top:13px; }
+    #games #rpsEntry .rps-hand.scissors { right:3px; bottom:8px; }
+  }
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -2363,6 +2408,16 @@
     <a id="openSeka" class="game-app-launch seka-launch-link" href="./seka.html?v=20261024-editable-bets2" aria-label="Открыть игру Сека Онлайн">
       <span class="seka-entry-appicon" aria-hidden="true"><span class="seka-mini-card back">♣</span><span class="seka-mini-card front">СЕ</span></span>
       <span class="game-app-title">Сека Онлайн</span>
+    </a>
+  </div>
+  <div class="game-app-tile" id="rpsEntry">
+    <a id="openRps" class="game-app-launch rps-launch-link" href="./rps.html?v=20261024-rps-rooms1" aria-label="Открыть игру Камень Ножницы Бумага">
+      <span class="rps-entry-appicon" aria-hidden="true">
+        <span class="rps-hand rock">✊</span>
+        <span class="rps-hand paper">✋</span>
+        <span class="rps-hand scissors">✌️</span>
+      </span>
+      <span class="game-app-title">Камень Ножницы Бумага</span>
     </a>
   </div>
 </div>
