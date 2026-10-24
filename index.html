@@ -7042,7 +7042,13 @@ defenseCard.style.boxSizing = "border-box";
   applyDurakTableCardSizeLocks();
 }
 
-// Новые карты атаки соперника летят от его места к столу, а не появляются внезапно.
+// Новые атаки обычно летят от места соперника к столу.
+// Если игрок только что взял карты со стола, скрываем следующую атаку
+// и запускаем её полёт лишь после завершения анимации подбора старых карт.
+const queuedIncomingAttackAnimations = [];
+const deferIncomingAttackUntilPickupDone =
+  shouldHoldTableCardsForPickup &&
+  !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (attacksFromOpponent && incomingAttackIds.length) {
   const attackerSeat = playersBox?.querySelector(
     '[data-player-index="' + String(game.attackerIndex) + '"]'
@@ -7051,7 +7057,18 @@ if (attacksFromOpponent && incomingAttackIds.length) {
     const targetCard = Array.from(
       $("durakTable").querySelectorAll('.durak-card[data-table-card-type="attack"]')
     ).find(element => String(element.dataset.cardId) === String(id));
-    if (targetCard) animateIncomingDurakAttackCard(targetCard, attackerSeat, index * 110);
+    if (!targetCard) return;
+    if (deferIncomingAttackUntilPickupDone && attackerSeat) {
+      targetCard.style.setProperty("visibility", "hidden", "important");
+      targetCard.style.setProperty("opacity", "0", "important");
+      queuedIncomingAttackAnimations.push({
+        targetCard,
+        attackerSeat,
+        delayMs: index * 110
+      });
+    } else {
+      void animateIncomingDurakAttackCard(targetCard, attackerSeat, index * 110);
+    }
   });
 }
 
@@ -7714,6 +7731,14 @@ if (Array.isArray(game.hand)) {
       await animateDurakDealSequence(dealQueue, roomId, {
         initial: isInitialDealForRoom,
         finalDeckCount: Number(game.cardsLeft ?? 0)
+      });
+    }
+
+    // Только после того, как все карты со стола долетели в руку берущего,
+    // разрешаем показать следующую атаку соперника.
+    if (queuedIncomingAttackAnimations.length) {
+      queuedIncomingAttackAnimations.forEach(({ targetCard, attackerSeat, delayMs }) => {
+        void animateIncomingDurakAttackCard(targetCard, attackerSeat, delayMs);
       });
     }
   }
