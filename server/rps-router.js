@@ -3,6 +3,8 @@ import { isRpsChoice, resolveRpsRound } from "./rps-rules.js";
 
 const MAX_PLAYERS = 3;
 const MIN_STAKE = 100;
+const RPS_BOT_ID = "0";
+const RPS_BOT_NAME = "🤖 Бот проверки";
 const CHOICE_LABELS = Object.freeze({ rock: "Камень", paper: "Бумага", scissors: "Ножницы" });
 const CHOICE_SYMBOLS = Object.freeze({ rock: "✊", paper: "✋", scissors: "✌️" });
 
@@ -33,6 +35,11 @@ function jsonObject(value) {
     } catch (_) {}
   }
   return {};
+}
+
+function randomRpsChoice() {
+  const choices = ["rock", "paper", "scissors"];
+  return choices[Math.floor(Math.random() * choices.length)];
 }
 
 function cleanName(user) {
@@ -187,6 +194,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       displayName: String(player.display_name || "Игрок"),
       joinedRound: Number(player.joined_round),
       isMe: String(player.telegram_id) === String(user.id),
+      isBot: String(player.telegram_id) === RPS_BOT_ID,
       isOwner: String(player.telegram_id) === String(room.owner_telegram_id),
       inCurrentRound: participantIds.includes(String(player.telegram_id)),
       waitingNextRound: Number(player.joined_round) > Number(room.current_round),
@@ -214,6 +222,8 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         currentRound: Number(room.current_round),
         playersCount: players.length,
         isOwner: String(room.owner_telegram_id) === String(user.id),
+        hasBot: members.some(player => String(player.telegram_id) === RPS_BOT_ID),
+        testMode: members.some(player => String(player.telegram_id) === RPS_BOT_ID),
         players
       },
       round: currentRound ? {
@@ -295,6 +305,73 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       await client.query("COMMIT");
       transactionOpen = false;
       return res.json({ ok: true, roomId, message: "Комната создана. Ждём второго игрока." });
+    } catch (error) {
+      if (client && transactionOpen) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+      }
+      return httpError(res, error);
+    } finally {
+      client?.release();
+    }
+  });
+
+  router.post("/rooms/add-bot", async (req, res) => {
+    let client;
+    let transactionOpen = false;
+    try {
+      await ensureSchema();
+      const user = authenticatedUser(req, res);
+      if (!user) return;
+      const roomId = parseRoomId(req.body?.roomId);
+      if (!roomId) throw new RpsHttpError(400, "Неверный номер комнаты.");
+
+      client = await pool.connect();
+      await client.query("BEGIN");
+      transactionOpen = true;
+      const room = await getRoomOrThrow(client, roomId, true);
+      if (String(room.owner_telegram_id) !== String(user.id)) {
+        throw new RpsHttpError(403, "Добавить бота может только создатель комнаты.");
+      }
+      if (room.status !== "waiting") {
+        throw new RpsHttpError(400, "Бота можно добавить только до начала раунда.");
+      }
+
+      const members = await currentMembers(client, roomId);
+      if (members.some(player => String(player.telegram_id) === RPS_BOT_ID)) {
+        await client.query("COMMIT");
+        transactionOpen = false;
+        return res.json({ ok: true, roomId, alreadyAdded: true, message: "Бот уже в комнате." });
+      }
+      if (members.length >= MAX_PLAYERS) {
+        throw new RpsHttpError(400, "В комнате уже 3 игрока.");
+      }
+
+      await client.query(
+        "INSERT INTO rps_room_players (room_id, telegram_id, display_name, joined_round) " +
+        "VALUES ($1, $2, $3, $4)",
+        [roomId, RPS_BOT_ID, RPS_BOT_NAME, Number(room.current_round)]
+      );
+      const participantIds = [
+        ...members
+          .filter(player => Number(player.joined_round) <= Number(room.current_round))
+          .map(player => String(player.telegram_id)),
+        RPS_BOT_ID
+      ];
+      if (participantIds.length < 2) {
+        throw new RpsHttpError(400, "Для проверки нужны игрок и бот.");
+      }
+      await ensureCurrentRound(client, roomId, Number(room.current_round), participantIds);
+      await client.query(
+        "UPDATE rps_rooms SET status = 'playing', updated_at = NOW() WHERE id = $1",
+        [roomId]
+      );
+      await client.query("COMMIT");
+      transactionOpen = false;
+      return res.json({
+        ok: true,
+        roomId,
+        message: "Бот добавлен. Это тестовый режим: баланс AC не меняется."
+      });
     } catch (error) {
       if (client && transactionOpen) {
         try { await client.query("ROLLBACK"); } catch (_) {}
@@ -459,6 +536,10 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         throw new RpsHttpError(409, "Ты уже сделал выбор. Дождись остальных игроков.");
       }
       const candidateChoices = { ...choices, [userId]: choice };
+      // Test bot chooses automatically. Its choice stays hidden until the human(s) have chosen.
+      if (participantIds.includes(RPS_BOT_ID) && !Object.prototype.hasOwnProperty.call(candidateChoices, RPS_BOT_ID)) {
+        candidateChoices[RPS_BOT_ID] = randomRpsChoice();
+      }
       if (Object.keys(candidateChoices).length < participantIds.length) {
         await client.query(
           "UPDATE rps_room_rounds SET choices = $3::JSONB, updated_at = NOW() " +
@@ -471,6 +552,9 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         return res.json({ ok: true, resolved: false, message: "Ход скрыт до выбора остальных игроков." });
       }
 
+      // Test-bot rooms are practice only: they never change any real player balance.
+      const testMode = participantIds.includes(RPS_BOT_ID);
+      if (!testMode) {
       // Charge everybody together only after every participant has chosen.
       const walletResult = await client.query(
         "SELECT telegram_id, balance FROM players WHERE telegram_id::TEXT = ANY($1::TEXT[]) " +
@@ -503,6 +587,8 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         if (!debit.rows.length) throw new RpsHttpError(400, "Не удалось подтвердить ставку. Выбери жест ещё раз.");
       }
 
+      }
+
       const resolution = resolveRpsRound(candidateChoices);
       const labelResult = await client.query(
         "SELECT telegram_id, display_name FROM rps_room_players " +
@@ -513,9 +599,11 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         String(row.telegram_id),
         String(row.display_name || "Игрок")
       ]));
-      const pot = Number(room.stake) * participantIds.length;
+      const pot = testMode ? 0 : Number(room.stake) * participantIds.length;
       const payouts = [];
-      if (resolution.outcome === "draw") {
+      if (testMode) {
+        // Never debit, refund, or pay out AC in test-bot mode.
+      } else if (resolution.outcome === "draw") {
         for (const telegramId of participantIds) {
           const refund = await client.query(
             "UPDATE players SET balance = balance + $1, updated_at = NOW() " +
@@ -567,6 +655,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         choices: revealedChoices,
         pot,
         stake: Number(room.stake),
+        testMode,
         payouts,
         finishedAt: new Date().toISOString()
       };
@@ -669,12 +758,13 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       }
 
       const remainingMembers = await currentMembers(client, roomId);
-      if (!remainingMembers.length) {
+      const remainingHumans = remainingMembers.filter(player => String(player.telegram_id) !== RPS_BOT_ID);
+      if (!remainingHumans.length) {
         await client.query("DELETE FROM rps_rooms WHERE id = $1", [roomId]);
       } else if (String(room.owner_telegram_id) === userId) {
         await client.query(
           "UPDATE rps_rooms SET owner_telegram_id = $2, updated_at = NOW() WHERE id = $1",
-          [roomId, String(remainingMembers[0].telegram_id)]
+          [roomId, String(remainingHumans[0].telegram_id)]
         );
       } else {
         await client.query("UPDATE rps_rooms SET updated_at = NOW() WHERE id = $1", [roomId]);
