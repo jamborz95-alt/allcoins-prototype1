@@ -6592,6 +6592,21 @@ async function loadDurakGame(roomId) {
                 ? "ЗАЩИЩАЕТСЯ · " : "") + count + " карт";
         playerTag.appendChild(meta);
 
+        // Показываем в ячейке соперника подтверждённое сервером решение взять карты.
+        // У самого защищающегося для этого уже есть сообщение «ТЫ БЕРЁШЬ».
+        const opponentIsTaking =
+          index !== Number(game.playerIndex) &&
+          Number(game.defenderIndex) === index &&
+          game.takePending === true;
+        if (opponentIsTaking) {
+          playerTag.classList.add("taking");
+          const takeStatus = document.createElement("span");
+          takeStatus.className = "durak-player-take-status";
+          takeStatus.textContent = "Беру";
+          takeStatus.setAttribute("aria-label", "Соперник берёт карты");
+          playerTag.appendChild(takeStatus);
+        }
+
         if (index !== Number(game.playerIndex)) {
           const backs = document.createElement("div");
           backs.className = "durak-card-backs";
@@ -12523,6 +12538,34 @@ $("refreshDurakRooms").onclick = async () => {
   #games #durakEntry .durak-app-card-back {
     color:#c8dbe3 !important;
     background:repeating-linear-gradient(45deg,#17314a 0 4px,#214d66 4px 8px) !important;
+  }
+  /* Индикатор «Беру» в ячейке соперника после подтверждения takePending от сервера. */
+  #durakGame .durak-player.taking {
+    border-color: #ffb66e !important;
+    box-shadow: 0 0 0 2px rgba(255, 166, 92, .28), 0 0 14px rgba(255, 103, 75, .42) !important;
+  }
+  #durakGame .durak-player-take-status {
+    display: block;
+    max-width: 100%;
+    margin-top: 4px;
+    padding: 3px 8px;
+    border: 1px solid rgba(255, 185, 112, .95);
+    border-radius: 7px;
+    background: linear-gradient(180deg, #8d3627, #5d201d);
+    color: #fff4df;
+    font-size: 11px;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: .02em;
+    white-space: nowrap;
+    animation: durakTakingPulse 1.05s ease-in-out infinite alternate;
+  }
+  @keyframes durakTakingPulse {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.28); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #durakGame .durak-player-take-status { animation: none; }
   }
 </style>
 
