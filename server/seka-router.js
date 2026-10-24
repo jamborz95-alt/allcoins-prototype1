@@ -352,7 +352,12 @@ export function createSekaRouter({ pool, verifyTelegram }) {
                 COUNT(rp.telegram_id)::INTEGER AS players_count
          FROM seka_rooms r
          LEFT JOIN seka_room_players rp ON rp.room_id = r.id
-         WHERE r.status = 'waiting' AND ($1::INTEGER IS NULL OR r.limit_tier = $1)
+         WHERE r.status = 'waiting'
+           AND NOT EXISTS (
+             SELECT 1 FROM seka_room_players sb
+             WHERE sb.room_id = r.id AND sb.telegram_id = 0
+           )
+           AND ($1::INTEGER IS NULL OR r.limit_tier = $1)
          GROUP BY r.id
          ORDER BY r.created_at DESC
          LIMIT 50`,
@@ -434,6 +439,7 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       );
       if (!existing.rows.length) {
         const count = await getRoomCounts(client, roomId);
+        if (count !== 1) throw new SekaHttpError(400, "Бота для проверки можно добавить, пока в комнате только вы.");
         if (count >= Number(room.max_players)) throw new SekaHttpError(400, "В комнате нет свободных мест для бота");
         await client.query(
           "INSERT INTO seka_room_players (room_id, telegram_id, display_name) VALUES ($1, $2, $3)",
@@ -469,6 +475,11 @@ export function createSekaRouter({ pool, verifyTelegram }) {
       const room = await getRoomRow(client, roomId, true);
       if (!room) throw new SekaHttpError(404, "Комната не найдена");
       if (room.status !== "waiting") throw new SekaHttpError(400, "Партия уже началась. Выбери другую комнату.");
+      const testBot = await client.query(
+        "SELECT 1 FROM seka_room_players WHERE room_id = $1 AND telegram_id = $2",
+        [roomId, SEKA_BOT_ID]
+      );
+      if (testBot.rows.length) throw new SekaHttpError(400, "Эта комната предназначена для проверки с ботом и не принимает других игроков.");
       const existing = await client.query(
         "SELECT 1 FROM seka_room_players WHERE room_id = $1 AND telegram_id = $2",
         [roomId, String(user.id)]
