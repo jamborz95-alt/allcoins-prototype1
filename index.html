@@ -12316,6 +12316,25 @@ $("refreshDurakRooms").onclick = async () => {
     color:#9f2432 !important;
     background:linear-gradient(145deg,#fff4db,#e7d2a5) !important;
   }
+
+  @media (max-width:360px) {
+    /* На узком телефоне новые значки уменьшаются так же, как значок Дурака. */
+    #games #lottoEntry .lotto-entry-appicon,
+    #games #twentyOneEntry .twentyone-entry-appicon,
+    #games #sekaEntry .seka-entry-appicon {
+      flex-basis:74px !important;
+      width:74px !important;
+      height:74px !important;
+      min-width:74px !important;
+      min-height:74px !important;
+      border-radius:19px !important;
+    }
+    #games #lottoEntry .lotto-entry-appicon::before,
+    #games #twentyOneEntry .twentyone-entry-appicon::before,
+    #games #sekaEntry .seka-entry-appicon::before {
+      border-radius:14px;
+    }
+  }
 </style>
 
 </body>

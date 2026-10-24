@@ -194,9 +194,11 @@ const path = require("node:path");
     }));
     fs.writeFileSync(path.join(out, "games-icons-small-viewport.json"), JSON.stringify(smallViewport, null, 2));
     assert.equal(smallViewport.documentWidth, smallViewport.viewportWidth, "На экране 360px появилась горизонтальная прокрутка");
+    const expectedSmallIconSize = smallViewport.icons[0]?.width;
+    assert.equal(expectedSmallIconSize, 74, "На узком экране ожидается уменьшенный общий размер 74×74");
     for (const icon of smallViewport.icons) {
-      assert.ok(Math.abs(icon.width - 82) <= 1 && Math.abs(icon.height - 82) <= 1,
-        icon.id + ": неверный размер на узком экране: " + JSON.stringify(icon));
+      assert.ok(Math.abs(icon.width - expectedSmallIconSize) <= 1 && Math.abs(icon.height - expectedSmallIconSize) <= 1,
+        icon.id + ": значок не совпадает по размеру с остальными на узком экране: " + JSON.stringify(icon));
     }
     await page.locator("#games").screenshot({ path: path.join(out, "01b-games-icons-small-mobile.png") });
     await page.setViewportSize({ width: 390, height: 844 });
