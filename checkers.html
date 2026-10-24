@@ -85,7 +85,7 @@
     /* На каждой шашке — маленький знак ALLCOINS с золотым и мятным ободком. */
     .piece-logo { position:absolute; inset:16%; display:block; width:68%; height:68%; border-radius:50%; filter:drop-shadow(0 1px 2px #0008); }
     .piece-logo svg { display:block; width:100%; height:100%; }
-    .piece.king::after { content:"♛"; position:absolute; z-index:3; top:-3%; right:-3%; display:grid; place-items:center; width:39%; height:39%; box-sizing:border-box; border:1px solid #8b6827; border-radius:50%; background:linear-gradient(135deg,#fff0ad,#e4c475 65%,#a57429); color:#132231; font-size:clamp(7px,2vw,12px); line-height:1; font-weight:900; text-shadow:none; }
+    .piece.king::after { content:"♛"; position:absolute; z-index:4; top:-12%; left:16%; right:auto; display:grid; place-items:center; width:68%; height:48%; box-sizing:border-box; border:1.5px solid #8b6827; border-radius:10px 10px 50% 50%; background:linear-gradient(135deg,#fff4c4,#e4c475 62%,#a57429); color:#132231; font-size:clamp(11px,3.1vw,17px); line-height:1; font-weight:900; text-shadow:0 1px 1px #fff5; box-shadow:0 2px 4px #0009; }
     .square .piece { transform:translateZ(0); }
     .game-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; margin-top:9px; }
     .game-actions button { min-height:42px; font-size:12px; }
@@ -228,14 +228,14 @@
           <span class="stake-pill"><span id="gameStake">100</span> AC</span>
         </div>
         <div class="playerbar">
-          <div class="player-meta"><div class="player-name">🤖 Тестовый бот</div><div class="player-note">Соперник · чёрные</div></div>
+          <div class="player-meta"><div class="player-name">🤖 Тестовый бот</div><div class="player-note" id="botColorNote">Соперник · чёрные</div></div>
           <div class="piece-count" id="botCount">12</div>
         </div>
         <div class="turn" id="turnStatus" aria-live="polite">Твой ход — белые</div>
         <div class="board-wrap"><div id="board" class="board" role="group" aria-label="Шашечная доска"></div></div>
         <div class="turn" id="moveHint">Нажми на свою шашку, затем на подсвеченную клетку</div>
         <div class="playerbar">
-          <div class="player-meta"><div class="player-name">👤 <span id="humanName">Игрок</span></div><div class="player-note">Ты играешь белыми</div></div>
+          <div class="player-meta"><div class="player-name">👤 <span id="humanName">Игрок</span></div><div class="player-note" id="humanColorNote">Ты играешь белыми</div></div>
           <div class="piece-count" id="humanCount">12</div>
         </div>
         <div class="game-actions">
@@ -264,7 +264,9 @@
       var stake = 100;
       var currentRoom = null;
       var board = [];
-      var turn = "w";
+      var turn = humanColor;
+      var humanColor = "w";
+      var botColor = "b";
       var selectedPos = null;
       var selectedMoves = [];
       var lastMove = null;
@@ -289,6 +291,13 @@
       }
       $("humanName").textContent = personName;
 
+      function colorLabel(color) { return color === "w" ? "белые" : "чёрные"; }
+      function colorInstrumental(color) { return color === "w" ? "белыми" : "чёрными"; }
+      function humanTurnLabel() { return "Твой ход — " + colorLabel(humanColor); }
+      function refreshColorLabels() {
+        $("botColorNote").textContent = "Соперник · " + colorLabel(botColor);
+        $("humanColorNote").textContent = "Ты играешь " + colorInstrumental(humanColor);
+      }
       function formatNumber(value) { return Math.round(value).toLocaleString("ru-RU"); }
       function normalizeStake(value) {
         var n = Number(value);
@@ -398,8 +407,8 @@
       $("backToAllcoins").addEventListener("click", function () { window.location.href = "./index.html"; });
       $("backToLobby").addEventListener("click", showLobby);
       $("quitGame").addEventListener("click", showLobby);
-      $("newGame").addEventListener("click", function () { startGame(stake); });
-      $("playAgain").addEventListener("click", function () { startGame(stake); });
+      $("newGame").addEventListener("click", startRematch);
+      $("playAgain").addEventListener("click", startRematch);
       $("resultToLobby").addEventListener("click", showLobby);
 
       function showLobby() {
@@ -414,6 +423,11 @@
           try { telegram.BackButton.show(); } catch (_) {}
         }
       }
+      function startRematch() {
+        humanColor = humanColor === "w" ? "b" : "w";
+        botColor = humanColor === "w" ? "b" : "w";
+        startGame(stake);
+      }
       function startGame(selectedStake) {
         gameSession += 1;
         stake = normalizeStake(selectedStake);
@@ -424,22 +438,23 @@
         if (botTimer) clearTimeout(botTimer);
         botTimer = null;
         board = makeInitialBoard();
-        turn = "w";
+        turn = humanColor;
         selectedPos = null;
         selectedMoves = [];
         lastMove = null;
         busy = false;
         finished = false;
         renderBoard();
-        updateStatus("Твой ход — белые", "Выбери свою шашку.");
+        refreshColorLabels();
+        updateStatus(humanTurnLabel(), "Выбери свою шашку.");
       }
       function makeInitialBoard() {
         var b = Array.from({ length: 8 }, function () { return Array(8).fill(null); });
         for (var r = 0; r < 3; r++) {
-          for (var c = 0; c < 8; c++) if ((r + c) % 2 === 1) b[r][c] = { color: "b", king: false };
+          for (var c = 0; c < 8; c++) if ((r + c) % 2 === 1) b[r][c] = { color: botColor, king: false };
         }
         for (var r2 = 5; r2 < 8; r2++) {
-          for (var c2 = 0; c2 < 8; c2++) if ((r2 + c2) % 2 === 1) b[r2][c2] = { color: "w", king: false };
+          for (var c2 = 0; c2 < 8; c2++) if ((r2 + c2) % 2 === 1) b[r2][c2] = { color: humanColor, king: false };
         }
         return b;
       }
@@ -505,7 +520,7 @@
         if (!piece) return [];
         var moves = [];
         if (!piece.king) {
-          var direction = piece.color === "w" ? -1 : 1;
+          var direction = piece.color === humanColor ? -1 : 1;
           [-1,1].forEach(function (dc) {
             var nr = r + direction, nc = c + dc;
             if (inside(nr,nc) && !state[nr][nc]) moves.push({ from:{r:r,c:c}, path:[{r:nr,c:nc}], captures:[] });
@@ -575,15 +590,15 @@
             root.appendChild(cell);
           }
         }
-        $("humanCount").textContent = String(countPieces("w"));
-        $("botCount").textContent = String(countPieces("b"));
+        $("humanCount").textContent = String(countPieces(humanColor));
+        $("botCount").textContent = String(countPieces(botColor));
       }
       function updateStatus(status, hint) {
         $("turnStatus").textContent = status;
         $("moveHint").textContent = hint || "";
       }
       function onSquareClick(event) {
-        if (busy || finished || turn !== "w") return;
+        if (busy || finished || turn !== humanColor) return;
         var cell = event.currentTarget;
         var r = Number(cell.dataset.r), c = Number(cell.dataset.c);
         var piece = board[r][c];
@@ -593,25 +608,25 @@
           performHumanStep(r,c);
           return;
         }
-        if (piece && piece.color === "w") {
-          var moves = getAllMoves(board, "w").filter(function (m) { return m.from.r === r && m.from.c === c; });
+        if (piece && piece.color === humanColor) {
+          var moves = getAllMoves(board, humanColor).filter(function (m) { return m.from.r === r && m.from.c === c; });
           if (!moves.length) {
             selectedPos = null;
             selectedMoves = [];
             renderBoard();
-            updateStatus("Твой ход — белые", getAllMoves(board,"w").some(function(m){return m.captures.length;}) ? "Обязательно возьми шашку соперника." : "У этой шашки нет доступных ходов.");
+            updateStatus(humanTurnLabel(), getAllMoves(board,humanColor).some(function(m){return m.captures.length;}) ? "Обязательно возьми шашку соперника." : "У этой шашки нет доступных ходов.");
             return;
           }
           selectedPos = {r:r,c:c};
           selectedMoves = moves;
           renderBoard();
-          updateStatus("Твой ход — белые", moves[0].captures.length ? "Взятие обязательно: выбери подсвеченную клетку." : "Выбери подсвеченную клетку для хода.");
+          updateStatus(humanTurnLabel(), moves[0].captures.length ? "Взятие обязательно: выбери подсвеченную клетку." : "Выбери подсвеченную клетку для хода.");
           return;
         }
         selectedPos = null;
         selectedMoves = [];
         renderBoard();
-        updateStatus("Твой ход — белые", "Нажми на свою шашку, затем на подсвеченную клетку.");
+        updateStatus(humanTurnLabel(), "Нажми на свою шашку, затем на подсвеченную клетку.");
       }
       function performHumanStep(r,c) {
         var matching = selectedMoves.filter(function (m) { return m.path.length && m.path[0].r === r && m.path[0].c === c; });
@@ -623,7 +638,7 @@
         var captured = matching[0].captures.length ? matching[0].captures[0] : null;
         board[from.r][from.c] = null;
         if (captured) board[captured.r][captured.c] = null;
-        if (!moving.king && ((moving.color === "w" && to.r === 0) || (moving.color === "b" && to.r === 7))) moving.king = true;
+        if (!moving.king && ((moving.color === humanColor && to.r === 0) || (moving.color === botColor && to.r === 7))) moving.king = true;
         board[to.r][to.c] = moving;
         lastMove = {from:from,to:to};
         var continuing = matching.map(function (m) {
@@ -633,14 +648,14 @@
           selectedPos = to;
           selectedMoves = continuing;
           renderBoard();
-          updateStatus("Твой ход — белые", "Продолжи обязательное взятие: выбери следующую подсвеченную клетку.");
+          updateStatus(humanTurnLabel(), "Продолжи обязательное взятие: выбери следующую подсвеченную клетку.");
           return;
         }
         selectedPos = null;
         selectedMoves = [];
         renderBoard();
-        if (finishIfNoMoves("b")) return;
-        turn = "b";
+        if (finishIfNoMoves(botColor)) return;
+        turn = botColor;
         busy = true;
         updateStatus("Ходит бот…", "Бот выбирает ход.");
         var scheduledSession = gameSession;
@@ -648,7 +663,7 @@
       }
       function finishIfNoMoves(colorToMove) {
         if (countPieces(colorToMove) === 0 || getAllMoves(board, colorToMove).length === 0) {
-          var winner = colorToMove === "w" ? "b" : "w";
+          var winner = colorToMove === humanColor ? botColor : humanColor;
           endGame(winner);
           return true;
         }
@@ -658,10 +673,10 @@
       async function botTurn(sessionId) {
         botTimer = null;
         if (sessionId !== gameSession || finished) { return; }
-        var moves = getAllMoves(board, "b");
+        var moves = getAllMoves(board, botColor);
         if (!moves.length) {
           busy = false;
-          endGame("w");
+          endGame(humanColor);
           return;
         }
         var maxCaptures = Math.max.apply(null, moves.map(function (m) { return m.captures.length; }));
@@ -681,7 +696,7 @@
           var captured = move.captures[i];
           board[from.r][from.c] = null;
           if (captured) board[captured.r][captured.c] = null;
-          if (!moving.king && ((moving.color === "b" && to.r === 7) || (moving.color === "w" && to.r === 0))) moving.king = true;
+          if (!moving.king && ((moving.color === botColor && to.r === 7) || (moving.color === humanColor && to.r === 0))) moving.king = true;
           board[to.r][to.c] = moving;
           lastMove = {from:{r:from.r,c:from.c},to:{r:to.r,c:to.c}};
           from = {r:to.r,c:to.c};
@@ -691,11 +706,11 @@
         }
         selectedPos = null;
         selectedMoves = [];
-        if (finishIfNoMoves("w")) { busy = false; return; }
+        if (finishIfNoMoves(humanColor)) { busy = false; return; }
         turn = "w";
         busy = false;
         renderBoard();
-        updateStatus("Твой ход — белые", "Нажми на свою шашку, затем на подсвеченную клетку.");
+        updateStatus(humanTurnLabel(), "Нажми на свою шашку, затем на подсвеченную клетку.");
       }
       function endGame(winner) {
         finished = true;
@@ -703,7 +718,7 @@
         selectedPos = null;
         selectedMoves = [];
         renderBoard();
-        if (winner === "w") {
+        if (winner === humanColor) {
           $("resultMark").textContent = "🏆";
           $("resultTitle").textContent = "Ты победил!";
           $("resultText").textContent = "Ты выиграл тестовую партию у бота. Ставка " + formatNumber(stake) + " AC была демонстрационной.";
