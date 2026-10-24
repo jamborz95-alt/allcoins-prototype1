@@ -177,7 +177,7 @@ try {
   await owner.page.locator("#stakeInput").waitFor();
   await owner.page.locator("#stakeInput").fill("500");
   await owner.page.locator("#createRoom").click();
-  await owner.page.getByText("Ждём второго игрока", { exact: false }).waitFor();
+  await owner.page.locator("#playersList .player-row").first().waitFor();
   const createCall = owner.apiCalls.find(call => call.path === "/api/rps/rooms/create");
   assert.equal(createCall?.body?.stake, 500, "Комната должна получать заданную ставку числом");
   assert.equal(await owner.page.locator("#roomNumber").innerText(), "Комната #42");
@@ -187,6 +187,13 @@ try {
   });
   assert.equal(roomBounds.position, "fixed", "Экран игры должен занимать весь экран");
   assert.equal(roomBounds.width, 390, "Комната должна занимать всю ширину мобильного экрана");
+  assert.equal(await owner.page.locator("body").evaluate(node => node.classList.contains("in-game")), true,
+    "Во время игры должны скрываться элементы оболочки приложения");
+  assert.equal(await owner.page.locator("#roomView .room-top").evaluate(node => getComputedStyle(node).display), "none",
+    "В игровой комнате не должно быть заголовка и лишней информации");
+  const profileBox = await owner.page.locator("#playersList .player-row").first().boundingBox();
+  assert.ok(profileBox && Math.abs(profileBox.width - profileBox.height) <= 6,
+    "Профиль игрока должен быть квадратным");
   await owner.page.locator("[data-add-bot]").click();
   await owner.page.locator("[data-choice]").first().waitFor();
   assert.ok(owner.apiCalls.some(call => call.path === "/api/rps/rooms/add-bot"), "Кнопка должна отправить запрос добавления бота");
@@ -213,8 +220,7 @@ try {
   const third = await newPlayerPage(303, "Третий Игрок");
   await third.page.goto("http://127.0.0.1:4174/rps.html?v=test");
   await third.page.locator('[data-join-room="77"]').click();
-  await third.page.getByText("Со следующего раунда", { exact: false }).first().waitFor();
-  await third.page.getByText("Ты подключился во время текущего раунда", { exact: false }).waitFor();
+  await third.page.locator('.player-row[data-player-id="303"]').waitFor();
   assert.equal(await third.page.locator('.player-row[data-player-id="101"] .ready-check.is-ready').count(), 1,
     "Другой игрок должен видеть галочку рядом с участником, который уже готов");
   assert.equal(await third.page.locator('.player-row[data-player-id="202"] .ready-check.is-ready').count(), 0,
