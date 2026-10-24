@@ -3597,7 +3597,7 @@
       <button type="button" class="secondary full" id="adminCommissionToggle">💰 Комиссия проекта · 5%</button>
       <div id="adminCommissionDetails" class="hidden" style="margin-top:14px">
         <p>Начислено комиссии: <b><span id="adminCommissionTotal">0</span> AC</b></p>
-        <p>Оборот завершённых игр: <b><span id="adminGrossTotal">0</span> AC</b></p>
+        <p>База начисления комиссии: <b><span id="adminGrossTotal">0</span> AC</b></p>
         <p>Завершённых игр с комиссией: <b><span id="adminGamesCount">0</span></b></p>
         <p>Баланс аккаунта администратора: <b><span id="adminWalletBalance">0</span> AC</b></p>
         <div id="adminCommissionHistory" style="display:grid;gap:7px;margin:10px 0"></div>
@@ -9119,6 +9119,9 @@ document.querySelectorAll(".nav button").forEach(button => {
       const page = $(pageId);
       if (page) page.classList.toggle("hidden", pageId !== button.dataset.page);
     });
+    if (button.dataset.page === "profile" && state.user) {
+      refreshAdminCommissionSummary(false);
+    }
   };
 });
 
