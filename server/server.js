@@ -6,6 +6,7 @@ import { createDurakDeck, shuffleDurakDeck, cardRank, beatsCard, dealInitialHand
 import { createLottoRouter } from "./lotto.js";
 import { createTwentyOneRound, applyTwentyOneAction, scoreTwentyOneHand } from "./twentyone-rules.js";
 import { createSekaRouter } from "./seka-router.js";
+import { createRpsRouter } from "./rps-router.js";
 
 const { Pool } = pg;
 const app = express();
@@ -201,6 +202,9 @@ app.use("/api/lotto", lottoRouter);
 const sekaRouter = createSekaRouter({ pool, verifyTelegram });
 app.use("/api/seka", sekaRouter);
 
+const rpsRouter = createRpsRouter({ pool, verifyTelegram });
+app.use("/api/rps", rpsRouter);
+
 app.get("/", (req, res) => {
   res.json({
     app: "ALLCOINS",
@@ -216,7 +220,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.4.0"
+      version: "1.5.0"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
