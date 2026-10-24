@@ -119,8 +119,9 @@ try {
 
   // 21 Очко: use the shared Durak card factory, then verify the actual PNGs load.
   await page.goto("http://127.0.0.1:4175/index.html", { waitUntil: "domcontentloaded" });
-  await page.locator("#openTwentyOne").waitFor();
+  await page.locator("#openTwentyOne").waitFor({ state: "attached" });
   await page.locator('.nav button[data-page="games"]').click();
+  await page.locator("#openTwentyOne").waitFor({ state: "visible" });
   await page.locator("#openTwentyOne").click();
 
   const cardSet = ["10", "A", "J", "Q", "K"].flatMap(rank =>
