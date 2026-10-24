@@ -3592,6 +3592,19 @@
       <button class="secondary full" id="loginButton">Повторить вход</button>
       <div class="status" id="profileStatus"></div>
     </div>
+    <div id="adminCommissionCard" class="card hidden">
+      <div class="section-title">🛡 Администрирование ALLCOINS</div>
+      <button type="button" class="secondary full" id="adminCommissionToggle">💰 Комиссия проекта · 5%</button>
+      <div id="adminCommissionDetails" class="hidden" style="margin-top:14px">
+        <p>Начислено комиссии: <b><span id="adminCommissionTotal">0</span> AC</b></p>
+        <p>Оборот завершённых игр: <b><span id="adminGrossTotal">0</span> AC</b></p>
+        <p>Завершённых игр с комиссией: <b><span id="adminGamesCount">0</span></b></p>
+        <p>Баланс аккаунта администратора: <b><span id="adminWalletBalance">0</span> AC</b></p>
+        <div id="adminCommissionHistory" style="display:grid;gap:7px;margin:10px 0"></div>
+        <button type="button" class="full" id="adminCommissionRefresh">↻ Обновить данные</button>
+        <div class="status" id="adminCommissionStatus"></div>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -7716,7 +7729,7 @@ if (Array.isArray(game.hand)) {
     if (game.pot) {
       const formatDurakAC = value => Math.max(0, Number(value) || 0).toLocaleString("ru-RU");
       gameStatusText += " · Банк: " + formatDurakAC(game.pot.grossPot) + " AC";
-      gameStatusText += " · Сожжено 5%: " + formatDurakAC(game.pot.burnedAmount) + " AC";
+      gameStatusText += " · Комиссия проекта 5%: " + formatDurakAC(game.pot.commissionAmount ?? game.pot.burnedAmount) + " AC";
       if (game.pot.settled) {
         gameStatusText += " · Твой выигрыш: " + formatDurakAC(game.pot.myPrize) + " AC";
         if (Array.isArray(game.pot.winners) && game.pot.winners.length) {
@@ -7944,6 +7957,73 @@ setInterval(() => {
     loadDurakRooms();
   }
 }, 5000);
+
+let adminCommissionBusy = false;
+let adminCommissionVerified = false;
+
+async function refreshAdminCommissionSummary(showErrors = false) {
+  if (adminCommissionBusy || !tg?.initData) return false;
+  adminCommissionBusy = true;
+  try {
+    const result = await apiRequest("/api/admin/summary");
+    adminCommissionVerified = result.admin === true;
+    if (!adminCommissionVerified) {
+      $("adminCommissionCard").classList.add("hidden");
+      return false;
+    }
+    $("adminCommissionCard").classList.remove("hidden");
+    $("adminCommissionTotal").textContent = Number(result.totalCommission || 0).toLocaleString("ru-RU");
+    $("adminGrossTotal").textContent = Number(result.totalGross || 0).toLocaleString("ru-RU");
+    $("adminGamesCount").textContent = Number(result.gamesCount || 0).toLocaleString("ru-RU");
+    $("adminWalletBalance").textContent = Number(result.adminBalance || 0).toLocaleString("ru-RU");
+    state.balance = Number(result.adminBalance ?? state.balance);
+    render();
+
+    const history = $("adminCommissionHistory");
+    history.textContent = "";
+    const names = {
+      durak: "Дурак Онлайн",
+      lotto: "Лото Онлайн",
+      seka: "Сека Онлайн",
+      rps: "Камень, ножницы, бумага",
+      twentyone: "21 Очко"
+    };
+    const rows = Array.isArray(result.recent) ? result.recent : [];
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "notice";
+      empty.textContent = "Комиссий пока нет. После завершения реальной игры данные появятся здесь.";
+      history.appendChild(empty);
+    } else {
+      rows.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "notice";
+        const date = item.createdAt ? new Date(item.createdAt) : null;
+        const dateText = date && Number.isFinite(date.getTime()) ? date.toLocaleString("ru-RU") : "";
+        row.textContent =
+          (dateText ? dateText + " · " : "") +
+          (names[item.game] || String(item.game || "Игра")) +
+          " · банк " + Number(item.grossAmount || 0).toLocaleString("ru-RU") + " AC" +
+          " · комиссия +" + Number(item.commissionAmount || 0).toLocaleString("ru-RU") + " AC";
+        history.appendChild(row);
+      });
+    }
+    $("adminCommissionStatus").textContent = "Комиссия начисляется на твой баланс автоматически. Реальные денежные выплаты не подключены.";
+    return true;
+  } catch (error) {
+    const errorText = String(error?.message || error || "Не удалось загрузить комиссии");
+    if (/HTTP (401|403|503)/.test(errorText)) {
+      adminCommissionVerified = false;
+      $("adminCommissionCard").classList.add("hidden");
+    } else if (showErrors) {
+      $("adminCommissionStatus").textContent = errorText;
+    }
+    return false;
+  } finally {
+    adminCommissionBusy = false;
+  }
+}
+
   async function login() {
   if (tg) {
     tg.ready();
@@ -7963,6 +8043,7 @@ setInterval(() => {
       state.energy = Number(result.player.energy ?? state.energy);
       showStatus("profileStatus", "Вход через Telegram выполнен.");
       render();
+      await refreshAdminCommissionSummary(false);
       await loadDurakRooms();
     } else {
       showStatus("profileStatus", "Сервер не подтвердил вход.");
@@ -9018,6 +9099,14 @@ $("withdrawInfo").onclick = () => {
 };
 
 $("loginButton").onclick = login;
+$("adminCommissionToggle").onclick = async () => {
+  const details = $("adminCommissionDetails");
+  details.classList.toggle("hidden");
+  if (!details.classList.contains("hidden")) {
+    await refreshAdminCommissionSummary(true);
+  }
+};
+$("adminCommissionRefresh").onclick = () => refreshAdminCommissionSummary(true);
 
 document.querySelectorAll(".nav button").forEach(button => {
   button.onclick = () => {
@@ -10448,7 +10537,10 @@ function renderTwentyOneRoomBoard(result) {
     if (game.status === "finished") {
       $("twentyOneRoomMyHandNote").textContent = "Раунд завершён · " +
         (Number(myPlayer.payout) > 0
-          ? "тебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC"
+          ? "тебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC" +
+            (Number(myPlayer.commissionAmount) > 0
+              ? " · комиссия проекта 5%: " + Number(myPlayer.commissionAmount).toLocaleString("ru-RU") + " AC"
+              : "")
           : "выигрыш в этом раунде не начислен");
     } else if (myPlayer.status === "stand") {
       $("twentyOneRoomMyHandNote").textContent = "Ты остановился на " + myScore + " очках.";
@@ -10483,7 +10575,10 @@ function renderTwentyOneRoomBoard(result) {
     const stateLabel = document.createElement("small");
     const statusText = { playing:"Ходит", stand:"Остановился", won:"Победа", bust:"Перебор", lost:"Проиграл" };
     const stateNote = game.status === "finished" && Number(player.payout) > 0
-      ? "Победа · +" + Number(player.payout).toLocaleString("ru-RU") + " AC"
+      ? "Победа · +" + Number(player.payout).toLocaleString("ru-RU") + " AC" +
+        (Number(player.commissionAmount) > 0
+          ? " · комиссия " + Number(player.commissionAmount).toLocaleString("ru-RU") + " AC"
+          : "")
       : (statusText[player.status] || "В игре");
     const hasVisibleScore = player.score !== null && player.score !== undefined && Number.isFinite(Number(player.score));
     const scoreText = hasVisibleScore
