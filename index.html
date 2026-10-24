@@ -5614,6 +5614,109 @@ function promoteDurakFlightCardToTable(flyer, targetElement) {
   return true;
 }
 
+// Отбитые карты уходят со стола быстрым непрерывным полётом,
+// примерно в темпе раздачи. Карты не исчезают мгновенно и не мешают следующей атаке.
+async function animateDurakDiscardedTableCards(previousTableCardOrigins) {
+  if (!(previousTableCardOrigins instanceof Map) || !previousTableCardOrigins.size) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const sources = Array.from(previousTableCardOrigins.values())
+    .filter(source => source?.element && Number.isFinite(source.x) &&
+      Number.isFinite(source.y) && Number(source.width) > 0 && Number(source.height) > 0);
+  if (!sources.length) return;
+
+  const duration = 560;
+  const stagger = 45;
+  await Promise.all(sources.map((source, index) => new Promise(resolve => {
+    const flyer = source.element;
+    const width = Number(source.width);
+    const height = Number(source.height);
+    const startLeft = Number(source.x) - width / 2;
+    const startTop = Number(source.y) - height / 2;
+    const endLeft = window.innerWidth + 24 + (index % 3) * 7;
+    const endTop = startTop + 55 + ((index % 5) - 2) * 12;
+    const dx = endLeft - startLeft;
+    const dy = endTop - startTop;
+    let delayTimer = null;
+    let fallbackTimer = null;
+    let animation = null;
+    let finished = false;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (delayTimer !== null) window.clearTimeout(delayTimer);
+      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+      if (animation) {
+        animation.onfinish = null;
+        try { animation.cancel(); } catch (_) {}
+      }
+      flyer.remove();
+      resolve();
+    };
+
+    flyer.classList.remove("table-card", "durak-landing-target",
+      "durak-pickup-hold-card", "durak-flying-card");
+    flyer.classList.add("durak-discard-flyer");
+    [
+      ["position", "fixed"],
+      ["left", startLeft + "px"],
+      ["top", startTop + "px"],
+      ["width", width + "px"],
+      ["height", height + "px"],
+      ["min-width", width + "px"],
+      ["min-height", height + "px"],
+      ["max-width", width + "px"],
+      ["max-height", height + "px"],
+      ["margin", "0"],
+      ["padding", "0"],
+      ["box-sizing", "border-box"],
+      ["overflow", "hidden"],
+      ["opacity", "1"],
+      ["visibility", "visible"],
+      ["pointer-events", "none"],
+      ["z-index", "2147483001"],
+      ["transform", "none"],
+      ["transform-origin", "center center"],
+      ["transition", "none"],
+      ["will-change", "transform, opacity"],
+      ["backface-visibility", "hidden"]
+    ].forEach(([property, value]) => flyer.style.setProperty(property, value, "important"));
+
+    const image = flyer.querySelector("img");
+    if (image) {
+      [
+        ["display", "block"], ["width", "100%"], ["height", "100%"],
+        ["min-width", "0"], ["min-height", "0"],
+        ["max-width", "100%"], ["max-height", "100%"],
+        ["object-fit", "contain"], ["object-position", "center"],
+        ["margin", "0"], ["padding", "0"], ["transform", "none"]
+      ].forEach(([property, value]) => image.style.setProperty(property, value, "important"));
+    }
+
+    document.body.appendChild(flyer);
+    delayTimer = window.setTimeout(() => {
+      if (!flyer.isConnected) {
+        finish();
+        return;
+      }
+      try {
+        animation = flyer.animate([
+          { offset: 0, transform: "translate3d(0,0,0) rotate(0deg) scale(1)", opacity: 1 },
+          { offset: 0.22, transform: "translate3d(" + (dx * 0.22) + "px," + (dy * 0.12 - 10) + "px,0) rotate(4deg) scale(.98)", opacity: 1 },
+          { offset: 0.68, transform: "translate3d(" + (dx * 0.68) + "px," + (dy * 0.62) + "px,0) rotate(14deg) scale(.78)", opacity: .78 },
+          { offset: 1, transform: "translate3d(" + dx + "px," + dy + "px,0) rotate(24deg) scale(.56)", opacity: 0 }
+        ], { duration, easing: "cubic-bezier(.16,.72,.22,1)", fill: "forwards" });
+        animation.onfinish = finish;
+        fallbackTimer = window.setTimeout(finish, duration + 180);
+      } catch (error) {
+        console.warn("Не удалось анимировать уход отбитой карты:", error);
+        finish();
+      }
+    }, index * stagger);
+  })));
+}
+
 function revealPendingDurakDealTargets(dealTargets) {
   if (!Array.isArray(dealTargets)) return;
   dealTargets.forEach(item => {
@@ -6455,6 +6558,29 @@ async function loadDurakGame(roomId) {
       game.status === "playing" &&
       (durakLastRenderedTakePending || pickupByOwnHand || pickupByOpponentCount);
 
+    // Если все пары прошлого стола были побиты и сервер очистил их без взятия,
+    // это сброс отбоя. Сохраняем исходные карты для плавного ухода со стола.
+    const previousTableSourceCards = Array.from(previousTableCardOrigins.values());
+    const previousAttackIds = previousTableSourceCards
+      .filter(source => source?.element?.dataset?.tableCardType === "attack")
+      .map(source => String(source.element.dataset.cardId || ""))
+      .filter(Boolean);
+    const previousDefenseIds = new Set(previousTableSourceCards
+      .filter(source => source?.element?.dataset?.tableCardType === "defense")
+      .map(source => String(source.element.dataset.cardId || ""))
+      .filter(Boolean));
+    const previousTableWasFullyBeaten =
+      previousAttackIds.length > 0 &&
+      previousDefenseIds.size >= previousAttackIds.length;
+    const shouldAnimateBeatenTableDiscard =
+      pickupRoomMatches &&
+      pickupOldTableFullyRemoved &&
+      previousTableWasFullyBeaten &&
+      game.status === "playing" &&
+      !shouldHoldTableCardsForPickup &&
+      game.takePending !== true &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (shouldHoldTableCardsForPickup &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       previousTableCardOrigins.forEach(source => {
@@ -7046,8 +7172,8 @@ defenseCard.style.boxSizing = "border-box";
 // Если игрок только что взял карты со стола, скрываем следующую атаку
 // и запускаем её полёт лишь после завершения анимации подбора старых карт.
 const queuedIncomingAttackAnimations = [];
-const deferIncomingAttackUntilPickupDone =
-  shouldHoldTableCardsForPickup &&
+const deferIncomingAttackUntilTableCleanupDone =
+  (shouldHoldTableCardsForPickup || shouldAnimateBeatenTableDiscard) &&
   !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (attacksFromOpponent && incomingAttackIds.length) {
   const attackerSeat = playersBox?.querySelector(
@@ -7058,7 +7184,7 @@ if (attacksFromOpponent && incomingAttackIds.length) {
       $("durakTable").querySelectorAll('.durak-card[data-table-card-type="attack"]')
     ).find(element => String(element.dataset.cardId) === String(id));
     if (!targetCard) return;
-    if (deferIncomingAttackUntilPickupDone && attackerSeat) {
+    if (deferIncomingAttackUntilTableCleanupDone && attackerSeat) {
       targetCard.style.setProperty("visibility", "hidden", "important");
       targetCard.style.setProperty("opacity", "0", "important");
       queuedIncomingAttackAnimations.push({
@@ -7727,6 +7853,12 @@ if (Array.isArray(game.hand)) {
       });
     }
 
+    // При отбое сначала уводим побитые карты со стола, затем начинаем добор
+    // до шести карт, и только после всех анимаций показываем новую атаку.
+    if (shouldAnimateBeatenTableDiscard) {
+      await animateDurakDiscardedTableCards(previousTableCardOrigins);
+    }
+
     if (dealQueue.length) {
       await animateDurakDealSequence(dealQueue, roomId, {
         initial: isInitialDealForRoom,
@@ -7734,7 +7866,7 @@ if (Array.isArray(game.hand)) {
       });
     }
 
-    // Только после того, как все карты со стола долетели в руку берущего,
+    // Только после завершения анимации подбора или сброса старых карт
     // разрешаем показать следующую атаку соперника.
     if (queuedIncomingAttackAnimations.length) {
       queuedIncomingAttackAnimations.forEach(({ targetCard, attackerSeat, delayMs }) => {
