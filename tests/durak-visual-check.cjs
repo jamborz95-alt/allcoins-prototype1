@@ -120,7 +120,8 @@ const path = require("node:path");
         { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
         { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
-        { id: "sekaEntry", selector: ".seka-entry-appicon", title: "Сека Онлайн" }
+        { id: "sekaEntry", selector: ".seka-entry-appicon", title: "Сека Онлайн" },
+        { id: "rpsEntry", selector: ".rps-entry-appicon", title: "Камень Ножницы Бумага" }
       ];
       const icons = definitions.map(def => {
         const tile = document.getElementById(def.id);
@@ -175,8 +176,8 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
-    assert.equal(gamesIconDiagnostics.tiles, 4, "В разделе должны остаться четыре игровые плитки");
-    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн"]);
+    assert.equal(gamesIconDiagnostics.tiles, 5, "В разделе должны отображаться пять игровых плиток");
+    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага"]);
     assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
     assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
       "На значке Дурак Онлайн остался старый золотой градиент");
