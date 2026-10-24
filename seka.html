@@ -815,11 +815,16 @@
     busy = true;
     $("startGameButton").disabled = true;
     setStatus("roomStatus", "Раздаём карты…");
+    // Запрашиваем полноэкранный режим прямо из нажатия пользователя,
+    // до сетевого запроса: Telegram может отклонить вызов после await.
+    setSekaFullscreen(true);
+    setStatus("roomStatus", "Запускаем игру…");
     try {
       await api("/rooms/start", { roomId: currentRoomId });
       await refreshRoomState();
       setStatus("roomStatus", "");
     } catch (error) {
+      setSekaFullscreen(false);
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
