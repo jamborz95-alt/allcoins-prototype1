@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-capture1"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-roads2"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
@@ -48,7 +48,13 @@ try {
   await page.locator(".tower[data-tower='1']").click();
   await page.locator(".tower[data-tower='4']").click();
   await page.locator(".fleet").first().waitFor({ timeout: 3000 });
-  assert.ok(await page.locator("#routeSvg line.path-line").count() > 0, "Troop movement should draw its animated route.");
+  await page.locator(".tower[data-tower='1']").click();
+  await page.locator(".tower[data-tower='5']").click();
+  await page.waitForFunction(() => document.querySelectorAll("#fleets .fleet").length >= 2, null, { timeout: 3000 });
+  assert.ok(await page.locator("#routeSvg .road-group").count() >= 2, "Multiple attacks should leave multiple asphalt roads on the map.");
+  assert.ok(await page.locator("#routeSvg line.road-asphalt").count() >= 2, "Each route should have an asphalt road surface.");
+  assert.ok(await page.locator("#fleets .fleet-soldier").count() >= 6, "Armies on multiple roads should contain animated soldier figures.");
+
   assert.deepEqual(errors, [], "The Towers Capture page should not throw browser errors.");
 } finally {
   await browser?.close();
