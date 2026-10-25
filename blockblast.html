@@ -148,6 +148,18 @@ body.playing .top{display:none}
 #tray.is-resolving{pointer-events:none;opacity:.86}
 @media(prefers-reduced-motion:reduce){.cell.clearing,.cell.clearing:before{animation-duration:1ms!important}}
 </style>
+<style id="block-blast-drop-size-final">
+:root{--block-size:18px}
+.board{width:min(88vw,43dvh,640px)}
+#play .board-wrap{height:min(43dvh,88vw,640px)}
+.piece-grid{display:grid;gap:2px;grid-template-columns:repeat(var(--piece-cols,3),var(--block-size));grid-template-rows:repeat(var(--piece-rows,3),var(--block-size));pointer-events:none}
+.piece-dot{width:var(--block-size);height:var(--block-size);min-width:0;min-height:0}
+.tray{width:min(96vw,500px);gap:2px;margin:min(3dvh,24px) auto 0;min-height:calc(var(--block-size)*3);align-items:center}
+.piece-slot{width:100%;min-width:0;min-height:calc(var(--block-size)*2);padding:0;overflow:visible;touch-action:none;user-select:none;-webkit-user-select:none}
+.drag-ghost{grid-auto-rows:var(--block-size);gap:2px}
+.drag-ghost .piece-dot{width:var(--block-size);height:var(--block-size)}
+@media(max-height:760px){.board{width:min(88vw,42dvh,560px)}#play .board-wrap{height:min(42dvh,88vw,560px)}.tray{margin-top:min(2dvh,14px)}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -294,7 +306,8 @@ function initialBoard(){
   [2,1,1,1,1,0,0,1]
  ];
 }
-function randomPiece(){return shapes[Math.floor(Math.random()*shapes.length)].map(function(c){return [c[0],c[1]];});}
+var trayPlayableShapes=shapes.filter(function(shape){return Math.max.apply(null,shape.map(function(c){return c[1];}))<3;});
+function randomPiece(){var shape=trayPlayableShapes[Math.floor(Math.random()*trayPlayableShapes.length)];return shape.map(function(c){return [c[0],c[1]];});}
 function generatePieces(){
  var attempts=0;
  do {pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;attempts++;}
@@ -302,7 +315,7 @@ function generatePieces(){
  renderTray();
 }
 function startGame(){
- $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
+ $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderTray();renderScore();
  $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
  $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
@@ -311,8 +324,15 @@ function renderBoard(){
  var root=$("board");root.innerHTML="";
  for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
   var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
-  cell.addEventListener("click",function(){if(!isResolving)placeSelected(Number(this.dataset.row)-selectedAnchorRow,Number(this.dataset.col)-selectedAnchorCol);});root.appendChild(cell);
+  cell.addEventListener("click",function(){if(!isResolving)placeSelected(Number(this.dataset.row)-selectedAnchorRow,Number(this.dataset.col)-selectedAnchorCol);});
+  root.appendChild(cell);
  }
+ syncBlockSize();
+}
+function syncBlockSize(){
+ var cell=$("board")&&$("board").querySelector(".cell");if(!cell)return;
+ var size=cell.getBoundingClientRect().width;
+ if(size>1)document.documentElement.style.setProperty("--block-size",size+"px");
 }
 function renderTray(){
  var root=$("tray");root.innerHTML="";
@@ -321,7 +341,15 @@ function renderTray(){
   slot.addEventListener("click",function(){if(ignorePieceClick){ignorePieceClick=false;return;}var n=Number(this.dataset.index);if(!pieces[n]||isResolving)return;selected=n;setDefaultAnchor(pieces[n]);renderTray();$("gameHint").textContent="Фигура выбрана. Коснись нужной клетки или перетащи кубики в свободное место.";});
   slot.addEventListener("pointerdown",function(ev){beginDrag(ev,Number(this.dataset.index));});
   var grid=document.createElement("span");grid.className="piece-grid";var piece=pieces[i];
-  for(var y=0;y<4;y++)for(var x=0;x<4;x++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece&&piece.some(function(pos){return pos[0]===y&&pos[1]===x;}))dot.className="piece-dot";grid.appendChild(dot);}
+  var maxRow=0,maxCol=0;
+  if(piece)piece.forEach(function(pos){maxRow=Math.max(maxRow,pos[0]);maxCol=Math.max(maxCol,pos[1]);});
+  grid.style.setProperty("--piece-cols",String(maxCol+1));grid.style.setProperty("--piece-rows",String(maxRow+1));
+  grid.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";grid.style.gridTemplateRows="repeat("+(maxRow+1)+",var(--block-size))";
+  for(var y=0;y<=maxRow;y++)for(var x=0;x<=maxCol;x++){
+   var dot=document.createElement("i");dot.className="piece-dot empty";
+   if(piece&&piece.some(function(pos){return pos[0]===y&&pos[1]===x;}))dot.className="piece-dot";
+   grid.appendChild(dot);
+  }
   slot.appendChild(grid);root.appendChild(slot);
  }
 }
@@ -340,13 +368,11 @@ function getClosestPieceAnchor(piece,clientX,clientY,grid){
  });
  return best||getDefaultPieceAnchor(piece);
 }
-function getDefaultPieceAnchor(piece){
- if(!piece||!piece.length)return [0,0];
- return piece.slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1];})[0];
-}
+function getDefaultPieceAnchor(piece){return [0,0];}
 function setDefaultAnchor(piece){var anchor=getDefaultPieceAnchor(piece);selectedAnchorRow=anchor[0];selectedAnchorCol=anchor[1];}
 function beginDrag(ev,index){
  if(!gameActive||isResolving||!pieces[index])return;
+ try{if(ev.currentTarget&&ev.currentTarget.setPointerCapture)ev.currentTarget.setPointerCapture(ev.pointerId);}catch(captureError){}
  var grid=ev.currentTarget.querySelector(".piece-grid");
  var anchor=getClosestPieceAnchor(pieces[index],ev.clientX,ev.clientY,grid);
  dragState={index:index,pointerId:ev.pointerId,x:ev.clientX,y:ev.clientY,moved:false,anchorRow:anchor[0],anchorCol:anchor[1]};
@@ -355,13 +381,25 @@ function beginDrag(ev,index){
 function makeDragGhost(index,x,y,anchorRow,anchorCol){
  clearDragGhost();var piece=pieces[index];if(!piece)return;
  var maxRow=0,maxCol=0;piece.forEach(function(p){maxRow=Math.max(maxRow,p[0]);maxCol=Math.max(maxCol,p[1]);});
- dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",clamp(16px,5vw,28px))";
+ dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";
  for(var r=0;r<=maxRow;r++)for(var c=0;c<=maxCol;c++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece.some(function(p){return p[0]===r&&p[1]===c;}))dot.className="piece-dot";dragGhost.appendChild(dot);}
- var ghostCell=Math.max(16,Math.min(28,window.innerWidth*0.05));var ghostGap=2;dragGhost.style.transform="translate(-"+(anchorCol*(ghostCell+ghostGap)+ghostCell/2)+"px,-"+(anchorRow*(ghostCell+ghostGap)+ghostCell/2)+"px)";document.body.appendChild(dragGhost);moveDragGhost(x,y);
+ var ghostCell=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--block-size"))||24;var ghostGap=2;dragGhost.style.transform="translate(-"+(anchorCol*(ghostCell+ghostGap)+ghostCell/2)+"px,-"+(anchorRow*(ghostCell+ghostGap)+ghostCell/2)+"px)";document.body.appendChild(dragGhost);moveDragGhost(x,y);
 }
 function moveDragGhost(x,y){if(dragGhost){dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";}}
 function clearDragGhost(){if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;}
 function clearDrag(){dragState=null;clearDragGhost();}
+function findBoardCellAtPoint(x,y){
+ var boardEl=$("board");if(!boardEl)return null;
+ var rect=boardEl.getBoundingClientRect();
+ if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;
+ var cells=boardEl.querySelectorAll(".cell"),closest=null,best=Infinity;
+ for(var i=0;i<cells.length;i++){
+  var r=cells[i].getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  var dist=Math.pow(cx-x,2)+Math.pow(cy-y,2);
+  if(dist<best){best=dist;closest=cells[i];}
+ }
+ return closest;
+}
 document.addEventListener("pointermove",function(ev){
  if(!dragState||ev.pointerId!==dragState.pointerId)return;
  if(!dragState.moved&&Math.hypot(ev.clientX-dragState.x,ev.clientY-dragState.y)>10){dragState.moved=true;selected=dragState.index;selectedAnchorRow=dragState.anchorRow;selectedAnchorCol=dragState.anchorCol;makeDragGhost(dragState.index,ev.clientX,ev.clientY,dragState.anchorRow,dragState.anchorCol);}
@@ -371,10 +409,10 @@ document.addEventListener("pointerup",function(ev){
  if(!dragState||ev.pointerId!==dragState.pointerId)return;
  var state=dragState;dragState=null;clearDragGhost();
  if(state.moved){
-  ignorePieceClick=true;var target=document.elementFromPoint(ev.clientX,ev.clientY);var cell=target&&target.closest?target.closest(".cell"):null;
+  ignorePieceClick=true;var cell=findBoardCellAtPoint(ev.clientX,ev.clientY);
   if(cell&&!isResolving){selected=state.index;selectedAnchorRow=state.anchorRow;selectedAnchorCol=state.anchorCol;placeSelected(Number(cell.dataset.row)-state.anchorRow,Number(cell.dataset.col)-state.anchorCol);}
-  else{$("gameHint").textContent="Перетащи фигуру на одну из клеток поля.";}
-  renderTray();setTimeout(function(){ignorePieceClick=false;},100);
+  else{$("gameHint").textContent="Отпусти фигуру над игровым полем, чтобы поставить её.";}
+  renderTray();setTimeout(function(){ignorePieceClick=false;},180);
  }
 });
 document.addEventListener("pointercancel",function(){clearDrag();});
