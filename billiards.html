@@ -59,6 +59,7 @@
     .gameActions{width:100%;max-width:940px;margin:2px auto 0;display:flex;justify-content:center;gap:6px;flex:0 0 auto}.gameActions button{min-height:34px;padding:6px 9px;font-size:11px}
     .ruleNote{text-align:center;font-size:9px;color:#a6c6b9;margin:1px auto 0;max-width:940px;line-height:1.3;flex:0 0 auto}
     .endResult{max-width:550px;width:100%;margin:8px auto;padding:14px;border:1px solid #f2d48c;border-radius:17px;background:#092f27ee;text-align:center;box-shadow:0 12px 32px #0005}.endResult h2{color:#ffdf8e;font-size:22px;margin:0 0 7px}.endResult p{font-size:12px;color:#d3e6d9;line-height:1.5;margin:0 0 13px}
+    .leaveConfirm{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:#020806d9;backdrop-filter:blur(6px)}.leaveConfirmCard{width:min(100%,360px);padding:20px;border:1px solid #d3b76f;border-radius:18px;background:linear-gradient(145deg,#172b29,#091714);box-shadow:0 20px 50px #0009;text-align:center}.leaveConfirmCard h2{margin:0 0 9px;color:#ffdf8e;font-size:21px}.leaveConfirmCard p{margin:0 0 16px;color:#d7e6df;font-size:13px;line-height:1.5}.leaveConfirmActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.leaveConfirmActions button{min-height:44px}
     @media(max-width:680px){body{padding-left:9px;padding-right:9px}.topbar{gap:8px}.brandTag{padding:7px 8px}.grid{grid-template-columns:1fr;gap:0}.panel{padding:13px}.panelhead h2{font-size:16px}.room button{min-width:66px}.seatGrid{gap:7px}.seat{padding:10px}.playerChip{min-width:98px}.aimPanel{gap:7px}.power{flex-basis:95px}.gameActions button{flex:1;padding:8px 9px}}
     @media(max-height:650px){#gameView{padding-top:max(3px,env(safe-area-inset-top));padding-bottom:max(3px,env(safe-area-inset-bottom));gap:2px}.gameTop{min-height:32px}.gameTop .back{height:32px}.opponentRow{min-height:36px;padding:1px 0}.playerChip{padding:4px 7px}.tableWrap{flex:1 1 auto;min-height:125px}.aimPanel{margin-top:0}.gameMsg{margin-top:0;padding:3px}.gameActions{margin-top:0}.ruleNote{display:none}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important}}
@@ -133,7 +134,7 @@
     <div class="powerControl"><label for="shotPowerRange">СИЛА УДАРА</label><input id="shotPowerRange" type="range" min="4" max="100" value="55" step="1" aria-label="Сила удара"><span class="powerValue" id="shotPowerValue">55%</span></div>
     <div class="gameMsg" id="gameMessage">Прицелься и отпусти, чтобы ударить.</div>
     <div class="gameActions">
-      <button class="secondary" id="viewModeBtn" type="button" aria-pressed="false" title="Включить управление ракурсом пальцем">🎥 Ракурс стола</button>
+      <button class="secondary" id="viewModeBtn" type="button" aria-pressed="false" title="Одним пальцем в этом режиме можно вращать ракурс; двумя пальцами — в любой момент">🎥 Повернуть стол</button>
       <button class="secondary" id="centerCueBtn" type="button">🎯 Прицел</button>
       <button class="goldbtn" id="rematchBtn" type="button">Новый раунд</button>
     </div>
@@ -141,6 +142,9 @@
     <div class="endResult hidden" id="endResult">
       <h2 id="endTitle">🏆 Победа!</h2><p id="endCopy"></p>
       <button class="primary full" id="endLobbyBtn" type="button">Вернуться к комнатам</button>
+    </div>
+    <div id="leaveGameConfirm" class="leaveConfirm hidden" role="dialog" aria-modal="true" aria-labelledby="leaveGameTitle">
+      <div class="leaveConfirmCard"><h2 id="leaveGameTitle">Покинуть партию?</h2><p>Текущая игра останется на сервере. Вы вернётесь в лобби бильярда. Чтобы случайно не выйти, выбери действие ниже.</p><div class="leaveConfirmActions"><button class="secondary" id="stayInGameBtn" type="button">Остаться</button><button class="goldbtn" id="confirmLeaveGameBtn" type="button">Выйти в лобби</button></div></div>
     </div>
   </section>
 
@@ -153,9 +157,10 @@
       const $ = id => document.getElementById(id);
       const W=800,H=440,R=10;
       const POCKETS=[{x:31,y:31},{x:400,y:25},{x:769,y:31},{x:31,y:409},{x:400,y:415},{x:769,y:409}];
-      const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#e9e8df",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#e9e8df",8:"#15171d"};
+      const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#7d1830",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#7d1830",8:"#15171d"};
       const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,cameraMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
       let pointerDown=null;
+      const activeTouchPoints=new Map();
 
       function amount(v){const n=Number(v);return Number.isFinite(n)?Math.round(n).toLocaleString("ru-RU"):"—";}
       function setStatus(message,bad){const h=$("globalStatus");h.innerHTML='<span class="dot" style="'+(bad?"background:#ff6b79":"")+'"></span><span></span>';h.lastElementChild.textContent=message;}
@@ -169,8 +174,24 @@
       }
       function stopPolling(){if(state.pollTimer)clearInterval(state.pollTimer);state.pollTimer=null;}
       function startPolling(){stopPolling();state.pollTimer=setInterval(function(){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game"&&state.animatingSeq===null)refreshGame(true);},650);}
+      function protectTelegram(stage){
+        if(!tg)return;
+        const protectedStage=stage==="game"||stage==="waiting";
+        try{
+          if(protectedStage){
+            if(typeof tg.disableVerticalSwipes==="function")tg.disableVerticalSwipes();
+            if(typeof tg.enableClosingConfirmation==="function")tg.enableClosingConfirmation();
+            if(stage==="game"&&typeof tg.requestFullscreen==="function"&&!tg.isFullscreen)tg.requestFullscreen();
+            if(tg.BackButton&&typeof tg.BackButton.hide==="function")tg.BackButton.hide();
+          }else{
+            if(typeof tg.enableVerticalSwipes==="function")tg.enableVerticalSwipes();
+            if(typeof tg.disableClosingConfirmation==="function")tg.disableClosingConfirmation();
+          }
+        }catch(_){}
+      }
       function showStage(stage){
-        if(stage!=="game"&&state.cameraMode){state.cameraMode=false;const viewBtn=$("viewModeBtn");viewBtn.classList.remove("active");viewBtn.setAttribute("aria-pressed","false");viewBtn.textContent="🎥 Ракурс стола";pointerDown=null;}
+        protectTelegram(stage);
+        if(stage!=="game"&&state.cameraMode){state.cameraMode=false;const viewBtn=$("viewModeBtn");viewBtn.classList.remove("active");viewBtn.setAttribute("aria-pressed","false");viewBtn.textContent="🎥 Повернуть стол";pointerDown=null;}
         state.stage=stage;$("lobbyView").classList.toggle("hidden",stage!=="lobby");$("waitingView").classList.toggle("hidden",stage!=="waiting");$("gameView").classList.toggle("hidden",stage!=="game");
         if(stage==="game"){$("gameView").scrollTop=0;requestAnimationFrame(()=>drawTable());}
         startPolling();
@@ -247,7 +268,7 @@
         const row=$("playerRow");row.innerHTML="";
         g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;const groupLabel=p.group?(p.group==="solid"?"Целые шары":"Полосатые шары"):"";small.textContent=p.isCurrent&&g.status==="playing"?(p.isBot?"ХОД БОТА":"ТВОЙ ХОД")+(groupLabel?" · "+groupLabel:""):(groupLabel||"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
         const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
-        $("aimText").textContent=state.cameraMode?"Ракурс: двигай пальцем по столу. Нажми «Готово · бить», чтобы вернуться к удару.":(state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни от битка в направлении удара":"Ход соперника · наблюдай за ударом")));
+        $("aimText").textContent=state.cameraMode?"Ракурс: двигай одним пальцем. Также ракурс можно менять двумя пальцами без переключения режима. Нажми «Готово · бить», чтобы целиться.":(state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни от битка в направлении удара":"Ход соперника · наблюдай за ударом")));
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
         $("rematchBtn").classList.toggle("hidden",g.status!=="finished");
         $("endResult").classList.toggle("hidden",g.status!=="finished");
@@ -317,11 +338,36 @@
         ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();
       }
       function pointerCoords(e){if(typeof window.billiards3DPointerCoords==="function"){const point=window.billiards3DPointerCoords(e.clientX,e.clientY);if(point&&Number.isFinite(point.x)&&Number.isFinite(point.y))return point;}const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
+      function touchCenter(){const points=Array.from(activeTouchPoints.values());if(!points.length)return null;return{x:points.reduce((sum,p)=>sum+p.x,0)/points.length,y:points.reduce((sum,p)=>sum+p.y,0)/points.length};}
+      function capturePointer(target,id){try{if(target&&typeof target.setPointerCapture==="function")target.setPointerCapture(id);}catch(_){}}
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
-      function onPointerDown(e){if(state.cameraMode){e.preventDefault();pointerDown={id:e.pointerId,mode:"camera",clientX:e.clientX,clientY:e.clientY};e.currentTarget.setPointerCapture?.(e.pointerId);return;}if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId,mode:"aim"};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
-      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();if(pointerDown.mode==="camera"){const dx=e.clientX-pointerDown.clientX,dy=e.clientY-pointerDown.clientY;pointerDown.clientX=e.clientX;pointerDown.clientY=e.clientY;if(window.billiards3DOrbit)window.billiards3DOrbit(dx,dy);return;}state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";}drawTable();}
-      async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();if(pointerDown.mode==="camera"){pointerDown=null;return;}pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
+      function onPointerDown(e){
+        if(e.pointerType==="touch"){
+          activeTouchPoints.set(e.pointerId,{x:e.clientX,y:e.clientY});
+          if(activeTouchPoints.size>=2){
+            e.preventDefault();pointerDown={id:e.pointerId,mode:"two-finger-camera",...(touchCenter()||{x:e.clientX,y:e.clientY})};state.aim=null;
+            capturePointer(e.currentTarget,e.pointerId);setMessage("Поворот ракурса двумя пальцами. Прицеливание снова доступно, когда уберёшь второй палец.");return;
+          }
+        }
+        if(state.cameraMode){e.preventDefault();pointerDown={id:e.pointerId,mode:"camera",clientX:e.clientX,clientY:e.clientY};capturePointer(e.currentTarget,e.pointerId);return;}
+        if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId,mode:"aim"};state.aim=pointerCoords(e);capturePointer(e.currentTarget,e.pointerId);drawTable();
+      }
+      function onPointerMove(e){
+        if(e.pointerType==="touch"&&activeTouchPoints.has(e.pointerId))activeTouchPoints.set(e.pointerId,{x:e.clientX,y:e.clientY});
+        if(pointerDown&&pointerDown.mode==="two-finger-camera"&&activeTouchPoints.size>=2){
+          e.preventDefault();const center=touchCenter();if(!center)return;
+          const dx=center.x-pointerDown.x,dy=center.y-pointerDown.y;pointerDown.x=center.x;pointerDown.y=center.y;
+          if(window.billiards3DOrbit)window.billiards3DOrbit(dx,dy);return;
+        }
+        if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();
+        if(pointerDown.mode==="camera"){const dx=e.clientX-pointerDown.clientX,dy=e.clientY-pointerDown.clientY;pointerDown.clientX=e.clientX;pointerDown.clientY=e.clientY;if(window.billiards3DOrbit)window.billiards3DOrbit(dx,dy);return;}
+        state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";}drawTable();
+      }
+      async function onPointerUp(e){
+        if(e.pointerType==="touch")activeTouchPoints.delete(e.pointerId);
+        if(pointerDown&&pointerDown.mode==="two-finger-camera"){e.preventDefault();if(activeTouchPoints.size<2)pointerDown=null;return;}
+        if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();if(pointerDown.mode==="camera"){pointerDown=null;return;}pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
         const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";return;}
         const power=Number($("shotPowerRange").value)||55;const angle=Math.atan2(dy,dx);await shoot(angle,power);
       }
@@ -331,7 +377,9 @@
         finally{state.busy=false;renderGameUI();}
       }
       async function placeCue(){state.aim=null;$("powerFill").style.width=($("shotPowerRange").value||55)+"%";setMessage(currentPlayerIsMe()?"Прицел сброшен. Потяни от битка в направлении удара.":"Сейчас ход соперника.");drawTable();}
+      function askToLeaveGame(){if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}$("leaveGameConfirm").classList.remove("hidden");$("stayInGameBtn").focus();}
       async function backToLobby(){
+        $("leaveGameConfirm").classList.add("hidden");
         if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}
         state.room=null;state.players=[];state.game=null;state.aim=null;state.visualBalls=null;state.lastAnimatedSeq=0;showStage("lobby");await loadRooms(true);
       }
@@ -345,7 +393,7 @@
       $("botTestBtn").addEventListener("click",()=>{state.botTestMode=!state.botTestMode;$("botTestBtn").classList.toggle("active",state.botTestMode);$("botTestBtn").setAttribute("aria-pressed",String(state.botTestMode));$("botTestBtn").textContent=state.botTestMode?"🤖 Играть с ботом (тест) · включено":"🤖 Играть с ботом (тест) · выключено";});
       $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
-      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);$("viewModeBtn").addEventListener("click",()=>{state.cameraMode=!state.cameraMode;pointerDown=null;state.aim=null;$("viewModeBtn").classList.toggle("active",state.cameraMode);$("viewModeBtn").setAttribute("aria-pressed",String(state.cameraMode));$("viewModeBtn").textContent=state.cameraMode?"✅ Готово · бить":"🎥 Ракурс стола";$("powerFill").style.width=($("shotPowerRange").value||55)+"%";if(state.cameraMode)setMessage("Режим ракурса включён: веди пальцем по столу, чтобы повернуть его.");else setMessage("Ракурс сохранён. Потяни от битка к направлению удара.");renderGameUI();drawTable();});
+      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",askToLeaveGame);$("endLobbyBtn").addEventListener("click",askToLeaveGame);$("stayInGameBtn").addEventListener("click",()=>{$("leaveGameConfirm").classList.add("hidden");});$("confirmLeaveGameBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);$("viewModeBtn").addEventListener("click",()=>{state.cameraMode=!state.cameraMode;pointerDown=null;state.aim=null;$("viewModeBtn").classList.toggle("active",state.cameraMode);$("viewModeBtn").setAttribute("aria-pressed",String(state.cameraMode));$("viewModeBtn").textContent=state.cameraMode?"✅ Готово · бить":"🎥 Повернуть стол";$("powerFill").style.width=($("shotPowerRange").value||55)+"%";if(state.cameraMode)setMessage("Режим ракурса включён: веди одним пальцем по столу. Или поверни стол двумя пальцами без этого режима.");else setMessage("Ракурс сохранён. Потяни от битка к направлению удара.");renderGameUI();drawTable();});
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
       $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";$("powerFill").style.width=$("shotPowerRange").value+"%";});$("powerFill").style.width=$("shotPowerRange").value+"%";
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
@@ -372,7 +420,7 @@
       const ballMaterialCache=new Map();
       let cueStick=null,aimLine=null,resizeObserver=null;
       const W=800,H=440,SCALE=0.01,BALL_R=0.10;
-      const colors={1:0xf7d51d,2:0x1767d8,3:0xd72e35,4:0x6c36b8,5:0xef7e21,6:0x139e59,7:0xe9e8df,9:0xf7d51d,10:0x1767d8,11:0xd72e35,12:0x6c36b8,13:0xef7e21,14:0x139e59,15:0xe9e8df,8:0x101217};
+      const colors={1:0xf7d51d,2:0x1767d8,3:0xd72e35,4:0x6c36b8,5:0xef7e21,6:0x139e59,7:0x7d1830,9:0xf7d51d,10:0x1767d8,11:0xd72e35,12:0x6c36b8,13:0xef7e21,14:0x139e59,15:0x7d1830,8:0x101217};
       function mat(color,roughness=0.3,metalness=0){return new THREE.MeshStandardMaterial({color,roughness,metalness});}
       function roundedBox(w,h,d,r,material){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.castShadow=true;mesh.receiveShadow=true;return mesh;}
       function buildTable(){
