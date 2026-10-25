@@ -320,7 +320,8 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       }
       const game = result.rows[0].game_state;
       const shooter = game.players?.[game.currentPlayerIndex];
-      if (!game.testMode || game.status !== "playing" || !shooter?.isBot) {
+      if (!game.testMode || game.status !== "playing" || !shooter?.isBot ||
+          Number(game.botNextAt || 0) > Date.now()) {
         await client.query("COMMIT"); transactionOpen = false;
         return;
       }
@@ -349,6 +350,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         seq: game.turnNo, shooterId: String(shooter.id), angle, power,
         startBalls, endBalls: cloneBalls(sim.endBalls), pocketedIds: ids, scratch: sunkCue
       };
+      game.botNextAt = Date.now() + 1200;
 
       if (sunkEight) {
         const wins = Boolean(ownGroupBefore && remainingOwnBefore === 0 && !sunkCue);
@@ -444,7 +446,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       if (!/^\d+$/.test(roomId)) throw new BilliardsError(400, "Неверный номер комнаты.");
       await client.query("BEGIN"); transactionOpen = true;
       await ensurePlayer(client, user);
-      const roomResult = await client.query("SELECT id, status FROM billiards_rooms WHERE id = $1 FOR UPDATE", [roomId]);
+      const roomResult = await client.query("SELECT id, status, bot_mode FROM billiards_rooms WHERE id = $1 FOR UPDATE", [roomId]);
       const room = roomResult.rows[0];
       if (!room) throw new BilliardsError(404, "Комната уже не существует.");
       if (room.status !== "waiting") throw new BilliardsError(400, "Эта партия уже началась.");
@@ -452,6 +454,9 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         "SELECT 1 FROM billiards_room_players WHERE room_id = $1 AND telegram_id = $2",
         [roomId, user.id]
       );
+      if (!member.rows.length && room.bot_mode) {
+        throw new BilliardsError(400, "Это тестовая комната с ботом. Создай собственную тестовую партию.");
+      }
       if (!member.rows.length) {
         const count = await client.query("SELECT COUNT(*)::INTEGER AS total FROM billiards_room_players WHERE room_id = $1", [roomId]);
         if (Number(count.rows[0]?.total || 0) >= 2) throw new BilliardsError(400, "В комнате уже два игрока.");
