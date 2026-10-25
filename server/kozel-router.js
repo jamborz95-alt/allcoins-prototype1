@@ -530,11 +530,14 @@ export function createKozelRouter({ pool, verifyTelegram }) {
     if (!user) return;
     try {
       await pool.query("INSERT INTO players (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO NOTHING", [String(user.id)]);
+      await pool.query("DELETE FROM kozel_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'");
       const result = await pool.query(
         `SELECT r.*, COUNT(rp.telegram_id)::INTEGER AS players_count
          FROM kozel_rooms r LEFT JOIN kozel_room_players rp ON rp.room_id = r.id
          WHERE r.status = 'waiting' AND r.bot_mode = FALSE
-         GROUP BY r.id ORDER BY r.created_at DESC LIMIT 50`
+         GROUP BY r.id
+         HAVING COUNT(rp.telegram_id) < 4
+         ORDER BY r.created_at DESC LIMIT 50`
       );
       const balance = await pool.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
       return res.json({
@@ -633,15 +636,15 @@ export function createKozelRouter({ pool, verifyTelegram }) {
       await ensurePlayer(client, user);
       const oldMember = await client.query("SELECT 1 FROM kozel_room_players WHERE room_id = $1 AND telegram_id = $2", [roomId, String(user.id)]);
       if (!oldMember.rows.length) {
-        const count = await client.query("SELECT COUNT(*)::INTEGER AS total FROM kozel_room_players WHERE room_id = $1", [roomId]);
+        const count = await client.query("SELECT COUNT(*)::INTEGER AS total, COALESCE(MAX(seat_no), -1)::INTEGER AS max_seat FROM kozel_room_players WHERE room_id = $1", [roomId]);
         if (Number(count.rows[0]?.total || 0) >= 4) throw new KozelError(400, "Комната уже заполнена.");
         const profile = await client.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
         if (Number(profile.rows[0]?.balance || 0) < Number(room.stake)) throw new KozelError(400, "Недостаточно AC для ставки этой комнаты.");
-        const index = Number(count.rows[0]?.total || 0);
+        const seatNo = Number(count.rows[0]?.max_seat ?? -1) + 1;
         const displayName = String(user.first_name || user.username || "Игрок").trim().slice(0, 40) || "Игрок";
         await client.query(
           "INSERT INTO kozel_room_players (room_id, telegram_id, display_name, seat_no) VALUES ($1, $2, $3, $4)",
-          [roomId, String(user.id), displayName, index]
+          [roomId, String(user.id), displayName, seatNo]
         );
       }
       await client.query("COMMIT"); open = false;
