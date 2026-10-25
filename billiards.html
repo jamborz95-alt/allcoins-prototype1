@@ -170,6 +170,30 @@
       const POCKETS=[{x:31,y:31},{x:400,y:25},{x:769,y:31},{x:31,y:409},{x:400,y:415},{x:769,y:409}];
       const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#7d1830",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#7d1830",8:"#15171d"};
       const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,cameraMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
+      const billiardsAudio={context:null,source:null,filter:null,gain:null,master:null};
+      function ensureBilliardsAudio(){
+        const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;
+        try{
+          if(!billiardsAudio.context){
+            const context=new AudioContextClass(),master=context.createGain();master.gain.value=0.58;master.connect(context.destination);
+            const filter=context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=430;filter.Q.value=0.55;
+            const gain=context.createGain();gain.gain.value=0;gain.connect(filter);filter.connect(master);
+            const sampleCount=Math.max(1,Math.floor(context.sampleRate*1.5)),buffer=context.createBuffer(1,sampleCount,context.sampleRate),samples=buffer.getChannelData(0);let previous=0;
+            for(let i=0;i<sampleCount;i++){const white=Math.random()*2-1;previous=previous*0.72+white*0.28;samples[i]=previous;}
+            const source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(gain);source.start();
+            billiardsAudio.context=context;billiardsAudio.master=master;billiardsAudio.filter=filter;billiardsAudio.gain=gain;billiardsAudio.source=source;
+          }
+          if(billiardsAudio.context.state==="suspended")billiardsAudio.context.resume().catch(()=>{});
+        }catch(error){console.debug("Звук бильярда недоступен на устройстве.",error);}
+      }
+      function updateRollingSound(balls){
+        const context=billiardsAudio.context,gain=billiardsAudio.gain,filter=billiardsAudio.filter;if(!context||!gain||!filter)return;
+        let total=0,count=0,maxSpeed=0;
+        for(const ball of balls||[]){if(!ball.active||ball.falling)continue;const speed=Math.hypot(Number(ball.vx)||0,Number(ball.vy)||0);if(speed>0.12){total+=speed*speed;count++;maxSpeed=Math.max(maxSpeed,speed);}}
+        const averageSpeed=count?Math.sqrt(total/count):0,intensity=Math.max(0,Math.min(1,averageSpeed/15)),volume=count?0.095*intensity:0;
+        try{const now=context.currentTime;gain.gain.setTargetAtTime(volume,now,0.075);filter.frequency.setTargetAtTime(270+Math.min(1,maxSpeed/15)*730,now,0.09);if(context.state==="suspended")context.resume().catch(()=>{});}catch(_){}
+      }
+      function stopRollingSound(){updateRollingSound([]);}
       let pointerDown=null;
       const activeTouchPoints=new Map();
       let navigationGuardActive=false;
@@ -221,6 +245,7 @@
         }catch(_){}
       }
       function showStage(stage){
+        if(stage!=="game")stopRollingSound();
         const wasProtected=state.stage==="game"||state.stage==="waiting";
         state.stage=stage;
         protectTelegram(stage);
@@ -315,51 +340,53 @@
 
       function cloneBalls(balls){return balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:Number(b.x),y:Number(b.y),active:Boolean(b.active)}));}
       function createPhysics(sourceBalls,angle,power){
-        const balls=cloneBalls(sourceBalls).map(b=>({...b,vx:0,vy:0}));const cue=balls.find(b=>b.id==="cue"&&b.active);
+        const balls=cloneBalls(sourceBalls).map(b=>({...b,vx:0,vy:0,falling:false,fallProgress:0}));const cue=balls.find(b=>b.id==="cue"&&b.active);
         if(cue){const speed=3.7+Math.max(4,Math.min(100,Number(power)||0))*0.16;cue.vx=Math.cos(angle)*speed;cue.vy=Math.sin(angle)*speed;}
         return{balls,pocketedIds:[],scratch:false,frames:0};
       }
       function stepPhysics(physics){
-        const balls=physics.balls,stopSpeed=0.07,substeps=2,moveScale=1/substeps,friction=Math.sqrt(0.9885),restitution=0.96;
+        const balls=physics.balls,stopSpeed=0.07,substeps=2,moveScale=1/substeps,friction=Math.sqrt(0.9885),restitution=0.96,fallDurationSteps=30;
         let maxSpeed=0;
         for(let substep=0;substep<substeps;substep++){
           maxSpeed=0;
           for(const b of balls){
             if(!b.active)continue;
+            if(b.falling){
+              b.fallFrames=(b.fallFrames||0)+1;
+              const p=Math.max(0,Math.min(1,b.fallFrames/fallDurationSteps)),eased=1-Math.pow(1-p,2);
+              b.fallProgress=p;b.x=b.fallStartX+(b.pocketX-b.fallStartX)*eased;b.y=b.fallStartY+(b.pocketY-b.fallStartY)*eased;b.vx=0;b.vy=0;
+              if(p>=1){b.active=false;b.falling=false;if(!b.pocketReported){physics.pocketedIds.push(b.id);b.pocketReported=true;if(b.id==="cue")physics.scratch=true;}}
+              continue;
+            }
             b.x+=b.vx*moveScale;b.y+=b.vy*moveScale;
             const pocket=POCKETS.find(p=>Math.hypot(b.x-p.x,b.y-p.y)<21.5);
-            if(pocket){b.active=false;b.vx=0;b.vy=0;physics.pocketedIds.push(b.id);if(b.id==="cue")physics.scratch=true;continue;}
+            if(pocket){b.falling=true;b.fallFrames=0;b.fallProgress=0;b.fallStartX=b.x;b.fallStartY=b.y;b.pocketX=pocket.x;b.pocketY=pocket.y;b.vx=0;b.vy=0;continue;}
             if(b.x<42){b.x=42;b.vx=Math.abs(b.vx)*0.90;}
             if(b.x>758){b.x=758;b.vx=-Math.abs(b.vx)*0.90;}
             if(b.y<42){b.y=42;b.vy=Math.abs(b.vy)*0.90;}
             if(b.y>398){b.y=398;b.vy=-Math.abs(b.vy)*0.90;}
           }
           for(let i=0;i<balls.length;i++){
-            const a=balls[i];if(!a.active)continue;
+            const a=balls[i];if(!a.active||a.falling)continue;
             for(let j=i+1;j<balls.length;j++){
-              const b=balls[j];if(!b.active)continue;
+              const b=balls[j];if(!b.active||b.falling)continue;
               let dx=b.x-a.x,dy=b.y-a.y,distance=Math.hypot(dx,dy);
               if(distance>=R*2)continue;
               if(distance<0.001){const seed=(i+1)*1.61803398875+(j+1)*0.75487766625;distance=0.001;dx=Math.cos(seed)*distance;dy=Math.sin(seed)*distance;}
               const nx=dx/distance,ny=dy/distance,overlap=R*2-distance;
-              a.x-=nx*(overlap/2+0.02);a.y-=ny*(overlap/2+0.02);
-              b.x+=nx*(overlap/2+0.02);b.y+=ny*(overlap/2+0.02);
+              a.x-=nx*(overlap/2+0.02);a.y-=ny*(overlap/2+0.02);b.x+=nx*(overlap/2+0.02);b.y+=ny*(overlap/2+0.02);
               const relative=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
               if(relative>0.0001){const impulse=relative*(1+restitution)/2;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}
             }
           }
-          for(const b of balls){
-            if(!b.active)continue;
-            b.vx*=friction;b.vy*=friction;
-            const speed=Math.hypot(b.vx,b.vy);
-            if(speed<stopSpeed){b.vx=0;b.vy=0;}else maxSpeed=Math.max(maxSpeed,speed);
-          }
-          if(maxSpeed<stopSpeed)break;
+          for(const b of balls){if(!b.active||b.falling)continue;b.vx*=friction;b.vy*=friction;const speed=Math.hypot(b.vx,b.vy);if(speed<stopSpeed){b.vx=0;b.vy=0;}else maxSpeed=Math.max(maxSpeed,speed);}
+          const anyFalling=balls.some(b=>b.active&&b.falling);
+          if(maxSpeed<stopSpeed&&!anyFalling)break;
         }
         physics.frames++;
-        return maxSpeed<stopSpeed||physics.frames>=900;
+        return (maxSpeed<stopSpeed&&!balls.some(b=>b.active&&b.falling))||physics.frames>=900;
       }
-      function physicsToBalls(physics){return physics.balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:b.x,y:b.y,active:Boolean(b.active)}));}
+      function physicsToBalls(physics){return physics.balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:b.x,y:b.y,active:Boolean(b.active),falling:Boolean(b.falling),fallProgress:Math.max(0,Math.min(1,Number(b.fallProgress)||0))}));}
       function interpolateBallSets(fromBalls,toBalls,t){
         const previous=new Map((fromBalls||[]).map(ball=>[String(ball.id),ball]));
         const progress=Math.max(0,Math.min(1,Number(t)||0));
@@ -389,7 +416,7 @@
             const progress=Math.max(0,Math.min(1,(time-settleStart)/duration)),eased=1-Math.pow(1-progress,3);
             state.visualBalls=interpolateBallSets(settleFrom,shot.endBalls,eased);drawTable();
             if(progress<1){state.raf=requestAnimationFrame(settleFrame);return;}
-            state.visualBalls=cloneBalls(shot.endBalls);state.animatingSeq=null;state.raf=0;drawTable();renderGameUI();
+            state.visualBalls=cloneBalls(shot.endBalls);state.animatingSeq=null;state.raf=0;stopRollingSound();drawTable();renderGameUI();
           }
           state.raf=requestAnimationFrame(settleFrame);
         }
@@ -401,7 +428,8 @@
           while(accumulator>=stepMs&&steps<maxStepsPerFrame&&!finished){
             previousBalls=physicsToBalls(physics);finished=stepPhysics(physics);accumulator-=stepMs;steps++;
           }
-          state.visualBalls=interpolateBallSets(previousBalls,physicsToBalls(physics),Math.min(1,accumulator/stepMs));drawTable();
+          state.visualBalls=interpolateBallSets(previousBalls,physicsToBalls(physics),Math.min(1,accumulator/stepMs));
+          updateRollingSound(physics.balls);drawTable();
           if(!finished){state.raf=requestAnimationFrame(frame);return;}
           settleToServer(now);
         }
@@ -420,23 +448,33 @@
         balls.forEach(ball=>{if(!ball.active)return;drawBall(ctx,ball);});
         if(state.aim&&state.game&&state.animatingSeq===null&&!state.busy){
           const cue=balls.find(b=>b.id==="cue"&&b.active);if(cue){const dx=state.aim.x-cue.x,dy=state.aim.y-cue.y,dist=Math.hypot(dx,dy);if(dist>3){
-            const angle=Math.atan2(dy,dx),lineStartX=cue.x+Math.cos(angle)*(R+1),lineStartY=cue.y+Math.sin(angle)*(R+1);ctx.save();ctx.setLineDash([7,7]);ctx.strokeStyle="#eafff5cc";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(lineStartX,lineStartY);ctx.lineTo(cue.x+Math.cos(angle)*350,cue.y+Math.sin(angle)*350);ctx.stroke();ctx.setLineDash([]);
-            ctx.strokeStyle="#ebd3a0";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(cue.x-Math.cos(angle)*28,cue.y-Math.sin(angle)*28);ctx.lineTo(cue.x-Math.cos(angle)*(72+Math.min(dist,150)*.12),cue.y-Math.sin(angle)*(72+Math.min(dist,150)*.12));ctx.stroke();ctx.restore();
+            const angle=Math.atan2(dy,dx),ux=Math.cos(angle),uy=Math.sin(angle),lineStartX=cue.x+ux*(R+1),lineStartY=cue.y+uy*(R+1),lineLength=window.billiardsAimLineLengthPixels?window.billiardsAimLineLengthPixels(cue,balls,ux,uy,350):350;ctx.save();ctx.setLineDash([7,7]);ctx.strokeStyle="#eafff5cc";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(lineStartX,lineStartY);ctx.lineTo(cue.x+ux*(R+1+lineLength),cue.y+uy*(R+1+lineLength));ctx.stroke();ctx.setLineDash([]);
+            ctx.strokeStyle="#ebd3a0";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(cue.x-ux*(R-1),cue.y-uy*(R-1));ctx.lineTo(cue.x-ux*(72+Math.min(dist,150)*.12),cue.y-uy*(72+Math.min(dist,150)*.12));ctx.stroke();ctx.restore();
           }}
         }
       }
       function roundedRect(ctx,x,y,w,h,r,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
       function roundedRectStroke(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.stroke();}
       function drawBall(ctx,b){
-        const x=b.x,y=b.y,isCue=b.id==="cue"||b.type==="cue",number=Number(b.number),ballColor=COLORS[number]||"#68798a";
+        const x=b.x,y=b.y,isCue=b.id==="cue"||b.type==="cue",number=Number(b.number),ballColor=COLORS[number]||"#68798a",fall=b.falling?Math.max(0,Math.min(1,Number(b.fallProgress)||0)):0;
+        ctx.save();if(fall>0){ctx.globalAlpha=1-fall;const size=1-fall*.84;ctx.translate(x,y);ctx.scale(size,size);ctx.translate(-x,-y);}
         if(!isCue&&b.type==="stripe"){ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fillStyle=ballColor;ctx.fill();ctx.save();ctx.beginPath();ctx.arc(x,y,R-0.5,0,Math.PI*2);ctx.clip();ctx.fillStyle="#dce3e7";ctx.fillRect(x-R,y-4,R*2,8);ctx.restore();}
         else{ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);const g=ctx.createRadialGradient(x-3,y-4,1,x,y,R+1);if(isCue){g.addColorStop(0,"#fff");g.addColorStop(1,"#bac5cd");}else if(b.type==="eight"||number===8){g.addColorStop(0,"#555");g.addColorStop(1,"#030507");}else{g.addColorStop(0,"#f2e0a7");g.addColorStop(.28,ballColor);g.addColorStop(1,"#15191e");}ctx.fillStyle=g;ctx.fill();}
         if(!isCue){ctx.beginPath();ctx.arc(x,y,5.7,0,Math.PI*2);ctx.fillStyle="#e9e0c7";ctx.fill();ctx.fillStyle="#12171d";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(Number.isFinite(number)?number:"?"),x,y+.2);}
-        ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();
+        ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();ctx.restore();
       }
       function pointerCoords(e){if(typeof window.billiards3DPointerCoords==="function"){const point=window.billiards3DPointerCoords(e.clientX,e.clientY);if(point&&Number.isFinite(point.x)&&Number.isFinite(point.y))return point;}const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
       function touchCenter(){const points=Array.from(activeTouchPoints.values());if(!points.length)return null;return{x:points.reduce((sum,p)=>sum+p.x,0)/points.length,y:points.reduce((sum,p)=>sum+p.y,0)/points.length};}
       function touchDistance(){const points=Array.from(activeTouchPoints.values());if(points.length<2)return 0;return Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);}
+      window.billiardsAimLineLengthPixels=function(cue,balls,ux,uy,maxPixels){
+        const left=42,right=758,top=42,bottom=398;let limit=Math.max(1,Number(maxPixels)||350);const candidates=[];
+        if(ux>0.00001)candidates.push((right-cue.x)/ux);else if(ux< -0.00001)candidates.push((left-cue.x)/ux);
+        if(uy>0.00001)candidates.push((bottom-cue.y)/uy);else if(uy< -0.00001)candidates.push((top-cue.y)/uy);
+        const railDistance=candidates.filter(v=>Number.isFinite(v)&&v>0).reduce((a,b)=>Math.min(a,b),Infinity);
+        if(Number.isFinite(railDistance))limit=Math.min(limit,Math.max(0,railDistance-R-1));
+        for(const ball of balls||[]){if(!ball.active||ball.falling||String(ball.id)===String(cue.id))continue;const rx=Number(ball.x)-cue.x,ry=Number(ball.y)-cue.y,along=rx*ux+ry*uy;if(along<=R)continue;const side=Math.abs(rx*uy-ry*ux),diameter=R*2;if(side>=diameter)continue;const hit=along-Math.sqrt(Math.max(0,diameter*diameter-side*side));if(hit>R)limit=Math.min(limit,Math.max(0,hit-R-1));}
+        return Math.max(0.5,limit);
+      }
       function capturePointer(target,id){try{if(target&&typeof target.setPointerCapture==="function")target.setPointerCapture(id);}catch(_){}}
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
@@ -499,6 +537,7 @@
       window.billiards3DZoomChanged=function(factor){const range=$("tableZoomRange"),label=$("tableZoomValue");if(!range||!label)return;const percent=Math.max(82,Math.min(145,Math.round(Number(factor)*100)));range.value=String(percent);label.textContent=percent+"%";};
       $("tableZoomRange").addEventListener("input",function(){const factor=Math.max(0.82,Math.min(1.45,Number(this.value)/100));$("tableZoomValue").textContent=Math.round(factor*100)+"%";if(window.billiards3DSetZoom)window.billiards3DSetZoom(factor);});
       $("resetTableViewBtn").addEventListener("click",function(){if(window.billiards3DResetView)window.billiards3DResetView();else{$("tableZoomRange").value="100";$("tableZoomValue").textContent="100%";}});
+      $("gameView").addEventListener("pointerdown",ensureBilliardsAudio,{passive:true});
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
       $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";$("powerFill").style.width=$("shotPowerRange").value+"%";});$("powerFill").style.width=$("shotPowerRange").value+"%";
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
@@ -549,7 +588,7 @@
         const legMat=mat(0x302018,.36);
         [[-3.4,-1.8],[3.4,-1.8],[-3.4,1.8],[3.4,1.8]].forEach(([x,z])=>{const leg=roundedBox(.34,1.05,.34,.06,legMat);leg.position.set(x,-.43,z);tableGroup.add(leg);});
         const lightGeo=new THREE.PlaneGeometry(7.5,3.9);const marks=new THREE.Mesh(lightGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.025,side:THREE.DoubleSide}));marks.rotation.x=-Math.PI/2;marks.position.y=.337;tableGroup.add(marks);
-        cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,12),mat(0xd5b47b,.28));cue.castShadow=true;cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,12),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-2.61;cueStick.add(tip);scene.add(cueStick);
+        cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,16),mat(0xd5b47b,.28));cue.castShadow=true;cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,16),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-.13;cueStick.add(tip);scene.add(cueStick);
         const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(1,0,0)]);aimLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xe9ffe9,transparent:true,opacity:.8}));scene.add(aimLine);
       }
       function ballMaterial(ball){
@@ -565,9 +604,12 @@
           const band=new THREE.Mesh(new THREE.TorusGeometry(BALL_R*.82,.027,8,40),mat(0xdce3e7,.22));band.rotation.x=Math.PI/2;group.add(band);
         }
         if(!isCue){
-          const disk=new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.43,24),mat(0xe9e0c7,.35));disk.position.y=BALL_R*.91;disk.rotation.x=-Math.PI/2;group.add(disk);
-          const numberCanvas=document.createElement("canvas");numberCanvas.width=128;numberCanvas.height=128;const ctx=numberCanvas.getContext("2d");ctx.fillStyle="#e9e0c7";ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fill();ctx.fillStyle="#111820";ctx.font="bold 68px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(ball.number),64,66);
-          const tex=new THREE.CanvasTexture(numberCanvas);const sprite=new THREE.Mesh(new THREE.PlaneGeometry(BALL_R*.72,BALL_R*.72),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));sprite.position.y=BALL_R*.97;sprite.rotation.x=-Math.PI/2;group.add(sprite);
+          const disk=new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.445,48),mat(0xe9e0c7,.3));disk.position.y=BALL_R*.91;disk.rotation.x=-Math.PI/2;group.add(disk);
+          const numberCanvas=document.createElement("canvas");numberCanvas.width=256;numberCanvas.height=256;const ctx=numberCanvas.getContext("2d");
+          ctx.clearRect(0,0,256,256);ctx.beginPath();ctx.arc(128,128,116,0,Math.PI*2);ctx.fillStyle="#f4f1e7";ctx.fill();ctx.lineWidth=7;ctx.strokeStyle="#9c9b94";ctx.stroke();ctx.beginPath();ctx.arc(128,128,105,0,Math.PI*2);ctx.lineWidth=2;ctx.strokeStyle="#d2d0c7";ctx.stroke();
+          ctx.fillStyle="#111820";ctx.font="900 "+(Number(ball.number)>=10?"86px":"112px")+" Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(ball.number),128,132);
+          const tex=new THREE.CanvasTexture(numberCanvas);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+          const sprite=new THREE.Mesh(new THREE.PlaneGeometry(BALL_R*.76,BALL_R*.76),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false}));sprite.position.y=BALL_R*.975;sprite.rotation.x=-Math.PI/2;group.add(sprite);
         }
         scene.add(group);return group;
       }
@@ -578,19 +620,21 @@
           const id=String(b.id);active.add(id);
           let mesh=ballMeshes.get(id);if(!mesh){mesh=makeBall(b);ballMeshes.set(id,mesh);}
           const x=(Number(b.x)-400)*SCALE,z=(Number(b.y)-220)*SCALE,previous=ballPositions.get(id);
-          if(previous){const dx=x-previous.x,dz=z-previous.z,distance=Math.hypot(dx,dz);if(distance>0.00002&&distance<0.7){const axis=new THREE.Vector3(-dz,0,dx).normalize();mesh.rotateOnWorldAxis(axis,distance/BALL_R);}}
-          ballPositions.set(id,{x,z});mesh.position.set(x,.43,z);mesh.visible=true;
+          const fall=b.falling?Math.max(0,Math.min(1,Number(b.fallProgress)||0)):0;
+          if(previous){const dx=x-previous.x,dz=z-previous.z,distance=Math.hypot(dx,dz);if(!b.falling&&distance>0.00002&&distance<0.7){const axis=new THREE.Vector3(-dz,0,dx).normalize();mesh.rotateOnWorldAxis(axis,distance/BALL_R);}}
+          ballPositions.set(id,{x,z});mesh.position.set(x,.43-fall*.34,z);const scale=1-fall*.82;mesh.scale.setScalar(scale);mesh.visible=true;
         }
         for(const [id,mesh] of ballMeshes){if(!active.has(id)){mesh.visible=false;ballPositions.delete(id);}}
       }
       function updateAim(balls,aim,canAim){
-        const cue=(balls||[]).find(b=>b.id==="cue"&&b.active);
+        const cue=(balls||[]).find(b=>b.id==="cue"&&b.active&&!b.falling);
         if(!cue||!aim||!canAim){cueStick.visible=false;aimLine.visible=false;return;}
         const dx=aim.x-cue.x,dy=aim.y-cue.y,dist=Math.hypot(dx,dy);if(dist<3){cueStick.visible=false;aimLine.visible=false;return;}
-        const angle=Math.atan2(dy,dx),x=(cue.x-400)*SCALE,z=(cue.y-220)*SCALE;
-        cueStick.visible=true;cueStick.position.set(x,.47,z);cueStick.rotation.y=-angle;
-        cueStick.position.x-=Math.cos(angle)*.62;cueStick.position.z-=Math.sin(angle)*.62;
-        aimLine.visible=true;aimLine.position.set(x+Math.cos(angle)*(BALL_R+.005),.43,z+Math.sin(angle)*(BALL_R+.005));aimLine.rotation.y=-angle;aimLine.scale.set(Math.min(3.5,dist*SCALE+1),1,1);
+        const angle=Math.atan2(dy,dx),ux=Math.cos(angle),uy=Math.sin(angle),x=(cue.x-400)*SCALE,z=(cue.y-220)*SCALE;
+        cueStick.visible=true;cueStick.position.set(x+ux*.02,.47,z+uy*.02);cueStick.rotation.y=-angle;
+        aimLine.visible=true;aimLine.position.set(x+ux*(BALL_R+.005),.43,z+uy*(BALL_R+.005));aimLine.rotation.y=-angle;
+        const lengthPixels=window.billiardsAimLineLengthPixels?window.billiardsAimLineLengthPixels(cue,balls,ux,uy,350):350;
+        aimLine.scale.set(Math.max(.005,lengthPixels*SCALE),1,1);
       }
       function fitOrbitRadius(theta,aspect,layout){
         const projectedWidth=Math.abs(Math.cos(theta))*8.25+Math.abs(Math.sin(theta))*4.65;
@@ -606,6 +650,8 @@
       function render(){
         if(!renderer)return;
         const rect=canvas.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height),aspect=w/h;
+        const desiredPixelRatio=Math.min(window.devicePixelRatio||1,2);
+        if(Math.abs(renderer.getPixelRatio()-desiredPixelRatio)>0.01)renderer.setPixelRatio(desiredPixelRatio);
         const layout=aspect<0.82?"portrait":"landscape";viewportAspect=aspect;
         const layoutChanged=layout!==cameraLayout,aspectChanged=Math.abs(aspect-lastCameraAspect)>0.02;
         if(layoutChanged){cameraLayout=layout;orbitTheta=layout==="portrait"?Math.PI/2:0;orbitPhi=layout==="portrait"?0.55:Math.atan2(5.3,7.0);}
@@ -614,7 +660,7 @@
       }
       try{
         renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
         renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
         renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
         buildTable();
