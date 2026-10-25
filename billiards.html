@@ -276,7 +276,7 @@
       function physicsToBalls(physics){return physics.balls.map(b=>({id:String(b.id),number:Number(b.number),type:String(b.type),x:b.x,y:b.y,active:Boolean(b.active)}));}
       function startShotAnimation(shot){
         if(!shot||!shot.startBalls||!shot.endBalls)return;
-        state.animatingSeq=Number(shot.seq);state.visualBalls=cloneBalls(shot.startBalls);state.aim=null;$("powerFill").style.width="0%";renderGameUI();
+        state.animatingSeq=Number(shot.seq);state.visualBalls=cloneBalls(shot.startBalls);state.aim=null;$("powerFill").style.width=($("shotPowerRange").value||55)+"%";renderGameUI();
         const physics=createPhysics(shot.startBalls,Number(shot.angle),Number(shot.power));let previous=0;
         function frame(now){if(state.stage!=="game"){state.animatingSeq=null;state.visualBalls=null;return;}
           const steps=previous===0?1:2;previous=now;let finished=false;for(let i=0;i<steps;i++){finished=stepPhysics(physics);if(finished)break;}
@@ -316,9 +316,9 @@
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
       function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
-      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){const p=state.aim;const d=Math.hypot(p.x-cue.x,p.y-cue.y);$("powerFill").style.width=Math.min(100,Math.max(0,d/1.5))+"%";}drawTable();}
+      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){const p=state.aim;const d=Math.hypot(p.x-cue.x,p.y-cue.y);$("powerFill").style.width=($("shotPowerRange").value||55)+"%";}drawTable();}
       async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
-        const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width="0%";return;}
+        const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";return;}
         const power=Number($("shotPowerRange").value)||55;const angle=Math.atan2(dy,dx);await shoot(angle,power);
       }
       async function shoot(angle,power){if(!state.room||!canShoot())return;state.busy=true;setMessage("Удар…");renderGameUI();
@@ -326,7 +326,7 @@
         catch(e){setMessage(e.message,true);await refreshGame(true);}
         finally{state.busy=false;renderGameUI();}
       }
-      async function placeCue(){state.aim=null;$("powerFill").style.width="0%";setMessage(currentPlayerIsMe()?"Прицел сброшен. Потяни от битка в направлении удара.":"Сейчас ход соперника.");drawTable();}
+      async function placeCue(){state.aim=null;$("powerFill").style.width=($("shotPowerRange").value||55)+"%";setMessage(currentPlayerIsMe()?"Прицел сброшен. Потяни от битка в направлении удара.":"Сейчас ход соперника.");drawTable();}
       async function backToLobby(){
         if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}
         state.room=null;state.players=[];state.game=null;state.aim=null;state.visualBalls=null;state.lastAnimatedSeq=0;showStage("lobby");await loadRooms(true);
@@ -343,7 +343,7 @@
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
       $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
-      $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";});
+      $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";$("powerFill").style.width=$("shotPowerRange").value+"%";});$("powerFill").style.width=$("shotPowerRange").value+"%";
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
       setTimeout(function(){if(!window.billiards3DReady){const fallback=$("poolCanvas"),overlay=$("pool3DCanvas");if(fallback)fallback.style.opacity="1";if(overlay)overlay.style.display="none";setMessage("3D не загрузился на этом устройстве — включён совместимый режим стола.");}},7000);
       window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
@@ -380,7 +380,7 @@
         const trim=roundedBox(8.0,.15,4.4,.1,mat(0xb78948,.27,.35));trim.position.y=.2;tableGroup.add(trim);
         const felt=roundedBox(7.55,.08,3.95,.05,mat(0x08734e,.72));felt.position.y=.29;tableGroup.add(felt);
         const railMat=mat(0x174a37,.36),railTop=mat(0x226248,.32);
-        [[0,.39,-2.02,7.72,.18,.22],[0,.39,2.02,7.72,.18,.22],[-3.91,.39,0,.22,.18,3.85],[3.91,.39,0,.22,.18,3.85]].forEach(a=>{const m=roundedBox(a[3],a[4],a[5],.04,railMat);m.position.set(a[0],a[1],a[2]);tableGroup.add(m);});
+        [[-1.95,.39,-2.02,3.35,.18,.22],[1.95,.39,-2.02,3.35,.18,.22],[-1.95,.39,2.02,3.35,.18,.22],[1.95,.39,2.02,3.35,.18,.22],[-3.91,.39,0,.22,.18,3.35],[3.91,.39,0,.22,.18,3.35]].forEach(a=>{const m=roundedBox(a[3],a[4],a[5],.04,railMat);m.position.set(a[0],a[1],a[2]);tableGroup.add(m);});
         const pocketMat=mat(0x020504,.2);
         [[-3.8,-1.95],[0,-1.98],[3.8,-1.95],[-3.8,1.95],[0,1.98],[3.8,1.95]].forEach(([x,z])=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.17,.19,.06,32),pocketMat);p.position.set(x,.36,z);tableGroup.add(p);});
         const legMat=mat(0x302018,.36);
