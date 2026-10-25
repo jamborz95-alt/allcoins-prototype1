@@ -10,7 +10,7 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-bomb1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-touchpass1"'),
   "The game link should remain stable.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
@@ -79,10 +79,23 @@ try {
 
   await page.locator('#playerCountControl button[data-count="4"]').click();
   await page.locator('#modeControl button[data-mode="local"]').click();
+  await page.evaluate(() => { Math.random = () => 0; });
   await page.locator("#startGame").click();
 
   assert.equal(await page.locator("#playerCharacter").isVisible(), true,
     "The full-screen arena should show the custom player character.");
+  const characterVisual = await page.locator("#playerCharacter").evaluate(el => {
+    const s = getComputedStyle(el);
+    const figure = el.querySelector(".runner-figure");
+    const r = figure.getBoundingClientRect();
+    return {display:s.display,visibility:s.visibility,opacity:Number(s.opacity),figureWidth:r.width,figureHeight:r.height};
+  });
+  assert.notEqual(characterVisual.display,"none","The player character must not be hidden by CSS.");
+  assert.equal(characterVisual.visibility,"visible","The character should remain visible during play.");
+  assert.ok(characterVisual.opacity > .9 && characterVisual.figureWidth >= 70 && characterVisual.figureHeight >= 90,
+    "The character should be large and visible on a phone: " + JSON.stringify(characterVisual));
+  assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"),"0",
+    "The predictable contact test should start with the human player holding the bomb.");
   assert.equal(await page.locator("#playerCharacter .runner-figure").count(), 1,
     "The player should use the original custom SVG figure.");
   assert.equal(await page.locator("#moveJoystick").isVisible(), true,
@@ -110,14 +123,38 @@ try {
   assert.equal(walkingClassAfterRelease, false, "The character should stop walking when the joystick is released.");
 
   const previousHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
-  const target = previousHolder !== "0" ? "0" : "1";
+  const target = "3"; // Bottom-right opponent, reachable by moving down and right.
   const beforePass = await page.locator("#bomb").boundingBox();
+
+  // Tapping an opponent chooses/highlights them, but must not pass the bomb from across the arena.
   await page.locator('#seats .seat[data-player="' + target + '"]').click();
-  await page.waitForTimeout(600);
+  assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"), "0",
+    "A remote tap should not pass the bomb before the character reaches the opponent.");
+  assert.match(await page.locator("#instruction").innerText(), /физическом касании/i,
+    "The game should tell the player that contact transfers the bomb.");
+
+  // Hold the virtual joystick diagonally. The animated miner should physically reach the opponent.
+  const stick = await page.locator("#moveJoystick").boundingBox();
+  assert.ok(stick, "The movement joystick should be visible before contact.");
+  const sx = stick.x + stick.width / 2;
+  const sy = stick.y + stick.height / 2;
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  await page.mouse.move(sx + stick.width * .31, sy + stick.height * .31, {steps:8});
+  await page.waitForFunction(() =>
+    document.querySelector('#seats .seat.current')?.dataset.player === "3",
+    {timeout:3500}
+  );
+  await page.waitForTimeout(560);
+  await page.mouse.up();
   assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"), target,
-    "Passing the bomb should transfer possession to the selected player.");
+    "Physically touching the opponent should automatically transfer the bomb to them.");
   const afterPass = await page.locator("#bomb").boundingBox();
-  assert.ok(beforePass && afterPass, "The bomb should remain visible during and after a pass.");
+  assert.ok(beforePass && afterPass, "The bomb should remain visible during and after a contact pass.");
+  assert.ok(Math.hypot(
+    (afterPass.x + afterPass.width / 2) - (beforePass.x + beforePass.width / 2),
+    (afterPass.y + afterPass.height / 2) - (beforePass.y + beforePass.height / 2)
+  ) > 35, "The bomb should animate from the moving character to the contacted opponent.");
 
   const heartsBefore = await page.locator(
     '#seats .seat[data-player="' + target + '"] .lives .heart.on'
@@ -159,7 +196,7 @@ try {
   assert.equal(await page.locator("#setupView").isVisible(), true,
     "The game should return to setup without leaving the app page.");
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
-  console.log("Pass the Bomb smoke test passed: lobby/maps, 2/3/4 seats, joystick movement and running animation, transfer, explosion/lives, next round, bot transfer and 320px mobile layout.");
+  console.log("Pass the Bomb smoke test passed: lobby/maps, visible animated miner, joystick movement, contact-only bomb transfer, explosion/lives, next round, bot transfer and 320px mobile layout.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
