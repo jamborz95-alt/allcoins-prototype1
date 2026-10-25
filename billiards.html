@@ -347,7 +347,7 @@
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
       setTimeout(function(){if(!window.billiards3DReady){const fallback=$("poolCanvas"),overlay=$("pool3DCanvas");if(fallback)fallback.style.opacity="1";if(overlay)overlay.style.display="none";setMessage("3D не загрузился на этом устройстве — включён совместимый режим стола.");}},7000);
       window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
-      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game")refreshGame(true);}});
+      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game"&&state.animatingSeq===null)refreshGame(true);}});
       (async function init(){if(tg){try{tg.ready();tg.expand();}catch(_){}}
         await loadRooms(false);startPolling();
       })();
