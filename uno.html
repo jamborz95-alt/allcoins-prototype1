@@ -141,6 +141,7 @@
     .uno-hand .uno-card:active{z-index:50;transform:translateY(-9px) scale(1.025)}
     .uno-hand .uno-card.playable:active{transform:translateY(-10px) scale(1.035)}
     .uno-hand .uno-card:active{cursor:grabbing}
+    .uno-hand .uno-card.hand-selected{z-index:70;transform:translateY(-9px) scale(1.025);box-shadow:0 0 0 2px #ffe58a,0 10px 20px #0008}
     .uno-hand .card-center{font-size:35px}
     .uno-hand .card-center.action{font-size:27px}
     .uno-hand .card-center.word{font-size:10px}
@@ -335,6 +336,7 @@
         roomPollBusy: false,
         gamePollBusy: false,
         selectedPendingCard: null,
+        selectedHandCardId: null,
         error: "",
         busy: false,
         renderedGame: null,
@@ -941,15 +943,13 @@
             suppressUnoCardClick(element);
 
             if (!dragging) {
+              // Tap only selects/lifts the card. A play must come from an actual drag onto the table.
               state.cardDragging = false;
               restoreSource();
-              const latestGame = state.game;
-              const stillPlayable = latestGame &&
-                latestGame.players.some(player => player.isYou && player.isCurrent) &&
-                latestGame.status === "playing" &&
-                playableOnClient(card, latestGame);
-              if (stillPlayable) await playCard(card);
-              else if (state.game) renderGame();
+              state.selectedHandCardId = String(state.selectedHandCardId) === String(card.id)
+                ? null
+                : String(card.id);
+              if (state.game && state.stage === "game") renderGame();
               return;
             }
 
@@ -1456,6 +1456,9 @@
         const turn = isCurrent && game.status === "playing";
         const handHost = $("unoHand");
         handHost.innerHTML = "";
+        if (!game.hand.some(card => String(card.id) === String(state.selectedHandCardId))) {
+          state.selectedHandCardId = null;
+        }
         $("handLabel").textContent = "Твои карты · " + game.hand.length;
         $("turnLabel").textContent = game.status === "finished" ? "ПАРТИЯ ЗАВЕРШЕНА" : (turn ? "ТВОЙ ХОД" : "ХОД СОПЕРНИКА");
         $("turnLabel").style.color = turn ? "#ffe4a1" : "#c7dfd4";
@@ -1465,10 +1468,13 @@
           const element = cardElement(card, { interactive: true, playable: turn ? canPlay : false });
           element.disabled = false;
           element.setAttribute("aria-disabled", canPlay ? "false" : "true");
+          if (String(state.selectedHandCardId) === String(card.id)) {
+            element.classList.add("hand-selected");
+            element.setAttribute("aria-pressed", "true");
+          } else {
+            element.setAttribute("aria-pressed", "false");
+          }
           attachUnoCardDrag(element, card, turn);
-          element.addEventListener("click", function () {
-            if (canPlay && !state.cardAnimationInProgress) playCard(card);
-          });
           handHost.appendChild(element);
         });
 
