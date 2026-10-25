@@ -312,7 +312,7 @@
         if(b.type!=="cue"){ctx.beginPath();ctx.arc(x,y,5.7,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.fillStyle="#12171d";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(b.number),x,y+.2);}
         ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();
       }
-      function pointerCoords(e){const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
+      function pointerCoords(e){if(typeof window.billiards3DPointerCoords==="function"){const point=window.billiards3DPointerCoords(e.clientX,e.clientY);if(point&&Number.isFinite(point.x)&&Number.isFinite(point.y))return point;}const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
       function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
@@ -360,6 +360,8 @@
       const canvas=document.getElementById("pool3DCanvas");
       if(!canvas)return;
       let renderer,scene,camera,tableGroup;
+      const raycaster=new THREE.Raycaster();
+      const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.43);
       const ballMeshes=new Map();
       const ballMaterialCache=new Map();
       let cueStick=null,aimLine=null,resizeObserver=null;
@@ -434,6 +436,7 @@
         renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
         buildTable();
         window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
+        window.billiards3DPointerCoords=function(clientX,clientY){const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;const ndc=new THREE.Vector2(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(ndc,camera);const point=new THREE.Vector3();if(!raycaster.ray.intersectPlane(aimPlane,point))return null;return{x:point.x/SCALE+400,y:point.z/SCALE+220};};
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
         canvas.style.background="#0a2018";
         window.billiards3DUpdate([],null,false);
