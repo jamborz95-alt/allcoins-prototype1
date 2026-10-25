@@ -197,6 +197,7 @@ function processPlayedCard(game, playerIndex, card) {
 }
 function finishDeal(game, previousWinnerIndex) {
   const [team0Points, team1Points] = game.teamPoints;
+  game.lastDealPoints = [team0Points, team1Points];
   game.lastTrick = game.lastTrick || null;
   if (team0Points === team1Points) {
     game.message = "Раздача завершена со счётом 60:60. Буквы не начислены.";
@@ -271,6 +272,7 @@ function publicGame(game, userId) {
     roundNo: Number(game.roundNo || 1),
     trickNo: Number(game.trickNo || 1),
     teamPoints: [...(game.teamPoints || [0, 0])],
+    lastDealPoints: [...(game.lastDealPoints || [0, 0])],
     letters: game.letters.map(items => [...items]),
     currentPlayerIndex: Number(game.currentPlayerIndex || 0),
     currentPlayerId: game.players[game.currentPlayerIndex]?.id || null,
