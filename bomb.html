@@ -204,6 +204,13 @@
     .joystick-knob:after{content:"";width:34%;height:34%;border:1px solid #fff7;border-radius:50%;background:linear-gradient(145deg,#754d2c,#e8b45b);box-shadow:inset 0 1px 2px #0006}
     .player-character{position:absolute;z-index:5;left:50%;top:64%;width:88px;height:126px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;visibility:visible;opacity:1;transform:translate(-50%,-56%);filter:drop-shadow(0 5px 5px #170b05d9) drop-shadow(0 0 7px #ffe0a04d);will-change:left,top}
     .player-character .runner-figure{display:block;flex:0 0 auto;width:82px;height:104px;overflow:visible;visibility:visible}
+    .bot-characters{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+    .bot-character{width:76px;height:112px;z-index:5;opacity:1;visibility:visible}
+    .bot-character .runner-figure{width:70px;height:91px}
+    .bot-character .character-name{font-size:8px;max-width:104px;overflow:hidden;text-overflow:ellipsis}
+    .bot-character .character-shadow{bottom:17px;width:28px}
+    .player-character.contact-nearby,.bot-character.contact-nearby{filter:drop-shadow(0 0 9px #fff0ae) drop-shadow(0 4px 4px #170b05d9)}
+    @media(max-width:390px){.bot-character{width:65px;height:100px}.bot-character .runner-figure{width:60px;height:80px}.bot-character .character-shadow{bottom:18px;width:25px}.bot-character .character-name{font-size:7px;padding:2px 5px}}
     .player-character .runner-facing{transform-box:fill-box;transform-origin:center}
     .player-character.facing-left .runner-facing{transform:scaleX(-1)}
     .player-character .runner-leg-front,.player-character .runner-leg-back,.player-character .runner-arm-front,.player-character .runner-arm-back,.player-character .runner-bob{transform-box:fill-box}
@@ -417,6 +424,7 @@
       <div class="trail" id="trail" aria-hidden="true"></div>
       <div class="flash" id="flash"></div>
       <div id="seats"></div>
+      <div id="botCharacters" class="bot-characters" aria-hidden="true"></div>
       <div class="player-character" id="playerCharacter" aria-label="Твой персонаж" role="img">
         <div class="character-shadow"></div>
         <svg class="runner-figure" viewBox="0 0 90 112" aria-hidden="true">
@@ -524,6 +532,12 @@
     let moveFrame = 0;
     let lastMoveFrameTime = 0;
     const MOVE_SPEED = 205;
+    const BOT_MOVE_SPEED = 226;
+    let botMoveFrame = 0;
+    let botMoveLastTime = 0;
+    let botMoverIndex = -1;
+    let botTargetIndex = -1;
+    let navigationGuardArmed = false;
     let players = [];
     let holder = -1;
     let round = 0;
@@ -772,6 +786,81 @@
       if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','A','d','D','w','W','s','S'].includes(event.key) && movePointerId === null) resetJoystick();
     });
 
+    function botCharacterFor(index) {
+      return $('botCharacters')?.querySelector('.bot-character[data-player="' + index + '"]') || null;
+    }
+
+    function spawnPointForBot(index, width, height) {
+      if (players.length === 2) return { x: width * .75, y: height * .49 };
+      if (players.length === 3) {
+        return index === 1 ? { x: width * .72, y: height * .30 } : { x: width * .27, y: height * .72 };
+      }
+      const points = {
+        1: { x: width * .74, y: height * .31 },
+        2: { x: width * .27, y: height * .72 },
+        3: { x: width * .74, y: height * .72 }
+      };
+      return points[index] || { x: width * .72, y: height * .48 };
+    }
+
+    function copyRunnerSvg(playerIndex) {
+      const source = $('playerCharacter')?.querySelector('.runner-figure');
+      if (!source) return document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const clone = source.cloneNode(true);
+      const idMap = new Map();
+      clone.querySelectorAll('[id]').forEach(node => {
+        const nextId = node.id + '-bot-' + playerIndex;
+        idMap.set(node.id, nextId);
+        node.id = nextId;
+      });
+      clone.querySelectorAll('*').forEach(node => {
+        for (const attr of Array.from(node.attributes)) {
+          let value = attr.value.replace(/url\(#([^)]+)\)/g, (match, id) => 'url(#' + (idMap.get(id) || id) + ')');
+          if (value.startsWith('#') && idMap.has(value.slice(1))) value = '#' + idMap.get(value.slice(1));
+          if (value !== attr.value) node.setAttribute(attr.name, value);
+        }
+      });
+      return clone;
+    }
+
+    function renderBotCharacters() {
+      const layer = $('botCharacters');
+      if (!layer) return;
+      layer.innerHTML = '';
+      const rect = $('arena').getBoundingClientRect();
+      players.forEach((player, index) => {
+        if (index === 0) return;
+        const character = document.createElement('div');
+        character.className = 'player-character bot-character';
+        character.dataset.player = String(index);
+        character.setAttribute('role', 'img');
+        character.setAttribute('aria-label', player.name);
+        character.appendChild(document.createElement('div')).className = 'character-shadow';
+        character.appendChild(copyRunnerSvg(index));
+        const name = document.createElement('span');
+        name.className = 'character-name';
+        name.textContent = player.name;
+        character.appendChild(name);
+        const bubble = document.createElement('span');
+        bubble.className = 'character-bubble';
+        bubble.setAttribute('aria-hidden', 'true');
+        bubble.textContent = '✦';
+        character.appendChild(bubble);
+        layer.appendChild(character);
+        const point = spawnPointForBot(index, rect.width, rect.height);
+        character.style.left = point.x + 'px';
+        character.style.top = point.y + 'px';
+      });
+      updateBotCarryingState();
+    }
+
+    function updateBotCarryingState() {
+      document.querySelectorAll('.bot-character').forEach(character => {
+        const index = Number(character.dataset.player);
+        character.classList.toggle('carrying', index === holder && phase === 'playing');
+      });
+    }
+
     function renderSeats() {
       const seats = $('seats'); seats.innerHTML = '';
       const classes = players.length === 2 ? ['seat-left','seat-right'] : players.length === 3 ? ['seat-top-left','seat-bottom-left','seat-top-right'] : ['seat-top-left','seat-bottom-left','seat-top-right','seat-bottom-right'];
@@ -792,6 +881,7 @@
         seat.addEventListener('click', () => onSeatClick(i));
         seats.appendChild(seat);
       });
+      renderBotCharacters();
       updateSeats();
       positionBomb(holder, false);
     }
@@ -815,6 +905,8 @@
       });
       $('aliveLabel').textContent = `${activePlayers().length} ${plural(activePlayers().length, 'игрок', 'игрока', 'игроков')}`;
       $('roundLabel').textContent = String(round || 1);
+      renderCharacterPosition();
+      updateBotCarryingState();
     }
     function plural(n, one, few, many) {
       const x = Math.abs(n) % 100, y = x % 10;
