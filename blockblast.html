@@ -147,6 +147,15 @@ body.playing .top{display:none}
 #board.is-resolving{pointer-events:none}
 #tray.is-resolving{pointer-events:none;opacity:.86}
 @media(prefers-reduced-motion:reduce){.cell.clearing,.cell.clearing:before{animation-duration:1ms!important}}
+
+@keyframes blockBlastLand{
+  0%{transform:scale(.78);filter:brightness(1.2)}
+  65%{transform:scale(1.07);filter:brightness(1.08)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+.cell.just-placed{animation:blockBlastLand 180ms cubic-bezier(.2,.8,.25,1) both;will-change:transform}
+.drag-ghost{will-change:left,top;contain:layout style;backface-visibility:hidden}
+@media(prefers-reduced-motion:reduce){.cell.just-placed{animation-duration:1ms!important}}
 </style>
 <style id="block-blast-drop-size-final">
 :root{--block-size:18px}
@@ -229,7 +238,8 @@ var personalKey="allcoins_blockblast_personal_"+userId;
 var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
 var BOARD_SIZE=8;
-var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0;
+var lastPlacedCells=[];
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0;
 var shapes=[
  [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
  [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
@@ -323,7 +333,7 @@ function backToMenu(){gameActive=false;document.body.classList.remove("playing")
 function renderBoard(){
  var root=$("board");root.innerHTML="";
  for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
-  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
+  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"")+(lastPlacedCells.indexOf(r+","+c)>=0?" just-placed":"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
   cell.addEventListener("click",function(){if(!isResolving)placeSelected(Number(this.dataset.row)-selectedAnchorRow,Number(this.dataset.col)-selectedAnchorCol);});
   root.appendChild(cell);
  }
@@ -383,10 +393,25 @@ function makeDragGhost(index,x,y,anchorRow,anchorCol){
  var maxRow=0,maxCol=0;piece.forEach(function(p){maxRow=Math.max(maxRow,p[0]);maxCol=Math.max(maxCol,p[1]);});
  dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";
  for(var r=0;r<=maxRow;r++)for(var c=0;c<=maxCol;c++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece.some(function(p){return p[0]===r&&p[1]===c;}))dot.className="piece-dot";dragGhost.appendChild(dot);}
- var ghostCell=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--block-size"))||24;var ghostGap=2;dragGhost.style.transform="translate(-"+(anchorCol*(ghostCell+ghostGap)+ghostCell/2)+"px,-"+(anchorRow*(ghostCell+ghostGap)+ghostCell/2)+"px)";document.body.appendChild(dragGhost);moveDragGhost(x,y);
+ var ghostCell=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--block-size"))||24;var ghostGap=2;dragGhost.style.transform="translate(-"+(anchorCol*(ghostCell+ghostGap)+ghostCell/2)+"px,-"+(anchorRow*(ghostCell+ghostGap)+ghostCell/2)+"px)";document.body.appendChild(dragGhost);dragCurrentX=x;dragCurrentY=y;dragTargetX=x;dragTargetY=y;dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";
 }
-function moveDragGhost(x,y){if(dragGhost){dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";}}
-function clearDragGhost(){if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;}
+function moveDragGhost(x,y){
+ if(!dragGhost)return;
+ dragTargetX=x;dragTargetY=y;
+ if(!dragMotionFrame)dragMotionFrame=requestAnimationFrame(animateDragGhost);
+}
+function animateDragGhost(){
+ dragMotionFrame=0;
+ if(!dragGhost)return;
+ dragCurrentX+=(dragTargetX-dragCurrentX)*0.34;
+ dragCurrentY+=(dragTargetY-dragCurrentY)*0.34;
+ if(Math.abs(dragTargetX-dragCurrentX)<0.45)dragCurrentX=dragTargetX;
+ if(Math.abs(dragTargetY-dragCurrentY)<0.45)dragCurrentY=dragTargetY;
+ dragGhost.style.left=dragCurrentX+"px";
+ dragGhost.style.top=dragCurrentY+"px";
+ if(dragCurrentX!==dragTargetX||dragCurrentY!==dragTargetY)dragMotionFrame=requestAnimationFrame(animateDragGhost);
+}
+function clearDragGhost(){if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;}
 function clearDrag(){dragState=null;clearDragGhost();}
 function findBoardCellAtPoint(x,y){
  var boardEl=$("board");if(!boardEl)return null;
@@ -427,7 +452,7 @@ async function placeSelected(row,col){
  var piece=pieces[selected];
  if(!fits(piece,row,col)){$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";return;}
  var usedIndex=selected;
- for(var i=0;i<piece.length;i++)board[row+piece[i][0]][col+piece[i][1]]=(Math.random()<0.38?2:1);
+ lastPlacedCells=[];for(var i=0;i<piece.length;i++){var placedRow=row+piece[i][0],placedCol=col+piece[i][1];board[placedRow][placedCol]=(Math.random()<0.38?2:1);lastPlacedCells.push(placedRow+","+placedCol);}
  score+=piece.length;
  var fullRows=[],fullCols=[];
  for(var r=0;r<BOARD_SIZE;r++)if(board[r].every(Boolean))fullRows.push(r);
@@ -458,6 +483,7 @@ async function placeSelected(row,col){
   $("gameHint").textContent="Хорошо! Поставь следующую фигуру.";
  }
  renderBoard();renderTray();renderScore();
+ if(lastPlacedCells.length){setTimeout(function(){lastPlacedCells=[];},220);}
  if(pieces.every(function(p){return !p;})){generatePieces();}
  if(!anyMoveAvailable()){endGame();return;}
 }
