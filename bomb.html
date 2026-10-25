@@ -601,6 +601,7 @@
       }
       round = 0;
       phase = 'ready';
+      try { history.pushState({ allcoinsBombGuard: true }, '', window.location.href); navigationGuardArmed = true; } catch (_) {}
       $('setupView').classList.add('hidden');
       $('gameView').classList.remove('hidden');
       $('arena').dataset.map = chosenMap;
@@ -1051,7 +1052,11 @@
       if (left < .24) {
         $('bomb').classList.add('urgent');
         $('fuseLabel').textContent = '⚠️ Скоро';
-        if (now - lastTickSound > 400) { playTone(210 + left * 160, .035, 'square', .018); lastTickSound = now; }
+      }
+      const soundInterval = left < .24 ? 220 : 760;
+      if (now - lastTickSound > soundInterval) {
+        playDynamiteFuseSound(left);
+        lastTickSound = now;
       }
       if (left <= 0) explode();
     }
@@ -1262,6 +1267,7 @@
 
     function onBack() {
       stopTimers(); roundToken++; phase = 'setup'; holder = -1;
+      navigationGuardArmed = false;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
       resetJoystick();
       stopCharacterMotion();
@@ -1270,10 +1276,23 @@
     }
     $('backToAllcoins').addEventListener('click', () => { if (window.history.length > 1) window.history.back(); else window.location.href = './index.html'; });
     $('gameBack').addEventListener('click', onBack);
+    function handleTelegramBack() {
+      const activeGame = !$('gameView').classList.contains('hidden');
+      if (activeGame && ['playing','passing','boom'].includes(phase)) {
+        setInstruction('Матч продолжается. Чтобы выйти в меню, используй кнопку «Меню» внутри игры.');
+        return;
+      }
+      onBack();
+    }
     $('startGame').addEventListener('click', startGame);
     $('continueRound').addEventListener('click', () => { if (phase === 'boom') { $('resultOverlay').classList.add('hidden'); startRound(); } });
     $('resultMenu').addEventListener('click', onBack);
-    if (tg && tg.BackButton) { try { tg.BackButton.onClick(onBack); } catch (_) {} }
+    if (tg && tg.BackButton) { try { tg.BackButton.onClick(handleTelegramBack); } catch (_) {} }
+    window.addEventListener('popstate', () => {
+      if ($('gameView').classList.contains('hidden') || !['playing','passing','boom'].includes(phase)) return;
+      try { history.pushState({ allcoinsBombGuard: true }, '', window.location.href); navigationGuardArmed = true; } catch (_) {}
+      setInstruction('Игра не прервана. Продолжай матч; для выхода используй кнопку «Меню» внутри игры.');
+    });
     $('soundToggle').addEventListener('click', () => {
       soundOn = !soundOn; $('soundToggle').textContent = soundOn ? '🔊' : '🔇';
       if (soundOn) playTone(590,.06,'sine',.025);
@@ -1301,9 +1320,73 @@
         osc.connect(gain); gain.connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + duration);
       } catch (_) {}
     }
+    function playDynamiteFuseSound(left) {
+      if (!soundOn) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioContext) audioContext = new AC();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        const now = audioContext.currentTime;
+        const duration = left < .24 ? .085 : .055;
+        const sampleCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+        const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < sampleCount; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / sampleCount);
+        const noise = audioContext.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioContext.createBiquadFilter();
+        filter.type = 'highpass'; filter.frequency.setValueAtTime(left < .24 ? 1350 : 1700, now);
+        const gain = audioContext.createGain();
+        const volume = left < .24 ? .052 : .026;
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(volume, now + .006);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+        noise.connect(filter); filter.connect(gain); gain.connect(audioContext.destination);
+        noise.start(now); noise.stop(now + duration);
+        const tick = audioContext.createOscillator();
+        const tickGain = audioContext.createGain();
+        tick.type = 'square';
+        tick.frequency.setValueAtTime(left < .24 ? 360 : 235, now);
+        tickGain.gain.setValueAtTime(left < .24 ? .026 : .012, now);
+        tickGain.gain.exponentialRampToValueAtTime(.0001, now + .035);
+        tick.connect(tickGain); tickGain.connect(audioContext.destination);
+        tick.start(now); tick.stop(now + .04);
+      } catch (_) {}
+    }
+
     function playExplosionSound() {
       if (!soundOn) return;
-      playTone(95,.28,'sawtooth',.09); window.setTimeout(() => playTone(54,.36,'triangle',.06),50);
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { playTone(95,.28,'sawtooth',.09); return; }
+        if (!audioContext) audioContext = new AC();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        const now = audioContext.currentTime;
+        const length = Math.floor(audioContext.sampleRate * .42);
+        const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          const decay = 1 - i / length;
+          data[i] = (Math.random() * 2 - 1) * decay * decay;
+        }
+        const noise = audioContext.createBufferSource(); noise.buffer = buffer;
+        const lowpass = audioContext.createBiquadFilter(); lowpass.type = 'lowpass'; lowpass.frequency.setValueAtTime(520, now);
+        const noiseGain = audioContext.createGain();
+        noiseGain.gain.setValueAtTime(.0001, now);
+        noiseGain.gain.exponentialRampToValueAtTime(.16, now + .012);
+        noiseGain.gain.exponentialRampToValueAtTime(.0001, now + .42);
+        noise.connect(lowpass); lowpass.connect(noiseGain); noiseGain.connect(audioContext.destination);
+        noise.start(now); noise.stop(now + .43);
+        const boom = audioContext.createOscillator(); boom.type = 'sawtooth';
+        const boomGain = audioContext.createGain();
+        boom.frequency.setValueAtTime(115, now); boom.frequency.exponentialRampToValueAtTime(38, now + .35);
+        boomGain.gain.setValueAtTime(.12, now); boomGain.gain.exponentialRampToValueAtTime(.0001, now + .4);
+        boom.connect(boomGain); boomGain.connect(audioContext.destination);
+        boom.start(now); boom.stop(now + .41);
+      } catch (_) {
+        playTone(95,.28,'sawtooth',.09);
+      }
     }
   })();
   </script>
