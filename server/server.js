@@ -10,6 +10,7 @@ import { createRpsRouter } from "./rps-router.js";
 import { createUnoRouter } from "./uno-router.js";
 import { createBilliardsRouter } from "./billiards-router.js";
 import { createCheckersRouter } from "./checkers-router.js";
+import { createTowersRouter } from "./towers-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -222,7 +223,9 @@ const billiardsRouter = createBilliardsRouter({ pool, verifyTelegram });
 app.use("/api/billiards", billiardsRouter);
 
 const checkersRouter = createCheckersRouter({ pool, verifyTelegram });
+const towersRouter = createTowersRouter({ pool, verifyTelegram });
 app.use("/api/checkers", checkersRouter);
+app.use("/api/towers", towersRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3333,6 +3336,8 @@ async function startServer() {
     console.log("Checkers Online tables are ready");
     await billiardsRouter.initialize();
     console.log("Billiards Online tables are ready");
+    await towersRouter.initialize();
+    console.log("Towers Capture tables are ready");
   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS durak_rooms (
