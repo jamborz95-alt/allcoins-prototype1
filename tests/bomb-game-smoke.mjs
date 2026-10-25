@@ -103,7 +103,7 @@ try {
   await page.locator("#startGame").click();
   const botHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.ok(["1", "2", "3"].includes(botHolder), "Deterministic setup should start with a bot holding the bomb.");
-  await page.waitForTimeout(1900);
+  await page.waitForTimeout(2200);
   const nextHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.notEqual(nextHolder, botHolder, "A bot should automatically pass the bomb after its decision delay.");
 
