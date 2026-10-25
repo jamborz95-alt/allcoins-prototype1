@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-3dturret1"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-3dturret2"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
@@ -16,8 +16,8 @@ assert.ok(html.includes(".turret-head") && html.includes(".soldier-helmet") &&
   html.includes('type-shooter') && towersRouter.includes('type: "shooter"'),
   "The battlefield should render detailed 3D-style troop figures and a shooting tower.");
 assert.ok(towersRouter.includes("function tickShooterTowers(game, now)") &&
-  html.includes("function fireShooterTowers(state,now)"),
-  "The shooting tower should damage enemy troops in online and local games.");
+  html.includes("function fireShooterTowers(state,now)") && html.includes("el.classList.add('firing')"),
+  "The shooting tower should damage enemy troops and show a muzzle flash in online and local games.");
 assert.ok(html.includes("Стратегия в реальном времени") && html.includes("function localTick()"),
   "The game should implement real-time tower control and local practice.");
 assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId, ownerId = null)") &&
