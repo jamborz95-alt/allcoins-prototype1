@@ -14,9 +14,20 @@ assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   "The game needs a fullscreen battlefield, bot practice and room options.");
 assert.ok(html.includes("Стратегия в реальном времени") && html.includes("function localTick()"),
   "The game should implement real-time tower control and local practice.");
-assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId)") &&
-  towersRouter.includes("rememberRoad(game, fromId, toId);"),
-  "The backend should persist road connections for all players throughout an online match.");
+assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId, ownerId = null)") &&
+  towersRouter.includes("rememberRoad(game, fromId, toId, String(user.id));"),
+  "The backend should persist player-owned road connections throughout an online match.");
+assert.ok(html.includes(".road-group.road-blue") && html.includes(".road-group.road-red") &&
+  html.includes(".road-group.road-green") && html.includes("requestAnimationFrame(fleetAnimationTick)"),
+  "Roads should use player colours and fleets should move through frame-based animation.");
+assert.ok(html.includes("function travelDuration(from,to,troops)") && towersRouter.includes("function travelDuration(from, to, troops)"),
+  "Travel speed should scale with the dispatched army size.");
+const distanceFn = towersRouter.match(/function distance\(a, b\) \{[\s\S]*?\n\}/)?.[0];
+const durationFn = towersRouter.match(/function travelDuration\(from, to, troops\) \{[\s\S]*?\n\}/)?.[0];
+assert.ok(distanceFn && durationFn, "The backend should define route distance and speed calculations.");
+const getDuration = new Function(distanceFn + "\n" + durationFn + "\nreturn travelDuration;")();
+assert.ok(getDuration({ x: 0, y: 0 }, { x: 70, y: 0 }, 100) < getDuration({ x: 0, y: 0 }, { x: 70, y: 0 }, 4),
+  "A larger army must travel faster than a smaller army.");
 
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
@@ -52,10 +63,16 @@ try {
   await page.locator(".tower[data-tower='1']").click();
   await page.locator(".tower[data-tower='4']").click();
   await page.locator(".fleet").first().waitFor({ timeout: 3000 });
+  const firstFleet = page.locator("#fleets .fleet").first();
+  const firstTransform = await firstFleet.evaluate(el => el.style.transform);
+  await page.waitForTimeout(90);
+  const nextTransform = await firstFleet.evaluate(el => el.style.transform);
+  assert.notEqual(nextTransform, firstTransform, "Fleet position should update smoothly between server/game ticks.");
   await page.locator(".tower[data-tower='1']").click();
   await page.locator(".tower[data-tower='5']").click();
   await page.waitForFunction(() => document.querySelectorAll("#fleets .fleet").length >= 2, null, { timeout: 3000 });
   assert.ok(await page.locator("#routeSvg .road-group").count() >= 2, "Multiple attacks should leave multiple asphalt roads on the map.");
+  assert.ok(await page.locator("#routeSvg .road-group.road-blue").count() >= 2, "Player roads should use the player's colour.");
   assert.ok(await page.locator("#routeSvg line.road-asphalt").count() >= 2, "Each route should have an asphalt road surface.");
   assert.ok(await page.locator("#fleets .fleet-soldier").count() >= 6, "Armies on multiple roads should contain animated soldier figures.");
 
