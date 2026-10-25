@@ -264,7 +264,8 @@
     (function () {
       "use strict";
       var $ = function (id) { return document.getElementById(id); };
-      var ROOM_KEY = "allcoins_checkers_demo_rooms_v1";
+      var API = "https://allcoins-server.onrender.com/api/checkers";
+      var roomRequest = 0;
       var stake = 100;
       var currentRoom = null;
       var board = [];
@@ -325,83 +326,110 @@
       });
       $("stakePresets").addEventListener("click", function (event) {
         var button = event.target.closest("[data-stake]");
-        if (button) setStake(button.dataset.stake);
-      });
-
-      function readRooms() {
-        try {
-          var parsed = JSON.parse(localStorage.getItem(ROOM_KEY) || "[]");
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (_) { return []; }
+        if (button) set      function initData() {
+        return telegram && typeof telegram.initData === "string" ? telegram.initData : "";
       }
-      function saveRooms(rooms) {
-        try { localStorage.setItem(ROOM_KEY, JSON.stringify(rooms.slice(0, 12))); }
-        catch (_) {}
+      async function checkersApi(path, payload) {
+        var dataString = initData();
+        if (!dataString) {
+          throw new Error("Открой Шашки через Telegram Mini App, чтобы увидеть общие комнаты.");
+        }
+        var response = await fetch(API + path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({ initData: dataString }, payload || {}))
+        });
+        var result;
+        try { result = await response.json(); }
+        catch (_) { throw new Error("Сервер комнат вернул непонятный ответ. Попробуй обновить список."); }
+        if (!response.ok || !result || result.ok !== true) {
+          throw new Error(result && result.error ? result.error : "Не удалось связаться с сервером комнат.");
+        }
+        return result;
       }
-      function roomCode() { return "SH-" + Math.random().toString(36).slice(2, 6).toUpperCase(); }
-      function createRoom() {
+      async function createRoom() {
         setStake($("stakeInput").value);
-        var room = {
-          id: roomCode(),
-          stake: stake,
-          createdAt: Date.now(),
-          owner: personName,
-          status: "Ожидает игрока",
-          demo: true
-        };
-        var rooms = readRooms();
-        rooms.unshift(room);
-        saveRooms(rooms);
-        currentRoom = room;
-        $("createdRoomName").textContent = "Комната " + room.id;
-        $("createdRoomMeta").textContent = "Ставка " + formatNumber(room.stake) + " AC · " + room.status;
-        $("createdRoomPanel").classList.remove("hidden");
-        $("lobbyStatus").textContent = "Комната добавлена в локальный тестовый список.";
-        renderRooms();
+        var button = $("createRoom");
+        button.disabled = true;
+        $("lobbyStatus").textContent = "Создаю общую комнату…";
+        try {
+          var result = await checkersApi("/rooms/create", { stake: stake });
+          var room = result.room;
+          currentRoom = room;
+          $("createdRoomName").textContent = "Комната " + room.id;
+          $("createdRoomMeta").textContent = "Ставка " + formatNumber(room.stake) + " AC · " + room.status;
+          $("createdRoomPanel").classList.remove("hidden");
+          $("lobbyStatus").textContent = "Комната сохранена на сервере и видна другим игрокам.";
+          await renderRooms();
+        } catch (error) {
+          $("lobbyStatus").textContent = error.message || "Не удалось создать комнату.";
+        } finally {
+          button.disabled = false;
+        }
       }
       function showRooms() {
         $("roomsPanel").classList.remove("hidden");
         renderRooms();
         $("roomsPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
-      function renderRooms() {
+      async function renderRooms() {
+        var requestId = ++roomRequest;
         var list = $("roomsList");
         list.textContent = "";
-        var rooms = readRooms();
-        if (!rooms.length) {
-          var empty = document.createElement("div");
-          empty.className = "notice";
-          empty.textContent = "Пока нет созданных комнат. Создай комнату выше или запусти тестового бота.";
-          list.appendChild(empty);
-          $("roomsStatus").textContent = "";
-          return;
-        }
-        rooms.slice(0, 12).forEach(function (room) {
-          var item = document.createElement("div");
-          item.className = "room-item";
-          var info = document.createElement("div");
-          info.className = "room-info";
-          var name = document.createElement("div");
-          name.className = "room-name";
-          name.textContent = "Комната " + room.id;
-          var meta = document.createElement("div");
-          meta.className = "room-meta";
-          meta.textContent = formatNumber(room.stake) + " AC · " + (room.status || "Ожидает игрока") + " · локальный тест";
-          info.appendChild(name);
-          info.appendChild(meta);
-          var join = document.createElement("button");
-          join.type = "button";
-          join.className = "secondary";
-          join.textContent = "Открыть";
-          join.addEventListener("click", function () {
-            currentRoom = room;
-            startGame(room.stake);
+        var loading = document.createElement("div");
+        loading.className = "notice";
+        loading.textContent = "Загружаю общий список комнат…";
+        list.appendChild(loading);
+        try {
+          var result = await checkersApi("/rooms/list", {});
+          if (requestId !== roomRequest) return;
+          var rooms = Array.isArray(result.rooms) ? result.rooms : [];
+          list.textContent = "";
+          if (!rooms.length) {
+            var empty = document.createElement("div");
+            empty.className = "notice";
+            empty.textContent = "Пока нет открытых комнат. Создай комнату выше — она появится в общем списке у других игроков.";
+            list.appendChild(empty);
+            $("roomsStatus").textContent = "Открытых комнат пока нет.";
+            return;
+          }
+          rooms.slice(0, 50).forEach(function (room) {
+            var item = document.createElement("div");
+            item.className = "room-item";
+            var info = document.createElement("div");
+            info.className = "room-info";
+            var name = document.createElement("div");
+            name.className = "room-name";
+            name.textContent = "Комната " + room.id;
+            var meta = document.createElement("div");
+            meta.className = "room-meta";
+            meta.textContent = formatNumber(room.stake) + " AC · " + (room.status || "Ожидает игрока") +
+              " · " + String(room.playersCount || 1) + "/2 игрока · создал: " + (room.owner || "Игрок");
+            info.appendChild(name);
+            info.appendChild(meta);
+            var open = document.createElement("button");
+            open.type = "button";
+            open.className = "secondary";
+            open.textContent = "Открыть";
+            open.addEventListener("click", function () {
+              currentRoom = room;
+              startGame(room.stake);
+            });
+            item.appendChild(info);
+            item.appendChild(open);
+            list.appendChild(item);
           });
-          item.appendChild(info);
-          item.appendChild(join);
-          list.appendChild(item);
-        });
-        $("roomsStatus").textContent = "В списке " + rooms.length + " локальных комнат.";
+          $("roomsStatus").textContent = "В общем списке " + rooms.length + " открытых комнат.";
+        } catch (error) {
+          if (requestId !== roomRequest) return;
+          list.textContent = "";
+          var failed = document.createElement("div");
+          failed.className = "notice";
+          failed.textContent = error.message || "Не удалось загрузить общие комнаты. Нажми «Найти комнату» ещё раз.";
+          list.appendChild(failed);
+          $("roomsStatus").textContent = "Ошибка загрузки списка.";
+        }
+      }s.length + " локальных комнат.";
       }
 
       $("createRoom").addEventListener("click", createRoom);
