@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
+const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
 assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-roads2"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
@@ -13,6 +14,9 @@ assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   "The game needs a fullscreen battlefield, bot practice and room options.");
 assert.ok(html.includes("Стратегия в реальном времени") && html.includes("function localTick()"),
   "The game should implement real-time tower control and local practice.");
+assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId)") &&
+  towersRouter.includes("rememberRoad(game, fromId, toId);"),
+  "The backend should persist road connections for all players throughout an online match.");
 
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
