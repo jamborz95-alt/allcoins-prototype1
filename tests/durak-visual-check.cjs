@@ -465,7 +465,7 @@ const path = require("node:path");
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       icons: [...document.querySelectorAll("#games .game-app-tile")].map(tile => {
-        const icon = tile.querySelector(".durak-entry-appicon,.uno-entry-appicon,.billiards-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
+        const icon = tile.querySelector(".durak-entry-appicon,.bomb-entry-appicon,.uno-entry-appicon,.billiards-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
         const r = icon?.getBoundingClientRect();
         return { id: tile.id, width: r?.width ?? null, height: r?.height ?? null };
       })
