@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-smooth-cannon1"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-smooth-cannon2"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
@@ -17,7 +17,8 @@ assert.ok(html.includes(".turret-head") && html.includes(".soldier-helmet") &&
   "The battlefield should render detailed 3D-style troop figures and a shooting tower.");
 assert.ok(html.includes("function updateShooterAims") && html.includes("function animateCannonShot") &&
   html.includes("tower-projectile") && html.includes("@keyframes towerEntryMove") &&
-  html.includes("function animateTowerEntry") && html.includes("function detectOnlineArrivals"),
+  html.includes("function animateTowerEntry") && html.includes("function detectOnlineArrivals") &&
+  html.includes("@keyframes cannonRecoil") && html.includes("function spawnShotImpact"),
   "The turret should smoothly rotate and launch a moving projectile; troops should visibly enter captured towers.");
 assert.ok(towersRouter.includes("function tickShooterTowers(game, now)") &&
   html.includes("function fireShooterTowers(state,now)") && html.includes("el.classList.add('firing')") &&
