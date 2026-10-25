@@ -10,8 +10,8 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-fieldjoystick1"'),
-  "The game link should load the larger arena with its on-field joystick.");
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-physics1"'),
+  "The game link should load the smoother physics build with its on-field joystick.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
@@ -38,6 +38,19 @@ assert.ok(bombHtml.includes("setGradient('minerHelmet', outfit.helmet)") &&
   bombHtml.includes("setGradient('minerJacket', outfit.jacket)") &&
   bombHtml.includes("setGradient('minerPants', outfit.pants)"),
   "Bot miners must receive distinct outfit colors.");
+assert.ok(bombHtml.includes("const PLAYER_ACCELERATION = 13.5;") &&
+  bombHtml.includes("const PLAYER_DRAG = 18;") &&
+  bombHtml.includes("playerVelocityX += (targetVX - playerVelocityX) * blend;"),
+  "Player movement should use smooth acceleration, velocity and drag instead of instant speed changes.");
+assert.ok(bombHtml.includes("const blend = 1 - Math.exp(-10 * dt);") &&
+  bombHtml.includes("botVelocityX += (desiredVX - botVelocityX) * blend;"),
+  "Bot movement should accelerate smoothly instead of snapping to full speed.");
+assert.ok(bombHtml.includes("pointOnArc(.25)") && bombHtml.includes("pointOnArc(.5)") &&
+  bombHtml.includes("pointOnArc(.75)") && bombHtml.includes("duration: 485, easing: 'linear'"),
+  "Bomb transfers should follow a smooth sampled curved flight path.");
+assert.ok(bombHtml.includes(".bomb.following{transition:none!important}") &&
+  !bombHtml.slice(bombHtml.indexOf("function syncBombToCarrier()"), bombHtml.indexOf("function setMoveVector")).includes("offsetWidth"),
+  "Following the carrier should not force a layout reflow on every animation frame.");
 assert.ok(bombHtml.includes('<div class="joystick-panel arena-joystick-panel">') &&
   bombHtml.includes(".arena-joystick-panel{position:absolute;left:50%;") &&
   bombHtml.indexOf('id="moveJoystick" type="button"') < bombHtml.indexOf('<div class="bottom-area">'),
@@ -176,7 +189,7 @@ try {
   const characterWhileMoving = await page.locator("#playerCharacter").boundingBox();
   const walkingClassDuringMove = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
   await page.mouse.up();
-  await page.waitForTimeout(70);
+  await page.waitForTimeout(280);
   const characterAfterMove = await page.locator("#playerCharacter").boundingBox();
   const walkingClassAfterRelease = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
   assert.ok(characterWhileMoving && characterAfterMove, "The character should stay rendered while moving.");
