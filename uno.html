@@ -157,6 +157,46 @@
     @media(max-height:700px){#gameView{padding-top:max(5px,env(safe-area-inset-top));padding-bottom:max(5px,env(safe-area-inset-bottom))}.game-top{min-height:37px}.game-top .back{height:36px}.opponents{max-height:22%;padding:4px 1px}.table-felt{min-height:120px}.game-message{min-height:27px;padding:5px 8px}.uno-hand{min-height:82px;padding:4px 2px 7px}.uno-hand .uno-card{height:70px}.uno-hand .card-center{font-size:28px}.uno-hand .card-center.action{font-size:23px}.controls button{min-height:34px;padding:6px 10px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
   </style>
+<style id="uno-opponent-hands-and-slower-plays">
+
+  /* Visible, face-down UNO hands for opponents, styled as a compact card fan. */
+  .opponent { flex-wrap:wrap; align-content:center; max-width:145px; min-width:108px; }
+  .op-hand {
+    flex:0 0 100%; width:100%; min-height:37px; margin-top:3px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:visible; padding:0 2px 1px; isolation:isolate;
+  }
+  .op-hand .op-mini-card {
+    position:relative; flex:0 0 22px; width:22px; min-width:22px;
+    height:33px; min-height:33px; margin:0 -5px 0 0; padding:0;
+    border:1px solid #f0d48b; border-radius:4px; overflow:hidden;
+    box-shadow:0 2px 4px #00110c8c; pointer-events:none;
+  }
+  .op-hand .op-mini-card:before {
+    inset:3px; left:3px; top:3px; width:auto; height:auto;
+    border-radius:2px; border-width:1px;
+  }
+  .op-hand .op-mini-card .back-logo {
+    font-size:9px; text-shadow:0 1px 0 #620d19,1px 0 #b60d25,-1px 0 #b60d25,0 -1px #b60d25;
+  }
+  .op-hand .op-mini-card .back-logo span {
+    padding:1px 2px; border-width:1px; border-radius:3px;
+  }
+  .op-hand-more {
+    position:relative; z-index:12; display:grid; place-items:center;
+    min-width:23px; height:20px; margin-left:4px; padding:0 3px;
+    border:1px solid #e7d092; border-radius:7px;
+    background:#102b28; color:#ffdc89; font-size:9px; font-weight:1000;
+  }
+  @media(max-width:680px) {
+    .opponent { flex:1 1 118px; min-width:100px; max-width:155px; }
+    .op-hand { min-height:35px; }
+  }
+  @media(max-height:700px) {
+    .op-hand { min-height:29px; margin-top:1px; }
+    .op-hand .op-mini-card { height:27px; min-height:27px; }
+  }
+</style>
 </head>
 <body>
   <main class="app" id="lobbyView">
@@ -681,6 +721,36 @@
           count.textContent = p.handCount + " карт" + (p.isCurrent ? " · ход" : "");
           info.append(name, count);
           item.append(avatar, info);
+
+          // In UNO the opponent's card faces stay hidden, but their hand is visibly fanned.
+          if (!p.isYou && Number(p.handCount) > 0) {
+            const handFan = document.createElement("div");
+            handFan.className = "op-hand";
+            handFan.setAttribute("aria-label", p.handCount + " карт в руке");
+            const visibleCards = Math.min(8, Number(p.handCount) || 0);
+            for (let i = 0; i < visibleCards; i++) {
+              const back = document.createElement("div");
+              back.className = "uno-card card-back op-mini-card";
+              back.setAttribute("aria-hidden", "true");
+              const logo = document.createElement("span");
+              logo.className = "back-logo";
+              const mark = document.createElement("span");
+              mark.textContent = "U";
+              logo.appendChild(mark);
+              back.appendChild(logo);
+              const spread = i - (visibleCards - 1) / 2;
+              back.style.transform = "translateY(" + (Math.abs(spread) * 1.1) + "px) rotate(" + (spread * 2.7) + "deg)";
+              handFan.appendChild(back);
+            }
+            if (Number(p.handCount) > visibleCards) {
+              const more = document.createElement("span");
+              more.className = "op-hand-more";
+              more.textContent = "+" + (Number(p.handCount) - visibleCards);
+              handFan.appendChild(more);
+            }
+            item.appendChild(handFan);
+          }
+
           if (p.isCurrent) {
             const pill = document.createElement("span");
             pill.className = "turn-pill";
@@ -1102,6 +1172,11 @@
                 delay = 260;
                 duration = 340;
               } else {
+                // A face-up card played by an opponent should stay on screen long enough
+                // for the player to clearly follow its path from the opponent's hand to the pile.
+                delay = 90;
+                duration = 980;
+
                 // Polling can return after a bot has played, so the previous
                 // snapshot's current-player flag is not always the actor. Detect who lost a card.
                 const previousPlayersById = new Map(previous.players.map(player => [player.id, player]));
@@ -1294,7 +1369,9 @@
             ];
             const animation = flyer.animate(frames, {
               duration: job.duration || 360,
-              easing: "cubic-bezier(.18,.72,.22,1)",
+              easing: job.kind === "opponent-to-discard"
+                ? "cubic-bezier(.28,.58,.32,1)"
+                : "cubic-bezier(.18,.72,.22,1)",
               fill: "forwards"
             });
             await animation.finished.catch(() => {});
