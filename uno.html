@@ -1475,9 +1475,13 @@
         $("endResult").classList.toggle("hidden", game.status !== "finished");
         if (game.status === "finished") {
           $("endTitle").textContent = game.winnerId === (state.myId || "") ? "🏆 Ты выиграл!" : "🎴 " + (game.winnerName || "Победитель") + " выиграл!";
+          const myWin = String(game.winnerId || "") === String(state.myId || "");
+          const payoutText = formatAmount(game.payout);
           $("endCopy").textContent = game.mode === "bots"
-            ? "Тренировочная партия завершена. AC не списывались."
-            : "Банк: " + formatAmount(game.pot) + " AC. Победителю начислено " + formatAmount(game.payout) + " AC после комиссии.";
+            ? "Твой выигрыш: 0 AC. Тренировочная партия — AC не списывались и не начислялись."
+            : myWin
+              ? "🏆 Твой выигрыш: +" + payoutText + " AC после комиссии. Банк: " + formatAmount(game.pot) + " AC."
+              : "Твой выигрыш: 0 AC. Победителю " + (game.winnerName || "сопернику") + " начислено " + payoutText + " AC после комиссии. Банк: " + formatAmount(game.pot) + " AC.";
           $("drawBtn").disabled = true;
           $("passBtn").classList.add("hidden");
         }
