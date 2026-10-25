@@ -545,8 +545,14 @@
     let lastJoystickClientY = null;
     let moveFrame = 0;
     let lastMoveFrameTime = 0;
+    let playerVelocityX = 0;
+    let playerVelocityY = 0;
     const MOVE_SPEED = 225;
+    const PLAYER_ACCELERATION = 1550;
+    const PLAYER_DRAG = 1750;
     const BOT_MOVE_SPEED = 226;
+    let botVelocityX = 0;
+    let botVelocityY = 0;
     let botMoveFrame = 0;
     let botMoveLastTime = 0;
     let botMoverIndex = -1;
@@ -648,8 +654,11 @@
       if (!character) return;
       character.style.left = characterX + 'px';
       character.style.top = characterY + 'px';
-      character.classList.toggle('facing-left', moveX < -.08);
-      character.classList.toggle('walking', Math.hypot(moveX, moveY) > .08 && phase === 'playing');
+      const facingX = Math.abs(moveX) > .08 ? moveX : playerVelocityX;
+      character.classList.toggle('facing-left', facingX < -.08);
+      character.classList.toggle('walking', phase === 'playing' &&
+        Math.hypot(playerVelocityX, playerVelocityY) > 16 || phase === 'playing' &&
+        Math.hypot(moveX, moveY) > .08);
       character.classList.toggle('carrying', holder === 0 && players[0] && players[0].lives > 0 && phase === 'playing');
     }
 
@@ -691,7 +700,9 @@
         moveX = x * scale; moveY = y * scale;
       }
       renderCharacterPosition();
-      if (Math.hypot(moveX, moveY) > .08 && !moveFrame) {
+      // Keep the simulation running while the character is coasting to a stop.
+      if ((Math.hypot(moveX, moveY) > .02 ||
+          Math.hypot(playerVelocityX, playerVelocityY) > 2) && !moveFrame && phase === 'playing') {
         lastMoveFrameTime = 0;
         moveFrame = requestAnimationFrame(moveCharacterFrame);
       }
@@ -726,6 +737,7 @@
     // player keeps a finger on the joystick, the same gesture resumes afterward.
     function pauseJoystickMotion() {
       moveX = 0; moveY = 0;
+      playerVelocityX = 0; playerVelocityY = 0;
       const knob = $('joystickKnob');
       if (knob) knob.style.transform = 'translate(-50%,-50%)';
       renderCharacterPosition();
@@ -743,12 +755,21 @@
       movePointerId = null;
       lastJoystickClientX = null;
       lastJoystickClientY = null;
-      pauseJoystickMotion();
+      moveX = 0; moveY = 0;
+      const knob = $('joystickKnob');
+      if (knob) knob.style.transform = 'translate(-50%,-50%)';
+      // Release input and let inertia/drag ease the miner to a natural stop.
+      renderCharacterPosition();
+      if (Math.hypot(playerVelocityX, playerVelocityY) > 2 && !moveFrame && phase === 'playing') {
+        lastMoveFrameTime = 0;
+        moveFrame = requestAnimationFrame(moveCharacterFrame);
+      }
     }
 
     function stopCharacterMotion() {
       if (moveFrame) cancelAnimationFrame(moveFrame);
       moveFrame = 0; lastMoveFrameTime = 0;
+      playerVelocityX = 0; playerVelocityY = 0;
       if ($('playerCharacter')) $('playerCharacter').classList.remove('walking');
     }
 
@@ -784,19 +805,39 @@
 
     function moveCharacterFrame(time) {
       if (!moveFrame) return;
-      if (phase !== 'playing' || (!moveX && !moveY)) {
+      if (phase !== 'playing') {
         moveFrame = 0; lastMoveFrameTime = 0;
+        playerVelocityX = 0; playerVelocityY = 0;
         renderCharacterPosition();
         return;
       }
       const rect = $('arena').getBoundingClientRect();
-      const dt = lastMoveFrameTime ? Math.min(.04,(time - lastMoveFrameTime) / 1000) : .016;
+      // Clamp frame time to avoid visible teleporting after a dropped frame or tab resume.
+      const dt = lastMoveFrameTime ? Math.max(.001, Math.min(.032,(time - lastMoveFrameTime) / 1000)) : .016;
       lastMoveFrameTime = time;
+      const hasInput = Math.hypot(moveX, moveY) > .02;
+      const targetVX = moveX * MOVE_SPEED;
+      const targetVY = moveY * MOVE_SPEED;
+      const response = hasInput ? PLAYER_ACCELERATION : PLAYER_DRAG;
+      const blend = 1 - Math.exp(-(response / MOVE_SPEED) * dt * MOVE_SPEED / 120);
+      playerVelocityX += (targetVX - playerVelocityX) * blend;
+      playerVelocityY += (targetVY - playerVelocityY) * blend;
+      const currentSpeed = Math.hypot(playerVelocityX, playerVelocityY);
+      if (!hasInput && currentSpeed < 3) {
+        playerVelocityX = 0; playerVelocityY = 0;
+        moveFrame = 0; lastMoveFrameTime = 0;
+        renderCharacterPosition();
+        return;
+      }
       const marginX = Math.min(36, rect.width * .12);
       const marginTop = 52;
       const marginBottom = 56;
-      characterX = Math.max(marginX, Math.min(rect.width - marginX, characterX + moveX * MOVE_SPEED * dt));
-      characterY = Math.max(marginTop, Math.min(rect.height - marginBottom, characterY + moveY * MOVE_SPEED * dt));
+      const nextX = characterX + playerVelocityX * dt;
+      const nextY = characterY + playerVelocityY * dt;
+      characterX = Math.max(marginX, Math.min(rect.width - marginX, nextX));
+      characterY = Math.max(marginTop, Math.min(rect.height - marginBottom, nextY));
+      if (characterX === marginX || characterX === rect.width - marginX) playerVelocityX = 0;
+      if (characterY === marginTop || characterY === rect.height - marginBottom) playerVelocityY = 0;
       renderCharacterPosition();
       if (holder === 0) {
         syncBombToCarrier();
@@ -1041,19 +1082,26 @@
       const startY = current.top + current.height / 2 - arenaRect.top;
       const dx = endX - startX, dy = endY - startY;
       const arc = Math.min(105, Math.max(42, Math.hypot(dx, dy) * 0.22));
-      const midX = (startX + endX) / 2 + (dy * 0.10);
-      const midY = (startY + endY) / 2 - arc;
+      const controlX = (startX + endX) / 2 + (dy * 0.10);
+      const controlY = (startY + endY) / 2 - arc;
+      const pointOnArc = t => ({
+        x: (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * controlX + t * t * endX,
+        y: (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * controlY + t * t * endY
+      });
+      const arc1 = pointOnArc(.25), arc2 = pointOnArc(.5), arc3 = pointOnArc(.75);
       bomb.classList.add('moving'); bomb.style.transition = 'none';
       bomb.style.left = `${startX}px`; bomb.style.top = `${startY}px`;
       bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
       void bomb.offsetWidth;
-      makeTrail(midX, midY);
+      makeTrail(arc2.x, arc2.y);
       if (typeof bomb.animate === 'function') {
         bombFlightAnimation = bomb.animate([
-          { left: `${startX}px`, top: `${startY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', offset: 0 },
-          { left: `${midX}px`, top: `${midY}px`, transform: 'translate(-50%,-50%) scale(1.24) rotate(190deg)', offset: 0.52 },
-          { left: `${endX}px`, top: `${endY}px`, transform: 'translate(-50%,-50%) scale(.94) rotate(365deg)', offset: 1 }
-        ], { duration: 485, easing: 'cubic-bezier(.18,.74,.22,1)', fill: 'forwards' });
+          { left: `${startX}px`, top: `${startY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', offset: 0, easing: 'linear' },
+          { left: `${arc1.x}px`, top: `${arc1.y}px`, transform: 'translate(-50%,-50%) scale(1.10) rotate(72deg)', offset: .25, easing: 'linear' },
+          { left: `${arc2.x}px`, top: `${arc2.y}px`, transform: 'translate(-50%,-50%) scale(1.20) rotate(180deg)', offset: .5, easing: 'linear' },
+          { left: `${arc3.x}px`, top: `${arc3.y}px`, transform: 'translate(-50%,-50%) scale(1.10) rotate(288deg)', offset: .75, easing: 'linear' },
+          { left: `${endX}px`, top: `${endY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(360deg)', offset: 1 }
+        ], { duration: 485, easing: 'linear', fill: 'forwards' });
         const flight = bombFlightAnimation;
         flight.onfinish = () => {
           if (bombFlightAnimation !== flight) return;
@@ -1064,8 +1112,8 @@
           bombFlightAnimation = null;
         };
       } else {
-        bomb.style.transition = 'left 485ms cubic-bezier(.18,.74,.22,1),top 485ms cubic-bezier(.18,.74,.22,1),transform 485ms ease';
-        requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.12) rotate(18deg)'; });
+        bomb.style.transition = 'left 485ms cubic-bezier(.22,.72,.22,1),top 485ms cubic-bezier(.22,.72,.22,1),transform 485ms ease-out';
+        requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.08) rotate(360deg)'; });
         window.setTimeout(() => { bomb.classList.remove('moving'); bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)'; bomb.style.transition = ''; }, 500);
       }
     }
@@ -1167,6 +1215,7 @@
       botMoveLastTime = 0;
       botMoverIndex = -1;
       botTargetIndex = -1;
+      botVelocityX = 0; botVelocityY = 0;
       document.querySelectorAll('.bot-character').forEach(character => character.classList.remove('walking'));
     }
 
@@ -1187,6 +1236,7 @@
       if (phase !== 'playing' || holder <= 0 || !players[holder]?.bot || !players[target] || players[target].lives <= 0) return;
       botMoverIndex = holder;
       botTargetIndex = target;
+      botVelocityX = 0; botVelocityY = 0;
       botMoveLastTime = 0;
       const mover = botCharacterFor(botMoverIndex);
       if (mover) mover.classList.add('walking');
@@ -1219,11 +1269,17 @@
         return;
       }
       const rect = $('arena').getBoundingClientRect();
-      const dt = botMoveLastTime ? Math.min(.04, (time - botMoveLastTime) / 1000) : .016;
+      const dt = botMoveLastTime ? Math.max(.001, Math.min(.032, (time - botMoveLastTime) / 1000)) : .016;
       botMoveLastTime = time;
-      const speed = BOT_MOVE_SPEED * dt;
-      const nextX = Math.max(38, Math.min(rect.width - 38, from.x + dx / distance * speed));
-      const nextY = Math.max(52, Math.min(rect.height - 72, from.y + dy / distance * speed));
+      const approach = Math.min(1, Math.max(.35, (distance - 34) / 115));
+      const desiredSpeed = BOT_MOVE_SPEED * approach;
+      const desiredVX = dx / distance * desiredSpeed;
+      const desiredVY = dy / distance * desiredSpeed;
+      const blend = 1 - Math.exp(-10 * dt);
+      botVelocityX += (desiredVX - botVelocityX) * blend;
+      botVelocityY += (desiredVY - botVelocityY) * blend;
+      const nextX = Math.max(38, Math.min(rect.width - 38, from.x + botVelocityX * dt));
+      const nextY = Math.max(52, Math.min(rect.height - 72, from.y + botVelocityY * dt));
       mover.style.left = nextX + 'px';
       mover.style.top = nextY + 'px';
       mover.classList.toggle('facing-left', dx < 0);
