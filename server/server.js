@@ -9,6 +9,7 @@ import { createSekaRouter } from "./seka-router.js";
 import { createRpsRouter } from "./rps-router.js";
 import { createUnoRouter } from "./uno-router.js";
 import { createBilliardsRouter } from "./billiards-router.js";
+import { createCheckersRouter } from "./checkers-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -219,6 +220,9 @@ app.use("/api/uno", unoRouter);
 
 const billiardsRouter = createBilliardsRouter({ pool, verifyTelegram });
 app.use("/api/billiards", billiardsRouter);
+
+const checkersRouter = createCheckersRouter({ pool, verifyTelegram });
+app.use("/api/checkers", checkersRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3325,6 +3329,8 @@ async function startServer() {
     console.log("Seka Online tables are ready");
     await unoRouter.initialize();
     console.log("UNO Online tables are ready");
+    await checkersRouter.initialize();
+    console.log("Checkers Online tables are ready");
     await billiardsRouter.initialize();
     console.log("Billiards Online tables are ready");
   
