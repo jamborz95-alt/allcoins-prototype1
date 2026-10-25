@@ -364,7 +364,7 @@
       const canvas=document.getElementById("pool3DCanvas");
       if(!canvas)return;
       let renderer,scene,camera,tableGroup;
-      let orbitTheta=0,orbitPhi=Math.atan2(5.3,7.0),orbitRadius=Math.hypot(7,5.3);
+      let orbitTheta=0,orbitPhi=Math.atan2(5.3,7.0),orbitRadius=Math.hypot(7,5.3),cameraLayout="";
       const cameraTarget=new THREE.Vector3(0,0,0);
       const raycaster=new THREE.Raycaster();
       const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.43);
@@ -437,8 +437,16 @@
       }
       function render(){
         if(!renderer)return;
-        const rect=canvas.getBoundingClientRect();const w=Math.max(1,rect.width),h=Math.max(1,rect.height);
-        renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+        const rect=canvas.getBoundingClientRect();const w=Math.max(1,rect.width),h=Math.max(1,rect.height),aspect=w/h;
+        const layout=aspect<0.82?"portrait":"landscape";
+        if(layout!==cameraLayout){
+          cameraLayout=layout;
+          orbitTheta=layout==="portrait"?Math.PI/2:0;
+          orbitPhi=layout==="portrait"?0.82:Math.atan2(5.3,7.0);
+          orbitRadius=layout==="portrait"?12.7:Math.hypot(7,5.3);
+          applyCameraOrbit();
+        }
+        renderer.setSize(w,h,false);camera.aspect=aspect;camera.updateProjectionMatrix();
         renderer.render(scene,camera);
       }
       try{
@@ -450,7 +458,8 @@
         window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
         window.billiards3DPointerCoords=function(clientX,clientY){const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;const ndc=new THREE.Vector2(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(ndc,camera);const point=new THREE.Vector3();if(!raycaster.ray.intersectPlane(aimPlane,point))return null;return{x:point.x/SCALE+400,y:point.z/SCALE+220};};
         window.billiards3DOrbit=function(deltaX,deltaY){orbitTheta-=Number(deltaX||0)*0.009;orbitPhi=Math.max(0.24,Math.min(1.48,orbitPhi+Number(deltaY||0)*0.007));applyCameraOrbit();render();};
-        window.billiards3DGetCameraState=function(){return{theta:orbitTheta,phi:orbitPhi,radius:orbitRadius};};
+        window.billiards3DGetCameraState=function(){return{theta:orbitTheta,phi:orbitPhi,radius:orbitRadius,layout:cameraLayout};};
+        window.billiards3DGetFrameBounds=function(){camera.updateMatrixWorld();const points=[[-4.13,-2.33],[4.13,-2.33],[-4.13,2.33],[4.13,2.33]].map(([x,z])=>new THREE.Vector3(x,.4,z).project(camera));return{minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))};};
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
         canvas.style.background="#0a2018";
         window.billiards3DUpdate([],null,false);
