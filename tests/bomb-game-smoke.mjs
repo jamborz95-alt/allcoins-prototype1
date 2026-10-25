@@ -80,6 +80,35 @@ try {
   await page.locator('#playerCountControl button[data-count="4"]').click();
   await page.locator('#modeControl button[data-mode="local"]').click();
   await page.locator("#startGame").click();
+
+  assert.equal(await page.locator("#playerCharacter").isVisible(), true,
+    "The full-screen arena should show the custom player character.");
+  assert.equal(await page.locator("#playerCharacter .runner-figure").count(), 1,
+    "The player should use the original custom SVG figure.");
+  assert.equal(await page.locator("#moveJoystick").isVisible(), true,
+    "A touch joystick should be available during a round.");
+  const characterBefore = await page.locator("#playerCharacter").boundingBox();
+  const joystickBox = await page.locator("#moveJoystick").boundingBox();
+  assert.ok(characterBefore && joystickBox, "The character and joystick should have measurable positions.");
+  const joystickCenterX = joystickBox.x + joystickBox.width / 2;
+  const joystickCenterY = joystickBox.y + joystickBox.height / 2;
+  await page.mouse.move(joystickCenterX, joystickCenterY);
+  await page.mouse.down();
+  await page.mouse.move(joystickCenterX + joystickBox.width * 0.31, joystickCenterY, { steps: 6 });
+  await page.waitForTimeout(300);
+  const characterWhileMoving = await page.locator("#playerCharacter").boundingBox();
+  const walkingClassDuringMove = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
+  await page.mouse.up();
+  await page.waitForTimeout(70);
+  const characterAfterMove = await page.locator("#playerCharacter").boundingBox();
+  const walkingClassAfterRelease = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
+  assert.ok(characterWhileMoving && characterAfterMove, "The character should stay rendered while moving.");
+  assert.ok(Math.abs((characterAfterMove.x + characterAfterMove.width / 2) -
+    (characterBefore.x + characterBefore.width / 2)) > 12,
+    "Dragging the joystick should physically move the character across the arena.");
+  assert.equal(walkingClassDuringMove, true, "Leg and arm running animations should activate while moving.");
+  assert.equal(walkingClassAfterRelease, false, "The character should stop walking when the joystick is released.");
+
   const previousHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   const target = previousHolder !== "0" ? "0" : "1";
   const beforePass = await page.locator("#bomb").boundingBox();
@@ -130,7 +159,7 @@ try {
   assert.equal(await page.locator("#setupView").isVisible(), true,
     "The game should return to setup without leaving the app page.");
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
-  console.log("Pass the Bomb smoke test passed: lobby, 2/3/4 seats, transfer, explosion/lives, next round, bot transfer and 320px mobile layout.");
+  console.log("Pass the Bomb smoke test passed: lobby/maps, 2/3/4 seats, joystick movement and running animation, transfer, explosion/lives, next round, bot transfer and 320px mobile layout.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
