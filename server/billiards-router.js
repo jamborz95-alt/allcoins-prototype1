@@ -86,67 +86,83 @@ function simulateShot(sourceBalls, angle, power) {
   let scratch = false;
   const stopSpeed = 0.07;
 
+  const substeps = 2;
+  const moveScale = 1 / substeps;
+  const friction = Math.sqrt(0.9885);
+  const restitution = 0.96;
+
   for (let frame = 0; frame < 900; frame++) {
     let maxSpeed = 0;
-    for (const ball of balls) {
-      if (!ball.active) continue;
-      ball.x += ball.vx;
-      ball.y += ball.vy;
+    for (let substep = 0; substep < substeps; substep++) {
+      maxSpeed = 0;
+      for (const ball of balls) {
+        if (!ball.active) continue;
+        ball.x += ball.vx * moveScale;
+        ball.y += ball.vy * moveScale;
 
-      const pocket = POCKETS.find(item => Math.hypot(ball.x - item.x, ball.y - item.y) < 21.5);
-      if (pocket) {
-        ball.active = false;
-        ball.vx = 0;
-        ball.vy = 0;
-        pocketedIds.push(ball.id);
-        if (ball.id === "cue") scratch = true;
-        continue;
+        const pocket = POCKETS.find(item => Math.hypot(ball.x - item.x, ball.y - item.y) < 21.5);
+        if (pocket) {
+          ball.active = false;
+          ball.vx = 0;
+          ball.vy = 0;
+          pocketedIds.push(ball.id);
+          if (ball.id === "cue") scratch = true;
+          continue;
+        }
+
+        if (ball.x < MIN_X) { ball.x = MIN_X; ball.vx = Math.abs(ball.vx) * 0.90; }
+        if (ball.x > MAX_X) { ball.x = MAX_X; ball.vx = -Math.abs(ball.vx) * 0.90; }
+        if (ball.y < MIN_Y) { ball.y = MIN_Y; ball.vy = Math.abs(ball.vy) * 0.90; }
+        if (ball.y > MAX_Y) { ball.y = MAX_Y; ball.vy = -Math.abs(ball.vy) * 0.90; }
       }
 
-      if (ball.x < MIN_X) { ball.x = MIN_X; ball.vx = Math.abs(ball.vx) * 0.92; }
-      if (ball.x > MAX_X) { ball.x = MAX_X; ball.vx = -Math.abs(ball.vx) * 0.92; }
-      if (ball.y < MIN_Y) { ball.y = MIN_Y; ball.vy = Math.abs(ball.vy) * 0.92; }
-      if (ball.y > MAX_Y) { ball.y = MAX_Y; ball.vy = -Math.abs(ball.vy) * 0.92; }
-    }
-
-    for (let i = 0; i < balls.length; i++) {
-      const a = balls[i];
-      if (!a.active) continue;
-      for (let j = i + 1; j < balls.length; j++) {
-        const b = balls[j];
-        if (!b.active) continue;
-        let dx = b.x - a.x;
-        let dy = b.y - a.y;
-        let distance = Math.hypot(dx, dy);
-        if (distance <= 0 || distance >= BALL_R * 2) continue;
-        const nx = dx / distance;
-        const ny = dy / distance;
-        const overlap = BALL_R * 2 - distance;
-        a.x -= nx * (overlap / 2 + 0.02);
-        a.y -= ny * (overlap / 2 + 0.02);
-        b.x += nx * (overlap / 2 + 0.02);
-        b.y += ny * (overlap / 2 + 0.02);
-        const relative = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-        if (relative > 0) {
-          a.vx -= relative * nx;
-          a.vy -= relative * ny;
-          b.vx += relative * nx;
-          b.vy += relative * ny;
+      for (let i = 0; i < balls.length; i++) {
+        const a = balls[i];
+        if (!a.active) continue;
+        for (let j = i + 1; j < balls.length; j++) {
+          const b = balls[j];
+          if (!b.active) continue;
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let distance = Math.hypot(dx, dy);
+          if (distance >= BALL_R * 2) continue;
+          if (distance < 0.001) {
+            const seed = (i + 1) * 1.61803398875 + (j + 1) * 0.75487766625;
+            distance = 0.001;
+            dx = Math.cos(seed) * distance;
+            dy = Math.sin(seed) * distance;
+          }
+          const nx = dx / distance;
+          const ny = dy / distance;
+          const overlap = BALL_R * 2 - distance;
+          a.x -= nx * (overlap / 2 + 0.02);
+          a.y -= ny * (overlap / 2 + 0.02);
+          b.x += nx * (overlap / 2 + 0.02);
+          b.y += ny * (overlap / 2 + 0.02);
+          const relative = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+          if (relative > 0.0001) {
+            const impulse = relative * (1 + restitution) / 2;
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+            b.vx += impulse * nx;
+            b.vy += impulse * ny;
+          }
         }
       }
-    }
 
-    for (const ball of balls) {
-      if (!ball.active) continue;
-      ball.vx *= 0.9885;
-      ball.vy *= 0.9885;
-      const speedNow = Math.hypot(ball.vx, ball.vy);
-      if (speedNow < stopSpeed) {
-        ball.vx = 0;
-        ball.vy = 0;
-      } else {
-        maxSpeed = Math.max(maxSpeed, speedNow);
+      for (const ball of balls) {
+        if (!ball.active) continue;
+        ball.vx *= friction;
+        ball.vy *= friction;
+        const speedNow = Math.hypot(ball.vx, ball.vy);
+        if (speedNow < stopSpeed) {
+          ball.vx = 0;
+          ball.vy = 0;
+        } else {
+          maxSpeed = Math.max(maxSpeed, speedNow);
+        }
       }
+      if (maxSpeed < stopSpeed) break;
     }
     if (maxSpeed < stopSpeed) break;
   }
