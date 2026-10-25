@@ -10,6 +10,7 @@ import { createRpsRouter } from "./rps-router.js";
 import { createUnoRouter } from "./uno-router.js";
 import { createBilliardsRouter } from "./billiards-router.js";
 import { createCheckersRouter } from "./checkers-router.js";
+import { createKozelRouter } from "./kozel-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -223,6 +224,9 @@ app.use("/api/billiards", billiardsRouter);
 
 const checkersRouter = createCheckersRouter({ pool, verifyTelegram });
 app.use("/api/checkers", checkersRouter);
+
+const kozelRouter = createKozelRouter({ pool, verifyTelegram });
+app.use("/api/kozel", kozelRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3331,6 +3335,8 @@ async function startServer() {
     console.log("UNO Online tables are ready");
     await checkersRouter.initialize();
     console.log("Checkers Online tables are ready");
+    await kozelRouter.initialize();
+    console.log("Kozel Online tables are ready");
     await billiardsRouter.initialize();
     console.log("Billiards Online tables are ready");
   
