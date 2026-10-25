@@ -423,7 +423,7 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
-    assert.equal(gamesIconDiagnostics.tiles, 9, "В разделе должны отображаться девять игровых плиток, включая Передай бомбу, УНО Онлайн и Бильярд Онлайн");
+    assert.equal(gamesIconDiagnostics.tiles, 10, "В разделе должны отображаться десять игровых плиток, включая Передай бомбу, Захват башен, УНО Онлайн и Бильярд Онлайн");
     assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Передай бомбу", "УНО Онлайн", "Бильярд Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
     assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
     assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
