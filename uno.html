@@ -132,8 +132,14 @@
     .game-message{min-height:33px;max-width:800px;margin:6px auto 2px;padding:8px 10px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid #67937d70;border-radius:11px;background:#06251f66;color:#e1f1e8;font-size:11px;line-height:1.45}
     .hand-zone{flex:0 0 auto;width:100%;max-width:900px;margin:0 auto}
     .hand-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#d4e8dc;font-size:11px;font-weight:900;padding:3px 3px}
-    .uno-hand{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;overscroll-behavior-x:contain;padding:7px 3px 12px;min-height:96px;scrollbar-width:thin;scrollbar-color:#61917f transparent}
+    .uno-hand{display:flex;gap:0;align-items:flex-end;overflow-x:auto;overscroll-behavior-x:contain;padding:13px 3px 12px;min-height:102px;scrollbar-width:thin;scrollbar-color:#61917f transparent}
     .uno-hand .uno-card{width:57px;height:84px;border-radius:8px;border-width:1.5px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+    /* UNO hand fan: cards overlap slightly like in Durak Online. */
+    .uno-hand .uno-card + .uno-card{margin-left:-15px}
+    .uno-hand .uno-card:hover,
+    .uno-hand .uno-card:focus-visible,
+    .uno-hand .uno-card:active{z-index:50;transform:translateY(-9px) scale(1.025)}
+    .uno-hand .uno-card.playable:active{transform:translateY(-10px) scale(1.035)}
     .uno-hand .uno-card:active{cursor:grabbing}
     .uno-hand .card-center{font-size:35px}
     .uno-hand .card-center.action{font-size:27px}
@@ -153,8 +159,8 @@
     .hidden{display:none!important}
     .end-result{max-width:550px;margin:12px auto;padding:14px;border:1px solid #f2d48c;border-radius:17px;background:#092f27ee;text-align:center;box-shadow:0 12px 32px #0005}
     .end-result h2{color:#ffdf8e;font-size:22px;margin:0 0 7px}.end-result p{font-size:12px;color:#d3e6d9;line-height:1.5;margin:0 0 13px}
-    @media(max-width:680px){body{padding-left:9px;padding-right:9px}.topbar{gap:8px}.brand-tag{padding:7px 8px}.lobby-grid{grid-template-columns:1fr;gap:0}.panel{padding:13px}.opponents{max-height:24%;gap:5px}.opponent{flex:1 1 82px;min-width:72px;padding:6px}.table-felt{border-radius:21px;min-height:142px;padding:8px;gap:18px}.table-felt:before{inset:7px}.uno-card{width:61px;height:91px}.uno-hand{gap:5px}.uno-hand .uno-card{width:52px;height:78px}.uno-hand .card-center{font-size:32px}.uno-hand .card-center.action{font-size:25px}.uno-hand .card-center.word{font-size:9px}.pile-caption{font-size:8px}.pile-count{min-width:21px;height:21px}.game-message{font-size:10px;min-height:30px;margin-top:4px}.controls button{flex:1;padding:8px 9px}.game-footer-note{display:none}}
-    @media(max-height:700px){#gameView{padding-top:max(5px,env(safe-area-inset-top));padding-bottom:max(5px,env(safe-area-inset-bottom))}.game-top{min-height:37px}.game-top .back{height:36px}.opponents{max-height:22%;padding:4px 1px}.table-felt{min-height:120px}.game-message{min-height:27px;padding:5px 8px}.uno-hand{min-height:82px;padding:4px 2px 7px}.uno-hand .uno-card{height:70px}.uno-hand .card-center{font-size:28px}.uno-hand .card-center.action{font-size:23px}.controls button{min-height:34px;padding:6px 10px}}
+    @media(max-width:680px){body{padding-left:9px;padding-right:9px}.topbar{gap:8px}.brand-tag{padding:7px 8px}.lobby-grid{grid-template-columns:1fr;gap:0}.panel{padding:13px}.opponents{max-height:24%;gap:5px}.opponent{flex:1 1 82px;min-width:72px;padding:6px}.table-felt{border-radius:21px;min-height:142px;padding:8px;gap:18px}.table-felt:before{inset:7px}.uno-card{width:61px;height:91px}.uno-hand{gap:0}.uno-hand .uno-card{width:52px;height:78px}.uno-hand .card-center{font-size:32px}.uno-hand .card-center.action{font-size:25px}.uno-hand .card-center.word{font-size:9px}.pile-caption{font-size:8px}.pile-count{min-width:21px;height:21px}.game-message{font-size:10px;min-height:30px;margin-top:4px}.controls button{flex:1;padding:8px 9px}.game-footer-note{display:none}}
+    @media(max-height:700px){#gameView{padding-top:max(5px,env(safe-area-inset-top));padding-bottom:max(5px,env(safe-area-inset-bottom))}.game-top{min-height:37px}.game-top .back{height:36px}.opponents{max-height:22%;padding:4px 1px}.table-felt{min-height:120px}.game-message{min-height:27px;padding:5px 8px}.uno-hand{min-height:87px;padding:9px 2px 7px}.uno-hand .uno-card{height:70px}.uno-hand .card-center{font-size:28px}.uno-hand .card-center.action{font-size:23px}.controls button{min-height:34px;padding:6px 10px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
   </style>
 <style id="uno-opponent-hands-and-slower-plays">
