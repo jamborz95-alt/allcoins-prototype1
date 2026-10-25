@@ -18,10 +18,9 @@
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:#f7f8fb;font-family:Arial,Helvetica,sans-serif;overscroll-behavior:none;overscroll-behavior-x:none}
     html{touch-action:pan-y}
-    body.game-active{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;overscroll-behavior:none;touch-action:pan-y}
-    body.game-active #gameView,body.game-active .arena,body.game-active .joystick,body.game-active #moveJoystick{touch-action:none}
+    body.game-active{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;overscroll-behavior:none;overscroll-behavior-x:none;touch-action:none;user-select:none;-webkit-user-select:none}
+    body.game-active #gameView,body.game-active .arena,body.game-active .joystick,body.game-active #moveJoystick,body.game-active .game-head,body.game-active .scorebar,body.game-active .bottom-area{touch-action:none}
     body.game-active #gameView{height:100%;height:100dvh;overflow:hidden}
-    body.game-active .game-head,body.game-active .scorebar{touch-action:pan-y}
     body{min-height:100vh;min-height:100dvh}
     button,input{font:inherit}
     button{border:0;cursor:pointer;touch-action:manipulation;font-weight:800;border-radius:13px;min-height:44px;padding:11px 14px;-webkit-tap-highlight-color:transparent}
@@ -534,6 +533,8 @@
     let moveX = 0;
     let moveY = 0;
     let movePointerId = null;
+    let lastJoystickClientX = null;
+    let lastJoystickClientY = null;
     let moveFrame = 0;
     let lastMoveFrameTime = 0;
     const MOVE_SPEED = 205;
@@ -689,12 +690,21 @@
     }
 
     function setJoystickFromPointer(event) {
+      // During the 485 ms bomb-transfer animation keep pointer capture, but do not
+      // let a finger move the character until the hand-off finishes.
+      if (phase !== 'playing') return;
+      lastJoystickClientX = event.clientX;
+      lastJoystickClientY = event.clientY;
+      setJoystickFromCoordinates(lastJoystickClientX, lastJoystickClientY);
+    }
+
+    function setJoystickFromCoordinates(clientX, clientY) {
       const stick = $('moveJoystick');
       const knob = $('joystickKnob');
       if (!stick || !knob) return;
       const rect = stick.getBoundingClientRect();
-      const dx = event.clientX - (rect.left + rect.width / 2);
-      const dy = event.clientY - (rect.top + rect.height / 2);
+      const dx = clientX - (rect.left + rect.width / 2);
+      const dy = clientY - (rect.top + rect.height / 2);
       const limit = Math.max(12, rect.width * .31);
       const length = Math.hypot(dx,dy);
       const clamped = Math.min(limit,length);
@@ -704,13 +714,28 @@
       setMoveVector(kx / limit, ky / limit);
     }
 
-    function resetJoystick() {
-      movePointerId = null;
+    // Pause motion for a transfer without dropping the active pointer. If the
+    // player keeps a finger on the joystick, the same gesture resumes afterward.
+    function pauseJoystickMotion() {
       moveX = 0; moveY = 0;
       const knob = $('joystickKnob');
       if (knob) knob.style.transform = 'translate(-50%,-50%)';
       renderCharacterPosition();
       stopCharacterMotion();
+    }
+
+    function resumeJoystickMotion() {
+      if (movePointerId !== null && lastJoystickClientX !== null && lastJoystickClientY !== null &&
+          phase === 'playing') {
+        setJoystickFromCoordinates(lastJoystickClientX, lastJoystickClientY);
+      }
+    }
+
+    function resetJoystick() {
+      movePointerId = null;
+      lastJoystickClientX = null;
+      lastJoystickClientY = null;
+      pauseJoystickMotion();
     }
 
     function stopCharacterMotion() {
@@ -1088,7 +1113,7 @@
       clearTimeout(botTimer); botTimer = null;
       const token = roundToken;
       phase = 'passing';
-      resetJoystick();
+      pauseJoystickMotion();
       document.querySelectorAll('.seat').forEach(seat => seat.classList.toggle('target', Number(seat.dataset.player) === target));
       setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
       setInstruction('💨 Бомба летит к <strong>' + safeText(players[target].name) + '</strong>…');
@@ -1102,6 +1127,7 @@
         updateSeats();
         if (holder === 0) syncBombToCarrier();
         renderCharacterPosition();
+        resumeJoystickMotion();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот быстро решает, кому отдать её' : 'Не медли — передавай дальше');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
@@ -1199,7 +1225,7 @@
       stopBotMovement();
       const owner = holder; const token = roundToken;
       phase = 'passing';
-      resetJoystick();
+      pauseJoystickMotion();
       setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
       setInstruction('<strong>' + safeText(players[owner].name) + '</strong> передаёт бомбу игроку <strong>' + safeText(players[target].name) + '</strong>…');
       playTone(710, .08, 'triangle', .035);
@@ -1209,6 +1235,7 @@
         holder = target; phase = 'playing'; updateSeats();
         if (holder === 0) syncBombToCarrier();
         renderCharacterPosition();
+        resumeJoystickMotion();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Нажми на другого игрока');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
@@ -1316,17 +1343,9 @@
         try { history.pushState({ allcoinsBombGuard: true, at: Date.now() }, '', window.location.href); } catch (_) {}
       }
     });
-    // Prevent Android edge-swipe navigation while the player is actively steering.
-    document.addEventListener('touchstart', event => {
-      if ($('gameView').classList.contains('hidden') || phase !== 'playing') return;
-      if (event.touches.length !== 1) return;
-      const touch = event.touches[0];
-      const rect = $('moveJoystick').getBoundingClientRect();
-      if (touch.clientX >= rect.left - 18 && touch.clientX <= rect.right + 18 &&
-          touch.clientY >= rect.top - 18 && touch.clientY <= rect.bottom + 18) {
-        event.preventDefault();
-      }
-    }, { passive: false, capture: true });
+    // Touch navigation is disabled with touch-action:none for the whole active
+    // viewport. Do not cancel touchstart here: doing so can cancel Android
+    // pointer events and leave joystick pointer capture in a stuck state.
     $('soundToggle').addEventListener('click', () => {
       soundOn = !soundOn; $('soundToggle').textContent = soundOn ? '🔊' : '🔇';
       if (soundOn) playTone(590,.06,'sine',.025);
