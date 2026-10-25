@@ -112,7 +112,7 @@ try {
   const joystickCenterY = joystickBox.y + joystickBox.height / 2;
   await page.mouse.move(joystickCenterX, joystickCenterY);
   await page.mouse.down();
-  await page.mouse.move(joystickCenterX - joystickBox.width * 0.31, joystickCenterY, { steps: 6 });
+  await page.mouse.move(joystickCenterX, joystickCenterY - joystickBox.height * 0.31, { steps: 6 });
   await page.waitForTimeout(300);
   const characterWhileMoving = await page.locator("#playerCharacter").boundingBox();
   const walkingClassDuringMove = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
@@ -121,8 +121,8 @@ try {
   const characterAfterMove = await page.locator("#playerCharacter").boundingBox();
   const walkingClassAfterRelease = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
   assert.ok(characterWhileMoving && characterAfterMove, "The character should stay rendered while moving.");
-  assert.ok(Math.abs((characterAfterMove.x + characterAfterMove.width / 2) -
-    (characterBefore.x + characterBefore.width / 2)) > 12,
+  assert.ok(Math.abs((characterAfterMove.y + characterAfterMove.height / 2) -
+    (characterBefore.y + characterBefore.height / 2)) > 12,
     "Dragging the joystick should physically move the character across the arena.");
   assert.equal(walkingClassDuringMove, true, "Leg and arm running animations should activate while moving.");
   assert.equal(walkingClassAfterRelease, false, "The character should stop walking when the joystick is released.");
