@@ -624,7 +624,7 @@
       moveX = 0; moveY = 0;
       stopCharacterMotion();
       renderCharacterPosition();
-      syncBombToCharacter();
+      syncBombToCarrier();
     }
 
     function renderCharacterPosition() {
@@ -637,18 +637,33 @@
       character.classList.toggle('carrying', holder === 0 && players[0] && players[0].lives > 0 && phase === 'playing');
     }
 
-    function syncBombToCharacter() {
-      if (holder !== 0 || !['playing','passing'].includes(phase)) return;
+    function syncBombToCarrier() {
+      if (holder < 0 || !['playing','passing'].includes(phase)) return;
       const arena = $('arena');
       const bomb = $('bomb');
       if (!arena || !bomb) return;
-      const facing = $('playerCharacter').classList.contains('facing-left') ? -1 : 1;
       const arenaRect = arena.getBoundingClientRect();
+      let x, y, facing = 1;
+      if (holder === 0) {
+        const character = $('playerCharacter');
+        if (!character) return;
+        facing = character.classList.contains('facing-left') ? -1 : 1;
+        x = characterX + 23 * facing;
+        y = characterY - 13;
+      } else {
+        const character = botCharacterFor(holder);
+        if (!character) return;
+        const r = character.getBoundingClientRect();
+        facing = character.classList.contains('facing-left') ? -1 : 1;
+        x = r.left + r.width / 2 - arenaRect.left + 22 * facing;
+        y = r.top + r.height * .36 - arenaRect.top;
+      }
       bomb.style.transition = 'none';
-      bomb.style.left = Math.max(28, Math.min(arenaRect.width - 28, characterX + 23 * facing)) + 'px';
-      bomb.style.top = Math.max(30, characterY - 13) + 'px';
+      bomb.style.left = Math.max(28, Math.min(arenaRect.width - 28, x)) + 'px';
+      bomb.style.top = Math.max(30, Math.min(arenaRect.height - 30, y)) + 'px';
       bomb.style.transform = 'translate(-50%,-50%) scale(.88) rotate(-10deg)';
       bomb.classList.remove('moving');
+      void bomb.offsetWidth;
       bomb.style.transition = '';
     }
 
@@ -708,15 +723,17 @@
       const characterCenterY = characterRect.top + characterRect.height * .48 - arenaRect.top;
       const characterRadius = Math.min(23, characterRect.width * .29);
 
-      for (const seat of arena.querySelectorAll('.seat')) {
-        const target = Number(seat.dataset.player);
-        if (target === 0 || !players[target] || players[target].lives <= 0) continue;
-        const targetRect = seat.getBoundingClientRect();
+      for (const opponent of arena.querySelectorAll('.bot-character')) {
+        const target = Number(opponent.dataset.player);
+        if (!players[target] || players[target].lives <= 0) continue;
+        const targetRect = opponent.getBoundingClientRect();
         const targetX = targetRect.left + targetRect.width / 2 - arenaRect.left;
-        const targetY = targetRect.top + targetRect.height / 2 - arenaRect.top;
-        const targetRadius = Math.min(targetRect.width, targetRect.height) * .47;
+        const targetY = targetRect.top + targetRect.height * .45 - arenaRect.top;
+        const targetRadius = Math.min(targetRect.width * .36, 28);
         if (Math.hypot(characterCenterX - targetX, characterCenterY - targetY) <= characterRadius + targetRadius) {
-          seat.classList.add('contact-hit');
+          const seat = arena.querySelector('.seat[data-player="' + target + '"]');
+          if (seat) seat.classList.add('contact-hit');
+          opponent.classList.add('contact-nearby');
           if (navigator.vibrate) { try { navigator.vibrate([22,25,35]); } catch (_) {} }
           passBomb(target);
           return true;
@@ -742,7 +759,7 @@
       characterY = Math.max(marginTop, Math.min(rect.height - marginBottom, characterY + moveY * MOVE_SPEED * dt));
       renderCharacterPosition();
       if (holder === 0) {
-        syncBombToCharacter();
+        syncBombToCarrier();
         if (checkOpponentContact()) return;
       }
       moveFrame = requestAnimationFrame(moveCharacterFrame);
@@ -934,14 +951,23 @@
       const bomb = $('bomb'); const arena = $('arena');
       if (!arena || playerIndex < 0) return;
       const arenaRect = arena.getBoundingClientRect();
-      let targetPoint;
+      let targetPoint = null;
       if (playerIndex === 0) {
         const facing = $('playerCharacter').classList.contains('facing-left') ? -1 : 1;
         targetPoint = { x: Math.max(28, Math.min(arenaRect.width - 28, characterX + 23 * facing)), y: Math.max(30, characterY - 13) };
       } else {
-        const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
-        if (!seat) return;
-        targetPoint = bombPointForSeat(seat, arenaRect);
+        const bot = botCharacterFor(playerIndex);
+        if (bot) {
+          const r = bot.getBoundingClientRect();
+          targetPoint = {
+            x: r.left + r.width / 2 - arenaRect.left + (bot.classList.contains('facing-left') ? -22 : 22),
+            y: r.top + r.height * .36 - arenaRect.top
+          };
+        } else {
+          const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
+          if (!seat) return;
+          targetPoint = bombPointForSeat(seat, arenaRect);
+        }
       }
       const endX = targetPoint.x;
       const endY = targetPoint.y;
@@ -1045,6 +1071,7 @@
 
     function passBomb(target) {
       if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      stopBotMovement();
       const owner = holder;
       if (players[owner].bot) return;
       clearTimeout(botTimer); botTimer = null;
@@ -1062,13 +1089,80 @@
         holder = target;
         phase = 'playing';
         updateSeats();
-        if (holder === 0) syncBombToCharacter();
+        if (holder === 0) syncBombToCarrier();
         renderCharacterPosition();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот быстро решает, кому отдать её' : 'Не медли — передавай дальше');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
         playTone(610, .05, 'sine', .026);
       }, 485);
+    }
+
+    function stopBotMovement() {
+      if (botMoveFrame) cancelAnimationFrame(botMoveFrame);
+      botMoveFrame = 0;
+      botMoveLastTime = 0;
+      botMoverIndex = -1;
+      botTargetIndex = -1;
+      document.querySelectorAll('.bot-character').forEach(character => character.classList.remove('walking'));
+    }
+
+    function characterCenterFor(index) {
+      const arenaRect = $('arena').getBoundingClientRect();
+      const node = index === 0 ? $('playerCharacter') : botCharacterFor(index);
+      if (!node) return null;
+      const r = node.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - arenaRect.left, y: r.top + r.height * .45 - arenaRect.top };
+    }
+
+    function moveBotToward(target) {
+      stopBotMovement();
+      if (phase !== 'playing' || holder <= 0 || !players[holder]?.bot || !players[target] || players[target].lives <= 0) return;
+      botMoverIndex = holder;
+      botTargetIndex = target;
+      botMoveLastTime = 0;
+      const mover = botCharacterFor(botMoverIndex);
+      if (mover) mover.classList.add('walking');
+      botMoveFrame = requestAnimationFrame(moveBotFrame);
+    }
+
+    function moveBotFrame(time) {
+      if (!botMoveFrame) return;
+      if (phase !== 'playing' || holder !== botMoverIndex || !players[botMoverIndex]?.bot ||
+          botTargetIndex < 0 || !players[botTargetIndex] || players[botTargetIndex].lives <= 0) {
+        stopBotMovement();
+        return;
+      }
+      const mover = botCharacterFor(botMoverIndex);
+      const targetNode = botTargetIndex === 0 ? $('playerCharacter') : botCharacterFor(botTargetIndex);
+      if (!mover || !targetNode) { stopBotMovement(); return; }
+      const from = characterCenterFor(botMoverIndex);
+      const to = characterCenterFor(botTargetIndex);
+      if (!from || !to) { stopBotMovement(); return; }
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 57) {
+        const target = botTargetIndex;
+        const seat = $('arena').querySelector('.seat[data-player="' + target + '"]');
+        if (seat) seat.classList.add('contact-hit');
+        targetNode.classList.add('contact-nearby');
+        if (navigator.vibrate) { try { navigator.vibrate([20,25,35]); } catch (_) {} }
+        passBombFromBot(target);
+        return;
+      }
+      const rect = $('arena').getBoundingClientRect();
+      const dt = botMoveLastTime ? Math.min(.04, (time - botMoveLastTime) / 1000) : .016;
+      botMoveLastTime = time;
+      const speed = BOT_MOVE_SPEED * dt;
+      const nextX = Math.max(38, Math.min(rect.width - 38, from.x + dx / distance * speed));
+      const nextY = Math.max(52, Math.min(rect.height - 72, from.y + dy / distance * speed));
+      mover.style.left = nextX + 'px';
+      mover.style.top = nextY + 'px';
+      mover.classList.toggle('facing-left', dx < 0);
+      mover.classList.add('walking');
+      syncBombToCarrier();
+      botMoveFrame = requestAnimationFrame(moveBotFrame);
     }
 
     function scheduleBot() {
@@ -1082,11 +1176,12 @@
         let target = candidates[Math.floor(Math.random() * candidates.length)];
         // Небольшой шанс, что бот передаст бомбу самому уязвимому сопернику.
         if (Math.random() < .35) target = candidates.sort((a,b) => players[a].lives - players[b].lives)[0];
-        passBombFromBot(target);
-      }, 620 + Math.random() * 620);
+        moveBotToward(target);
+      }, 420 + Math.random() * 420);
     }
     function passBombFromBot(target) {
       if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      stopBotMovement();
       const owner = holder; const token = roundToken;
       phase = 'passing';
       resetJoystick();
@@ -1097,7 +1192,7 @@
       window.setTimeout(() => {
         if (token !== roundToken || phase !== 'passing') return;
         holder = target; phase = 'playing'; updateSeats();
-        if (holder === 0) syncBombToCharacter();
+        if (holder === 0) syncBombToCarrier();
         renderCharacterPosition();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Нажми на другого игрока');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
@@ -1162,6 +1257,7 @@
     function stopTimers() {
       if (tickTimer) clearInterval(tickTimer); tickTimer = null;
       if (botTimer) clearTimeout(botTimer); botTimer = null;
+      stopBotMovement();
     }
 
     function onBack() {
