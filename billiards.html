@@ -370,7 +370,7 @@
       function buildTable(){
         scene=new THREE.Scene();scene.background=new THREE.Color(0x081711);
         scene.fog=new THREE.Fog(0x081711,12,28);
-        camera=new THREE.PerspectiveCamera(32,800/440,0.1,100);camera.position.set(0,7.0,5.3);camera.lookAt(0,0,0);
+        camera=new THREE.PerspectiveCamera(36,800/440,0.1,100);camera.position.set(0,7.0,5.3);camera.lookAt(0,0,0);
         scene.add(new THREE.HemisphereLight(0xd9f5ff,0x142016,1.65));
         const key=new THREE.DirectionalLight(0xffe5b0,3.0);key.position.set(-4,9,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=6;key.shadow.camera.bottom=-6;key.shadow.camera.near=.5;key.shadow.camera.far=22;key.shadow.bias=-0.0003;key.shadow.radius=4;scene.add(key);
         const fill=new THREE.PointLight(0x72e5b3,1.4,18);fill.position.set(3,5,-3);scene.add(fill);
