@@ -1113,11 +1113,15 @@
     }
 
     function characterCenterFor(index) {
-      const arenaRect = $('arena').getBoundingClientRect();
-      const node = index === 0 ? $('playerCharacter') : botCharacterFor(index);
+      // Track the CSS anchor coordinates, not the transformed bounding-box center.
+      // This keeps bot motion stable when the SVG is translated above its anchor.
+      if (index === 0) return { x: characterX, y: characterY };
+      const node = botCharacterFor(index);
       if (!node) return null;
-      const r = node.getBoundingClientRect();
-      return { x: r.left + r.width / 2 - arenaRect.left, y: r.top + r.height * .45 - arenaRect.top };
+      return {
+        x: Number.parseFloat(node.style.left) || 0,
+        y: Number.parseFloat(node.style.top) || 0
+      };
     }
 
     function moveBotToward(target) {
