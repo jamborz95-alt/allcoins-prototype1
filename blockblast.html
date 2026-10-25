@@ -325,18 +325,26 @@ function initialBoard(){
 var trayPlayableShapes=shapes.filter(function(shape){return Math.max.apply(null,shape.map(function(c){return c[1];}))<3;});
 function randomPiece(){var shape=trayPlayableShapes[Math.floor(Math.random()*trayPlayableShapes.length)];return shape.map(function(c){return [c[0],c[1]];});}
 function generatePieces(){
- var attempts=0, candidate=null;
- // Each trio is checked against the current board, including the lines each placement clears.
- while(attempts<90){
+ var attempts=0,candidate=null;
+ // Check potential sets quickly to avoid long calculations on mobile.
+ while(attempts<32){
   candidate=[randomPiece(),randomPiece(),randomPiece()];
   if(canPlaceAllThree(board,candidate)){pieces=candidate;selected=-1;renderTray();return;}
   attempts++;
  }
- // When the board is crowded, try a forgiving trio (single, pair, pair).
- candidate=[[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]]];
- if(canPlaceAllThree(board,candidate)){pieces=candidate;selected=-1;renderTray();return;}
- // No set of three simple pieces can fit the remaining board space; the normal game-over rule applies.
- pieces=candidate;selected=-1;renderTray();
+ // On a crowded board, prefer small pieces; each fallback is still checked with line clearing.
+ var fallbackSets=[
+  [[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]]],
+  [[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1]]],
+  [[[0,0]],[[0,0]],[[0,0]]]
+ ];
+ for(var f=0;f<fallbackSets.length;f++){
+  if(canPlaceAllThree(board,fallbackSets[f])){
+   pieces=fallbackSets[f];selected=-1;renderTray();return;
+  }
+ }
+ // If no trio of even single-cell pieces can be placed in a valid sequence, the board is truly blocked.
+ pieces=[[[0,0]],[[0,0]],[[0,0]]];selected=-1;renderTray();
 }
 function boardFits(state,piece,row,col){
  for(var i=0;i<piece.length;i++){
@@ -363,7 +371,7 @@ function canPlaceAllThree(startBoard,candidate){
  var nodes=0;
  function search(state,remaining){
   if(!remaining.length)return true;
-  if(++nodes>8500)return false;
+  if(++nodes>700)return false;
   // Try the piece with the fewest legal placements first to prune dead ends early.
   var choices=null,chosenIndex=-1;
   for(var k=0;k<remaining.length;k++){
