@@ -33,15 +33,24 @@ function distance(a, b) {
   return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
 }
 
-function rememberRoad(game, fromId, toId) {
+function travelDuration(from, to, troops) {
+  const count = Math.max(1, Number(troops) || 1);
+  return Math.max(0.65, distance(from, to) / (14 + Math.sqrt(count) * 1.5));
+}
+
+function rememberRoad(game, fromId, toId, ownerId = null) {
   if (!game || Number(fromId) === Number(toId)) return;
   const from = Number(fromId), to = Number(toId);
   if (!Number.isInteger(from) || !Number.isInteger(to)) return;
   if (!Array.isArray(game.roads)) game.roads = [];
-  const low = Math.min(from, to), high = Math.max(from, to);
-  const key = low + "-" + high;
-  if (!game.roads.some(road => String(road.key || (Math.min(Number(road.fromId), Number(road.toId)) + "-" + Math.max(Number(road.fromId), Number(road.toId)))) === key)) {
-    game.roads.push({ key, fromId: low, toId: high });
+  const source = (game.towers || []).find(tower => Number(tower.id) === from);
+  const resolvedOwner = ownerId != null ? String(ownerId) : (source && source.ownerId != null ? String(source.ownerId) : null);
+  const existing = game.roads.find(road => Number(road.fromId) === from && Number(road.toId) === to);
+  if (!existing) {
+    game.roads.push({ key: from + ">" + to, fromId: from, toId: to, ownerId: resolvedOwner });
+  } else if (existing.ownerId == null && resolvedOwner != null) {
+    existing.ownerId = resolvedOwner;
+    existing.key = from + ">" + to;
   }
 }
 
@@ -94,7 +103,7 @@ function tickGame(game, now) {
     if (tower.ownerId) tower.units = Math.min(999, Number(tower.units || 0) + Number(tower.income || 1) * dt);
   }
   for (const fleet of game.fleets) {
-    rememberRoad(game, fleet.fromId, fleet.toId);
+    rememberRoad(game, fleet.fromId, fleet.toId, fleet.ownerId);
     fleet.progress = Math.min(1, Number(fleet.progress || 0) + dt / Math.max(1.1, Number(fleet.duration || 3)));
   }
   const landed = game.fleets.filter(f => f.progress >= 1);
@@ -152,9 +161,9 @@ function tickGame(game, now) {
         game.fleets.push({
           id: game.nextFleetId++, fromId: source.id, toId: target.id,
           ownerId: BOT_ID, units: troops, progress: 0,
-          duration: Math.max(1.1, distance(source, target) / 16)
+          duration: travelDuration(source, target, troops)
         });
-        rememberRoad(game, source.id, target.id);
+        rememberRoad(game, source.id, target.id, BOT_ID);
       }
     }
   }
@@ -391,8 +400,8 @@ export function createTowersRouter({ pool, verifyTelegram }) {
       const send = Math.floor(source.units * 0.58);
       if (send < 2) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "В этой башне пока мало войск." }); }
       source.units -= send;
-      game.fleets.push({ id: game.nextFleetId++, fromId, toId, ownerId: String(user.id), units: send, progress: 0, duration: Math.max(1.1, distance(source, target) / 16) });
-      rememberRoad(game, fromId, toId);
+      game.fleets.push({ id: game.nextFleetId++, fromId, toId, ownerId: String(user.id), units: send, progress: 0, duration: travelDuration(source, target, send) });
+      rememberRoad(game, fromId, toId, String(user.id));
       game.feed.unshift({ text: "Войска отправлены к башне №" + toId, at: Date.now() });
       await updateAndSettle(client, room, game);
       await client.query("COMMIT");
