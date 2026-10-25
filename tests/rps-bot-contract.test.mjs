@@ -39,7 +39,8 @@ test("a room with a bot exposes a practice label and a button in the waiting roo
   assert.match(router, /isBot: String\(player\.telegram_id\) === RPS_BOT_ID/);
   assert.match(client, /data-add-bot/);
   assert.match(client, /Добавить бота для проверки/);
-  assert.match(client, /Тестовый раунд с ботом\. Баланс AC не изменён\./);
+  assert.match(client, /Тестовый раунд с ботом\./);
+  assert.match(client, /Твой выигрыш: 0 AC — тестовый режим, баланс не изменён\./);
 });
 
 test("leaving a bot room never transfers room ownership to the bot", () => {
