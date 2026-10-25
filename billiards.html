@@ -472,7 +472,7 @@
         if(uy>0.00001)candidates.push((bottom-cue.y)/uy);else if(uy< -0.00001)candidates.push((top-cue.y)/uy);
         const railDistance=candidates.filter(v=>Number.isFinite(v)&&v>0).reduce((a,b)=>Math.min(a,b),Infinity);
         if(Number.isFinite(railDistance))limit=Math.min(limit,Math.max(0,railDistance-R-1));
-        for(const ball of balls||[]){if(!ball.active||ball.falling||String(ball.id)===String(cue.id))continue;const rx=Number(ball.x)-cue.x,ry=Number(ball.y)-cue.y,along=rx*ux+ry*uy;if(along<=R)continue;const side=Math.abs(rx*uy-ry*ux),diameter=R*2;if(side>=diameter)continue;const hit=along-Math.sqrt(Math.max(0,diameter*diameter-side*side));if(hit>R)limit=Math.min(limit,Math.max(0,hit-R-1));}
+        for(const ball of balls||[]){if(!ball.active||ball.falling||String(ball.id)===String(cue.id))continue;const rx=Number(ball.x)-cue.x,ry=Number(ball.y)-cue.y,along=rx*ux+ry*uy;if(along<=R)continue;const side=Math.abs(rx*uy-ry*ux),diameter=R*2;if(side>=diameter)continue;const hit=along-Math.sqrt(Math.max(0,diameter*diameter-side*side));if(hit>1)limit=Math.min(limit,Math.max(0,hit-1));}
         return Math.max(0.5,limit);
       }
       function capturePointer(target,id){try{if(target&&typeof target.setPointerCapture==="function")target.setPointerCapture(id);}catch(_){}}
