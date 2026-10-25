@@ -379,7 +379,7 @@ function renderGame(){
    if(gun){
     let nearest=null;
     for(const fleet of(gameState.fleets||[])){
-     if(String(fleet.ownerId)===String(t.ownerId))continue;
+     if(t.ownerId==null||String(fleet.ownerId)===String(t.ownerId))continue;
      const a=towerAt(fleet.fromId),b=towerAt(fleet.toId);if(!a||!b)continue;
      const p=Math.max(0,Math.min(1,Number(fleet.progress)||0)),fx=a.x+(b.x-a.x)*p,fy=a.y+(b.y-a.y)*p,d=Math.hypot((fx-t.x)*fr.width/100,(fy-t.y)*fr.height/100);
      if(d<=Number(t.range||25)&&(!nearest||d<nearest.d))nearest={fx,fy,d};
@@ -390,10 +390,11 @@ function renderGame(){
    const shotAt=Number(t.lastShotAt||0),seen=Number(lastShotSeenAt.get(String(t.id))||0);
    if(shotAt>seen&&Number.isFinite(Number(t.lastShotX))&&Number.isFinite(Number(t.lastShotY))){
     lastShotSeenAt.set(String(t.id),shotAt);
+    el.classList.add('firing');
     const shot=document.createElementNS(svgNS,'line');shot.setAttribute('class','tower-shot shot-'+roadColorFor(t.ownerId,colorFor(t.ownerId)));
     shot.setAttribute('x1',t.x*fr.width/100);shot.setAttribute('y1',t.y*fr.height/100);
     shot.setAttribute('x2',Number(t.lastShotX)*fr.width/100);shot.setAttribute('y2',Number(t.lastShotY)*fr.height/100);routes.appendChild(shot);
-    setTimeout(()=>shot.remove(),240);
+    setTimeout(()=>{shot.remove();if(el.isConnected)el.classList.remove('firing');},240);
    }
    if(Number(t.lastShotAt||0)>0&&Date.now()-Number(t.lastShotAt)<240)el.classList.add('firing');
   }
