@@ -7,11 +7,17 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-roads4"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-3dturret1"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
   "The game needs a fullscreen battlefield, bot practice and room options.");
+assert.ok(html.includes(".turret-head") && html.includes(".soldier-helmet") &&
+  html.includes('type-shooter') && towersRouter.includes('type: "shooter"'),
+  "The battlefield should render detailed 3D-style troop figures and a shooting tower.");
+assert.ok(towersRouter.includes("function tickShooterTowers(game, now)") &&
+  html.includes("function fireShooterTowers(state,now)"),
+  "The shooting tower should damage enemy troops in online and local games.");
 assert.ok(html.includes("Стратегия в реальном времени") && html.includes("function localTick()"),
   "The game should implement real-time tower control and local practice.");
 assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId, ownerId = null)") &&
@@ -89,11 +95,14 @@ try {
   await page.locator("#gameView:not(.hidden)").waitFor();
   assert.ok(await page.evaluate(() => (window.__fullscreenRequests || 0) >= 1), "Starting a match should request Telegram fullscreen.");
   await page.locator(".tower[data-tower='1']").waitFor();
-  assert.equal(await page.locator(".tower").count(), 9, "Practice mode should draw nine towers.");
+  assert.equal(await page.locator(".tower").count(), 10, "Practice mode should draw ten towers including the shooting turret.");
+  assert.equal(await page.locator(".tower.type-shooter").count(), 1, "The battlefield should have one shooting turret.");
+  assert.equal(await page.locator(".tower.type-shooter .shooter-model").count(), 1, "The shooting turret should use its own 3D model.");
   await page.locator(".tower[data-tower='1']").click();
   await page.locator(".tower[data-tower='4']").click();
   await page.locator(".fleet").first().waitFor({ timeout: 3000 });
   const firstFleet = page.locator("#fleets .fleet").first();
+  assert.equal(await firstFleet.locator(".fleet-soldier").count(), 5, "Moving armies should show a squad of detailed soldier figures.");
   const firstTransform = await firstFleet.evaluate(el => el.style.transform);
   await page.waitForTimeout(90);
   const nextTransform = await firstFleet.evaluate(el => el.style.transform);
