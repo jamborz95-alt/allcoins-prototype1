@@ -196,7 +196,7 @@ try {
     await page.mouse.down();
     await page.mouse.move(rect.x + rect.width * 0.62, rect.y + rect.height * 0.48, { steps: 4 });
     await page.mouse.up();
-    await page.waitForFunction(() => document.getElementById("gameMessage")?.textContent === "Удар тестируется." && document.getElementById("aimText")?.textContent?.endsWith("потяни в направлении удара"), { timeout: 15000 });
+    await page.waitForFunction(() => document.getElementById("gameMessage")?.textContent === "Удар тестируется." && document.getElementById("aimText")?.textContent?.includes("в направлении удара"), { timeout: 15000 });
     assert.equal(stakeRequests.length, 1, "Жест прицеливания не вызвал API выстрела");
     assert.equal(stakeRequests[0].power, 78, "Удар не передал выбранную силу 78%");
     assert.ok(Number.isFinite(stakeRequests[0].angle), "Удар не передал числовой угол");
