@@ -2688,6 +2688,15 @@
 
   <section id="games" class="hidden">
     <div class="section-title">🎮 Игры</div>
+    <style id="kozel-entry-icon-styles">
+      .kozel-entry-appicon{position:relative;isolation:isolate;display:block;flex:0 0 82px;width:82px;height:82px;margin:0 auto 9px;overflow:hidden;border:1px solid rgba(244,213,133,.85);border-radius:21px;background:radial-gradient(circle at 50% 28%,rgba(222,178,72,.22),transparent 46%),linear-gradient(145deg,#244634 0%,#0b201a 65%,#24182b 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 7px 16px rgba(0,0,0,.38)}
+      .kozel-entry-appicon:before{content:"";position:absolute;inset:5px;border:1px solid rgba(244,213,133,.23);border-radius:15px;pointer-events:none}
+      .kozel-mini-card{position:absolute;display:flex;align-items:center;justify-content:center;flex-direction:column;width:35px;height:48px;border:2px solid #fff;border-radius:7px;box-shadow:0 2px 4px #0005;overflow:hidden;font-weight:1000}
+      .kozel-mini-card.back{left:15px;top:12px;transform:rotate(-17deg);background:repeating-linear-gradient(45deg,#18336e 0 4px,#0c1b45 4px 8px);border-color:#e8cf83;color:#fff}
+      .kozel-mini-card.front{right:10px;bottom:10px;transform:rotate(13deg);background:linear-gradient(135deg,#fffef8,#e9e0cf);color:#0b673e;border-color:#e8cf83}
+      .kozel-mini-card.front i{font-size:14px;font-style:normal}
+      .kozel-mini-spark{position:absolute;right:7px;top:5px;z-index:2;font-size:15px;text-shadow:0 2px 3px #000}
+    </style>
     <style id="uno-entry-icon-styles">
       .uno-entry-appicon{position:relative;isolation:isolate;display:block;flex:0 0 82px;width:82px;height:82px;margin:0 auto 9px;overflow:hidden;border:1px solid rgba(244,213,133,.85);border-radius:21px;background:radial-gradient(circle at 50% 28%,rgba(222,178,72,.24),transparent 46%),linear-gradient(145deg,#183c55 0%,#0b1728 65%,#24182b 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 7px 16px rgba(0,0,0,.38)}
       .uno-entry-appicon:before{content:"";position:absolute;inset:5px;border:1px solid rgba(244,213,133,.23);border-radius:15px;pointer-events:none}
@@ -2785,6 +2794,16 @@
         <span class="checkers-piece-mini white"></span>
       </span>
       <span class="game-app-title">Шашки Онлайн</span>
+    </a>
+  </div>
+  <div class="game-app-tile" id="kozelEntry">
+    <a id="openKozel" class="game-app-launch kozel-launch-link" href="./kozel.html?v=20261025-kozel1" aria-label="Открыть игру Козёл Онлайн">
+      <span class="kozel-entry-appicon" aria-hidden="true">
+        <span class="kozel-mini-card back"><b>К</b></span>
+        <span class="kozel-mini-card front"><b>Q</b><i>♣</i></span>
+        <span class="kozel-mini-spark">🐐</span>
+      </span>
+      <span class="game-app-title">Козёл Онлайн</span>
     </a>
   </div>
 </div>
