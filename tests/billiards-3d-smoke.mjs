@@ -136,7 +136,7 @@ try {
       };
     });
     assert.equal(threeReady.ready, true, "Трёхмерная сцена не запустилась: " + JSON.stringify(threeReady));
-    assert.ok(threeReady.width > 100 && threeReady.height > 100, "3D canvas has no visible area: " + JSON.stringify(threeReady));
+    assert.equal(threeReady.webgl2, true, "Браузер не создал контекст WebGL 2: " + JSON.stringify(threeReady));
     assert.equal(threeReady.threeModule, true, "Не создан обработчик обновления 3D-сцены");
     assert.equal(threeReady.raycastMapper, true, "Не создано преобразование координат для перспективной 3D-камеры");
 
@@ -156,6 +156,9 @@ try {
     await page.locator("#startGameBtn").click();
     await page.waitForFunction(() => !document.getElementById("gameView").classList.contains("hidden"));
     await page.waitForFunction(() => window.billiards3DReady === true);
+    const activeCanvas = await page.evaluate(() => { const canvas = document.getElementById("pool3DCanvas"); const rect = canvas.getBoundingClientRect(); return { width: rect.width, height: rect.height, opacity: getComputedStyle(canvas).opacity }; });
+    assert.ok(activeCanvas.width > 100 && activeCanvas.height > 100, "После открытия игры у 3D-стола нет видимой области: " + JSON.stringify(activeCanvas));
+    assert.equal(activeCanvas.opacity, "1", "3D-стол должен быть видимым");
     assert.equal(await page.locator("#shotPowerRange").count(), 1, "На игровом экране отсутствует ползунок силы удара");
     await page.locator("#shotPowerRange").evaluate(el => {
       el.value = "78";
