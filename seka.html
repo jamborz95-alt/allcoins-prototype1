@@ -1136,7 +1136,18 @@
 
     if (game) {
       $("potValue").innerHTML = fmt(game.pot) + " AC<small>БАНК ПАРТИИ</small>";
-      $("gameMessage").textContent = game.message || "";
+      let gameMessageText = game.message || "";
+      if (game.status === "finished") {
+        const ownResult = (game.players || []).find(player => String(player.telegramId) === tgUserId);
+        const ownPayout = Math.max(0, Number(ownResult && ownResult.payout) || 0);
+        const personalWin = game.testMode
+          ? "Твой выигрыш: 0 AC — тестовый режим, баланс не менялся."
+          : ownPayout > 0
+            ? "Твой выигрыш: +" + fmt(ownPayout) + " AC."
+            : "Твой выигрыш: 0 AC.";
+        gameMessageText = (gameMessageText ? gameMessageText + " " : "") + personalWin;
+      }
+      $("gameMessage").textContent = gameMessageText;
       $("gameTurnLabel").textContent = game.status === "finished" ? "Партия завершена" :
         (game.isYourTurn ? "Ваш ход" : "Ход игрока: " + ((game.players || []).find(p => String(p.telegramId) === String(game.currentPlayerTelegramId)) || {}).label);
       const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
