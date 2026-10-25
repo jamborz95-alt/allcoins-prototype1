@@ -16,7 +16,12 @@
       --gold:#f0d184; --mint:#67f5b5; --muted:#a6b4cc; --red:#ff5a6a;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:#f7f8fb;font-family:Arial,Helvetica,sans-serif;overscroll-behavior:none}
+    html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:#f7f8fb;font-family:Arial,Helvetica,sans-serif;overscroll-behavior:none;overscroll-behavior-x:none}
+    html{touch-action:pan-y}
+    body.game-active{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;overscroll-behavior:none;touch-action:pan-y}
+    body.game-active #gameView,body.game-active .arena,body.game-active .joystick,body.game-active #moveJoystick{touch-action:none}
+    body.game-active #gameView{height:100%;height:100dvh;overflow:hidden}
+    body.game-active .game-head,body.game-active .scorebar{touch-action:pan-y}
     body{min-height:100vh;min-height:100dvh}
     button,input{font:inherit}
     button{border:0;cursor:pointer;touch-action:manipulation;font-weight:800;border-radius:13px;min-height:44px;padding:11px 14px;-webkit-tap-highlight-color:transparent}
@@ -604,6 +609,7 @@
       try { history.pushState({ allcoinsBombGuard: true }, '', window.location.href); navigationGuardArmed = true; } catch (_) {}
       $('setupView').classList.add('hidden');
       $('gameView').classList.remove('hidden');
+      document.body.classList.add('game-active');
       $('arena').dataset.map = chosenMap;
       $('playerCharacter').querySelector('.character-name').textContent = nick.slice(0,12);
       $('playerCharacter').setAttribute('aria-label', 'Персонаж ' + nick);
@@ -1276,14 +1282,16 @@
       resetJoystick();
       stopCharacterMotion();
       $('gameView').classList.add('hidden'); $('resultOverlay').classList.add('hidden'); $('setupView').classList.remove('hidden');
+      document.body.classList.remove('game-active');
       if (tg && tg.BackButton) { try { tg.BackButton.hide(); } catch (_) {} }
     }
-    $('backToAllcoins').addEventListener('click', () => { if (window.history.length > 1) window.history.back(); else window.location.href = './index.html'; });
+    $('backToAllcoins').addEventListener('click', () => { window.location.replace('./index.html'); });
     $('gameBack').addEventListener('click', onBack);
     function handleTelegramBack() {
       const activeGame = !$('gameView').classList.contains('hidden');
-      if (activeGame && ['playing','passing','boom'].includes(phase)) {
-        setInstruction('Матч продолжается. Чтобы выйти в меню, используй кнопку «Меню» внутри игры.');
+      if (activeGame && ['playing','passing','boom','ready'].includes(phase)) {
+        setInstruction('Матч продолжается. Для выхода сначала нажми «Меню» внутри игры.');
+        try { tg.BackButton.show(); } catch (_) {}
         return;
       }
       onBack();
@@ -1292,11 +1300,33 @@
     $('continueRound').addEventListener('click', () => { if (phase === 'boom') { $('resultOverlay').classList.add('hidden'); startRound(); } });
     $('resultMenu').addEventListener('click', onBack);
     if (tg && tg.BackButton) { try { tg.BackButton.onClick(handleTelegramBack); } catch (_) {} }
-    window.addEventListener('popstate', () => {
-      if ($('gameView').classList.contains('hidden') || !['playing','passing','boom'].includes(phase)) return;
-      try { history.pushState({ allcoinsBombGuard: true }, '', window.location.href); navigationGuardArmed = true; } catch (_) {}
-      setInstruction('Игра не прервана. Продолжай матч; для выхода используй кнопку «Меню» внутри игры.');
+    function keepActiveGameOnHistoryNavigation() {
+      if ($('gameView').classList.contains('hidden') || !['playing','passing','boom','ready'].includes(phase)) return;
+      try {
+        history.pushState({ allcoinsBombGuard: true, at: Date.now() }, '', window.location.href);
+        navigationGuardArmed = true;
+      } catch (_) {}
+      setInstruction('Игра продолжается. Управляй джойстиком; для выхода используй «Меню» внутри игры.');
+      if (tg && tg.BackButton) { try { tg.BackButton.show(); } catch (_) {} }
+    }
+    window.addEventListener('popstate', keepActiveGameOnHistoryNavigation);
+    window.addEventListener('pageshow', () => {
+      if (!$('gameView').classList.contains('hidden') && ['playing','passing','boom','ready'].includes(phase)) {
+        document.body.classList.add('game-active');
+        try { history.pushState({ allcoinsBombGuard: true, at: Date.now() }, '', window.location.href); } catch (_) {}
+      }
     });
+    // Prevent Android edge-swipe navigation while the player is actively steering.
+    document.addEventListener('touchstart', event => {
+      if ($('gameView').classList.contains('hidden') || phase !== 'playing') return;
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const rect = $('moveJoystick').getBoundingClientRect();
+      if (touch.clientX >= rect.left - 18 && touch.clientX <= rect.right + 18 &&
+          touch.clientY >= rect.top - 18 && touch.clientY <= rect.bottom + 18) {
+        event.preventDefault();
+      }
+    }, { passive: false, capture: true });
     $('soundToggle').addEventListener('click', () => {
       soundOn = !soundOn; $('soundToggle').textContent = soundOn ? '🔊' : '🔇';
       if (soundOn) playTone(590,.06,'sine',.025);
