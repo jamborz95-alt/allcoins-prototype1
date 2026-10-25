@@ -588,6 +588,8 @@
       $('setupView').classList.add('hidden');
       $('gameView').classList.remove('hidden');
       $('arena').dataset.map = chosenMap;
+      $('playerCharacter').querySelector('.character-name').textContent = nick.slice(0,12);
+      $('playerCharacter').setAttribute('aria-label', 'Персонаж ' + nick);
       $('resultOverlay').classList.add('hidden');
       $('modeCaption').textContent = chosenMode === 'bots' ? 'Ты против ботов' : 'Игроки на одном экране';
       $('continueRound').hidden = true;
@@ -917,6 +919,7 @@
       clearTimeout(botTimer); botTimer = null;
       const token = roundToken;
       phase = 'passing';
+      resetJoystick();
       document.querySelectorAll('.seat').forEach(seat => seat.classList.toggle('target', Number(seat.dataset.player) === target));
       setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
       setInstruction('💨 Бомба летит к <strong>' + safeText(players[target].name) + '</strong>…');
@@ -955,6 +958,7 @@
       if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
       const owner = holder; const token = roundToken;
       phase = 'passing';
+      resetJoystick();
       setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
       setInstruction('<strong>' + safeText(players[owner].name) + '</strong> передаёт бомбу игроку <strong>' + safeText(players[target].name) + '</strong>…');
       playTone(710, .08, 'triangle', .035);
