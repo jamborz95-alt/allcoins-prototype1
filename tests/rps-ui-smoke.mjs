@@ -205,7 +205,7 @@ try {
   assert.equal(await owner.page.locator("[data-ready-choice]").isEnabled(), true,
     "Кнопка «Готово» должна включаться после выбора жеста");
   await owner.page.locator("[data-ready-choice]").click();
-  await owner.page.waitForFunction(() => /Тестовый раунд с ботом\\..*Твой выигрыш: 0 AC — тестовый режим, баланс не изменён\\./.test(document.querySelector("#lastResult")?.textContent || ""));
+  await owner.page.waitForFunction(() => /Тестовый раунд с ботом\..*Твой выигрыш: 0 AC — тестовый режим, баланс не изменён\./.test(document.querySelector("#lastResult")?.textContent || ""));
   assert.equal(await owner.page.locator("#gameTable .table-card").count(), 2,
     "После готовности жесты игрока и бота должны появиться на игровом столе");
   assert.match(await owner.page.locator("#gameTable").innerText(), /Камень|Ножницы|Бумага/,
