@@ -238,8 +238,9 @@
           startShotAnimation(incomingShot);
         }
         $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"")+(g.testMode?" · ТЕСТ-БОТ":"");$("bankValue").textContent=g.testMode?"ТЕСТ":amount(g.pot)+" AC";
+        setMessage(g.message||"");
         const row=$("playerRow");row.innerHTML="";
-        g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?"ТВОЙ ХОД":"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
+        g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?(p.isBot?"ХОД БОТА":"ТВОЙ ХОД"):"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
         const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
         $("aimText").textContent=state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни в направлении удара":"Ход соперника · наблюдай за ударом"));
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
