@@ -10,7 +10,7 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-obstacles1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-obstacles2"'),
   "The game link should load the smoother physics build with its on-field joystick.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
