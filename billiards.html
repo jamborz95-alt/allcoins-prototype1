@@ -50,9 +50,9 @@
     .playerChip{min-width:116px;max-width:48%;padding:7px 11px;border:1px solid #5d8677;background:#082b27;border-radius:11px;text-align:center}
     .playerChip.active{border-color:#ffe38a;box-shadow:0 0 0 1px #ffe38a77,0 0 15px #ffe38a22}.playerChip b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.playerChip small{display:block;font-size:10px;color:#c1d8ce;margin-top:4px}
     .tableWrap{width:100%;max-width:940px;margin:0 auto;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
-    #poolCanvas{display:block;width:100%;height:auto;aspect-ratio:800/440;max-height:calc(100dvh - 260px);border-radius:15px;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 10px 30px #0007}
+    #poolCanvas{display:block;width:100%;height:auto;aspect-ratio:800/440;max-height:calc(100dvh - 260px);border-radius:15px;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 10px 30px #0007;opacity:0;position:relative;z-index:1}.tableWrap{position:relative}#pool3DCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;border-radius:15px;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 10px 30px #0007}
     .aimPanel{width:100%;max-width:940px;margin:8px auto 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .aimText{min-width:0;font-size:11px;line-height:1.45;color:#d9e9e1}.power{flex:0 0 125px;height:8px;border:1px solid #9bbaaa;border-radius:8px;overflow:hidden;background:#06211a}.powerFill{height:100%;width:0;background:linear-gradient(90deg,#65edb2,#f6d87f);transition:width .05s linear}
+    .aimText{min-width:0;font-size:11px;line-height:1.45;color:#d9e9e1}.power{flex:0 0 125px;height:8px;border:1px solid #9bbaaa;border-radius:8px;overflow:hidden;background:#06211a}.powerFill{height:100%;width:0;background:linear-gradient(90deg,#65edb2,#f6d87f);transition:width .05s linear}.powerControl{width:100%;max-width:940px;margin:5px auto 0;display:flex;align-items:center;gap:10px;color:#d7e9df;font-size:11px}.powerControl label{margin:0;white-space:nowrap;color:#f4d88c;font-weight:900}.powerControl input{min-height:22px;height:22px;padding:0;border:0;box-shadow:none;background:transparent;accent-color:#f2d58d}.powerValue{min-width:42px;text-align:right;font-weight:900;color:#f4d88c}
     .gameMsg{width:100%;max-width:940px;margin:7px auto 0;min-height:28px;padding:7px 10px;border:1px solid #67937d70;border-radius:10px;background:#06251f66;color:#e1f1e8;font-size:11px;line-height:1.45;text-align:center}
     .gameActions{width:100%;max-width:940px;margin:8px auto 0;display:flex;justify-content:center;gap:8px}.gameActions button{min-height:37px;padding:8px 14px;font-size:12px}
     .ruleNote{text-align:center;font-size:9px;color:#a6c6b9;margin:5px auto 0;max-width:940px;line-height:1.4}
@@ -123,11 +123,12 @@
       <div class="bank"><small>БАНК</small><span id="bankValue">200 AC</span></div>
     </div>
     <div class="opponentRow" id="playerRow"></div>
-    <div class="tableWrap"><canvas id="poolCanvas" width="800" height="440" aria-label="Бильярдный стол. Потяни от битка в сторону удара"></canvas></div>
+    <div class="tableWrap"><canvas id="poolCanvas" width="800" height="440" aria-label="Бильярдный стол"></canvas><canvas id="pool3DCanvas" aria-label="Трёхмерный бильярдный стол. Потяни от битка в сторону удара"></canvas></div>
     <div class="aimPanel">
       <div class="aimText" id="aimText">Твой ход. Коснись стола и потяни в направлении удара.</div>
       <div class="power"><div id="powerFill" class="powerFill"></div></div>
     </div>
+    <div class="powerControl"><label for="shotPowerRange">СИЛА УДАРА</label><input id="shotPowerRange" type="range" min="4" max="100" value="55" step="1" aria-label="Сила удара"><span class="powerValue" id="shotPowerValue">55%</span></div>
     <div class="gameMsg" id="gameMessage">Прицелься и отпусти, чтобы ударить.</div>
     <div class="gameActions">
       <button class="secondary" id="centerCueBtn" type="button">🎯 Сбросить прицел</button>
@@ -286,6 +287,7 @@
         if(state.raf)cancelAnimationFrame(state.raf);state.raf=requestAnimationFrame(frame);
       }
       function drawTable(){
+        if(window.billiards3DUpdate){try{window.billiards3DUpdate(state.visualBalls||(state.game&&state.game.balls)||[],state.aim,state.animatingSeq===null&&!state.busy);}catch(_){}}
         const canvas=$("poolCanvas");if(!canvas)return;const ctx=canvas.getContext("2d");ctx.clearRect(0,0,W,H);
         const wood=ctx.createLinearGradient(0,0,W,H);wood.addColorStop(0,"#e8c481");wood.addColorStop(.42,"#8a562c");wood.addColorStop(1,"#3b2115");
         roundedRect(ctx,1,1,W-2,H-2,20,wood);roundedRect(ctx,20,19,W-40,H-38,16,"#18251c");
@@ -313,11 +315,11 @@
       function pointerCoords(e){const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
-      function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);$("poolCanvas").setPointerCapture?.(e.pointerId);drawTable();}
+      function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
       function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){const p=state.aim;const d=Math.hypot(p.x-cue.x,p.y-cue.y);$("powerFill").style.width=Math.min(100,Math.max(0,d/1.5))+"%";}drawTable();}
       async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
         const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width="0%";return;}
-        const power=Math.max(4,Math.min(100,(dist-12)*.65));const angle=Math.atan2(dy,dx);await shoot(angle,power);
+        const power=Number($("shotPowerRange").value)||55;const angle=Math.atan2(dy,dx);await shoot(angle,power);
       }
       async function shoot(angle,power){if(!state.room||!canShoot())return;state.busy=true;setMessage("Удар…");renderGameUI();
         try{const data=await api("/game/shot",{roomId:state.room.id,angle,power});state.game=data.game;renderGameUI();}
@@ -340,7 +342,8 @@
       $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
       $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
-      $("poolCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
+      $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
+      $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";});
       window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
       document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game")refreshGame(true);}});
       (async function init(){if(tg){try{tg.ready();tg.expand();}catch(_){}}
@@ -348,5 +351,91 @@
       })();
     })();
   </script>
+
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+    (function(){
+      const canvas=document.getElementById("pool3DCanvas");
+      if(!canvas)return;
+      let renderer,scene,camera,tableGroup;
+      const ballMeshes=new Map();
+      const ballMaterialCache=new Map();
+      let cueStick=null,aimLine=null,resizeObserver=null;
+      const W=800,H=440,SCALE=0.01,BALL_R=0.10;
+      const colors={1:0xf7d51d,2:0x1767d8,3:0xd72e35,4:0x6c36b8,5:0xef7e21,6:0x139e59,7:0xe9e8df,9:0xf7d51d,10:0x1767d8,11:0xd72e35,12:0x6c36b8,13:0xef7e21,14:0x139e59,15:0xe9e8df,8:0x101217};
+      function mat(color,roughness=0.3,metalness=0){return new THREE.MeshStandardMaterial({color,roughness,metalness});}
+      function roundedBox(w,h,d,r,material){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);return mesh;}
+      function buildTable(){
+        scene=new THREE.Scene();scene.background=new THREE.Color(0x081711);
+        scene.fog=new THREE.Fog(0x081711,12,28);
+        camera=new THREE.PerspectiveCamera(34,800/440,0.1,100);camera.position.set(0,7.9,10.7);camera.lookAt(0,0,0);
+        scene.add(new THREE.HemisphereLight(0xd9f5ff,0x142016,2.0));
+        const key=new THREE.DirectionalLight(0xffe5b0,3.1);key.position.set(-4,9,5);scene.add(key);
+        const fill=new THREE.PointLight(0x72e5b3,1.4,18);fill.position.set(3,5,-3);scene.add(fill);
+        tableGroup=new THREE.Group();scene.add(tableGroup);
+        tableGroup.add(roundedBox(8.25,.34,4.65,.12,mat(0x58351f,.28)));
+        const trim=roundedBox(8.0,.15,4.4,.1,mat(0xb78948,.27,.35));trim.position.y=.2;tableGroup.add(trim);
+        const felt=roundedBox(7.55,.08,3.95,.05,mat(0x08734e,.72));felt.position.y=.29;tableGroup.add(felt);
+        const railMat=mat(0x174a37,.36),railTop=mat(0x226248,.32);
+        [[0,.39,-2.02,7.72,.18,.22],[0,.39,2.02,7.72,.18,.22],[-3.91,.39,0,.22,.18,3.85],[3.91,.39,0,.22,.18,3.85]].forEach(a=>{const m=roundedBox(a[3],a[4],a[5],.04,railMat);m.position.set(a[0],a[1],a[2]);tableGroup.add(m);});
+        const pocketMat=mat(0x020504,.2);
+        [[-3.8,-1.95],[0,-1.98],[3.8,-1.95],[-3.8,1.95],[0,1.98],[3.8,1.95]].forEach(([x,z])=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.17,.19,.06,32),pocketMat);p.position.set(x,.36,z);tableGroup.add(p);});
+        const legMat=mat(0x302018,.36);
+        [[-3.4,-1.8],[3.4,-1.8],[-3.4,1.8],[3.4,1.8]].forEach(([x,z])=>{const leg=roundedBox(.34,1.05,.34,.06,legMat);leg.position.set(x,-.43,z);tableGroup.add(leg);});
+        const lightGeo=new THREE.PlaneGeometry(7.5,3.9);const marks=new THREE.Mesh(lightGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.025,side:THREE.DoubleSide}));marks.rotation.x=-Math.PI/2;marks.position.y=.337;tableGroup.add(marks);
+        cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,12),mat(0xd5b47b,.28));cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,12),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-2.61;cueStick.add(tip);scene.add(cueStick);
+        const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.43,0),new THREE.Vector3(1,.43,0)]);aimLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xe9ffe9,transparent:true,opacity:.8}));scene.add(aimLine);
+      }
+      function ballMaterial(ball){
+        const key=String(ball.id);if(ballMaterialCache.has(key))return ballMaterialCache.get(key);
+        const color=ball.id==="cue"?0xffffff:(colors[ball.number]||0xffffff);
+        const m=mat(color,.18,.04);ballMaterialCache.set(key,m);return m;
+      }
+      function makeBall(ball){
+        const group=new THREE.Group();
+        const sphere=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,32,24),ballMaterial(ball));group.add(sphere);
+        if(ball.type==="stripe"){
+          const band=new THREE.Mesh(new THREE.TorusGeometry(BALL_R*.82,.027,8,40),mat(0xf8f7ec,.22));band.rotation.x=Math.PI/2;group.add(band);
+        }
+        if(ball.id!=="cue"){
+          const disk=new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.43,24),mat(0xffffff,.35));disk.position.y=BALL_R*.91;disk.rotation.x=-Math.PI/2;group.add(disk);
+          const numberCanvas=document.createElement("canvas");numberCanvas.width=128;numberCanvas.height=128;const ctx=numberCanvas.getContext("2d");ctx.fillStyle="#ffffff";ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fill();ctx.fillStyle="#111820";ctx.font="bold 68px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(ball.number),64,66);
+          const tex=new THREE.CanvasTexture(numberCanvas);const sprite=new THREE.Mesh(new THREE.PlaneGeometry(BALL_R*.72,BALL_R*.72),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));sprite.position.y=BALL_R*.97;sprite.rotation.x=-Math.PI/2;group.add(sprite);
+        }
+        scene.add(group);return group;
+      }
+      function syncBalls(balls){
+        const active=new Set();
+        for(const b of balls||[]){if(!b.active)continue;const id=String(b.id);active.add(id);let mesh=ballMeshes.get(id);if(!mesh){mesh=makeBall(b);ballMeshes.set(id,mesh);}mesh.position.set((Number(b.x)-400)*SCALE,.43,(Number(b.y)-220)*SCALE);mesh.visible=true;}
+        for(const [id,mesh] of ballMeshes){if(!active.has(id))mesh.visible=false;}
+      }
+      function updateAim(balls,aim,canAim){
+        const cue=(balls||[]).find(b=>b.id==="cue"&&b.active);
+        if(!cue||!aim||!canAim){cueStick.visible=false;aimLine.visible=false;return;}
+        const dx=aim.x-cue.x,dy=aim.y-cue.y,dist=Math.hypot(dx,dy);if(dist<3){cueStick.visible=false;aimLine.visible=false;return;}
+        const angle=Math.atan2(dy,dx),x=(cue.x-400)*SCALE,z=(cue.y-220)*SCALE;
+        cueStick.visible=true;cueStick.position.set(x,.47,z);cueStick.rotation.y=-angle;
+        cueStick.position.x-=Math.cos(angle)*.62;cueStick.position.z-=Math.sin(angle)*.62;
+        aimLine.visible=true;aimLine.position.set(x,.44,z);aimLine.rotation.y=-angle;aimLine.scale.set(Math.min(3.5,dist*SCALE+1),1,1);
+      }
+      function render(){
+        if(!renderer)return;
+        const rect=canvas.getBoundingClientRect();const w=Math.max(1,rect.width),h=Math.max(1,rect.height);
+        renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+        renderer.render(scene,camera);
+      }
+      try{
+        renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;
+        renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+        buildTable();
+        window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
+        resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
+        canvas.style.background="#0a2018";
+        window.billiards3DUpdate([],null,false);
+      }catch(err){console.error("3D billiards initialization failed",err);canvas.style.display="none";const old=document.getElementById("poolCanvas");if(old)old.style.opacity="1";}
+    })();
+  </script>
+
 </body>
 </html>
