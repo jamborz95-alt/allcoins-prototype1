@@ -759,12 +759,12 @@
         if (winner === humanColor) {
           $("resultMark").textContent = "🏆";
           $("resultTitle").textContent = "Ты победил!";
-          $("resultText").textContent = "Ты выиграл тестовую партию у бота. Ставка " + formatNumber(stake) + " AC была демонстрационной.";
+          $("resultText").textContent = "Твой выигрыш: 0 AC. Это тестовая партия против бота — ставка демонстрационная, реальные AC не начисляются.";
           updateStatus("Победа", "Партия завершена.");
         } else {
           $("resultMark").textContent = "♟";
           $("resultTitle").textContent = "Бот победил";
-          $("resultText").textContent = "Партия завершена. Можно сразу начать новую и попробовать другую стратегию. Ставка " + formatNumber(stake) + " AC не списывалась.";
+          $("resultText").textContent = "Твой выигрыш: 0 AC. Это тестовый режим: ставка " + formatNumber(stake) + " AC не списывалась, реальные выплаты не выполняются. Можно начать новую партию.";
           updateStatus("Партия завершена", "Начни новую партию или вернись в комнаты.");
         }
         $("resultOverlay").classList.remove("hidden");
