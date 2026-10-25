@@ -4,6 +4,7 @@ import { recordGameCommission } from "./commission.js";
 const TABLE_W = 800;
 const TABLE_H = 440;
 const BALL_R = 10;
+const TEST_BOT_ID = "billiards-test-bot";
 const MIN_X = 42;
 const MAX_X = 758;
 const MIN_Y = 42;
@@ -180,8 +181,10 @@ function makePublicGame(game, userId) {
     pot: Number(game.pot),
     players: game.players.map((player, index) => ({
       id: String(player.id), name: String(player.name), group: player.group || null,
-      isYou: String(player.id) === String(userId), isCurrent: index === game.currentPlayerIndex
+      isYou: String(player.id) === String(userId), isCurrent: index === game.currentPlayerIndex,
+      isBot: Boolean(player.isBot)
     })),
+    testMode: Boolean(game.testMode),
     balls: cloneBalls(game.balls),
     currentPlayerId: String(game.players[game.currentPlayerIndex]?.id || ""),
     turnNo: Number(game.turnNo || 0),
@@ -200,7 +203,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
 
   async function roomPayload(db, roomId, userId) {
     const result = await db.query(
-      "SELECT r.id, r.name, r.owner_telegram_id, r.stake, r.status, r.created_at, " +
+      "SELECT r.id, r.name, r.owner_telegram_id, r.stake, r.status, r.bot_mode, r.created_at, " +
       "COUNT(p.telegram_id)::INTEGER AS players_count, " +
       "COALESCE(MAX(p.display_name) FILTER (WHERE p.telegram_id = r.owner_telegram_id), 'Создатель') AS owner_name " +
       "FROM billiards_rooms r LEFT JOIN billiards_room_players p ON p.room_id = r.id " +
@@ -218,14 +221,18 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         id: String(row.id), name: String(row.name), ownerId: String(row.owner_telegram_id),
         ownerName: String(row.owner_name), stake: Number(row.stake), status: String(row.status),
         playersCount: Number(row.players_count), isOwner: String(row.owner_telegram_id) === String(userId),
-        createdAt: row.created_at
+        botMode: Boolean(row.bot_mode), createdAt: row.created_at
       },
-      players: playersResult.rows.map(player => ({
-        id: String(player.telegram_id),
-        name: String(player.display_name || "Игрок"),
-        isYou: String(player.telegram_id) === String(userId),
-        isOwner: String(player.telegram_id) === String(row.owner_telegram_id)
-      }))
+      players: [
+        ...playersResult.rows.map(player => ({
+          id: String(player.telegram_id),
+          name: String(player.display_name || "Игрок"),
+          isYou: String(player.telegram_id) === String(userId),
+          isOwner: String(player.telegram_id) === String(row.owner_telegram_id),
+          isBot: false
+        })),
+        ...(row.bot_mode ? [{ id: TEST_BOT_ID, name: "Бот (тест)", isYou: false, isOwner: false, isBot: true }] : [])
+      ]
     };
   }
 
@@ -239,6 +246,14 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
 
   async function settleGame(client, roomId, game) {
     if (game.status !== "finished" || game.settlementApplied) return;
+    if (game.testMode) {
+      game.commission = 0;
+      game.payout = 0;
+      game.settlementApplied = true;
+      game.message = (game.winnerName || "Игрок") + " выиграл тестовую партию. Баланс AC не менялся.";
+      await client.query("UPDATE billiards_rooms SET status = 'finished' WHERE id = $1", [String(roomId)]);
+      return;
+    }
     const commissionResult = await recordGameCommission(client, {
       game: "billiards",
       eventKey: "billiards:" + String(roomId) + ":finished",
@@ -261,6 +276,116 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
     await client.query("UPDATE billiards_rooms SET status = 'finished' WHERE id = $1", [String(roomId)]);
   }
 
+
+  function chooseTestBotShot(game) {
+    const balls = cloneBalls(game.balls);
+    const cue = balls.find(ball => ball.id === "cue" && ball.active);
+    if (!cue) return { angle: 0, power: 45 };
+    const bot = game.players[game.currentPlayerIndex];
+    let targets = balls.filter(ball => ball.active && ball.type !== "cue" && ball.type !== "eight");
+    if (bot?.group) {
+      const own = targets.filter(ball => ball.type === bot.group);
+      targets = own.length ? own : balls.filter(ball => ball.active && ball.type === "eight");
+    }
+    if (!targets.length) targets = balls.filter(ball => ball.active && ball.type !== "cue");
+    let best = null;
+    for (const target of targets) {
+      for (const pocket of POCKETS) {
+        const pdx = pocket.x - target.x, pdy = pocket.y - target.y;
+        const pd = Math.hypot(pdx, pdy) || 1;
+        const contactX = target.x - (pdx / pd) * (BALL_R * 2 + 1);
+        const contactY = target.y - (pdy / pd) * (BALL_R * 2 + 1);
+        const dx = contactX - cue.x, dy = contactY - cue.y;
+        const distance = Math.hypot(dx, dy);
+        const score = distance + pd * 0.08 + Math.random() * 7;
+        if (!best || score < best.score) best = { score, angle: Math.atan2(dy, dx), distance };
+      }
+    }
+    const distance = best?.distance || 220;
+    return {
+      angle: best?.angle ?? (Math.random() * Math.PI * 2),
+      power: Math.max(30, Math.min(82, Math.round(32 + distance * 0.12)))
+    };
+  }
+
+  async function runTestBotTurn(roomId) {
+    const client = await pool.connect();
+    let transactionOpen = false;
+    try {
+      await client.query("BEGIN"); transactionOpen = true;
+      const result = await client.query("SELECT game_state FROM billiards_games WHERE room_id = $1 FOR UPDATE", [String(roomId)]);
+      if (!result.rows.length) {
+        await client.query("COMMIT"); transactionOpen = false;
+        return;
+      }
+      const game = result.rows[0].game_state;
+      const shooter = game.players?.[game.currentPlayerIndex];
+      if (!game.testMode || game.status !== "playing" || !shooter?.isBot) {
+        await client.query("COMMIT"); transactionOpen = false;
+        return;
+      }
+
+      const startBalls = cloneBalls(game.balls);
+      const ownGroupBefore = shooter.group;
+      const remainingOwnBefore = ownGroupBefore ? countRemaining(startBalls, ownGroupBefore) : null;
+      const { angle, power } = chooseTestBotShot(game);
+      const sim = simulateShot(startBalls, angle, power);
+      const ids = sim.pocketedIds;
+      const sunkEight = ids.includes("8");
+      const sunkCue = sim.scratch;
+      const objectPotted = ids.map(id => startBalls.find(ball => ball.id === id))
+        .filter(ball => ball && ball.type !== "cue" && ball.type !== "eight");
+
+      if (!shooter.group && objectPotted.length) {
+        const first = objectPotted[0];
+        shooter.group = first.type;
+        game.players.forEach(player => {
+          if (String(player.id) !== String(shooter.id)) player.group = first.type === "solid" ? "stripe" : "solid";
+        });
+      }
+      game.balls = sim.endBalls;
+      game.turnNo = Number(game.turnNo || 0) + 1;
+      game.lastShot = {
+        seq: game.turnNo, shooterId: String(shooter.id), angle, power,
+        startBalls, endBalls: cloneBalls(sim.endBalls), pocketedIds: ids, scratch: sunkCue
+      };
+
+      if (sunkEight) {
+        const wins = Boolean(ownGroupBefore && remainingOwnBefore === 0 && !sunkCue);
+        const winner = wins ? shooter : game.players.find(player => String(player.id) !== String(shooter.id));
+        game.status = "finished";
+        game.winnerId = String(winner?.id || "");
+        game.winnerName = String(winner?.name || "Игрок");
+        await settleGame(client, roomId, game);
+      } else {
+        const shotGroup = shooter.group;
+        const ownPocketed = !sunkCue && shotGroup && ids.some(id => {
+          const ball = startBalls.find(item => item.id === id);
+          return ball && ball.type === shotGroup;
+        });
+        if (!ownPocketed || sunkCue) {
+          game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+        }
+        game.message = sunkCue
+          ? shooter.name + " забил биток. Ход соперника."
+          : ownPocketed
+            ? shooter.name + " забил свой шар. Продолжает."
+            : "Бот завершил удар. Твой ход.";
+      }
+      game.updatedAt = Date.now();
+      await client.query(
+        "UPDATE billiards_games SET game_state = $2::jsonb, updated_at = NOW() WHERE room_id = $1",
+        [String(roomId), JSON.stringify(game)]
+      );
+      await client.query("COMMIT"); transactionOpen = false;
+    } catch (error) {
+      if (transactionOpen) { try { await client.query("ROLLBACK"); } catch {} }
+      console.error("Billiards test bot turn error:", error.message || error);
+    } finally {
+      client.release();
+    }
+  }
+
   router.post("/rooms/list", async (req, res) => {
     try {
       const user = userFromRequest(req, verifyTelegram);
@@ -270,7 +395,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         "COUNT(p.telegram_id)::INTEGER AS players_count, " +
         "COALESCE(MAX(p.display_name) FILTER (WHERE p.telegram_id = r.owner_telegram_id), 'Создатель') AS owner_name " +
         "FROM billiards_rooms r LEFT JOIN billiards_room_players p ON p.room_id = r.id " +
-        "WHERE r.status = 'waiting' GROUP BY r.id HAVING COUNT(p.telegram_id) < 2 " +
+        "WHERE r.status = 'waiting' AND r.bot_mode = FALSE GROUP BY r.id HAVING COUNT(p.telegram_id) < 2 " +
         "ORDER BY r.created_at DESC LIMIT 80"
       );
       return res.json({ ok: true, rooms: result.rows.map(row => ({
@@ -294,8 +419,8 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       await client.query("BEGIN"); transactionOpen = true;
       await ensurePlayer(client, user);
       const created = await client.query(
-        "INSERT INTO billiards_rooms (name, owner_telegram_id, stake, status) VALUES ($1, $2, $3, 'waiting') RETURNING id",
-        [name, user.id, String(stake)]
+        "INSERT INTO billiards_rooms (name, owner_telegram_id, stake, status, bot_mode) VALUES ($1, $2, $3, 'waiting', $4) RETURNING id",
+        [name, user.id, String(stake), Boolean(req.body?.botMode)]
       );
       const roomId = String(created.rows[0].id);
       await client.query(
@@ -386,7 +511,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       if (!/^\d+$/.test(roomId)) throw new BilliardsError(400, "Неверный номер комнаты.");
       await client.query("BEGIN"); transactionOpen = true;
       const roomResult = await client.query(
-        "SELECT id, name, owner_telegram_id, stake, status FROM billiards_rooms WHERE id = $1 FOR UPDATE", [roomId]
+        "SELECT id, name, owner_telegram_id, stake, status, bot_mode FROM billiards_rooms WHERE id = $1 FOR UPDATE", [roomId]
       );
       const room = roomResult.rows[0];
       if (!room) throw new BilliardsError(404, "Комната не найдена.");
@@ -397,25 +522,33 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         [roomId]
       );
       const members = membersResult.rows;
-      if (members.length !== 2) throw new BilliardsError(400, "Для игры нужны ровно два игрока.");
-      for (const member of members) {
-        const balanceResult = await client.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [String(member.telegram_id)]);
-        if (!balanceResult.rows.length || BigInt(balanceResult.rows[0].balance) < BigInt(room.stake)) {
-          throw new BilliardsError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для ставки.");
-        }
+      const botMode = Boolean(room.bot_mode);
+      if (members.length !== (botMode ? 1 : 2)) {
+        throw new BilliardsError(400, botMode ? "Для тестовой партии нужен один игрок." : "Для игры нужны ровно два игрока.");
       }
-      for (const member of members) {
-        const charged = await client.query(
-          "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance",
-          [String(room.stake), String(member.telegram_id)]
-        );
-        if (!charged.rows.length) throw new BilliardsError(400, "Не удалось списать ставку. Проверьте баланс.");
+      if (!botMode) {
+        for (const member of members) {
+          const balanceResult = await client.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [String(member.telegram_id)]);
+          if (!balanceResult.rows.length || BigInt(balanceResult.rows[0].balance) < BigInt(room.stake)) {
+            throw new BilliardsError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для ставки.");
+          }
+        }
+        for (const member of members) {
+          const charged = await client.query(
+            "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance",
+            [String(room.stake), String(member.telegram_id)]
+          );
+          if (!charged.rows.length) throw new BilliardsError(400, "Не удалось списать ставку. Проверьте баланс.");
+        }
       }
       const game = {
         status: "playing",
+        testMode: botMode,
         stake: Number(room.stake),
-        pot: Number(BigInt(room.stake) * 2n),
-        players: members.map(member => ({ id: String(member.telegram_id), name: String(member.display_name || "Игрок"), group: null })),
+        pot: botMode ? 0 : Number(BigInt(room.stake) * 2n),
+        players: members.map(member => ({ id: String(member.telegram_id), name: String(member.display_name || "Игрок"), group: null })).concat(
+          botMode ? [{ id: TEST_BOT_ID, name: "Бот (тест)", group: null, isBot: true }] : []
+        ),
         balls: initialBalls(),
         currentPlayerIndex: 0,
         turnNo: 0,
@@ -425,13 +558,18 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         payout: 0,
         commission: 0,
         settlementApplied: false,
-        message: "Разбой! Прицелься и потяни в направлении удара.",
+        message: botMode
+          ? "Тестовый режим: играй против бота. AC не списываются и не выплачиваются."
+          : "Разбой! Прицелься и потяни в направлении удара.",
         updatedAt: Date.now()
       };
       await client.query("INSERT INTO billiards_games (room_id, game_state) VALUES ($1, $2::jsonb)", [roomId, JSON.stringify(game)]);
       await client.query("UPDATE billiards_rooms SET status = 'playing' WHERE id = $1", [roomId]);
       await client.query("COMMIT"); transactionOpen = false;
-      return res.json({ ok: true, game: makePublicGame(game, user.id), message: "Игра началась. Ставка списана с обоих игроков." });
+      return res.json({
+        ok: true, game: makePublicGame(game, user.id),
+        message: botMode ? "Тестовая партия началась. Баланс AC не меняется." : "Игра началась. Ставка списана с обоих игроков."
+      });
     } catch (error) {
       if (transactionOpen) { try { await client.query("ROLLBACK"); } catch {} }
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось начать бильярд." });
@@ -444,6 +582,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       const roomId = String(req.body?.roomId || "");
       if (!/^\d+$/.test(roomId)) throw new BilliardsError(400, "Неверный номер комнаты.");
       await assertMember(pool, roomId, user.id);
+      await runTestBotTurn(roomId);
       const result = await pool.query("SELECT game_state FROM billiards_games WHERE room_id = $1", [roomId]);
       if (!result.rows.length) throw new BilliardsError(404, "Партия ещё не подготовлена.");
       return res.json({ ok: true, game: makePublicGame(result.rows[0].game_state, user.id) });
@@ -542,8 +681,10 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       "name TEXT NOT NULL, owner_telegram_id BIGINT NOT NULL, " +
       "stake BIGINT NOT NULL CHECK (stake >= 100), " +
       "status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'playing', 'finished')), " +
+      "bot_mode BOOLEAN NOT NULL DEFAULT FALSE, " +
       "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
     );
+    await pool.query("ALTER TABLE billiards_rooms ADD COLUMN IF NOT EXISTS bot_mode BOOLEAN NOT NULL DEFAULT FALSE");
     await pool.query(
       "CREATE TABLE IF NOT EXISTS billiards_room_players (" +
       "room_id BIGINT NOT NULL REFERENCES billiards_rooms(id) ON DELETE CASCADE, " +
