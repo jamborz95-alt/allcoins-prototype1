@@ -133,7 +133,8 @@
     <div class="powerControl"><label for="shotPowerRange">СИЛА УДАРА</label><input id="shotPowerRange" type="range" min="4" max="100" value="55" step="1" aria-label="Сила удара"><span class="powerValue" id="shotPowerValue">55%</span></div>
     <div class="gameMsg" id="gameMessage">Прицелься и отпусти, чтобы ударить.</div>
     <div class="gameActions">
-      <button class="secondary" id="centerCueBtn" type="button">🎯 Сбросить прицел</button>
+      <button class="secondary" id="viewModeBtn" type="button" aria-pressed="false" title="Включить управление ракурсом пальцем">🎥 Ракурс стола</button>
+      <button class="secondary" id="centerCueBtn" type="button">🎯 Прицел</button>
       <button class="goldbtn" id="rematchBtn" type="button">Новый раунд</button>
     </div>
     <div class="ruleNote">Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку. Попадание битка в лузу передаёт ход.</div>
@@ -153,7 +154,7 @@
       const W=800,H=440,R=10;
       const POCKETS=[{x:31,y:31},{x:400,y:25},{x:769,y:31},{x:31,y:409},{x:400,y:415},{x:769,y:409}];
       const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#e9e8df",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#e9e8df",8:"#15171d"};
-      const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
+      const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,cameraMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
       let pointerDown=null;
 
       function amount(v){const n=Number(v);return Number.isFinite(n)?Math.round(n).toLocaleString("ru-RU"):"—";}
@@ -245,7 +246,7 @@
         const row=$("playerRow");row.innerHTML="";
         g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;const groupLabel=p.group?(p.group==="solid"?"Целые шары":"Полосатые шары"):"";small.textContent=p.isCurrent&&g.status==="playing"?(p.isBot?"ХОД БОТА":"ТВОЙ ХОД")+(groupLabel?" · "+groupLabel:""):(groupLabel||"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
         const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
-        $("aimText").textContent=state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни в направлении удара":"Ход соперника · наблюдай за ударом"));
+        $("aimText").textContent=state.cameraMode?"Ракурс: двигай пальцем по столу. Нажми «Готово · бить», чтобы вернуться к удару.":(state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни от битка в направлении удара":"Ход соперника · наблюдай за ударом")));
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
         $("rematchBtn").classList.toggle("hidden",g.status!=="finished");
         $("endResult").classList.toggle("hidden",g.status!=="finished");
@@ -317,9 +318,9 @@
       function pointerCoords(e){if(typeof window.billiards3DPointerCoords==="function"){const point=window.billiards3DPointerCoords(e.clientX,e.clientY);if(point&&Number.isFinite(point.x)&&Number.isFinite(point.y))return point;}const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
       function currentPlayerIsMe(){const g=state.game;if(!g||g.status!=="playing")return false;const me=g.players.find(p=>p.isYou);return Boolean(me&&g.currentPlayerId===me.id);}
       function canShoot(){return currentPlayerIsMe()&&state.animatingSeq===null&&!state.busy;}
-      function onPointerDown(e){if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
-      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){const p=state.aim;const d=Math.hypot(p.x-cue.x,p.y-cue.y);$("powerFill").style.width=($("shotPowerRange").value||55)+"%";}drawTable();}
-      async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
+      function onPointerDown(e){if(state.cameraMode){e.preventDefault();pointerDown={id:e.pointerId,mode:"camera",clientX:e.clientX,clientY:e.clientY};e.currentTarget.setPointerCapture?.(e.pointerId);return;}if(!canShoot())return;e.preventDefault();pointerDown={id:e.pointerId,mode:"aim"};state.aim=pointerCoords(e);e.currentTarget.setPointerCapture?.(e.pointerId);drawTable();}
+      function onPointerMove(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();if(pointerDown.mode==="camera"){const dx=e.clientX-pointerDown.clientX,dy=e.clientY-pointerDown.clientY;pointerDown.clientX=e.clientX;pointerDown.clientY=e.clientY;if(window.billiards3DOrbit)window.billiards3DOrbit(dx,dy);return;}state.aim=pointerCoords(e);const cue=(state.visualBalls||state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(cue){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";}drawTable();}
+      async function onPointerUp(e){if(!pointerDown||pointerDown.id!==e.pointerId)return;e.preventDefault();if(pointerDown.mode==="camera"){pointerDown=null;return;}pointerDown=null;const target=state.aim;state.aim=null;drawTable();if(!target||!canShoot())return;
         const cue=(state.game?.balls||[]).find(b=>b.id==="cue"&&b.active);if(!cue)return;const dx=target.x-cue.x,dy=target.y-cue.y,dist=Math.hypot(dx,dy);if(dist<15){$("powerFill").style.width=($("shotPowerRange").value||55)+"%";return;}
         const power=Number($("shotPowerRange").value)||55;const angle=Math.atan2(dy,dx);await shoot(angle,power);
       }
@@ -343,7 +344,7 @@
       $("botTestBtn").addEventListener("click",()=>{state.botTestMode=!state.botTestMode;$("botTestBtn").classList.toggle("active",state.botTestMode);$("botTestBtn").setAttribute("aria-pressed",String(state.botTestMode));$("botTestBtn").textContent=state.botTestMode?"🤖 Играть с ботом (тест) · включено":"🤖 Играть с ботом (тест) · выключено";});
       $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
-      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
+      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);$("viewModeBtn").addEventListener("click",()=>{state.cameraMode=!state.cameraMode;pointerDown=null;state.aim=null;$("viewModeBtn").classList.toggle("active",state.cameraMode);$("viewModeBtn").setAttribute("aria-pressed",String(state.cameraMode));$("viewModeBtn").textContent=state.cameraMode?"✅ Готово · бить":"🎥 Ракурс стола";$("powerFill").style.width=($("shotPowerRange").value||55)+"%";if(state.cameraMode)setMessage("Режим ракурса включён: веди пальцем по столу, чтобы повернуть его.");else setMessage("Ракурс сохранён. Потяни от битка к направлению удара.");renderGameUI();drawTable();});
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
       $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";$("powerFill").style.width=$("shotPowerRange").value+"%";});$("powerFill").style.width=$("shotPowerRange").value+"%";
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
