@@ -17,6 +17,11 @@ assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   "Pass the Bomb should appear in the first row after Durak.");
 assert.ok(bombHtml.includes("function startGame()") && bombHtml.includes("function passBombFromBot(target)"),
   "The standalone game must include its start and bot-pass logic.");
+assert.ok(bombHtml.includes('<svg class="mine-scene"') &&
+  bombHtml.includes('data-map="copper"') && bombHtml.includes('data-map="crystal"'),
+  "The game should include original inline mine artwork and two selectable original maps.");
+assert.ok(!/<img[^>]+src=["']https?:\/\//i.test(bombHtml),
+  "The mine artwork should not depend on copied or remotely hosted image assets.");
 
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
@@ -52,6 +57,11 @@ try {
   assert.equal(await page.title(), "Передай бомбу — ALLCOINS");
   assert.equal(await page.locator("#setupView").isVisible(), true);
   assert.equal(await page.locator("#startGame").isVisible(), true);
+  assert.equal(await page.locator("#mapControl [data-map]").count(), 2,
+    "The lobby should offer two original selectable map cards.");
+  await page.locator('#mapControl [data-map="crystal"]').click();
+  assert.equal(await page.locator('#mapControl [data-map="crystal"]').getAttribute("aria-pressed"), "true",
+    "Selecting a map should visibly update the selected state.");
 
   for (const count of [2, 3, 4]) {
     await page.locator('#playerCountControl button[data-count="' + count + '"]').click();
@@ -62,6 +72,8 @@ try {
       "Selecting " + count + " players should create exactly " + count + " seats.");
     const arena = await page.locator("#arena").boundingBox();
     assert.ok(arena && arena.width >= 300, "The game arena should fit a mobile viewport.");
+    assert.equal(await page.locator("#arena").getAttribute("data-map"), "crystal",
+      "The selected map should be applied to the full-screen game arena.");
     await page.locator("#gameBack").click();
   }
 
