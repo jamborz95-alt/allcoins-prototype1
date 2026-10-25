@@ -612,17 +612,11 @@
         $("potValue").textContent = game.botMode ? "ТЕСТ" : (game.status === "finished" ? "+" + fmt(game.myPayout) + " AC" : fmt(game.pot) + " AC");
         $("centerStatus").textContent = game.status === "finished"
           ? "ПАРТИЯ ЗАВЕРШЕНА"
-          : (game.table.length ? "Взятка " + Math.max(1, game.trickNo) : "Козыри: все ♣, все Q и J");
+          : (game.table.length ? "Взятка " + Math.max(1, game.trickNo) : (game.message || "Все трефы, дамы и валеты — козыри"));
         const tableHost = $("tableCards");
         tableHost.textContent = "";
         const plays = game.table.length ? game.table : (game.lastTrick && game.status !== "finished" ? game.lastTrick.plays : []);
         plays.forEach((play, index) => tableHost.appendChild(renderPlayCard(play, index)));
-        if (!plays.length && game.status !== "finished") {
-          const hint = document.createElement("div");
-          hint.className = "center-status";
-          hint.textContent = game.message || "Начинаем раздачу";
-          tableHost.appendChild(hint);
-        }
         const handHost = $("handCards");
         handHost.textContent = "";
         const myPlayer = game.players.find(player => player.isYou);
