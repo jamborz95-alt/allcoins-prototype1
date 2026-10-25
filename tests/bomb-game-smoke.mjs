@@ -25,6 +25,14 @@ assert.ok(!/<img[^>]+src=["']https?:\/\//i.test(bombHtml),
 assert.ok(bombHtml.includes("function playDynamiteFuseSound(left)") &&
   bombHtml.includes("function playExplosionSound()"),
   "The dynamite fuse and explosion should have original generated sound effects.");
+assert.ok(bombHtml.includes("function pauseJoystickMotion()") &&
+  bombHtml.includes("function resumeJoystickMotion()") &&
+  bombHtml.includes("movePointerId !== null && lastJoystickClientX !== null"),
+  "A bomb hand-off must preserve an active joystick gesture and resume movement afterward.");
+assert.ok(bombHtml.includes("body.game-active{overflow:hidden;position:fixed") &&
+  bombHtml.includes("touch-action:none;user-select:none;-webkit-user-select:none") &&
+  !bombHtml.includes("document.addEventListener('touchstart'"),
+  "The active game must block page/edge gestures without cancelling joystick touch events.");
 
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
@@ -221,6 +229,40 @@ try {
   await page.locator("#gameBack").click();
   assert.equal(await page.locator("#setupView").isVisible(), true,
     "The game should return to setup without leaving the app page.");
+
+  // Regression: retain the same active finger gesture when a bot passes the bomb to us.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#playerCountControl button[data-count="2"]').click();
+  await page.locator('#modeControl button[data-mode="bots"]').click();
+  await page.evaluate(() => { Math.random = () => 0.9999; });
+  await page.locator("#startGame").click();
+  assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"), "1",
+    "The deterministic two-player round should start with the bot holding the bomb.");
+  const handoffStick = await page.locator("#moveJoystick").boundingBox();
+  assert.ok(handoffStick, "The joystick must be available during a bot hand-off.");
+  const handoffX = handoffStick.x + handoffStick.width / 2;
+  const handoffY = handoffStick.y + handoffStick.height / 2;
+  await page.mouse.move(handoffX, handoffY);
+  await page.mouse.down();
+  await page.waitForFunction(() =>
+    document.querySelector('#seats .seat.current')?.dataset.player === "0",
+    undefined,
+    { timeout: 5000 }
+  );
+  await page.waitForTimeout(520);
+  const humanBeforeContinuedDrag = await page.locator("#playerCharacter").boundingBox();
+  assert.ok(humanBeforeContinuedDrag, "The player character should remain visible after the bot hand-off.");
+  // Move the already-held pointer left; no second pointerdown is allowed in this regression.
+  await page.mouse.move(handoffX - handoffStick.width * .31, handoffY, { steps: 5 });
+  await page.waitForTimeout(260);
+  const humanAfterContinuedDrag = await page.locator("#playerCharacter").boundingBox();
+  assert.ok(humanAfterContinuedDrag &&
+    humanAfterContinuedDrag.x + humanAfterContinuedDrag.width / 2 <
+      humanBeforeContinuedDrag.x + humanBeforeContinuedDrag.width / 2 - 10,
+    "Movement must resume after a bot passes the bomb while the same pointer remains held.");
+  await page.mouse.up();
+  assert.equal(await page.locator("#gameView").isVisible(), true,
+    "The current round must stay open after the bot hand-off and joystick recovery.");
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
   console.log("Pass the Bomb smoke test passed: lobby/maps, visible human and bot miners, joystick movement, contact transfers, dynamite audio code, active-round back guard, explosions and 320px mobile layout.");
 } finally {
