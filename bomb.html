@@ -316,6 +316,12 @@
         const badge = seat.querySelector('.holder-pill'); if (badge) badge.hidden = !(i === holder && phase === 'playing' && p && p.lives > 0);
         const state = seat.querySelector('[data-seat-state]');
         if (state && p) state.textContent = p.lives <= 0 ? 'Выбыл' : (i === holder ? (p.bot ? 'Держит бомбу · бот' : 'Бомба у тебя') : (p.bot ? 'Бот' : 'Готов'));
+        // Keep the visible hearts and accessibility label in sync after every explosion.
+        if (p) {
+          seat.setAttribute('aria-label', p.name + (p.lives ? ', жизни: ' + p.lives : ', выбыл'));
+          const lives = seat.querySelector('.lives');
+          if (lives) lives.innerHTML = [0,1,2].map(n => `<span class="heart ${n < p.lives ? 'on' : ''}">♥</span>`).join('');
+        }
         if (p && p.lives <= 0) seat.disabled = true; else seat.disabled = false;
       });
       $('aliveLabel').textContent = `${activePlayers().length} ${plural(activePlayers().length, 'игрок', 'игрока', 'игроков')}`;
