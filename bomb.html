@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#0b1020">
+  <title>Передай бомбу — ALLCOINS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#080d18; --panel:#121d30; --panel2:#17253a; --line:#34435b;
+      --gold:#f0d184; --mint:#67f5b5; --muted:#a6b4cc; --red:#ff5a6a;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:#f7f8fb;font-family:Arial,Helvetica,sans-serif;overscroll-behavior:none}
+    body{min-height:100vh;min-height:100dvh}
+    button,input{font:inherit}
+    button{border:0;cursor:pointer;touch-action:manipulation;font-weight:800;border-radius:13px;min-height:44px;padding:11px 14px;-webkit-tap-highlight-color:transparent}
+    button:disabled{opacity:.42;cursor:default}
+    .hidden,[hidden]{display:none!important}
+    .primary{color:#10151d;background:linear-gradient(135deg,#ffe4a0,#cea64e);box-shadow:0 5px 16px #d4ac5426}
+    .secondary{color:#fff;background:#26354c;border:1px solid #3a4a64}
+    .danger{color:#fff;background:#512631;border:1px solid #8a4554}
+    .app{width:min(100%,760px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 13px calc(16px + env(safe-area-inset-bottom));}
+    .header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .back{flex:0 0 auto;min-width:44px;background:#26354c;color:#fff;padding:9px 12px}
+    .heading{flex:1;min-width:0}
+    h1{margin:0;font-size:21px;letter-spacing:.1px}
+    .subtitle{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.4}
+    .brand{border:1px solid #e6c57985;color:var(--gold);border-radius:11px;padding:8px 9px;font-size:10px;font-weight:1000;letter-spacing:1px;white-space:nowrap}
+    .panel{background:linear-gradient(150deg,#152239,#10192a);border:1px solid #2c3b55;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 12px 35px #0003}
+    .hero{display:flex;align-items:center;gap:15px;margin-bottom:14px}
+    .hero-art{position:relative;flex:0 0 94px;width:94px;height:94px;display:grid;place-items:center;border-radius:25px;border:1px solid #f0d18480;background:radial-gradient(circle at 50% 35%,#79552b70,transparent 58%),linear-gradient(145deg,#192e36,#0b1422 72%);box-shadow:inset 0 1px #ffffff24,0 7px 18px #0004}
+    .hero-bomb{font-size:55px;filter:drop-shadow(0 4px 8px #0007);animation:heroBob 2.2s ease-in-out infinite}
+    .hero-spark{position:absolute;top:9px;right:10px;color:var(--gold);font-size:17px;animation:spark 1.6s ease-in-out infinite}
+    .hero h2{margin:0 0 7px;font-size:22px;line-height:1.1}
+    .hero p{margin:0;color:#bac7d9;font-size:12px;line-height:1.5}
+    .field-label{display:block;margin:14px 0 8px;color:#d1dbeb;font-size:12px;font-weight:800}
+    .segmented{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .segmented button{background:#0c1627;color:#d9e2ef;border:1px solid #35445e;min-height:48px}
+    .segmented button.selected{border-color:var(--gold);background:linear-gradient(145deg,#4c4028,#292719);color:#ffe9ab;box-shadow:0 0 0 1px #f0d18424}
+    .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mode-card{display:flex;gap:9px;align-items:flex-start;text-align:left;padding:12px;background:#0e1829;border:1px solid #31425d;border-radius:14px;color:#fff;min-height:80px}
+    .mode-card.selected{background:#202b31;border-color:var(--mint);box-shadow:inset 0 0 0 1px #67f5b524}
+    .mode-icon{font-size:23px;line-height:1.2}
+    .mode-title{display:block;font-size:12px;line-height:1.3}
+    .mode-note{display:block;margin-top:4px;font-size:10px;line-height:1.35;color:#a9b8cc;font-weight:400}
+    .name-label{display:block;color:#d1dbeb;font-size:12px;margin:14px 0 6px;font-weight:800}
+    input{width:100%;min-width:0;min-height:45px;border-radius:11px;border:1px solid #394a65;background:#0b1525;color:#fff;padding:10px 12px}
+    .start{width:100%;margin-top:15px;min-height:50px;font-size:15px}
+    .tip{margin-top:10px;color:#98abc4;font-size:11px;line-height:1.5}
+    details{margin-top:13px;border-top:1px solid #2a3a53;padding-top:12px}
+    summary{cursor:pointer;color:var(--gold);font-size:12px;font-weight:800}
+    .rules{color:#c0cde0;font-size:12px;line-height:1.65;padding-top:9px}
+    .rules b{color:#fff}
+
+    /* Полноэкранный игровой стол */
+    .game{position:fixed;inset:0;z-index:50;width:100%;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:calc(7px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 38%,#1a3043 0%,#0c1727 43%,#070b13 100%);overscroll-behavior:contain}
+    .game-head{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:43px}
+    .game-head .back{min-height:40px;padding:8px 11px}
+    .game-title{flex:1;min-width:0;font-weight:900;font-size:14px;line-height:1.2}
+    .game-title small{display:block;color:#a7b6ca;font-size:10px;font-weight:600;margin-top:3px}
+    .icon-button{min-width:42px;min-height:40px;padding:7px;background:#18263a;color:#f0d184;border:1px solid #34465f}
+    .scorebar{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .scorebox{min-width:0;padding:7px 8px;border:1px solid #2e4059;border-radius:11px;background:#101b2c}
+    .scorebox span{display:block;color:#9fb0c8;font-size:9px;font-weight:700;letter-spacing:.25px}
+    .scorebox b{display:block;margin-top:3px;color:#f5d990;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .arena{position:relative;isolation:isolate;flex:1 1 auto;min-height:0;overflow:hidden;border:1px solid #8f7845a6;border-radius:25px;background:radial-gradient(ellipse at 50% 44%,#174b46 0%,#0d3436 46%,#0a2029 100%);box-shadow:inset 0 0 0 5px #0b1722, inset 0 0 0 6px #d7b86b30, inset 0 0 54px #0007,0 9px 25px #0007}
+    .arena:before{content:"";position:absolute;inset:10px;border:1px solid #d5c37d20;border-radius:18px;pointer-events:none;z-index:0}
+    .arena-glow{position:absolute;width:52%;height:43%;left:24%;top:28%;background:radial-gradient(ellipse,#55c7a111,transparent 70%);pointer-events:none}
+    .seat{position:absolute;z-index:3;width:clamp(92px,29vw,142px);min-height:72px;padding:7px 8px;display:flex;align-items:center;gap:7px;text-align:left;color:#fff;border:1px solid #d9c57b75;border-radius:15px;background:linear-gradient(145deg,#172b3af2,#0a1726f2);box-shadow:0 5px 13px #0006;transition:border-color .18s,box-shadow .18s,transform .18s,opacity .18s;overflow:visible}
+    .seat:active{transform:scale(.98)}
+    .seat.current{border-color:#ffdf81;box-shadow:0 0 0 2px #f0d18428,0 0 22px #f1c55e42,0 5px 13px #0007}
+    .seat.target{border-color:#67f5b5;box-shadow:0 0 0 2px #67f5b530,0 0 19px #67f5b52b;animation:targetPulse .75s ease-in-out infinite alternate}
+    .seat.eliminated{opacity:.32;filter:grayscale(1);pointer-events:none}
+    .seat-top{left:50%;top:13px;transform:translateX(-50%)}
+    .seat-bottom{left:50%;bottom:13px;transform:translateX(-50%)}
+    .seat-left{left:7px;top:50%;transform:translateY(-50%)}
+    .seat-right{right:7px;top:50%;transform:translateY(-50%)}
+    .seat-left-low{left:7px;bottom:22px}
+    .seat-right-low{right:7px;bottom:22px}
+    .seat-avatar{position:relative;flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;border:1px solid #e9cf8b8c;border-radius:50%;background:radial-gradient(circle at 32% 25%,#e9d7a2,#9c7939 65%,#41311b);font-size:20px;box-shadow:inset 0 1px #fff6,0 2px 5px #0006}
+    .seat-info{min-width:0;flex:1}
+    .seat-name{display:block;font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .seat-state{display:block;margin-top:3px;color:#b5c4d6;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .lives{display:flex;gap:1px;margin-top:4px;font-size:10px;letter-spacing:-1px;white-space:nowrap}
+    .heart{opacity:.26;filter:grayscale(1)}
+    .heart.on{opacity:1;filter:none;text-shadow:0 0 6px #ff4f7066}
+    .holder-pill{position:absolute;right:-5px;top:-7px;padding:4px 6px;border-radius:8px;background:#e7c66f;color:#1a1a18;border:1px solid #fff0bf;font-size:8px;font-weight:1000;letter-spacing:.5px;box-shadow:0 2px 6px #0005}
+    .seat-top .holder-pill{right:-6px;top:-7px}
+    .seat-bottom .holder-pill{right:-6px;top:-7px}
+    .arena-center{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(38%,185px);min-width:110px;text-align:center;pointer-events:none}
+    .center-kicker{color:#bed0df;font-size:9px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}
+    .center-message{margin-top:7px;color:#f6e2ab;font-size:clamp(12px,3.3vw,17px);font-weight:1000;line-height:1.25;text-shadow:0 2px 6px #001117}
+    .center-sub{margin-top:5px;color:#b6c9d4;font-size:10px;line-height:1.35}
+    .bomb{position:absolute;z-index:6;left:50%;top:50%;width:55px;height:55px;display:grid;place-items:center;font-size:43px;line-height:1;transform:translate(-50%,-50%);filter:drop-shadow(0 5px 9px #000b);pointer-events:none;will-change:left,top,transform;transition:left .48s cubic-bezier(.18,.74,.22,1),top .48s cubic-bezier(.18,.74,.22,1),filter .2s}
+    .bomb:before{content:"";position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,#ffc85b38,transparent 70%);z-index:-1;animation:bombAura .8s ease-in-out infinite alternate}
+    .bomb:after{content:"";position:absolute;right:4px;top:2px;width:9px;height:9px;border-radius:50%;background:#ffbf50;box-shadow:0 0 9px 3px #ff9b3b99;animation:fuseSpark .45s ease-in-out infinite alternate}
+    .bomb.moving{filter:drop-shadow(0 8px 12px #000d);transform:translate(-50%,-50%) scale(1.13) rotate(14deg)}
+    .bomb.urgent{animation:bombUrgent .28s ease-in-out infinite alternate}
+    .bomb.exploding{animation:explosion .7s ease-out forwards;filter:drop-shadow(0 0 24px #ff9b32)}
+    .trail{position:absolute;z-index:5;width:8px;height:8px;left:50%;top:50%;border-radius:50%;background:#f7d178;box-shadow:0 0 10px 3px #ffaf3e88;pointer-events:none;opacity:0}
+    .trail.show{animation:trailFade .45s ease-out forwards}
+    .fuse-wrap{position:absolute;z-index:2;left:12%;right:12%;bottom:calc(50% - 43px);height:4px;border-radius:9px;background:#ffffff13;overflow:hidden}
+    .fuse-fill{height:100%;width:100%;transform-origin:left center;background:linear-gradient(90deg,#67f5b5,#f0d184 55%,#ff5a6a);box-shadow:0 0 8px #f0d18455;border-radius:9px}
+    .bottom-area{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:8px;min-height:55px}
+    .instruction{display:flex;align-items:center;min-width:0;padding:10px 11px;border:1px solid #30435a;border-radius:12px;background:#111e2e;color:#e0e8f2;font-size:11px;line-height:1.4}
+    .instruction strong{color:#f3d58c}
+    .action-btn{align-self:stretch;min-width:110px;padding:10px 13px;font-size:11px}
+    .overlay{position:fixed;z-index:100;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:#030711ce;backdrop-filter:blur(8px)}
+    .dialog{width:min(100%,370px);padding:22px 18px 18px;border:1px solid #d8bd6d8a;border-radius:23px;background:linear-gradient(155deg,#1c2a3d,#0b1422);box-shadow:0 25px 70px #000a;text-align:center;animation:dialogIn .24s ease-out both}
+    .dialog-icon{font-size:61px;line-height:1.2;filter:drop-shadow(0 4px 9px #0006)}
+    .dialog h2{margin:9px 0 5px;font-size:24px;color:#ffe2a0}
+    .dialog p{margin:0;color:#c0cede;font-size:13px;line-height:1.5}
+    .dialog .primary{width:100%;margin-top:17px;min-height:49px}
+    .dialog .secondary{width:100%;margin-top:8px}
+    .alive-list{margin-top:10px;color:#aebfd1;font-size:11px;line-height:1.6}
+    .flash{position:absolute;z-index:8;inset:0;background:#fff5cf;opacity:0;pointer-events:none}
+    .flash.on{animation:flash .4s ease-out}
+    .safe-bottom{height:env(safe-area-inset-bottom);flex:0 0 auto}
+    @keyframes heroBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
+    @keyframes spark{0%,100%{opacity:.55;transform:scale(.85) rotate(-8deg)}50%{opacity:1;transform:scale(1.15) rotate(10deg)}}
+    @keyframes bombAura{from{opacity:.45;transform:scale(.85)}to{opacity:1;transform:scale(1.2)}}
+    @keyframes fuseSpark{from{transform:translate(0,0) scale(.75)}to{transform:translate(2px,-3px) scale(1.2)}}
+    @keyframes bombUrgent{from{margin-left:-2px;filter:drop-shadow(0 4px 8px #000b)}to{margin-left:2px;filter:drop-shadow(0 0 13px #ff5a6acc)}}
+    @keyframes targetPulse{from{box-shadow:0 0 0 1px #67f5b51a,0 0 7px #67f5b520}to{box-shadow:0 0 0 2px #67f5b53d,0 0 16px #67f5b544}}
+    @keyframes explosion{0%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}35%{transform:translate(-50%,-50%) scale(2.1) rotate(20deg);opacity:1}65%{transform:translate(-50%,-50%) scale(2.9) rotate(-15deg);opacity:.92}100%{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
+    @keyframes trailFade{0%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.1)}}
+    @keyframes flash{0%{opacity:.7}100%{opacity:0}}
+    @keyframes dialogIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @media(max-width:390px){
+      .app{padding-left:10px;padding-right:10px}.panel{padding:13px}.hero-art{flex-basis:78px;width:78px;height:78px;border-radius:21px}.hero-bomb{font-size:46px}.hero h2{font-size:19px}.mode-card{padding:10px 8px;gap:6px}.mode-icon{font-size:20px}
+      .seat{width:clamp(85px,30vw,112px);min-height:65px;padding:6px 6px;gap:5px;border-radius:13px}.seat-avatar{flex-basis:31px;width:31px;height:31px;font-size:17px}.seat-name{font-size:10px}.seat-state{font-size:8px}.lives{font-size:9px}.seat-left{left:4px}.seat-right{right:4px}.seat-left-low{left:4px}.seat-right-low{right:4px}.arena-center{width:33%;min-width:96px}.center-message{font-size:12px}.center-sub{font-size:9px}.bomb{font-size:38px;width:46px;height:46px}.bottom-area{grid-template-columns:minmax(0,1fr) 94px;gap:6px}.action-btn{min-width:0;padding:8px 6px;font-size:10px}.instruction{font-size:10px;padding:8px}
+    }
+    @media(max-height:680px){.game{gap:5px}.scorebox{padding:5px 7px}.seat{min-height:58px}.seat-avatar{width:29px;height:29px;flex-basis:29px}.arena{border-radius:19px}.bottom-area{min-height:48px}.instruction{padding:7px 9px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="app" id="setupView">
+    <header class="header">
+      <button class="back" id="backToAllcoins" type="button" aria-label="Назад">←</button>
+      <div class="heading"><h1>💣 Передай бомбу</h1><div class="subtitle">Быстрая игра на реакцию · до 4 игроков</div></div>
+      <div class="brand">ALLCOINS</div>
+    </header>
+
+    <section class="panel">
+      <div class="hero">
+        <div class="hero-art"><span class="hero-bomb">💣</span><span class="hero-spark">✦</span></div>
+        <div><h2>Не держи её долго!</h2><p>Передавай бомбу другому игроку, пока фитиль не догорел. Кто останется с ней в момент взрыва — теряет жизнь.</p></div>
+      </div>
+      <label class="field-label">Сколько игроков?</label>
+      <div class="segmented" id="playerCountControl" role="group" aria-label="Количество игроков">
+        <button type="button" data-count="2">2 игрока</button>
+        <button type="button" data-count="3">3 игрока</button>
+        <button type="button" data-count="4" class="selected">4 игрока</button>
+      </div>
+      <label class="field-label">Режим игры</label>
+      <div class="mode-grid" id="modeControl">
+        <button type="button" class="mode-card selected" data-mode="bots">
+          <span class="mode-icon">🤖</span><span><span class="mode-title">Ты против ботов</span><span class="mode-note">Боты сами передают бомбу. Удобно проверить игру в одиночку.</span></span>
+        </button>
+        <button type="button" class="mode-card" data-mode="local">
+          <span class="mode-icon">👥</span><span><span class="mode-title">Игроки на одном экране</span><span class="mode-note">Все участники по очереди нажимают на игрока-получателя.</span></span>
+        </button>
+      </div>
+      <label class="name-label" for="playerName">Твой ник</label>
+      <input id="playerName" maxlength="18" autocomplete="off" placeholder="Игрок 1" value="Ты">
+      <button class="primary start" id="startGame" type="button">▶ Начать игру</button>
+      <div class="tip">В игре нет ставок и списания AC. Это отдельный аркадный режим для проверки анимации и механики передачи.</div>
+      <details>
+        <summary>📘 Как играть</summary>
+        <div class="rules">
+          <b>1.</b> Бомба случайно попадает к одному из игроков.<br>
+          <b>2.</b> Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.<br>
+          <b>3.</b> Время до взрыва случайное, точный момент заранее не показывается. Когда фитиль почти догорел, бомба начинает мигать и дрожать.<br>
+          <b>4.</b> За взрыв игрок теряет одно сердце. После трёх потерь он выбывает. Побеждает последний оставшийся игрок.
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <section class="game hidden" id="gameView" aria-label="Игра Передай бомбу">
+    <header class="game-head">
+      <button class="back" id="gameBack" type="button" aria-label="В меню">← Меню</button>
+      <div class="game-title">💣 Передай бомбу<small id="modeCaption">Ты против ботов</small></div>
+      <button class="icon-button" id="soundToggle" type="button" aria-label="Включить или выключить звук">🔊</button>
+    </header>
+    <div class="scorebar">
+      <div class="scorebox"><span>РАУНД</span><b id="roundLabel">1</b></div>
+      <div class="scorebox"><span>В ИГРЕ</span><b id="aliveLabel">4 игрока</b></div>
+      <div class="scorebox"><span>ФИТИЛЬ</span><b id="fuseLabel">🔥 Горит</b></div>
+    </div>
+    <div class="arena" id="arena">
+      <div class="arena-glow"></div>
+      <div class="arena-center"><div class="center-kicker">ALLCOINS PARTY</div><div class="center-message" id="centerMessage">Передай бомбу!</div><div class="center-sub" id="centerSub">Нажми на соперника</div></div>
+      <div class="fuse-wrap"><div class="fuse-fill" id="fuseFill"></div></div>
+      <div class="bomb" id="bomb" aria-hidden="true">💣</div>
+      <div class="trail" id="trail" aria-hidden="true"></div>
+      <div class="flash" id="flash"></div>
+      <div id="seats"></div>
+    </div>
+    <div class="bottom-area">
+      <div class="instruction" id="instruction" aria-live="polite">Бомба у тебя? Нажми на другого игрока, чтобы передать её.</div>
+      <button class="primary action-btn" id="continueRound" type="button" hidden>Следующий раунд</button>
+    </div>
+  </section>
+
+  <div class="overlay hidden" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="dialog">
+      <div class="dialog-icon" id="resultIcon">💥</div>
+      <h2 id="resultTitle">БУМ!</h2>
+      <p id="resultText">Бомба взорвалась.</p>
+      <div class="alive-list" id="resultExtra"></div>
+      <button class="primary" id="resultPrimary" type="button">Следующий раунд</button>
+      <button class="secondary" id="resultMenu" type="button">В меню</button>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
+
+    let chosenCount = 4;
+    let chosenMode = 'bots';
+    let players = [];
+    let holder = -1;
+    let round = 0;
+    let phase = 'setup';
+    let fuseStart = 0;
+    let fuseDuration = 0;
+    let tickTimer = null;
+    let botTimer = null;
+    let lastTickSound = 0;
+    let soundOn = true;
+    let roundToken = 0;
+    let audioContext = null;
+    let bombFlightAnimation = null;
+    const MAX_LIVES = 3;
+
+    function setStatusText(message, sub) {
+      $('centerMessage').textContent = message;
+      $('centerSub').textContent = sub || '';
+    }
+    function setInstruction(html) { $('instruction').innerHTML = html; }
+    function activePlayers() { return players.map((p, i) => p.lives > 0 ? i : -1).filter(i => i >= 0); }
+    function playerLabel(i) { return players[i] ? players[i].name : 'Игрок'; }
+
+    function chooseCount(count) {
+      chosenCount = count;
+      document.querySelectorAll('[data-count]').forEach(b => b.classList.toggle('selected', Number(b.dataset.count) === count));
+    }
+    function chooseMode(mode) {
+      chosenMode = mode;
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+    }
+    $('playerCountControl').addEventListener('click', e => {
+      const b = e.target.closest('[data-count]'); if (b) chooseCount(Number(b.dataset.count));
+    });
+    $('modeControl').addEventListener('click', e => {
+      const b = e.target.closest('[data-mode]'); if (b) chooseMode(b.dataset.mode);
+    });
+
+    function safeText(value) { return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+    function startGame() {
+      stopTimers();
+      roundToken++;
+      const nick = ($('playerName').value || 'Ты').trim().slice(0,18) || 'Ты';
+      players = [];
+      for (let i = 0; i < chosenCount; i++) {
+        const isBot = chosenMode === 'bots' && i > 0;
+        const name = i === 0 ? nick : (isBot ? `Бот ${i}` : `Игрок ${i + 1}`);
+        players.push({id:i,name,bot:isBot,lives:MAX_LIVES,emoji: isBot ? ['🤖','👾','🦊'][ (i - 1) % 3 ] : (i === 0 ? '🧑' : ['🧑‍🚀','🦊','🐼'][ (i - 1) % 3 ])});
+      }
+      round = 0;
+      phase = 'ready';
+      $('setupView').classList.add('hidden');
+      $('gameView').classList.remove('hidden');
+      $('resultOverlay').classList.add('hidden');
+      $('modeCaption').textContent = chosenMode === 'bots' ? 'Ты против ботов' : 'Игроки на одном экране';
+      $('continueRound').hidden = true;
+      renderSeats();
+      startRound();
+      if (tg && tg.BackButton) { try { tg.BackButton.show(); } catch (_) {} }
+    }
+
+    function renderSeats() {
+      const seats = $('seats'); seats.innerHTML = '';
+      const classes = players.length === 2 ? ['seat-top','seat-bottom'] : players.length === 3 ? ['seat-top','seat-left-low','seat-right-low'] : ['seat-top','seat-left','seat-right','seat-bottom'];
+      players.forEach((p, i) => {
+        const seat = document.createElement('button');
+        seat.type = 'button'; seat.className = `seat ${classes[i]}`;
+        seat.dataset.player = String(i);
+        seat.setAttribute('aria-label', p.name + (p.lives ? ', жизни: ' + p.lives : ', выбыл'));
+        seat.innerHTML = `<span class="seat-avatar">${p.emoji}</span><span class="seat-info"><span class="seat-name">${safeText(p.name)}</span><span class="seat-state" data-seat-state>${p.lives ? (p.bot ? 'Компьютер' : 'Игрок') : 'Выбыл'}</span><span class="lives" aria-label="Жизни">${[0,1,2].map(n => `<span class="heart ${n < p.lives ? 'on' : ''}">♥</span>`).join('')}</span></span><span class="holder-pill" hidden>БОМБА</span>`;
+        seat.addEventListener('click', () => onSeatClick(i));
+        seats.appendChild(seat);
+      });
+      updateSeats();
+      positionBomb(holder, false);
+    }
+
+    function updateSeats() {
+      document.querySelectorAll('.seat').forEach(seat => {
+        const i = Number(seat.dataset.player); const p = players[i];
+        seat.classList.toggle('current', i === holder && p && p.lives > 0 && phase === 'playing');
+        seat.classList.toggle('eliminated', !p || p.lives <= 0);
+        seat.classList.remove('target');
+        const badge = seat.querySelector('.holder-pill'); if (badge) badge.hidden = !(i === holder && phase === 'playing' && p && p.lives > 0);
+        const state = seat.querySelector('[data-seat-state]');
+        if (state && p) state.textContent = p.lives <= 0 ? 'Выбыл' : (i === holder ? (p.bot ? 'Держит бомбу · бот' : 'Бомба у тебя') : (p.bot ? 'Бот' : 'Готов'));
+        if (p && p.lives <= 0) seat.disabled = true; else seat.disabled = false;
+      });
+      $('aliveLabel').textContent = `${activePlayers().length} ${plural(activePlayers().length, 'игрок', 'игрока', 'игроков')}`;
+      $('roundLabel').textContent = String(round || 1);
+    }
+    function plural(n, one, few, many) {
+      const x = Math.abs(n) % 100, y = x % 10;
+      if (x > 10 && x < 20) return many;
+      if (y > 1 && y < 5) return few;
+      if (y === 1) return one;
+      return many;
+    }
+
+    function bombPointForSeat(seat, arenaRect) {
+      const r = seat.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - arenaRect.left;
+      const cy = r.top + r.height / 2 - arenaRect.top;
+      // Бомба останавливается у внутреннего края карточки игрока — рядом с его «рукой», а не поверх ника.
+      if (seat.classList.contains('seat-top')) return { x: cx, y: r.bottom - arenaRect.top + 11 };
+      if (seat.classList.contains('seat-bottom')) return { x: cx, y: r.top - arenaRect.top - 11 };
+      if (seat.classList.contains('seat-left') || seat.classList.contains('seat-left-low')) return { x: r.right - arenaRect.left + 11, y: cy };
+      if (seat.classList.contains('seat-right') || seat.classList.contains('seat-right-low')) return { x: r.left - arenaRect.left - 11, y: cy };
+      return { x: cx, y: cy };
+    }
+
+    function positionBomb(playerIndex, animate) {
+      const bomb = $('bomb'); const arena = $('arena');
+      if (!arena || playerIndex < 0) return;
+      const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
+      if (!seat) return;
+      const arenaRect = arena.getBoundingClientRect();
+      const targetPoint = bombPointForSeat(seat, arenaRect);
+      const endX = targetPoint.x;
+      const endY = targetPoint.y;
+      if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
+      if (!animate) {
+        bomb.style.transition = 'none'; bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
+        bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+        void bomb.offsetWidth; bomb.style.transition = ''; bomb.classList.remove('moving');
+        return;
+      }
+      const current = bomb.getBoundingClientRect();
+      const startX = current.left + current.width / 2 - arenaRect.left;
+      const startY = current.top + current.height / 2 - arenaRect.top;
+      const dx = endX - startX, dy = endY - startY;
+      const arc = Math.min(105, Math.max(42, Math.hypot(dx, dy) * 0.22));
+      const midX = (startX + endX) / 2 + (dy * 0.10);
+      const midY = (startY + endY) / 2 - arc;
+      bomb.classList.add('moving'); bomb.style.transition = 'none';
+      bomb.style.left = `${startX}px`; bomb.style.top = `${startY}px`;
+      bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+      void bomb.offsetWidth;
+      makeTrail(midX, midY);
+      if (typeof bomb.animate === 'function') {
+        bombFlightAnimation = bomb.animate([
+          { left: `${startX}px`, top: `${startY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', offset: 0 },
+          { left: `${midX}px`, top: `${midY}px`, transform: 'translate(-50%,-50%) scale(1.24) rotate(190deg)', offset: 0.52 },
+          { left: `${endX}px`, top: `${endY}px`, transform: 'translate(-50%,-50%) scale(.94) rotate(365deg)', offset: 1 }
+        ], { duration: 485, easing: 'cubic-bezier(.18,.74,.22,1)', fill: 'forwards' });
+        const flight = bombFlightAnimation;
+        flight.onfinish = () => {
+          if (bombFlightAnimation !== flight) return;
+          bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
+          bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+          bomb.classList.remove('moving');
+          try { flight.cancel(); } catch (_) {}
+          bombFlightAnimation = null;
+        };
+      } else {
+        bomb.style.transition = 'left 485ms cubic-bezier(.18,.74,.22,1),top 485ms cubic-bezier(.18,.74,.22,1),transform 485ms ease';
+        requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.12) rotate(18deg)'; });
+        window.setTimeout(() => { bomb.classList.remove('moving'); bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)'; bomb.style.transition = ''; }, 500);
+      }
+    }
+    function makeTrail(x, y) {
+      const t = $('trail'); t.style.left = `${x}px`; t.style.top = `${y}px`; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+    }
+
+    function startRound() {
+      stopTimers();
+      roundToken++;
+      round++;
+      phase = 'playing';
+      $('resultOverlay').classList.add('hidden');
+      $('continueRound').hidden = true;
+      $('fuseLabel').textContent = '🔥 Горит';
+      $('fuseFill').style.transform = 'scaleX(1)';
+      $('bomb').classList.remove('exploding','urgent','moving');
+      $('flash').classList.remove('on');
+      const alive = activePlayers();
+      if (alive.length < 2) { endGame(alive[0]); return; }
+      holder = alive[Math.floor(Math.random() * alive.length)];
+      fuseDuration = 8200 + Math.random() * 7200;
+      fuseStart = performance.now(); lastTickSound = 0;
+      renderSeats();
+      setStatusText('Передай бомбу!', players[holder].bot ? 'Бот сейчас передаст её дальше' : 'Нажми на другого игрока');
+      if (players[holder].bot) setInstruction('Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот выбирает следующего игрока…');
+      else setInstruction('<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на любого другого активного игрока, чтобы передать её.');
+      updateSeats();
+      requestAnimationFrame(() => positionBomb(holder, false));
+      tickTimer = window.setInterval(tickFuse, 40);
+      scheduleBot();
+      playTone(530, .06, 'sine', .03);
+    }
+
+    function tickFuse() {
+      if (phase !== 'playing' && phase !== 'passing') return;
+      const now = performance.now(); const left = Math.max(0, 1 - ((now - fuseStart) / fuseDuration));
+      $('fuseFill').style.transform = `scaleX(${left})`;
+      if (left < .24) {
+        $('bomb').classList.add('urgent');
+        $('fuseLabel').textContent = '⚠️ Скоро';
+        if (now - lastTickSound > 400) { playTone(210 + left * 160, .035, 'square', .018); lastTickSound = now; }
+      }
+      if (left <= 0) explode();
+    }
+
+    function onSeatClick(target) {
+      if (phase !== 'playing' || target === holder || !players[target] || players[target].lives <= 0) return;
+      const current = players[holder];
+      if (!current || current.bot) return;
+      passBomb(target);
+    }
+
+    function passBomb(target) {
+      if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      const owner = holder;
+      if (players[owner].bot) return;
+      clearTimeout(botTimer); botTimer = null;
+      const token = roundToken;
+      phase = 'passing';
+      document.querySelectorAll('.seat').forEach(seat => seat.classList.toggle('target', Number(seat.dataset.player) === target));
+      setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
+      setInstruction('💨 Бомба летит к <strong>' + safeText(players[target].name) + '</strong>…');
+      playTone(780, .09, 'triangle', .045);
+      if (navigator.vibrate) { try { navigator.vibrate(35); } catch (_) {} }
+      positionBomb(target, true);
+      window.setTimeout(() => {
+        if (token !== roundToken || phase !== 'passing') return;
+        holder = target;
+        phase = 'playing';
+        updateSeats();
+        setStatusText('Передай бомбу!', players[holder].bot ? 'Бот быстро решает, кому отдать её' : 'Не медли — передавай дальше');
+        setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
+        scheduleBot();
+        playTone(610, .05, 'sine', .026);
+      }, 485);
+    }
+
+    function scheduleBot() {
+      clearTimeout(botTimer); botTimer = null;
+      if (phase !== 'playing' || holder < 0 || !players[holder] || !players[holder].bot) return;
+      const token = roundToken;
+      botTimer = window.setTimeout(() => {
+        if (token !== roundToken || phase !== 'playing' || holder < 0 || !players[holder].bot) return;
+        const candidates = activePlayers().filter(i => i !== holder);
+        if (!candidates.length) return;
+        let target = candidates[Math.floor(Math.random() * candidates.length)];
+        // Небольшой шанс, что бот передаст бомбу самому уязвимому сопернику.
+        if (Math.random() < .35) target = candidates.sort((a,b) => players[a].lives - players[b].lives)[0];
+        passBombFromBot(target);
+      }, 620 + Math.random() * 620);
+    }
+    function passBombFromBot(target) {
+      if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      const owner = holder; const token = roundToken;
+      phase = 'passing';
+      setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
+      setInstruction('<strong>' + safeText(players[owner].name) + '</strong> передаёт бомбу игроку <strong>' + safeText(players[target].name) + '</strong>…');
+      playTone(710, .08, 'triangle', .035);
+      positionBomb(target, true);
+      window.setTimeout(() => {
+        if (token !== roundToken || phase !== 'passing') return;
+        holder = target; phase = 'playing'; updateSeats();
+        setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Нажми на другого игрока');
+        setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
+        scheduleBot();
+      }, 485);
+    }
+
+    function explode() {
+      if (phase !== 'playing' && phase !== 'passing') return;
+      const unlucky = holder;
+      phase = 'boom';
+      stopTimers();
+      if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
+      $('bomb').classList.remove('moving');
+      roundToken++;
+      $('fuseLabel').textContent = '💥 Взрыв';
+      $('fuseFill').style.transform = 'scaleX(0)';
+      $('bomb').classList.remove('urgent','moving'); $('bomb').classList.add('exploding');
+      $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
+      players[unlucky].lives = Math.max(0, players[unlucky].lives - 1);
+      updateSeats();
+      playExplosionSound();
+      if (navigator.vibrate) { try { navigator.vibrate([90,45,180]); } catch (_) {} }
+      setStatusText('БУМ!', safeText(players[unlucky].name) + ' теряет жизнь');
+      setInstruction('<strong>' + safeText(players[unlucky].name) + '</strong> попал под взрыв. Посмотри, кто ещё остался в игре.');
+      const alive = activePlayers();
+      window.setTimeout(() => {
+        if (alive.length <= 1) {
+          endGame(alive[0], unlucky);
+        } else {
+          showResult('💥','БУМ!', `<strong>${safeText(players[unlucky].name)}</strong> остался с бомбой и потерял сердце.`, `${players[unlucky].lives > 0 ? 'У него осталось жизней: ' + players[unlucky].lives : 'Игрок выбыл из игры.'} · В игре осталось ${alive.length} ${plural(alive.length,'игрок','игрока','игроков')}.`, 'Следующий раунд', startRound);
+          $('continueRound').hidden = false;
+          $('continueRound').textContent = 'Следующий раунд';
+        }
+      }, 620);
+    }
+
+    function endGame(winner, unlucky) {
+      phase = 'finished'; stopTimers(); roundToken++;
+      $('continueRound').hidden = true;
+      $('bomb').classList.remove('urgent','moving');
+      if (winner === undefined || winner === null || !players[winner]) {
+        showResult('🏁','Раунд завершён','Все игроки выбыли.','Можно начать заново и попробовать другой состав.','Играть снова',restartFromResult);
+      } else {
+        showResult('🏆','ПОБЕДА!', `<strong>${safeText(players[winner].name)}</strong> — последний игрок в игре!`, `Раундов сыграно: ${round}. Победитель сохранил ${players[winner].lives} ${plural(players[winner].lives,'жизнь','жизни','жизней')}.`, 'Сыграть снова',restartFromResult);
+      }
+      setStatusText('ИГРА ОКОНЧЕНА','Начни новый матч!');
+    }
+
+    function showResult(icon, title, text, extra, primaryText, primaryAction) {
+      $('resultIcon').textContent = icon; $('resultTitle').textContent = title;
+      $('resultText').innerHTML = text; $('resultExtra').textContent = extra || '';
+      $('resultPrimary').textContent = primaryText; $('resultPrimary').onclick = primaryAction;
+      $('resultOverlay').classList.remove('hidden');
+    }
+    function restartFromResult() {
+      $('resultOverlay').classList.add('hidden');
+      players.forEach(p => p.lives = MAX_LIVES); round = 0; startRound();
+    }
+    function stopTimers() {
+      if (tickTimer) clearInterval(tickTimer); tickTimer = null;
+      if (botTimer) clearTimeout(botTimer); botTimer = null;
+    }
+
+    function onBack() {
+      stopTimers(); roundToken++; phase = 'setup'; holder = -1;
+      if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
+      $('gameView').classList.add('hidden'); $('resultOverlay').classList.add('hidden'); $('setupView').classList.remove('hidden');
+      if (tg && tg.BackButton) { try { tg.BackButton.hide(); } catch (_) {} }
+    }
+    $('backToAllcoins').addEventListener('click', () => { if (window.history.length > 1) window.history.back(); else window.location.href = './index.html'; });
+    $('gameBack').addEventListener('click', onBack);
+    $('startGame').addEventListener('click', startGame);
+    $('continueRound').addEventListener('click', () => { if (phase === 'boom') { $('resultOverlay').classList.add('hidden'); startRound(); } });
+    $('resultMenu').addEventListener('click', onBack);
+    if (tg && tg.BackButton) { try { tg.BackButton.onClick(onBack); } catch (_) {} }
+    $('soundToggle').addEventListener('click', () => {
+      soundOn = !soundOn; $('soundToggle').textContent = soundOn ? '🔊' : '🔇';
+      if (soundOn) playTone(590,.06,'sine',.025);
+    });
+    window.addEventListener('resize', () => { if (holder >= 0 && !['setup','finished'].includes(phase)) positionBomb(holder, false); });
+
+    function playTone(frequency, duration, type, volume) {
+      if (!soundOn) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+        if (!audioContext) audioContext = new AC();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+        osc.type = type || 'sine'; osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
+        gain.gain.setValueAtTime(volume || .025, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+        osc.connect(gain); gain.connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + duration);
+      } catch (_) {}
+    }
+    function playExplosionSound() {
+      if (!soundOn) return;
+      playTone(95,.28,'sawtooth',.09); window.setTimeout(() => playTone(54,.36,'triangle',.06),50);
+    }
+  })();
+  </script>
+</body>
+</html>
