@@ -31,6 +31,34 @@ const getDuration = new Function(distanceFn + "\n" + durationFn + "\nreturn trav
 assert.ok(getDuration({ x: 0, y: 0 }, { x: 70, y: 0 }, 100) < getDuration({ x: 0, y: 0 }, { x: 70, y: 0 }, 4),
   "A larger army must travel faster than a smaller army.");
 
+const colourFn = towersRouter.match(/function playerColorFor\(game, ownerId\) \{[\s\S]*?\n\}/)?.[0];
+const rememberFn = towersRouter.match(/function rememberRoad\(game, fromId, toId, ownerId = null\) \{[\s\S]*?\n\}/)?.[0];
+const autoFn = towersRouter.match(/function tickAutoRoads\(game, now\) \{[\s\S]*?\n\}/)?.[0];
+assert.ok(colourFn && rememberFn && autoFn, "Road ownership and automatic dispatch helpers should exist.");
+const roadHelpers = new Function(distanceFn + "\n" + durationFn + "\n" + colourFn + "\n" + rememberFn + "\n" + autoFn +
+  "\nreturn { rememberRoad, tickAutoRoads };")();
+const roadSimulation = {
+  players: [
+    { telegramId: "100", name: "Blue", color: "blue" },
+    { telegramId: "200", name: "Red", color: "red" },
+    { telegramId: "300", name: "Green", color: "green" }
+  ],
+  towers: [
+    { id: 1, x: 0, y: 0, ownerId: "100", units: 30, income: 1.7 },
+    { id: 2, x: 70, y: 0, ownerId: "200", units: 20, income: 1.7 }
+  ],
+  roads: [],
+  fleets: [],
+  nextFleetId: 1
+};
+roadHelpers.rememberRoad(roadSimulation, 1, 2, "100");
+assert.equal(roadSimulation.roads[0].ownerColor, "blue", "The route must retain the sender's blue colour.");
+const fleetsBeforeAutoSend = roadSimulation.fleets.length;
+roadHelpers.tickAutoRoads(roadSimulation, Date.now() + 3000);
+assert.ok(roadSimulation.fleets.length > fleetsBeforeAutoSend, "The route should dispatch a new troop wave without another manual action.");
+roadHelpers.rememberRoad(roadSimulation, 2, 1, "200");
+assert.equal(roadSimulation.roads.find(road => road.fromId === 2).ownerColor, "red", "A route laid by a red player must not turn blue.");
+
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
   if (pathname === "/towers.html") {
