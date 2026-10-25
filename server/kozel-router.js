@@ -6,7 +6,6 @@ const RANKS = ["7", "8", "9", "10", "J", "Q", "K", "A"];
 const SUITS = ["♠", "♥", "♦", "♣"];
 const SCORE = { A: 11, "10": 10, K: 4, Q: 3, J: 2, "9": 0, "8": 0, "7": 0 };
 const SUIT_ORDER = { "♣": 4, "♠": 3, "♥": 2, "♦": 1 };
-const MATCH_LETTERS = ["К", "О", "З", "Ё", "Л"];
 
 class KozelError extends Error {
   constructor(status, message) { super(message); this.status = status; }
