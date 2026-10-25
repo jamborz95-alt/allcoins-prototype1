@@ -204,12 +204,12 @@
         if(!/^\d+$/.test(stake)||BigInt(stake)<100n||BigInt(stake)>9007199254740991n){setStatus("Укажи ставку от 100 AC. Верхнего лимита нет.",true);return;}
         state.busy=true;$("createRoomBtn").disabled=true;
         try{const data=await api("/rooms/create",{name:$("roomName").value,stake,botMode:state.botTestMode});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus(state.room.botMode?"Тестовая комната создана. Нажми «Начать игру» — AC не спишутся.":"Комната создана. Пригласи второго игрока.");}
-        catch(e){setStatus(e.message,true);}finally{state.busy=false;$("createRoomBtn").disabled=false;}
+        catch(e){setStatus(e.message,true);}finally{state.busy=false;$("createRoomBtn").disabled=false;if(state.stage==="waiting")renderWaiting();}
       }
       async function joinRoom(roomId){
         if(state.busy)return;state.busy=true;
         try{const data=await api("/rooms/join",{roomId});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus("Ты вошёл в комнату.");}
-        catch(e){setStatus(e.message,true);}finally{state.busy=false;}
+        catch(e){setStatus(e.message,true);}finally{state.busy=false;if(state.stage==="waiting")renderWaiting();}
       }
       async function refreshWaiting(quiet){
         if(!state.room||state.stage!=="waiting"||state.roomBusy)return;state.roomBusy=true;
@@ -227,7 +227,7 @@
       async function startGame(){
         if(!state.room||state.busy)return;state.busy=true;$("startGameBtn").disabled=true;
         try{const data=await api("/rooms/start",{roomId:state.room.id});state.game=data.game;showStage("game");state.lastAnimatedSeq=0;renderGameUI();setMessage(data.message||"Партия началась.");}
-        catch(e){setWaitingStatus(e.message,true);renderWaiting();}finally{state.busy=false;}
+        catch(e){setWaitingStatus(e.message,true);renderWaiting();}finally{state.busy=false;if(state.stage==="waiting")renderWaiting();}
       }
       async function refreshGame(quiet){
         if(!state.room||state.stage!=="game"||state.roomBusy)return;state.roomBusy=true;
