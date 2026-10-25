@@ -102,7 +102,7 @@
     .uno-flight-face{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;box-sizing:border-box!important;margin:0!important;padding:0!important;backface-visibility:hidden!important}
     .uno-flight-face.front{transform:rotateY(180deg)!important}
     .draw-pile:disabled{opacity:.52}
-    .uno-card{--face:#d82937;position:relative;display:block;flex:0 0 auto;width:68px;height:101px;overflow:hidden;padding:0;border:2px solid #fff;border-radius:10px;background:var(--face);color:white;box-shadow:0 6px 12px #00110c6b,inset 0 0 0 1px #0002;isolation:isolate;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:transform .13s ease,filter .13s ease,box-shadow .13s ease}
+    .uno-card{--face:#d82937;position:relative;display:block;flex:0 0 auto;width:68px;height:101px;overflow:hidden;padding:0;border:2px solid #fff;border-radius:10px;background:var(--face);color:white;box-shadow:0 6px 12px #00110c6b,inset 0 0 0 1px #0002;isolation:isolate;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:transform .22s cubic-bezier(.2,.75,.25,1),filter .22s ease,box-shadow .22s ease}
     .uno-card.red{--face:#e52d3d;background:linear-gradient(145deg,#f75359,#b80827)}
     .uno-card.blue{--face:#1769db;background:linear-gradient(145deg,#4296ff,#1043af)}
     .uno-card.green{--face:#169b56;background:linear-gradient(145deg,#35d77a,#08713b)}
@@ -1112,8 +1112,8 @@
             sourceElement: deckElement,
             targetElement: target,
             startRect: oldRects.deck,
-            delay: isFirstRender ? index * 62 : index * 72,
-            duration: isFirstRender ? 285 : 335,
+            delay: isFirstRender ? index * 42 : index * 48,
+            duration: isFirstRender ? 240 : 275,
             useCardBack: true
           });
         });
@@ -1141,8 +1141,8 @@
                 targetElement: null,
                 startRect: oldRects.deck,
                 endRect,
-                delay: 35 + n * 82,
-                duration: 310,
+                delay: 22 + n * 58,
+                duration: 245,
                 useCardBack: true
               });
             }
@@ -1180,8 +1180,8 @@
               } else {
                 // A face-up card played by an opponent should stay on screen long enough
                 // for the player to clearly follow its path from the opponent's hand to the pile.
-                delay = 90;
-                duration = 980;
+                delay = 0;
+                duration = 470;
 
                 // Polling can return after a bot has played, so the previous
                 // snapshot's current-player flag is not always the actor. Detect who lost a card.
@@ -1377,15 +1377,13 @@
               { left: endLeft + "px", top: endTop + "px", width: endWidth + "px", height: endHeight + "px", transform: "rotateZ(0deg) scale(1)" }
             ];
             const animation = flyer.animate(frames, {
-              duration: job.duration || 360,
-              easing: job.kind === "opponent-to-discard"
-                ? "cubic-bezier(.28,.58,.32,1)"
-                : "cubic-bezier(.18,.72,.22,1)",
+              duration: job.duration || 300,
+              easing: "cubic-bezier(.22,.72,.18,1)",
               fill: "forwards"
             });
             await animation.finished.catch(() => {});
           } else {
-            await unoWait(job.duration || 360);
+            await unoWait(job.duration || 300);
           }
         } catch (error) {
           console.warn("UNO card animation failed:", error);
