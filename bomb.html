@@ -206,6 +206,10 @@
     .joystick-arrow.right{right:7px;top:50%;transform:translateY(-50%)}
     .joystick-knob{position:absolute;z-index:2;left:50%;top:50%;width:39%;height:39%;display:grid;place-items:center;border:1px solid #fff0be;border-radius:50%;background:radial-gradient(circle at 33% 25%,#fff0b5,#d99a3e 47%,#75401f 100%);box-shadow:inset 0 2px 3px #fff9,0 3px 7px #0009;transform:translate(-50%,-50%);pointer-events:none;will-change:transform}
     .joystick-knob:after{content:"";width:34%;height:34%;border:1px solid #fff7;border-radius:50%;background:linear-gradient(145deg,#754d2c,#e8b45b);box-shadow:inset 0 1px 2px #0006}
+    /* Responsive joystick sizes must follow the main button styles below. */
+    @media(max-width:390px){.joystick-control{width:100px;height:100px}}
+    @media(max-height:680px){.joystick-control{width:84px;height:84px}}
+    @media(orientation:landscape){.joystick-control{width:84px;height:84px}}
     .player-character{position:absolute;z-index:5;left:50%;top:64%;width:88px;height:126px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;visibility:visible;opacity:1;transform:translate(-50%,-56%);filter:drop-shadow(0 5px 5px #170b05d9) drop-shadow(0 0 7px #ffe0a04d);will-change:left,top}
     .player-character .runner-figure{display:block;flex:0 0 auto;width:82px;height:104px;overflow:visible;visibility:visible}
     .bot-characters{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
