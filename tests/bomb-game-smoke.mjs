@@ -143,7 +143,8 @@ try {
   await page.mouse.move(sx + stick.width * .31, sy + stick.height * .31, {steps:8});
   await page.waitForFunction(() =>
     document.querySelector('#seats .seat.current')?.dataset.player === "3",
-    {timeout:3500}
+    undefined,
+    { timeout: 3500 }
   );
   await page.waitForTimeout(560);
   await page.mouse.up();
