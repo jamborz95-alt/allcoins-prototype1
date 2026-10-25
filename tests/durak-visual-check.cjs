@@ -361,6 +361,7 @@ const path = require("node:path");
     const gamesIconDiagnostics = await page.evaluate(() => {
       const definitions = [
         { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
+        { id: "bombEntry", selector: ".bomb-entry-appicon", title: "Передай бомбу" },
         { id: "unoEntry", selector: ".uno-entry-appicon", title: "УНО Онлайн" },
         { id: "billiardsEntry", selector: ".billiards-entry-appicon", title: "Бильярд Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
