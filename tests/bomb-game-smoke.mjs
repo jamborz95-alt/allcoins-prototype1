@@ -10,8 +10,8 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-botsound2"'),
-  "The game link should remain stable.");
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-joystickcolors1"'),
+  "The game link should use the refreshed joystick and character-color assets.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
@@ -29,6 +29,15 @@ assert.ok(bombHtml.includes("function pauseJoystickMotion()") &&
   bombHtml.includes("function resumeJoystickMotion()") &&
   bombHtml.includes("movePointerId !== null && lastJoystickClientX !== null"),
   "A bomb hand-off must preserve an active joystick gesture and resume movement afterward.");
+assert.ok(bombHtml.includes("width:108px;height:108px") &&
+  bombHtml.includes("width:100px;height:100px") &&
+  bombHtml.includes("rect.width * .24") &&
+  bombHtml.includes("const MOVE_SPEED = 225;"),
+  "The joystick must be bigger and respond to shorter finger movement.");
+assert.ok(bombHtml.includes("setGradient('minerHelmet', outfit.helmet)") &&
+  bombHtml.includes("setGradient('minerJacket', outfit.jacket)") &&
+  bombHtml.includes("setGradient('minerPants', outfit.pants)"),
+  "Bot miners must receive distinct outfit colors.");
 assert.ok(bombHtml.includes("body.game-active{overflow:hidden;position:fixed") &&
   bombHtml.includes("touch-action:none;user-select:none;-webkit-user-select:none") &&
   !bombHtml.includes("document.addEventListener('touchstart'"),
@@ -95,6 +104,12 @@ try {
   await page.evaluate(() => { Math.random = () => 0; });
   await page.locator("#startGame").click();
 
+  const outfitColors = await page.evaluate(() => [1,2,3].map(index =>
+    document.querySelector('#botCharacters .bot-character[data-player="' + index + '"] svg linearGradient[id^="minerJacket-bot-' + index + '"] stop')
+      ?.getAttribute("stop-color")));
+  assert.deepEqual(outfitColors, ["#a6f1ff", "#f7b6ff", "#ddff9d"],
+    "The three visible bot miners must have different blue, purple and green jackets.");
+
   assert.equal(await page.locator("#playerCharacter").isVisible(), true,
     "The full-screen arena should show the custom player character.");
   const characterVisual = await page.locator("#playerCharacter").evaluate(el => {
@@ -113,11 +128,29 @@ try {
     "The player should use the original custom SVG figure.");
   assert.equal(await page.locator("#moveJoystick").isVisible(), true,
     "A touch joystick should be available during a round.");
-  const characterBefore = await page.locator("#playerCharacter").boundingBox();
   const joystickBox = await page.locator("#moveJoystick").boundingBox();
-  assert.ok(characterBefore && joystickBox, "The character and joystick should have measurable positions.");
+  assert.ok(joystickBox, "The joystick should have a measurable position.");
+  assert.ok(joystickBox.width >= 98 && joystickBox.height >= 98,
+    "On a portrait phone the movement joystick should be at least 98 by 98 pixels.");
   const joystickCenterX = joystickBox.x + joystickBox.width / 2;
   const joystickCenterY = joystickBox.y + joystickBox.height / 2;
+
+  // A small six-pixel deflection should now start movement instead of being lost in a dead zone.
+  const beforeSensitiveMove = await page.locator("#playerCharacter").boundingBox();
+  assert.ok(beforeSensitiveMove, "The player character should be visible before the sensitivity test.");
+  await page.mouse.move(joystickCenterX, joystickCenterY);
+  await page.mouse.down();
+  await page.mouse.move(joystickCenterX, joystickCenterY - 6, { steps: 2 });
+  await page.waitForTimeout(300);
+  const afterSensitiveMove = await page.locator("#playerCharacter").boundingBox();
+  await page.mouse.up();
+  assert.ok(afterSensitiveMove &&
+    Math.abs((afterSensitiveMove.y + afterSensitiveMove.height/2) -
+      (beforeSensitiveMove.y + beforeSensitiveMove.height/2)) > 12,
+    "A short joystick displacement should move the player noticeably.");
+
+  const characterBefore = await page.locator("#playerCharacter").boundingBox();
+  assert.ok(characterBefore, "The character should remain visible before full joystick travel.");
   await page.mouse.move(joystickCenterX, joystickCenterY);
   await page.mouse.down();
   await page.mouse.move(joystickCenterX, joystickCenterY - joystickBox.height * 0.31, { steps: 6 });
