@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#79c946">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Захват башен — ALLCOINS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark;--night:#101c2c;--panel:#17263a;--line:#31445a;--gold:#f4d58a;--mint:#a8fa72;--text:#f8fbff;--muted:#b2c0d0;--blue:#2d96ff;--red:#ff5869;--green:#d2dde5;--field:#9ddd54}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;width:100%;background:#0c1723;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{min-height:100dvh;overscroll-behavior:none}
+button,input,select{font:inherit}
+button{border:0;cursor:pointer;touch-action:manipulation;font-weight:850;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.42;cursor:default}
+.hidden{display:none!important}
+#lobby{width:min(100%,560px);margin:0 auto;min-height:100dvh;padding:calc(12px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.back{width:44px;height:44px;border-radius:14px;background:#26364b;color:#fff;font-size:20px;flex:none}
+.brand{font-size:10px;letter-spacing:1.7px;color:var(--gold);font-weight:1000;border:1px solid #d3b36780;border-radius:10px;padding:7px 9px;margin-left:auto}
+h1{font-size:26px;line-height:1.05;letter-spacing:-.5px;margin:0}
+.subtitle{margin-top:5px;font-size:12px;color:#b7c5d6;line-height:1.45}
+.panel{border:1px solid #33445a;background:linear-gradient(150deg,#18283d,#111c2d);border-radius:21px;padding:16px;margin-bottom:13px;box-shadow:0 12px 28px #0002}
+.hero{display:flex;gap:15px;align-items:center;margin-bottom:17px}
+.hero-art{position:relative;width:106px;height:112px;flex:none;border:1px solid #ecd58b99;border-radius:22px;background:radial-gradient(circle at 50% 26%,#fff1a22b,transparent 48%),linear-gradient(150deg,#263f4c,#101e2b 65%);overflow:hidden;box-shadow:inset 0 1px #ffffff24,0 7px 17px #0004}
+.hero-ground{position:absolute;left:-12%;right:-12%;bottom:-18px;height:48px;transform:rotate(-9deg);background:linear-gradient(#9eda57,#5f9d2a);border-radius:50%}
+.hero-tower{position:absolute;bottom:22px;width:23px;height:40px;border-radius:7px 7px 4px 4px;background:linear-gradient(90deg,#1b5a91,#69b9ff 42%,#276eaa 76%,#123e68);box-shadow:inset 0 2px #c9ecff7a,0 7px 8px #0005}
+.hero-tower:before{content:"";position:absolute;left:-4px;right:-4px;top:-7px;height:10px;border-radius:7px;background:linear-gradient(#a2d9ff,#2778b5);border:1px solid #b9e3ff}
+.hero-tower:after{content:"";position:absolute;top:9px;left:7px;width:8px;height:9px;border-radius:3px 3px 0 0;background:#142c47;box-shadow:0 14px #142c47}
+.hero-tower.t1{left:17px;bottom:21px;transform:scale(.8);background:linear-gradient(90deg,#a82838,#ff8e98,#c92b3a)}
+.hero-tower.t2{left:43px;bottom:22px;height:54px;width:27px;z-index:2}
+.hero-tower.t3{right:13px;bottom:18px;transform:scale(.72);background:linear-gradient(90deg,#778893,#f1f6fa,#7b8d99)}
+.hero-route{position:absolute;left:28px;top:45px;width:45px;height:42px;border-right:2px solid #d8eea7;transform:rotate(-35deg);opacity:.9}
+.hero-star{position:absolute;right:12px;top:7px;color:#ffe9a5;font-size:17px}
+.hero-copy h2{margin:0 0 8px;font-size:21px;line-height:1.08}
+.hero-copy p{margin:0;color:#c0ccdb;font-size:12px;line-height:1.55}
+.eyebrow{color:var(--gold);font-weight:900;font-size:11px;letter-spacing:1.1px;text-transform:uppercase}
+.label{display:block;margin:14px 0 7px;color:#d9e4f0;font-size:12px;font-weight:850}
+input,select{width:100%;min-width:0;color:#fff;background:#0b1625;border:1px solid #364960;border-radius:13px;padding:13px 12px;outline:none}
+input:focus,select:focus{border-color:#e5c779;box-shadow:0 0 0 3px #d5ac4430}
+.two-cols{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.hint{font-size:11px;line-height:1.45;color:#9eafc3;margin-top:6px}
+.primary{color:#102113;background:linear-gradient(135deg,#d5ff8d,#93dd4b);box-shadow:0 5px 15px #7fdd4630}
+.secondary{color:#fff;background:#293950;border:1px solid #3b5069}
+.btn{width:100%;border-radius:14px;min-height:48px;padding:12px 14px;font-size:14px}
+.btn-row{display:flex;gap:9px;margin-top:13px}
+.btn-row>*{flex:1;min-width:0}
+.online-note{font-size:11px;color:#b3c2d4;line-height:1.5;margin-top:12px;padding:10px 11px;background:#0e1928;border-radius:11px;border:1px solid #2e4057}
+.room-list{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.room-item{background:#0e1929;border:1px solid #32445c;border-radius:15px;padding:12px;display:flex;align-items:center;gap:10px}
+.room-emblem{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#244a43,#172833);font-size:22px}
+.room-detail{min-width:0;flex:1}
+.room-name{font-size:13px;font-weight:900;overflow-wrap:anywhere}
+.room-meta{font-size:11px;color:#aab8ca;margin-top:5px}
+.room-item button{padding:10px 12px;border-radius:11px;font-size:12px;flex:none}
+.empty{padding:19px 12px;text-align:center;color:#98a8bd;border:1px dashed #36485f;border-radius:14px;font-size:12px;line-height:1.5}
+.statusline{color:#b7c5d6;font-size:12px;line-height:1.5;margin:7px 0 0}
+#roomView{padding:16px}
+.room-code{font-weight:1000;font-size:28px;letter-spacing:1.6px;color:#fff;margin:7px 0 2px;overflow-wrap:anywhere}
+.room-players{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.seat{display:flex;align-items:center;gap:10px;padding:10px;border-radius:13px;border:1px solid #32445a;background:#0f1a29}
+.seat-dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.seat-name{flex:1;font-size:13px;font-weight:850}
+.seat-tag{color:#aebcd0;font-size:10px}
+#gameView{position:fixed;inset:0;width:100vw;height:100dvh;z-index:20;overflow:hidden;background:#79c947;touch-action:none;user-select:none;-webkit-user-select:none;isolation:isolate}
+#gameView:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#d8f6aa 0%,#9cdd54 24%,#83c943 65%,#78bd3e 100%);z-index:-3}
+.game-header{position:absolute;top:calc(7px + env(safe-area-inset-top));left:10px;right:10px;z-index:20;display:flex;align-items:flex-start;gap:8px;pointer-events:none}
+.hud-pill,.hud-back{pointer-events:auto;color:#fff;background:#122437e8;border:1px solid #d5efb878;box-shadow:0 3px 12px #2b5a1e26;backdrop-filter:blur(8px);border-radius:13px;padding:9px 11px}
+.hud-back{min-height:42px;min-width:42px;font-size:19px;padding:7px 10px}
+.hud-main{flex:1;min-width:0}
+.hud-title{font-size:12px;font-weight:1000;letter-spacing:.2px}
+.hud-stats{font-size:10px;color:#d9e5ee;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud-time{font-variant-numeric:tabular-nums;min-width:50px;text-align:center;font-size:11px;font-weight:900}
+.player-strip{position:absolute;z-index:13;top:calc(62px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:7px;justify-content:center;pointer-events:none}
+.player-chip{display:flex;align-items:center;gap:6px;background:#182b3ae8;border:1px solid #ffffff55;color:#fff;padding:6px 9px;border-radius:20px;font-size:10px;font-weight:850;box-shadow:0 2px 7px #0002;max-width:45%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.player-chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+#field{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.terrain{position:absolute;inset:-5% -3%;width:106%;height:110%;pointer-events:none}
+.grass-pattern{position:absolute;inset:0;opacity:.19;pointer-events:none;background-image:radial-gradient(ellipse,#eeffbf 0 1px,transparent 2px),radial-gradient(ellipse,#438c2d 0 1px,transparent 2px);background-size:30px 33px,43px 47px;background-position:6px 3px,19px 14px}
+.terrain-rock{position:absolute;width:25px;height:15px;border-radius:45% 50% 25% 28%;background:linear-gradient(140deg,#f1e5b1 0%,#a7b17c 45%,#65765b);box-shadow:0 4px 0 #456c2e70,0 6px 6px #466b2030;opacity:.9;pointer-events:none;transform:rotate(-20deg)}
+.terrain-tree{position:absolute;width:19px;height:20px;border-radius:45% 52% 45% 45%;background:radial-gradient(circle at 35% 24%,#e5f5a6,#6bb83b 54%,#39832f);box-shadow:0 4px 0 #367728,0 6px 7px #477c2345;pointer-events:none}
+.terrain-tree:after{content:"";position:absolute;left:8px;bottom:-6px;width:5px;height:9px;background:#957b4c;z-index:-1}
+.path-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.path-line{stroke:#f5ffe3;stroke-width:1.1;stroke-dasharray:3 3;opacity:.9;filter:drop-shadow(0 1px 1px #39662a)}
+.tower{position:absolute;width:76px;height:88px;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;display:flex;align-items:center;justify-content:flex-end;flex-direction:column;z-index:4;filter:drop-shadow(0 4px 2px #426b2870);transition:filter .15s,transform .15s;touch-action:none}
+.tower:after{content:"";position:absolute;left:7px;right:7px;bottom:4px;height:23px;border-radius:50%;background:#456a2b3e;filter:blur(2px);z-index:-1}
+.tower.selected{transform:translate(-50%,-50%) scale(1.11);filter:drop-shadow(0 0 8px #fff9) drop-shadow(0 5px 2px #426b2870);z-index:8}
+.tower.selected .tower-base{box-shadow:0 0 0 3px #fff9,0 5px 0 #50644d,0 7px 7px #0004}
+.tower-shape{position:relative;width:44px;height:46px;border-radius:9px 9px 4px 4px;background:linear-gradient(90deg,var(--shade1),var(--main) 32%,var(--shade2) 70%,var(--shade3));box-shadow:inset 0 2px #ffffff83, inset 0 -6px #00000018,0 5px 0 #435a4766;z-index:3;transition:background .25s}
+.tower-shape:before{content:"";position:absolute;left:-5px;right:-5px;top:-9px;height:15px;border-radius:8px;background:linear-gradient(180deg,var(--main),var(--shade2));border:1px solid #fff9;box-shadow:inset 0 2px #ffffff80}
+.tower-shape:after{content:"";position:absolute;left:8px;top:12px;width:9px;height:14px;border-radius:4px 4px 0 0;background:#1a3342a8;box-shadow:18px 0 #1a3342a8,0 19px #1a3342a8,18px 19px #1a3342a8}
+.tower-flag{position:absolute;right:3px;top:-26px;width:19px;height:27px;z-index:4;filter:drop-shadow(0 1px 1px #0004)}
+.tower-flag:before{content:"";position:absolute;left:1px;top:1px;bottom:0;width:2px;background:#f8f5db}
+.tower-flag:after{content:"";position:absolute;left:3px;top:2px;width:15px;height:11px;background:var(--main);clip-path:polygon(0 0,100% 20%,72% 100%,0 83%);border:1px solid #fff}
+.tower-base{position:absolute;left:10px;right:10px;bottom:10px;height:24px;border-radius:50%;background:linear-gradient(180deg,var(--main),var(--shade2));box-shadow:inset 0 2px #ffffff80,0 5px 0 #50644d,0 7px 7px #0004;border:1px solid #fff8;z-index:2;transition:box-shadow .15s}
+.tower-units{position:absolute;bottom:-2px;z-index:7;background:#102336eF;color:#fff;border:1px solid #ffffffb8;border-radius:12px;min-width:39px;padding:3px 6px;font-size:11px;font-weight:1000;line-height:1.15;text-align:center;box-shadow:0 2px 3px #0003;font-variant-numeric:tabular-nums}
+.tower-num{position:absolute;top:7px;left:0;right:0;color:#fff;text-align:center;font-size:9px;font-weight:900;opacity:.8;text-shadow:0 1px 2px #0008;z-index:4}
+.tower.neutral{--main:#cedae2;--shade1:#8595a1;--shade2:#748590;--shade3:#4c6472}
+.tower.blue{--main:#4ca9ff;--shade1:#18568b;--shade2:#2878b9;--shade3:#0e3d66}
+.tower.red{--main:#ff737f;--shade1:#9c2335;--shade2:#c83c49;--shade3:#661d2c}
+.tower.green{--main:#e8ef9b;--shade1:#87973b;--shade2:#b0c457;--shade3:#63732d}
+.tower.blue .tower-base{border-color:#d6edff}.tower.red .tower-base{border-color:#ffd4d8}.tower.green .tower-base{border-color:#faffd1}
+.fleet{position:absolute;width:18px;height:20px;transform:translate(-50%,-50%);z-index:10;pointer-events:none;transition:left .42s linear,top .42s linear;filter:drop-shadow(0 2px 2px #344d315c)}
+.fleet-core{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50% 50% 38% 38%;background:linear-gradient(135deg,var(--fleet-light),var(--fleet));border:1px solid #ffffffd0;box-shadow:inset 0 1px #fff8,0 0 0 2px #ffffff44}
+.fleet:after{content:"";position:absolute;left:7px;top:13px;width:4px;height:7px;border-radius:0 0 3px 3px;background:var(--fleet)}
+.fleet.blue{--fleet:#197ee0;--fleet-light:#8bd0ff}.fleet.red{--fleet:#d9273a;--fleet-light:#ffb3b9}.fleet.green{--fleet:#99ae37;--fleet-light:#eaff8a}
+.selected-route{stroke:#fff;stroke-width:2;stroke-dasharray:5 5;opacity:.9;filter:drop-shadow(0 0 3px #497b2b)}
+#toast{position:absolute;left:50%;top:calc(104px + env(safe-area-inset-top));transform:translate(-50%,-7px);opacity:0;pointer-events:none;z-index:18;padding:9px 14px;background:#142739ed;color:#fff;border:1px solid #ffffff70;border-radius:13px;font-size:11px;font-weight:850;text-align:center;max-width:90%;transition:opacity .18s,transform .18s;box-shadow:0 7px 17px #315d2230}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.game-bottom{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:15;display:flex;align-items:flex-end;gap:8px;pointer-events:none}
+.instruction{flex:1;background:#172b3be9;color:#f3fae9;border:1px solid #ffffff6b;border-radius:14px;padding:10px 12px;font-size:11px;line-height:1.4;box-shadow:0 5px 16px #0002;backdrop-filter:blur(8px)}
+.instruction b{color:#dfffae}
+.game-actions{display:flex;gap:7px;pointer-events:auto}
+.mini-btn{background:#182c3eea;border:1px solid #ffffff80;color:#fff;border-radius:13px;padding:10px 12px;min-height:46px;font-size:11px;white-space:nowrap;backdrop-filter:blur(8px)}
+#resultOverlay{position:absolute;inset:0;z-index:40;background:#06111dc2;backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px}
+.result-card{width:min(100%,340px);text-align:center;background:linear-gradient(145deg,#203b4c,#111e2e);border:1px solid #efcf7e9c;border-radius:24px;padding:25px 18px;box-shadow:0 18px 55px #0006;animation:resultPop .34s cubic-bezier(.2,.9,.25,1.2)}
+.result-icon{font-size:56px;filter:drop-shadow(0 5px 5px #0004)}
+.result-card h2{margin:10px 0 7px;font-size:25px}.result-card p{font-size:13px;line-height:1.5;color:#c2cedd}
+#loadingToast{position:absolute;z-index:18;right:12px;top:calc(110px + env(safe-area-inset-top));font-size:10px;color:#274a27;background:#f3ffe1c9;border-radius:10px;padding:5px 8px;pointer-events:none}
+@keyframes resultPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+@keyframes towerAppear{from{opacity:0;transform:translate(-50%,-50%) scale(.65)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes captureGlow{0%{filter:drop-shadow(0 0 0 #fff0)}35%{filter:drop-shadow(0 0 15px #fff)}100%{filter:drop-shadow(0 4px 2px #426b2870)}}
+.tower{animation:towerAppear .3s ease-out}
+.tower.captured{animation:captureGlow .8s ease-out}
+@media (max-height:620px){.hero{margin-bottom:9px}.hero-art{height:92px;width:90px}.hero-copy h2{font-size:19px}.panel{padding:13px}.tower{transform:translate(-50%,-50%) scale(.82)}.tower.selected{transform:translate(-50%,-50%) scale(.95)}.player-strip{top:calc(57px + env(safe-area-inset-top))}.game-bottom{bottom:calc(6px + env(safe-area-inset-bottom))}}
+@media (max-width:360px){h1{font-size:23px}.hero-art{width:89px;height:100px}.hero-copy h2{font-size:19px}.two-cols{gap:8px}.panel{padding:13px}.tower{transform:translate(-50%,-50%) scale(.9)}.tower.selected{transform:translate(-50%,-50%) scale(1)}}
+</style>
+</head>
+<body>
+<main id="lobby">
+  <div class="topbar">
+    <button class="back" id="backToApp" aria-label="Назад">‹</button>
+    <div><h1>Захват башен</h1><div class="subtitle">Стратегия в реальном времени · до 3 игроков</div></div>
+    <div class="brand">ALLCOINS</div>
+  </div>
+  <section class="panel" id="setupPanel">
+    <div class="hero">
+      <div class="hero-art" aria-hidden="true"><div class="hero-ground"></div><div class="hero-route"></div><div class="hero-tower t1"></div><div class="hero-tower t2"></div><div class="hero-tower t3"></div><div class="hero-star">✦</div></div>
+      <div class="hero-copy"><div class="eyebrow">Захвати карту</div><h2>Веди войска.<br>Захватывай башни.</h2><p>Выбирай башню, отправляй войска к нейтральным и вражеским башням. Больше башен — быстрее рост армии.</p></div>
+    </div>
+    <label class="label" for="roomName">Название комнаты</label>
+    <input id="roomName" maxlength="40" value="Захват башен" placeholder="Например, Захват башен">
+    <div class="two-cols">
+      <div><label class="label" for="stakeInput">Ставка, AC</label><input id="stakeInput" type="number" inputmode="numeric" min="100" step="1" value="100"><div class="hint">От 100 AC. Ставку можно вписать вручную.</div></div>
+      <div><label class="label" for="playersInput">Игроков</label><select id="playersInput"><option value="2">2 игрока</option><option value="3">3 игрока</option></select><div class="hint">Создатель + соперники</div></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" id="createRoom">＋ Создать комнату</button><button class="btn secondary" id="refreshRooms">↻ Комнаты</button></div>
+    <button class="btn secondary" id="practice" style="margin-top:9px">⚔️ Тренировка с ботами · бесплатно</button>
+    <div class="online-note" id="apiStatus">Онлайн-комнаты доступны после открытия ALLCOINS через Telegram. Тренировка с ботами работает без ставки.</div>
+  </section>
+  <section class="panel hidden" id="roomView">
+    <div class="eyebrow">Комната создана</div><div class="room-code" id="roomCode">T-0000</div><div class="statusline" id="roomSummary">Ожидание игроков…</div>
+    <div class="room-players" id="roomPlayers"></div>
+    <div class="online-note">Ставка спишется только при начале матча. До старта можно выйти из комнаты.</div>
+    <button class="btn primary" id="startRoom" style="margin-top:13px">▶ Начать игру</button>
+    <button class="btn secondary" id="leaveRoom" style="margin-top:9px">Выйти из комнаты</button>
+  </section>
+  <section class="panel" id="roomsPanel">
+    <div class="eyebrow">Открытые комнаты</div><h2 style="font-size:18px;margin:7px 0">Присоединиться к игре</h2><div class="hint">Здесь отображаются комнаты других игроков, созданные онлайн.</div>
+    <div id="roomsList" class="room-list"><div class="empty">Загрузка комнат…</div></div>
+  </section>
+</main>
+<section id="gameView" class="hidden" aria-label="Полноэкранная игра Захват башен">
+  <div class="game-header"><button class="hud-back" id="exitGame" aria-label="Выйти">‹</button><div class="hud-pill hud-main"><div class="hud-title">ЗАХВАТ БАШЕН</div><div class="hud-stats" id="gameStats">Ставка 100 AC · 2 игрока</div></div><div class="hud-pill hud-time" id="gameTimer">00:00</div></div>
+  <div class="player-strip" id="playerStrip"></div>
+  <div id="field"><div class="grass-pattern"></div>
+    <svg class="terrain" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-30 18 Q170 -5 300 70 T590 65 T1030 38 L1020 230 Q880 258 740 210 T425 244 T-15 180Z" fill="#c5e997" opacity=".8"/>
+      <path d="M-20 765 Q115 735 230 790 T490 798 T810 772 T1025 820 L1030 1030 L-20 1030Z" fill="#73bc3d" opacity=".55"/>
+      <path d="M-20 400 Q190 360 340 430 T670 430 T1025 390" fill="none" stroke="#d3f4a2" stroke-width="32" opacity=".22"/>
+      <path d="M50 540 Q200 510 280 565 T570 565 T960 530" fill="none" stroke="#5eaa35" stroke-width="5" opacity=".23"/>
+      <path d="M130 160 Q280 220 370 180 T600 165 T895 195" fill="none" stroke="#e6fac4" stroke-width="4" opacity=".35"/>
+    </svg>
+    <div class="terrain-rock" style="left:9%;top:29%"></div><div class="terrain-rock" style="left:13%;top:32%;transform:scale(.75) rotate(25deg)"></div><div class="terrain-rock" style="left:83%;top:39%;transform:scale(1.15) rotate(-40deg)"></div><div class="terrain-rock" style="left:72%;top:85%;transform:scale(.8)"></div>
+    <div class="terrain-tree" style="left:82%;top:17%"></div><div class="terrain-tree" style="left:89%;top:20%;transform:scale(.7)"></div><div class="terrain-tree" style="left:8%;top:62%;transform:scale(.78)"></div><div class="terrain-tree" style="left:92%;top:64%;transform:scale(.85)"></div><div class="terrain-tree" style="left:17%;top:86%;transform:scale(.8)"></div><div class="terrain-tree" style="left:66%;top:31%;transform:scale(.65)"></div><div class="terrain-tree" style="left:36%;top:16%;transform:scale(.7)"></div>
+    <svg id="routeSvg" class="path-layer" aria-hidden="true"></svg><div id="fleets"></div><div id="towers"></div>
+  </div>
+  <div id="toast"></div><div id="loadingToast" class="hidden">Синхронизация</div>
+  <div class="game-bottom"><div class="instruction" id="instruction"><b>Как играть:</b> нажми на свою башню, затем на цель. Или проведи пальцем от башни к башне.</div><div class="game-actions"><button class="mini-btn" id="sendHelp">Войска ↗</button></div></div>
+  <div id="resultOverlay" class="hidden"><div class="result-card"><div class="result-icon" id="resultIcon">🏆</div><h2 id="resultTitle">Победа!</h2><p id="resultText">Ты захватил карту.</p><button class="btn primary" id="resultExit">В меню</button></div></div>
+</section>
+<script>
+(function(){
+'use strict';
+const API='https://allcoins-server.onrender.com/api/towers';
+const tg=window.Telegram&&window.Telegram.WebApp?window.Telegram.WebApp:null;
+if(tg){try{tg.ready();tg.expand();if(tg.setHeaderColor)tg.setHeaderColor('#152438');if(tg.setBackgroundColor)tg.setBackgroundColor('#0c1723');}catch(e){}}
+const $=id=>document.getElementById(id);
+const lobby=$('lobby'), setupPanel=$('setupPanel'), roomView=$('roomView'), roomsPanel=$('roomsPanel'), gameView=$('gameView');
+let roomId=null,roomInfo=null,gameState=null,localPractice=false,selectedTower=null,pollTimer=null,localTimer=null,gameStartAt=0,lastTick=0,toastTimer=null,dragFrom=null,dragMoved=false,suppressClickUntil=0,lastStateKey='',lastRoomPoll=0,finishedShown=false;
+const myId=()=>String(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.id||'local-player');
+const myName=()=>{const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;return u?(u.first_name||u.username||'Ты'):'Ты';};
+function colorFor(id){const p=(gameState&&gameState.players||roomInfo&&roomInfo.players||[]).find(x=>String(x.telegramId||x.telegram_id)===String(id));return p?p.color:'neutral';}
+function playerName(id){const p=(gameState&&gameState.players||roomInfo&&roomInfo.players||[]).find(x=>String(x.telegramId||x.telegram_id)===String(id));return p?(p.name||p.display_name||'Игрок'):String(id)===myId()?'Ты':String(id)==='bot1'?'Бот':String(id)==='bot2'?'Бот 2':'Соперник';}
+function fmt(n){return Math.floor(Number(n)||0).toLocaleString('ru-RU');}
+function showToast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2100);}
+async function api(path,body){const response=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData:tg&&tg.initData||''},body||{}))});let data;try{data=await response.json();}catch(e){throw new Error('Сервер вернул пустой ответ.');}if(!response.ok||!data.ok)throw new Error(data.error||'Ошибка сервера');return data;}
+function backToApp(){stopLoops();if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href='./index.html';}
+$('backToApp').addEventListener('click',backToApp);
+$('exitGame').addEventListener('click',()=>{if(localPractice){endLocalPractice();return;}if(gameState&&gameState.status==='playing'){showToast('Партия продолжится, пока ты возвращаешься в комнату.');return;}showLobby();});
+$('resultExit').addEventListener('click',()=>{if(localPractice)endLocalPractice();else showLobby();});
+function showLobby(){stopLoops();gameView.classList.add('hidden');lobby.classList.remove('hidden');roomView.classList.toggle('hidden',!roomId);setupPanel.classList.toggle('hidden',!!roomId);roomsPanel.classList.toggle('hidden',!!roomId);if(roomId)loadRoomState();}
+function stopLoops(){clearInterval(pollTimer);clearInterval(localTimer);pollTimer=null;localTimer=null;}
+function showGame(){lobby.classList.add('hidden');gameView.classList.remove('hidden');$('resultOverlay').classList.add('hidden');finishedShown=false;selectedTower=null;if(tg){try{tg.expand();}catch(e){}}resizeRouteSvg();renderGame();if(localPractice){lastTick=Date.now();gameStartAt=lastTick;localTimer=setInterval(localTick,220);}else{if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(loadRoomState,750);}}
+function setApiStatus(s){$('apiStatus').textContent=s;}
+async function refreshRooms(){const list=$('roomsList');list.innerHTML='<div class="empty">Загрузка комнат…</div>';if(!tg||!tg.initData){list.innerHTML='<div class="empty">Открой игру внутри Telegram, чтобы увидеть онлайн-комнаты.<br>Тренировка с ботами доступна выше.</div>';setApiStatus('Чтобы создавать и находить онлайн-комнаты, открой ALLCOINS через Telegram.');return;}try{const data=await api('/rooms/list');if(!data.rooms.length){list.innerHTML='<div class="empty">Открытых комнат пока нет.<br>Создай первую и дождись соперника.</div>';return;}list.innerHTML='';for(const r of data.rooms){const item=document.createElement('div');item.className='room-item';const stake=Number(r.stake).toLocaleString('ru-RU');item.innerHTML='<div class="room-emblem">🏰</div><div class="room-detail"><div class="room-name"></div><div class="room-meta"></div></div><button class="primary">Войти</button>';item.querySelector('.room-name').textContent=r.name||'Комната';item.querySelector('.room-meta').textContent=stake+' AC · '+r.playersCount+'/'+r.maxPlayers+' игроков · №'+r.id;item.querySelector('button').addEventListener('click',()=>joinRoom(r.id));list.appendChild(item);}}catch(e){list.innerHTML='<div class="empty"></div>';list.firstChild.textContent=e.message;}}
+$('refreshRooms').addEventListener('click',refreshRooms);
+async function createRoom(){if(!tg||!tg.initData){setApiStatus('Для онлайн-комнаты открой ALLCOINS через Telegram. Можно потренироваться с ботами бесплатно.');showToast('Открой игру через Telegram для онлайн-комнат');return;}const stake=String($('stakeInput').value||'').trim();if(!/^\d+$/.test(stake)||Number(stake)<100||!Number.isSafeInteger(Number(stake))){showToast('Ставка должна быть целым числом от 100 AC');return;}const button=$('createRoom');button.disabled=true;try{const d=await api('/rooms/create',{name:$('roomName').value,stake:stake,maxPlayers:Number($('playersInput').value)});roomId=d.roomId;roomInfo={id:roomId,name:d.name,stake:d.stake,maxPlayers:d.maxPlayers,status:'waiting',ownerTelegramId:myId(),players:[{telegramId:myId(),name:myName(),color:'blue',isOwner:true}]};await showRoom();setApiStatus('Комната создана. Когда зайдёт соперник, создатель сможет начать матч.');}catch(e){showToast(e.message);setApiStatus(e.message);}finally{button.disabled=false;}}
+$('createRoom').addEventListener('click',createRoom);
+async function joinRoom(id){try{const d=await api('/rooms/join',{roomId:String(id)});roomId=d.roomId;await showRoom();}catch(e){showToast(e.message);}}
+async function showRoom(){setupPanel.classList.add('hidden');roomsPanel.classList.add('hidden');roomView.classList.remove('hidden');$('roomCode').textContent='T-'+String(roomId).padStart(4,'0');await loadRoomState();if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(loadRoomState,1200);}
+$('leaveRoom').addEventListener('click',async()=>{try{await api('/rooms/leave',{roomId:roomId});}catch(e){showToast(e.message);return;}roomId=null;roomInfo=null;showLobby();refreshRooms();});
+$('startRoom').addEventListener('click',async()=>{if(!roomId)return;try{const d=await api('/rooms/start',{roomId:roomId});gameState=d.game;roomInfo.status='playing';showGame();}catch(e){showToast(e.message);}});
+async function loadRoomState(){if(!roomId||localPractice)return;try{$('loadingToast').classList.remove('hidden');const d=await api('/rooms/state',{roomId:roomId});roomInfo=d.room;if(d.game)gameState=d.game;renderRoom();if(roomInfo.status==='playing'||roomInfo.status==='finished'){if(gameView.classList.contains('hidden'))showGame();else renderGame();if(gameState&&gameState.status==='finished')showResult();}else{if(!gameView.classList.contains('hidden'))return;}}catch(e){if(!gameView.classList.contains('hidden'))showToast(e.message);else setApiStatus(e.message);}finally{$('loadingToast').classList.add('hidden');}}
+function renderRoom(){if(!roomInfo)return;$('roomCode').textContent='T-'+String(roomId).padStart(4,'0');$('roomSummary').textContent='Ставка '+fmt(roomInfo.stake)+' AC · мест: '+roomInfo.players.length+'/'+roomInfo.maxPlayers+' · '+(roomInfo.status==='waiting'?'ожидание соперника':'матч начат');const list=$('roomPlayers');list.innerHTML='';for(let i=0;i<roomInfo.maxPlayers;i++){const p=roomInfo.players[i];const seat=document.createElement('div');seat.className='seat';if(p){const color=p.color||(['blue','red','green'][i]);seat.innerHTML='<span class="seat-dot" style="color:var(--'+(color==='neutral'?'green':color)+');background:var(--'+(color==='neutral'?'green':color)+')"></span><span class="seat-name"></span><span class="seat-tag"></span>';seat.querySelector('.seat-name').textContent=p.name||p.display_name||'Игрок';seat.querySelector('.seat-tag').textContent=p.isOwner||p.isOwner===true?'Создатель':(String(p.telegramId||p.telegram_id)===myId()?'Ты':'Готов');}else{seat.innerHTML='<span class="seat-dot" style="color:#6b7c8d;background:#6b7c8d"></span><span class="seat-name">Ожидаем игрока</span><span class="seat-tag">Свободно</span>';}list.appendChild(seat);}const owner=String(roomInfo.ownerTelegramId)===myId();$('startRoom').classList.toggle('hidden',!owner);$('startRoom').disabled=roomInfo.players.length<2||roomInfo.status!=='waiting';$('startRoom').textContent=roomInfo.players.length<2?'Ожидаем соперника…':'▶ Начать игру';$('leaveRoom').classList.toggle('hidden',roomInfo.status==='playing');}
+function startPractice(){stopLoops();roomId=null;roomInfo={id:'practice',name:'Тренировка',stake:0,maxPlayers:3,status:'playing',players:[{telegramId:'local-player',name:myName(),color:'blue'},{telegramId:'bot1',name:'Бот Красный',color:'red'},{telegramId:'bot2',name:'Бот Зелёный',color:'green'}]};localPractice=true;const players=roomInfo.players;gameState={status:'playing',startedAt:Date.now(),lastTick:Date.now(),nextFleetId:1,nextBotAt:Date.now()+1900,stake:0,players:players.map(p=>({telegramId:p.telegramId,name:p.name,color:p.color})),towers:[{id:1,x:19,y:77,ownerId:'local-player',units:20,income:1.7},{id:2,x:80,y:25,ownerId:'bot1',units:20,income:1.7},{id:3,x:80,y:77,ownerId:'bot2',units:20,income:1.7},{id:4,x:28,y:30,ownerId:null,units:7,income:.8},{id:5,x:50,y:19,ownerId:null,units:9,income:.8},{id:6,x:54,y:48,ownerId:null,units:8,income:.8},{id:7,x:25,y:53,ownerId:null,units:8,income:.8},{id:8,x:70,y:52,ownerId:null,units:8,income:.8},{id:9,x:48,y:77,ownerId:null,units:7,income:.8}],fleets:[],feed:[]};showGame();showToast('Тренировка началась — отправляй войска!');}
+$('practice').addEventListener('click',startPractice);
+function endLocalPractice(){stopLoops();localPractice=false;gameState=null;selectedTower=null;gameView.classList.add('hidden');lobby.classList.remove('hidden');roomView.classList.add('hidden');setupPanel.classList.remove('hidden');roomsPanel.classList.remove('hidden');refreshRooms();}
+function towerAt(id){return gameState&&gameState.towers.find(t=>t.id===Number(id));}
+function sendAttack(fromId,toId){if(!gameState||gameState.status!=='playing'||fromId===toId)return;const from=towerAt(fromId),to=towerAt(toId);if(!from||!to)return;if(String(from.ownerId)!==myId()){showToast('Выбирай свою башню — отправлять войска можно только оттуда.');return;}if(Math.floor(from.units*.58)<2){showToast('Слишком мало войск в башне.');return;}if(localPractice){localSend(from,to,myId());selectedTower=null;renderGame();return;}api('/rooms/action',{roomId:roomId,fromId:Number(fromId),toId:Number(toId)}).then(()=>{selectedTower=null;loadRoomState();}).catch(e=>showToast(e.message));}
+function localSend(from,to,owner){const troops=Math.floor(from.units*.58);from.units-=troops;gameState.fleets.push({id:gameState.nextFleetId++,fromId:from.id,toId:to.id,ownerId:owner,units:troops,progress:0,duration:Math.max(1.1,Math.hypot(from.x-to.x,from.y-to.y)/16)});showToast('Войска отправлены к башне №'+to.id);}
+function localTick(){if(!localPractice||!gameState||gameState.status!=='playing')return;const now=Date.now();const dt=Math.min(.5,(now-lastTick)/1000);lastTick=now;for(const t of gameState.towers)if(t.ownerId)t.units=Math.min(999,t.units+t.income*dt);for(const f of gameState.fleets)f.progress=Math.min(1,f.progress+dt/f.duration);const arrived=gameState.fleets.filter(f=>f.progress>=1);gameState.fleets=gameState.fleets.filter(f=>f.progress<1);arrived.forEach(f=>{const t=towerAt(f.toId);if(!t)return;if(t.ownerId===f.ownerId){t.units+=f.units;return;}const def=Math.floor(t.units);if(f.units>def){t.ownerId=f.ownerId;t.units=Math.max(1,f.units-def);t.income=1.7;t._captured=true;}else{t.units=Math.max(0,def-f.units);if(!t.units){t.ownerId=f.ownerId;t.units=1;t.income=1.7;t._captured=true;}}});if(now>=gameState.nextBotAt){gameState.nextBotAt=now+2200;['bot1','bot2'].forEach(bot=>{const sources=gameState.towers.filter(t=>t.ownerId===bot&&t.units>=9);const targets=gameState.towers.filter(t=>t.ownerId!==bot);if(sources.length&&targets.length){sources.sort((a,b)=>b.units-a.units);const from=sources[Math.floor(Math.random()*Math.min(2,sources.length))];targets.sort((a,b)=>Math.hypot(from.x-a.x,from.y-a.y)-Math.hypot(from.x-b.x,from.y-b.y));localSend(from,targets[0],bot);}});}const alive=gameState.players.filter(p=>gameState.towers.some(t=>t.ownerId===p.telegramId));if(alive.length===1){gameState.status='finished';gameState.winnerTelegramId=alive[0].telegramId;gameState.result=alive[0].name+' захватывает все башни!';showResult();}if(now-gameStartAt>180000&&gameState.status==='playing'){const scores=gameState.players.map(p=>({p:p,score:gameState.towers.filter(t=>t.ownerId===p.telegramId).length*100+gameState.towers.filter(t=>t.ownerId===p.telegramId).reduce((n,t)=>n+Math.floor(t.units),0)})).sort((a,b)=>b.score-a.score);gameState.status='finished';gameState.winnerTelegramId=scores[0].p.telegramId;gameState.result=scores[0].p.name+' выиграл по очкам!';showResult();}renderGame();}
+function renderRoomPlayersOnly(){const strip=$('playerStrip');strip.innerHTML='';for(const p of (gameState&&gameState.players||[])){const chip=document.createElement('div');chip.className='player-chip';const dot=document.createElement('span');dot.className='dot';dot.style.background='var(--'+(p.color||colorFor(p.telegramId))+')';chip.appendChild(dot);const label=document.createElement('span');label.textContent=(String(p.telegramId)===myId()?'Ты':p.name||'Игрок');chip.appendChild(label);strip.appendChild(chip);}}
+function resizeRouteSvg(){const s=$('routeSvg');const r=$('field').getBoundingClientRect();s.setAttribute('viewBox','0 0 '+r.width+' '+r.height);s.setAttribute('preserveAspectRatio','none');}
+function renderGame(){if(!gameState)return;renderRoomPlayersOnly();const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets');resizeRouteSvg();routes.innerHTML='';container.innerHTML='';const fr=$('field').getBoundingClientRect();ts.forEach(t=>{if(selectedTower===t.id){const to=ts.filter(x=>x.id!==t.id).map(x=>'<line class="selected-route" x1="'+t.x*fr.width/100+'" y1="'+t.y*fr.height/100+'" x2="'+x.x*fr.width/100+'" y2="'+x.y*fr.height/100+'"/>').join('');routes.insertAdjacentHTML('beforeend',to);}});for(const f of(gameState.fleets||[])){const from=towerAt(f.fromId),to=towerAt(f.toId);if(from&&to){const x1=from.x*fr.width/100,y1=from.y*fr.height/100,x2=to.x*fr.width/100,y2=to.y*fr.height/100;routes.insertAdjacentHTML('beforeend','<line class="path-line" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>');let el=document.querySelector('.fleet[data-fleet="'+f.id+'"]');if(!el){el=document.createElement('div');el.className='fleet '+(colorFor(f.ownerId)||'blue');el.dataset.fleet=f.id;el.innerHTML='<span class="fleet-core"></span>';fleetLayer.appendChild(el);}el.className='fleet '+(colorFor(f.ownerId)||'blue');el.style.left=(from.x+(to.x-from.x)*f.progress)+'%';el.style.top=(from.y+(to.y-from.y)*f.progress)+'%';el.title=fmt(f.units)+' войск';}}const activeFleetIds=new Set((gameState.fleets||[]).map(f=>String(f.id)));fleetLayer.querySelectorAll('.fleet').forEach(el=>{if(!activeFleetIds.has(el.dataset.fleet))el.remove();});for(const t of ts){const owner=String(t.ownerId||'')===myId();const color=t.ownerId?colorFor(t.ownerId):'neutral';const el=document.createElement('button');el.type='button';el.className='tower '+(color||'neutral')+(selectedTower===t.id?' selected':'')+(t._captured?' captured':'');el.dataset.tower=t.id;el.style.left=t.x+'%';el.style.top=t.y+'%';el.setAttribute('aria-label','Башня '+t.id+', войск '+fmt(t.units));el.innerHTML='<span class="tower-flag"></span><span class="tower-shape"><span class="tower-num">#'+t.id+'</span></span><span class="tower-base"></span><span class="tower-units">'+fmt(t.units)+'</span>';el.addEventListener('click',e=>{e.stopPropagation();if(Date.now()<suppressClickUntil)return;chooseTower(t.id);});el.addEventListener('pointerdown',e=>{dragFrom=t.id;dragMoved=false;try{el.setPointerCapture(e.pointerId);}catch(err){}});el.addEventListener('pointermove',e=>{if(dragFrom===t.id&&Math.hypot(e.movementX||0,e.movementY||0)>4)dragMoved=true;});el.addEventListener('pointerup',e=>{if(dragFrom!==null&&dragMoved){const under=document.elementFromPoint(e.clientX,e.clientY);const target=under&&under.closest?under.closest('.tower'):null;if(target&&Number(target.dataset.tower)!==dragFrom){suppressClickUntil=Date.now()+500;sendAttack(dragFrom,Number(target.dataset.tower));}else if(target&&Number(target.dataset.tower)===dragFrom){chooseTower(dragFrom);}dragFrom=null;dragMoved=false;} });container.appendChild(el);t._captured=false;}if(localPractice){const elapsed=Math.floor((Date.now()-gameStartAt)/1000);$('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');}else if(gameState.startedAt){const elapsed=Math.max(0,Math.floor((Date.now()-Number(gameState.startedAt))/1000));$('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');}const stake=Number(gameState.stake||roomInfo&&roomInfo.stake||0);$('gameStats').textContent=(stake>0?'Ставка '+fmt(stake)+' AC':'Тренировка без ставки')+' · '+gameState.players.length+' игрока · выбрано: '+(selectedTower?'башня №'+selectedTower:'—');$('instruction').innerHTML=selectedTower?'<b>Башня №'+selectedTower+' выбрана.</b> Выбери цель или перетащи палец на другую башню. Отправится около 58% войск.':'<b>Как играть:</b> нажми на свою башню, затем на цель. Или проведи пальцем от башни к башне.';if(gameState.status==='finished')showResult();}
+function chooseTower(id){const t=towerAt(id);if(!t)return;if(selectedTower!==null&&selectedTower!==id){const from=towerAt(selectedTower);if(from&&String(from.ownerId)===myId()){sendAttack(selectedTower,id);return;}}if(String(t.ownerId)!==myId()){if(selectedTower===null){showToast('Сначала выбери свою башню.');return;}}selectedTower=id;renderGame();}
+$('sendHelp').addEventListener('click',()=>{if(selectedTower===null){showToast('Сначала выбери свою башню.');return;}showToast('Выбери цель на карте — войска отправятся автоматически.');});
+function showResult(){if(finishedShown||!gameState||gameState.status!=='finished')return;finishedShown=true;const won=String(gameState.winnerTelegramId)===myId();$('resultIcon').textContent=won?'🏆':'🛡️';$('resultTitle').textContent=won?'ПОБЕДА':'ПАРТИЯ ЗАВЕРШЕНА';$('resultText').textContent=gameState.result|| (won?'Ты захватил территорию!':'Победитель захватил больше башен.');if(gameState.settlement&&Number(gameState.settlement.prize)>0&&won)$('resultText').textContent+=' Приз: '+fmt(gameState.settlement.prize)+' AC.';$('resultOverlay').classList.remove('hidden');stopLoops();}
+function clearLocalState(){stopLoops();localPractice=false;roomId=null;roomInfo=null;gameState=null;selectedTower=null;finishedShown=false;gameView.classList.add('hidden');lobby.classList.remove('hidden');roomView.classList.add('hidden');setupPanel.classList.remove('hidden');roomsPanel.classList.remove('hidden');}
+function endLocalPractice(){clearLocalState();refreshRooms();}
+document.addEventListener('pointerup',e=>{if(!dragMoved||dragFrom===null)return;const under=document.elementFromPoint(e.clientX,e.clientY);const target=under&&under.closest?under.closest('.tower'):null;if(target&&Number(target.dataset.tower)!==dragFrom){suppressClickUntil=Date.now()+500;sendAttack(dragFrom,Number(target.dataset.tower));}dragFrom=null;dragMoved=false;});
+window.addEventListener('resize',()=>{if(!gameView.classList.contains('hidden'))renderGame();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&roomId&&!localPractice)loadRoomState();});
+if(tg&&tg.BackButton){try{tg.BackButton.onClick(()=>{if(localPractice)endLocalPractice();else if(roomId&&roomInfo&&roomInfo.status!=='playing')showLobby();else if(roomId){showToast('Матч продолжается — нажми стрелку в углу, чтобы вернуться.');}else backToApp();});tg.BackButton.show();}catch(e){}}
+setApiStatus(tg&&tg.initData?'Онлайн-режим подключён. Ставка списывается при запуске матча; победитель получает банк за вычетом 5% комиссии.':'Открой ALLCOINS через Telegram для онлайн-комнат. Тренировка с ботами работает бесплатно.');
+refreshRooms();
+})();
+</script>
+</body>
+</html>
