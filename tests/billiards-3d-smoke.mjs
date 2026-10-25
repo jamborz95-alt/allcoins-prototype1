@@ -159,6 +159,20 @@ try {
     const activeCanvas = await page.evaluate(() => { const canvas = document.getElementById("pool3DCanvas"); const rect = canvas.getBoundingClientRect(); return { width: rect.width, height: rect.height, opacity: getComputedStyle(canvas).opacity }; });
     assert.ok(activeCanvas.width > 100 && activeCanvas.height > 100, "После открытия игры у 3D-стола нет видимой области: " + JSON.stringify(activeCanvas));
     assert.equal(activeCanvas.opacity, "1", "3D-стол должен быть видимым");
+    assert.ok(activeCanvas.width >= 360 && activeCanvas.height >= 350, "Бильярдный стол не занимает большую часть полноэкранной области: " + JSON.stringify(activeCanvas));
+    const cameraBefore = await page.evaluate(() => window.billiards3DGetCameraState());
+    await page.locator("#viewModeBtn").click();
+    assert.equal(await page.locator("#viewModeBtn").getAttribute("aria-pressed"), "true", "Режим настройки ракурса не включился");
+    const cameraRect = await page.locator("#pool3DCanvas").boundingBox();
+    await page.mouse.move(cameraRect.x + cameraRect.width * 0.45, cameraRect.y + cameraRect.height * 0.48);
+    await page.mouse.down();
+    await page.mouse.move(cameraRect.x + cameraRect.width * 0.61, cameraRect.y + cameraRect.height * 0.57, { steps: 5 });
+    await page.mouse.up();
+    const cameraAfter = await page.evaluate(() => window.billiards3DGetCameraState());
+    assert.ok(Math.abs(cameraAfter.theta-cameraBefore.theta) > 0.05 || Math.abs(cameraAfter.phi-cameraBefore.phi) > 0.05, "Перетаскивание пальцем в режиме ракурса не повернуло камеру");
+    assert.equal(stakeRequests.length, 0, "Настройка ракурса ошибочно отправила удар");
+    await page.locator("#viewModeBtn").click();
+    assert.equal(await page.locator("#viewModeBtn").getAttribute("aria-pressed"), "false", "Режим ракурса не выключился");
     assert.equal(await page.locator("#shotPowerRange").count(), 1, "На игровом экране отсутствует ползунок силы удара");
     await page.locator("#shotPowerRange").evaluate(el => {
       el.value = "78";
@@ -202,7 +216,7 @@ try {
       };
     });
     fs.writeFileSync(resolve(out, "billiards-3d-mobile-report.json"), JSON.stringify({
-      threeReady, lobbyOverflow, coordProbe, smallScreen, apiCalls, shots: stakeRequests, pageErrors, consoleErrors, failedRequests
+      threeReady, lobbyOverflow, activeCanvas, cameraBefore, cameraAfter, coordProbe, smallScreen, apiCalls, shots: stakeRequests, pageErrors, consoleErrors, failedRequests
     }, null, 2));
     assert.equal(smallScreen.gameVisible, true, "На узком экране игровой экран исчез");
     assert.equal(smallScreen.documentWidth, smallScreen.viewportWidth, "На узком экране появилась горизонтальная прокрутка");
