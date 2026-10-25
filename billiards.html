@@ -187,10 +187,10 @@
         finally{state.roomBusy=false;}
       }
       function renderWaiting(){
-        if(!state.room)return;$("waitingRoomName").textContent=state.room.name;$("waitingStake").textContent=amount(state.room.stake)+" AC";$("waitingCount").textContent=state.players.length+" / 2 игрока";
+        if(!state.room)return;$("waitingRoomName").textContent=state.room.name;$("waitingStake").textContent=state.room.botMode?"ТЕСТ":amount(state.room.stake)+" AC";$("waitingCount").textContent=state.players.length+" / 2 игрока";
         $("waitingRoomSub").textContent=state.room.botMode?"Тестовая партия против бота · без списания AC":"Дождись второго игрока";
         const host=$("seatGrid");host.innerHTML="";
-        for(let i=0;i<2;i++){const p=state.players[i];const seat=document.createElement("div");seat.className="seat";const b=document.createElement("b"),small=document.createElement("small");b.textContent=p?(p.isYou?"Вы · "+p.name:p.name):"Ожидание игрока…";small.textContent=p?(p.isOwner?"Создатель комнаты":"Готов к игре"):"Место свободно";seat.append(b,small);host.appendChild(seat);}
+        for(let i=0;i<2;i++){const p=state.players[i];const seat=document.createElement("div");seat.className="seat";const b=document.createElement("b"),small=document.createElement("small");b.textContent=p?(p.isYou?"Вы · "+p.name:p.name):"Ожидание игрока…";small.textContent=p?(p.isBot?"Тестовый бот":(p.isOwner?"Создатель комнаты":"Готов к игре")):"Место свободно";seat.append(b,small);host.appendChild(seat);}
         $("startGameBtn").disabled=!state.room.isOwner||state.players.length!==2||state.busy;
         $("startGameBtn").textContent=state.players.length===2?"Начать игру":"Ждём второго игрока";
       }
@@ -240,7 +240,7 @@
         $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"")+(g.testMode?" · ТЕСТ-БОТ":"");$("bankValue").textContent=g.testMode?"ТЕСТ":amount(g.pot)+" AC";
         setMessage(g.message||"");
         const row=$("playerRow");row.innerHTML="";
-        g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?(p.isBot?"ХОД БОТА":"ТВОЙ ХОД"):"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
+        g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;const groupLabel=p.group?(p.group==="solid"?"Целые шары":"Полосатые шары"):"";small.textContent=p.isCurrent&&g.status==="playing"?(p.isBot?"ХОД БОТА":"ТВОЙ ХОД")+(groupLabel?" · "+groupLabel:""):(groupLabel||"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
         const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
         $("aimText").textContent=state.animatingSeq!==null?"Шары движутся…":(g.status==="finished"?"Партия завершена":(myTurn?"Твой ход · потяни в направлении удара":"Ход соперника · наблюдай за ударом"));
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
