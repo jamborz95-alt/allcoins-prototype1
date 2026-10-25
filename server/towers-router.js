@@ -33,6 +33,18 @@ function distance(a, b) {
   return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
 }
 
+function rememberRoad(game, fromId, toId) {
+  if (!game || Number(fromId) === Number(toId)) return;
+  const from = Number(fromId), to = Number(toId);
+  if (!Number.isInteger(from) || !Number.isInteger(to)) return;
+  if (!Array.isArray(game.roads)) game.roads = [];
+  const low = Math.min(from, to), high = Math.max(from, to);
+  const key = low + "-" + high;
+  if (!game.roads.some(road => String(road.key || (Math.min(Number(road.fromId), Number(road.toId)) + "-" + Math.max(Number(road.fromId), Number(road.toId)))) === key)) {
+    game.roads.push({ key, fromId: low, toId: high });
+  }
+}
+
 function makeGame(players, stake) {
   const slots = [
     { x: 19, y: 77, ownerIndex: 0, units: 20 },
@@ -66,6 +78,7 @@ function makeGame(players, stake) {
       income: t.ownerIndex >= 0 ? 1.7 : 0.8
     })),
     fleets: [],
+    roads: [],
     winnerTelegramId: null,
     result: null,
     settled: false,
@@ -81,6 +94,7 @@ function tickGame(game, now) {
     if (tower.ownerId) tower.units = Math.min(999, Number(tower.units || 0) + Number(tower.income || 1) * dt);
   }
   for (const fleet of game.fleets) {
+    rememberRoad(game, fleet.fromId, fleet.toId);
     fleet.progress = Math.min(1, Number(fleet.progress || 0) + dt / Math.max(1.1, Number(fleet.duration || 3)));
   }
   const landed = game.fleets.filter(f => f.progress >= 1);
@@ -140,6 +154,7 @@ function tickGame(game, now) {
           ownerId: BOT_ID, units: troops, progress: 0,
           duration: Math.max(1.1, distance(source, target) / 16)
         });
+        rememberRoad(game, source.id, target.id);
       }
     }
   }
@@ -377,6 +392,7 @@ export function createTowersRouter({ pool, verifyTelegram }) {
       if (send < 2) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "В этой башне пока мало войск." }); }
       source.units -= send;
       game.fleets.push({ id: game.nextFleetId++, fromId, toId, ownerId: String(user.id), units: send, progress: 0, duration: Math.max(1.1, distance(source, target) / 16) });
+      rememberRoad(game, fromId, toId);
       game.feed.unshift({ text: "Войска отправлены к башне №" + toId, at: Date.now() });
       await updateAndSettle(client, room, game);
       await client.query("COMMIT");
