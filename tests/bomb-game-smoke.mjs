@@ -20,7 +20,7 @@ assert.ok(bombHtml.includes("function startGame()") && bombHtml.includes("functi
 assert.ok(bombHtml.includes('<div class="obstacle-layer" id="obstacleLayer"') &&
   bombHtml.includes("const MAP_OBSTACLES =") &&
   bombHtml.includes("function slideAroundObstacles(") &&
-  bombHtml.includes("isBlockedByObstacle(boundedX, boundedY"),
+  bombHtml.includes("function isBlockedByObstacle(x, y, radius)"),
   "The mine maps must have visible obstacles with physical collision handling.");
 assert.ok(bombHtml.includes('<svg class="mine-scene"') &&
   bombHtml.includes('data-map="copper"') && bombHtml.includes('data-map="crystal"'),
