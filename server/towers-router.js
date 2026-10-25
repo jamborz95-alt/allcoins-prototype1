@@ -38,6 +38,11 @@ function travelDuration(from, to, troops) {
   return Math.max(0.65, distance(from, to) / (14 + Math.sqrt(count) * 1.5));
 }
 
+function playerColorFor(game, ownerId) {
+  const player = (game && game.players || []).find(p => String(p.telegramId) === String(ownerId));
+  return player && ["blue", "red", "green"].includes(player.color) ? player.color : null;
+}
+
 function rememberRoad(game, fromId, toId, ownerId = null) {
   if (!game || Number(fromId) === Number(toId)) return;
   const from = Number(fromId), to = Number(toId);
@@ -45,12 +50,49 @@ function rememberRoad(game, fromId, toId, ownerId = null) {
   if (!Array.isArray(game.roads)) game.roads = [];
   const source = (game.towers || []).find(tower => Number(tower.id) === from);
   const resolvedOwner = ownerId != null ? String(ownerId) : (source && source.ownerId != null ? String(source.ownerId) : null);
+  const resolvedColor = playerColorFor(game, resolvedOwner) || (source && source.ownerId != null && String(source.ownerId) === String(resolvedOwner) ? playerColorFor(game, source.ownerId) : null) || "blue";
   const existing = game.roads.find(road => Number(road.fromId) === from && Number(road.toId) === to);
   if (!existing) {
-    game.roads.push({ key: from + ">" + to, fromId: from, toId: to, ownerId: resolvedOwner });
-  } else if (existing.ownerId == null && resolvedOwner != null) {
-    existing.ownerId = resolvedOwner;
+    game.roads.push({ key: from + ">" + to, fromId: from, toId: to, ownerId: resolvedOwner, ownerColor: resolvedColor, nextAutoSendAt: Date.now() + 1200 });
+  } else {
+    // Reclaiming a route from a newly-owned tower gives the route to the current sender.
+    if (ownerId != null && String(existing.ownerId) !== String(resolvedOwner)) {
+      existing.ownerId = resolvedOwner;
+      existing.ownerColor = resolvedColor;
+      existing.nextAutoSendAt = Date.now() + 1200;
+    } else {
+      if (existing.ownerId == null) existing.ownerId = resolvedOwner;
+      if (!["blue", "red", "green"].includes(existing.ownerColor)) existing.ownerColor = resolvedColor;
+    }
     existing.key = from + ">" + to;
+    existing.fromId = from;
+    existing.toId = to;
+  }
+}
+
+function tickAutoRoads(game, now) {
+  for (const road of (game && game.roads || [])) {
+    const from = (game.towers || []).find(t => Number(t.id) === Number(road.fromId));
+    const to = (game.towers || []).find(t => Number(t.id) === Number(road.toId));
+    if (!from || !to) continue;
+    if (road.ownerId == null && from.ownerId != null) road.ownerId = String(from.ownerId);
+    if (!["blue", "red", "green"].includes(road.ownerColor)) {
+      road.ownerColor = playerColorFor(game, road.ownerId) || "blue";
+    }
+    // A road keeps moving reinforcements automatically while its source remains owned by its builder.
+    if (road.ownerId == null || String(from.ownerId) !== String(road.ownerId)) continue;
+    if (!Number.isFinite(Number(road.nextAutoSendAt))) road.nextAutoSendAt = now + 900;
+    if (now < Number(road.nextAutoSendAt)) continue;
+    road.nextAutoSendAt = now + 1200;
+    const available = Math.floor(Number(from.units) || 0);
+    if (available < 7) continue;
+    const troops = Math.min(available - 1, Math.max(2, Math.floor(available * 0.30)));
+    if (troops < 2) continue;
+    from.units -= troops;
+    game.fleets.push({
+      id: game.nextFleetId++, fromId: from.id, toId: to.id, ownerId: String(road.ownerId),
+      units: troops, progress: 0, duration: travelDuration(from, to, troops)
+    });
   }
 }
 
@@ -102,6 +144,8 @@ function tickGame(game, now) {
   for (const tower of game.towers) {
     if (tower.ownerId) tower.units = Math.min(999, Number(tower.units || 0) + Number(tower.income || 1) * dt);
   }
+  // Existing routes automatically dispatch new waves; a player only needs to draw the route once.
+  tickAutoRoads(game, now);
   for (const fleet of game.fleets) {
     rememberRoad(game, fleet.fromId, fleet.toId, fleet.ownerId);
     fleet.progress = Math.min(1, Number(fleet.progress || 0) + dt / Math.max(1.1, Number(fleet.duration || 3)));
