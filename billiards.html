@@ -324,7 +324,7 @@
         balls.forEach(ball=>{if(!ball.active)return;drawBall(ctx,ball);});
         if(state.aim&&state.game&&state.animatingSeq===null&&!state.busy){
           const cue=balls.find(b=>b.id==="cue"&&b.active);if(cue){const dx=state.aim.x-cue.x,dy=state.aim.y-cue.y,dist=Math.hypot(dx,dy);if(dist>3){
-            const angle=Math.atan2(dy,dx);ctx.save();ctx.setLineDash([7,7]);ctx.strokeStyle="#eafff5cc";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(cue.x,cue.y);ctx.lineTo(cue.x+Math.cos(angle)*350,cue.y+Math.sin(angle)*350);ctx.stroke();ctx.setLineDash([]);
+            const angle=Math.atan2(dy,dx),lineStartX=cue.x+Math.cos(angle)*(R+1),lineStartY=cue.y+Math.sin(angle)*(R+1);ctx.save();ctx.setLineDash([7,7]);ctx.strokeStyle="#eafff5cc";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(lineStartX,lineStartY);ctx.lineTo(cue.x+Math.cos(angle)*350,cue.y+Math.sin(angle)*350);ctx.stroke();ctx.setLineDash([]);
             ctx.strokeStyle="#ebd3a0";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(cue.x-Math.cos(angle)*28,cue.y-Math.sin(angle)*28);ctx.lineTo(cue.x-Math.cos(angle)*(72+Math.min(dist,150)*.12),cue.y-Math.sin(angle)*(72+Math.min(dist,150)*.12));ctx.stroke();ctx.restore();
           }}
         }
@@ -443,7 +443,7 @@
         [[-3.4,-1.8],[3.4,-1.8],[-3.4,1.8],[3.4,1.8]].forEach(([x,z])=>{const leg=roundedBox(.34,1.05,.34,.06,legMat);leg.position.set(x,-.43,z);tableGroup.add(leg);});
         const lightGeo=new THREE.PlaneGeometry(7.5,3.9);const marks=new THREE.Mesh(lightGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.025,side:THREE.DoubleSide}));marks.rotation.x=-Math.PI/2;marks.position.y=.337;tableGroup.add(marks);
         cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,12),mat(0xd5b47b,.28));cue.castShadow=true;cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,12),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-2.61;cueStick.add(tip);scene.add(cueStick);
-        const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.43,0),new THREE.Vector3(1,.43,0)]);aimLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xe9ffe9,transparent:true,opacity:.8}));scene.add(aimLine);
+        const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(1,0,0)]);aimLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xe9ffe9,transparent:true,opacity:.8}));scene.add(aimLine);
       }
       function ballMaterial(ball){
         const key=String(ball.id);if(ballMaterialCache.has(key))return ballMaterialCache.get(key);
@@ -475,7 +475,7 @@
         const angle=Math.atan2(dy,dx),x=(cue.x-400)*SCALE,z=(cue.y-220)*SCALE;
         cueStick.visible=true;cueStick.position.set(x,.47,z);cueStick.rotation.y=-angle;
         cueStick.position.x-=Math.cos(angle)*.62;cueStick.position.z-=Math.sin(angle)*.62;
-        aimLine.visible=true;aimLine.position.set(x,.44,z);aimLine.rotation.y=-angle;aimLine.scale.set(Math.min(3.5,dist*SCALE+1),1,1);
+        aimLine.visible=true;aimLine.position.set(x+Math.cos(angle)*(BALL_R+.005),.43,z+Math.sin(angle)*(BALL_R+.005));aimLine.rotation.y=-angle;aimLine.scale.set(Math.min(3.5,dist*SCALE+1),1,1);
       }
       function fitOrbitRadius(theta,aspect,layout){
         const projectedWidth=Math.abs(Math.cos(theta))*8.25+Math.abs(Math.sin(theta))*4.65;
