@@ -364,7 +364,7 @@
       const canvas=document.getElementById("pool3DCanvas");
       if(!canvas)return;
       let renderer,scene,camera,tableGroup;
-      let orbitTheta=0,orbitPhi=Math.atan2(5.3,7.0),orbitRadius=Math.hypot(7,5.3),cameraLayout="";
+      let orbitTheta=0,orbitPhi=Math.atan2(5.3,7.0),orbitRadius=Math.hypot(7,5.3),cameraLayout="",viewportAspect=1;
       const cameraTarget=new THREE.Vector3(0,0,0);
       const raycaster=new THREE.Raycaster();
       const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.43);
@@ -429,6 +429,11 @@
         cueStick.position.x-=Math.cos(angle)*.62;cueStick.position.z-=Math.sin(angle)*.62;
         aimLine.visible=true;aimLine.position.set(x,.44,z);aimLine.rotation.y=-angle;aimLine.scale.set(Math.min(3.5,dist*SCALE+1),1,1);
       }
+      function fitOrbitRadius(theta,aspect,layout){
+        const projectedWidth=Math.abs(Math.cos(theta))*8.25+Math.abs(Math.sin(theta))*4.65;
+        const framingMargin=layout==="portrait"?4.0:1.3;
+        return projectedWidth/(2*Math.tan(18*Math.PI/180)*Math.max(.4,aspect))+framingMargin;
+      }
       function applyCameraOrbit(){
         if(!camera)return;
         const sinPhi=Math.sin(orbitPhi);
@@ -438,12 +443,12 @@
       function render(){
         if(!renderer)return;
         const rect=canvas.getBoundingClientRect();const w=Math.max(1,rect.width),h=Math.max(1,rect.height),aspect=w/h;
-        const layout=aspect<0.82?"portrait":"landscape";
+        const layout=aspect<0.82?"portrait":"landscape";viewportAspect=aspect;
         if(layout!==cameraLayout){
           cameraLayout=layout;
           orbitTheta=layout==="portrait"?Math.PI/2:0;
           orbitPhi=layout==="portrait"?0.82:Math.atan2(5.3,7.0);
-          orbitRadius=layout==="portrait"?12.7:Math.hypot(7,5.3);
+          orbitRadius=fitOrbitRadius(orbitTheta,aspect,layout);
           applyCameraOrbit();
         }
         renderer.setSize(w,h,false);camera.aspect=aspect;camera.updateProjectionMatrix();
@@ -457,7 +462,7 @@
         buildTable();
         window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
         window.billiards3DPointerCoords=function(clientX,clientY){const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;const ndc=new THREE.Vector2(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(ndc,camera);const point=new THREE.Vector3();if(!raycaster.ray.intersectPlane(aimPlane,point))return null;return{x:point.x/SCALE+400,y:point.z/SCALE+220};};
-        window.billiards3DOrbit=function(deltaX,deltaY){orbitTheta-=Number(deltaX||0)*0.009;orbitPhi=Math.max(0.24,Math.min(1.48,orbitPhi+Number(deltaY||0)*0.007));applyCameraOrbit();render();};
+        window.billiards3DOrbit=function(deltaX,deltaY){orbitTheta-=Number(deltaX||0)*0.009;orbitPhi=Math.max(0.5,Math.min(1.15,orbitPhi+Number(deltaY||0)*0.007));orbitRadius=fitOrbitRadius(orbitTheta,viewportAspect,cameraLayout);applyCameraOrbit();render();};
         window.billiards3DGetCameraState=function(){return{theta:orbitTheta,phi:orbitPhi,radius:orbitRadius,layout:cameraLayout};};
         window.billiards3DGetFrameBounds=function(){camera.updateMatrixWorld();const points=[[-4.13,-2.33],[4.13,-2.33],[-4.13,2.33],[4.13,2.33]].map(([x,z])=>new THREE.Vector3(x,.4,z).project(camera));return{minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))};};
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
