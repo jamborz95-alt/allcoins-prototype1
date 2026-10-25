@@ -225,8 +225,74 @@ function localSend(from,to,owner){const troops=Math.floor(from.units*.58);from.u
 function localTick(){if(!localPractice||!gameState||gameState.status!=='playing')return;const now=Date.now();const dt=Math.min(.5,(now-lastTick)/1000);lastTick=now;for(const t of gameState.towers)if(t.ownerId)t.units=Math.min(999,t.units+t.income*dt);for(const f of gameState.fleets)f.progress=Math.min(1,f.progress+dt/f.duration);const arrived=gameState.fleets.filter(f=>f.progress>=1);gameState.fleets=gameState.fleets.filter(f=>f.progress<1);arrived.forEach(f=>{const t=towerAt(f.toId);if(!t)return;if(t.ownerId===f.ownerId){t.units+=f.units;return;}const def=Math.floor(t.units);if(f.units>def){t.ownerId=f.ownerId;t.units=Math.max(1,f.units-def);t.income=1.7;t._captured=true;}else{t.units=Math.max(0,def-f.units);if(!t.units){t.ownerId=f.ownerId;t.units=1;t.income=1.7;t._captured=true;}}});if(now>=gameState.nextBotAt){gameState.nextBotAt=now+2200;['bot1','bot2'].forEach(bot=>{const sources=gameState.towers.filter(t=>t.ownerId===bot&&t.units>=9);const targets=gameState.towers.filter(t=>t.ownerId!==bot);if(sources.length&&targets.length){sources.sort((a,b)=>b.units-a.units);const from=sources[Math.floor(Math.random()*Math.min(2,sources.length))];targets.sort((a,b)=>Math.hypot(from.x-a.x,from.y-a.y)-Math.hypot(from.x-b.x,from.y-b.y));localSend(from,targets[0],bot);}});}const alive=gameState.players.filter(p=>gameState.towers.some(t=>t.ownerId===p.telegramId));if(alive.length===1){gameState.status='finished';gameState.winnerTelegramId=alive[0].telegramId;gameState.result=alive[0].name+' захватывает все башни!';showResult();}if(now-gameStartAt>180000&&gameState.status==='playing'){const scores=gameState.players.map(p=>({p:p,score:gameState.towers.filter(t=>t.ownerId===p.telegramId).length*100+gameState.towers.filter(t=>t.ownerId===p.telegramId).reduce((n,t)=>n+Math.floor(t.units),0)})).sort((a,b)=>b.score-a.score);gameState.status='finished';gameState.winnerTelegramId=scores[0].p.telegramId;gameState.result=scores[0].p.name+' выиграл по очкам!';showResult();}renderGame();}
 function renderRoomPlayersOnly(){const strip=$('playerStrip');strip.innerHTML='';for(const p of (gameState&&gameState.players||[])){const chip=document.createElement('div');chip.className='player-chip';const dot=document.createElement('span');dot.className='dot';dot.style.background='var(--'+(p.color||colorFor(p.telegramId))+')';chip.appendChild(dot);const label=document.createElement('span');label.textContent=(String(p.telegramId)===myId()?'Ты':p.name||'Игрок');chip.appendChild(label);strip.appendChild(chip);}}
 function resizeRouteSvg(){const s=$('routeSvg');const r=$('field').getBoundingClientRect();s.setAttribute('viewBox','0 0 '+r.width+' '+r.height);s.setAttribute('preserveAspectRatio','none');}
-function renderGame(){if(!gameState)return;renderRoomPlayersOnly();const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets');resizeRouteSvg();routes.innerHTML='';container.innerHTML='';const fr=$('field').getBoundingClientRect();ts.forEach(t=>{if(selectedTower===t.id){const to=ts.filter(x=>x.id!==t.id).map(x=>'<line class="selected-route" x1="'+t.x*fr.width/100+'" y1="'+t.y*fr.height/100+'" x2="'+x.x*fr.width/100+'" y2="'+x.y*fr.height/100+'"/>').join('');routes.insertAdjacentHTML('beforeend',to);}});for(const f of(gameState.fleets||[])){const from=towerAt(f.fromId),to=towerAt(f.toId);if(from&&to){const x1=from.x*fr.width/100,y1=from.y*fr.height/100,x2=to.x*fr.width/100,y2=to.y*fr.height/100;routes.insertAdjacentHTML('beforeend','<line class="path-line" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>');let el=document.querySelector('.fleet[data-fleet="'+f.id+'"]');if(!el){el=document.createElement('div');el.className='fleet '+(colorFor(f.ownerId)||'blue');el.dataset.fleet=f.id;el.innerHTML='<span class="fleet-core"></span>';fleetLayer.appendChild(el);}el.className='fleet '+(colorFor(f.ownerId)||'blue');el.style.left=(from.x+(to.x-from.x)*f.progress)+'%';el.style.top=(from.y+(to.y-from.y)*f.progress)+'%';el.title=fmt(f.units)+' войск';}}const activeFleetIds=new Set((gameState.fleets||[]).map(f=>String(f.id)));fleetLayer.querySelectorAll('.fleet').forEach(el=>{if(!activeFleetIds.has(el.dataset.fleet))el.remove();});for(const t of ts){const owner=String(t.ownerId||'')===myId();const color=t.ownerId?colorFor(t.ownerId):'neutral';const el=document.createElement('button');el.type='button';el.className='tower '+(color||'neutral')+(selectedTower===t.id?' selected':'')+(t._captured?' captured':'');el.dataset.tower=t.id;el.style.left=t.x+'%';el.style.top=t.y+'%';el.setAttribute('aria-label','Башня '+t.id+', войск '+fmt(t.units));el.innerHTML='<span class="tower-flag"></span><span class="tower-shape"><span class="tower-num">#'+t.id+'</span></span><span class="tower-base"></span><span class="tower-units">'+fmt(t.units)+'</span>';el.addEventListener('click',e=>{e.stopPropagation();if(Date.now()<suppressClickUntil)return;chooseTower(t.id);});el.addEventListener('pointerdown',e=>{dragFrom=t.id;dragMoved=false;try{el.setPointerCapture(e.pointerId);}catch(err){}});el.addEventListener('pointermove',e=>{if(dragFrom===t.id&&Math.hypot(e.movementX||0,e.movementY||0)>4)dragMoved=true;});el.addEventListener('pointerup',e=>{if(dragFrom!==null&&dragMoved){const under=document.elementFromPoint(e.clientX,e.clientY);const target=under&&under.closest?under.closest('.tower'):null;if(target&&Number(target.dataset.tower)!==dragFrom){suppressClickUntil=Date.now()+500;sendAttack(dragFrom,Number(target.dataset.tower));}else if(target&&Number(target.dataset.tower)===dragFrom){chooseTower(dragFrom);}dragFrom=null;dragMoved=false;} });container.appendChild(el);t._captured=false;}if(localPractice){const elapsed=Math.floor((Date.now()-gameStartAt)/1000);$('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');}else if(gameState.startedAt){const elapsed=Math.max(0,Math.floor((Date.now()-Number(gameState.startedAt))/1000));$('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');}const stake=Number(gameState.stake||roomInfo&&roomInfo.stake||0);$('gameStats').textContent=(stake>0?'Ставка '+fmt(stake)+' AC':'Тренировка без ставки')+' · '+gameState.players.length+' игрока · выбрано: '+(selectedTower?'башня №'+selectedTower:'—');$('instruction').innerHTML=selectedTower?'<b>Башня №'+selectedTower+' выбрана.</b> Выбери цель или перетащи палец на другую башню. Отправится около 58% войск.':'<b>Как играть:</b> нажми на свою башню, затем на цель. Или проведи пальцем от башни к башне.';if(gameState.status==='finished')showResult();}
-function chooseTower(id){const t=towerAt(id);if(!t)return;if(selectedTower!==null&&selectedTower!==id){const from=towerAt(selectedTower);if(from&&String(from.ownerId)===myId()){sendAttack(selectedTower,id);return;}}if(String(t.ownerId)!==myId()){if(selectedTower===null){showToast('Сначала выбери свою башню.');return;}}selectedTower=id;renderGame();}
+function renderGame(){
+ if(!gameState)return;
+ renderRoomPlayersOnly();
+ const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets');
+ resizeRouteSvg();routes.innerHTML='';
+ const fr=$('field').getBoundingClientRect();
+ ts.forEach(t=>{
+  if(selectedTower===t.id){
+   const to=ts.filter(x=>x.id!==t.id).map(x=>'<line class="selected-route" x1="'+t.x*fr.width/100+'" y1="'+t.y*fr.height/100+'" x2="'+x.x*fr.width/100+'" y2="'+x.y*fr.height/100+'"/>').join('');
+   routes.insertAdjacentHTML('beforeend',to);
+  }
+ });
+ for(const f of(gameState.fleets||[])){
+  const from=towerAt(f.fromId),to=towerAt(f.toId);
+  if(from&&to){
+   const x1=from.x*fr.width/100,y1=from.y*fr.height/100,x2=to.x*fr.width/100,y2=to.y*fr.height/100;
+   routes.insertAdjacentHTML('beforeend','<line class="path-line" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>');
+   let el=fleetLayer.querySelector('.fleet[data-fleet="'+f.id+'"]');
+   if(!el){el=document.createElement('div');el.dataset.fleet=f.id;el.innerHTML='<span class="fleet-core"></span>';fleetLayer.appendChild(el);}
+   el.className='fleet '+(colorFor(f.ownerId)||'blue');
+   el.style.left=(from.x+(to.x-from.x)*f.progress)+'%';
+   el.style.top=(from.y+(to.y-from.y)*f.progress)+'%';
+   el.title=fmt(f.units)+' войск';
+  }
+ }
+ const activeFleetIds=new Set((gameState.fleets||[]).map(f=>String(f.id)));
+ fleetLayer.querySelectorAll('.fleet').forEach(el=>{if(!activeFleetIds.has(el.dataset.fleet))el.remove();});
+ for(const t of ts){
+  const color=t.ownerId?colorFor(t.ownerId):'neutral';
+  let el=container.querySelector('.tower[data-tower="'+t.id+'"]');
+  if(!el){
+   el=document.createElement('button');el.type='button';el.dataset.tower=t.id;
+   el.innerHTML='<span class="tower-flag"></span><span class="tower-shape"><span class="tower-num"></span></span><span class="tower-base"></span><span class="tower-units"></span>';
+   el.addEventListener('click',e=>{e.stopPropagation();if(Date.now()<suppressClickUntil)return;chooseTower(Number(el.dataset.tower));});
+   el.addEventListener('pointerdown',e=>{dragFrom=Number(el.dataset.tower);dragMoved=false;try{el.setPointerCapture(e.pointerId);}catch(err){}});
+   el.addEventListener('pointermove',e=>{if(dragFrom===Number(el.dataset.tower)&&Math.hypot(e.movementX||0,e.movementY||0)>4)dragMoved=true;});
+   el.addEventListener('pointerup',e=>{
+    if(dragFrom!==null&&dragMoved){
+     const under=document.elementFromPoint(e.clientX,e.clientY);
+     const target=under&&under.closest?under.closest('.tower'):null;
+     if(target&&Number(target.dataset.tower)!==dragFrom){suppressClickUntil=Date.now()+500;sendAttack(dragFrom,Number(target.dataset.tower));}
+     else if(target&&Number(target.dataset.tower)===dragFrom){chooseTower(dragFrom);}
+     dragFrom=null;dragMoved=false;
+    }
+   });
+   container.appendChild(el);
+  }
+  el.className='tower '+(color||'neutral')+(selectedTower===t.id?' selected':'')+(t._captured?' captured':'');
+  el.style.left=t.x+'%';el.style.top=t.y+'%';
+  el.setAttribute('aria-label','Башня '+t.id+', войск '+fmt(t.units));
+  el.querySelector('.tower-num').textContent='#'+t.id;
+  el.querySelector('.tower-units').textContent=fmt(t.units);
+  t._captured=false;
+ }
+ const activeTowerIds=new Set(ts.map(t=>String(t.id)));
+ container.querySelectorAll('.tower').forEach(el=>{if(!activeTowerIds.has(el.dataset.tower))el.remove();});
+ if(localPractice){
+  const elapsed=Math.floor((Date.now()-gameStartAt)/1000);
+  $('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
+ }else if(gameState.startedAt){
+  const elapsed=Math.max(0,Math.floor((Date.now()-Number(gameState.startedAt))/1000));
+  $('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
+ }
+ const stake=Number(gameState.stake||roomInfo&&roomInfo.stake||0);
+ $('gameStats').textContent=(stake>0?'Ставка '+fmt(stake)+' AC':'Тренировка без ставки')+' · '+gameState.players.length+' игрока · выбрано: '+(selectedTower?'башня №'+selectedTower:'—');
+ $('instruction').innerHTML=selectedTower?'<b>Башня №'+selectedTower+' выбрана.</b> Выбери цель или перетащи палец на другую башню. Отправится около 58% войск.':'<b>Как играть:</b> нажми на свою башню, затем на цель. Или проведи пальцем от башни к башне.';
+ if(gameState.status==='finished')showResult();
+}function chooseTower(id){const t=towerAt(id);if(!t)return;if(selectedTower!==null&&selectedTower!==id){const from=towerAt(selectedTower);if(from&&String(from.ownerId)===myId()){sendAttack(selectedTower,id);return;}}if(String(t.ownerId)!==myId()){if(selectedTower===null){showToast('Сначала выбери свою башню.');return;}}selectedTower=id;renderGame();}
 $('sendHelp').addEventListener('click',()=>{if(selectedTower===null){showToast('Сначала выбери свою башню.');return;}showToast('Выбери цель на карте — войска отправятся автоматически.');});
 function showResult(){if(finishedShown||!gameState||gameState.status!=='finished')return;finishedShown=true;const won=String(gameState.winnerTelegramId)===myId();$('resultIcon').textContent=won?'🏆':'🛡️';$('resultTitle').textContent=won?'ПОБЕДА':'ПАРТИЯ ЗАВЕРШЕНА';$('resultText').textContent=gameState.result|| (won?'Ты захватил территорию!':'Победитель захватил больше башен.');if(gameState.settlement&&Number(gameState.settlement.prize)>0&&won)$('resultText').textContent+=' Приз: '+fmt(gameState.settlement.prize)+' AC.';$('resultOverlay').classList.remove('hidden');stopLoops();}
 function clearLocalState(){stopLoops();localPractice=false;roomId=null;roomInfo=null;gameState=null;selectedTower=null;finishedShown=false;gameView.classList.add('hidden');lobby.classList.remove('hidden');roomView.classList.add('hidden');setupPanel.classList.remove('hidden');roomsPanel.classList.remove('hidden');}
