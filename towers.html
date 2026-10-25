@@ -124,7 +124,6 @@ input:focus,select:focus{border-color:#e5c779;box-shadow:0 0 0 3px #d5ac4430}
 @keyframes resultPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
 @keyframes towerAppear{from{opacity:0;transform:translate(-50%,-50%) scale(.65)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @keyframes captureGlow{0%{filter:drop-shadow(0 0 0 #fff0)}35%{filter:drop-shadow(0 0 15px #fff)}100%{filter:drop-shadow(0 4px 2px #426b2870)}}
-.tower{animation:towerAppear .3s ease-out}
 .tower.captured{animation:captureGlow .8s ease-out}
 @media (max-height:620px){.hero{margin-bottom:9px}.hero-art{height:92px;width:90px}.hero-copy h2{font-size:19px}.panel{padding:13px}.tower{transform:translate(-50%,-50%) scale(.82)}.tower.selected{transform:translate(-50%,-50%) scale(.95)}.player-strip{top:calc(57px + env(safe-area-inset-top))}.game-bottom{bottom:calc(6px + env(safe-area-inset-bottom))}}
 @media (max-width:360px){h1{font-size:23px}.hero-art{width:89px;height:100px}.hero-copy h2{font-size:19px}.two-cols{gap:8px}.panel{padding:13px}.tower{transform:translate(-50%,-50%) scale(.9)}.tower.selected{transform:translate(-50%,-50%) scale(1)}}
@@ -145,7 +144,7 @@ input:focus,select:focus{border-color:#e5c779;box-shadow:0 0 0 3px #d5ac4430}
     <label class="label" for="roomName">Название комнаты</label>
     <input id="roomName" maxlength="40" value="Захват башен" placeholder="Например, Захват башен">
     <div class="two-cols">
-      <div><label class="label" for="stakeInput">Ставка, AC</label><input id="stakeInput" type="number" inputmode="numeric" min="100" step="1" value="100"><div class="hint">От 100 AC. Ставку можно вписать вручную.</div></div>
+      <div><label class="label" for="stakeInput">Ставка, AC</label><input id="stakeInput" type="number" inputmode="numeric" min="100" step="1" value="100"><div class="hint">От 100 AC без фиксированной верхней границы. Ставка не может превышать твой баланс.</div></div>
       <div><label class="label" for="playersInput">Игроков</label><select id="playersInput"><option value="2">2 игрока</option><option value="3">3 игрока</option></select><div class="hint">Создатель + соперники</div></div>
     </div>
     <div class="btn-row"><button class="btn primary" id="createRoom">＋ Создать комнату</button><button class="btn secondary" id="refreshRooms">↻ Комнаты</button></div>
