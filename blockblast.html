@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1020">
+<meta name="theme-color" content="#ef9fba">
 <title>Block Blast — ALLCOINS</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
@@ -72,6 +72,64 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:360px){#app{padding-left:8px;padding-right:8px}.brand{font-size:17px}.record strong{font-size:23px}.board{gap:2px;padding:3px}.cell{border-radius:3px}.piece-grid{grid-template-columns:repeat(4,11px);grid-template-rows:repeat(4,11px)}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
+<style id="block-blast-pink-theme">
+:root{color-scheme:light;--bg:#ef9fba;--rose:#9b4964;--lilac:#d9c6ff;--coral:#ffd0d0;--white:#fffaff;--gold:#ffe45c}
+html,body{background:#ef9fba;color:#fffaff}
+body{background:radial-gradient(ellipse at 48% 20%,#f6b4c8 0,transparent 52%),linear-gradient(180deg,#f0a4bd 0%,#ed9bb7 56%,#e98dac 100%)}
+#app{background:radial-gradient(ellipse at 50% 32%,#f8b5cb55 0%,transparent 55%),linear-gradient(165deg,#f1a4bd 0%,#eb97b4 100%);padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 14px)}
+#app:before{content:"";pointer-events:none;position:fixed;inset:0;opacity:.13;background-image:radial-gradient(#fff 0.65px,transparent .8px);background-size:4px 4px;mix-blend-mode:soft-light}
+.page{position:relative;z-index:1;width:min(100%,620px);gap:12px}
+.top{min-height:44px}.brand{color:#fff;text-shadow:0 2px 3px #a64b6f55}.brand .logo{color:#84405b;background:linear-gradient(145deg,#fff1fa,#e7d2ff);box-shadow:inset 0 2px 2px #fff,0 4px 0 #b76483,0 5px 7px #a9476b66}
+.small-btn{border:1px solid #cb7a96;background:linear-gradient(180deg,#ffd8e6,#f3b3c9);color:#873e5b;box-shadow:inset 0 1px 0 #fff9,0 3px 0 #c66b8b}
+.section{background:linear-gradient(160deg,#f9c0d3,#f1a5c0);border:1px solid #d77f9d;box-shadow:inset 0 1px 0 #fff8,0 5px 0 #d77f9b,0 10px 18px #b84f7550}
+.eyebrow{color:#a45370}.records{gap:10px}.record{border:1px solid #d07c9a;border-radius:17px;background:linear-gradient(145deg,#fac5d7,#e9a1bb);color:#803a55;box-shadow:inset 0 1px 0 #fff9,0 4px 0 #cf7796,0 7px 13px #b84f7540}
+.record.week{border-color:#ddb04c;background:linear-gradient(145deg,#ffe3a0,#f5bc80)}.record.personal{border-color:#d88cb2;background:linear-gradient(145deg,#edc9ff,#c9b1f4)}
+.record .label{color:#84435e}.record strong{color:#fff;text-shadow:0 2px 2px #8f476455}.record .caption{color:#89415d}
+.tourney-copy{color:#7e3955}.tourney-copy p{color:#8f4d67}.tourney .fee{color:#8e4761}.tourney-symbol{background:linear-gradient(145deg,#fff0a2,#f0bd3c);color:#b96c1d;box-shadow:inset 0 2px 0 #fff,0 4px 0 #c58b43}
+.primary{border:1px solid #d09a34;background:linear-gradient(180deg,#fff08e,#ffc63e);color:#915328;box-shadow:inset 0 2px 0 #fff9,0 4px 0 #c58c30,0 7px 12px #9e55743f}
+.secondary{border:1px solid #cb7998;background:linear-gradient(180deg,#ffe0ea,#f4b6cb);color:#873e5b;box-shadow:inset 0 1px 0 #fff8,0 3px 0 #ce7896}
+.status{color:#853e59;text-shadow:0 1px #ffffff44}.status.good{color:#486e49}.status.bad{color:#8d2f4d}.rules{color:#88445f}
+#setup{display:flex;flex-direction:column;gap:12px;max-width:520px;margin:0 auto;width:100%}
+#play{display:none;flex:1;min-height:0;gap:0;flex-direction:column;width:100%}
+body.playing #app{overflow:hidden;padding:calc(env(safe-area-inset-top) + 2px) 0 calc(env(safe-area-inset-bottom) + 5px)}
+body.playing #app:before{opacity:.12}
+body.playing .page{height:100%;min-height:0;max-width:760px;width:100%;gap:0}
+body.playing .top{display:none}
+.play-recordbar{height:12.5dvh;min-height:82px;max-height:160px;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;gap:10px;flex:0 0 auto}
+.crown-record{display:flex;align-items:center;gap:8px;min-width:0;color:#ffda42;text-shadow:0 2px 2px #a85a6d66}
+.crown-icon{font-size:clamp(32px,7vw,48px);line-height:1;filter:drop-shadow(0 3px 1px #a85a6c5c)}
+.crown-numbers{min-width:0}.crown-numbers strong{display:block;font-size:clamp(19px,5vw,30px);line-height:1.02;font-weight:1000;letter-spacing:.3px;white-space:nowrap}
+.crown-numbers small{display:block;margin-top:4px;color:#a85270;font-size:8px;font-weight:1000;letter-spacing:1px;text-shadow:none}
+.week-mini{display:block;margin-top:2px;color:#97516b;font-size:9px;font-weight:900;text-shadow:none;white-space:nowrap}
+.game-controls{display:flex;align-items:center;gap:9px}.exit-round{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:#ffdae7aa;color:#984b68;font-size:20px;box-shadow:inset 0 1px 0 #fff8}
+.new-round{position:relative;display:grid;place-items:center;width:50px;height:54px;border:0;background:transparent;color:#fff6fc;font-size:34px;text-shadow:0 2px 2px #a4546e}
+.new-round span{position:absolute;top:0;right:-3px;border:1px solid #f0b03a;border-radius:9px;padding:3px 6px;background:linear-gradient(180deg,#fff1a2,#ffc43c);color:#9e651a;font-size:10px;font-weight:1000;line-height:1;text-shadow:none;box-shadow:0 2px 2px #a85b7044}
+.current-score-wrap{height:10.5dvh;min-height:82px;max-height:150px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;margin-top:-1dvh}
+.score{margin:0;color:#fffdfd;font-size:clamp(58px,11vw,86px);line-height:1;font-weight:550;letter-spacing:-2px;text-shadow:0 4px 5px #a74b6d70}.score-caption{height:0;overflow:hidden;font-size:1px}
+#play .board-wrap{width:100%;height:min(43dvh,92vw,640px);flex:0 0 auto;display:flex;justify-content:center;align-items:center;margin:0 auto}
+.board{width:min(91vw,43dvh,640px);height:auto;aspect-ratio:1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:3px;padding:5px;border-radius:12px;border:4px solid #b65c7d;background:linear-gradient(145deg,#a04c68,#91435e);box-shadow:inset 0 2px 4px #6d304d99,0 3px 0 #8f3f5b,0 7px 13px #b44e7255;touch-action:none}
+.cell{position:relative;min-width:0;min-height:0;border:1px solid #a0516b;border-radius:5px;background:linear-gradient(145deg,#9c4b66,#94445f);padding:0;box-shadow:inset 0 2px 2px #74344c33;touch-action:none}
+.cell.filled{border:1px solid #efcadc;background:linear-gradient(145deg,#fff1ff 0%,#e3d1ff 44%,#c3b0f1 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #b1a0de,0 2px 1px #7e3e5a8a}
+.cell.coral{border-color:#ffe0e5;background:linear-gradient(145deg,#fff3ef 0%,#ffd1d1 48%,#f4aab8 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #e8a0b2,0 2px 1px #7e3e5a8a}
+.cell.filled:after{content:"";position:absolute;inset:1px 1px 48%;border-radius:4px;background:linear-gradient(180deg,#ffffff55,transparent);pointer-events:none}
+.cell.preview-ok{outline:3px solid #ffe46a;background:#8fe7ce}.cell.preview-no{outline:3px solid #bd2f5a;background:#e78da5}
+.tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-height:82px;margin:min(7dvh,100px) auto 0;width:min(94vw,500px);align-items:center;flex:0 0 auto}
+.piece-slot{min-width:0;min-height:76px;border:0;border-radius:10px;background:transparent;display:grid;place-items:center;padding:4px;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none}
+.piece-slot.selected{background:#ffffff1f;filter:drop-shadow(0 0 5px #fff7);transform:translateY(-3px)}.piece-slot:active{transform:translateY(-3px)}
+.piece-grid{display:grid;grid-template-columns:repeat(4,clamp(13px,4.6vw,24px));grid-template-rows:repeat(4,clamp(13px,4.6vw,24px));gap:2px;pointer-events:none}
+.piece-dot{border-radius:3px;background:linear-gradient(145deg,#fff3ff 0%,#e4d6ff 45%,#c6b5f0 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #b2a0df,0 2px 1px #a45d7a;position:relative}
+.piece-dot:after{content:"";position:absolute;inset:1px 1px 48%;border-radius:3px;background:linear-gradient(180deg,#ffffff70,transparent)}.piece-dot.empty{background:transparent;box-shadow:none}.piece-dot.empty:after{display:none}
+.game-hints{margin:4px auto 0;max-width:92%;text-align:center;color:#9a4a69;font-size:10px;line-height:1.25;min-height:15px;text-shadow:0 1px #ffffff35}#modeLabel{display:none}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.92;filter:drop-shadow(0 8px 6px #7c365966);transform:translate(-50%,-65%);display:grid;gap:2px}
+.drag-ghost .piece-dot{width:clamp(16px,5vw,28px);height:clamp(16px,5vw,28px)}
+#gameover{position:fixed;inset:0;z-index:5;background:#a54b6fd9;display:none;align-items:center;justify-content:center;padding:22px}
+.modal{width:min(100%,380px);border:1px solid #e7a4ba;border-radius:22px;background:linear-gradient(145deg,#f9c9da,#f0a3be);padding:22px;text-align:center;color:#813b56;box-shadow:0 7px 0 #c66e8e,0 24px 70px #883a5b66}
+.modal .trophy{font-size:42px}.modal h2{margin:7px 0;font-size:25px}.final-score{font-size:42px;font-weight:1000;color:#fff;text-shadow:0 3px 3px #9d4b6b}
+.modal p{font-size:12px;line-height:1.5;color:#89405d}.modal-actions{display:grid;gap:10px;margin-top:15px}
+@media(max-height:760px){.play-recordbar{height:10dvh;min-height:65px}.current-score-wrap{height:9dvh;min-height:58px}.score{font-size:clamp(48px,9vh,68px)}#play .board-wrap{height:min(42dvh,92vw,560px)}.board{width:min(91vw,42dvh,560px);gap:2px;padding:4px}.tray{margin-top:min(4dvh,26px);min-height:55px}.piece-slot{min-height:54px}.piece-grid{grid-template-columns:repeat(4,clamp(11px,3.5vw,19px));grid-template-rows:repeat(4,clamp(11px,3.5vw,19px))}}
+@media(max-width:360px){#app{padding-left:9px;padding-right:9px}.brand{font-size:17px}.record strong{font-size:24px}.board{width:91vw;gap:2px;padding:3px}.cell{border-radius:3px}.tray{width:96vw;gap:2px}.piece-grid{grid-template-columns:repeat(4,clamp(11px,3.8vw,15px));grid-template-rows:repeat(4,clamp(11px,3.8vw,15px))}.play-recordbar{padding:0 4vw}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -103,16 +161,18 @@ button:disabled{opacity:.55;cursor:not-allowed}
   </section>
 
   <section id="play">
-   <div class="playhead">
-    <button class="small-btn back-btn" id="leaveGameButton" type="button">← Меню</button>
-    <div class="scorebox"><span>ТЕКУЩИЙ СЧЁТ</span><strong id="currentScore">0</strong></div>
-    <div class="scorebox"><span>РЕКОРД</span><strong id="inGameBest">0</strong></div>
+   <div class="play-recordbar">
+    <div class="crown-record"><span class="crown-icon" aria-hidden="true">👑</span><div class="crown-numbers"><strong id="inGameBest">0</strong><small>ЛИЧНЫЙ РЕКОРД</small><span class="week-mini">НЕДЕЛЯ · <b id="playingWeeklyRecord">0</b></span></div></div>
+    <div class="game-controls">
+     <button class="exit-round" id="leaveGameButton" type="button" aria-label="В меню" title="В меню">↩</button>
+     <button class="new-round" id="restartButton" type="button" aria-label="Новая игра" title="Начать новую игру">♟<span>NEW</span></button>
+    </div>
    </div>
-   <div class="hint" id="gameHint" aria-live="polite">Выбери фигуру, затем клетку на поле.</div>
-   <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Поле Block Blast 10 на 10"></div></div>
-   <div class="hint">Фигуры на выбор</div>
-   <div class="tray" id="tray"></div>
-   <div class="playfoot"><p class="rules" id="modeLabel">Тренировка · личный рекорд сохраняется</p><button class="secondary" id="restartButton" type="button">↻ Новая игра</button></div>
+   <div class="current-score-wrap"><strong class="score" id="currentScore">0</strong><span class="score-caption">СЧЁТ</span></div>
+   <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Поле Block Blast 8 на 8"></div></div>
+   <div class="tray" id="tray" aria-label="Фигуры для размещения"></div>
+   <div class="game-hints" id="gameHint" aria-live="polite">Перетащи фигуру на поле или коснись фигуры, затем клетки.</div>
+   <div class="game-hints" id="modeLabel">Тренировка · личный рекорд сохраняется</div>
   </section>
  </div>
 </div>
@@ -138,7 +198,8 @@ var weekDate=weekStart().toISOString().slice(0,10);
 var personalKey="allcoins_blockblast_personal_"+userId;
 var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
-var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false;
+var BOARD_SIZE=8;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,ignorePieceClick=false;
 var shapes=[
  [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
  [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
@@ -152,7 +213,7 @@ function readNumber(key){try{return Math.max(0,Number(localStorage.getItem(key)|
 function storeNumber(key,value){try{localStorage.setItem(key,String(Math.max(0,Math.floor(value||0))));}catch(e){}}
 function setStatus(message,type){var el=$("setupStatus");el.textContent=message;el.className="status"+(type?" "+type:"");}
 function safeWeek(){var now=weekStart().toISOString().slice(0,10);if(now!==weekDate){location.reload();}}
-function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));}
+function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));var mini=$("playingWeeklyRecord");if(mini)mini.textContent=String(readNumber(weeklyKey));}
 function updateWeekCaption(){var now=new Date();var end=weekStart();end.setUTCDate(end.getUTCDate()+7);var ms=end-now;var days=Math.max(0,Math.floor(ms/86400000));var hours=Math.max(0,Math.floor(ms%86400000/3600000));$("weeklyCaption").textContent="Сброс через "+days+" дн. "+hours+" ч. (UTC)";}
 async function post(path,data){
  if(!tg||!tg.initData)throw new Error("Открой игру через Telegram-бота ALLCOINS.");
@@ -202,50 +263,81 @@ async function joinTournament(){
   setStatus("Турнирный модуль не подтвердил списание. 1 000 AC НЕ списаны. "+error.message+" Используй тренировку или подключи серверный модуль турнира.","bad");
  }
 }
-function emptyBoard(){return Array.from({length:10},function(){return Array(10).fill(0);});}
+function emptyBoard(){return Array.from({length:BOARD_SIZE},function(){return Array(BOARD_SIZE).fill(0);});}
 function randomPiece(){return shapes[Math.floor(Math.random()*shapes.length)].map(function(c){return [c[0],c[1]];});}
 function generatePieces(){pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;renderTray();}
 function startGame(){
- $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";board=emptyBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
+ $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=emptyBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
  $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
- $("gameHint").textContent="Выбери фигуру снизу, затем клетку начала на поле.";
+ $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
-function backToMenu(){gameActive=false;$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
+function backToMenu(){gameActive=false;document.body.classList.remove("playing");clearDrag();$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
 function renderBoard(){
  var root=$("board");root.innerHTML="";
- for(var r=0;r<10;r++)for(var c=0;c<10;c++){
-  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled":"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
+ for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
+  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
   cell.addEventListener("click",function(){placeSelected(Number(this.dataset.row),Number(this.dataset.col));});root.appendChild(cell);
  }
 }
 function renderTray(){
  var root=$("tray");root.innerHTML="";
  for(var i=0;i<3;i++){
-  var slot=document.createElement("button");slot.type="button";slot.className="piece-slot"+(selected===i?" selected":"");slot.disabled=!pieces[i]||!gameActive;slot.dataset.index=String(i);slot.setAttribute("aria-label","Выбрать фигуру "+(i+1));slot.addEventListener("click",function(){var n=Number(this.dataset.index);if(!pieces[n])return;selected=n;renderTray();$("gameHint").textContent="Фигура выбрана. Коснись клетки, где должен быть её верхний левый угол.";});
-  var grid=document.createElement("span");grid.className="piece-grid";
-  var piece=pieces[i];
+  var slot=document.createElement("button");slot.type="button";slot.className="piece-slot"+(selected===i?" selected":"");slot.disabled=!pieces[i]||!gameActive;slot.dataset.index=String(i);slot.setAttribute("aria-label","Выбрать фигуру "+(i+1)+"; можно перетащить на поле");
+  slot.addEventListener("click",function(){if(ignorePieceClick){ignorePieceClick=false;return;}var n=Number(this.dataset.index);if(!pieces[n])return;selected=n;renderTray();$("gameHint").textContent="Фигура выбрана. Коснись поля или перетащи фигуру в нужное место.";});
+  slot.addEventListener("pointerdown",function(ev){beginDrag(ev,Number(this.dataset.index));});
+  var grid=document.createElement("span");grid.className="piece-grid";var piece=pieces[i];
   for(var y=0;y<4;y++)for(var x=0;x<4;x++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece&&piece.some(function(pos){return pos[0]===y&&pos[1]===x;}))dot.className="piece-dot";grid.appendChild(dot);}
   slot.appendChild(grid);root.appendChild(slot);
  }
 }
+function beginDrag(ev,index){
+ if(!gameActive||!pieces[index])return;
+ dragState={index:index,pointerId:ev.pointerId,x:ev.clientX,y:ev.clientY,moved:false};selected=index;
+}
+function makeDragGhost(index,x,y){
+ clearDragGhost();var piece=pieces[index];if(!piece)return;
+ var maxRow=0,maxCol=0;piece.forEach(function(p){maxRow=Math.max(maxRow,p[0]);maxCol=Math.max(maxCol,p[1]);});
+ dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",clamp(16px,5vw,28px))";
+ for(var r=0;r<=maxRow;r++)for(var c=0;c<=maxCol;c++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece.some(function(p){return p[0]===r&&p[1]===c;}))dot.className="piece-dot";dragGhost.appendChild(dot);}
+ document.body.appendChild(dragGhost);moveDragGhost(x,y);
+}
+function moveDragGhost(x,y){if(dragGhost){dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";}}
+function clearDragGhost(){if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;}
+function clearDrag(){dragState=null;clearDragGhost();}
+document.addEventListener("pointermove",function(ev){
+ if(!dragState||ev.pointerId!==dragState.pointerId)return;
+ if(!dragState.moved&&Math.hypot(ev.clientX-dragState.x,ev.clientY-dragState.y)>10){dragState.moved=true;selected=dragState.index;makeDragGhost(dragState.index,ev.clientX,ev.clientY);}
+ if(dragState.moved){ev.preventDefault();moveDragGhost(ev.clientX,ev.clientY);}
+},{passive:false});
+document.addEventListener("pointerup",function(ev){
+ if(!dragState||ev.pointerId!==dragState.pointerId)return;
+ var state=dragState;dragState=null;clearDragGhost();
+ if(state.moved){
+  ignorePieceClick=true;var target=document.elementFromPoint(ev.clientX,ev.clientY);var cell=target&&target.closest?target.closest(".cell"):null;
+  if(cell){selected=state.index;placeSelected(Number(cell.dataset.row),Number(cell.dataset.col));}
+  else{$("gameHint").textContent="Перетащи фигуру на одну из клеток поля.";}
+  renderTray();setTimeout(function(){ignorePieceClick=false;},100);
+ }
+});
+document.addEventListener("pointercancel",function(){clearDrag();});
 function fits(piece,row,col){
  if(!piece)return false;
- for(var i=0;i<piece.length;i++){var rr=row+piece[i][0],cc=col+piece[i][1];if(rr<0||rr>=10||cc<0||cc>=10||board[rr][cc])return false;}
+ for(var i=0;i<piece.length;i++){var rr=row+piece[i][0],cc=col+piece[i][1];if(rr<0||rr>=BOARD_SIZE||cc<0||cc>=BOARD_SIZE||board[rr][cc])return false;}
  return true;
 }
-function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var r=0;r<10;r++)for(var c=0;c<10;c++)if(fits(pieces[p],r,c))return true;return false;}
+function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)if(fits(pieces[p],r,c))return true;return false;}
 function placeSelected(row,col){
  if(!gameActive||selected<0||!pieces[selected]){$("gameHint").textContent="Сначала выбери фигуру снизу.";return;}
  var piece=pieces[selected];if(!fits(piece,row,col)){$("gameHint").textContent="Сюда фигура не помещается. Попробуй другую клетку.";return;}
- for(var i=0;i<piece.length;i++)board[row+piece[i][0]][col+piece[i][1]]=1;
+ for(var i=0;i<piece.length;i++)board[row+piece[i][0]][col+piece[i][1]]=(Math.random()<0.38?2:1);
  score+=piece.length;
  var fullRows=[],fullCols=[];
- for(var r=0;r<10;r++)if(board[r].every(Boolean))fullRows.push(r);
- for(var c=0;c<10;c++){var full=true;for(var rr=0;rr<10;rr++)if(!board[rr][c]){full=false;break;}if(full)fullCols.push(c);}
+ for(var r=0;r<BOARD_SIZE;r++)if(board[r].every(Boolean))fullRows.push(r);
+ for(var c=0;c<BOARD_SIZE;c++){var full=true;for(var rr=0;rr<BOARD_SIZE;rr++)if(!board[rr][c]){full=false;break;}if(full)fullCols.push(c);}
  var lines=fullRows.length+fullCols.length;
  if(lines){
-  fullRows.forEach(function(r){for(var c=0;c<10;c++)board[r][c]=0;});
-  fullCols.forEach(function(c){for(var r=0;r<10;r++)board[r][c]=0;});
+  fullRows.forEach(function(r){for(var c=0;c<BOARD_SIZE;c++)board[r][c]=0;});
+  fullCols.forEach(function(c){for(var r=0;r<BOARD_SIZE;r++)board[r][c]=0;});
   score+=lines*10;if(lines>1)score+=(lines-1)*5;
   $("gameHint").textContent="Линий очищено: "+lines+" · бонус +"+(lines*10+(lines>1?(lines-1)*5:0))+" очков!";
  }else{$("gameHint").textContent="Хорошо! Поставь следующую фигуру.";}
@@ -253,7 +345,7 @@ function placeSelected(row,col){
  if(pieces.every(function(p){return !p;})){generatePieces();}
  if(!anyMoveAvailable()){endGame();return;}
 }
-function renderScore(){$("currentScore").textContent=String(score);$("inGameBest").textContent=String(Math.max(readNumber(personalKey),readNumber(weeklyKey),score));}
+function renderScore(){$("currentScore").textContent=String(score);$("inGameBest").textContent=String(Math.max(readNumber(personalKey),score));$("playingWeeklyRecord").textContent=String(readNumber(weeklyKey));}
 async function endGame(){
  if(!gameActive)return;gameActive=false;renderTray();
  var prevPersonal=readNumber(personalKey);if(score>prevPersonal)storeNumber(personalKey,score);
