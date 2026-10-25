@@ -161,6 +161,10 @@ try {
     assert.equal(activeCanvas.opacity, "1", "3D-стол должен быть видимым");
     assert.ok(activeCanvas.width >= 360 && activeCanvas.height >= 350, "Бильярдный стол не занимает большую часть полноэкранной области: " + JSON.stringify(activeCanvas));
     const cameraBefore = await page.evaluate(() => window.billiards3DGetCameraState());
+    const frameBounds = await page.evaluate(() => window.billiards3DGetFrameBounds());
+    assert.equal(cameraBefore.layout, "portrait", "На мобильном экране камера должна выбирать портретное положение стола");
+    assert.ok(frameBounds.minX > -1 && frameBounds.maxX < 1 && frameBounds.minY > -1 && frameBounds.maxY < 1,
+      "Стол или лузы выходят за границы мобильного экрана: " + JSON.stringify(frameBounds));
     await page.locator("#viewModeBtn").click();
     assert.equal(await page.locator("#viewModeBtn").getAttribute("aria-pressed"), "true", "Режим настройки ракурса не включился");
     const cameraRect = await page.locator("#pool3DCanvas").boundingBox();
@@ -216,7 +220,7 @@ try {
       };
     });
     fs.writeFileSync(resolve(out, "billiards-3d-mobile-report.json"), JSON.stringify({
-      threeReady, lobbyOverflow, activeCanvas, cameraBefore, cameraAfter, coordProbe, smallScreen, apiCalls, shots: stakeRequests, pageErrors, consoleErrors, failedRequests
+      threeReady, lobbyOverflow, activeCanvas, cameraBefore, cameraAfter, frameBounds, coordProbe, smallScreen, apiCalls, shots: stakeRequests, pageErrors, consoleErrors, failedRequests
     }, null, 2));
     assert.equal(smallScreen.gameVisible, true, "На узком экране игровой экран исчез");
     assert.equal(smallScreen.documentWidth, smallScreen.viewportWidth, "На узком экране появилась горизонтальная прокрутка");
