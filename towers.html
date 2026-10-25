@@ -248,6 +248,7 @@ function renderGame(){
  const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets');
  resizeRouteSvg();
  const fr=$('field').getBoundingClientRect();
+ for(const road of(gameState.roads||[]))rememberRoad(road.fromId,road.toId);
  for(const f of(gameState.fleets||[]))rememberRoad(f.fromId,f.toId);
  routes.innerHTML='';
  // Keep every road laid during this match. Each new tower pair adds another independent road.
