@@ -163,9 +163,24 @@ async function post(path,data){
 }
 async function loadProfile(){
  if(tg){try{tg.ready();tg.expand();}catch(e){}}
- if(!tg||!tg.initData){authenticated=false;$("joinButton").disabled=true;setStatus("Для участия в платном турнире открой ALLCOINS через Telegram. Тренировка доступна без оплаты.","bad");return;}
- try{var result=await post("/api/auth");if(result.ok&&result.player){authenticated=true;balance=Number(result.player.balance);setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход в турнир стоит 1 000 AC.","good");joined=localStorage.getItem(joinedKey)==="1";if(joined){$("joinButton").textContent="Продолжить турнир";$("joinButton").disabled=false;}else{$("joinButton").disabled=false;}}else{throw new Error("Сервер не подтвердил вход в профиль.");}}
- catch(error){authenticated=false;$("joinButton").disabled=true;setStatus("Не удалось проверить профиль: "+error.message+" Вход в турнир заблокирован; монеты не списаны.","bad");}
+ if(!tg||!tg.initData){authenticated=false;joined=false;$("joinButton").disabled=true;setStatus("Для участия в платном турнире открой ALLCOINS через Telegram. Тренировка доступна без оплаты.","bad");return;}
+ try{
+  var result=await post("/api/auth");
+  if(!result.ok||!result.player)throw new Error("Сервер не подтвердил вход в профиль.");
+  authenticated=true;balance=Number(result.player.balance);
+  joined=false;
+  try{
+   var tournament=await post("/api/block-blast/status");
+   if(tournament.ok){
+    joined=Boolean(tournament.joined);
+    if(tournament.weeklyBest!==undefined)storeNumber(weeklyKey,Math.max(readNumber(weeklyKey),Number(tournament.weeklyBest)||0));
+    if(tournament.personalBest!==undefined)storeNumber(personalKey,Math.max(readNumber(personalKey),Number(tournament.personalBest)||0));
+   }
+  }catch(statusError){joined=false;}
+  updateRecords();
+  if(joined){$("joinButton").textContent="Продолжить турнир";$("joinButton").disabled=false;setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход на эту неделю уже оплачен.","good");}
+  else{$("joinButton").textContent="Войти в турнир · 1 000 AC";$("joinButton").disabled=false;setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход в турнир стоит 1 000 AC.","good");}
+ }catch(error){authenticated=false;joined=false;$("joinButton").disabled=true;setStatus("Не удалось проверить профиль: "+error.message+" Вход в турнир заблокирован; монеты не списаны.","bad");}
 }
 async function joinTournament(){
  if(joined){tournamentMode=true;startGame();return;}
