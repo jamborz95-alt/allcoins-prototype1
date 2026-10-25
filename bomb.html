@@ -126,6 +126,7 @@
     .center-sub{margin-top:3px;color:#e3c6a8;font-size:9px;line-height:1.3}
     .bomb{position:absolute;z-index:6;left:50%;top:50%;width:59px;height:59px;display:grid;place-items:center;font-size:0;line-height:1;transform:translate(-50%,-50%);filter:drop-shadow(0 5px 8px #160b06cc);pointer-events:none;will-change:left,top,transform;transition:left .48s cubic-bezier(.18,.74,.22,1),top .48s cubic-bezier(.18,.74,.22,1),filter .2s}
     .bomb:before{content:"";position:absolute;inset:-9px;border-radius:50%;background:radial-gradient(circle,#ffc85b55,transparent 70%);z-index:-1;animation:bombAura .8s ease-in-out infinite alternate}
+    .bomb.following{transition:none!important}
     .bomb:after{content:"";position:absolute;right:12px;top:3px;width:8px;height:8px;border-radius:50%;background:#ffbf50;box-shadow:0 0 9px 3px #ff9b3b99;animation:fuseSpark .45s ease-in-out infinite alternate}
     .cart-bed{position:absolute;left:50%;bottom:8px;width:46px;height:11px;transform:translateX(-50%) skewX(-7deg);border:1px solid #e8b675;background:linear-gradient(180deg,#c6813f,#683920);border-radius:3px;box-shadow:0 2px 3px #0007}
     .cart-bomb{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:31px;line-height:1;filter:drop-shadow(0 2px 3px #0008)}
@@ -548,8 +549,9 @@
     let playerVelocityX = 0;
     let playerVelocityY = 0;
     const MOVE_SPEED = 225;
-    const PLAYER_ACCELERATION = 1550;
-    const PLAYER_DRAG = 1750;
+    // Exponential response rates (per second) give smooth acceleration and coasting.
+    const PLAYER_ACCELERATION = 13.5;
+    const PLAYER_DRAG = 18;
     const BOT_MOVE_SPEED = 226;
     let botVelocityX = 0;
     let botVelocityY = 0;
@@ -656,9 +658,9 @@
       character.style.top = characterY + 'px';
       const facingX = Math.abs(moveX) > .08 ? moveX : playerVelocityX;
       character.classList.toggle('facing-left', facingX < -.08);
-      character.classList.toggle('walking', phase === 'playing' &&
-        Math.hypot(playerVelocityX, playerVelocityY) > 16 || phase === 'playing' &&
-        Math.hypot(moveX, moveY) > .08);
+      const walking = phase === 'playing' &&
+        (Math.hypot(playerVelocityX, playerVelocityY) > 16 || Math.hypot(moveX, moveY) > .08);
+      character.classList.toggle('walking', walking);
       character.classList.toggle('carrying', holder === 0 && players[0] && players[0].lives > 0 && phase === 'playing');
     }
 
@@ -667,6 +669,10 @@
       const arena = $('arena');
       const bomb = $('bomb');
       if (!arena || !bomb) return;
+      if (bombFlightAnimation) {
+        try { bombFlightAnimation.cancel(); } catch (_) {}
+        bombFlightAnimation = null;
+      }
       const arenaRect = arena.getBoundingClientRect();
       let x, y, facing = 1;
       if (holder === 0) {
@@ -683,13 +689,12 @@
         x = r.left + r.width / 2 - arenaRect.left + 22 * facing;
         y = r.top + r.height * .36 - arenaRect.top;
       }
-      bomb.style.transition = 'none';
+      // The following class disables transitions without a forced layout/reflow on every frame.
+      bomb.classList.add('following');
       bomb.style.left = Math.max(28, Math.min(arenaRect.width - 28, x)) + 'px';
       bomb.style.top = Math.max(30, Math.min(arenaRect.height - 30, y)) + 'px';
       bomb.style.transform = 'translate(-50%,-50%) scale(.88) rotate(-10deg)';
       bomb.classList.remove('moving');
-      void bomb.offsetWidth;
-      bomb.style.transition = '';
     }
 
     function setMoveVector(x, y) {
@@ -819,7 +824,7 @@
       const targetVX = moveX * MOVE_SPEED;
       const targetVY = moveY * MOVE_SPEED;
       const response = hasInput ? PLAYER_ACCELERATION : PLAYER_DRAG;
-      const blend = 1 - Math.exp(-(response / MOVE_SPEED) * dt * MOVE_SPEED / 120);
+      const blend = 1 - Math.exp(-response * dt);
       playerVelocityX += (targetVX - playerVelocityX) * blend;
       playerVelocityY += (targetVY - playerVelocityY) * blend;
       const currentSpeed = Math.hypot(playerVelocityX, playerVelocityY);
@@ -1072,11 +1077,13 @@
       const endY = targetPoint.y;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
       if (!animate) {
-        bomb.style.transition = 'none'; bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
+        bomb.classList.add('following');
+        bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
         bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
-        void bomb.offsetWidth; bomb.style.transition = ''; bomb.classList.remove('moving');
+        bomb.classList.remove('moving');
         return;
       }
+      bomb.classList.remove('following');
       const current = bomb.getBoundingClientRect();
       const startX = current.left + current.width / 2 - arenaRect.left;
       const startY = current.top + current.height / 2 - arenaRect.top;
@@ -1092,14 +1099,14 @@
       bomb.classList.add('moving'); bomb.style.transition = 'none';
       bomb.style.left = `${startX}px`; bomb.style.top = `${startY}px`;
       bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
-      void bomb.offsetWidth;
+      void bomb.offsetWidth; // A single layout sync at flight start, never inside the game loop.
       makeTrail(arc2.x, arc2.y);
       if (typeof bomb.animate === 'function') {
         bombFlightAnimation = bomb.animate([
           { left: `${startX}px`, top: `${startY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', offset: 0, easing: 'linear' },
-          { left: `${arc1.x}px`, top: `${arc1.y}px`, transform: 'translate(-50%,-50%) scale(1.10) rotate(72deg)', offset: .25, easing: 'linear' },
-          { left: `${arc2.x}px`, top: `${arc2.y}px`, transform: 'translate(-50%,-50%) scale(1.20) rotate(180deg)', offset: .5, easing: 'linear' },
-          { left: `${arc3.x}px`, top: `${arc3.y}px`, transform: 'translate(-50%,-50%) scale(1.10) rotate(288deg)', offset: .75, easing: 'linear' },
+          { left: `${arc1.x}px`, top: `${arc1.y}px`, transform: 'translate(-50%,-50%) scale(1.08) rotate(55deg)', offset: .25, easing: 'linear' },
+          { left: `${arc2.x}px`, top: `${arc2.y}px`, transform: 'translate(-50%,-50%) scale(1.16) rotate(155deg)', offset: .5, easing: 'linear' },
+          { left: `${arc3.x}px`, top: `${arc3.y}px`, transform: 'translate(-50%,-50%) scale(1.08) rotate(280deg)', offset: .75, easing: 'linear' },
           { left: `${endX}px`, top: `${endY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(360deg)', offset: 1 }
         ], { duration: 485, easing: 'linear', fill: 'forwards' });
         const flight = bombFlightAnimation;
@@ -1107,14 +1114,21 @@
           if (bombFlightAnimation !== flight) return;
           bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
           bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+          bomb.style.transition = '';
           bomb.classList.remove('moving');
+          bomb.classList.add('following');
           try { flight.cancel(); } catch (_) {}
           bombFlightAnimation = null;
         };
       } else {
         bomb.style.transition = 'left 485ms cubic-bezier(.22,.72,.22,1),top 485ms cubic-bezier(.22,.72,.22,1),transform 485ms ease-out';
         requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.08) rotate(360deg)'; });
-        window.setTimeout(() => { bomb.classList.remove('moving'); bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)'; bomb.style.transition = ''; }, 500);
+        window.setTimeout(() => {
+          bomb.classList.remove('moving');
+          bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+          bomb.style.transition = '';
+          bomb.classList.add('following');
+        }, 500);
       }
     }
     function makeTrail(x, y) {
