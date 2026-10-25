@@ -170,8 +170,9 @@
       <div class="actions">
         <button id="createRoom" class="primary" type="button">＋ Создать комнату</button>
         <button id="findRooms" class="secondary" type="button">⌕ Найти комнаты</button>
-        <button id="playBots" class="secondary" type="button">🤖 Играть с ботами</button>
+        <button id="playBots" class="secondary" type="button">🤖 Быстрый тест с ботами</button>
       </div>
+      <div class="muted" style="margin-top:9px">Тестовый режим: ты играешь против трёх ботов. Ставка не списывается, выигрыш AC не начисляется.</div>
       <div class="status" id="lobbyStatus" aria-live="polite"></div>
     </section>
 
@@ -416,9 +417,10 @@
         $("createRoom").disabled = true;
         $("playBots").disabled = true;
         try {
-          const stake = validateStake();
+          // Bot testing is always free and must not be blocked by the stake field.
+          const stake = botMode ? 100 : validateStake();
           const data = await api("/rooms/create", {
-            name:$("roomName").value.trim() || "Комната Козёл",
+            name:botMode ? "Тест Козёл с ботами" : ($("roomName").value.trim() || "Комната Козёл"),
             stake,
             botMode:Boolean(botMode)
           });
