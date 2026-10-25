@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-roads3"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-roads4"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
@@ -15,12 +15,14 @@ assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
 assert.ok(html.includes("Стратегия в реальном времени") && html.includes("function localTick()"),
   "The game should implement real-time tower control and local practice.");
 assert.ok(towersRouter.includes("roads: []") && towersRouter.includes("function rememberRoad(game, fromId, toId, ownerId = null)") &&
-  towersRouter.includes("rememberRoad(game, fromId, toId, String(user.id));"),
-  "The backend should persist player-owned road connections throughout an online match.");
+  towersRouter.includes("rememberRoad(game, fromId, toId, String(user.id));") &&
+  towersRouter.includes("function tickAutoRoads(game, now)"),
+  "The backend should persist roads and auto-send troops after the route is created.");
 assert.ok(html.includes(".road-group.road-blue") && html.includes(".road-group.road-red") &&
   html.includes(".road-group.road-green") && html.includes("requestAnimationFrame(fleetAnimationTick)"),
   "Roads should use player colours and fleets should move through frame-based animation.");
-assert.ok(html.includes("function travelDuration(from,to,troops)") && towersRouter.includes("function travelDuration(from, to, troops)"),
+assert.ok(html.includes("function travelDuration(from,to,troops)") && towersRouter.includes("function travelDuration(from, to, troops)") &&
+  html.includes("roadColorFor(id,explicitColor)") && html.includes("Маршрут сохранён: войска будут идти автоматически"),
   "Travel speed should scale with the dispatched army size.");
 const distanceFn = towersRouter.match(/function distance\(a, b\) \{[\s\S]*?\n\}/)?.[0];
 const durationFn = towersRouter.match(/function travelDuration\(from, to, troops\) \{[\s\S]*?\n\}/)?.[0];
