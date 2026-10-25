@@ -93,6 +93,7 @@
     .seat:active{transform:scale(.97)}
     .seat.current{border-color:#fff7c1;box-shadow:inset 0 0 0 2px var(--player-color),0 0 0 3px #ffeaa152,0 0 22px var(--player-color),0 3px 10px #000a;animation:playerGlow 1.05s ease-in-out infinite alternate}
     .seat.target{border-color:#fff;box-shadow:0 0 0 3px #e7fff3a0,0 0 20px #a8fff5aa;animation:targetPulse .6s ease-in-out infinite alternate}
+    .seat.contact-hit{animation:contactHit .28s ease-out}
     .seat.eliminated{opacity:.28;filter:grayscale(1);pointer-events:none}
     .seat-top-left{left:clamp(7px,1.8vw,20px);top:clamp(7px,1.8vw,20px)}
     .seat-bottom-left{left:clamp(7px,1.8vw,20px);bottom:clamp(10px,2vw,20px)}
@@ -155,6 +156,7 @@
     @keyframes bombUrgent{from{margin-left:-2px;filter:drop-shadow(0 4px 8px #000b)}to{margin-left:2px;filter:drop-shadow(0 0 13px #ff5a6acc)}}
     @keyframes playerGlow{from{box-shadow:inset 0 0 0 1px var(--player-color),0 0 8px var(--player-color),0 3px 10px #0008}to{box-shadow:inset 0 0 0 2px var(--player-color),0 0 22px var(--player-color),0 3px 12px #000c}}
     @keyframes targetPulse{from{box-shadow:0 0 0 1px #9affdf50,0 0 7px #67f5b520}to{box-shadow:0 0 0 3px #67f5b58c,0 0 18px #67f5b577}}
+    @keyframes contactHit{0%{transform:scale(1)}45%{transform:scale(1.13)}100%{transform:scale(1)}}
     @keyframes explosion{0%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}35%{transform:translate(-50%,-50%) scale(2.1) rotate(20deg);opacity:1}65%{transform:translate(-50%,-50%) scale(2.9) rotate(-15deg);opacity:.92}100%{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
     @keyframes trailFade{0%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.1)}}
     @keyframes flash{0%{opacity:.7}100%{opacity:0}}
@@ -200,8 +202,8 @@
     .joystick-arrow.right{right:7px;top:50%;transform:translateY(-50%)}
     .joystick-knob{position:absolute;z-index:2;left:50%;top:50%;width:39%;height:39%;display:grid;place-items:center;border:1px solid #fff0be;border-radius:50%;background:radial-gradient(circle at 33% 25%,#fff0b5,#d99a3e 47%,#75401f 100%);box-shadow:inset 0 2px 3px #fff9,0 3px 7px #0009;transform:translate(-50%,-50%);pointer-events:none;will-change:transform}
     .joystick-knob:after{content:"";width:34%;height:34%;border:1px solid #fff7;border-radius:50%;background:linear-gradient(145deg,#754d2c,#e8b45b);box-shadow:inset 0 1px 2px #0006}
-    .player-character{position:absolute;z-index:5;left:50%;top:64%;width:72px;height:104px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;transform:translate(-50%,-56%);filter:drop-shadow(0 4px 3px #27100770);will-change:left,top}
-    .player-character .runner-figure{display:block;width:68px;height:86px;overflow:visible}
+    .player-character{position:absolute;z-index:5;left:50%;top:64%;width:88px;height:126px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;visibility:visible;opacity:1;transform:translate(-50%,-56%);filter:drop-shadow(0 5px 5px #170b05d9) drop-shadow(0 0 7px #ffe0a04d);will-change:left,top}
+    .player-character .runner-figure{display:block;flex:0 0 auto;width:82px;height:104px;overflow:visible;visibility:visible}
     .player-character .runner-facing{transform-box:fill-box;transform-origin:center}
     .player-character.facing-left .runner-facing{transform:scaleX(-1)}
     .player-character .runner-leg-front,.player-character .runner-leg-back,.player-character .runner-arm-front,.player-character .runner-arm-back,.player-character .runner-bob{transform-box:fill-box}
@@ -226,7 +228,7 @@
     @keyframes minerLegBack{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}
     @keyframes minerArmFront{from{transform:rotate(25deg)}to{transform:rotate(-27deg)}}
     @keyframes minerArmBack{from{transform:rotate(-22deg)}to{transform:rotate(28deg)}}
-    @media(max-width:390px){.player-character{width:62px;height:94px}.player-character .runner-figure{width:60px;height:78px}.character-shadow{bottom:18px;width:28px}.character-name{font-size:8px;padding:2px 6px}}
+    @media(max-width:390px){.player-character{width:78px;height:116px}.player-character .runner-figure{width:74px;height:94px}.character-shadow{bottom:18px;width:31px}.character-name{font-size:8px;padding:2px 6px}}
 
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
@@ -681,6 +683,34 @@
       if ($('playerCharacter')) $('playerCharacter').classList.remove('walking');
     }
 
+    function checkOpponentContact() {
+      if (phase !== 'playing' || holder !== 0 || !players[0] || players[0].lives <= 0) return false;
+      const character = $('playerCharacter');
+      const arena = $('arena');
+      if (!character || !arena) return false;
+      const arenaRect = arena.getBoundingClientRect();
+      const characterRect = character.getBoundingClientRect();
+      const characterCenterX = characterRect.left + characterRect.width / 2 - arenaRect.left;
+      const characterCenterY = characterRect.top + characterRect.height * .48 - arenaRect.top;
+      const characterRadius = Math.min(23, characterRect.width * .29);
+
+      for (const seat of arena.querySelectorAll('.seat')) {
+        const target = Number(seat.dataset.player);
+        if (target === 0 || !players[target] || players[target].lives <= 0) continue;
+        const targetRect = seat.getBoundingClientRect();
+        const targetX = targetRect.left + targetRect.width / 2 - arenaRect.left;
+        const targetY = targetRect.top + targetRect.height / 2 - arenaRect.top;
+        const targetRadius = Math.min(targetRect.width, targetRect.height) * .47;
+        if (Math.hypot(characterCenterX - targetX, characterCenterY - targetY) <= characterRadius + targetRadius) {
+          seat.classList.add('contact-hit');
+          if (navigator.vibrate) { try { navigator.vibrate([22,25,35]); } catch (_) {} }
+          passBomb(target);
+          return true;
+        }
+      }
+      return false;
+    }
+
     function moveCharacterFrame(time) {
       if (!moveFrame) return;
       if (phase !== 'playing' || (!moveX && !moveY)) {
@@ -697,7 +727,10 @@
       characterX = Math.max(marginX, Math.min(rect.width - marginX, characterX + moveX * MOVE_SPEED * dt));
       characterY = Math.max(marginTop, Math.min(rect.height - marginBottom, characterY + moveY * MOVE_SPEED * dt));
       renderCharacterPosition();
-      if (holder === 0) syncBombToCharacter();
+      if (holder === 0) {
+        syncBombToCharacter();
+        if (checkOpponentContact()) return;
+      }
       moveFrame = requestAnimationFrame(moveCharacterFrame);
     }
 
@@ -906,10 +939,16 @@
     }
 
     function onSeatClick(target) {
-      if (phase !== 'playing' || target === holder || !players[target] || players[target].lives <= 0) return;
-      const current = players[holder];
-      if (!current || current.bot) return;
-      passBomb(target);
+      if (phase !== 'playing' || target === 0 || target === holder || !players[target] || players[target].lives <= 0) return;
+      if (holder !== 0) {
+        const carrier = players[holder];
+        setInstruction(carrier
+          ? '<strong>' + safeText(carrier.name) + '</strong> держит бомбу. Дождись передачи, затем подойди к сопернику.'
+          : 'Подойди к сопернику, когда бомба будет у тебя.');
+        return;
+      }
+      document.querySelectorAll('.seat').forEach(seat => seat.classList.toggle('target', Number(seat.dataset.player) === target));
+      setInstruction('Подведи шахтёра к <strong>' + safeText(players[target].name) + '</strong>. При физическом касании бомба автоматически перейдёт ему.');
     }
 
     function passBomb(target) {
