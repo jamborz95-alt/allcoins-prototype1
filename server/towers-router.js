@@ -106,7 +106,8 @@ function makeGame(players, stake) {
     { x: 54, y: 48, ownerIndex: -1, units: 8 },
     { x: 25, y: 53, ownerIndex: -1, units: 8 },
     { x: 70, y: 52, ownerIndex: -1, units: 8 },
-    { x: 48, y: 77, ownerIndex: -1, units: 7 }
+    { x: 48, y: 77, ownerIndex: -1, units: 7 },
+    { x: 50, y: 64, ownerIndex: -1, units: 8, type: "shooter", range: 25, damage: 3, fireRate: 950 }
   ];
   return {
     status: "playing",
@@ -126,7 +127,13 @@ function makeGame(players, stake) {
       y: t.y,
       ownerId: t.ownerIndex >= 0 && players[t.ownerIndex] ? String(players[t.ownerIndex].telegram_id) : null,
       units: t.units,
-      income: t.ownerIndex >= 0 ? 1.7 : 0.8
+      income: t.ownerIndex >= 0 ? 1.7 : 0.8,
+      type: t.type || "fort",
+      range: Number(t.range || 0),
+      damage: Number(t.damage || 0),
+      fireRate: Number(t.fireRate || 950),
+      nextShotAt: 0,
+      lastShotAt: 0
     })),
     fleets: [],
     roads: [],
@@ -135,6 +142,33 @@ function makeGame(players, stake) {
     settled: false,
     feed: [{ text: "Башни захватываются отправкой войск: выбери свою башню, затем цель.", at: Date.now() }]
   };
+}
+
+function tickShooterTowers(game, now) {
+  if (!game || !Array.isArray(game.towers) || !Array.isArray(game.fleets)) return;
+  for (const tower of game.towers) {
+    if (tower.type !== "shooter" || tower.ownerId == null || now < Number(tower.nextShotAt || 0)) continue;
+    let closest = null;
+    for (const fleet of game.fleets) {
+      if (String(fleet.ownerId) === String(tower.ownerId) || Number(fleet.units) <= 0) continue;
+      const from = game.towers.find(t => Number(t.id) === Number(fleet.fromId));
+      const to = game.towers.find(t => Number(t.id) === Number(fleet.toId));
+      if (!from || !to) continue;
+      const progress = Math.max(0, Math.min(1, Number(fleet.progress) || 0));
+      const x = Number(from.x) + (Number(to.x) - Number(from.x)) * progress;
+      const y = Number(from.y) + (Number(to.y) - Number(from.y)) * progress;
+      const dist = Math.hypot(Number(tower.x) - x, Number(tower.y) - y);
+      if (dist <= Number(tower.range || 25) && (!closest || dist < closest.dist)) closest = { fleet, x, y, dist };
+    }
+    if (!closest) continue;
+    closest.fleet.units = Math.max(0, Number(closest.fleet.units) - Number(tower.damage || 3));
+    tower.nextShotAt = now + Number(tower.fireRate || 950);
+    tower.lastShotAt = now;
+    tower.lastShotFleetId = closest.fleet.id;
+    tower.lastShotX = closest.x;
+    tower.lastShotY = closest.y;
+  }
+  game.fleets = game.fleets.filter(fleet => Number(fleet.units) > 0);
 }
 
 function tickGame(game, now) {
@@ -150,6 +184,7 @@ function tickGame(game, now) {
     rememberRoad(game, fleet.fromId, fleet.toId, fleet.ownerId);
     fleet.progress = Math.min(1, Number(fleet.progress || 0) + dt / Math.max(1.1, Number(fleet.duration || 3)));
   }
+  tickShooterTowers(game, now);
   const landed = game.fleets.filter(f => f.progress >= 1);
   game.fleets = game.fleets.filter(f => f.progress < 1);
   for (const fleet of landed) {
