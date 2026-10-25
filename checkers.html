@@ -326,7 +326,10 @@
       });
       $("stakePresets").addEventListener("click", function (event) {
         var button = event.target.closest("[data-stake]");
-        if (button) set      function initData() {
+        if (button) setStake(button.dataset.stake);
+      });
+
+      function initData() {
         return telegram && typeof telegram.initData === "string" ? telegram.initData : "";
       }
       async function checkersApi(path, payload) {
@@ -429,9 +432,7 @@
           list.appendChild(failed);
           $("roomsStatus").textContent = "Ошибка загрузки списка.";
         }
-      }s.length + " локальных комнат.";
       }
-
       $("createRoom").addEventListener("click", createRoom);
       $("showRooms").addEventListener("click", showRooms);
       $("startCreatedRoom").addEventListener("click", function () { startGame(currentRoom ? currentRoom.stake : stake); });
