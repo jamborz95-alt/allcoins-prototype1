@@ -447,7 +447,7 @@
         if(layout!==cameraLayout){
           cameraLayout=layout;
           orbitTheta=layout==="portrait"?Math.PI/2:0;
-          orbitPhi=layout==="portrait"?0.82:Math.atan2(5.3,7.0);
+          orbitPhi=layout==="portrait"?0.55:Math.atan2(5.3,7.0);
           orbitRadius=fitOrbitRadius(orbitTheta,aspect,layout);
           applyCameraOrbit();
         }
@@ -462,7 +462,7 @@
         buildTable();
         window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
         window.billiards3DPointerCoords=function(clientX,clientY){const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;const ndc=new THREE.Vector2(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(ndc,camera);const point=new THREE.Vector3();if(!raycaster.ray.intersectPlane(aimPlane,point))return null;return{x:point.x/SCALE+400,y:point.z/SCALE+220};};
-        window.billiards3DOrbit=function(deltaX,deltaY){orbitTheta-=Number(deltaX||0)*0.009;orbitPhi=Math.max(0.5,Math.min(1.15,orbitPhi+Number(deltaY||0)*0.007));orbitRadius=fitOrbitRadius(orbitTheta,viewportAspect,cameraLayout);applyCameraOrbit();render();};
+        window.billiards3DOrbit=function(deltaX,deltaY){orbitTheta-=Number(deltaX||0)*0.009;orbitPhi=Math.max(0.5,Math.min(1.05,orbitPhi+Number(deltaY||0)*0.007));orbitRadius=fitOrbitRadius(orbitTheta,viewportAspect,cameraLayout);applyCameraOrbit();render();};
         window.billiards3DGetCameraState=function(){return{theta:orbitTheta,phi:orbitPhi,radius:orbitRadius,layout:cameraLayout};};
         window.billiards3DGetFrameBounds=function(){camera.updateMatrixWorld();const points=[[-4.13,-2.33],[4.13,-2.33],[-4.13,2.33],[4.13,2.33]].map(([x,z])=>new THREE.Vector3(x,.4,z).project(camera));return{minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))};};
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
