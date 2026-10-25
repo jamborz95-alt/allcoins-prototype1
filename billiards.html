@@ -334,7 +334,7 @@
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
         $("rematchBtn").classList.toggle("hidden",g.status!=="finished");
         $("endResult").classList.toggle("hidden",g.status!=="finished");
-        if(g.status==="finished"){$("endTitle").textContent=g.winnerId===g.players.find(p=>p.isYou)?.id?"🏆 Ты выиграл!":"🎱 "+(g.winnerName||"Соперник")+" выиграл";$("endCopy").textContent=g.testMode?"Тестовая партия завершена. AC не списывались и не выплачивались.":"Банк "+amount(g.pot)+" AC · выплата победителю "+amount(g.payout)+" AC после комиссии.";}
+        if(g.status==="finished"){const myPlayer=g.players.find(p=>p.isYou);const myWin=!!myPlayer&&String(g.winnerId)===String(myPlayer.id);$("endTitle").textContent=myWin?"🏆 Ты выиграл!":"🎱 "+(g.winnerName||"Соперник")+" выиграл";$("endCopy").textContent=g.testMode?"Твой выигрыш: 0 AC. Тестовая партия — баланс AC не менялся.":(myWin?"Твой выигрыш: +"+amount(g.payout)+" AC после комиссии. Банк "+amount(g.pot)+" AC.":"Твой выигрыш: 0 AC. Победителю "+amount(g.payout)+" AC после комиссии. Банк "+amount(g.pot)+" AC.");}
         if(state.animatingSeq===null)drawTable();
       }
 
