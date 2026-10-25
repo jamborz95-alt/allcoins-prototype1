@@ -169,6 +169,12 @@ body.playing .top{display:none}
 .drag-ghost .piece-dot{width:var(--block-size);height:var(--block-size)}
 @media(max-height:760px){.board{width:min(88vw,42dvh,560px)}#play .board-wrap{height:min(42dvh,88vw,560px)}.tray{margin-top:min(2dvh,14px)}}
 </style>
+<style id="block-blast-tray-compact-final">
+.tray .piece-grid{transform:scale(.72);transform-origin:center;will-change:transform}
+.drag-ghost .piece-dot{animation:blockBlastPickup 120ms cubic-bezier(.2,.85,.25,1) both;transform-origin:center}
+@keyframes blockBlastPickup{from{transform:scale(.72)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.drag-ghost .piece-dot{animation-duration:1ms!important}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -319,10 +325,65 @@ function initialBoard(){
 var trayPlayableShapes=shapes.filter(function(shape){return Math.max.apply(null,shape.map(function(c){return c[1];}))<3;});
 function randomPiece(){var shape=trayPlayableShapes[Math.floor(Math.random()*trayPlayableShapes.length)];return shape.map(function(c){return [c[0],c[1]];});}
 function generatePieces(){
- var attempts=0;
- do {pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;attempts++;}
- while(!anyMoveAvailable()&&attempts<30);
- renderTray();
+ var attempts=0, candidate=null;
+ // Each trio is checked against the current board, including the lines each placement clears.
+ while(attempts<90){
+  candidate=[randomPiece(),randomPiece(),randomPiece()];
+  if(canPlaceAllThree(board,candidate)){pieces=candidate;selected=-1;renderTray();return;}
+  attempts++;
+ }
+ // When the board is crowded, try a forgiving trio (single, pair, pair).
+ candidate=[[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]]];
+ if(canPlaceAllThree(board,candidate)){pieces=candidate;selected=-1;renderTray();return;}
+ // No set of three simple pieces can fit the remaining board space; the normal game-over rule applies.
+ pieces=candidate;selected=-1;renderTray();
+}
+function boardFits(state,piece,row,col){
+ for(var i=0;i<piece.length;i++){
+  var rr=row+piece[i][0],cc=col+piece[i][1];
+  if(rr<0||rr>=BOARD_SIZE||cc<0||cc>=BOARD_SIZE||state[rr][cc])return false;
+ }
+ return true;
+}
+function simulateBlockPlacement(state,piece,row,col){
+ var next=state.map(function(line){return line.slice();});
+ for(var i=0;i<piece.length;i++)next[row+piece[i][0]][col+piece[i][1]]=1;
+ var clearRows=[],clearCols=[];
+ for(var r=0;r<BOARD_SIZE;r++)if(next[r].every(Boolean))clearRows.push(r);
+ for(var c=0;c<BOARD_SIZE;c++){
+  var full=true;
+  for(var rr=0;rr<BOARD_SIZE;rr++)if(!next[rr][c]){full=false;break;}
+  if(full)clearCols.push(c);
+ }
+ clearRows.forEach(function(r){for(var c=0;c<BOARD_SIZE;c++)next[r][c]=0;});
+ clearCols.forEach(function(c){for(var r=0;r<BOARD_SIZE;r++)next[r][c]=0;});
+ return next;
+}
+function canPlaceAllThree(startBoard,candidate){
+ var nodes=0;
+ function search(state,remaining){
+  if(!remaining.length)return true;
+  if(++nodes>8500)return false;
+  // Try the piece with the fewest legal placements first to prune dead ends early.
+  var choices=null,chosenIndex=-1;
+  for(var k=0;k<remaining.length;k++){
+   var idx=remaining[k],piece=candidate[idx],placements=[];
+   for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)
+    if(boardFits(state,piece,r,c))placements.push([r,c]);
+   if(!placements.length)return false;
+   if(!choices||placements.length<choices.length){choices=placements;chosenIndex=idx;}
+  }
+  // Randomize equivalent locations so the algorithm doesn't always steer play to a corner.
+  for(var p=choices.length-1;p>0;p--){var q=Math.floor(Math.random()*(p+1));var swap=choices[p];choices[p]=choices[q];choices[q]=swap;}
+  var nextRemaining=remaining.filter(function(idx){return idx!==chosenIndex;});
+  for(var n=0;n<choices.length;n++){
+   var place=choices[n];
+   var nextState=simulateBlockPlacement(state,candidate[chosenIndex],place[0],place[1]);
+   if(search(nextState,nextRemaining))return true;
+  }
+  return false;
+ }
+ return search(startBoard,[0,1,2]);
 }
 function startGame(){
  $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderTray();renderScore();
@@ -364,15 +425,14 @@ function renderTray(){
  }
 }
 function getClosestPieceAnchor(piece,clientX,clientY,grid){
- var rect=grid?grid.getBoundingClientRect():null;
- if(!rect)return getDefaultPieceAnchor(piece);
- var style=window.getComputedStyle(grid);
- var cols=style.gridTemplateColumns.split(" ").map(parseFloat);
- var rows=style.gridTemplateRows.split(" ").map(parseFloat);
- var cw=cols[0]||14,ch=rows[0]||14,gapX=parseFloat(style.columnGap)||2,gapY=parseFloat(style.rowGap)||2;
+ if(!grid)return getDefaultPieceAnchor(piece);
+ var maxCol=0;piece.forEach(function(pos){maxCol=Math.max(maxCol,pos[1]);});
  var best=null,bestDistance=Infinity;
  piece.forEach(function(pos){
-  var x=rect.left+pos[1]*(cw+gapX)+cw/2,y=rect.top+pos[0]*(ch+gapY)+ch/2;
+  var index=pos[0]*(maxCol+1)+pos[1],dot=grid.children[index];
+  if(!dot)return;
+  // getBoundingClientRect includes the tray's scale(.72), so the touched cube is identified correctly.
+  var rect=dot.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;
   var distance=Math.pow(x-clientX,2)+Math.pow(y-clientY,2);
   if(distance<bestDistance){bestDistance=distance;best=pos;}
  });
@@ -403,8 +463,8 @@ function moveDragGhost(x,y){
 function animateDragGhost(){
  dragMotionFrame=0;
  if(!dragGhost)return;
- dragCurrentX+=(dragTargetX-dragCurrentX)*0.34;
- dragCurrentY+=(dragTargetY-dragCurrentY)*0.34;
+ dragCurrentX+=(dragTargetX-dragCurrentX)*0.62;
+ dragCurrentY+=(dragTargetY-dragCurrentY)*0.62;
  if(Math.abs(dragTargetX-dragCurrentX)<0.45)dragCurrentX=dragTargetX;
  if(Math.abs(dragTargetY-dragCurrentY)<0.45)dragCurrentY=dragTargetY;
  dragGhost.style.left=dragCurrentX+"px";
