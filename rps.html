@@ -191,7 +191,8 @@
     #roomView #gameTable:not(.has-result) .table-player-label,
     #roomView #gameTable:not(.has-result) .table-choice-label { display:none; }
     #roomView #gameTable:not(.has-result) .table-card { min-height:clamp(100px,17vh,145px); }
-    #roomView #lastResult { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); clip-path:inset(50%); white-space:nowrap; border:0; }
+    #roomView #lastResult { position:relative; width:100%; height:auto; padding:9px 11px; margin:8px 0 0; overflow:visible; clip:auto; clip-path:none; white-space:normal; border:1px solid #3b4a60; border-radius:12px; background:#10192b; color:#fff; font-size:12px; line-height:1.45; text-align:center; }
+  #roomView #lastResult:empty { display:none; }
     #roomView #choiceArea {
       display:flex; flex:0 0 auto; flex-direction:column; justify-content:center; gap:7px;
       width:100%; min-height:100px; margin:0; padding:0;
@@ -434,7 +435,7 @@
     if (!players.length) $("playersList").innerHTML = "";
   }
 
-  function renderResult(result) {
+  function renderResult(result, room) {
     const node = $("lastResult");
     if (!result) {
       node.textContent = "";
@@ -442,15 +443,29 @@
     }
     const isDraw = result.outcome === "draw";
     const summary = result.testMode
-      ? "Тестовый раунд с ботом. Баланс AC не изменён."
+      ? "Тестовый раунд с ботом."
       : isDraw
-        ? "Ничья. Ставки возвращены участникам."
+        ? "Ничья."
         : "Раунд " + result.roundNumber + " завершён. Победитель: " +
           (Array.isArray(result.winnerLabels) ? result.winnerLabels.join(", ") : "—");
+    const me = (room && Array.isArray(room.players) ? room.players : []).find(player => player && player.isMe);
+    const myId = me && me.telegramId != null ? String(me.telegramId) : "";
+    const myPayout = (Array.isArray(result.payouts) ? result.payouts : [])
+      .find(item => String(item.telegramId) === myId);
+    let personalResult;
+    if (result.testMode) {
+      personalResult = "Твой выигрыш: 0 AC — тестовый режим, баланс не изменён.";
+    } else if (isDraw) {
+      personalResult = "Возврат ставки: +" + formatAmount(myPayout ? myPayout.amount : (Number(result.stake) || 0)) + " AC.";
+    } else if (myPayout && myPayout.kind !== "refund") {
+      personalResult = "Твой выигрыш: +" + formatAmount(myPayout.amount) + " AC.";
+    } else {
+      personalResult = "Твой выигрыш: 0 AC.";
+    }
     const commissionNote = !result.testMode && Number(result.commissionAmount) > 0
       ? " Комиссия проекта 5%: " + formatAmount(result.commissionAmount) + " AC."
       : "";
-    node.textContent = summary + commissionNote;
+    node.textContent = summary + " " + personalResult + commissionNote;
   }
 
   function renderGameTable(result, room) {
@@ -522,7 +537,7 @@
     $("roundNumber").textContent = String(room.currentRound);
     renderPlayers(room, round);
     renderGameTable(data.lastResult, room);
-    renderResult(data.lastResult);
+    renderResult(data.lastResult, room);
 
     if (room.status === "waiting") {
       showStatus("roomStatus", room.playersCount < 2
