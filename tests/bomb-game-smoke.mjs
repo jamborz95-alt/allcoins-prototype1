@@ -10,7 +10,7 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-touchpass1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-botsound1"'),
   "The game link should remain stable.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
@@ -22,6 +22,9 @@ assert.ok(bombHtml.includes('<svg class="mine-scene"') &&
   "The game should include original inline mine artwork and two selectable original maps.");
 assert.ok(!/<img[^>]+src=["']https?:\/\//i.test(bombHtml),
   "The mine artwork should not depend on copied or remotely hosted image assets.");
+assert.ok(bombHtml.includes("function playDynamiteFuseSound(left)") &&
+  bombHtml.includes("function playExplosionSound()"),
+  "The dynamite fuse and explosion should have original generated sound effects.");
 
 const server = createServer((req, res) => {
   const pathname = new URL(req.url || "/", "http://127.0.0.1").pathname;
@@ -48,7 +51,7 @@ try {
   await page.route("https://telegram.org/**", (route) => route.fulfill({
     status: 200,
     contentType: "application/javascript",
-    body: "window.Telegram = { WebApp: { ready(){}, expand(){}, BackButton: { show(){}, hide(){}, onClick(){} } } };"
+    body: "window.Telegram = { WebApp: { ready(){}, expand(){}, BackButton: { show(){}, hide(){}, onClick(fn){ window.__allcoinsBackHandler = fn; } } } };"
   }));
   await page.goto("http://127.0.0.1:4175/bomb.html", {
     waitUntil: "domcontentloaded",
@@ -70,6 +73,8 @@ try {
     await page.locator("#gameView").waitFor({ state: "visible" });
     assert.equal(await page.locator("#seats .seat").count(), count,
       "Selecting " + count + " players should create exactly " + count + " seats.");
+    assert.equal(await page.locator("#botCharacters .bot-character").count(), count - 1,
+      "Every non-human player should have a visible human-shaped character.");
     const arena = await page.locator("#arena").boundingBox();
     assert.ok(arena && arena.width >= 300, "The game arena should fit a mobile viewport.");
     assert.equal(await page.locator("#arena").getAttribute("data-map"), "crystal",
@@ -107,7 +112,7 @@ try {
   const joystickCenterY = joystickBox.y + joystickBox.height / 2;
   await page.mouse.move(joystickCenterX, joystickCenterY);
   await page.mouse.down();
-  await page.mouse.move(joystickCenterX + joystickBox.width * 0.31, joystickCenterY, { steps: 6 });
+  await page.mouse.move(joystickCenterX - joystickBox.width * 0.31, joystickCenterY, { steps: 6 });
   await page.waitForTimeout(300);
   const characterWhileMoving = await page.locator("#playerCharacter").boundingBox();
   const walkingClassDuringMove = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
@@ -121,6 +126,14 @@ try {
     "Dragging the joystick should physically move the character across the arena.");
   assert.equal(walkingClassDuringMove, true, "Leg and arm running animations should activate while moving.");
   assert.equal(walkingClassAfterRelease, false, "The character should stop walking when the joystick is released.");
+
+  assert.equal(await page.evaluate(() => typeof window.__allcoinsBackHandler), "function",
+    "The Telegram back-button handler should be registered.");
+  await page.evaluate(() => window.__allcoinsBackHandler());
+  assert.equal(await page.locator("#gameView").isVisible(), true,
+    "Using Telegram's back button must not eject the user from an active round.");
+  assert.match(await page.locator("#instruction").innerText(), /Матч продолжается/i,
+    "The game should explain that the active match is being kept open.");
 
   const previousHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   const target = "3"; // Bottom-right opponent, reachable by moving down and right.
@@ -182,9 +195,18 @@ try {
   await page.locator("#startGame").click();
   const botHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.ok(["1", "2", "3"].includes(botHolder), "Deterministic setup should start with a bot holding the bomb.");
-  await page.waitForTimeout(2200);
+  assert.equal(await page.locator("#botCharacters .bot-character").count(), 3,
+    "All three computer opponents should be shown as miner characters.");
+  await page.waitForFunction(() => Boolean(document.querySelector("#botCharacters .bot-character.walking")),
+    undefined, { timeout: 2400 });
+  await page.waitForFunction(() => {
+    const current = document.querySelector("#seats .seat.current")?.dataset.player;
+    return Boolean(current && current !== window.__testPreviousBotHolder);
+  }, undefined, { timeout: 3000 }).catch(async () => {
+    // Fallback is checked directly below; don't hide a missing transfer.
+  });
   const nextHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
-  assert.notEqual(nextHolder, botHolder, "A bot should automatically pass the bomb after its decision delay.");
+  assert.notEqual(nextHolder, botHolder, "A bot should walk to an opponent and pass the bomb on contact.");
 
   await page.setViewportSize({ width: 320, height: 700 });
   const dimensions = await page.locator("#gameView").evaluate((el) => ({
@@ -197,7 +219,7 @@ try {
   assert.equal(await page.locator("#setupView").isVisible(), true,
     "The game should return to setup without leaving the app page.");
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
-  console.log("Pass the Bomb smoke test passed: lobby/maps, visible animated miner, joystick movement, contact-only bomb transfer, explosion/lives, next round, bot transfer and 320px mobile layout.");
+  console.log("Pass the Bomb smoke test passed: lobby/maps, visible human and bot miners, joystick movement, contact transfers, dynamite audio code, active-round back guard, explosions and 320px mobile layout.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
