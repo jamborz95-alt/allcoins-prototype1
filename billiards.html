@@ -344,6 +344,8 @@
       $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
       $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";});
+      // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
+      setTimeout(function(){if(!window.billiards3DReady){const fallback=$("poolCanvas"),overlay=$("pool3DCanvas");if(fallback)fallback.style.opacity="1";if(overlay)overlay.style.display="none";setMessage("3D не загрузился на этом устройстве — включён совместимый режим стола.");}},7000);
       window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
       document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game")refreshGame(true);}});
       (async function init(){if(tg){try{tg.ready();tg.expand();}catch(_){}}
@@ -433,6 +435,7 @@
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
         canvas.style.background="#0a2018";
         window.billiards3DUpdate([],null,false);
+        window.billiards3DReady=true;
       }catch(err){console.error("3D billiards initialization failed",err);canvas.style.display="none";const old=document.getElementById("poolCanvas");if(old)old.style.opacity="1";}
     })();
   </script>
