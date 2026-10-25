@@ -310,7 +310,8 @@ async function finishByFold(client, game, winner) {
           hand: showHand ? (player.hand || []) : [],
           score: revealed ? player.score : null,
           handType: revealed ? player.handType : null,
-          payout: revealed ? Number(player.payout || 0) : 0
+          // Always expose the viewer's own payout after settlement; opponents' payouts remain hidden until hands are revealed.
+          payout: (revealed || String(player.telegramId) === String(userId)) ? Number(player.payout || 0) : 0
         };
       })
     };
