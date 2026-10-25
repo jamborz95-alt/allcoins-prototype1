@@ -366,15 +366,16 @@
       const W=800,H=440,SCALE=0.01,BALL_R=0.10;
       const colors={1:0xf7d51d,2:0x1767d8,3:0xd72e35,4:0x6c36b8,5:0xef7e21,6:0x139e59,7:0xe9e8df,9:0xf7d51d,10:0x1767d8,11:0xd72e35,12:0x6c36b8,13:0xef7e21,14:0x139e59,15:0xe9e8df,8:0x101217};
       function mat(color,roughness=0.3,metalness=0){return new THREE.MeshStandardMaterial({color,roughness,metalness});}
-      function roundedBox(w,h,d,r,material){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);return mesh;}
+      function roundedBox(w,h,d,r,material){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.castShadow=true;mesh.receiveShadow=true;return mesh;}
       function buildTable(){
         scene=new THREE.Scene();scene.background=new THREE.Color(0x081711);
         scene.fog=new THREE.Fog(0x081711,12,28);
-        camera=new THREE.PerspectiveCamera(34,800/440,0.1,100);camera.position.set(0,7.9,10.7);camera.lookAt(0,0,0);
-        scene.add(new THREE.HemisphereLight(0xd9f5ff,0x142016,2.0));
-        const key=new THREE.DirectionalLight(0xffe5b0,3.1);key.position.set(-4,9,5);scene.add(key);
+        camera=new THREE.PerspectiveCamera(32,800/440,0.1,100);camera.position.set(0,7.0,5.3);camera.lookAt(0,0,0);
+        scene.add(new THREE.HemisphereLight(0xd9f5ff,0x142016,1.65));
+        const key=new THREE.DirectionalLight(0xffe5b0,3.0);key.position.set(-4,9,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=6;key.shadow.camera.bottom=-6;key.shadow.camera.near=.5;key.shadow.camera.far=22;key.shadow.bias=-0.0003;key.shadow.radius=4;scene.add(key);
         const fill=new THREE.PointLight(0x72e5b3,1.4,18);fill.position.set(3,5,-3);scene.add(fill);
         tableGroup=new THREE.Group();scene.add(tableGroup);
+        const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,14),mat(0x0b1612,.92));floor.rotation.x=-Math.PI/2;floor.position.y=-.985;floor.receiveShadow=true;scene.add(floor);
         tableGroup.add(roundedBox(8.25,.34,4.65,.12,mat(0x58351f,.28)));
         const trim=roundedBox(8.0,.15,4.4,.1,mat(0xb78948,.27,.35));trim.position.y=.2;tableGroup.add(trim);
         const felt=roundedBox(7.55,.08,3.95,.05,mat(0x08734e,.72));felt.position.y=.29;tableGroup.add(felt);
@@ -385,7 +386,7 @@
         const legMat=mat(0x302018,.36);
         [[-3.4,-1.8],[3.4,-1.8],[-3.4,1.8],[3.4,1.8]].forEach(([x,z])=>{const leg=roundedBox(.34,1.05,.34,.06,legMat);leg.position.set(x,-.43,z);tableGroup.add(leg);});
         const lightGeo=new THREE.PlaneGeometry(7.5,3.9);const marks=new THREE.Mesh(lightGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.025,side:THREE.DoubleSide}));marks.rotation.x=-Math.PI/2;marks.position.y=.337;tableGroup.add(marks);
-        cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,12),mat(0xd5b47b,.28));cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,12),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-2.61;cueStick.add(tip);scene.add(cueStick);
+        cueStick=new THREE.Group();const cue=new THREE.Mesh(new THREE.CylinderGeometry(.035,.018,2.45,12),mat(0xd5b47b,.28));cue.castShadow=true;cue.rotation.z=Math.PI/2;cue.position.x=-1.35;cueStick.add(cue);const tip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.12,12),mat(0x6c3d26,.3));tip.rotation.z=Math.PI/2;tip.position.x=-2.61;cueStick.add(tip);scene.add(cueStick);
         const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.43,0),new THREE.Vector3(1,.43,0)]);aimLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xe9ffe9,transparent:true,opacity:.8}));scene.add(aimLine);
       }
       function ballMaterial(ball){
@@ -395,7 +396,7 @@
       }
       function makeBall(ball){
         const group=new THREE.Group();
-        const sphere=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,32,24),ballMaterial(ball));group.add(sphere);
+        const sphere=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,32,24),ballMaterial(ball));sphere.castShadow=true;sphere.receiveShadow=true;group.add(sphere);
         if(ball.type==="stripe"){
           const band=new THREE.Mesh(new THREE.TorusGeometry(BALL_R*.82,.027,8,40),mat(0xf8f7ec,.22));band.rotation.x=Math.PI/2;group.add(band);
         }
@@ -428,8 +429,9 @@
       }
       try{
         renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;
-        renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+        renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
         buildTable();
         window.billiards3DUpdate=function(balls,aim,canAim){syncBalls(balls);updateAim(balls,aim,canAim);render();};
         resizeObserver=new ResizeObserver(render);resizeObserver.observe(canvas);window.addEventListener("resize",render);
