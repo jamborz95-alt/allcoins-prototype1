@@ -199,12 +199,10 @@ try {
     "All three computer opponents should be shown as miner characters.");
   await page.waitForFunction(() => Boolean(document.querySelector("#botCharacters .bot-character.walking")),
     undefined, { timeout: 2400 });
-  await page.waitForFunction(() => {
+  await page.waitForFunction((previousHolder) => {
     const current = document.querySelector("#seats .seat.current")?.dataset.player;
-    return Boolean(current && current !== window.__testPreviousBotHolder);
-  }, undefined, { timeout: 3000 }).catch(async () => {
-    // Fallback is checked directly below; don't hide a missing transfer.
-  });
+    return Boolean(current && current !== previousHolder);
+  }, botHolder, { timeout: 4000 });
   const nextHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.notEqual(nextHolder, botHolder, "A bot should walk to an opponent and pass the bomb on contact.");
 
