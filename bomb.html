@@ -133,7 +133,7 @@
     .trail.show{animation:trailFade .45s ease-out forwards}
     .fuse-wrap{position:absolute;z-index:3;left:35%;right:35%;top:calc(8% + 52px);height:4px;border-radius:9px;background:#ffffff22;overflow:hidden}
     .fuse-fill{height:100%;width:100%;transform-origin:left center;background:linear-gradient(90deg,#77f5a4,#f0d184 55%,#ff4f49);box-shadow:0 0 8px #f0d18488;border-radius:9px}
-    .bottom-area{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:7px;min-height:49px}
+    .bottom-area{flex:0 0 auto;display:grid;grid-template-columns:88px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:92px}
     .instruction{display:flex;align-items:center;min-width:0;padding:8px 10px;border:1px solid #a16f47;border-radius:10px;background:linear-gradient(140deg,#2f1c14f2,#1b120ef5);color:#f3dfc7;font-size:10px;line-height:1.35}
     .instruction strong{color:#ffe1a1}
     .action-btn{align-self:stretch;min-width:108px;padding:8px 11px;font-size:10px;background:linear-gradient(135deg,#ffe5a4,#cb9344)}
@@ -164,13 +164,13 @@
       .map-select{padding:8px;margin:12px 0}.map-art{height:65px}.map-choice{padding:6px}.map-choice.selected{padding:5px}.map-choice-copy b{font-size:10px}.map-choice-copy small{font-size:8px}
       .seat{width:58px;padding:4px}.seat-avatar{width:29px;height:29px}.seat-info{max-width:85px;padding:3px 5px}.seat-name{font-size:9px}.lives{font-size:9px}
       .arena-center{width:43%;min-width:95px;padding:6px 8px}.center-message{font-size:12px}.center-sub{font-size:8px}.bomb{width:51px;height:51px}.cart-bomb{font-size:29px}.cart-bed{width:40px}
-      .bottom-area{grid-template-columns:minmax(0,1fr) 92px;gap:5px}.action-btn{min-width:0;padding:7px 5px;font-size:9px}.instruction{font-size:9px;padding:7px 8px}
+      .bottom-area{grid-template-columns:76px minmax(0,1fr) 84px;gap:5px;min-height:78px}.joystick-control{width:72px;height:72px}.joystick-label{font-size:7px}.action-btn{min-width:0;padding:7px 5px;font-size:9px}.instruction{font-size:9px;padding:7px 8px}
     }
     @media(max-height:680px){
       .game{gap:4px;padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:calc(4px + env(safe-area-inset-bottom))}
       .game-head{min-height:32px}.game-head .back,.icon-button{min-height:31px;min-width:34px;padding:4px 8px}
       .scorebox{padding:3px 7px}.scorebox span{font-size:8px}.scorebox b{font-size:11px}
-      .bottom-area{min-height:39px}.instruction{padding:5px 8px;font-size:9px}.action-btn{padding:5px 7px;min-height:37px}
+      .bottom-area{grid-template-columns:68px minmax(0,1fr) auto;min-height:72px}.joystick-control{width:64px;height:64px}.instruction{padding:5px 8px;font-size:9px}.action-btn{padding:5px 7px;min-height:37px}
       .seat{width:clamp(55px,11vh,88px)}.seat-avatar{width:clamp(25px,4.2vh,35px);height:clamp(25px,4.2vh,35px)}
       .arena-center{top:6%;padding:5px 8px}.center-sub{font-size:8px}.fuse-wrap{top:calc(6% + 47px)}
     }
@@ -184,9 +184,51 @@
       .seat-avatar{width:clamp(26px,4.4vh,39px);height:clamp(26px,4.4vh,39px)}
       .arena-center{top:5%;width:min(32%,300px);padding:5px 8px}
       .fuse-wrap{top:calc(5% + 43px);left:38%;right:38%}
-      .bottom-area{min-height:38px}.instruction{font-size:9px;padding:5px 8px}.action-btn{min-height:36px;padding:5px 8px}
+      .bottom-area{grid-template-columns:66px minmax(0,1fr) auto;min-height:68px}.joystick-control{width:62px;height:62px}.instruction{font-size:9px;padding:5px 8px}.action-btn{min-height:36px;padding:5px 8px}
     }
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+    /* Touch joystick and original animated ALLCOINS miner */
+    .joystick-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
+    .joystick-label{color:#ffdf9c;font-size:8px;font-weight:1000;letter-spacing:.7px;text-align:center;text-shadow:0 1px 3px #160b05}
+    .joystick-control{position:relative;flex:0 0 auto;width:84px;height:84px;min-height:0;min-width:0;padding:0;border:1px solid #f2c982;border-radius:50%;background:radial-gradient(circle at 35% 26%,#e4bb7b60,#714a2cba 58%,#2b1b13f2 100%);box-shadow:inset 0 0 0 4px #1e130b88,inset 0 0 0 5px #ffe1a34d,0 4px 11px #0009;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden}
+    .joystick-control:focus-visible{outline:2px solid #fff0ad;outline-offset:3px}
+    .joystick-control:before{content:"";position:absolute;inset:12%;border:1px dashed #f5dbad52;border-radius:50%;pointer-events:none}
+    .joystick-arrow{position:absolute;z-index:1;color:#f7d5a16b;font-size:10px;line-height:1;pointer-events:none}
+    .joystick-arrow.up{top:7px;left:50%;transform:translateX(-50%)}
+    .joystick-arrow.down{bottom:7px;left:50%;transform:translateX(-50%)}
+    .joystick-arrow.left{left:7px;top:50%;transform:translateY(-50%)}
+    .joystick-arrow.right{right:7px;top:50%;transform:translateY(-50%)}
+    .joystick-knob{position:absolute;z-index:2;left:50%;top:50%;width:39%;height:39%;display:grid;place-items:center;border:1px solid #fff0be;border-radius:50%;background:radial-gradient(circle at 33% 25%,#fff0b5,#d99a3e 47%,#75401f 100%);box-shadow:inset 0 2px 3px #fff9,0 3px 7px #0009;transform:translate(-50%,-50%);pointer-events:none;will-change:transform}
+    .joystick-knob:after{content:"";width:34%;height:34%;border:1px solid #fff7;border-radius:50%;background:linear-gradient(145deg,#754d2c,#e8b45b);box-shadow:inset 0 1px 2px #0006}
+    .player-character{position:absolute;z-index:5;left:50%;top:64%;width:72px;height:104px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;transform:translate(-50%,-56%);filter:drop-shadow(0 4px 3px #27100770);will-change:left,top}
+    .player-character .runner-figure{display:block;width:68px;height:86px;overflow:visible}
+    .player-character .runner-facing{transform-box:fill-box;transform-origin:center}
+    .player-character.facing-left .runner-facing{transform:scaleX(-1)}
+    .player-character .runner-leg-front,.player-character .runner-leg-back,.player-character .runner-arm-front,.player-character .runner-arm-back,.player-character .runner-bob{transform-box:fill-box}
+    .player-character .runner-leg-front{transform-origin:50% 6%}
+    .player-character .runner-leg-back{transform-origin:50% 6%}
+    .player-character .runner-arm-front{transform-origin:78% 18%}
+    .player-character .runner-arm-back{transform-origin:25% 17%}
+    .player-character .runner-bob{transform-origin:50% 65%}
+    .player-character:not(.walking) .runner-bob{animation:minerIdle 1.7s ease-in-out infinite}
+    .player-character.walking .runner-bob{animation:minerBounce .22s ease-in-out infinite alternate}
+    .player-character.walking .runner-leg-front{animation:minerLegFront .23s ease-in-out infinite alternate}
+    .player-character.walking .runner-leg-back{animation:minerLegBack .23s ease-in-out infinite alternate}
+    .player-character.walking .runner-arm-front{animation:minerArmFront .23s ease-in-out infinite alternate}
+    .player-character.walking .runner-arm-back{animation:minerArmBack .23s ease-in-out infinite alternate}
+    .character-shadow{position:absolute;left:50%;bottom:17px;width:32px;height:9px;transform:translateX(-50%);border-radius:50%;background:#1b0d07a8;filter:blur(2px)}
+    .character-name{position:relative;z-index:1;margin-top:-1px;padding:2px 8px;border:1px solid #ffe2a0;border-radius:8px;background:#24150ff0;color:#fff0c8;font-size:9px;font-weight:1000;letter-spacing:.6px;line-height:1.2;white-space:nowrap;box-shadow:0 2px 5px #0008}
+    .character-bubble{position:absolute;left:calc(50% + 24px);top:20px;width:21px;height:21px;display:grid;place-items:center;border:1px solid #ffe3a0;border-radius:50%;background:#3a2412;color:#ffdf86;font-size:12px;box-shadow:0 0 10px #ffcf6666;opacity:0;transform:scale(.6);transition:opacity .12s,transform .12s}
+    .player-character.carrying .character-bubble{opacity:1;transform:scale(1)}
+    @keyframes minerIdle{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-2px) rotate(1deg)}}
+    @keyframes minerBounce{from{transform:translateY(1px) rotate(-2deg)}to{transform:translateY(-3px) rotate(2deg)}}
+    @keyframes minerLegFront{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
+    @keyframes minerLegBack{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}
+    @keyframes minerArmFront{from{transform:rotate(25deg)}to{transform:rotate(-27deg)}}
+    @keyframes minerArmBack{from{transform:rotate(-22deg)}to{transform:rotate(28deg)}}
+    @media(max-width:390px){.player-character{width:62px;height:94px}.player-character .runner-figure{width:60px;height:78px}.character-shadow{bottom:18px;width:28px}.character-name{font-size:8px;padding:2px 6px}}
+
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
@@ -373,9 +415,80 @@
       <div class="trail" id="trail" aria-hidden="true"></div>
       <div class="flash" id="flash"></div>
       <div id="seats"></div>
+      <div class="player-character" id="playerCharacter" aria-label="Твой персонаж" role="img">
+        <div class="character-shadow"></div>
+        <svg class="runner-figure" viewBox="0 0 90 112" aria-hidden="true">
+          <defs>
+            <linearGradient id="minerHelmet" x1="0" y1="0" x2="0.85" y2="1"><stop stop-color="#fff0a2"/><stop offset=".42" stop-color="#f2b93f"/><stop offset="1" stop-color="#a95d18"/></linearGradient>
+            <linearGradient id="minerJacket" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb34d"/><stop offset=".53" stop-color="#ee782e"/><stop offset="1" stop-color="#9b3824"/></linearGradient>
+            <linearGradient id="minerPants" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3d8b94"/><stop offset="1" stop-color="#16464f"/></linearGradient>
+            <linearGradient id="minerSkin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd6a4"/><stop offset="1" stop-color="#be7950"/></linearGradient>
+            <radialGradient id="minerLamp"><stop stop-color="#fff9cb"/><stop offset=".45" stop-color="#fff06c"/><stop offset="1" stop-color="#ffba31" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g class="runner-facing">
+            <g class="runner-bob">
+              <ellipse cx="45" cy="103" rx="20" ry="4" fill="#28140a" opacity=".3"/>
+              <g class="runner-leg-back">
+                <path d="M38 72L31 88L27 98" fill="none" stroke="#16464f" stroke-width="10" stroke-linecap="round"/>
+                <path d="M31 84L25 96" fill="none" stroke="#24717a" stroke-width="6" stroke-linecap="round"/>
+                <path d="M27 98L20 101Q17 104 22 106L35 105Q39 103 35 99L32 96Z" fill="#3b2925" stroke="#dbac70" stroke-width="1.5"/>
+                <path d="M20 103L34 102" stroke="#f1ce8e" stroke-width="2" stroke-linecap="round"/>
+              </g>
+              <g class="runner-leg-front">
+                <path d="M51 72L56 87L62 97" fill="none" stroke="url(#minerPants)" stroke-width="11" stroke-linecap="round"/>
+                <path d="M55 82L60 94" fill="none" stroke="#4aa3a0" stroke-width="6" stroke-linecap="round"/>
+                <path d="M61 96L72 99Q77 102 73 105L60 106Q56 105 58 101Z" fill="#332521" stroke="#f0c986" stroke-width="1.5"/>
+                <path d="M60 103L73 102" stroke="#e8c98e" stroke-width="2" stroke-linecap="round"/>
+              </g>
+              <g class="runner-arm-back">
+                <path d="M35 40Q24 44 22 57L18 67" fill="none" stroke="#a64d2a" stroke-width="9" stroke-linecap="round"/>
+                <path d="M22 57L18 67" fill="none" stroke="#f4a15a" stroke-width="6" stroke-linecap="round"/>
+                <circle cx="17" cy="68" r="5" fill="url(#minerSkin)"/>
+              </g>
+              <path d="M36 36Q28 38 30 48L27 65Q27 71 34 73L56 73Q63 71 62 65L59 46Q58 38 52 36Z" fill="url(#minerJacket)" stroke="#713724" stroke-width="1.5"/>
+              <path d="M39 40L44 47L49 40L48 70L40 70Z" fill="#f9d98a" opacity=".95"/>
+              <path d="M32 51L40 54L35 62L29 59Z" fill="#a54827" opacity=".7"/>
+              <path d="M54 51L60 56L56 62L51 58Z" fill="#a54827" opacity=".7"/>
+              <path d="M35 65L55 65" stroke="#7b321f" stroke-width="2"/>
+              <path d="M39 73L56 73L57 79L38 79Z" fill="#5d3824" stroke="#dfa65a" stroke-width="1"/>
+              <rect x="44" y="75" width="7" height="3" rx="1" fill="#f8d77d"/>
+              <g class="runner-arm-front">
+                <path d="M56 41Q65 43 68 54L71 64" fill="none" stroke="#be572b" stroke-width="10" stroke-linecap="round"/>
+                <path d="M66 53L71 64" fill="none" stroke="#f4a15a" stroke-width="6" stroke-linecap="round"/>
+                <circle cx="72" cy="66" r="5" fill="url(#minerSkin)"/>
+                <path d="M69 66L75 65" stroke="#8d4e34" stroke-width="1.4" stroke-linecap="round"/>
+              </g>
+              <path d="M38 30L38 39Q45 46 52 39L52 29Z" fill="#b96f49"/>
+              <ellipse cx="45" cy="24" rx="15" ry="17" fill="url(#minerSkin)" stroke="#74442e" stroke-width="1.4"/>
+              <path d="M31 25Q28 8 42 7Q57 5 59 24L54 20L50 14L39 18L34 28Z" fill="#533429"/>
+              <ellipse cx="39" cy="24" rx="2" ry="2.4" fill="#37251f"/>
+              <ellipse cx="51" cy="24" rx="2" ry="2.4" fill="#37251f"/>
+              <path d="M41 31Q45 34 49 30" fill="none" stroke="#8b4534" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M29 19Q29 7 41 5L53 7Q62 12 60 21L54 19L49 12L37 14L31 24Z" fill="#5e3825"/>
+              <path d="M27 16Q28 3 45 3Q62 3 63 16L59 21L31 21Z" fill="url(#minerHelmet)" stroke="#965321" stroke-width="1.6"/>
+              <path d="M23 18Q44 11 67 18L65 23Q45 28 25 23Z" fill="#e69b2f" stroke="#965321" stroke-width="1.4"/>
+              <path d="M33 12Q45 7 57 12" fill="none" stroke="#fff1b1" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="45" cy="18" r="8" fill="url(#minerLamp)"/>
+              <circle cx="45" cy="18" r="3.3" fill="#fff2a6" stroke="#fff8cf" stroke-width="1"/>
+              <path d="M30 48L35 53M55 47L59 51" stroke="#ffd88b" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M33 56L37 60" stroke="#fff0ba" stroke-width="1.4" stroke-linecap="round"/>
+            </g>
+          </g>
+        </svg>
+        <span class="character-bubble" aria-hidden="true">✦</span>
+        <span class="character-name">ТЫ</span>
+      </div>
     </div>
     <div class="bottom-area">
-      <div class="instruction" id="instruction" aria-live="polite">Бомба у тебя? Нажми на другого игрока, чтобы передать её.</div>
+      <div class="joystick-panel">
+        <div class="joystick-label">ДВИЖЕНИЕ</div>
+        <button class="joystick-control" id="moveJoystick" type="button" aria-label="Джойстик движения персонажа">
+          <span class="joystick-arrow up">▲</span><span class="joystick-arrow down">▼</span>
+          <span class="joystick-arrow left">◀</span><span class="joystick-arrow right">▶</span>
+          <span class="joystick-knob" id="joystickKnob"></span>
+        </button>
+      </div>
+      <div class="instruction" id="instruction" aria-live="polite">Двигай джойстик в нужную сторону. Если у тебя бомба — нажми на другого игрока, чтобы передать её.</div>
       <button class="primary action-btn" id="continueRound" type="button" hidden>Следующий раунд</button>
     </div>
   </section>
@@ -401,6 +514,14 @@
     let chosenCount = 4;
     let chosenMode = 'bots';
     let chosenMap = 'copper';
+    let characterX = 0;
+    let characterY = 0;
+    let moveX = 0;
+    let moveY = 0;
+    let movePointerId = null;
+    let moveFrame = 0;
+    let lastMoveFrameTime = 0;
+    const MOVE_SPEED = 205;
     let players = [];
     let holder = -1;
     let round = 0;
@@ -471,9 +592,150 @@
       $('modeCaption').textContent = chosenMode === 'bots' ? 'Ты против ботов' : 'Игроки на одном экране';
       $('continueRound').hidden = true;
       renderSeats();
+      resetCharacterPosition();
       startRound();
       if (tg && tg.BackButton) { try { tg.BackButton.show(); } catch (_) {} }
     }
+
+    function resetCharacterPosition() {
+      const arena = $('arena');
+      if (!arena) return;
+      const rect = arena.getBoundingClientRect();
+      characterX = rect.width * .5;
+      characterY = rect.height * .65;
+      moveX = 0; moveY = 0;
+      stopCharacterMotion();
+      renderCharacterPosition();
+      syncBombToCharacter();
+    }
+
+    function renderCharacterPosition() {
+      const character = $('playerCharacter');
+      if (!character) return;
+      character.style.left = characterX + 'px';
+      character.style.top = characterY + 'px';
+      character.classList.toggle('facing-left', moveX < -.08);
+      character.classList.toggle('walking', Math.hypot(moveX, moveY) > .08 && phase === 'playing');
+      character.classList.toggle('carrying', holder === 0 && players[0] && players[0].lives > 0 && phase === 'playing');
+    }
+
+    function syncBombToCharacter() {
+      if (holder !== 0 || !['playing','passing'].includes(phase)) return;
+      const arena = $('arena');
+      const bomb = $('bomb');
+      if (!arena || !bomb) return;
+      const facing = $('playerCharacter').classList.contains('facing-left') ? -1 : 1;
+      const arenaRect = arena.getBoundingClientRect();
+      bomb.style.transition = 'none';
+      bomb.style.left = Math.max(28, Math.min(arenaRect.width - 28, characterX + 23 * facing)) + 'px';
+      bomb.style.top = Math.max(30, characterY - 13) + 'px';
+      bomb.style.transform = 'translate(-50%,-50%) scale(.88) rotate(-10deg)';
+      bomb.classList.remove('moving');
+      bomb.style.transition = '';
+    }
+
+    function setMoveVector(x, y) {
+      const length = Math.hypot(x, y);
+      if (length < .12) { moveX = 0; moveY = 0; }
+      else {
+        const scale = length > 1 ? 1 / length : 1;
+        moveX = x * scale; moveY = y * scale;
+      }
+      renderCharacterPosition();
+      if (Math.hypot(moveX, moveY) > .08 && !moveFrame) {
+        lastMoveFrameTime = 0;
+        moveFrame = requestAnimationFrame(moveCharacterFrame);
+      }
+    }
+
+    function setJoystickFromPointer(event) {
+      const stick = $('moveJoystick');
+      const knob = $('joystickKnob');
+      if (!stick || !knob) return;
+      const rect = stick.getBoundingClientRect();
+      const dx = event.clientX - (rect.left + rect.width / 2);
+      const dy = event.clientY - (rect.top + rect.height / 2);
+      const limit = Math.max(12, rect.width * .31);
+      const length = Math.hypot(dx,dy);
+      const clamped = Math.min(limit,length);
+      const ratio = length > 0 ? clamped / length : 0;
+      const kx = dx * ratio; const ky = dy * ratio;
+      knob.style.transform = 'translate(calc(-50% + ' + kx + 'px), calc(-50% + ' + ky + 'px))';
+      setMoveVector(kx / limit, ky / limit);
+    }
+
+    function resetJoystick() {
+      movePointerId = null;
+      moveX = 0; moveY = 0;
+      const knob = $('joystickKnob');
+      if (knob) knob.style.transform = 'translate(-50%,-50%)';
+      renderCharacterPosition();
+      stopCharacterMotion();
+    }
+
+    function stopCharacterMotion() {
+      if (moveFrame) cancelAnimationFrame(moveFrame);
+      moveFrame = 0; lastMoveFrameTime = 0;
+      if ($('playerCharacter')) $('playerCharacter').classList.remove('walking');
+    }
+
+    function moveCharacterFrame(time) {
+      if (!moveFrame) return;
+      if (phase !== 'playing' || (!moveX && !moveY)) {
+        moveFrame = 0; lastMoveFrameTime = 0;
+        renderCharacterPosition();
+        return;
+      }
+      const rect = $('arena').getBoundingClientRect();
+      const dt = lastMoveFrameTime ? Math.min(.04,(time - lastMoveFrameTime) / 1000) : .016;
+      lastMoveFrameTime = time;
+      const marginX = Math.min(36, rect.width * .12);
+      const marginTop = 52;
+      const marginBottom = 56;
+      characterX = Math.max(marginX, Math.min(rect.width - marginX, characterX + moveX * MOVE_SPEED * dt));
+      characterY = Math.max(marginTop, Math.min(rect.height - marginBottom, characterY + moveY * MOVE_SPEED * dt));
+      renderCharacterPosition();
+      if (holder === 0) syncBombToCharacter();
+      moveFrame = requestAnimationFrame(moveCharacterFrame);
+    }
+
+    $('moveJoystick').addEventListener('pointerdown', event => {
+      if (phase !== 'playing') return;
+      event.preventDefault();
+      movePointerId = event.pointerId;
+      try { $('moveJoystick').setPointerCapture(event.pointerId); } catch (_) {}
+      setJoystickFromPointer(event);
+    });
+    $('moveJoystick').addEventListener('pointermove', event => {
+      if (movePointerId !== event.pointerId) return;
+      event.preventDefault();
+      setJoystickFromPointer(event);
+    });
+    $('moveJoystick').addEventListener('pointerup', event => {
+      if (movePointerId !== event.pointerId) return;
+      try { if ($('moveJoystick').hasPointerCapture(event.pointerId)) $('moveJoystick').releasePointerCapture(event.pointerId); } catch (_) {}
+      resetJoystick();
+    });
+    $('moveJoystick').addEventListener('pointercancel', resetJoystick);
+    $('moveJoystick').addEventListener('lostpointercapture', () => {
+      if (movePointerId !== null) resetJoystick();
+    });
+    window.addEventListener('keydown', event => {
+      if ($('gameView').classList.contains('hidden') || phase !== 'playing') return;
+      const target = event.target;
+      if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
+      let x = 0, y = 0;
+      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') x = -1;
+      else if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') x = 1;
+      else if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') y = -1;
+      else if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') y = 1;
+      else return;
+      event.preventDefault();
+      setMoveVector(x * .7, y * .7);
+    });
+    window.addEventListener('keyup', event => {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','A','d','D','w','W','s','S'].includes(event.key) && movePointerId === null) resetJoystick();
+    });
 
     function renderSeats() {
       const seats = $('seats'); seats.innerHTML = '';
@@ -544,10 +806,16 @@
     function positionBomb(playerIndex, animate) {
       const bomb = $('bomb'); const arena = $('arena');
       if (!arena || playerIndex < 0) return;
-      const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
-      if (!seat) return;
       const arenaRect = arena.getBoundingClientRect();
-      const targetPoint = bombPointForSeat(seat, arenaRect);
+      let targetPoint;
+      if (playerIndex === 0) {
+        const facing = $('playerCharacter').classList.contains('facing-left') ? -1 : 1;
+        targetPoint = { x: Math.max(28, Math.min(arenaRect.width - 28, characterX + 23 * facing)), y: Math.max(30, characterY - 13) };
+      } else {
+        const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
+        if (!seat) return;
+        targetPoint = bombPointForSeat(seat, arenaRect);
+      }
       const endX = targetPoint.x;
       const endY = targetPoint.y;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
@@ -596,6 +864,8 @@
 
     function startRound() {
       stopTimers();
+      resetJoystick();
+      resetCharacterPosition();
       roundToken++;
       round++;
       phase = 'playing';
@@ -658,6 +928,8 @@
         holder = target;
         phase = 'playing';
         updateSeats();
+        if (holder === 0) syncBombToCharacter();
+        renderCharacterPosition();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот быстро решает, кому отдать её' : 'Не медли — передавай дальше');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
@@ -690,6 +962,8 @@
       window.setTimeout(() => {
         if (token !== roundToken || phase !== 'passing') return;
         holder = target; phase = 'playing'; updateSeats();
+        if (holder === 0) syncBombToCharacter();
+        renderCharacterPosition();
         setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Нажми на другого игрока');
         setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
@@ -700,6 +974,8 @@
       if (phase !== 'playing' && phase !== 'passing') return;
       const unlucky = holder;
       phase = 'boom';
+      resetJoystick();
+      stopCharacterMotion();
       stopTimers();
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
       $('bomb').classList.remove('moving');
@@ -756,6 +1032,8 @@
     function onBack() {
       stopTimers(); roundToken++; phase = 'setup'; holder = -1;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
+      resetJoystick();
+      stopCharacterMotion();
       $('gameView').classList.add('hidden'); $('resultOverlay').classList.add('hidden'); $('setupView').classList.remove('hidden');
       if (tg && tg.BackButton) { try { tg.BackButton.hide(); } catch (_) {} }
     }
@@ -769,7 +1047,15 @@
       soundOn = !soundOn; $('soundToggle').textContent = soundOn ? '🔊' : '🔇';
       if (soundOn) playTone(590,.06,'sine',.025);
     });
-    window.addEventListener('resize', () => { if (holder >= 0 && !['setup','finished'].includes(phase)) positionBomb(holder, false); });
+    window.addEventListener('resize', () => {
+      if (holder >= 0 && !['setup','finished'].includes(phase)) {
+        const rect = $('arena').getBoundingClientRect();
+        characterX = Math.max(36, Math.min(rect.width - 36, characterX));
+        characterY = Math.max(52, Math.min(rect.height - 56, characterY));
+        renderCharacterPosition();
+        positionBomb(holder, false);
+      }
+    });
 
     function playTone(frequency, duration, type, volume) {
       if (!soundOn) return;
