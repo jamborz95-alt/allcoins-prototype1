@@ -138,7 +138,10 @@
     .trail.show{animation:trailFade .45s ease-out forwards}
     .fuse-wrap{position:absolute;z-index:3;left:35%;right:35%;top:calc(8% + 52px);height:4px;border-radius:9px;background:#ffffff22;overflow:hidden}
     .fuse-fill{height:100%;width:100%;transform-origin:left center;background:linear-gradient(90deg,#77f5a4,#f0d184 55%,#ff4f49);box-shadow:0 0 8px #f0d18488;border-radius:9px}
-    .bottom-area{flex:0 0 auto;display:grid;grid-template-columns:116px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:122px}
+    .bottom-area{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px;min-height:62px}
+    .arena-joystick-panel{position:absolute;left:clamp(8px,2vw,16px);bottom:clamp(8px,2vw,16px);z-index:18;gap:5px;pointer-events:none}
+    .arena-joystick-panel .joystick-label{padding:3px 7px;border:1px solid #f2c9829c;border-radius:7px;background:#24150fe8;color:#ffdf9c;font-size:9px;text-shadow:0 1px 3px #160b05}
+    .arena-joystick-panel .joystick-control{pointer-events:auto;box-shadow:inset 0 0 0 4px #1e130b88,inset 0 0 0 5px #ffe1a34d,0 5px 15px #000c}
     .instruction{display:flex;align-items:center;min-width:0;padding:8px 10px;border:1px solid #a16f47;border-radius:10px;background:linear-gradient(140deg,#2f1c14f2,#1b120ef5);color:#f3dfc7;font-size:10px;line-height:1.35}
     .instruction strong{color:#ffe1a1}
     .action-btn{align-self:stretch;min-width:108px;padding:8px 11px;font-size:10px;background:linear-gradient(135deg,#ffe5a4,#cb9344)}
@@ -170,13 +173,13 @@
       .map-select{padding:8px;margin:12px 0}.map-art{height:65px}.map-choice{padding:6px}.map-choice.selected{padding:5px}.map-choice-copy b{font-size:10px}.map-choice-copy small{font-size:8px}
       .seat{width:58px;padding:4px}.seat-avatar{width:29px;height:29px}.seat-info{max-width:85px;padding:3px 5px}.seat-name{font-size:9px}.lives{font-size:9px}
       .arena-center{width:43%;min-width:95px;padding:6px 8px}.center-message{font-size:12px}.center-sub{font-size:8px}.bomb{width:51px;height:51px}.cart-bomb{font-size:29px}.cart-bed{width:40px}
-      .bottom-area{grid-template-columns:106px minmax(0,1fr) 84px;gap:5px;min-height:112px}.joystick-control{width:100px;height:100px}.joystick-label{font-size:8px}.action-btn{min-width:0;padding:7px 5px;font-size:9px}.instruction{font-size:9px;padding:7px 8px}
+      .bottom-area{grid-template-columns:minmax(0,1fr) auto;gap:5px;min-height:58px}.action-btn{min-width:0;padding:7px 5px;font-size:9px}.instruction{font-size:9px;padding:7px 8px}
     }
     @media(max-height:680px){
       .game{gap:4px;padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:calc(4px + env(safe-area-inset-bottom))}
       .game-head{min-height:32px}.game-head .back,.icon-button{min-height:31px;min-width:34px;padding:4px 8px}
       .scorebox{padding:3px 7px}.scorebox span{font-size:8px}.scorebox b{font-size:11px}
-      .bottom-area{grid-template-columns:92px minmax(0,1fr) auto;min-height:98px}.joystick-control{width:84px;height:84px}.instruction{padding:5px 8px;font-size:9px}.action-btn{padding:5px 7px;min-height:37px}
+      .bottom-area{grid-template-columns:minmax(0,1fr) auto;min-height:52px}.arena-joystick-panel .joystick-control{width:84px;height:84px}.instruction{padding:5px 8px;font-size:9px}.action-btn{padding:5px 7px;min-height:37px}
       .seat{width:clamp(55px,11vh,88px)}.seat-avatar{width:clamp(25px,4.2vh,35px);height:clamp(25px,4.2vh,35px)}
       .arena-center{top:6%;padding:5px 8px}.center-sub{font-size:8px}.fuse-wrap{top:calc(6% + 47px)}
     }
@@ -190,7 +193,7 @@
       .seat-avatar{width:clamp(26px,4.4vh,39px);height:clamp(26px,4.4vh,39px)}
       .arena-center{top:5%;width:min(32%,300px);padding:5px 8px}
       .fuse-wrap{top:calc(5% + 43px);left:38%;right:38%}
-      .bottom-area{grid-template-columns:92px minmax(0,1fr) auto;min-height:98px}.joystick-control{width:84px;height:84px}.instruction{font-size:9px;padding:5px 8px}.action-btn{min-height:36px;padding:5px 8px}
+      .bottom-area{grid-template-columns:minmax(0,1fr) auto;min-height:52px}.arena-joystick-panel .joystick-control{width:84px;height:84px}.instruction{font-size:9px;padding:5px 8px}.action-btn{min-height:36px;padding:5px 8px}
     }
 
     /* Touch joystick and original animated ALLCOINS miner */
@@ -497,9 +500,7 @@
         <span class="character-bubble" aria-hidden="true">✦</span>
         <span class="character-name">ТЫ</span>
       </div>
-    </div>
-    <div class="bottom-area">
-      <div class="joystick-panel">
+      <div class="joystick-panel arena-joystick-panel">
         <div class="joystick-label">ДВИЖЕНИЕ</div>
         <button class="joystick-control" id="moveJoystick" type="button" aria-label="Джойстик движения персонажа">
           <span class="joystick-arrow up">▲</span><span class="joystick-arrow down">▼</span>
@@ -507,6 +508,8 @@
           <span class="joystick-knob" id="joystickKnob"></span>
         </button>
       </div>
+    </div>
+    <div class="bottom-area">
       <div class="instruction" id="instruction" aria-live="polite">Двигай джойстик в нужную сторону. Если у тебя бомба — нажми на другого игрока, чтобы передать её.</div>
       <button class="primary action-btn" id="continueRound" type="button" hidden>Следующий раунд</button>
     </div>
