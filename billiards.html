@@ -32,7 +32,7 @@
     .primary,.secondary,.goldbtn{min-height:44px;border-radius:12px;padding:10px 13px;font-weight:900;border:1px solid transparent}
     .primary{background:linear-gradient(135deg,#83ffd0,#42d99b);color:#09271d;box-shadow:0 5px 18px #32db9b24}
     .goldbtn{background:linear-gradient(135deg,#f5dc96,#b58a40);border-color:#f3d994;color:#251b0c}
-    .secondary{background:#1c2c42;color:#f4f7fb;border-color:#40546f}.danger{background:#311b25;color:#ffd9df;border-color:#704050}.full{width:100%}
+    .secondary{background:#1c2c42;color:#f4f7fb;border-color:#40546f}.secondary.active{background:linear-gradient(135deg,#f5dc96,#b58a40);color:#251b0c;border-color:#f3d994}.danger{background:#311b25;color:#ffd9df;border-color:#704050}.full{width:100%}
     .stakes{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}.stakePreset{background:#112033;color:#dce7f4;border:1px solid #3a5067;border-radius:9px;min-height:34px;padding:6px 10px;font-size:11px;font-weight:900}
     .stakePreset.active{background:#e9ca80;color:#241b0d;border-color:#f2d996}
     .hint{font-size:11px;color:#aabbd0;line-height:1.5;margin-top:6px}
@@ -85,7 +85,9 @@
           <button type="button" class="stakePreset" data-stake="10000">10 000</button>
           <button type="button" class="stakePreset" data-stake="1000000">1 000 000</button>
         </div>
-        <div class="hint">Минимальная ставка — 100 AC. Верхнего лимита нет: доступная ставка зависит от баланса игроков. Ставка списывается только при начале партии.</div>
+        <div class="hint">Минимальная ставка — 100 AC. Верхнего лимита нет: доступная ставка зависит от баланса игроков. В обычной комнате ставка списывается при начале партии.</div>
+        <button class="secondary full" id="botTestBtn" type="button" aria-pressed="false" style="margin-top:12px">🤖 Играть с ботом (тест) · выключено</button>
+        <div class="hint" id="botTestHint">Тестовый режим: игра против бота без списания AC и без реальных выплат. Подходит для проверки стола, ударов и очередности ходов.</div>
         <button class="primary full" id="createRoomBtn" type="button" style="margin-top:13px">Создать комнату</button>
       </div>
       <div class="panel">
@@ -99,7 +101,7 @@
     <header class="topbar">
       <button class="back" id="waitingBackBtn" type="button" aria-label="Назад">‹</button>
       <div class="brand">🎱</div>
-      <div style="min-width:0;flex:1"><h1>Комната бильярда</h1><div class="sub">Дождись второго игрока</div></div>
+      <div style="min-width:0;flex:1"><h1>Комната бильярда</h1><div class="sub" id="waitingRoomSub">Дождись второго игрока</div></div>
       <div class="stakebadge" id="waitingStake">100 AC</div>
     </header>
     <div class="panel">
@@ -148,7 +150,7 @@
       const W=800,H=440,R=10;
       const POCKETS=[{x:31,y:31},{x:400,y:25},{x:769,y:31},{x:31,y:409},{x:400,y:415},{x:769,y:409}];
       const COLORS={1:"#f7d51d",2:"#1767d8",3:"#d72e35",4:"#6c36b8",5:"#ef7e21",6:"#139e59",7:"#e9e8df",9:"#f7d51d",10:"#1767d8",11:"#d72e35",12:"#6c36b8",13:"#ef7e21",14:"#139e59",15:"#e9e8df",8:"#15171d"};
-      const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
+      const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
       let pointerDown=null;
 
       function amount(v){const n=Number(v);return Number.isFinite(n)?Math.round(n).toLocaleString("ru-RU"):"—";}
@@ -186,6 +188,7 @@
       }
       function renderWaiting(){
         if(!state.room)return;$("waitingRoomName").textContent=state.room.name;$("waitingStake").textContent=amount(state.room.stake)+" AC";$("waitingCount").textContent=state.players.length+" / 2 игрока";
+        $("waitingRoomSub").textContent=state.room.botMode?"Тестовая партия против бота · без списания AC":"Дождись второго игрока";
         const host=$("seatGrid");host.innerHTML="";
         for(let i=0;i<2;i++){const p=state.players[i];const seat=document.createElement("div");seat.className="seat";const b=document.createElement("b"),small=document.createElement("small");b.textContent=p?(p.isYou?"Вы · "+p.name:p.name):"Ожидание игрока…";small.textContent=p?(p.isOwner?"Создатель комнаты":"Готов к игре"):"Место свободно";seat.append(b,small);host.appendChild(seat);}
         $("startGameBtn").disabled=!state.room.isOwner||state.players.length!==2||state.busy;
@@ -195,7 +198,7 @@
         if(state.busy)return;const stake=String($("roomStake").value||"").trim();
         if(!/^\d+$/.test(stake)||BigInt(stake)<100n||BigInt(stake)>9007199254740991n){setStatus("Укажи ставку от 100 AC. Верхнего лимита нет.",true);return;}
         state.busy=true;$("createRoomBtn").disabled=true;
-        try{const data=await api("/rooms/create",{name:$("roomName").value,stake});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus("Комната создана. Пригласи второго игрока.");}
+        try{const data=await api("/rooms/create",{name:$("roomName").value,stake,botMode:state.botTestMode});state.room=data.room;state.players=data.players||[];showStage("waiting");renderWaiting();setWaitingStatus(state.room.botMode?"Тестовая комната создана. Нажми «Начать игру» — AC не спишутся.":"Комната создана. Пригласи второго игрока.");}
         catch(e){setStatus(e.message,true);}finally{state.busy=false;$("createRoomBtn").disabled=false;}
       }
       async function joinRoom(roomId){
@@ -234,7 +237,7 @@
           state.lastAnimatedSeq=Number(incomingShot.seq);
           startShotAnimation(incomingShot);
         }
-        $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"");$("bankValue").textContent=amount(g.pot)+" AC";
+        $("gameRoomLabel").textContent=(state.room?.name||"Бильярд")+" · #"+(state.room?.id||"")+(g.testMode?" · ТЕСТ-БОТ":"");$("bankValue").textContent=g.testMode?"ТЕСТ":amount(g.pot)+" AC";
         const row=$("playerRow");row.innerHTML="";
         g.players.forEach(p=>{const chip=document.createElement("div");chip.className="playerChip"+(p.isCurrent&&g.status==="playing"?" active":"");const b=document.createElement("b"),small=document.createElement("small");b.textContent=p.isYou?"Вы · "+p.name:p.name;small.textContent=p.group?(p.group==="solid"?"Целые шары": "Полосатые шары"):(p.isCurrent?"ТВОЙ ХОД":"Ожидание хода");chip.append(b,small);row.appendChild(chip);});
         const myTurn=g.status==="playing"&&g.currentPlayerId===g.players.find(p=>p.isYou)?.id;
@@ -242,7 +245,7 @@
         $("centerCueBtn").disabled=!myTurn||state.animatingSeq!==null||state.busy;
         $("rematchBtn").classList.toggle("hidden",g.status!=="finished");
         $("endResult").classList.toggle("hidden",g.status!=="finished");
-        if(g.status==="finished"){$("endTitle").textContent=g.winnerId===g.players.find(p=>p.isYou)?.id?"🏆 Ты выиграл!":"🎱 "+(g.winnerName||"Соперник")+" выиграл";$("endCopy").textContent="Банк "+amount(g.pot)+" AC · выплата победителю "+amount(g.payout)+" AC после комиссии.";}
+        if(g.status==="finished"){$("endTitle").textContent=g.winnerId===g.players.find(p=>p.isYou)?.id?"🏆 Ты выиграл!":"🎱 "+(g.winnerName||"Соперник")+" выиграл";$("endCopy").textContent=g.testMode?"Тестовая партия завершена. AC не списывались и не выплачивались.":"Банк "+amount(g.pot)+" AC · выплата победителю "+amount(g.payout)+" AC после комиссии.";}
         if(state.animatingSeq===null)drawTable();
       }
 
@@ -332,6 +335,7 @@
       }
       function markStakePreset(){const value=Number($("roomStake").value);document.querySelectorAll(".stakePreset").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.stake)===value));}
       $("roomStake").addEventListener("input",markStakePreset);document.querySelectorAll(".stakePreset").forEach(btn=>btn.addEventListener("click",()=>{$("roomStake").value=btn.dataset.stake;markStakePreset();}));
+      $("botTestBtn").addEventListener("click",()=>{state.botTestMode=!state.botTestMode;$("botTestBtn").classList.toggle("active",state.botTestMode);$("botTestBtn").setAttribute("aria-pressed",String(state.botTestMode));$("botTestBtn").textContent=state.botTestMode?"🤖 Играть с ботом (тест) · включено":"🤖 Играть с ботом (тест) · выключено";});
       $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
       $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",backToLobby);$("endLobbyBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);
