@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-smooth-cannon2"'),
+assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-smooth-movement1"'),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
@@ -20,6 +20,11 @@ assert.ok(html.includes("function updateShooterAims") && html.includes("function
   html.includes("function animateTowerEntry") && html.includes("function detectOnlineArrivals") &&
   html.includes("@keyframes cannonRecoil") && html.includes("function spawnShotImpact"),
   "The turret should smoothly rotate and launch a moving projectile; troops should visibly enter captured towers.");
+assert.ok(html.includes("stampFleetProgress(state,previousState=null)") &&
+  html.includes("fleetProgressAt(old,stamp)") && html.includes("f._visualProgressBase=f.progress") &&
+  html.includes("el.classList.toggle('hit',stillHit)") &&
+  html.includes("(gameState.fleets||[]).length===0)return"),
+  "Troop motion should stay continuous across network snapshots, preserve soldier CSS animations and stop idle animation frames.");
 assert.ok(towersRouter.includes("function tickShooterTowers(game, now)") &&
   html.includes("function fireShooterTowers(state,now)") && html.includes("el.classList.add('firing')") &&
   html.includes("spawnShotImpact") && html.includes("fleet-count"),
