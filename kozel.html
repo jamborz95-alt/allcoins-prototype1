@@ -280,6 +280,7 @@
       let busy = false;
       let pollTimer = null;
       let roomListBusy = false;
+      let stateBusy = false;
       let lastState = null;
 
       if (tg) {
@@ -484,7 +485,8 @@
         }, 1300);
       }
       async function refreshState(quiet) {
-        if (!currentRoomId || busy) return;
+        if (!currentRoomId || busy || stateBusy) return;
+        stateBusy = true;
         try {
           const data = await api("/rooms/state", { roomId:currentRoomId });
           await applyState(data);
@@ -492,9 +494,12 @@
           if (!quiet) setStatus(stage === "game" ? "gameMessage" : "waitingStatus", error.message, true);
           if (error.status === 403 || error.status === 404) {
             currentRoomId = null;
+            stopPolling();
             showStage("lobby");
             await loadRooms(true);
           }
+        } finally {
+          stateBusy = false;
         }
       }
       async function applyState(data) {
@@ -667,14 +672,14 @@
           setStatus("gameMessage", "Партия ещё идёт. Вернись к столу, чтобы не пропустить ход.", true);
           return;
         }
-        currentRoomId = null; currentRoom = null; currentGame = null; showStage("lobby"); loadRooms();
+        stopPolling(); currentRoomId = null; currentRoom = null; currentGame = null; showStage("lobby"); loadRooms();
       });
       $("gameLobby").addEventListener("click", async () => {
         if (currentGame && currentGame.status === "playing") {
           setStatus("gameMessage", "Партия ещё идёт. Заверши матч, чтобы вернуться в лобби.", true);
           return;
         }
-        currentRoomId = null; currentRoom = null; currentGame = null; showStage("lobby"); await loadRooms();
+        stopPolling(); currentRoomId = null; currentRoom = null; currentGame = null; showStage("lobby"); await loadRooms();
       });
       $("createRoom").addEventListener("click", () => createRoom(false));
       $("playBots").addEventListener("click", () => createRoom(true));
