@@ -12,7 +12,7 @@
     :root{color-scheme:dark;--gold:#efd28b;--gold2:#a87b31;--mint:#67f5b5;--bg:#080f19;--panel:#111d2e;--line:#2c3e55;--muted:#a9b8cd}
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(ellipse at 50% -8%,#253b50 0,#111b2b 42%,#070c14 100%);color:#f7f9fc}
-    body{padding:max(8px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom))}
+    body{padding:max(8px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom));overscroll-behavior:none}
     button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:not-allowed}
     .app{max-width:1000px;margin:0 auto}.topbar{display:flex;align-items:center;gap:10px;margin:4px 0 16px}
     .back{flex:0 0 43px;width:43px;height:43px;border:1px solid #43566d;border-radius:13px;background:#17263a;color:#eef4fc;font-size:23px;font-weight:900}
@@ -49,7 +49,7 @@
     .opponentRow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:3px 0;min-height:42px;flex:0 0 auto}
     .playerChip{min-width:116px;max-width:48%;padding:7px 11px;border:1px solid #5d8677;background:#082b27;border-radius:11px;text-align:center}
     .playerChip.active{border-color:#ffe38a;box-shadow:0 0 0 1px #ffe38a77,0 0 15px #ffe38a22}.playerChip b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.playerChip small{display:block;font-size:10px;color:#c1d8ce;margin-top:4px}
-    .tableWrap{position:relative;width:100%;max-width:none;min-width:0;min-height:180px;flex:1 1 auto;margin:0 auto;display:block;overflow:hidden;border:1px solid #3b6957;border-radius:12px;background:#061710;box-shadow:inset 0 0 24px #0008}
+    .tableWrap{position:relative;width:100%;max-width:none;min-width:0;min-height:180px;flex:1 1 auto;margin:0 auto;display:block;overflow:hidden;overscroll-behavior:contain;touch-action:none;border:1px solid #3b6957;border-radius:12px;background:#061710;box-shadow:inset 0 0 24px #0008}
     #poolCanvas,#pool3DCanvas{position:absolute;inset:0;display:block;width:100%;height:100%;max-height:none;aspect-ratio:auto;border-radius:11px;touch-action:none;user-select:none;-webkit-user-select:none}
     #poolCanvas{z-index:1;opacity:0;pointer-events:none;box-shadow:none}
     #pool3DCanvas{z-index:2;box-shadow:none}
@@ -59,7 +59,7 @@
     .gameActions{width:100%;max-width:940px;margin:2px auto 0;display:flex;justify-content:center;gap:6px;flex:0 0 auto}.gameActions button{min-height:34px;padding:6px 9px;font-size:11px}
     .ruleNote{text-align:center;font-size:9px;color:#a6c6b9;margin:1px auto 0;max-width:940px;line-height:1.3;flex:0 0 auto}
     .endResult{max-width:550px;width:100%;margin:8px auto;padding:14px;border:1px solid #f2d48c;border-radius:17px;background:#092f27ee;text-align:center;box-shadow:0 12px 32px #0005}.endResult h2{color:#ffdf8e;font-size:22px;margin:0 0 7px}.endResult p{font-size:12px;color:#d3e6d9;line-height:1.5;margin:0 0 13px}
-    .leaveConfirm{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:#020806d9;backdrop-filter:blur(6px)}.leaveConfirmCard{width:min(100%,360px);padding:20px;border:1px solid #d3b76f;border-radius:18px;background:linear-gradient(145deg,#172b29,#091714);box-shadow:0 20px 50px #0009;text-align:center}.leaveConfirmCard h2{margin:0 0 9px;color:#ffdf8e;font-size:21px}.leaveConfirmCard p{margin:0 0 16px;color:#d7e6df;font-size:13px;line-height:1.5}.leaveConfirmActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.leaveConfirmActions button{min-height:44px}
+    .leaveConfirm{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:#020806d9;backdrop-filter:blur(6px)}#leaveRoomConfirm{position:fixed;inset:0;z-index:1200}.leaveConfirmCard{width:min(100%,360px);padding:20px;border:1px solid #d3b76f;border-radius:18px;background:linear-gradient(145deg,#172b29,#091714);box-shadow:0 20px 50px #0009;text-align:center}.leaveConfirmCard h2{margin:0 0 9px;color:#ffdf8e;font-size:21px}.leaveConfirmCard p{margin:0 0 16px;color:#d7e6df;font-size:13px;line-height:1.5}.leaveConfirmActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.leaveConfirmActions button{min-height:44px}
     @media(max-width:680px){body{padding-left:9px;padding-right:9px}.topbar{gap:8px}.brandTag{padding:7px 8px}.grid{grid-template-columns:1fr;gap:0}.panel{padding:13px}.panelhead h2{font-size:16px}.room button{min-width:66px}.seatGrid{gap:7px}.seat{padding:10px}.playerChip{min-width:98px}.aimPanel{gap:7px}.power{flex-basis:95px}.gameActions button{flex:1;padding:8px 9px}}
     @media(max-height:650px){#gameView{padding-top:max(3px,env(safe-area-inset-top));padding-bottom:max(3px,env(safe-area-inset-bottom));gap:2px}.gameTop{min-height:32px}.gameTop .back{height:32px}.opponentRow{min-height:36px;padding:1px 0}.playerChip{padding:4px 7px}.tableWrap{flex:1 1 auto;min-height:125px}.aimPanel{margin-top:0}.gameMsg{margin-top:0;padding:3px}.gameActions{margin-top:0}.ruleNote{display:none}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important}}
@@ -119,6 +119,10 @@
     </div>
   </section>
 
+  <div id="leaveRoomConfirm" class="leaveConfirm hidden" role="dialog" aria-modal="true" aria-labelledby="leaveRoomTitle">
+    <div class="leaveConfirmCard"><h2 id="leaveRoomTitle">Покинуть комнату?</h2><p>Ты выйдешь из комнаты ожидания. Чтобы не выйти случайно, подтверди действие.</p><div class="leaveConfirmActions"><button class="secondary" id="stayInRoomBtn" type="button">Остаться</button><button class="goldbtn" id="confirmLeaveRoomBtn" type="button">Выйти из комнаты</button></div></div>
+  </div>
+
   <section id="gameView" class="hidden" aria-label="Игра в бильярд">
     <div class="gameTop">
       <button class="back" id="gameBackBtn" type="button" aria-label="Назад в лобби">‹</button>
@@ -161,6 +165,26 @@
       const state={initData:tg?tg.initData:"",room:null,players:[],game:null,stage:"lobby",pollTimer:null,roomBusy:false,busy:false,botTestMode:false,cameraMode:false,aim:null,visualBalls:null,animatingSeq:null,lastAnimatedSeq:0,raf:0};
       let pointerDown=null;
       const activeTouchPoints=new Map();
+      let navigationGuardActive=false;
+      function enterNavigationGuard(){
+        if(navigationGuardActive)return;
+        try{history.pushState({allcoinsBilliardsGuard:true},"",location.href);navigationGuardActive=true;}catch(_){}
+      }
+      function leaveNavigationGuard(){
+        if(!navigationGuardActive)return;
+        navigationGuardActive=false;
+        try{history.back();}catch(_){}
+      }
+      window.addEventListener("popstate",function(){
+        navigationGuardActive=false;
+        if(state.stage==="game"){
+          enterNavigationGuard();
+          askToLeaveGame();
+        }else if(state.stage==="waiting"){
+          enterNavigationGuard();
+          askToLeaveWaiting();
+        }
+      });
 
       function amount(v){const n=Number(v);return Number.isFinite(n)?Math.round(n).toLocaleString("ru-RU"):"—";}
       function setStatus(message,bad){const h=$("globalStatus");h.innerHTML='<span class="dot" style="'+(bad?"background:#ff6b79":"")+'"></span><span></span>';h.lastElementChild.textContent=message;}
@@ -185,14 +209,20 @@
             if(tg.BackButton&&typeof tg.BackButton.hide==="function")tg.BackButton.hide();
           }else{
             if(typeof tg.enableVerticalSwipes==="function")tg.enableVerticalSwipes();
-            if(typeof tg.disableClosingConfirmation==="function")tg.disableClosingConfirmation();
+            if(typeof tg.disableClosingConfirmation==="function")tg.disableClosingConfirmation();if(tg.BackButton&&typeof tg.BackButton.show==="function")tg.BackButton.show();
           }
         }catch(_){}
       }
       function showStage(stage){
+        const wasProtected=state.stage==="game"||state.stage==="waiting";
+        state.stage=stage;
         protectTelegram(stage);
+        if(stage==="game"||stage==="waiting")enterNavigationGuard();
+        else if(wasProtected)leaveNavigationGuard();
         if(stage!=="game"&&state.cameraMode){state.cameraMode=false;const viewBtn=$("viewModeBtn");viewBtn.classList.remove("active");viewBtn.setAttribute("aria-pressed","false");viewBtn.textContent="🎥 Повернуть стол";pointerDown=null;}
-        state.stage=stage;$("lobbyView").classList.toggle("hidden",stage!=="lobby");$("waitingView").classList.toggle("hidden",stage!=="waiting");$("gameView").classList.toggle("hidden",stage!=="game");
+        if(stage!=="waiting")$("leaveRoomConfirm").classList.add("hidden");
+        if(stage!=="game")$("leaveGameConfirm").classList.add("hidden");
+        $("lobbyView").classList.toggle("hidden",stage!=="lobby");$("waitingView").classList.toggle("hidden",stage!=="waiting");$("gameView").classList.toggle("hidden",stage!=="game");
         if(stage==="game"){$("gameView").scrollTop=0;requestAnimationFrame(()=>drawTable());}
         startPolling();
       }
@@ -242,7 +272,7 @@
       }
       async function leaveRoom(){
         if(!state.room||state.busy)return;state.busy=true;
-        try{await api("/rooms/leave",{roomId:state.room.id});state.room=null;state.players=[];showStage("lobby");setStatus("Ты вышел из комнаты.");await loadRooms(true);}
+        try{await api("/rooms/leave",{roomId:state.room.id});$("leaveRoomConfirm").classList.add("hidden");state.room=null;state.players=[];showStage("lobby");setStatus("Ты вышел из комнаты.");await loadRooms(true);}
         catch(e){setWaitingStatus(e.message,true);}finally{state.busy=false;}
       }
       async function startGame(){
@@ -332,9 +362,10 @@
       function roundedRect(ctx,x,y,w,h,r,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
       function roundedRectStroke(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.stroke();}
       function drawBall(ctx,b){
-        const x=b.x,y=b.y;if(b.type==="stripe"){ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fillStyle=COLORS[b.number]||"#fff";ctx.fill();ctx.save();ctx.beginPath();ctx.arc(x,y,R-0.5,0,Math.PI*2);ctx.clip();ctx.fillStyle="#f6f5ed";ctx.fillRect(x-R,y-4,R*2,8);ctx.restore();}
-        else{ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);const g=ctx.createRadialGradient(x-3,y-4,1,x,y,R+1);if(b.id==="cue"){g.addColorStop(0,"#fff");g.addColorStop(1,"#bac5cd");}else if(b.type==="eight"){g.addColorStop(0,"#555");g.addColorStop(1,"#030507");}else{g.addColorStop(0,"#fff3a8");g.addColorStop(.28,COLORS[b.number]||"#ddd");g.addColorStop(1,"#15191e");}ctx.fillStyle=g;ctx.fill();}
-        if(b.type!=="cue"){ctx.beginPath();ctx.arc(x,y,5.7,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.fillStyle="#12171d";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(b.number),x,y+.2);}
+        const x=b.x,y=b.y,isCue=b.id==="cue"||b.type==="cue",number=Number(b.number),ballColor=COLORS[number]||"#68798a";
+        if(!isCue&&b.type==="stripe"){ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.fillStyle=ballColor;ctx.fill();ctx.save();ctx.beginPath();ctx.arc(x,y,R-0.5,0,Math.PI*2);ctx.clip();ctx.fillStyle="#dce3e7";ctx.fillRect(x-R,y-4,R*2,8);ctx.restore();}
+        else{ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);const g=ctx.createRadialGradient(x-3,y-4,1,x,y,R+1);if(isCue){g.addColorStop(0,"#fff");g.addColorStop(1,"#bac5cd");}else if(b.type==="eight"||number===8){g.addColorStop(0,"#555");g.addColorStop(1,"#030507");}else{g.addColorStop(0,"#f2e0a7");g.addColorStop(.28,ballColor);g.addColorStop(1,"#15191e");}ctx.fillStyle=g;ctx.fill();}
+        if(!isCue){ctx.beginPath();ctx.arc(x,y,5.7,0,Math.PI*2);ctx.fillStyle="#e9e0c7";ctx.fill();ctx.fillStyle="#12171d";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(Number.isFinite(number)?number:"?"),x,y+.2);}
         ctx.beginPath();ctx.arc(x-3,y-4,2.2,0,Math.PI*2);ctx.fillStyle="#ffffff9c";ctx.fill();
       }
       function pointerCoords(e){if(typeof window.billiards3DPointerCoords==="function"){const point=window.billiards3DPointerCoords(e.clientX,e.clientY);if(point&&Number.isFinite(point.x)&&Number.isFinite(point.y))return point;}const rect=$("poolCanvas").getBoundingClientRect();return{x:(e.clientX-rect.left)*W/rect.width,y:(e.clientY-rect.top)*H/rect.height};}
@@ -378,6 +409,8 @@
       }
       async function placeCue(){state.aim=null;$("powerFill").style.width=($("shotPowerRange").value||55)+"%";setMessage(currentPlayerIsMe()?"Прицел сброшен. Потяни от битка в направлении удара.":"Сейчас ход соперника.");drawTable();}
       function askToLeaveGame(){if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}$("leaveGameConfirm").classList.remove("hidden");$("stayInGameBtn").focus();}
+      function askToLeaveWaiting(){if(state.stage!=="waiting"||!state.room)return;$("leaveRoomConfirm").classList.remove("hidden");$("stayInRoomBtn").focus();}
+      if(tg&&tg.BackButton){try{tg.BackButton.onClick(function(){if(state.stage==="game")askToLeaveGame();else if(state.stage==="waiting")askToLeaveWaiting();else if(history.length>1)history.back();else location.href="./index.html";});}catch(_){}}
       async function backToLobby(){
         $("leaveGameConfirm").classList.add("hidden");
         if(state.animatingSeq!==null){setMessage("Дождись, пока шары остановятся.");return;}
@@ -391,9 +424,9 @@
       function markStakePreset(){const value=Number($("roomStake").value);document.querySelectorAll(".stakePreset").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.stake)===value));}
       $("roomStake").addEventListener("input",markStakePreset);document.querySelectorAll(".stakePreset").forEach(btn=>btn.addEventListener("click",()=>{$("roomStake").value=btn.dataset.stake;markStakePreset();}));
       $("botTestBtn").addEventListener("click",()=>{state.botTestMode=!state.botTestMode;$("botTestBtn").classList.toggle("active",state.botTestMode);$("botTestBtn").setAttribute("aria-pressed",String(state.botTestMode));$("botTestBtn").textContent=state.botTestMode?"🤖 Играть с ботом (тест) · включено":"🤖 Играть с ботом (тест) · выключено";});
-      $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",leaveRoom);
+      $("createRoomBtn").addEventListener("click",createRoom);$("refreshRoomsBtn").addEventListener("click",()=>loadRooms(false));$("startGameBtn").addEventListener("click",startGame);$("leaveRoomBtn").addEventListener("click",askToLeaveWaiting);
       $("backAllcoins").addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./index.html";});
-      $("waitingBackBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",askToLeaveGame);$("endLobbyBtn").addEventListener("click",askToLeaveGame);$("stayInGameBtn").addEventListener("click",()=>{$("leaveGameConfirm").classList.add("hidden");});$("confirmLeaveGameBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);$("viewModeBtn").addEventListener("click",()=>{state.cameraMode=!state.cameraMode;pointerDown=null;state.aim=null;$("viewModeBtn").classList.toggle("active",state.cameraMode);$("viewModeBtn").setAttribute("aria-pressed",String(state.cameraMode));$("viewModeBtn").textContent=state.cameraMode?"✅ Готово · бить":"🎥 Повернуть стол";$("powerFill").style.width=($("shotPowerRange").value||55)+"%";if(state.cameraMode)setMessage("Режим ракурса включён: веди одним пальцем по столу. Или поверни стол двумя пальцами без этого режима.");else setMessage("Ракурс сохранён. Потяни от битка к направлению удара.");renderGameUI();drawTable();});
+      $("waitingBackBtn").addEventListener("click",askToLeaveWaiting);$("stayInRoomBtn").addEventListener("click",()=>$("leaveRoomConfirm").classList.add("hidden"));$("confirmLeaveRoomBtn").addEventListener("click",leaveRoom);$("gameBackBtn").addEventListener("click",askToLeaveGame);$("endLobbyBtn").addEventListener("click",askToLeaveGame);$("stayInGameBtn").addEventListener("click",()=>{$("leaveGameConfirm").classList.add("hidden");});$("confirmLeaveGameBtn").addEventListener("click",backToLobby);$("rematchBtn").addEventListener("click",startRematch);$("centerCueBtn").addEventListener("click",placeCue);$("viewModeBtn").addEventListener("click",()=>{state.cameraMode=!state.cameraMode;pointerDown=null;state.aim=null;$("viewModeBtn").classList.toggle("active",state.cameraMode);$("viewModeBtn").setAttribute("aria-pressed",String(state.cameraMode));$("viewModeBtn").textContent=state.cameraMode?"✅ Готово · бить":"🎥 Повернуть стол";$("powerFill").style.width=($("shotPowerRange").value||55)+"%";if(state.cameraMode)setMessage("Режим ракурса включён: веди одним пальцем по столу. Или поверни стол двумя пальцами без этого режима.");else setMessage("Ракурс сохранён. Потяни от битка к направлению удара.");renderGameUI();drawTable();});
       $("poolCanvas").addEventListener("pointerdown",onPointerDown);$("pool3DCanvas").addEventListener("pointerdown",onPointerDown);window.addEventListener("pointermove",onPointerMove,{passive:false});window.addEventListener("pointerup",onPointerUp,{passive:false});window.addEventListener("pointercancel",onPointerUp,{passive:false});
       $("shotPowerRange").addEventListener("input",()=>{$("shotPowerValue").textContent=$("shotPowerRange").value+"%";$("powerFill").style.width=$("shotPowerRange").value+"%";});$("powerFill").style.width=$("shotPowerRange").value+"%";
       // If the external 3D module cannot load (CDN/WebGL/network), restore the working 2D table instead of leaving a blank play area.
@@ -401,7 +434,8 @@
       window.addEventListener("resize",()=>{if(state.stage==="game")drawTable();});
       document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game"&&state.animatingSeq===null)refreshGame(true);}});
       (async function init(){if(tg){try{tg.ready();tg.expand();}catch(_){}}
-        await loadRooms(false);startPolling();
+        protectTelegram("lobby");
+         await loadRooms(false);startPolling();
       })();
     })();
   </script>
@@ -447,18 +481,19 @@
       }
       function ballMaterial(ball){
         const key=String(ball.id);if(ballMaterialCache.has(key))return ballMaterialCache.get(key);
-        const color=ball.id==="cue"?0xffffff:(colors[ball.number]||0xffffff);
+        const isCue=ball.id==="cue"||ball.type==="cue",number=Number(ball.number);
+        const color=isCue?0xffffff:(ball.type==="eight"||number===8?0x101217:(colors[number]||0x667789));
         const m=mat(color,.18,.04);ballMaterialCache.set(key,m);return m;
       }
       function makeBall(ball){
-        const group=new THREE.Group();
+        const group=new THREE.Group(),isCue=ball.id==="cue"||ball.type==="cue";
         const sphere=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,32,24),ballMaterial(ball));sphere.castShadow=true;sphere.receiveShadow=true;group.add(sphere);
-        if(ball.type==="stripe"){
-          const band=new THREE.Mesh(new THREE.TorusGeometry(BALL_R*.82,.027,8,40),mat(0xf8f7ec,.22));band.rotation.x=Math.PI/2;group.add(band);
+        if(!isCue&&ball.type==="stripe"){
+          const band=new THREE.Mesh(new THREE.TorusGeometry(BALL_R*.82,.027,8,40),mat(0xdce3e7,.22));band.rotation.x=Math.PI/2;group.add(band);
         }
-        if(ball.id!=="cue"){
-          const disk=new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.43,24),mat(0xffffff,.35));disk.position.y=BALL_R*.91;disk.rotation.x=-Math.PI/2;group.add(disk);
-          const numberCanvas=document.createElement("canvas");numberCanvas.width=128;numberCanvas.height=128;const ctx=numberCanvas.getContext("2d");ctx.fillStyle="#ffffff";ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fill();ctx.fillStyle="#111820";ctx.font="bold 68px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(ball.number),64,66);
+        if(!isCue){
+          const disk=new THREE.Mesh(new THREE.CircleGeometry(BALL_R*.43,24),mat(0xe9e0c7,.35));disk.position.y=BALL_R*.91;disk.rotation.x=-Math.PI/2;group.add(disk);
+          const numberCanvas=document.createElement("canvas");numberCanvas.width=128;numberCanvas.height=128;const ctx=numberCanvas.getContext("2d");ctx.fillStyle="#e9e0c7";ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fill();ctx.fillStyle="#111820";ctx.font="bold 68px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(ball.number),64,66);
           const tex=new THREE.CanvasTexture(numberCanvas);const sprite=new THREE.Mesh(new THREE.PlaneGeometry(BALL_R*.72,BALL_R*.72),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));sprite.position.y=BALL_R*.97;sprite.rotation.x=-Math.PI/2;group.add(sprite);
         }
         scene.add(group);return group;
