@@ -11249,11 +11249,11 @@ function renderTwentyOneRoomBoard(result) {
     if (game.status === "finished") {
       $("twentyOneRoomMyHandNote").textContent = "Раунд завершён · " +
         (Number(myPlayer.payout) > 0
-          ? "тебе начислено " + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC" +
+          ? "тебе начислено: +" + Number(myPlayer.payout).toLocaleString("ru-RU") + " AC" +
             (Number(myPlayer.commissionAmount) > 0
               ? " · комиссия проекта 5%: " + Number(myPlayer.commissionAmount).toLocaleString("ru-RU") + " AC"
               : "")
-          : "выигрыш в этом раунде не начислен");
+          : "твой выигрыш: 0 AC — в этом раунде выплата не начислена");
     } else if (myPlayer.status === "stand") {
       $("twentyOneRoomMyHandNote").textContent = "Ты остановился на " + myScore + " очках.";
     } else if (myPlayer.status === "bust") {
@@ -11286,11 +11286,13 @@ function renderTwentyOneRoomBoard(result) {
     name.textContent = player.label || "Игрок";
     const stateLabel = document.createElement("small");
     const statusText = { playing:"Ходит", stand:"Остановился", won:"Победа", bust:"Перебор", lost:"Проиграл" };
-    const stateNote = game.status === "finished" && Number(player.payout) > 0
-      ? "Победа · +" + Number(player.payout).toLocaleString("ru-RU") + " AC" +
-        (Number(player.commissionAmount) > 0
-          ? " · комиссия " + Number(player.commissionAmount).toLocaleString("ru-RU") + " AC"
-          : "")
+    const stateNote = game.status === "finished"
+      ? (Number(player.payout) > 0
+          ? "Начислено: +" + Number(player.payout).toLocaleString("ru-RU") + " AC" +
+            (Number(player.commissionAmount) > 0
+              ? " · комиссия " + Number(player.commissionAmount).toLocaleString("ru-RU") + " AC"
+              : "")
+          : "Начислено: 0 AC")
       : (statusText[player.status] || "В игре");
     const hasVisibleScore = player.score !== null && player.score !== undefined && Number.isFinite(Number(player.score));
     const scoreText = hasVisibleScore
