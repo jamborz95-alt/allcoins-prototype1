@@ -10,13 +10,18 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-physics1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-obstacles1"'),
   "The game link should load the smoother physics build with its on-field joystick.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
 assert.ok(bombHtml.includes("function startGame()") && bombHtml.includes("function passBombFromBot(target)"),
   "The standalone game must include its start and bot-pass logic.");
+assert.ok(bombHtml.includes('<div class="obstacle-layer" id="obstacleLayer"') &&
+  bombHtml.includes("const MAP_OBSTACLES =") &&
+  bombHtml.includes("function slideAroundObstacles(") &&
+  bombHtml.includes("isBlockedByObstacle(boundedX, boundedY"),
+  "The mine maps must have visible obstacles with physical collision handling.");
 assert.ok(bombHtml.includes('<svg class="mine-scene"') &&
   bombHtml.includes('data-map="copper"') && bombHtml.includes('data-map="crystal"'),
   "The game should include original inline mine artwork and two selectable original maps.");
@@ -59,6 +64,8 @@ assert.ok(bombHtml.includes("min-height:62px") &&
   bombHtml.includes("grid-template-columns:minmax(0,1fr) auto"),
   "The footer should be shorter so more of the screen is available for the game arena.");
 assert.ok(bombHtml.includes("body.game-active{overflow:hidden;position:fixed") &&
+  bombHtml.includes("html.bomb-active,html.bomb-active body{touch-action:none") &&
+  bombHtml.includes("window.addEventListener('touchmove'") &&
   bombHtml.includes("touch-action:none;user-select:none;-webkit-user-select:none") &&
   !bombHtml.includes("document.addEventListener('touchstart'"),
   "The active game must block page/edge gestures without cancelling joystick touch events.");
