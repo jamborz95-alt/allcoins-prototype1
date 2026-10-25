@@ -165,7 +165,7 @@ body.playing .top{display:none}
     <div class="crown-record"><span class="crown-icon" aria-hidden="true">👑</span><div class="crown-numbers"><strong id="inGameBest">0</strong><small>ЛИЧНЫЙ РЕКОРД</small><span class="week-mini">НЕДЕЛЯ · <b id="playingWeeklyRecord">0</b></span></div></div>
     <div class="game-controls">
      <button class="exit-round" id="leaveGameButton" type="button" aria-label="В меню" title="В меню">↩</button>
-     <button class="new-round" id="restartButton" type="button" aria-label="Новая игра" title="Начать новую игру">♟<span>NEW</span></button>
+     <button class="new-round" id="restartButton" type="button" aria-label="Новая игра" title="Начать новую игру">↻<span>NEW</span></button>
     </div>
    </div>
    <div class="current-score-wrap"><strong class="score" id="currentScore">0</strong><span class="score-caption">СЧЁТ</span></div>
@@ -264,10 +264,27 @@ async function joinTournament(){
  }
 }
 function emptyBoard(){return Array.from({length:BOARD_SIZE},function(){return Array(BOARD_SIZE).fill(0);});}
+function initialBoard(){
+ return [
+  [0,2,0,0,1,0,0,0],
+  [0,0,1,1,1,2,0,2],
+  [2,1,0,0,1,0,0,0],
+  [0,0,1,1,0,2,0,1],
+  [1,1,1,0,0,0,0,2],
+  [0,1,1,1,1,0,1,1],
+  [1,2,2,2,0,0,1,1],
+  [2,1,1,1,1,0,0,1]
+ ];
+}
 function randomPiece(){return shapes[Math.floor(Math.random()*shapes.length)].map(function(c){return [c[0],c[1]];});}
-function generatePieces(){pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;renderTray();}
+function generatePieces(){
+ var attempts=0;
+ do {pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;attempts++;}
+ while(!anyMoveAvailable()&&attempts<30);
+ renderTray();
+}
 function startGame(){
- $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=emptyBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
+ $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
  $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
  $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
