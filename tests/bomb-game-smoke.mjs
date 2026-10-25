@@ -10,7 +10,7 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-botsound1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-botsound2"'),
   "The game link should remain stable.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
@@ -134,6 +134,11 @@ try {
     "Using Telegram's back button must not eject the user from an active round.");
   assert.match(await page.locator("#instruction").innerText(), /Матч продолжается/i,
     "The game should explain that the active match is being kept open.");
+  const activeUrl = page.url();
+  await page.evaluate(() => window.dispatchEvent(new PopStateEvent("popstate")));
+  assert.equal(await page.locator("#gameView").isVisible(), true,
+    "A browser back navigation should not eject the player from an active round.");
+  assert.equal(page.url(), activeUrl, "The active game should remain on its current URL.");
 
   const previousHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   const target = "3"; // Bottom-right opponent, reachable by moving down and right.
