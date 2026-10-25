@@ -66,7 +66,7 @@ try {
   await page.route("https://telegram.org/js/telegram-web-app.js", route => route.fulfill({
     status: 200,
     contentType: "application/javascript",
-    body: "window.Telegram = { WebApp: { initData: 'mock-billiards-init-data', ready(){}, expand(){}, colorScheme:'dark' } };"
+    body: "window.__tgCalls=[]; window.Telegram = { WebApp: { initData: 'mock-billiards-init-data', isFullscreen:false, ready(){}, expand(){}, disableVerticalSwipes(){window.__tgCalls.push('disableVerticalSwipes')}, enableVerticalSwipes(){window.__tgCalls.push('enableVerticalSwipes')}, enableClosingConfirmation(){window.__tgCalls.push('enableClosingConfirmation')}, disableClosingConfirmation(){window.__tgCalls.push('disableClosingConfirmation')}, requestFullscreen(){window.__tgCalls.push('requestFullscreen');this.isFullscreen=true}, colorScheme:'dark' } };"
   }));
   await page.route("https://allcoins-server.onrender.com/api/billiards/**", async route => {
     const request = route.request();
@@ -156,6 +156,14 @@ try {
     await page.locator("#startGameBtn").click();
     await page.waitForFunction(() => !document.getElementById("gameView").classList.contains("hidden"));
     await page.waitForFunction(() => window.billiards3DReady === true);
+    const telegramProtection = await page.evaluate(() => window.__tgCalls || []);
+    assert.ok(telegramProtection.includes("disableVerticalSwipes"), "Во время игры не отключены вертикальные свайпы, закрывающие Telegram Mini App");
+    assert.ok(telegramProtection.includes("enableClosingConfirmation"), "Во время игры не включено подтверждение закрытия Telegram Mini App");
+    assert.ok(telegramProtection.includes("requestFullscreen"), "При начале игры не запрашивается полноэкранный режим Telegram");
+    assert.match(html, /7:"#7d1830"/, "Шар №7 должен быть цветным, а не белым");
+    assert.match(html, /15:"#7d1830"/, "Шар №15 должен быть цветным, а не белым");
+    assert.match(html, /7:0x7d1830/, "В 3D-столе шар №7 не должен быть белым");
+    assert.match(html, /15:0x7d1830/, "В 3D-столе шар №15 не должен быть белым");
     const activeCanvas = await page.evaluate(() => { const canvas = document.getElementById("pool3DCanvas"); const rect = canvas.getBoundingClientRect(); return { width: rect.width, height: rect.height, opacity: getComputedStyle(canvas).opacity }; });
     assert.ok(activeCanvas.width > 100 && activeCanvas.height > 100, "После открытия игры у 3D-стола нет видимой области: " + JSON.stringify(activeCanvas));
     assert.equal(activeCanvas.opacity, "1", "3D-стол должен быть видимым");
@@ -178,6 +186,27 @@ try {
     assert.equal(stakeRequests.length, 0, "Настройка ракурса ошибочно отправила удар");
     await page.locator("#viewModeBtn").click();
     assert.equal(await page.locator("#viewModeBtn").getAttribute("aria-pressed"), "false", "Режим ракурса не выключился");
+    const angleBeforeTwoFinger = await page.evaluate(() => window.billiards3DGetCameraState());
+    await page.locator("#pool3DCanvas").evaluate(canvas => {
+      const send = (type, pointerId, clientX, clientY) => canvas.dispatchEvent(new PointerEvent(type, {
+        pointerId, pointerType: "touch", clientX, clientY, bubbles: true, cancelable: true
+      }));
+      send("pointerdown", 71, 150, 420);
+      send("pointerdown", 72, 250, 420);
+      send("pointermove", 71, 170, 435);
+      send("pointermove", 72, 270, 435);
+      send("pointerup", 71, 170, 435);
+      send("pointerup", 72, 270, 435);
+    });
+    const angleAfterTwoFinger = await page.evaluate(() => window.billiards3DGetCameraState());
+    assert.ok(Math.abs(angleAfterTwoFinger.theta-angleBeforeTwoFinger.theta) > 0.05 ||
+      Math.abs(angleAfterTwoFinger.phi-angleBeforeTwoFinger.phi) > 0.05, "Движение двумя пальцами без режима не изменило ракурс");
+    assert.equal(stakeRequests.length, 0, "Жест изменения ракурса двумя пальцами не должен вызывать удар");
+    await page.locator("#gameBackBtn").click();
+    assert.equal(await page.locator("#leaveGameConfirm").isVisible(), true, "Нажатие кнопки выхода должно сначала запросить подтверждение");
+    await page.locator("#stayInGameBtn").click();
+    assert.equal(await page.locator("#leaveGameConfirm").isVisible(), false, "После нажатия «Остаться» окно подтверждения должно закрыться");
+    assert.equal(await page.locator("#gameView").isVisible(), true, "После отмены выхода игра должна остаться открытой");
     assert.equal(await page.locator("#shotPowerRange").count(), 1, "На игровом экране отсутствует ползунок силы удара");
     await page.locator("#shotPowerRange").evaluate(el => {
       el.value = "78";
