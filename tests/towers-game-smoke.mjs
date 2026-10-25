@@ -31,7 +31,7 @@ try {
   const errors = [];
   await page.route("https://telegram.org/**", route => route.fulfill({
     status: 200, contentType: "application/javascript", body: `
-      window.Telegram={WebApp:{initData:"mock-init-data",initDataUnsafe:{user:{id:12345,first_name:"Тестовый игрок"}},ready(){},expand(){},setHeaderColor(){},setBackgroundColor(){},BackButton:{show(){},hide(){},onClick(){}}}};
+      window.Telegram={WebApp:{initData:"mock-init-data",initDataUnsafe:{user:{id:12345,first_name:"Тестовый игрок"}},ready(){},expand(){},setHeaderColor(){},setBackgroundColor(){},requestFullscreen(){window.__fullscreenRequests=(window.__fullscreenRequests||0)+1;return Promise.resolve();},BackButton:{show(){},hide(){},onClick(){}}}};
     `
   }));
   await page.route("https://allcoins-server.onrender.com/**", route => route.fulfill({
@@ -42,6 +42,7 @@ try {
   await page.locator("#practice").waitFor();
   await page.locator("#practice").click();
   await page.locator("#gameView:not(.hidden)").waitFor();
+  assert.ok(await page.evaluate(() => (window.__fullscreenRequests || 0) >= 1), "Starting a match should request Telegram fullscreen.");
   await page.locator(".tower[data-tower='1']").waitFor();
   assert.equal(await page.locator(".tower").count(), 9, "Practice mode should draw nine towers.");
   await page.locator(".tower[data-tower='1']").click();
