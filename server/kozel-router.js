@@ -56,11 +56,19 @@ function makeDeck() {
 function getGroup(card) { return isTrump(card) ? "trump" : "suit:" + card.suit; }
 function getLegalCards(game, player) {
   if (!player || !player.hand.length) return [];
-  if (!game.table.length && game.roundNo === 1 && game.trickNo === 1 && game.firstLeadForced) {
-    const aceDiamonds = player.hand.find(card => card.rank === "A" && card.suit === "♦");
-    return aceDiamonds ? [aceDiamonds] : [];
+  if (!game.table.length) {
+    if (game.roundNo === 1 && game.trickNo === 1 && game.firstLeadForced) {
+      const aceDiamonds = player.hand.find(card => card.rank === "A" && card.suit === "♦");
+      return aceDiamonds ? [aceDiamonds] : [];
+    }
+    const nonTrumps = player.hand.filter(card => !isTrump(card));
+    const score = game.matchPoints || [0, 0];
+    const kozlyachyBattle = score[0] === 10 && score[1] === 10;
+    if (nonTrumps.length && !kozlyachyBattle) {
+      if (game.roundNo === 1 || player.team !== Number(game.firstLeadTeam)) return nonTrumps;
+    }
+    return player.hand.slice();
   }
-  if (!game.table.length) return player.hand.slice();
   const leadCard = game.table[0].card;
   const requiredGroup = getGroup(leadCard);
   const matching = player.hand.filter(card => getGroup(card) === requiredGroup);
@@ -82,19 +90,18 @@ function trickPoints(plays) { return plays.reduce((sum, play) => sum + cardPoint
 function dealCards(game, firstLeadIndex, forcedFirstLead) {
   const deck = makeDeck();
   const hands = [[], [], [], []];
-  for (let i = 0; i < deck.length; i++) hands[(i % 4)].push(deck[i]);
-  // Keep each deal reproducible for the clients, but randomize which seat receives each
-  // chunk by shuffling the deck before dealing. The first lead card is then handled by
-  // the required rule (A♦ starts the first deal).
+  for (let i = 0; i < deck.length; i++) hands[i % 4].push(deck[i]);
   game.players.forEach((player, index) => { player.hand = hands[index]; });
   game.table = [];
   game.lastTrick = null;
   game.trickNo = 1;
   game.teamPoints = [0, 0];
+  game.tricksWon = [0, 0];
   game.firstLeadForced = Boolean(forcedFirstLead);
   game.currentPlayerIndex = forcedFirstLead
     ? game.players.findIndex(player => player.hand.some(card => card.rank === "A" && card.suit === "♦"))
     : ((Number(firstLeadIndex) % 4) + 4) % 4;
+  game.firstLeadTeam = game.players[game.currentPlayerIndex]?.team ?? 0;
 }
 function makeGame(players, stake, botMode, startedBy) {
   const game = {
@@ -115,8 +122,13 @@ function makeGame(players, stake, botMode, startedBy) {
     table: [],
     lastTrick: null,
     teamPoints: [0, 0],
-    letters: [[], []],
+    lastDealPoints: [0, 0],
+    tricksWon: [0, 0],
+    matchPoints: [0, 0],
+    pendingDrawBonus: 0,
     firstLeadForced: true,
+    firstLeadTeam: 0,
+    startingIndex: 0,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     winnerTeam: null,
@@ -126,6 +138,7 @@ function makeGame(players, stake, botMode, startedBy) {
     message: "Первая раздача. Начинает игрок с тузом бубен."
   };
   dealCards(game, startedBy || 0, true);
+  game.startingIndex = game.currentPlayerIndex;
   return game;
 }
 function chooseBotCard(game, player) {
@@ -176,6 +189,7 @@ function processPlayedCard(game, playerIndex, card) {
     card: { ...play.card }
   }));
   game.teamPoints[winningTeam] += points;
+  game.tricksWon[winningTeam] = Number(game.tricksWon[winningTeam] || 0) + 1;
   game.lastTrick = {
     plays: completedPlays,
     winnerIndex,
@@ -198,33 +212,75 @@ function processPlayedCard(game, playerIndex, card) {
 function finishDeal(game, previousWinnerIndex) {
   const [team0Points, team1Points] = game.teamPoints;
   game.lastDealPoints = [team0Points, team1Points];
-  game.lastTrick = game.lastTrick || null;
+
   if (team0Points === team1Points) {
-    game.message = "Раздача завершена со счётом 60:60. Буквы не начислены.";
+    game.pendingDrawBonus = Number(game.pendingDrawBonus || 0) + 2;
+    game.message = "Раздача завершена со счётом 60:60. Эти 2 балла перейдут победителю следующей раздачи.";
     const nextLeader = game.startingIndex;
     game.roundNo += 1;
     game.startingIndex = nextLeader;
     dealCards(game, nextLeader, false);
-  } else {
-    const losingTeam = team0Points < team1Points ? 0 : 1;
-    game.letters[losingTeam].push(MATCH_LETTERS[game.letters[losingTeam].length] || "Л");
-    const winningTeam = 1 - losingTeam;
-    if (game.letters[losingTeam].length >= MATCH_LETTERS.length) {
+    return;
+  }
+
+  const winningTeam = team0Points > team1Points ? 0 : 1;
+  const losingTeam = 1 - winningTeam;
+  const bonus = Math.max(0, Number(game.pendingDrawBonus) || 0);
+  game.pendingDrawBonus = 0;
+  let gained = 0;
+  let note = "";
+
+  if (Number(game.tricksWon[winningTeam] || 0) === 8) {
+    if (game.matchPoints[0] === 0 && game.matchPoints[1] === 0) {
+      gained = 6 + bonus;
+      game.matchPoints[winningTeam] += gained;
+      note = "Команда взяла все 8 взяток и получает " + gained + " баллов.";
+    } else if (Number(game.matchPoints[losingTeam] || 0) > 0) {
+      game.matchPoints[losingTeam] = 0;
+      if (bonus > 0) {
+        game.matchPoints[winningTeam] += bonus;
+        gained = bonus;
+      }
+      note = "Команда взяла все 8 взяток: баллы соперников сброшены до 0." +
+        (bonus ? " Дополнительно перенесено " + bonus + " балла." : "");
+    } else {
       game.status = "finished";
       game.winnerTeam = winningTeam;
       game.finishedAt = new Date().toISOString();
       game.table = [];
       game.currentPlayerIndex = previousWinnerIndex;
-      game.message = "Партия завершена! Команда " + (winningTeam + 1) + " выиграла. Итог раздачи: " + team0Points + ":" + team1Points + ".";
+      game.message = "Партия завершена: команда " + (winningTeam + 1) +
+        " взяла все 8 взяток, а соперники не имели баллов для сброса. Команда " +
+        (winningTeam + 1) + " победила.";
       return;
     }
-    game.message = "Раздача " + game.roundNo + " завершена: " + team0Points + ":" + team1Points +
-      ". Буква «" + MATCH_LETTERS[game.letters[losingTeam].length - 1] + "» команде " + (losingTeam + 1) + ".";
-    const nextLeader = (game.startingIndex + 1) % 4;
-    game.roundNo += 1;
-    game.startingIndex = nextLeader;
-    dealCards(game, nextLeader, false);
+  } else {
+    if (game.teamPoints[winningTeam] === 120) gained = 6;
+    else if (game.teamPoints[winningTeam] >= 90) gained = 4;
+    else if (game.teamPoints[winningTeam] >= 61) gained = 2;
+    gained += bonus;
+    game.matchPoints[winningTeam] += gained;
+    note = "Команда " + (winningTeam + 1) + " получает " + gained + " баллов за раздачу.";
   }
+
+  if (game.matchPoints[winningTeam] >= 12) {
+    game.status = "finished";
+    game.winnerTeam = winningTeam;
+    game.finishedAt = new Date().toISOString();
+    game.table = [];
+    game.currentPlayerIndex = previousWinnerIndex;
+    game.message = "Партия завершена! Команда " + (winningTeam + 1) + " набрала " +
+      game.matchPoints[winningTeam] + " баллов и победила. Счёт раздачи: " +
+      team0Points + ":" + team1Points + ".";
+    return;
+  }
+
+  game.message = "Раздача " + game.roundNo + " завершена: " + team0Points + ":" + team1Points +
+    ". " + note + " Матч: " + game.matchPoints[0] + ":" + game.matchPoints[1] + ".";
+  const nextLeader = (game.startingIndex + 1) % 4;
+  game.roundNo += 1;
+  game.startingIndex = nextLeader;
+  dealCards(game, nextLeader, false);
 }
 async function settlePayout(client, roomId, game) {
   if (game.status !== "finished" || game.settlementApplied) return;
@@ -273,7 +329,9 @@ function publicGame(game, userId) {
     trickNo: Number(game.trickNo || 1),
     teamPoints: [...(game.teamPoints || [0, 0])],
     lastDealPoints: [...(game.lastDealPoints || [0, 0])],
-    letters: game.letters.map(items => [...items]),
+    tricksWon: [...(game.tricksWon || [0, 0])],
+    matchPoints: [...(game.matchPoints || [0, 0])],
+    pendingDrawBonus: Number(game.pendingDrawBonus || 0),
     currentPlayerIndex: Number(game.currentPlayerIndex || 0),
     currentPlayerId: game.players[game.currentPlayerIndex]?.id || null,
     currentPlayerName: game.players[game.currentPlayerIndex]?.name || "",
