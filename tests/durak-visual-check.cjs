@@ -303,7 +303,7 @@ const path = require("node:path");
     await page.locator('.nav [data-page="games"]').click();
     await page.waitForTimeout(150);
 
-    // Regression checks for the clicker brand, task flow, six game tiles and card-preview removal.
+    // Regression checks for the clicker brand, task flow, eight game tiles and card-preview removal.
     const clickerBrandDiagnostics = await page.evaluate(() => {
       const brand = document.getElementById("allcoinsBrand");
       const rect = brand?.getBoundingClientRect();
@@ -362,6 +362,7 @@ const path = require("node:path");
       const definitions = [
         { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
         { id: "unoEntry", selector: ".uno-entry-appicon", title: "УНО Онлайн" },
+        { id: "billiardsEntry", selector: ".billiards-entry-appicon", title: "Бильярд Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
         { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
         { id: "sekaEntry", selector: ".seka-entry-appicon", title: "Сека Онлайн" },
@@ -421,8 +422,8 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
-    assert.equal(gamesIconDiagnostics.tiles, 7, "В разделе должны отображаться семь игровых плиток, включая УНО Онлайн");
-    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "УНО Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
+    assert.equal(gamesIconDiagnostics.tiles, 8, "В разделе должны отображаться восемь игровых плиток, включая УНО Онлайн и Бильярд Онлайн");
+    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "УНО Онлайн", "Бильярд Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
     assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
     assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
       "На значке Дурак Онлайн остался старый золотой градиент");
@@ -463,7 +464,7 @@ const path = require("node:path");
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       icons: [...document.querySelectorAll("#games .game-app-tile")].map(tile => {
-        const icon = tile.querySelector(".durak-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
+        const icon = tile.querySelector(".durak-entry-appicon,.uno-entry-appicon,.billiards-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
         const r = icon?.getBoundingClientRect();
         return { id: tile.id, width: r?.width ?? null, height: r?.height ?? null };
       })
