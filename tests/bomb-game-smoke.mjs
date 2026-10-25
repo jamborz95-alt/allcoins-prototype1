@@ -10,8 +10,8 @@ const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-joystickcolors1"'),
-  "The game link should use the refreshed joystick and character-color assets.");
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-fieldjoystick1"'),
+  "The game link should load the larger arena with its on-field joystick.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
@@ -38,6 +38,13 @@ assert.ok(bombHtml.includes("setGradient('minerHelmet', outfit.helmet)") &&
   bombHtml.includes("setGradient('minerJacket', outfit.jacket)") &&
   bombHtml.includes("setGradient('minerPants', outfit.pants)"),
   "Bot miners must receive distinct outfit colors.");
+assert.ok(bombHtml.includes('<div class="joystick-panel arena-joystick-panel">') &&
+  bombHtml.includes(".arena-joystick-panel{position:absolute;left:50%;") &&
+  bombHtml.indexOf('id="moveJoystick" type="button"') < bombHtml.indexOf('<div class="bottom-area">'),
+  "The movement joystick must be a floating control inside the actual playfield, not in the footer.");
+assert.ok(bombHtml.includes("min-height:62px") &&
+  bombHtml.includes("grid-template-columns:minmax(0,1fr) auto"),
+  "The footer should be shorter so more of the screen is available for the game arena.");
 assert.ok(bombHtml.includes("body.game-active{overflow:hidden;position:fixed") &&
   bombHtml.includes("touch-action:none;user-select:none;-webkit-user-select:none") &&
   !bombHtml.includes("document.addEventListener('touchstart'"),
@@ -94,6 +101,17 @@ try {
       "Every non-human player should have a visible human-shaped character.");
     const arena = await page.locator("#arena").boundingBox();
     assert.ok(arena && arena.width >= 300, "The game arena should fit a mobile viewport.");
+    assert.ok(arena && arena.height >= 500,
+      "The expanded playfield should use most of the phone's vertical space.");
+    const joystickBoxOnField = await page.locator("#moveJoystick").boundingBox();
+    assert.ok(joystickBoxOnField && arena &&
+      joystickBoxOnField.x >= arena.x &&
+      joystickBoxOnField.x + joystickBoxOnField.width <= arena.x + arena.width &&
+      joystickBoxOnField.y >= arena.y &&
+      joystickBoxOnField.y + joystickBoxOnField.height <= arena.y + arena.height,
+      "The large joystick must be visibly positioned inside the field boundaries.");
+    assert.equal(await page.locator("#arena").locator("#moveJoystick").count(), 1,
+      "The joystick should belong to the arena, not the footer.");
     assert.equal(await page.locator("#arena").getAttribute("data-map"), "crystal",
       "The selected map should be applied to the full-screen game arena.");
     await page.locator("#gameBack").click();
