@@ -1243,7 +1243,6 @@
       }
 
       async function animateUnoCardFlight(job) {
-        if (job.delay > 0) await unoWait(job.delay);
         const source = job.sourceElement;
         const target = job.targetElement;
         const endRect = job.endRect || unoRect(target);
@@ -1257,7 +1256,11 @@
           value: target.style.getPropertyValue("opacity"),
           priority: target.style.getPropertyPriority("opacity")
         } : null;
+
+        // Hide the real discard card immediately, before any stagger delay.
+        // Otherwise it flashes on the table, disappears, then reappears at flight end.
         if (target) target.style.setProperty("visibility", "hidden", "important");
+        if (job.delay > 0) await unoWait(job.delay);
 
         const sourceRect = job.startRect || unoRect(source);
         if (!sourceRect) {
