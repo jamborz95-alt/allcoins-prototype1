@@ -102,6 +102,8 @@
     .hand { display:flex; align-items:flex-end; justify-content:center; min-height:clamp(93px,20vw,145px); padding:0 4px; overflow-x:auto; overflow-y:hidden; }
     .hand .hand-card { margin-left:-12px; width:clamp(52px,12vw,83px); min-width:clamp(52px,12vw,83px); }
     .hand .hand-card:first-child { margin-left:0; }
+    .hand-card { touch-action:none; -webkit-user-select:none; user-select:none; }
+    .felt.drag-target { outline:2px solid #f2d482; outline-offset:2px; box-shadow:inset 0 0 0 2px #f2d48266, 0 0 18px #f2d48255; }
     .hand-card { padding:0; background:none; border:0; border-radius:8px; box-shadow:none; overflow:visible; transition:transform .14s ease,filter .14s ease; }
     .hand-card .card-face { width:100%; }
     .hand-card.legal { filter:drop-shadow(0 0 4px #f5d98a66); }
@@ -283,6 +285,7 @@
       let roomListBusy = false;
       let stateBusy = false;
       let lastState = null;
+      let kozelCardDragging = false;
 
       if (tg) {
         try {
@@ -481,7 +484,7 @@
       function startPolling() {
         stopPolling();
         pollTimer = setInterval(() => {
-          if (document.hidden || !currentRoomId || busy) return;
+          if (document.hidden || !currentRoomId || busy || kozelCardDragging) return;
           refreshState(true);
           if (stage === "lobby") loadRooms(true);
         }, 1300);
@@ -590,6 +593,121 @@
         wrapper.append(who, face);
         return wrapper;
       }
+      function setupKozelCardInput(button, card) {
+        button.style.touchAction = "none";
+        button.style.userSelect = "none";
+        button.addEventListener("click", () => {
+          if (button.dataset.skipNextClick === "true") {
+            button.dataset.skipNextClick = "false";
+            return;
+          }
+          playCard(card);
+        });
+        button.addEventListener("pointerdown", event => {
+          if ((event.pointerType === "mouse" && event.button !== 0) || button.disabled || busy) return;
+          const id = event.pointerId, sx = event.clientX, sy = event.clientY;
+          const rect = button.getBoundingClientRect();
+          const ox = sx - rect.left, oy = sy - rect.top;
+          let dragging = false, flyer = null, raf = 0, x = sx, y = sy, tilt = 0;
+          const skipClick = () => {
+            button.dataset.skipNextClick = "true";
+            setTimeout(() => { button.dataset.skipNextClick = "false"; }, 450);
+          };
+          kozelCardDragging = true;
+          try { button.setPointerCapture(id); } catch (_) {}
+          const move = e => {
+            if (e.pointerId !== id) return;
+            if (!dragging && Math.hypot(e.clientX - sx, e.clientY - sy) > 6) {
+              dragging = true;
+              skipClick();
+              flyer = button.cloneNode(true);
+              flyer.disabled = true;
+              Object.assign(flyer.style, {
+                position:"fixed", left:rect.left+"px", top:rect.top+"px",
+                width:rect.width+"px", minWidth:rect.width+"px", maxWidth:rect.width+"px",
+                height:rect.height+"px", minHeight:rect.height+"px", maxHeight:rect.height+"px",
+                margin:"0", padding:"0", boxSizing:"border-box", flex:"none",
+                zIndex:"10000", pointerEvents:"none", transition:"none",
+                transform:"rotate(0deg) scale(1.035)", transformOrigin:ox+"px "+oy+"px",
+                opacity:"1", willChange:"left,top,transform"
+              });
+              const face = flyer.querySelector(".card-face");
+              if (face) { face.style.width="100%"; face.style.height="100%"; face.style.aspectRatio="auto"; }
+              const img = flyer.querySelector("img");
+              if (img) { img.draggable=false; img.style.width="100%"; img.style.height="100%"; img.style.objectFit="fill"; }
+              document.body.appendChild(flyer);
+              button.style.opacity = "0";
+            }
+            if (!dragging || !flyer) return;
+            e.preventDefault();
+            x = e.clientX; y = e.clientY;
+            tilt = Math.max(-5, Math.min(5, (x - sx) * 0.055));
+            const r = $("felt").getBoundingClientRect();
+            $("felt").classList.toggle("drag-target", x>=r.left-12 && x<=r.right+12 && y>=r.top-12 && y<=r.bottom+12);
+            if (!raf) raf = requestAnimationFrame(() => {
+              raf = 0;
+              if (!flyer) return;
+              flyer.style.left = (x-ox)+"px";
+              flyer.style.top = (y-oy)+"px";
+              flyer.style.transform = "rotate("+tilt+"deg) scale(1.035)";
+            });
+          };
+          const cleanup = () => {
+            if (raf) cancelAnimationFrame(raf);
+            raf = 0;
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", up);
+            document.removeEventListener("pointercancel", cancel);
+            button.removeEventListener("lostpointercapture", cancel);
+            $("felt").classList.remove("drag-target");
+            kozelCardDragging = false;
+          };
+          const restore = () => {
+            button.style.opacity = "";
+            if (flyer) { flyer.remove(); flyer = null; }
+          };
+          const cancel = e => {
+            if (e && e.pointerId !== id) return;
+            cleanup(); restore();
+          };
+          const up = async e => {
+            if (e.pointerId !== id) return;
+            cleanup();
+            if (!dragging) {
+              restore(); skipClick(); await playCard(card); return;
+            }
+            x=e.clientX; y=e.clientY;
+            if (flyer) { flyer.style.left=(x-ox)+"px"; flyer.style.top=(y-oy)+"px"; flyer.style.transform="rotate(0deg) scale(1.035)"; }
+            const r=$("felt").getBoundingClientRect(), fr=flyer && flyer.getBoundingClientRect();
+            const inside=x>=r.left && x<=r.right && y>=r.top && y<=r.bottom;
+            const overlaps=!!(fr && fr.right>r.left+18 && fr.left<r.right-18 && fr.bottom>r.top+16 && fr.top<r.bottom-8);
+            const intentional=Math.hypot(x-sx,y-sy)>=8;
+            skipClick();
+            if (!intentional || (!inside && !overlaps)) {
+              restore();
+              setStatus("gameMessage", "Перетащи карту на игровой стол, чтобы сделать ход.");
+              return;
+            }
+            const moving=flyer; flyer=null;
+            button.style.opacity="0";
+            if (moving) {
+              const target=$("tableCards").getBoundingClientRect();
+              moving.style.transition="left 150ms cubic-bezier(.2,.75,.25,1), top 150ms cubic-bezier(.2,.75,.25,1), transform 150ms ease";
+              moving.style.left=(target.left+target.width/2-rect.width/2)+"px";
+              moving.style.top=(target.top+target.height/2-rect.height/2)+"px";
+              moving.style.transform="rotate(0deg) scale(.9)";
+              setTimeout(()=>moving.remove(),165);
+            }
+            await playCard(card);
+            button.style.opacity="";
+          };
+          document.addEventListener("pointermove", move, {passive:false});
+          document.addEventListener("pointerup", up);
+          document.addEventListener("pointercancel", cancel);
+          button.addEventListener("lostpointercapture", cancel, {once:true});
+        });
+      }
+
       function renderGame(game, data) {
         $("gameTitle").textContent = (currentRoom?.name || "Козёл Онлайн") + " · #" + (currentRoom?.id || "");
         $("gameStake").textContent = game.botMode ? "ТЕСТ-БОТ" : fmt(game.stake) + " AC";
@@ -640,7 +758,7 @@
           button.disabled = !legal || busy;
           button.setAttribute("aria-label", "Сыграть " + card.rank + " " + card.suit);
           button.appendChild(makeCardFace(card, false));
-          button.addEventListener("click", () => playCard(card));
+          setupKozelCardInput(button, card);
           handHost.appendChild(button);
         });
         $("gameMessage").textContent = game.message || "Игра идёт.";
