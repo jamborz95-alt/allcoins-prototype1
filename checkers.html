@@ -769,6 +769,11 @@
         $("resultOverlay").classList.remove("hidden");
       }
       renderRooms();
+      window.setInterval(function () {
+        if (!document.hidden && $("gameScreen").classList.contains("hidden") && !$("roomsPanel").classList.contains("hidden")) {
+          renderRooms();
+        }
+      }, 5000);
       setStake(100);
     })();
   </script>
