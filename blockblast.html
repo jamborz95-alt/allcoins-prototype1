@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Block Blast — ALLCOINS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#080d19;--panel:#121b2d;--panel2:#19243a;--line:#293951;--gold:#f3c969;--text:#f6f8fc;--muted:#9cacc3;--cyan:#67e3d0;--pink:#eaa7ff;--cell:#202d42;--cellBorder:#32445f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overscroll-behavior:none}
+button{font:inherit;cursor:pointer;color:inherit}
+button:disabled{opacity:.55;cursor:not-allowed}
+#app{position:fixed;inset:0;overflow:auto;overscroll-behavior:contain;padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 12px);background:radial-gradient(ellipse at 50% -12%,#1b2a46 0,#0b1221 48%,#070b14 100%)}
+.page{width:min(100%,520px);margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px}
+.brand{display:flex;align-items:center;gap:9px;font-size:20px;line-height:1;font-weight:950;letter-spacing:.5px}
+.brand .logo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;color:#09111f;background:linear-gradient(145deg,#ffe69a,#d39b36);box-shadow:inset 0 1px 0 #fff8;font-size:19px}
+.top-actions{display:flex;gap:7px}
+.small-btn{border:1px solid var(--line);background:#111a2b;border-radius:12px;min-height:40px;padding:8px 12px;font-weight:750}
+.back-btn{padding:8px 11px}
+.section{background:linear-gradient(145deg,rgba(25,36,58,.95),rgba(13,21,36,.97));border:1px solid var(--line);border-radius:18px;padding:13px;box-shadow:0 10px 28px #0003}
+.eyebrow{font-size:10px;letter-spacing:1.2px;color:var(--muted);font-weight:850}
+.records{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.record{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;padding:11px 12px;background:linear-gradient(140deg,#17243a,#101827)}
+.record.week{border-color:#5d5033;background:linear-gradient(145deg,#30291e,#171b26)}
+.record.personal{border-color:#315b67;background:linear-gradient(145deg,#17363c,#151d2d)}
+.record .label{font-size:10px;font-weight:850;letter-spacing:.7px;color:#bdc9da}
+.record strong{display:block;margin-top:4px;font-size:27px;line-height:1.1;font-variant-numeric:tabular-nums}
+.record .caption{font-size:10px;color:var(--muted);margin-top:4px}
+.tourney{display:flex;align-items:center;gap:10px}
+.tourney-symbol{flex:0 0 44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#f8dc88,#b77c22);color:#142033;font-size:24px;font-weight:1000}
+.tourney-copy{flex:1;min-width:0}
+.tourney-copy strong{font-size:14px;display:block}
+.tourney-copy p{margin:4px 0 0;font-size:11px;color:var(--muted);line-height:1.4}
+.tourney .fee{font-weight:950;color:var(--gold);font-size:13px;white-space:nowrap}
+.primary{display:block;width:100%;border:0;border-radius:14px;min-height:48px;padding:12px 14px;background:linear-gradient(135deg,#ffe49a,#e7ae4b);color:#151a25;font-weight:950;box-shadow:inset 0 1px 0 #fff9,0 5px 14px #0003}
+.secondary{display:block;width:100%;border:1px solid #34455f;border-radius:13px;min-height:44px;padding:10px;background:#172237;font-weight:800}
+.status{font-size:12px;line-height:1.4;color:var(--muted);min-height:16px;overflow-wrap:anywhere}
+.status.good{color:#8cf2c1}.status.bad{color:#ffb2aa}
+.rules{margin:0;color:var(--muted);font-size:11px;line-height:1.45}
+#setup{display:flex;flex-direction:column;gap:10px}
+#play{display:none;flex:1;min-height:0;gap:9px}
+.playhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.scorebox{border:1px solid var(--line);border-radius:13px;background:#121d30;padding:8px 12px;min-width:88px}
+.scorebox span{display:block;font-size:9px;color:var(--muted);font-weight:850;letter-spacing:.8px}
+.scorebox strong{display:block;font-size:23px;line-height:1.2;font-variant-numeric:tabular-nums}
+.hint{font-size:11px;color:var(--muted);text-align:center;min-height:16px}
+.board-wrap{width:100%;display:flex;justify-content:center;align-items:center}
+.board{width:min(100%,calc(100dvh - 300px),440px);aspect-ratio:1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));gap:3px;padding:5px;border-radius:15px;border:1px solid #34445b;background:linear-gradient(135deg,#172238,#0d1524);box-shadow:0 12px 28px #0004;touch-action:manipulation}
+.cell{min-width:0;min-height:0;border:1px solid #2b3b53;border-radius:4px;background:var(--cell);padding:0}
+.cell.filled{border-color:#f4d482;background:linear-gradient(135deg,#ffe8a3,#e5a73f);box-shadow:inset 0 1px 0 #fff9,0 1px 3px #0006}
+.cell.preview-ok{outline:2px solid #69eed0;background:#28695f}
+.cell.preview-no{outline:2px solid #ff8585;background:#733844}
+.tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-height:86px}
+.piece-slot{min-width:0;min-height:80px;border:1px solid var(--line);border-radius:14px;background:#111b2c;display:grid;place-items:center;padding:6px}
+.piece-slot.selected{border-color:var(--gold);background:#2a2a2a;box-shadow:0 0 0 2px #f3c96925}
+.piece-grid{display:grid;grid-template-columns:repeat(4,14px);grid-template-rows:repeat(4,14px);gap:2px;pointer-events:none}
+.piece-dot{border-radius:3px;background:linear-gradient(145deg,#ffe6a0,#d79a37);box-shadow:inset 0 1px 0 #fff8}
+.piece-dot.empty{background:transparent;box-shadow:none}
+.playfoot{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.playfoot .secondary{min-height:40px;padding:8px}
+#gameover{position:fixed;inset:0;z-index:5;background:#050914df;display:none;align-items:center;justify-content:center;padding:22px}
+.modal{width:min(100%,380px);border:1px solid #465879;border-radius:22px;background:linear-gradient(145deg,#1a2841,#101827);padding:22px;text-align:center;box-shadow:0 24px 90px #000a}
+.modal .trophy{font-size:42px}
+.modal h2{margin:7px 0;font-size:25px}
+.final-score{font-size:42px;font-weight:1000;color:var(--gold);font-variant-numeric:tabular-nums}
+.modal p{font-size:12px;line-height:1.5;color:var(--muted)}
+.modal-actions{display:grid;gap:8px;margin-top:15px}
+@media(max-height:720px){#app{padding-top:calc(env(safe-area-inset-top) + 5px);gap:7px}.page{gap:8px}.section{padding:10px}.records{gap:7px}.record{padding:8px 10px}.record strong{font-size:23px}.board{width:min(100%,calc(100dvh - 260px),405px);gap:2px;padding:4px}.tray{min-height:70px}.piece-slot{min-height:66px}.piece-grid{grid-template-columns:repeat(4,12px);grid-template-rows:repeat(4,12px)}.piece-dot{border-radius:2px}}
+@media(max-width:360px){#app{padding-left:8px;padding-right:8px}.brand{font-size:17px}.record strong{font-size:23px}.board{gap:2px;padding:3px}.cell{border-radius:3px}.piece-grid{grid-template-columns:repeat(4,11px);grid-template-rows:repeat(4,11px)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div class="page">
+  <header class="top">
+   <div class="brand"><span class="logo">▦</span><span>BLOCK BLAST</span></div>
+   <div class="top-actions"><button class="small-btn back-btn" id="backButton" type="button">← Назад</button></div>
+  </header>
+
+  <section id="setup">
+   <div class="records">
+    <div class="record week"><div class="label">🏆 РЕКОРД НЕДЕЛИ</div><strong id="weeklyRecord">0</strong><div class="caption" id="weeklyCaption">Обновление турнира…</div></div>
+    <div class="record personal"><div class="label">⭐ ЛИЧНЫЙ РЕКОРД</div><strong id="personalRecord">0</strong><div class="caption">Не сбрасывается</div></div>
+   </div>
+   <div class="section">
+    <div class="tourney">
+     <div class="tourney-symbol">🏆</div>
+     <div class="tourney-copy"><strong>Недельный турнир ALLCOINS</strong><p>Оплати вход один раз на эту неделю. Твой лучший результат попадёт в недельный рекорд.</p></div>
+     <div class="fee">1 000 AC</div>
+    </div>
+    <div style="height:10px"></div>
+    <button class="primary" id="joinButton" type="button">Войти в турнир · 1 000 AC</button>
+    <div style="height:8px"></div>
+    <button class="secondary" id="practiceButton" type="button">Тренировка без турнира</button>
+    <p class="rules" style="margin-top:9px">Турнирная неделя завершается в понедельник в 00:00 UTC. Недельный рекорд начинает считаться заново, личный рекорд остаётся.</p>
+   </div>
+   <div class="status" id="setupStatus" role="status" aria-live="polite">Подключаем профиль и проверяем баланс…</div>
+   <p class="rules">Ставь фигуры на поле 10×10. Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков. Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.</p>
+  </section>
+
+  <section id="play">
+   <div class="playhead">
+    <button class="small-btn back-btn" id="leaveGameButton" type="button">← Меню</button>
+    <div class="scorebox"><span>ТЕКУЩИЙ СЧЁТ</span><strong id="currentScore">0</strong></div>
+    <div class="scorebox"><span>РЕКОРД</span><strong id="inGameBest">0</strong></div>
+   </div>
+   <div class="hint" id="gameHint" aria-live="polite">Выбери фигуру, затем клетку на поле.</div>
+   <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Поле Block Blast 10 на 10"></div></div>
+   <div class="hint">Фигуры на выбор</div>
+   <div class="tray" id="tray"></div>
+   <div class="playfoot"><p class="rules" id="modeLabel">Тренировка · личный рекорд сохраняется</p><button class="secondary" id="restartButton" type="button">↻ Новая игра</button></div>
+  </section>
+ </div>
+</div>
+
+<div id="gameover" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+ <div class="modal">
+  <div class="trophy">🏆</div><h2 id="gameOverTitle">Игра окончена</h2>
+  <div class="final-score" id="finalScore">0</div>
+  <p id="resultMessage">Результат сохранён.</p>
+  <div class="modal-actions"><button class="primary" id="playAgainButton" type="button">Сыграть ещё раз</button><button class="secondary" id="resultMenuButton" type="button">В меню</button></div>
+ </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var API="https://allcoins-server.onrender.com";
+var tg=window.Telegram&&window.Telegram.WebApp;
+var $=function(id){return document.getElementById(id);};
+var userId=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.id)?String(tg.initDataUnsafe.user.id):"device";
+var weekStart=function(){var d=new Date();d.setUTCHours(0,0,0,0);d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d;};
+var weekDate=weekStart().toISOString().slice(0,10);
+var personalKey="allcoins_blockblast_personal_"+userId;
+var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
+var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false;
+var shapes=[
+ [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
+ [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
+ [[0,0],[0,1],[0,2],[1,0]],[[0,0],[0,1],[0,2],[1,2]],[[0,0],[1,0],[2,0],[2,1]],[[0,1],[1,1],[2,0],[2,1]],
+ [[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[0,2],[0,3]],[[0,0],[1,0],[2,0],[3,0]],
+ [[0,0],[0,1],[0,2],[1,1]],[[0,1],[1,0],[1,1],[1,2]],[[0,0],[1,0],[1,1],[2,0]],
+ [[0,1],[1,0],[1,1],[2,1]],[[0,0],[0,1],[1,1],[1,2]],[[0,1],[0,2],[1,0],[1,1]],
+ [[0,0],[1,0],[1,1],[1,2]],[[0,2],[1,0],[1,1],[1,2]],[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]]
+];
+function readNumber(key){try{return Math.max(0,Number(localStorage.getItem(key)||0)||0);}catch(e){return 0;}}
+function storeNumber(key,value){try{localStorage.setItem(key,String(Math.max(0,Math.floor(value||0))));}catch(e){}}
+function setStatus(message,type){var el=$("setupStatus");el.textContent=message;el.className="status"+(type?" "+type:"");}
+function safeWeek(){var now=weekStart().toISOString().slice(0,10);if(now!==weekDate){location.reload();}}
+function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));}
+function updateWeekCaption(){var now=new Date();var end=weekStart();end.setUTCDate(end.getUTCDate()+7);var ms=end-now;var days=Math.max(0,Math.floor(ms/86400000));var hours=Math.max(0,Math.floor(ms%86400000/3600000));$("weeklyCaption").textContent="Сброс через "+days+" дн. "+hours+" ч. (UTC)";}
+async function post(path,data){
+ if(!tg||!tg.initData)throw new Error("Открой игру через Telegram-бота ALLCOINS.");
+ var response=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({},data||{},{initData:tg.initData}))});
+ var body={};try{body=await response.json();}catch(e){}
+ if(!response.ok)throw new Error(body.error||("Сервер ответил ошибкой "+response.status+"."));
+ return body;
+}
+async function loadProfile(){
+ if(tg){try{tg.ready();tg.expand();}catch(e){}}
+ if(!tg||!tg.initData){authenticated=false;$("joinButton").disabled=true;setStatus("Для участия в платном турнире открой ALLCOINS через Telegram. Тренировка доступна без оплаты.","bad");return;}
+ try{var result=await post("/api/auth");if(result.ok&&result.player){authenticated=true;balance=Number(result.player.balance);setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход в турнир стоит 1 000 AC.","good");joined=localStorage.getItem(joinedKey)==="1";if(joined){$("joinButton").textContent="Продолжить турнир";$("joinButton").disabled=false;}else{$("joinButton").disabled=false;}}else{throw new Error("Сервер не подтвердил вход в профиль.");}}
+ catch(error){authenticated=false;$("joinButton").disabled=true;setStatus("Не удалось проверить профиль: "+error.message+" Вход в турнир заблокирован; монеты не списаны.","bad");}
+}
+async function joinTournament(){
+ if(joined){tournamentMode=true;startGame();return;}
+ if(!authenticated){setStatus("Сначала открой приложение через Telegram и подключи профиль.","bad");return;}
+ if(balance===null){setStatus("Баланс ещё не проверен. Обнови страницу.","bad");return;}
+ if(balance<1000){setStatus("Недостаточно AC. Для входа нужно 1 000 AC; текущий баланс: "+balance.toLocaleString("ru-RU")+".","bad");return;}
+ if(!window.confirm("Внести 1 000 AC за вход в недельный турнир Block Blast? Повторно платить на этой неделе не потребуется."))return;
+ $("joinButton").disabled=true;$("joinButton").textContent="Проверяем оплату…";
+ try{
+  var result=await post("/api/block-blast/enter",{entryFee:1000});
+  if(!result.ok)throw new Error(result.error||"Сервер не подтвердил оплату.");
+  if(result.player&&result.player.balance!==undefined)balance=Number(result.player.balance);
+  else if(result.balance!==undefined)balance=Number(result.balance);
+  joined=true;localStorage.setItem(joinedKey,"1");$("joinButton").textContent="Продолжить турнир";
+  setStatus("Вход подтверждён сервером. Списано 1 000 AC; можно играть весь турнир до конца недели.","good");
+  tournamentMode=true;updateRecords();startGame();
+ }catch(error){
+  $("joinButton").disabled=false;$("joinButton").textContent="Войти в турнир · 1 000 AC";
+  setStatus("Турнирный модуль не подтвердил списание. 1 000 AC НЕ списаны. "+error.message+" Используй тренировку или подключи серверный модуль турнира.","bad");
+ }
+}
+function emptyBoard(){return Array.from({length:10},function(){return Array(10).fill(0);});}
+function randomPiece(){return shapes[Math.floor(Math.random()*shapes.length)].map(function(c){return [c[0],c[1]];});}
+function generatePieces(){pieces=[randomPiece(),randomPiece(),randomPiece()];selected=-1;renderTray();}
+function startGame(){
+ $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";board=emptyBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderScore();
+ $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
+ $("gameHint").textContent="Выбери фигуру снизу, затем клетку начала на поле.";
+}
+function backToMenu(){gameActive=false;$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
+function renderBoard(){
+ var root=$("board");root.innerHTML="";
+ for(var r=0;r<10;r++)for(var c=0;c<10;c++){
+  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled":"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
+  cell.addEventListener("click",function(){placeSelected(Number(this.dataset.row),Number(this.dataset.col));});root.appendChild(cell);
+ }
+}
+function renderTray(){
+ var root=$("tray");root.innerHTML="";
+ for(var i=0;i<3;i++){
+  var slot=document.createElement("button");slot.type="button";slot.className="piece-slot"+(selected===i?" selected":"");slot.disabled=!pieces[i]||!gameActive;slot.dataset.index=String(i);slot.setAttribute("aria-label","Выбрать фигуру "+(i+1));slot.addEventListener("click",function(){var n=Number(this.dataset.index);if(!pieces[n])return;selected=n;renderTray();$("gameHint").textContent="Фигура выбрана. Коснись клетки, где должен быть её верхний левый угол.";});
+  var grid=document.createElement("span");grid.className="piece-grid";
+  var piece=pieces[i];
+  for(var y=0;y<4;y++)for(var x=0;x<4;x++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece&&piece.some(function(pos){return pos[0]===y&&pos[1]===x;}))dot.className="piece-dot";grid.appendChild(dot);}
+  slot.appendChild(grid);root.appendChild(slot);
+ }
+}
+function fits(piece,row,col){
+ if(!piece)return false;
+ for(var i=0;i<piece.length;i++){var rr=row+piece[i][0],cc=col+piece[i][1];if(rr<0||rr>=10||cc<0||cc>=10||board[rr][cc])return false;}
+ return true;
+}
+function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var r=0;r<10;r++)for(var c=0;c<10;c++)if(fits(pieces[p],r,c))return true;return false;}
+function placeSelected(row,col){
+ if(!gameActive||selected<0||!pieces[selected]){$("gameHint").textContent="Сначала выбери фигуру снизу.";return;}
+ var piece=pieces[selected];if(!fits(piece,row,col)){$("gameHint").textContent="Сюда фигура не помещается. Попробуй другую клетку.";return;}
+ for(var i=0;i<piece.length;i++)board[row+piece[i][0]][col+piece[i][1]]=1;
+ score+=piece.length;
+ var fullRows=[],fullCols=[];
+ for(var r=0;r<10;r++)if(board[r].every(Boolean))fullRows.push(r);
+ for(var c=0;c<10;c++){var full=true;for(var rr=0;rr<10;rr++)if(!board[rr][c]){full=false;break;}if(full)fullCols.push(c);}
+ var lines=fullRows.length+fullCols.length;
+ if(lines){
+  fullRows.forEach(function(r){for(var c=0;c<10;c++)board[r][c]=0;});
+  fullCols.forEach(function(c){for(var r=0;r<10;r++)board[r][c]=0;});
+  score+=lines*10;if(lines>1)score+=(lines-1)*5;
+  $("gameHint").textContent="Линий очищено: "+lines+" · бонус +"+(lines*10+(lines>1?(lines-1)*5:0))+" очков!";
+ }else{$("gameHint").textContent="Хорошо! Поставь следующую фигуру.";}
+ pieces[selected]=null;selected=-1;renderBoard();renderTray();renderScore();
+ if(pieces.every(function(p){return !p;})){generatePieces();}
+ if(!anyMoveAvailable()){endGame();return;}
+}
+function renderScore(){$("currentScore").textContent=String(score);$("inGameBest").textContent=String(Math.max(readNumber(personalKey),readNumber(weeklyKey),score));}
+async function endGame(){
+ if(!gameActive)return;gameActive=false;renderTray();
+ var prevPersonal=readNumber(personalKey);if(score>prevPersonal)storeNumber(personalKey,score);
+ var prevWeekly=readNumber(weeklyKey);var weeklyUpdated=false;
+ if(tournamentMode&&joined&&score>prevWeekly){storeNumber(weeklyKey,score);weeklyUpdated=true;}
+ updateRecords();$("finalScore").textContent=String(score);
+ var msg="Личный рекорд: "+readNumber(personalKey)+". ";
+ if(tournamentMode&&joined){msg+=weeklyUpdated?"Новый недельный рекорд на этом устройстве! ":"Недельный рекорд: "+readNumber(weeklyKey)+". ";msg+="Отправляем результат в турнирный рейтинг.";}
+ else{msg+="Тренировка не меняет недельный рекорд.";}
+ $("resultMessage").textContent=msg;$("gameover").style.display="flex";
+ if(tournamentMode&&joined){
+  try{var result=await post("/api/block-blast/score",{score:score});if(result.weeklyBest!==undefined){storeNumber(weeklyKey,Number(result.weeklyBest));updateRecords();}if(result.personalBest!==undefined){storeNumber(personalKey,Number(result.personalBest));updateRecords();}$("resultMessage").textContent+=" Результат подтверждён сервером.";}
+  catch(error){$("resultMessage").textContent+=" Внимание: серверный рейтинг пока не подтвердил результат. Локальные рекорды сохранены на этом устройстве.";}
+ }
+}
+$("joinButton").addEventListener("click",joinTournament);
+$("practiceButton").addEventListener("click",function(){tournamentMode=false;startGame();});
+$("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261025-blockblast1";});
+$("leaveGameButton").addEventListener("click",backToMenu);
+$("restartButton").addEventListener("click",startGame);
+$("playAgainButton").addEventListener("click",function(){startGame();});
+$("resultMenuButton").addEventListener("click",backToMenu);
+window.addEventListener("resize",function(){if(gameActive)renderBoard();});
+if(tg&&tg.BackButton){try{tg.BackButton.onClick(function(){backToMenu();});tg.BackButton.show();}catch(e){}}
+updateRecords();updateWeekCaption();loadProfile();
+setInterval(function(){safeWeek();updateWeekCaption();},60000);
+})();
+</script>
+</body>
+</html>
