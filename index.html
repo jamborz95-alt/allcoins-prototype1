@@ -2014,7 +2014,9 @@
 .ai-input { width:100%;min-height:48px;max-height:120px;resize:vertical;margin:0!important;padding:12px!important;border:1px solid #3a4a68!important;border-radius:14px!important;background:#0e1728!important;color:#fff!important;font:inherit;line-height:1.4; }
 .ai-send { min-height:48px;padding:12px 14px;border-radius:14px;white-space:nowrap; }
 .ai-disclaimer { margin-top:10px;font-size:11px; }
-.ai-prompt:active,.ai-send:active { transform:scale(.98); }
+.ai-load-button { width:100%; margin-top:8px; background:linear-gradient(135deg,#a9ffd1,#42d9a0); color:#06251b; }
+ .ai-local-note { margin-top:8px; line-height:1.45; }
+ .ai-prompt:active,.ai-send:active,.ai-load-button:active { transform:scale(.98); }
 @media (max-width:360px) { .ai-form { grid-template-columns:1fr; } .ai-send { width:100%; } .ai-prompts { gap:6px; } .ai-prompt { flex-basis:100%; } }
 
 </style>
@@ -4032,7 +4034,9 @@
           <p class="ai-subtitle">Поможет с играми, правилами, стратегией и вопросами по ALLCOINS.</p>
         </div>
       </div>
-      <div id="aiStatus" class="ai-status" role="status" aria-live="polite">Для запуска нужен ключ Google AI Studio в Render. Можно начать с бесплатного тарифа.</div>
+      <div id="aiStatus" class="ai-status" role="status" aria-live="polite">Бесплатный локальный режим: модель будет работать на твоём устройстве без API-ключа и без лимита запросов. Первый запуск скачает модель и требует совместимости с WebGPU.</div>
+      <button type="button" id="aiLoadLocalModel" class="full ai-load-button">⚡ Запустить бесплатный ИИ на устройстве</button>
+      <div class="muted ai-local-note">Модель работает прямо на телефоне. После первой загрузки она может кэшироваться. Нужен совместимый WebGPU; скорость и качество зависят от устройства, это компактная модель и она слабее крупных облачных ИИ.</div>
     </div>
     <div class="card">
       <div class="muted" style="margin-bottom:8px">БЫСТРЫЕ ВОПРОСЫ</div>
@@ -4047,7 +4051,7 @@
         <textarea id="aiInput" class="ai-input" rows="2" maxlength="1000" placeholder="Спроси что-нибудь..." aria-label="Сообщение для ALLCOINS ИИ"></textarea>
         <button id="aiSend" class="ai-send" type="submit">Отправить ➤</button>
       </form>
-      <div class="muted ai-disclaimer">Не отправляй пароли, токены, ключи API и личные данные. На бесплатном тарифе Google текст запросов может использоваться для улучшения сервисов. Ответы ИИ могут содержать ошибки.</div>
+      <div class="muted ai-disclaimer">Локальный режим не отправляет сообщения в облачный ИИ-сервис. Не отправляй секреты и личные данные. Ответы компактной модели могут содержать ошибки.</div>
     </div>
   </section>
 
@@ -5134,8 +5138,21 @@ const responseText = await response.text();
 }
 
 const ALLCOINS_AI_STORAGE_KEY = "allcoinsAIHistoryV1";
+const ALLCOINS_LOCAL_MODEL_ID = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
 let allcoinsAIHistory = [];
 let allcoinsAISending = false;
+let allcoinsAIEngine = null;
+let allcoinsAIEngineLoading = null;
+
+const ALLCOINS_LOCAL_SYSTEM_PROMPT = [
+  "Ты — ALLCOINS ИИ, персональный помощник внутри Telegram Mini App ALLCOINS.",
+  "Отвечай в основном на русском языке, понятно, дружелюбно и по делу. Для телефона давай пошаговые инструкции.",
+  "Помогай с правилами и стратегией игр, идеями, планированием и объяснением ошибок.",
+  "Контекст: ALLCOINS — проект Telegram Mini App в GitHub-репозитории jamborz95-alt/allcoins-prototype1; клиент — index.html, сервер — папка server/, отдельная игра Block Blast — blockblast.html. В проекте есть Дурак Онлайн, УНО, 21 очко, Сека, шашки, Block Blast, захват башен и другие игровые режимы.",
+  "Владелец работает преимущественно с Android-телефона. Сохраняй существующие функции проекта при советах по коду.",
+  "Ты работаешь на компактной локальной модели без доступа к интернету и файлам в реальном времени. Не выдумывай актуальные сведения, результаты проверок, изменения файлов или выполненные действия. Если не знаешь, честно скажи.",
+  "Не проси пароли, секретные ключи, токены Telegram или платёжные данные. Не утверждай, что можешь самостоятельно менять аккаунты или GitHub."
+].join("\n");
 
 function loadAIHistory() {
   try {
@@ -5166,7 +5183,7 @@ function renderAIHistory() {
   if (!allcoinsAIHistory.length) {
     allcoinsAIHistory.push({
       role: "assistant",
-      content: "Привет! Я ALLCOINS ИИ. Спроси меня о правилах игр, стратегиях или развитии проекта. По мере подключения функций я буду помогать тебе прямо внутри приложения."
+      content: "Привет! Я ALLCOINS ИИ. Могу помогать с играми, правилами и идеями по проекту. Я работаю локально на устройстве; для первого запуска нужно загрузить модель."
     });
     saveAIHistory();
   }
@@ -5184,6 +5201,77 @@ function renderAIHistory() {
   root.scrollTop = root.scrollHeight;
 }
 
+function reportLocalAIProgress(report) {
+  const details = String(report?.text || "Подготовка модели");
+  const progress = Number(report?.progress);
+  const percent = Number.isFinite(progress) && progress >= 0
+    ? " " + Math.min(100, Math.round(progress * 100)) + "%"
+    : "";
+  showStatus("aiStatus", "Загрузка локальной модели: " + details + percent);
+}
+
+async function loadAllcoinsLocalAI() {
+  if (allcoinsAIEngine) return allcoinsAIEngine;
+  if (allcoinsAIEngineLoading) return allcoinsAIEngineLoading;
+
+  allcoinsAIEngineLoading = (async () => {
+    if (!window.isSecureContext) {
+      throw new Error("Локальный ИИ требует защищённого HTTPS-соединения. Открой приложение по ссылке GitHub Pages.");
+    }
+    if (!navigator.gpu || typeof navigator.gpu.requestAdapter !== "function") {
+      throw new Error("Встроенный браузер Telegram не предоставляет WebGPU. Без него локальная модель не запускается. Попробуй открыть ALLCOINS в актуальном Chrome на Android; если WebGPU там тоже недоступен, на этом устройстве бесплатный локальный режим не поддерживается.");
+    }
+
+    showStatus("aiStatus", "Проверяю графический процессор телефона…");
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      throw new Error("Не удалось найти совместимый графический процессор для локального ИИ. Проверь поддержку WebGPU в браузере.");
+    }
+
+    showStatus("aiStatus", "Подключаю движок локального ИИ. При первом запуске модель может скачать около 1 ГБ данных; используй Wi-Fi и не закрывай приложение.");
+    const webllm = await import("https://esm.run/@mlc-ai/web-llm");
+    if (typeof webllm.CreateMLCEngine !== "function") {
+      throw new Error("Не удалось загрузить движок локального ИИ. Попробуй обновить страницу и повторить запуск.");
+    }
+
+    const engine = await webllm.CreateMLCEngine(ALLCOINS_LOCAL_MODEL_ID, {
+      initProgressCallback: reportLocalAIProgress
+    });
+    allcoinsAIEngine = engine;
+    showStatus("aiStatus", "Локальный ИИ готов. Запросы выполняются на устройстве без API-ключа и без лимита запросов от провайдера.");
+    const loadButton = $("aiLoadLocalModel");
+    if (loadButton) {
+      loadButton.disabled = false;
+      loadButton.textContent = "✓ Локальный ИИ готов";
+    }
+    return engine;
+  })();
+
+  try {
+    return await allcoinsAIEngineLoading;
+  } catch (error) {
+    showStatus("aiStatus", error?.message || "Не удалось запустить локальную модель.");
+    throw error;
+  } finally {
+    allcoinsAIEngineLoading = null;
+  }
+}
+
+const aiLoadLocalModelButton = $("aiLoadLocalModel");
+if (aiLoadLocalModelButton) {
+  aiLoadLocalModelButton.addEventListener("click", async () => {
+    if (allcoinsAIEngineLoading || allcoinsAIEngine) return;
+    aiLoadLocalModelButton.disabled = true;
+    aiLoadLocalModelButton.textContent = "Загрузка модели…";
+    try {
+      await loadAllcoinsLocalAI();
+    } catch (_) {
+      aiLoadLocalModelButton.disabled = false;
+      aiLoadLocalModelButton.textContent = "↻ Повторить запуск локального ИИ";
+    }
+  });
+}
+
 async function sendAIMessage(message) {
   if (allcoinsAISending) return;
   const cleanMessage = String(message || "").trim().slice(0, 1000);
@@ -5192,45 +5280,70 @@ async function sendAIMessage(message) {
   allcoinsAISending = true;
   const input = $("aiInput");
   const sendButton = $("aiSend");
+  const loadButton = $("aiLoadLocalModel");
   if (input) input.disabled = true;
   if (sendButton) {
     sendButton.disabled = true;
     sendButton.textContent = "Думаю…";
   }
+  if (loadButton) loadButton.disabled = true;
 
   const previousHistory = allcoinsAIHistory.slice(-8);
   allcoinsAIHistory.push({ role: "user", content: cleanMessage });
   saveAIHistory();
   renderAIHistory();
-  showStatus("aiStatus", "ИИ думает над ответом…");
+  showStatus("aiStatus", "Готовлю бесплатный локальный ИИ…");
 
   try {
-    const result = await apiRequest("/api/ai/chat", {
-      message: cleanMessage,
-      history: previousHistory
+    const engine = await loadAllcoinsLocalAI();
+    const priorMessages = previousHistory
+      .filter(item => item && (item.role === "user" || item.role === "assistant"))
+      .map(item => ({
+        role: item.role,
+        content: String(item.content || "").slice(0, 700)
+      }));
+    const result = await engine.chat.completions.create({
+      messages: [
+        { role: "system", content: ALLCOINS_LOCAL_SYSTEM_PROMPT },
+        ...priorMessages,
+        { role: "user", content: cleanMessage }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
     });
-    allcoinsAIHistory.push({
-      role: "assistant",
-      content: String(result.answer || "Не удалось получить текст ответа.")
-    });
+    const answer = String(result?.choices?.[0]?.message?.content || "").trim();
+    if (!answer) throw new Error("Локальная модель вернула пустой ответ. Попробуй сформулировать вопрос иначе.");
+    allcoinsAIHistory.push({ role: "assistant", content: answer });
     saveAIHistory();
     renderAIHistory();
-    showStatus("aiStatus", "Ответ готов.");
+    showStatus("aiStatus", "Ответ готов. Локальный режим: без платного API и без лимита запросов со стороны провайдера.");
     if (typeof tg !== "undefined" && tg?.HapticFeedback?.notificationOccurred) {
       tg.HapticFeedback.notificationOccurred("success");
     }
   } catch (error) {
-    showStatus("aiStatus", error?.message || "Не удалось связаться с ИИ.");
+    const lastMessage = allcoinsAIHistory[allcoinsAIHistory.length - 1];
+    if (lastMessage?.role === "user" && lastMessage.content === cleanMessage) {
+      allcoinsAIHistory.pop();
+      saveAIHistory();
+      renderAIHistory();
+    }
+    showStatus("aiStatus", error?.message || "Не удалось запустить локальный ИИ.");
   } finally {
     allcoinsAISending = false;
     if (input) {
       input.disabled = false;
       input.value = "";
-      input.focus();
     }
     if (sendButton) {
       sendButton.disabled = false;
       sendButton.textContent = "Отправить ➤";
+    }
+    if (loadButton && !allcoinsAIEngine) {
+      loadButton.disabled = false;
+      loadButton.textContent = "⚡ Запустить бесплатный ИИ на устройстве";
+    } else if (loadButton && allcoinsAIEngine) {
+      loadButton.disabled = false;
+      loadButton.textContent = "✓ Локальный ИИ готов";
     }
   }
 }
