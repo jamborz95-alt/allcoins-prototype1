@@ -333,6 +333,41 @@ body.playing #play #modeLabel{display:none!important}
 }
 </style>
 
+
+<style id="block-blast-smooth-placement-and-prize-table">
+.leaderboard-card{gap:11px;padding:13px!important;border:1px solid #dc91ab!important;background:linear-gradient(145deg,#ffe2eb,#f5bad0)!important;color:#78394f;box-shadow:inset 0 1px 0 #fff9,0 5px 0 #d17f9e,0 10px 18px #a94b6b30!important}
+.leaderboard-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.leaderboard-title{display:flex;flex-direction:column;gap:4px;min-width:0}
+.leaderboard-title strong{font-size:15px;font-weight:1000;line-height:1.2;color:#803a55}
+.leaderboard-title small{font-size:10px;color:#9b5770}
+.leaderboard-pot{flex:0 0 auto;min-width:94px;padding:7px 9px;border-radius:12px;text-align:right;background:linear-gradient(145deg,#fff0ae,#f8ce78);border:1px solid #e2b65c;box-shadow:inset 0 1px 0 #fff9}
+.leaderboard-pot small{display:block;font-size:8px;font-weight:950;letter-spacing:.7px;color:#936127}
+.leaderboard-pot b{display:block;font-size:15px;font-weight:1000;color:#73441d;white-space:nowrap}
+.leaderboard-summary{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:10px;color:#9b5770}
+.leaderboard-summary b{color:#78394f;font-size:11px}
+.prize-distribution{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.prize-distribution span{min-width:0;text-align:center;padding:7px 3px;border-radius:10px;background:#ffffff72;border:1px solid #e6a4bb;font-size:9px;font-weight:900;color:#874158;white-space:nowrap}
+.leaderboard-scroll{max-height:268px;overflow:auto;border:1px solid #df9ab1;border-radius:12px;background:#fff7fb}
+#tournamentTable{width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-variant-numeric:tabular-nums}
+#tournamentTable th{position:sticky;top:0;z-index:1;padding:9px 5px;text-align:left;font-size:9px;font-weight:950;color:#8f4a63;background:#f6c4d6;border-bottom:1px solid #e5a2ba;white-space:nowrap}
+#tournamentTable td{padding:9px 5px;border-bottom:1px solid #f2d4df;color:#78394f;vertical-align:middle}
+#tournamentTable tr:last-child td{border-bottom:0}
+#tournamentTable td:first-child{font-weight:1000;white-space:nowrap}
+#tournamentTable td:nth-child(2){max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+#tournamentTable td:nth-child(3){font-weight:950}
+#tournamentTable td:last-child{white-space:nowrap;font-weight:950;color:#8d5a17}
+#tournamentTable tr.rank-1 td{background:#fff0b860}
+#tournamentTable tr.rank-2 td{background:#ffffff4a}
+#tournamentTable tr.rank-3 td{background:#ffd8be65}
+.leaderboard-empty{padding:14px 9px;text-align:center;border:1px dashed #d995af;border-radius:12px;color:#9b5770;font-size:11px;line-height:1.5;background:#fff8fb66}
+.leaderboard-note{font-size:9px;line-height:1.45;color:#96536c}
+.cell.just-placed:not(.clearing){animation:blockBlastPlaceIn 390ms cubic-bezier(.16,1,.3,1) backwards;animation-delay:var(--place-delay,0ms);transform-origin:center;will-change:transform,opacity,filter}
+@keyframes blockBlastPlaceIn{0%{transform:translateY(6px) scale(.72);opacity:.12;filter:brightness(1.65) saturate(1.18)}58%{transform:translateY(-1px) scale(1.065);opacity:1;filter:brightness(1.2) saturate(1.08)}78%{transform:translateY(0) scale(.985);filter:brightness(1.05)}100%{transform:translateY(0) scale(1);opacity:1;filter:none}}
+.drag-ghost.is-settling{transition:opacity 165ms ease-out,filter 165ms ease-out!important}
+@media(max-width:360px){.leaderboard-card{padding:10px!important}.leaderboard-pot{min-width:82px}.leaderboard-title strong{font-size:13px}#tournamentTable{font-size:9px}#tournamentTable th,#tournamentTable td{padding:8px 4px}.prize-distribution span{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.cell.just-placed:not(.clearing){animation:none!important;will-change:auto}}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -360,6 +395,29 @@ body.playing #play #modeLabel{display:none!important}
     <p class="rules" style="margin-top:9px">Турнирная неделя завершается в понедельник в 00:00 UTC. Недельный рекорд начинает считаться заново, личный рекорд остаётся.</p>
    </div>
    <div class="status" id="setupStatus" role="status" aria-live="polite">Подключаем профиль и проверяем баланс…</div>
+   <div class="section leaderboard-card" id="leaderboardCard" aria-live="polite">
+    <div class="leaderboard-head">
+     <div class="leaderboard-title"><strong>🏆 Турнирная таблица</strong><small id="leaderboardWeek">Недельный рейтинг · UTC</small></div>
+     <div class="leaderboard-pot"><small>ОБЩИЙ БАНК</small><b id="tournamentGrossPot">0 AC</b></div>
+    </div>
+    <div class="leaderboard-summary">
+     <span>К распределению: <b id="tournamentPayoutPool">0 AC</b></span>
+     <span>Участников: <b id="tournamentEntries">0</b></span>
+    </div>
+    <div class="prize-distribution" aria-label="Распределение призов">
+     <span>🥇 <b id="prizeShare1">1 место · 50%</b></span>
+     <span>🥈 <b id="prizeShare2">2 место · 30%</b></span>
+     <span>🥉 <b id="prizeShare3">3 место · 20%</b></span>
+    </div>
+    <div class="leaderboard-empty" id="leaderboardEmpty">Пока нет участников. Войди в турнир, чтобы попасть в таблицу.</div>
+    <div class="leaderboard-scroll" id="leaderboardScroll" hidden>
+     <table id="tournamentTable">
+      <thead><tr><th>Место</th><th>Игрок</th><th>Очки</th><th>Приз сейчас</th></tr></thead>
+      <tbody id="leaderboardRows"></tbody>
+     </table>
+    </div>
+    <div class="leaderboard-note" id="leaderboardNote">Приз предварительный и меняется до закрытия недели. 5% банка — комиссия проекта. При равных очках выше тот, кто раньше установил результат.</div>
+   </div>
    <p class="rules">Ставь фигуры на поле 8×8. Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков. Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.</p>
   </section>
 
@@ -457,6 +515,39 @@ function updateSoundButton(){
 }
 function safeWeek(){var now=weekStart().toISOString().slice(0,10);if(now!==weekDate){location.reload();}}
 function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));var mini=$("playingWeeklyRecord");if(mini)mini.textContent=String(readNumber(weeklyKey));}
+function formatAC(value){return Math.max(0,Math.floor(Number(value)||0)).toLocaleString("ru-RU")+" AC";}
+function renderTournamentBoard(data){
+ if(!data)return;
+ var gross=Number(data.grossPot)||0,payout=Number(data.payoutPool)||0,entries=Number(data.entriesCount)||0;
+ $("tournamentGrossPot").textContent=formatAC(gross);
+ $("tournamentPayoutPool").textContent=formatAC(payout);
+ $("tournamentEntries").textContent=String(entries);
+ var weekText="Недельный рейтинг · UTC";
+ if(data.weekStart){weekText="Неделя с "+data.weekStart+" · UTC";if(data.weekEndsAt){try{weekText+=" · завершение "+new Date(data.weekEndsAt).toLocaleString("ru-RU",{timeZone:"UTC",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" UTC";}catch(e){}}}
+ $("leaderboardWeek").textContent=weekText;
+ var distribution=Array.isArray(data.distribution)?data.distribution:[];
+ var shares=[50,30,20];
+ distribution.forEach(function(item){var rank=Number(item.rank);if(rank>=1&&rank<=3)shares[rank-1]=Number(item.percent)||0;});
+ $("prizeShare1").textContent="1 место · "+shares[0]+"%";
+ $("prizeShare2").textContent="2 место · "+shares[1]+"%";
+ $("prizeShare3").textContent="3 место · "+shares[2]+"%";
+ var rows=$("leaderboardRows");rows.textContent="";
+ var list=Array.isArray(data.leaderboard)?data.leaderboard:[];
+ var medals=["🥇","🥈","🥉"];
+ list.forEach(function(player,index){
+  var tr=document.createElement("tr");if(index<3)tr.className="rank-"+(index+1);
+  var rank=document.createElement("td");rank.textContent=medals[index]||("#"+(Number(player.rank)||index+1));
+  var name=document.createElement("td");name.textContent=String(player.displayName||"Игрок").slice(0,64);name.title=name.textContent;
+  var scoreCell=document.createElement("td");scoreCell.textContent=(Number(player.score)||0).toLocaleString("ru-RU");
+  var prize=document.createElement("td");var prizeAmount=Number(player.prizeEstimate)||0;prize.textContent=prizeAmount>0?"~"+formatAC(prizeAmount):"—";
+  tr.appendChild(rank);tr.appendChild(name);tr.appendChild(scoreCell);tr.appendChild(prize);rows.appendChild(tr);
+ });
+ $("leaderboardEmpty").hidden=list.length>0;
+ $("leaderboardScroll").hidden=list.length===0;
+ if(entries===0){$("leaderboardEmpty").textContent="Пока нет участников. Войди в турнир, чтобы попасть в таблицу.";}
+ else if(list.length===0){$("leaderboardEmpty").textContent="Участники уже есть — таблица появится после первого сохранённого результата.";}
+ $("leaderboardNote").textContent="Приз предварительный до окончания недели. Из общего банка 5% учитываются как комиссия проекта. При равных очках выше тот, кто раньше установил результат.";
+}
 function updateWeekCaption(){var now=new Date();var end=weekStart();end.setUTCDate(end.getUTCDate()+7);var ms=end-now;var days=Math.max(0,Math.floor(ms/86400000));var hours=Math.max(0,Math.floor(ms%86400000/3600000));$("weeklyCaption").textContent="Сброс через "+days+" дн. "+hours+" ч. (UTC)";}
 async function post(path,data){
  if(!tg||!tg.initData)throw new Error("Открой игру через Telegram-бота ALLCOINS.");
@@ -479,6 +570,7 @@ async function loadProfile(){
     joined=Boolean(tournament.joined);
     if(tournament.weeklyBest!==undefined)storeNumber(weeklyKey,Math.max(readNumber(weeklyKey),Number(tournament.weeklyBest)||0));
     if(tournament.personalBest!==undefined)storeNumber(personalKey,Math.max(readNumber(personalKey),Number(tournament.personalBest)||0));
+    renderTournamentBoard(tournament);
    }
   }catch(statusError){joined=false;}
   updateRecords();
@@ -499,6 +591,7 @@ async function joinTournament(){
   if(result.player&&result.player.balance!==undefined)balance=Number(result.player.balance);
   else if(result.balance!==undefined)balance=Number(result.balance);
   joined=true;localStorage.setItem(joinedKey,"1");$("joinButton").textContent="Продолжить турнир";
+  renderTournamentBoard(result);
   setStatus("Вход подтверждён сервером. Списано 1 000 AC; можно играть весь турнир до конца недели.","good");
   tournamentMode=true;updateRecords();startGame();
  }catch(error){
@@ -607,7 +700,7 @@ function backToMenu(){gameActive=false;document.body.classList.remove("playing")
 function renderBoard(){
  var root=$("board");root.innerHTML="";
  for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
-  var cell=document.createElement("button");cell.type="button";cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"")+(lastPlacedCells.indexOf(r+","+c)>=0?" just-placed":"");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
+  var cell=document.createElement("button");cell.type="button";var justPlacedIndex=lastPlacedCells.indexOf(r+","+c);cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"")+(justPlacedIndex>=0?" just-placed":"");if(justPlacedIndex>=0)cell.style.setProperty("--place-delay",Math.min(justPlacedIndex,7)*22+"ms");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
   cell.addEventListener("click",function(){if(!isResolving)placeSelected(Number(this.dataset.row)-selectedAnchorRow,Number(this.dataset.col)-selectedAnchorCol);});
   root.appendChild(cell);
  }
@@ -695,12 +788,12 @@ function animateDropGhostToBoard(row,col,anchorRow,anchorCol){
   if(!targetCell){resolve();return;}
   var rect=targetCell.getBoundingClientRect(),targetX=rect.left+rect.width/2,targetY=rect.top+rect.height/2;
   dragGhost.classList.add("is-dropping");
-  dragGhost.style.transition="left 200ms cubic-bezier(.2,.8,.2,1), top 200ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease-out, filter 200ms ease-out";
+  dragGhost.style.transition="left 310ms cubic-bezier(.22,1,.36,1), top 310ms cubic-bezier(.22,1,.36,1), opacity 240ms ease-out, filter 310ms cubic-bezier(.22,1,.36,1)";
   requestAnimationFrame(function(){
    if(!dragGhost){resolve();return;}
    dragGhost.style.left=targetX+"px";dragGhost.style.top=targetY+"px";dragGhost.style.opacity=".98";dragGhost.style.filter="drop-shadow(0 5px 5px #9f496e66) brightness(1.12) saturate(1.04)";
   });
-  setTimeout(resolve,210);
+  setTimeout(resolve,320);
  });
 }
 function clearDrag(){dragState=null;clearDragGhost();}
@@ -732,8 +825,9 @@ document.addEventListener("pointerup",function(ev){
    if(pieces[state.index]&&fits(pieces[state.index],row,col)){
     isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
     animateDropGhostToBoard(row,col,state.anchorRow,state.anchorCol).then(function(){
-     clearDragGhost();$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");isResolving=false;
+     $("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");isResolving=false;
      placeSelected(row,col);
+     if(dragGhost){dragGhost.classList.add("is-settling");dragGhost.style.opacity="0";dragGhost.style.filter="blur(1.5px) drop-shadow(0 4px 4px #9f496e44)";setTimeout(clearDragGhost,175);}else{clearDragGhost();}
     });
    }else{
     clearDragGhost();$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";renderTray();playGameSound("bad");
@@ -899,7 +993,7 @@ async function endGame(){
  else{msg+="Тренировка не меняет недельный рекорд.";}
  $("resultMessage").textContent=msg;$("gameover").style.display="flex";
  if(tournamentMode&&joined){
-  try{var result=await post("/api/block-blast/score",{score:score});if(result.weeklyBest!==undefined){storeNumber(weeklyKey,Number(result.weeklyBest));updateRecords();}if(result.personalBest!==undefined){storeNumber(personalKey,Number(result.personalBest));updateRecords();}$("resultMessage").textContent+=" Результат подтверждён сервером.";}
+  try{var result=await post("/api/block-blast/score",{score:score});if(result.weeklyBest!==undefined){storeNumber(weeklyKey,Number(result.weeklyBest));updateRecords();}if(result.personalBest!==undefined){storeNumber(personalKey,Number(result.personalBest));updateRecords();}renderTournamentBoard(result);$("resultMessage").textContent+=" Результат подтверждён сервером.";}
   catch(error){$("resultMessage").textContent+=" Внимание: серверный рейтинг пока не подтвердил результат. Локальные рекорды сохранены на этом устройстве.";}
  }
 }
@@ -909,7 +1003,7 @@ $("soundToggle").addEventListener("click",function(){
 updateSoundButton();
 $("joinButton").addEventListener("click",joinTournament);
 $("practiceButton").addEventListener("click",function(){tournamentMode=false;startGame();});
-$("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261025-blockblast1";});
+$("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261026-smooth-prize";});
 $("leaveGameButton").addEventListener("click",backToMenu);
 $("restartButton").addEventListener("click",startGame);
 $("continueAdButton").addEventListener("click",continueAfterAd);
