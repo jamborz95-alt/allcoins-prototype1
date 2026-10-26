@@ -8,7 +8,7 @@ const root = process.cwd();
 const bombHtml = await readFile(resolve(root, "bomb.html"), "utf8");
 const bombJs = await readFile(resolve(root, "bomb-3d.js"), "utf8");
 const i18nExtraJs = await readFile(resolve(root, "i18n-extra.js"), "utf8");
-const threeBundle = await readFile(resolve(root, "node_modules/three/build/three.min.js"), "utf8");
+const threeBundle = await readFile(resolve(root, "three.min.js"), "utf8");
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await mkdir(resolve(root, "artifacts"), { recursive: true });
 
@@ -16,8 +16,9 @@ const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
 assert.ok(indexHtml.includes('href="./bomb.html?v=20261026h"'),
   "The Games menu should open the current cache-busted Bomb page.");
-assert.ok(bombHtml.includes('<script src="./bomb-3d.js?v=20261026h"></script>'),
-  "The current game page must load the updated 3D renderer.");
+assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026i"></script>') &&
+  bombHtml.includes('<script src="./bomb-3d.js?v=20261026i"></script>'),
+  "The page must load the local Three.js library and current 3D renderer without a CDN dependency.");
 assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
   !bombJs.includes("const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18)"),
   "The renderer should show the larger map and remove the dark helmet brim.");
@@ -91,6 +92,11 @@ const server = createServer((req, res) => {
     res.end(bombJs);
     return;
   }
+  if (pathname === "/three.min.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
+    res.end(threeBundle);
+    return;
+  }
   if (pathname === "/i18n-extra.js") {
     res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
     res.end(i18nExtraJs);
@@ -118,11 +124,6 @@ try {
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
-  await page.route("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/javascript",
-    body: threeBundle
-  }));
   await page.route("https://telegram.org/**", (route) => route.fulfill({
     status: 200,
     contentType: "application/javascript",
