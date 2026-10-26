@@ -5119,7 +5119,9 @@ function showStatus(id, message) {
 }
 
 function render() {
-  const displayedBalance = state.balance + getClickerLocalRewardTotal();
+  // Claimed client-only demo tasks must never be added to an authenticated server wallet.
+  const displayedBalance = Number(state.balance || 0) +
+    (state.user ? 0 : getClickerLocalRewardTotal());
   $("balance").textContent = displayedBalance;
   $("energy").textContent = state.energy;
   $("energyBar").style.width = state.energy + "%";
@@ -5131,9 +5133,10 @@ function render() {
   $("profileEnergy").textContent = state.energy;
 
   $("profileName").textContent =
-    state.user?.first_name || state.user?.username || "Гость";
+    state.user?.firstName || state.user?.first_name || state.user?.username || "Гость";
 
-  $("profileId").textContent = state.user?.id || "не авторизован";
+  // The server profile uses camelCase (telegramId); Telegram's raw user object uses id.
+  $("profileId").textContent = state.user?.telegramId || state.user?.id || "не авторизован";
   $("loginStatus").textContent = state.user ? "TELEGRAM" : "ДЕМО";
 
   $("roomsList").innerHTML = "";
