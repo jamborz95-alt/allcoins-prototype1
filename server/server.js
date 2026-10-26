@@ -3420,23 +3420,23 @@ async function startServer() {
 
     await pool.query(`
       CREATE OR REPLACE FUNCTION allcoins_audit_player_balance_change()
-      RETURNS trigger AS $
+      RETURNS trigger AS '
       BEGIN
-        IF TG_OP = 'INSERT' THEN
+        IF TG_OP = ''INSERT'' THEN
           INSERT INTO allcoins_balance_audit
             (telegram_id, operation, old_balance, new_balance, balance_delta, client_address)
           VALUES
-            (NEW.telegram_id, 'INSERT', NULL, NEW.balance, NEW.balance, inet_client_addr());
+            (NEW.telegram_id, ''INSERT'', NULL, NEW.balance, NEW.balance, inet_client_addr());
         ELSIF NEW.balance IS DISTINCT FROM OLD.balance THEN
           INSERT INTO allcoins_balance_audit
             (telegram_id, operation, old_balance, new_balance, balance_delta, client_address)
           VALUES
-            (NEW.telegram_id, 'UPDATE', OLD.balance, NEW.balance,
+            (NEW.telegram_id, ''UPDATE'', OLD.balance, NEW.balance,
              NEW.balance - OLD.balance, inet_client_addr());
         END IF;
         RETURN NEW;
       END;
-      $ LANGUAGE plpgsql
+      ' LANGUAGE plpgsql
     `);
 
     await pool.query(`
@@ -3450,11 +3450,11 @@ async function startServer() {
 
     await pool.query(`
       CREATE OR REPLACE FUNCTION allcoins_prevent_balance_audit_mutation()
-      RETURNS trigger AS $
+      RETURNS trigger AS '
       BEGIN
-        RAISE EXCEPTION 'ALLCOINS balance audit is append-only';
+        RAISE EXCEPTION ''ALLCOINS balance audit is append-only'';
       END;
-      $ LANGUAGE plpgsql
+      ' LANGUAGE plpgsql
     `);
     await pool.query(`
       DROP TRIGGER IF EXISTS trg_allcoins_balance_audit_append_only ON allcoins_balance_audit
