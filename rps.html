@@ -719,20 +719,24 @@
     while(walker.nextNode()) nodes.push(walker.currentNode);
     for(const node of nodes){
       if(excluded(node)) continue;
-      if(node.__allcoinsOriginalText===undefined) node.__allcoinsOriginalText=node.nodeValue;
+      if(node.__allcoinsOriginalText===undefined || (node.__allcoinsLastRenderedText!==undefined && node.nodeValue!==node.__allcoinsLastRenderedText)) node.__allcoinsOriginalText=node.nodeValue;
       const source=node.__allcoinsOriginalText;
       const target=current==="ru" ? source : trText(source);
       if(node.nodeValue!==target) node.nodeValue=target;
+      node.__allcoinsLastRenderedText=target;
     }
     const attrs=["placeholder","title","aria-label","alt"];
     document.querySelectorAll("[placeholder],[title],[aria-label],[alt]").forEach(el=>{
       for(const attr of attrs){
         if(!el.hasAttribute(attr)) continue;
         const marker="allcoinsOriginal"+attr.replace(/(^|-)(.)/g,(_,a,c)=>c.toUpperCase());
-        if(el.dataset[marker]===undefined) el.dataset[marker]=el.getAttribute(attr);
+        const lastMarker=marker+"LastRendered";
+        const actual=el.getAttribute(attr);
+        if(el.dataset[marker]===undefined || (el.dataset[lastMarker]!==undefined && actual!==el.dataset[lastMarker])) el.dataset[marker]=actual;
         const source=el.dataset[marker];
         const target=current==="ru"?source:trText(source);
-        if(el.getAttribute(attr)!==target) el.setAttribute(attr,target);
+        if(actual!==target) el.setAttribute(attr,target);
+        el.dataset[lastMarker]=target;
       }
     });
     const title=document.querySelector("title");
