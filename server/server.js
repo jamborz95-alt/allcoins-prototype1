@@ -13,6 +13,7 @@ import { createCheckersRouter } from "./checkers-router.js";
 import { createTowersRouter } from "./towers-router.js";
 import { createAIRouter } from "./ai-router.js";
 import { createSupportRouter } from "./support-router.js";
+import { registerNeonMigrationRoute } from "./neon-migration.js";
 import { createBlockBlastRouter } from "./blockblast-router.js";
 import {
   initializeCommissionTables,
@@ -34,10 +35,14 @@ app.use(cors({
 
 app.use(express.json({ limit: "20kb" }));
 
+const useNeonDatabase = process.env.USE_NEON_DATABASE === "1" && Boolean(process.env.NEON_DATABASE_URL);
+const activeDatabaseUrl = useNeonDatabase ? process.env.NEON_DATABASE_URL : process.env.DATABASE_URL;
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: activeDatabaseUrl,
   ssl: { rejectUnauthorized: false }
 });
+
+registerNeonMigrationRoute(app, pool);
 
 /**
  * Делит банк между реальными победителями один раз на завершённую партию.
