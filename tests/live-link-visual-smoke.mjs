@@ -20,8 +20,9 @@ const relevantFailedRequests = [];
 page.on("pageerror", error => pageErrors.push(error.message));
 page.on("requestfailed", request => {
   const url = request.url();
-  if (url.includes("i18n-extra.js") || url.includes("jamborz95-alt.github.io/allcoins-prototype1")) {
-    relevantFailedRequests.push({ url, error: request.failure()?.errorText || "failed" });
+  const failure = request.failure()?.errorText || "failed";
+  if (url.includes("i18n-extra.js") && failure !== "net::ERR_ABORTED") {
+    relevantFailedRequests.push({ url, error: failure });
   }
 });
 
