@@ -455,7 +455,6 @@ async function initTower3D(){
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.domElement.style.background='#a8c6bb';
-  field.appendChild(renderer.domElement);
 
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0xa8c6bb);
@@ -1026,6 +1025,7 @@ async function initTower3D(){
   function syncSafe(state,selected,userId){sync(state,selected,userId);}
   function dispose(){disposed=true;stop();if(resizeObserver)resizeObserver.disconnect();window.removeEventListener('resize',resize);renderer.dispose();canvas.remove();field.classList.remove('tower3d-active');}
   tower3D={ready:true,sync:syncSafe,start,stop,dispose,renderer,scene,camera};
+  field.appendChild(renderer.domElement);
   field.classList.add('tower3d-active');
   resize();
   if(gameState)tower3D.sync(gameState,selectedTower,myId());
