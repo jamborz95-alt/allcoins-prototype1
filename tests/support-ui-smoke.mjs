@@ -111,7 +111,7 @@ try {
   await player.page.goto("http://127.0.0.1:4175/index.html", { waitUntil: "domcontentloaded" });
   await player.page.locator('.nav button[data-page="profile"]').click();
   await player.page.locator("#profileName").waitFor({ state: "visible" });
-  await player.page.waitForFunction(() => document.querySelector("#profileId")?.textContent === "123");
+  await player.page.waitForFunction(() => document.querySelector("#profileStatus")?.textContent.includes("Вход через Telegram выполнен."));
   await player.page.locator("#supportOpenButton").click();
   await player.page.locator("#supportFormPanel:not(.hidden)").waitFor();
   await player.page.locator("#supportCategory").selectOption("Карты / анимация");
@@ -129,7 +129,7 @@ try {
   await owner.page.goto("http://127.0.0.1:4175/index.html", { waitUntil: "domcontentloaded" });
   await owner.page.locator('.nav button[data-page="profile"]').click();
   await owner.page.locator("#profileName").waitFor({ state: "visible" });
-  await owner.page.waitForFunction(() => document.querySelector("#profileId")?.textContent === "999");
+  await owner.page.waitForFunction(() => document.querySelector("#profileStatus")?.textContent.includes("Вход через Telegram выполнен."));
   await owner.page.locator("#adminSupportCard:not(.hidden)").waitFor();
   await owner.page.getByText("Диагностика ALLCOINS ИИ:", { exact: false }).waitFor();
   assert.equal(await owner.page.getByRole("button", { name: "📋 Копировать отчёт для ChatGPT" }).count(), 1);
