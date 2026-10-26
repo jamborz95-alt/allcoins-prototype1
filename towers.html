@@ -460,7 +460,7 @@ async function initTower3D(){
   scene.background=new THREE.Color(0xa8c6bb);
   scene.fog=new THREE.Fog(0xa8c6bb,46,95);
   const camera=new THREE.OrthographicCamera(-12,12,18,-18,.1,180);
-  let azimuth=0,elevation=.90,viewHeight=34.5;
+  let azimuth=0,elevation=.90,viewHeight=34.5,zoomFactor=1;
   const lookTarget=new THREE.Vector3(0,.15,0);
   const raycaster=new THREE.Raycaster();
   const pointer=new THREE.Vector2();
@@ -592,7 +592,7 @@ async function initTower3D(){
    for(let k=0;k<2;k++){if(towerSafe.some(p=>Math.hypot(x-p[0],z-p[1])<1.65)){x=(rand()-.5)*20;z=(rand()-.5)*26;}}
    dummy.position.set(x,-.005,z);dummy.rotation.set(0,rand()*Math.PI,0);dummy.scale.setScalar(.5+rand()*.9);dummy.updateMatrix();tufts.setMatrixAt(i,dummy.matrix);
   }
-  tufts.castShadow=false;tufts.receiveShadow=false;scene.add(tufts);
+  tufts.castShadow=false;tufts.receiveShadow=false;tufts.instanceMatrix.needsUpdate=true;scene.add(tufts);
 
   const shared={
    baseGeo:new THREE.CylinderGeometry(1.28,1.43,.38,12),
@@ -619,7 +619,7 @@ async function initTower3D(){
   const flagShape=new THREE.Shape();flagShape.moveTo(0,0);flagShape.lineTo(.67,0);flagShape.lineTo(.67,-.55);flagShape.lineTo(.34,-.39);flagShape.lineTo(0,-.55);flagShape.closePath();shared.flagShape=flagShape;
   const labelCtx=shared.labelCanvas.getContext('2d');
   function drawCountSprite(record,tower){
-   const ctx=labelCtx;ctx.clearRect(0,0,256,112);
+   const ctx=record.labelTexture.image.getContext('2d');ctx.clearRect(0,0,256,112);
    ctx.fillStyle='rgba(16,27,27,.92)';rounded(ctx,5,5,246,102,19);ctx.fill();
    ctx.lineWidth=5;ctx.strokeStyle='#e3d4a6';rounded(ctx,5,5,246,102,19);ctx.stroke();
    ctx.lineWidth=2;ctx.strokeStyle='#ffffff40';rounded(ctx,12,12,232,88,14);ctx.stroke();
@@ -718,7 +718,7 @@ async function initTower3D(){
    for(let i=0;i<points.length;i++){
     const point=points[i],tangent=curve.getTangent(i/(points.length-1)),normal=new THREE.Vector3(-tangent.z,0,tangent.x).normalize();
     positions.push(point.x+normal.x*.48,.065,point.z+normal.z*.48,point.x-normal.x*.48,.065,point.z-normal.z*.48);
-    if(i<points.length-1){const n=i*2;indices.push(n,n+1,n+2,n+1,n+3,n+2);}
+    if(i<points.length-1){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}
    }
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
    const asphaltMat=material(0x555d59,.95);
@@ -743,7 +743,7 @@ async function initTower3D(){
   }
   function setSelectionLines(selectedId){
    while(routeHintGroup.children.length){
-    const child=routeHintGroup.children.pop();routeHintGroup.remove(child);
+    const child=routeHintGroup.children[routeHintGroup.children.length-1];routeHintGroup.remove(child);
     if(child.geometry)child.geometry.dispose();if(child.material)child.material.dispose();
    }
    if(selectedId==null)return;
@@ -838,7 +838,7 @@ async function initTower3D(){
      if(tower){
       const dest=worldPosition(tower.x,tower.y);
       if(String(tower.ownerId)===String(g.userData.ownerId)){
-       entryEffects.push({from:oldPos,to:dest,age:0,owner:g.userData.ownerId,units:Math.min(5,g.userData.units||3)});
+       entryEffects.push({from:oldPos,to:dest,toId:Number(tower.id),age:0,owner:g.userData.ownerId,units:Math.min(5,g.userData.units||3)});
        if(entryEffects.length>5)entryEffects.shift();
       }else addImpact(oldPos,ownerHex(g.userData.ownerId),false);
      }else addImpact(oldPos,ownerHex(g.userData.ownerId),false);
@@ -861,7 +861,7 @@ async function initTower3D(){
   function resize(){
    const r=field.getBoundingClientRect();if(!r.width||!r.height)return;
    const aspect=r.width/r.height;
-   viewHeight=Math.max(31,Math.min(39,28.5/aspect));
+   viewHeight=Math.max(31,Math.min(39,28.5/aspect))/zoomFactor;
    camera.left=-viewHeight*aspect/2;camera.right=viewHeight*aspect/2;camera.top=viewHeight/2;camera.bottom=-viewHeight/2;camera.updateProjectionMatrix();
    renderer.setSize(Math.round(r.width),Math.round(r.height),false);
    updateCamera();
@@ -915,7 +915,7 @@ async function initTower3D(){
   canvas.addEventListener('pointermove',pointerMove,{passive:false});
   canvas.addEventListener('pointerup',pointerUp,{passive:false});
   canvas.addEventListener('pointercancel',()=>{drag=null;});
-  canvas.addEventListener('wheel',ev=>{ev.preventDefault();viewHeight=Math.max(25,Math.min(44,viewHeight+(ev.deltaY>0?1.2:-1.2)));resize();},{passive:false});
+  canvas.addEventListener('wheel',ev=>{ev.preventDefault();zoomFactor=Math.max(.78,Math.min(1.25,zoomFactor+(ev.deltaY>0?-.045:.045)));resize();},{passive:false});
   const resizeObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
   if(resizeObserver)resizeObserver.observe(field);
   window.addEventListener('resize',resize);
@@ -945,6 +945,7 @@ async function initTower3D(){
      }
     }
     for(const item of towerMeshes.values()){
+     item.ringMat.emissiveIntensity=item.flashUntil>now?1.65:.34+.1*Math.sin(now*.003+Number(item.id));
      if(!item.turret)continue;
      const t=towerAt(item.id);if(!t)continue;
      let best=null;
@@ -1140,7 +1141,7 @@ function clearLocalState(){stopLoops();roadNetwork.clear();lastFleetSnapshot.cle
 function endLocalPractice(){clearLocalState();refreshRooms();}
 document.addEventListener('pointerup',e=>{if(!dragMoved||dragFrom===null)return;const under=document.elementFromPoint(e.clientX,e.clientY);const target=under&&under.closest?under.closest('.tower'):null;if(target&&Number(target.dataset.tower)!==dragFrom){suppressClickUntil=Date.now()+500;sendAttack(dragFrom,Number(target.dataset.tower));}dragFrom=null;dragMoved=false;});
 window.addEventListener('resize',()=>{if(!gameView.classList.contains('hidden'))renderGame();});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&roomId&&!localPractice)loadRoomState();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(tower3D)tower3D.stop();}else{if(tower3D&&tower3D.ready)tower3D.start();if(roomId&&!localPractice)loadRoomState();}});
 if(tg&&tg.BackButton){try{tg.BackButton.onClick(()=>{if(localPractice)endLocalPractice();else if(roomId&&roomInfo&&roomInfo.status!=='playing')showLobby();else if(roomId){showToast('Матч продолжается — нажми стрелку в углу, чтобы вернуться.');}else backToApp();});tg.BackButton.show();}catch(e){}}
 setApiStatus(tg&&tg.initData?'Онлайн-режим подключён. Ставка списывается при запуске матча; победитель получает банк за вычетом 5% комиссии.':'Открой ALLCOINS через Telegram для онлайн-комнат. Тренировка с ботами работает бесплатно.');
 initTower3D();
