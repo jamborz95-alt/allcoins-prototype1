@@ -61,8 +61,10 @@ assert.ok(bombHtml.includes("const blend = 1 - Math.exp(-10 * dt);") &&
   bombHtml.includes("botVelocityX += (desiredVX - botVelocityX) * blend;"),
   "Bot movement should accelerate smoothly instead of snapping to full speed.");
 assert.ok(bombHtml.includes("pointOnArc(.25)") && bombHtml.includes("pointOnArc(.5)") &&
-  bombHtml.includes("pointOnArc(.75)") && bombHtml.includes("duration: 485, easing: 'linear'"),
-  "Bomb transfers should follow a smooth sampled curved flight path.");
+  bombHtml.includes("pointOnArc(.75)") && bombHtml.includes("const duration = 640;") &&
+  bombHtml.includes("window.__allcoinsBombFlight = { startX, startY, controlX, controlY, endX, endY, startedAt: performance.now(), duration };") &&
+  bombHtml.includes("cubic-bezier(.22,.72,.22,1)"),
+  "Bomb transfers should follow a smooth 640ms sampled curved flight path.");
 assert.ok(bombHtml.includes(".bomb.following{transition:none!important}") &&
   !bombHtml.slice(bombHtml.indexOf("function syncBombToCarrier()"), bombHtml.indexOf("function setMoveVector")).includes("offsetWidth"),
   "Following the carrier should not force a layout reflow on every animation frame.");
