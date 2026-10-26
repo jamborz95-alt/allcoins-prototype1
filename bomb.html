@@ -1186,13 +1186,16 @@
         y: (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * controlY + t * t * endY
       });
       const arc1 = pointOnArc(.25), arc2 = pointOnArc(.5), arc3 = pointOnArc(.75);
-      const duration = 560;
+      const duration = 640;
       window.__allcoinsBombFlight = { startX, startY, controlX, controlY, endX, endY, startedAt: performance.now(), duration };
       window.__allcoinsBombScreenPosition = { x: startX, y: startY };
       bomb.classList.add('moving'); bomb.style.transition = 'none';
       bomb.style.left = `${startX}px`; bomb.style.top = `${startY}px`;
       bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
-      void bomb.offsetWidth; // A single layout sync at flight start, never inside the game loop.
+      // The 3D renderer animates the flight from the shared path state. Avoid animating
+      // left/top on this hidden DOM element: it forces layout on every frame and stutters on phones.
+      if (arena.classList.contains('three-ready')) return;
+      void bomb.offsetWidth;
       makeTrail(arc2.x, arc2.y);
       if (typeof bomb.animate === 'function') {
         bombFlightAnimation = bomb.animate([
@@ -1216,7 +1219,7 @@
           bombFlightAnimation = null;
         };
       } else {
-        bomb.style.transition = 'left 560ms cubic-bezier(.22,.72,.22,1),top 560ms cubic-bezier(.22,.72,.22,1),transform 560ms ease-out';
+        bomb.style.transition = `left ${duration}ms cubic-bezier(.22,.72,.22,1),top ${duration}ms cubic-bezier(.22,.72,.22,1),transform ${duration}ms ease-out`;
         requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.08) rotate(360deg)'; });
         window.setTimeout(() => {
           bomb.classList.remove('moving');
@@ -1225,7 +1228,7 @@
           bomb.classList.add('following');
           window.__allcoinsBombScreenPosition = { x: endX, y: endY };
           window.__allcoinsBombFlight = null;
-        }, 575);
+        }, duration + 15);
       }
     }
     function makeTrail(x, y) {
@@ -1308,7 +1311,7 @@
       clearTimeout(transferTimer);
       // Finish slightly after the visual flight and force-sync the bomb to its new carrier.
       // This watchdog prevents a stalled WAAPI animation from leaving phase='passing'.
-      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 620);
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 700);
     }
 
     function finishBombTransfer(target, token) {
@@ -1449,7 +1452,7 @@
       playTone(710, .08, 'triangle', .035);
       positionBomb(target, true);
       clearTimeout(transferTimer);
-      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 620);
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 700);
     }
 
     function explode() {
@@ -1748,6 +1751,6 @@
   document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
 })();
 </script>
-  <script src="./bomb-3d.js?v=20261026d"></script>
+  <script src="./bomb-3d.js?v=20261026e"></script>
 </body>
 </html>
