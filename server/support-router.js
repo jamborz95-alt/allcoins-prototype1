@@ -167,7 +167,11 @@ async function notifyAdmin(ticket, triage) {
 async function processTicket(ticket) {
   try {
     const triage = await analyzeTicket(ticket);
-    const notificationSent = await notifyAdmin(ticket, triage);
+    // Only escalate to the owner when AI believes developer attention is needed.
+    const notificationSent = triage.needsDeveloper ? await notifyAdmin(ticket, triage) : false;
+    const notificationStatus = triage.needsDeveloper
+      ? (notificationSent ? "sent" : "failed")
+      : "not_needed";
     await ticket.pool.query(
       `UPDATE allcoins_support_tickets
        SET ai_summary = $1,
@@ -180,7 +184,7 @@ async function processTicket(ticket) {
         triage.summary,
         triage.severity,
         triage.needsDeveloper,
-        notificationSent ? "sent" : "failed",
+        notificationStatus,
         ticket.id
       ]
     );
@@ -215,7 +219,7 @@ export function createSupportRouter({ pool, verifyTelegram }) {
         ai_severity TEXT,
         needs_developer BOOLEAN NOT NULL DEFAULT TRUE,
         notification_status TEXT NOT NULL DEFAULT 'pending'
-          CHECK (notification_status IN ('pending', 'sent', 'failed')),
+          CHECK (notification_status IN ('pending', 'sent', 'failed', 'not_needed')),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
