@@ -11,6 +11,7 @@ import { createUnoRouter } from "./uno-router.js";
 import { createBilliardsRouter } from "./billiards-router.js";
 import { createCheckersRouter } from "./checkers-router.js";
 import { createTowersRouter } from "./towers-router.js";
+import { createAIRouter } from "./ai-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -226,6 +227,8 @@ const checkersRouter = createCheckersRouter({ pool, verifyTelegram });
 const towersRouter = createTowersRouter({ pool, verifyTelegram });
 app.use("/api/checkers", checkersRouter);
 app.use("/api/towers", towersRouter);
+const aiRouter = createAIRouter({ verifyTelegram });
+app.use("/api/ai", aiRouter);
 
 app.get("/", (req, res) => {
   res.json({
