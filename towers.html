@@ -236,6 +236,7 @@ input:focus,select:focus{border-color:#e5c779;box-shadow:0 0 0 3px #d5ac4430}
 #field.tower3d-active:after{content:"";position:absolute;inset:0;z-index:9;pointer-events:none;box-shadow:inset 0 0 35px #07120c35,inset 0 0 0 1px #d4ffc222}
 @media(prefers-reduced-motion:reduce){#field>.tower3d-canvas{cursor:default}}
 </style>
+<script src="./i18n-extra.js?v=20261026d"></script>
 </head>
 <body>
 <main id="lobby">
@@ -1189,7 +1190,7 @@ refreshRooms();
   let current = "ru", busy = false, scheduled = false;
   function getSaved(){ try { const value=localStorage.getItem("allcoins_language")||"ru"; return LANGS_AVAILABLE.includes(value)?value:"ru"; } catch(_){ return "ru"; } }
   let dictionaryCacheCode=null, dictionaryCache=null;
-  function getDictionary(){ if(dictionaryCacheCode!==current){ dictionaryCache=Object.assign({},LANGS.en || {},LANGS[current] || {}); dictionaryCacheCode=current; } return dictionaryCache || {}; }
+  function getDictionary(){ if(dictionaryCacheCode!==current){ const extra=(window.ALLCOINS_I18N_EXTRA && window.ALLCOINS_I18N_EXTRA[current]) || {}; dictionaryCache=Object.assign({},LANGS.en || {},LANGS[current] || {},extra); dictionaryCacheCode=current; } return dictionaryCache || {}; }
   function trText(value){
     if (!value || current==="ru") return value;
     const dict=getDictionary(), clean=value.trim();
