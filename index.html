@@ -9011,7 +9011,11 @@ function buildSupportReport(ticket) {
     "",
     "Приоритет: " + (ticket.ai_severity || "не определён"),
     "Нужен разработчик: " + (ticket.needs_developer ? "да" : "не определено"),
-    "Уведомление владельцу: " + (ticket.notification_status === "sent" ? "отправлено в Telegram" : "не подтверждено")
+    "Уведомление владельцу: " + (
+      ticket.notification_status === "sent" ? "отправлено в Telegram" :
+      ticket.notification_status === "not_needed" ? "ИИ решил, что передача владельцу не нужна" :
+      "не подтверждено"
+    )
   ].join("\n");
 }
 
@@ -9087,7 +9091,11 @@ function renderAdminSupportTickets(tickets) {
     status.textContent =
       "Статус: " + (supportStatusLabels[ticket.status] || ticket.status || "неизвестен") +
       " · Приоритет: " + (ticket.ai_severity || "не определён") +
-      " · Уведомление: " + (ticket.notification_status === "sent" ? "отправлено" : ticket.notification_status === "pending" ? "в обработке" : "не отправлено");
+      " · Уведомление: " + (
+        ticket.notification_status === "sent" ? "отправлено" :
+        ticket.notification_status === "pending" ? "в обработке" :
+        ticket.notification_status === "not_needed" ? "ИИ не считает нужным" : "не отправлено"
+      );
     card.appendChild(status);
 
     const description = document.createElement("div");
