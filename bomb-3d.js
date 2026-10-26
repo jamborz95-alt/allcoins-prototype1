@@ -798,7 +798,7 @@
       const facing = node.classList.contains('facing-left');
       miner.rotation.y = facing ? -Math.PI / 2 : 0;
       const carrying = node.classList.contains('carrying');
-      data.lamp.intensity = carrying ? 3.5 + Math.sin(time * .025) * .7 : 1.6;
+      if (data.lamp) data.lamp.intensity = carrying ? 3.5 + Math.sin(time * .025) * .7 : 1.6;
       data.nameSprite.material.opacity = miner.visible ? 1 : .3;
     });
     miners.forEach((miner, index) => {
@@ -997,7 +997,12 @@
     }
     const dt = lastFrame ? Math.min(.045, Math.max(.001, (time - lastFrame) / 1000)) : .016;
     lastFrame = time;
-    updateMiners(time);
+    try {
+      updateMiners(time);
+    } catch (error) {
+      fallbackTo2D(error);
+      return;
+    }
     const bomb = $('bomb');
     const exploding = !!(bomb && bomb.classList.contains('exploding'));
     if (exploding && !previousExplosion) startExplosion();
