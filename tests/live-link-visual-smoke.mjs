@@ -40,14 +40,14 @@ try {
   );
 
   const baseState = await page.evaluate(() => ({
-    title: document.title,
+    brand: document.querySelector("#allcoinsBrand strong")?.textContent?.trim() || "",
     viewport: { width: innerWidth, height: innerHeight },
     documentWidth: document.documentElement.scrollWidth,
     extraLocaleCounts: Object.fromEntries(
       ["de", "fr", "pt", "zh"].map(lang => [lang, Object.keys(window.ALLCOINS_I18N_EXTRA[lang]).length])
     )
   }));
-  assert.match(baseState.title, /ALLCOINS/i, "Page title does not identify ALLCOINS.");
+  assert.match(baseState.brand, /ALLCOINS/i, "Visible ALLCOINS brand is missing.");
   assert.equal(baseState.documentWidth, baseState.viewport.width, "Home page has horizontal overflow.");
   await page.screenshot({ path: resolve(out, "live-link-home-mobile.png") });
 
