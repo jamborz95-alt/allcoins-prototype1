@@ -32,12 +32,14 @@ jobs:
             sleep 1
           done
       - name: Run mobile visual baseline
-        run: node tests/durak-visual-check.cjs && node tests/billiards-3d-smoke.mjs && node tests/live-link-visual-smoke.mjs
+        run: node tests/durak-visual-check.cjs && node tests/billiards-3d-smoke.mjs && node tests/live-link-visual-smoke.mjs && node tests/bomb-game-smoke.mjs
       - name: Upload screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allcoins-mobile-visual-baseline
-          path: visual-test-output/
+          path: |
+            visual-test-output/
+            artifacts/*.png
           if-no-files-found: warn
           retention-days: 14
