@@ -688,10 +688,10 @@
     mesh(new THREE.SphereGeometry(.055, 8, 6), skinMat, head, 0, -.045, .315);
     mesh(new THREE.TorusGeometry(.085, .012, 4, 12), standard(0x8c4839, .75, 0), head, 0, -.13, .302);
 
-    // A smooth hard-hat dome without the dark horizontal brim that looked like a black stripe.
-    const dome = mesh(new THREE.SphereGeometry(.38, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .31, 0);
-    dome.scale.y = .9;
-    mesh(new THREE.SphereGeometry(.105, 10, 8), lampMat, head, 0, .36, .34);
+    // Lift the helmet dome to the top of the head so its lower edge cannot cut across the forehead like a dark stripe.
+    const dome = mesh(new THREE.SphereGeometry(.36, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .41, 0);
+    dome.scale.y = .92;
+    mesh(new THREE.SphereGeometry(.095, 10, 8), lampMat, head, 0, .42, .32);
     // Helmet lamp stays emissive but does not add one expensive point light per player.
     const lamp = null;
 
