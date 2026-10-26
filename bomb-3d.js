@@ -701,7 +701,7 @@
     root.add(nameSprite);
     root.userData = Object.assign(root.userData, {
       index, name, accent, legs, arms, torso, head, nameSprite, lamp, shadow,
-      lastX: 0, lastY: 0
+      lastX: 0, lastY: 0, positionReady: false
     });
     return root;
   }
@@ -762,7 +762,7 @@
     return miner;
   }
 
-  function updateMiners(time) {
+  function updateMiners(time, dt) {
     const nodes = [];
     const player = $('playerCharacter');
     if (player) nodes.push({ index: 0, node: player });
@@ -778,7 +778,15 @@
       const anchor = screenPosition(node, 19);
       if (anchor) {
         const pos = screenToWorld(anchor.x, anchor.y, 0);
-        miner.position.set(pos.x, 0, pos.z);
+        const data = miner.userData;
+        if (!data.positionReady || miner.position.distanceToSquared(pos) > 25) {
+          miner.position.set(pos.x, 0, pos.z);
+          data.positionReady = true;
+        } else {
+          // Smooth small screen-space movements instead of visibly stepping between frames.
+          const alpha = 1 - Math.exp(-Math.max(.001, Math.min(.05, dt || .016)) * 34);
+          miner.position.lerp(pos, alpha);
+        }
         const deadSeat = arena.querySelector('.seat[data-player="' + index + '"].eliminated');
         miner.visible = !deadSeat;
       }
@@ -797,7 +805,11 @@
       data.head.rotation.z = walking ? Math.sin(t * .75) * .035 : Math.sin(t * .4) * .018;
       data.nameSprite.position.y = 3.58 + (walking ? Math.abs(Math.sin(t * 1.55)) * .055 : 0);
       const facing = node.classList.contains('facing-left');
-      miner.rotation.y = facing ? -Math.PI / 2 : 0;
+      const targetYaw = facing ? -Math.PI / 2 : 0;
+      let yawDelta = targetYaw - miner.rotation.y;
+      while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+      while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+      miner.rotation.y += yawDelta * (1 - Math.exp(-Math.max(.001, dt || .016) * 20));
       const carrying = node.classList.contains('carrying');
       if (data.lamp) data.lamp.intensity = carrying ? 3.5 + Math.sin(time * .025) * .7 : 1.6;
       data.nameSprite.material.opacity = miner.visible ? 1 : .3;
@@ -836,18 +848,39 @@
   function updateBomb(time, dt) {
     const bomb = $('bomb');
     if (!bomb) return;
-    const point = bombScreenPoint();
-    if (!point) return;
     const moving = bomb.classList.contains('moving');
     const urgent = bomb.classList.contains('urgent');
     const exploding = bomb.classList.contains('exploding');
-    const height = moving ? 1.65 + Math.sin(time * .035) * .12 : .45;
+    const flight = moving ? window.__allcoinsBombFlight : null;
+    let point = null;
+    let flightProgress = 0;
+    if (flight) {
+      flightProgress = clamp((time - flight.startedAt) / flight.duration, 0, 1);
+      // Smoothstep timing plus a quadratic flight arc — no per-frame layout reads.
+      const t = flightProgress * flightProgress * (3 - 2 * flightProgress);
+      const u = 1 - t;
+      point = {
+        x: u * u * flight.startX + 2 * u * t * flight.controlX + t * t * flight.endX,
+        y: u * u * flight.startY + 2 * u * t * flight.controlY + t * t * flight.endY
+      };
+      window.__allcoinsBombScreenPosition = point;
+    } else {
+      const mirrored = window.__allcoinsBombScreenPosition;
+      point = mirrored && Number.isFinite(mirrored.x) && Number.isFinite(mirrored.y)
+        ? mirrored : bombScreenPoint();
+    }
+    if (!point) return;
+    const height = flight ? .45 + Math.sin(flightProgress * Math.PI) * 2.15
+      : (moving ? 1.2 : .45);
     const p = screenToWorld(point.x, point.y, height);
     bombRoot.position.copy(p);
     bombRoot.visible = !exploding;
     bombShadow.position.set(p.x, .028, p.z - height * COS_E / SIN_E);
     bombShadow.visible = !exploding;
     bombRoot.scale.setScalar(urgent ? 1 + Math.sin(time * .045) * .07 : 1);
+    bombRoot.rotation.y = flight ? flightProgress * Math.PI * 1.65 : 0;
+    bombRoot.rotation.x = flight ? Math.sin(flightProgress * Math.PI) * .10 : 0;
+    bombRoot.rotation.z = flight ? Math.sin(flightProgress * Math.PI) * .07 : 0;
     const ud = bombRoot.userData;
     if (ud.flame) {
       const flicker = .85 + Math.sin(time * .043) * .17 + Math.sin(time * .079) * .09;
@@ -880,7 +913,9 @@
       scene.remove(explosionEffect.group);
       explosionEffect = null;
     }
-    const point = bombScreenPoint() || lastBombScreen || { x: rendererWidth / 2, y: rendererHeight / 2 };
+    const mirrored = window.__allcoinsBombScreenPosition;
+    const point = mirrored && Number.isFinite(mirrored.x) && Number.isFinite(mirrored.y)
+      ? mirrored : (bombScreenPoint() || lastBombScreen || { x: rendererWidth / 2, y: rendererHeight / 2 });
     const origin = screenToWorld(point.x, point.y, .9);
     const group = new THREE.Group();
     group.position.copy(origin);
@@ -985,8 +1020,8 @@
   function loop(time) {
     frameId = 0;
     if (rendererFailed || !renderer || !scene || !camera) return;
-    // Cap expensive scene updates near 40–45 FPS; the gameplay logic remains independent.
-    if (lastDrawAt && time - lastDrawAt < 22) {
+    // Match the mobile display refresh more closely; capped just below 60 FPS.
+    if (lastDrawAt && time - lastDrawAt < 16) {
       frameId = requestAnimationFrame(loop);
       return;
     }
@@ -999,7 +1034,7 @@
     const dt = lastFrame ? Math.min(.045, Math.max(.001, (time - lastFrame) / 1000)) : .016;
     lastFrame = time;
     try {
-      updateMiners(time);
+      updateMiners(time, dt);
     } catch (error) {
       fallbackTo2D(error);
       return;
