@@ -213,6 +213,7 @@
       try { renderer.dispose(); } catch (_) {}
       try { renderer.domElement.remove(); } catch (_) {}
     }
+    renderer = null;
     console.warn('ALLCOINS 3D renderer stopped; gameplay continues in fallback mode.', error || 'Renderer stopped');
   }
 
