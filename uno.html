@@ -1777,6 +1777,77 @@
   }
 </style>
 
+<style id="uno-3d-high-quality-cards">
+  /* Deep, physical-looking cards while preserving the existing touch-drag controls. */
+  .uno-card{
+    border-color:#fffdf4!important;
+    border-bottom-width:4px!important;
+    box-shadow:
+      0 1px 0 #8d8b7e,
+      0 3px 0 #343b38,
+      0 6px 0 #111b18,
+      0 10px 17px #00100dcc,
+      inset 0 1px 0 #ffffff,
+      inset 1px 0 0 #ffffff9c,
+      inset -1px 0 0 #00000020,
+      inset 0 -2px 0 #00000024!important;
+    transform-style:preserve-3d;
+    backface-visibility:hidden;
+  }
+  .uno-card.red{background:linear-gradient(145deg,#ff6b70 0%,#e52d3d 34%,#a90725 100%)}
+  .uno-card.blue{background:linear-gradient(145deg,#69b5ff 0%,#1769db 37%,#0a327f 100%)}
+  .uno-card.green{background:linear-gradient(145deg,#6af4a1 0%,#169b56 37%,#07512f 100%)}
+  .uno-card.yellow{background:linear-gradient(145deg,#fff3a0 0%,#f0c52b 38%,#b87900 100%)}
+  .uno-card.wild{background:conic-gradient(from 28deg at 50% 50%,#f5cf31 0 25%,#2580ed 25% 50%,#159653 50% 75%,#ed3044 75% 100%)}
+  .uno-card.card-back{
+    border-color:#ffe8a3!important;
+    box-shadow:0 1px 0 #947238,0 3px 0 #5a411f,0 6px 0 #302419,0 10px 18px #00100dcc,inset 0 1px 0 #fff,inset 0 -2px 0 #0007!important;
+    background:linear-gradient(135deg,#211b31 0%,#49315b 28%,#17162a 52%,#6c422c 78%,#201b2c 100%);
+  }
+  .uno-card:not(.card-back):after{
+    background:linear-gradient(125deg,rgba(255,255,255,.28),transparent 24%,transparent 67%,rgba(0,0,0,.13))!important;
+  }
+  .uno-hand .uno-card{
+    transform-origin:50% 100%;
+    filter:drop-shadow(0 2px 1px #0004);
+    transition:transform .2s cubic-bezier(.2,.8,.2,1),filter .2s ease,box-shadow .2s ease;
+  }
+  .uno-hand .uno-card:hover,.uno-hand .uno-card:focus-visible{
+    filter:drop-shadow(0 10px 5px #0008) brightness(1.06);
+  }
+  .uno-hand .uno-card.hand-selected{
+    filter:drop-shadow(0 10px 7px #0009) brightness(1.08);
+  }
+  #discardPile .discard-stack-card{
+    filter:drop-shadow(0 5px 4px #00120d8c);
+  }
+  #discardPile .discard-stack-card:not(.discard-stack-top){
+    box-shadow:0 2px 0 #333a36,0 5px 0 #101815,0 8px 12px #00110c8c!important;
+  }
+  .draw-pile .uno-card{
+    transform:perspective(700px) rotateY(-4deg) rotateX(2deg);
+    transform-origin:50% 100%;
+  }
+  .draw-pile:not(:disabled):active .uno-card{
+    transform:perspective(700px) translateY(3px) rotateY(-2deg) rotateX(1deg);
+  }
+  .table-felt.uno-3d-ready{
+    filter:drop-shadow(0 14px 18px #0005);
+  }
+  .table-felt.uno-3d-ready .pile-wrap{
+    filter:drop-shadow(0 2px 2px #00120c66);
+  }
+  .table-felt.uno-3d-ready #discardPile .uno-card{
+    transform-style:preserve-3d;
+  }
+  @media(max-width:680px){
+    .uno-card{box-shadow:0 1px 0 #8d8b7e,0 3px 0 #343b38,0 5px 0 #111b18,0 7px 11px #00100dcc,inset 0 1px 0 #ffffff,inset 0 -2px 0 #00000024!important}
+    .draw-pile .uno-card{transform:perspective(600px) rotateY(-3deg) rotateX(1deg)}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .uno-hand .uno-card,.draw-pile .uno-card{transition:none!important}
+  }
+</style>
 
 <script id="uno-3d-scene">
 (function(){
