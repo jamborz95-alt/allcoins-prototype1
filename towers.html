@@ -558,7 +558,7 @@ async function initTower3D(){
   const trunkGeo=new THREE.CylinderGeometry(.12,.19,.75,7);
   const pineGeo1=new THREE.ConeGeometry(.76,1.25,7),pineGeo2=new THREE.ConeGeometry(.58,1.1,7),pineGeo3=new THREE.ConeGeometry(.42,.9,7);
   function addTree(x,z,scale,seed){
-   const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(scale);scene.add(g);
+   const g=new THREE.Group();g.position.set(x,-.125,z);g.scale.setScalar(scale);scene.add(g);
    const trunk=new THREE.Mesh(trunkGeo,pineTrunk);trunk.position.y=.39;trunk.castShadow=true;g.add(trunk);
    const a=new THREE.Mesh(pineGeo1,pineA);a.position.y=1.03;a.castShadow=true;g.add(a);
    const b=new THREE.Mesh(pineGeo2,pineB);b.position.y=1.65;b.castShadow=true;g.add(b);
@@ -638,16 +638,16 @@ async function initTower3D(){
   function makeTower(t){
    const root=new THREE.Group();root.position.copy(worldPosition(t.x,t.y));scene.add(root);
    const owner=ownerHex(t.ownerId),glow=ownerGlow(t.ownerId),shooter=t.type==='shooter';
-   const contact=new THREE.Mesh(shared.contactGeo,new THREE.MeshBasicMaterial({color:0x203020,transparent:true,opacity:.26,depthWrite:false}));contact.rotation.x=-Math.PI/2;contact.position.y=.012;contact.scale.set(1.1,1.0,1);root.add(contact);
+   const contact=new THREE.Mesh(shared.contactGeo,new THREE.MeshBasicMaterial({color:0x203020,transparent:true,opacity:.26,depthWrite:false}));contact.rotation.x=-Math.PI/2;contact.position.y=-.11;contact.scale.set(1.1,1.0,1);root.add(contact);
    const ringMat=new THREE.MeshStandardMaterial({color:owner,emissive:glow,emissiveIntensity:.38,roughness:.38,metalness:.34});
-   const ring=new THREE.Mesh(shared.ringGeo,ringMat);ring.rotation.x=Math.PI/2;ring.position.y=.12;root.add(ring);
-   const base=new THREE.Mesh(shared.baseGeo,stoneDark);base.position.y=.24;base.castShadow=true;base.receiveShadow=true;root.add(base);
-   const foundation=new THREE.Mesh(shared.foundationGeo,stoneLight);foundation.position.y=.53;foundation.castShadow=true;foundation.receiveShadow=true;root.add(foundation);
+   const ring=new THREE.Mesh(shared.ringGeo,ringMat);ring.rotation.x=Math.PI/2;ring.position.y=-.04;root.add(ring);
+   const base=new THREE.Mesh(shared.baseGeo,stoneDark);base.position.y=.08;base.castShadow=true;base.receiveShadow=true;root.add(base);
+   const foundation=new THREE.Mesh(shared.foundationGeo,stoneLight);foundation.position.y=.38;foundation.castShadow=true;foundation.receiveShadow=true;root.add(foundation);
    const bodyMat=stoneMat.clone();bodyMat.color.setHex(shooter?0xffffff:0xf3f0dc);bodyMat.map=stoneTex;
-   const body=new THREE.Mesh(shared.bodyGeo,bodyMat);body.position.y=1.72;body.castShadow=true;body.receiveShadow=true;root.add(body);
+   const body=new THREE.Mesh(shared.bodyGeo,bodyMat);body.position.y=1.58;body.castShadow=true;body.receiveShadow=true;root.add(body);
    for(let band=0;band<3;band++){
     const torus=new THREE.Mesh(new THREE.TorusGeometry(band===1?.83:.92,.045,6,20),band===1?stoneDark:stoneLight);
-    torus.rotation.x=Math.PI/2;torus.position.y=band===0?.71:(band===1?1.54:2.72);root.add(torus);
+    torus.rotation.x=Math.PI/2;torus.position.y=band===0?.58:(band===1?1.54:2.72);root.add(torus);
    }
    for(let i=0;i<10;i++){
     const a=(i/10)*Math.PI*2;
@@ -691,7 +691,7 @@ async function initTower3D(){
    record.ringMat.emissiveIntensity=record.flashUntil>now?1.3:.34+.12*Math.sin(now*.003+Number(t.id));
    record.ring.scale.setScalar(selectedId===Number(t.id)?1.0+.05*Math.sin(now*.006):1);
    record.ring.material.color.setHex(selectedId===Number(t.id)?0xffe18c:color);
-   record.ring.position.y=.11+.025*Math.sin(now*.004+Number(t.id));
+   record.ring.position.y=-.04+.02*Math.sin(now*.004+Number(t.id));
    if(record.turret){
     const p=worldPosition(t.x,t.y),targets=gameState&&gameState.fleets||[];
     let best=null;
@@ -715,18 +715,18 @@ async function initTower3D(){
    const a=worldPosition(from.x,from.y),b=worldPosition(to.x,to.y);
    const direction=new THREE.Vector3().subVectors(b,a);const perp=new THREE.Vector3(-direction.z,0,direction.x).normalize();
    const mid=a.clone().add(b).multiplyScalar(.5);mid.x+=perp.x*1.0;mid.z+=perp.z*1.0;
-   const curve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(a.x,.045,a.z),new THREE.Vector3(mid.x,.045,mid.z),new THREE.Vector3(b.x,.045,b.z));
+   const curve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(a.x,-.10,a.z),new THREE.Vector3(mid.x,-.10,mid.z),new THREE.Vector3(b.x,-.10,b.z));
    const points=curve.getPoints(30),positions=[],indices=[];
    for(let i=0;i<points.length;i++){
     const point=points[i],tangent=curve.getTangent(i/(points.length-1)),normal=new THREE.Vector3(-tangent.z,0,tangent.x).normalize();
-    positions.push(point.x+normal.x*.48,.065,point.z+normal.z*.48,point.x-normal.x*.48,.065,point.z-normal.z*.48);
+    positions.push(point.x+normal.x*.48,-.08,point.z+normal.z*.48,point.x-normal.x*.48,-.08,point.z-normal.z*.48);
     if(i<points.length-1){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}
    }
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
    const asphaltMat=material(0x555d59,.95);
    const mesh=new THREE.Mesh(geo,asphaltMat);mesh.receiveShadow=true;scene.add(mesh);
    const stripePoints=[];
-   for(let i=1;i<points.length-1;i+=3){stripePoints.push(points[i].clone().setY(.095),points[Math.min(i+1,points.length-1)].clone().setY(.095));}
+   for(let i=1;i<points.length-1;i+=3){stripePoints.push(points[i].clone().setY(-.065),points[Math.min(i+1,points.length-1)].clone().setY(-.065));}
    const stripeGeo=new THREE.BufferGeometry().setFromPoints(stripePoints);
    const stripeMat=new THREE.LineBasicMaterial({color:ownerHex(road.ownerId),transparent:true,opacity:.92});
    const stripe=new THREE.LineSegments(stripeGeo,stripeMat);scene.add(stripe);
