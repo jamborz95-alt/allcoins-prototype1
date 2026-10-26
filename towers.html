@@ -413,10 +413,13 @@ function localTick(){if(!localPractice||!gameState||gameState.status!=='playing'
 function rememberRoad(fromId,toId,ownerId,ownerColor){const a=Number(fromId),b=Number(toId);if(!Number.isFinite(a)||!Number.isFinite(b)||a===b)return;const key=a+'>'+b;const source=towerAt(a);const resolvedOwner=ownerId!=null?String(ownerId):(source&&source.ownerId!=null?String(source.ownerId):null);const resolvedColor=roadColorFor(resolvedOwner,ownerColor||(source&&colorFor(source.ownerId)));const existing=roadNetwork.get(key);if(!existing)roadNetwork.set(key,{key:key,fromId:a,toId:b,ownerId:resolvedOwner,ownerColor:resolvedColor});else{if(ownerId!=null&&String(existing.ownerId)!==String(resolvedOwner)){existing.ownerId=resolvedOwner;existing.ownerColor=resolvedColor;}else if(!['blue','red','green'].includes(existing.ownerColor))existing.ownerColor=resolvedColor;}}
 function renderRoomPlayersOnly(){const strip=$('playerStrip');strip.innerHTML='';for(const p of (gameState&&gameState.players||[])){const chip=document.createElement('div');chip.className='player-chip';const dot=document.createElement('span');dot.className='dot';dot.style.background='var(--'+(p.color||colorFor(p.telegramId))+')';chip.appendChild(dot);const label=document.createElement('span');label.textContent=(String(p.telegramId)===myId()?'Ты':p.name||'Игрок');chip.appendChild(label);strip.appendChild(chip);}}
 function resizeRouteSvg(){const s=$('routeSvg');const r=$('field').getBoundingClientRect();s.setAttribute('viewBox','0 0 '+r.width+' '+r.height);s.setAttribute('preserveAspectRatio','none');}
+function fleetSoldierCountForLoad(count){return count>=18?1:(count>=9?3:5);}
+function buildFleetMarkup(count){const soldier='<i class="soldier-backpack"></i><i class="soldier-helmet"></i><i class="soldier-face"></i><i class="soldier-body"></i><i class="soldier-arm arm-left"></i><i class="soldier-arm arm-right"></i><i class="soldier-rifle"></i><i class="leg left"></i><i class="leg right"></i>';const slots=count===1?['s3']:(count===3?['s1','s3','s5']:['s1','s2','s3','s4','s5']);return slots.map(cls=>'<span class="fleet-soldier '+cls+'">'+soldier+'</span>').join('')+'<span class="fleet-count"></span>';}
 function renderGame(){
  if(!gameState)return;
+ rebuildFastIndexes();
  renderRoomPlayersOnly();
- const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets');
+ const ts=gameState.towers||[],routes=$('routeSvg'),container=$('towers'),fleetLayer=$('fleets'),activeFleets=gameState.fleets||[],visualSoldierCount=fleetSoldierCountForLoad(activeFleets.length);
  resizeRouteSvg();
  const fr=$('field').getBoundingClientRect();
  for(const road of(gameState.roads||[]))rememberRoad(road.fromId,road.toId,road.ownerId,road.ownerColor);
@@ -428,13 +431,13 @@ function renderGame(){
   const from=towerAt(road.fromId),to=towerAt(road.toId);
   if(!from||!to)continue;
   keptRoadKeys.add(road.key);
-  let group=routes.querySelector('g.road-group[data-road="'+road.key+'"]');
+  let group=roadElementByKey.get(road.key);if(group&&!group.isConnected){roadElementByKey.delete(road.key);group=null;}
   if(!group){
    group=document.createElementNS(svgNS,'g');
    group.setAttribute('data-road',road.key);
    const classes=['road-shadow','road-edge','road-asphalt','road-surface','road-center'];
    for(const cls of classes){const line=document.createElementNS(svgNS,'line');line.setAttribute('class',cls);group.appendChild(line);}
-   routes.appendChild(group);
+   routes.appendChild(group);roadElementByKey.set(road.key,group);
   }
   group.setAttribute('class','road-group road-'+roadColorFor(road.ownerId,road.ownerColor));
   const x1=from.x*fr.width/100,y1=from.y*fr.height/100,x2=to.x*fr.width/100,y2=to.y*fr.height/100;
@@ -447,7 +450,7 @@ function renderGame(){
    line.setAttribute('x2',x2+ox);line.setAttribute('y2',y2+oy);
   }
  }
- routes.querySelectorAll('.road-group').forEach(group=>{if(!keptRoadKeys.has(group.getAttribute('data-road')))group.remove();});
+ routes.querySelectorAll('.road-group').forEach(group=>{if(!keptRoadKeys.has(group.getAttribute('data-road'))){group.remove();roadElementByKey.delete(group.getAttribute('data-road'));}});
  ts.forEach(t=>{
   if(selectedTower===t.id){
    const to=ts.filter(x=>x.id!==t.id).map(x=>'<line class="selected-route" x1="'+t.x*fr.width/100+'" y1="'+t.y*fr.height/100+'" x2="'+x.x*fr.width/100+'" y2="'+x.y*fr.height/100+'"/>').join('');
