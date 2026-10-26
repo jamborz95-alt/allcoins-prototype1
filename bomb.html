@@ -746,6 +746,7 @@
         try { bombFlightAnimation.cancel(); } catch (_) {}
         bombFlightAnimation = null;
       }
+      window.__allcoinsBombFlight = null;
       const arenaRect = arena.getBoundingClientRect();
       let x, y, facing = 1;
       if (holder === 0) {
@@ -765,7 +766,11 @@
       // The following class disables transitions without a forced layout/reflow on every frame.
       bomb.classList.add('following');
       bomb.style.left = Math.max(28, Math.min(arenaRect.width - 28, x)) + 'px';
-      bomb.style.top = Math.max(30, Math.min(arenaRect.height - 30, y)) + 'px';
+      x = Math.max(28, Math.min(arenaRect.width - 28, x));
+      y = Math.max(30, Math.min(arenaRect.height - 30, y));
+      window.__allcoinsBombScreenPosition = { x, y };
+      bomb.style.left = x + 'px';
+      bomb.style.top = y + 'px';
       bomb.style.transform = 'translate(-50%,-50%) scale(.88) rotate(-10deg)';
       bomb.classList.remove('moving');
     }
@@ -1138,10 +1143,11 @@
       } else {
         const bot = botCharacterFor(playerIndex);
         if (bot) {
-          const r = bot.getBoundingClientRect();
+          const left = Number.parseFloat(bot.style.left) || 0;
+          const top = Number.parseFloat(bot.style.top) || 0;
           targetPoint = {
-            x: r.left + r.width / 2 - arenaRect.left + (bot.classList.contains('facing-left') ? -22 : 22),
-            y: r.top + r.height * .36 - arenaRect.top
+            x: left + (bot.classList.contains('facing-left') ? -22 : 22),
+            y: top - 20
           };
         } else {
           const seat = arena.querySelector(`.seat[data-player="${playerIndex}"]`);
@@ -1149,10 +1155,12 @@
           targetPoint = bombPointForSeat(seat, arenaRect);
         }
       }
-      const endX = targetPoint.x;
-      const endY = targetPoint.y;
+      const endX = Math.max(28, Math.min(arenaRect.width - 28, targetPoint.x));
+      const endY = Math.max(30, Math.min(arenaRect.height - 30, targetPoint.y));
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
       if (!animate) {
+        window.__allcoinsBombFlight = null;
+        window.__allcoinsBombScreenPosition = { x: endX, y: endY };
         bomb.classList.add('following');
         bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`;
         bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
@@ -1160,9 +1168,15 @@
         return;
       }
       bomb.classList.remove('following');
-      const current = bomb.getBoundingClientRect();
-      const startX = current.left + current.width / 2 - arenaRect.left;
-      const startY = current.top + current.height / 2 - arenaRect.top;
+      const current = window.__allcoinsBombScreenPosition;
+      const startPoint = current && Number.isFinite(current.x) && Number.isFinite(current.y)
+        ? current
+        : (() => {
+            const rect = bomb.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2 - arenaRect.left, y: rect.top + rect.height / 2 - arenaRect.top };
+          })();
+      const startX = startPoint.x;
+      const startY = startPoint.y;
       const dx = endX - startX, dy = endY - startY;
       const arc = Math.min(105, Math.max(42, Math.hypot(dx, dy) * 0.22));
       const controlX = (startX + endX) / 2 + (dy * 0.10);
@@ -1172,6 +1186,9 @@
         y: (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * controlY + t * t * endY
       });
       const arc1 = pointOnArc(.25), arc2 = pointOnArc(.5), arc3 = pointOnArc(.75);
+      const duration = 560;
+      window.__allcoinsBombFlight = { startX, startY, controlX, controlY, endX, endY, startedAt: performance.now(), duration };
+      window.__allcoinsBombScreenPosition = { x: startX, y: startY };
       bomb.classList.add('moving'); bomb.style.transition = 'none';
       bomb.style.left = `${startX}px`; bomb.style.top = `${startY}px`;
       bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
@@ -1184,7 +1201,7 @@
           { left: `${arc2.x}px`, top: `${arc2.y}px`, transform: 'translate(-50%,-50%) scale(1.16) rotate(155deg)', offset: .5, easing: 'linear' },
           { left: `${arc3.x}px`, top: `${arc3.y}px`, transform: 'translate(-50%,-50%) scale(1.08) rotate(280deg)', offset: .75, easing: 'linear' },
           { left: `${endX}px`, top: `${endY}px`, transform: 'translate(-50%,-50%) scale(1) rotate(360deg)', offset: 1 }
-        ], { duration: 485, easing: 'linear', fill: 'forwards' });
+        ], { duration, easing: 'linear', fill: 'forwards' });
         const flight = bombFlightAnimation;
         flight.onfinish = () => {
           if (bombFlightAnimation !== flight) return;
@@ -1193,18 +1210,22 @@
           bomb.style.transition = '';
           bomb.classList.remove('moving');
           bomb.classList.add('following');
+          window.__allcoinsBombScreenPosition = { x: endX, y: endY };
+          window.__allcoinsBombFlight = null;
           try { flight.cancel(); } catch (_) {}
           bombFlightAnimation = null;
         };
       } else {
-        bomb.style.transition = 'left 485ms cubic-bezier(.22,.72,.22,1),top 485ms cubic-bezier(.22,.72,.22,1),transform 485ms ease-out';
+        bomb.style.transition = 'left 560ms cubic-bezier(.22,.72,.22,1),top 560ms cubic-bezier(.22,.72,.22,1),transform 560ms ease-out';
         requestAnimationFrame(() => { bomb.style.left = `${endX}px`; bomb.style.top = `${endY}px`; bomb.style.transform = 'translate(-50%,-50%) scale(1.08) rotate(360deg)'; });
         window.setTimeout(() => {
           bomb.classList.remove('moving');
           bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
           bomb.style.transition = '';
           bomb.classList.add('following');
-        }, 500);
+          window.__allcoinsBombScreenPosition = { x: endX, y: endY };
+          window.__allcoinsBombFlight = null;
+        }, 575);
       }
     }
     function makeTrail(x, y) {
@@ -1287,7 +1308,7 @@
       clearTimeout(transferTimer);
       // Finish slightly after the visual flight and force-sync the bomb to its new carrier.
       // This watchdog prevents a stalled WAAPI animation from leaving phase='passing'.
-      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 540);
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 620);
     }
 
     function finishBombTransfer(target, token) {
@@ -1428,7 +1449,7 @@
       playTone(710, .08, 'triangle', .035);
       positionBomb(target, true);
       clearTimeout(transferTimer);
-      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 540);
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 620);
     }
 
     function explode() {
@@ -1440,6 +1461,7 @@
       stopTimers();
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
       $('bomb').classList.remove('moving');
+      window.__allcoinsBombFlight = null;
       roundToken++;
       $('fuseLabel').textContent = '💥 Взрыв';
       $('fuseFill').style.transform = 'scaleX(0)';
@@ -1489,6 +1511,7 @@
       if (tickTimer) clearInterval(tickTimer); tickTimer = null;
       if (botTimer) clearTimeout(botTimer); botTimer = null;
       if (transferTimer) clearTimeout(transferTimer); transferTimer = null;
+      window.__allcoinsBombFlight = null;
       stopBotMovement();
     }
 
