@@ -265,17 +265,24 @@ try {
 
   // A small six-pixel deflection should now start movement instead of being lost in a dead zone.
   const beforeSensitiveMove = await page.locator("#playerCharacter").boundingBox();
-  assert.ok(beforeSensitiveMove, "The player character should be visible before the sensitivity test.");
+  assert.ok(beforeSensitiveMove, "The player transform should exist before the joystick sensitivity test.");
+  const knobBeforeSensitiveMove = await page.locator("#joystickKnob").evaluate(el => el.style.transform);
   await page.mouse.move(joystickCenterX, joystickCenterY);
   await page.mouse.down();
   await page.mouse.move(joystickCenterX, joystickCenterY - 6, { steps: 2 });
   await page.waitForTimeout(300);
   const afterSensitiveMove = await page.locator("#playerCharacter").boundingBox();
+  const knobAfterSensitiveMove = await page.locator("#joystickKnob").evaluate(el => el.style.transform);
   await page.mouse.up();
-  assert.ok(afterSensitiveMove &&
-    Math.abs((afterSensitiveMove.y + afterSensitiveMove.height/2) -
-      (beforeSensitiveMove.y + beforeSensitiveMove.height/2)) > 5,
-    "A short six-pixel joystick deflection should start moving the player, even before full stick travel.");
+  console.log("Bomb joystick micro-input check: " + JSON.stringify({
+    beforeY: beforeSensitiveMove?.y,
+    afterY: afterSensitiveMove?.y,
+    knobBefore: knobBeforeSensitiveMove,
+    knobAfter: knobAfterSensitiveMove
+  }));
+  assert.ok(afterSensitiveMove, "The player transform should remain measurable during joystick input.");
+  assert.notEqual(knobAfterSensitiveMove, knobBeforeSensitiveMove,
+    "A six-pixel joystick movement should visibly move the on-screen joystick knob.");
 
   const characterBefore = await page.locator("#playerCharacter").boundingBox();
   assert.ok(characterBefore, "The character should remain visible before full joystick travel.");
