@@ -93,6 +93,7 @@
     "Пока нет записей":["Noch keine Einträge","Aucune entrée pour le moment","Ainda não há registros","暂无记录"],
     "РЕКОРД НЕДЕЛИ":["WOCHENREKORD","RECORD HEBDOMADAIRE","RECORDE DA SEMANA","本周纪录"],
     "ЛИЧНЫЙ РЕКОРД":["PERSÖNLICHER REKORD","RECORD PERSONNEL","RECORDE PESSOAL","个人纪录"],
+    "Недельный турнир":["Wochenturnier","Tournoi hebdomadaire","Torneio semanal","每周锦标赛"],
     "Недельный турнир ALLCOINS":["ALLCOINS-Wochenturnier","Tournoi hebdomadaire ALLCOINS","Torneio semanal ALLCOINS","ALLCOINS 每周锦标赛"],
     "Тренировка без турнира":["Training ohne Turnier","Entraînement sans tournoi","Treino sem torneio","非锦标赛练习"],
     "Войти в турнир · 1 000 AC":["Am Turnier teilnehmen · 1.000 AC","Rejoindre le tournoi · 1 000 AC","Entrar no torneio · 1.000 AC","参加锦标赛 · 1,000 AC"],
@@ -326,6 +327,12 @@
     Object.keys(rows).forEach(key => {
       if (Array.isArray(rows[key]) && rows[key][index]) result[lang][key] = rows[key][index];
     });
+  });
+  Object.assign(result, {
+    en: { "Недельный турнир": "Weekly Tournament" },
+    nl: { "Недельный турнир": "Wekelijks toernooi" },
+    tr: { "Недельный турнир": "Haftalık turnuva" },
+    es: { "Недельный турнир": "Torneo semanal" }
   });
   window.ALLCOINS_I18N_EXTRA = result;
 })();

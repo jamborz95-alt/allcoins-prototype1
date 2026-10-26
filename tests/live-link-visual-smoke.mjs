@@ -68,14 +68,14 @@ try {
   await page.screenshot({ path: resolve(out, "live-link-games-ru-mobile.png") });
 
   const languageChecks = [
-    { code: "en", home: "Home", games: "Games", bomb: "Pass the Bomb" },
-    { code: "nl", home: "Home", games: "Spellen", bomb: "Geef de bom door" },
-    { code: "tr", home: "Ana sayfa", games: "Oyunlar", bomb: "Bombayı aktar" },
-    { code: "es", home: "Inicio", games: "Juegos", bomb: "Pasa la bomba" },
-    { code: "de", home: "Startseite", games: "Spiele", bomb: "Bombe weitergeben" },
-    { code: "fr", home: "Accueil", games: "Jeux", bomb: "Passer la bombe" },
-    { code: "pt", home: "Início", games: "Jogos", bomb: "Passe a bomba" },
-    { code: "zh", home: "首页", games: "游戏", bomb: "传递炸弹" }
+    { code: "en", home: "Home", games: "Games", bomb: "Pass the Bomb", promo: "Weekly Tournament" },
+    { code: "nl", home: "Home", games: "Spellen", bomb: "Geef de bom door", promo: "Wekelijks toernooi" },
+    { code: "tr", home: "Ana sayfa", games: "Oyunlar", bomb: "Bombayı aktar", promo: "Haftalık turnuva" },
+    { code: "es", home: "Inicio", games: "Juegos", bomb: "Pasa la bomba", promo: "Torneo semanal" },
+    { code: "de", home: "Startseite", games: "Spiele", bomb: "Bombe weitergeben", promo: "Wochenturnier" },
+    { code: "fr", home: "Accueil", games: "Jeux", bomb: "Passer la bombe", promo: "Tournoi hebdomadaire" },
+    { code: "pt", home: "Início", games: "Jogos", bomb: "Passe a bomba", promo: "Torneio semanal" },
+    { code: "zh", home: "首页", games: "游戏", bomb: "传递炸弹", promo: "每周锦标赛" }
   ];
   const renderedLocales = [];
   await page.locator('button[data-page="profile"]').click();
@@ -97,6 +97,9 @@ try {
     const bombTitle = (await page.locator("#bombEntry").innerText()).replace(/\s+/g, " ").trim();
     assert.ok(bombTitle.includes(item.bomb),
       item.code + " language did not translate the Pass the Bomb tile: " + bombTitle);
+    const promoText = (await page.locator("#openBlockBlast").innerText()).replace(/\s+/g, " ").trim();
+    assert.ok(promoText.includes(item.promo),
+      item.code + " language did not translate the Block Blast promotion: " + promoText);
     renderedLocales.push(item.code);
     if (["de", "fr", "pt", "zh"].includes(item.code)) {
       await page.screenshot({ path: resolve(out, "live-link-games-" + item.code + "-mobile.png") });
