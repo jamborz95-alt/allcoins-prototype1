@@ -1,0 +1,117 @@
+name: Migrate ALLCOINS Render PostgreSQL to Neon
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_migration:
+        description: "Choose YES only after both connection URLs are set as repository Actions secrets."
+        required: true
+        type: choice
+        options:
+          - NO
+          - YES_MIGRATE_TO_NEON
+        default: NO
+      target_database_name:
+        description: "Exact database name from the Neon connection URL (often neondb). This is a safety check."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    if: inputs.confirm_migration == 'YES_MIGRATE_TO_NEON'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Dump source, restore into an empty target, and verify
+        env:
+          SOURCE_DATABASE_URL: ${{ secrets.ALLCOINS_RENDER_DATABASE_URL }}
+          TARGET_DATABASE_URL: ${{ secrets.ALLCOINS_NEON_DATABASE_URL }}
+          EXPECTED_TARGET_DATABASE: ${{ inputs.target_database_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${SOURCE_DATABASE_URL:?Add repository Actions secret ALLCOINS_RENDER_DATABASE_URL first}"
+          : "${TARGET_DATABASE_URL:?Add repository Actions secret ALLCOINS_NEON_DATABASE_URL first}"
+          : "${EXPECTED_TARGET_DATABASE:?Enter the exact Neon database name}"
+          docker run --rm -i \
+            -e SOURCE_DATABASE_URL \
+            -e TARGET_DATABASE_URL \
+            -e EXPECTED_TARGET_DATABASE \
+            postgres:18-bookworm bash -s <<'CONTAINER_SCRIPT'
+          set -euo pipefail
+          export PGSSLMODE=require
+
+          source_db="$(psql "$SOURCE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'SELECT current_database()')"
+          target_db="$(psql "$TARGET_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'SELECT current_database()')"
+
+          printf 'Connected to source database: %s\n' "$source_db"
+          printf 'Connected to target database: %s\n' "$target_db"
+
+          if [ "$source_db" = "$target_db" ] && [ "$SOURCE_DATABASE_URL" = "$TARGET_DATABASE_URL" ]; then
+            echo 'ERROR: source and target URLs are identical; refusing to continue.'
+            exit 2
+          fi
+          if [ "$target_db" != "$EXPECTED_TARGET_DATABASE" ]; then
+            echo 'ERROR: target database name does not match the confirmation input.'
+            exit 3
+          fi
+
+          target_table_count="$(psql "$TARGET_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'")"
+          if [ "$target_table_count" != "0" ]; then
+            echo 'ERROR: target public schema is not empty. Nothing was imported. Use a new, empty Neon database for safety.'
+            exit 4
+          fi
+
+          table_counts() {
+            psql "$1" -X -v ON_ERROR_STOP=1 -At -F '|' -c "
+              SELECT tablename,
+                     (xpath('/table/row/n/text()',
+                       query_to_xml(format('SELECT count(*) AS n FROM %I.%I', schemaname, tablename), false, true, '')
+                     ))[1]::text::bigint
+              FROM pg_tables
+              WHERE schemaname = 'public'
+              ORDER BY tablename;"
+          }
+
+          wallet_summary() {
+            psql "$1" -X -v ON_ERROR_STOP=1 -At -F '|' -c "
+              SELECT count(*), COALESCE(sum(balance), 0)
+              FROM players;"
+          }
+
+          source_counts_before="$(table_counts "$SOURCE_DATABASE_URL")"
+          source_wallet_before="$(wallet_summary "$SOURCE_DATABASE_URL")"
+          printf 'Source public tables: %s\n' "$(printf '%s\n' "$source_counts_before" | wc -l | tr -d ' ')"
+          printf 'Source player-count and wallet-sum check: %s\n' "$source_wallet_before"
+
+          echo 'Exporting source PostgreSQL database and restoring into Neon...'
+          pg_dump --format=custom --no-owner --no-privileges "$SOURCE_DATABASE_URL" |
+            pg_restore --dbname="$TARGET_DATABASE_URL" --no-owner --no-privileges --exit-on-error --single-transaction
+
+          target_counts="$(table_counts "$TARGET_DATABASE_URL")"
+          target_wallet="$(wallet_summary "$TARGET_DATABASE_URL")"
+          if [ "$source_counts_before" != "$target_counts" ]; then
+            echo 'ERROR: row counts differ from the source snapshot. Do not switch the app yet; inspect logs and retry using a fresh empty target.'
+            exit 5
+          fi
+          if [ "$source_wallet_before" != "$target_wallet" ]; then
+            echo 'ERROR: wallet summary differs. Do not switch the app yet.'
+            exit 6
+          fi
+
+          source_counts_after="$(table_counts "$SOURCE_DATABASE_URL")"
+          if [ "$source_counts_after" != "$target_counts" ]; then
+            echo 'ERROR: source data changed while the export was running. Do not switch the app yet; retry at a quiet time using a fresh empty target.'
+            exit 7
+          fi
+
+          echo 'SUCCESS: table row counts and wallet summary match. The Render source was not modified.'
+          echo 'Next manual step: point the Render service DATABASE_URL at this Neon database only after reviewing this successful run.'
+          echo 'Verified public table row counts:'
+          printf '%s\n' "$target_counts"
+          echo 'Verified player-count and wallet-sum check:'
+          printf '%s\n' "$target_wallet"
+          CONTAINER_SCRIPT
