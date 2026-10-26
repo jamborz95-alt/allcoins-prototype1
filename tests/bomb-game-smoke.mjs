@@ -14,15 +14,15 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261026l"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261026m"'),
   "The Games menu should open the current cache-busted Bomb page.");
-assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026l"></script>') &&
-  bombHtml.includes('<script src="./bomb-3d.js?v=20261026l"></script>'),
+assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026m"></script>') &&
+  bombHtml.includes('<script src="./bomb-3d.js?v=20261026m"></script>'),
   "The page must load the local Three.js library and current 3D renderer without a CDN dependency.");
 assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
-  bombJs.includes("new THREE.SphereGeometry(.31, 18, 12), helmetMat") &&
+  bombJs.includes("new THREE.SphereGeometry(.30, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat") &&
   !bombJs.includes("const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18)"),
-  "The renderer should show the larger map and a smaller matte helmet shell without a projecting band.");
+  "The renderer should show the larger map and a smooth hemispherical helmet dome without a separate brim or hair band.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
