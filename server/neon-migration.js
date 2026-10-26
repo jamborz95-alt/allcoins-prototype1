@@ -472,4 +472,26 @@ export function registerNeonMigrationRoute(app, sourcePool) {
       globalThis.__allcoinsNeonMigrationRunning = false;
     }
   });
+
+  // A one-time boot trigger lets the connected Render deployment run the guarded
+  // migration without exposing connection strings or requiring an external POST client.
+  if (process.env.RUN_NEON_MIGRATION_ON_BOOT === "1" && !globalThis.__allcoinsNeonMigrationScheduled) {
+    globalThis.__allcoinsNeonMigrationScheduled = true;
+    setTimeout(async () => {
+      if (globalThis.__allcoinsNeonMigrationRunning) return;
+      globalThis.__allcoinsNeonMigrationRunning = true;
+      console.log("[NEON-MIGRATION] Starting guarded database copy; source remains unchanged.");
+      try {
+        const result = await runMigration(sourcePool);
+        globalThis.__allcoinsNeonMigrationResult = result;
+        console.log("[NEON-MIGRATION] SUCCESS " + JSON.stringify(result));
+      } catch (error) {
+        const message = String(error?.message || "Migration failed");
+        globalThis.__allcoinsNeonMigrationResult = { status: "failed", error: message };
+        console.error("[NEON-MIGRATION] FAILED " + message);
+      } finally {
+        globalThis.__allcoinsNeonMigrationRunning = false;
+      }
+    }, 6000);
+  }
 }
