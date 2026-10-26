@@ -1673,7 +1673,8 @@
   const LANGS_AVAILABLE = ["ru","en","nl","tr","es"];
   let current = "ru", busy = false, scheduled = false;
   function getSaved(){ try { const value=localStorage.getItem("allcoins_language")||"ru"; return LANGS_AVAILABLE.includes(value)?value:"ru"; } catch(_){ return "ru"; } }
-  function getDictionary(){ return LANGS[current] || {}; }
+  let dictionaryCacheCode=null, dictionaryCache=null;
+  function getDictionary(){ if(dictionaryCacheCode!==current){ dictionaryCache=Object.assign({},LANGS.en || {},LANGS[current] || {}); dictionaryCacheCode=current; } return dictionaryCache || {}; }
   function trText(value){
     if (!value || current==="ru") return value;
     const dict=getDictionary(), clean=value.trim();
