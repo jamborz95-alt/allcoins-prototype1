@@ -688,9 +688,9 @@
     mesh(new THREE.SphereGeometry(.055, 8, 6), skinMat, head, 0, -.045, .315);
     mesh(new THREE.TorusGeometry(.085, .012, 4, 12), standard(0x8c4839, .75, 0), head, 0, -.13, .302);
 
-    // A smaller matte shell follows the head contour without a projecting horizontal band.
-    const dome = mesh(new THREE.SphereGeometry(.31, 18, 12), helmetMat, head, 0, .40, 0);
-    dome.scale.set(1, .90, 1);
+    // Smooth helmet dome only: no dark hair cap, no cylinder brim and no horizontal band.
+    const dome = mesh(new THREE.SphereGeometry(.30, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .29, 0);
+    dome.scale.y = .92;
     mesh(new THREE.SphereGeometry(.08, 10, 8), lampMat, head, 0, .34, .29);
     // Helmet lamp stays emissive but does not add one expensive point light per player.
     const lamp = null;
