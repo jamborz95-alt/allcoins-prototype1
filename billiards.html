@@ -731,14 +731,14 @@
     const title=document.querySelector("title");
     if(title){
       if(title.dataset.allcoinsOriginalTitle===undefined) title.dataset.allcoinsOriginalTitle=title.textContent;
-      title.textContent=current==="ru"?title.dataset.allcoinsOriginalTitle:trText(title.dataset.allcoinsOriginalTitle);
+      const translatedTitle=current==="ru"?title.dataset.allcoinsOriginalTitle:trText(title.dataset.allcoinsOriginalTitle); if(title.textContent!==translatedTitle) title.textContent=translatedTitle;
     }
     const selector=document.getElementById("allcoinsLanguage");
     if(selector && selector.value!==current) selector.value=current;
     const status=document.getElementById("languageStatus");
     if(status){
       const texts={ru:"Язык будет применяться к меню и игровым интерфейсам.",en:"Your language will be used throughout the menus and games.",nl:"Je taal wordt in alle menu's en spellen gebruikt.",tr:"Seçtiğin dil tüm menülerde ve oyunlarda kullanılır.",es:"El idioma elegido se usará en todos los menús y juegos."};
-      status.textContent=texts[current]||texts.ru;
+      const statusText=texts[current]||texts.ru; if(status.textContent!==statusText) status.textContent=statusText;
     }
     busy=false;
   }
