@@ -457,11 +457,21 @@ function renderGame(){
    routes.insertAdjacentHTML('beforeend',to);
   }
  });
- for(const f of(gameState.fleets||[])){
+ for(const f of activeFleets){
   const from=towerAt(f.fromId),to=towerAt(f.toId);
   if(from&&to){
-   let el=fleetLayer.querySelector('.fleet[data-fleet="'+f.id+'"]');
-   if(!el){el=document.createElement('div');el.dataset.fleet=f.id;const soldier='<i class="soldier-backpack"></i><i class="soldier-helmet"></i><i class="soldier-face"></i><i class="soldier-body"></i><i class="soldier-arm arm-left"></i><i class="soldier-arm arm-right"></i><i class="soldier-rifle"></i><i class="leg left"></i><i class="leg right"></i>';el.innerHTML='<span class="fleet-soldier s1">'+soldier+'</span><span class="fleet-soldier s2">'+soldier+'</span><span class="fleet-soldier s3">'+soldier+'</span><span class="fleet-soldier s4">'+soldier+'</span><span class="fleet-soldier s5">'+soldier+'</span><span class="fleet-count"></span>';fleetLayer.appendChild(el);}
+   let el=fleetElementById.get(String(f.id));
+   if(!el||!el.isConnected){
+    el=document.createElement('div');
+    el.dataset.fleet=String(f.id);
+    el.dataset.soldierCount=String(visualSoldierCount);
+    el.innerHTML=buildFleetMarkup(visualSoldierCount);
+    fleetLayer.appendChild(el);
+    fleetElementById.set(String(f.id),el);
+   }else if(Number(el.dataset.soldierCount)!==visualSoldierCount){
+    el.innerHTML=buildFleetMarkup(visualSoldierCount);
+    el.dataset.soldierCount=String(visualSoldierCount);
+   }
    const fleetColor=['blue','red','green'].includes(colorFor(f.ownerId))?colorFor(f.ownerId):'blue';
    if(!el.classList.contains('fleet'))el.classList.add('fleet');
    const currentColor=['blue','red','green'].find(c=>el.classList.contains(c));
@@ -476,11 +486,12 @@ function renderGame(){
    el.title=fmt(f.units)+' войск';
   }
  }
- const activeFleetIds=new Set((gameState.fleets||[]).map(f=>String(f.id)));
- fleetLayer.querySelectorAll('.fleet').forEach(el=>{if(!activeFleetIds.has(el.dataset.fleet))el.remove();});
+ const activeFleetIds=new Set(activeFleets.map(f=>String(f.id)));
+ fleetLayer.querySelectorAll('.fleet[data-fleet]').forEach(el=>{if(!activeFleetIds.has(el.dataset.fleet)){el.remove();fleetElementById.delete(String(el.dataset.fleet));}});
+ for(const [id,el] of fleetElementById){if(!el.isConnected)fleetElementById.delete(id);}
  for(const t of ts){
   const color=t.ownerId?colorFor(t.ownerId):'neutral';
-  let el=container.querySelector('.tower[data-tower="'+t.id+'"]');
+  let el=towerElementById.get(String(t.id));if(el&&!el.isConnected){towerElementById.delete(String(t.id));el=null;}
   if(!el){
    el=document.createElement('button');el.type='button';el.dataset.tower=t.id;
    el.innerHTML='<span class="tower-flag"></span><span class="tower-shape"><span class="tower-cap"></span><span class="tower-num"></span><i class="tower-window w1"></i><i class="tower-window w2"></i><i class="tower-window w3"></i><i class="tower-window w4"></i><i class="tower-door"></i><i class="tower-brick"></i></span><span class="tower-base"></span><span class="shooter-model"><span class="shooter-platform"></span><span class="shooter-ring"></span><span class="turret-head"></span><span class="turret-gun"><i class="turret-barrel"></i><i class="turret-muzzle"></i></span></span><span class="tower-type-badge">СТРЕЛЯЕТ</span><span class="tower-units"></span>';
@@ -496,7 +507,7 @@ function renderGame(){
      dragFrom=null;dragMoved=false;
     }
    });
-   container.appendChild(el);
+   container.appendChild(el);towerElementById.set(String(t.id),el);
   }
   const kind=t.type==='shooter'?'shooter':'fort';
   el.className='tower type-'+kind+' '+(color||'neutral')+(selectedTower===t.id?' selected':'')+(Number(t._capturedUntil||0)>performance.now()?' captured':'')+(Number(t._receivingUntil||0)>performance.now()?' receiving':'');
@@ -515,7 +526,7 @@ function renderGame(){
   }
  }
  const activeTowerIds=new Set(ts.map(t=>String(t.id)));
- container.querySelectorAll('.tower').forEach(el=>{if(!activeTowerIds.has(el.dataset.tower))el.remove();});
+ container.querySelectorAll('.tower').forEach(el=>{if(!activeTowerIds.has(el.dataset.tower)){el.remove();towerElementById.delete(String(el.dataset.tower));}});
  if(localPractice){
   const elapsed=Math.floor((Date.now()-gameStartAt)/1000);
   $('gameTimer').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
