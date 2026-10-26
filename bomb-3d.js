@@ -668,8 +668,8 @@
     root.add(torso);
     mesh(new THREE.CapsuleGeometry(.39, .65, 4, 10), jacketMat, torso, 0, .15, 0);
     mesh(new THREE.BoxGeometry(.55, .52, .075), trimMat, torso, 0, .19, .36);
-    mesh(new THREE.BoxGeometry(.86, .12, .51), standard(0x493025, .7, .05), torso, 0, -.28, .015);
-    mesh(new THREE.BoxGeometry(.2, .16, .07), metalMat, torso, 0, -.28, .29);
+    // No deep waist box or buckle: the old slab intersected the jacket and projected
+    // as a dark rectangular seam across the chest and down between the legs.
     // A visible leather mining satchel (warm brown with gold fittings, not a black blob).
     const satchelMat = standard(0x9c7042, .83, .02);
     mesh(new THREE.BoxGeometry(.34, .46, .16), satchelMat, torso, 0, .22, -.34);
@@ -688,8 +688,9 @@
     mesh(new THREE.SphereGeometry(.055, 8, 6), skinMat, head, 0, -.045, .315);
     mesh(new THREE.TorusGeometry(.085, .012, 4, 12), standard(0x8c4839, .75, 0), head, 0, -.13, .302);
 
-    // Smooth helmet dome only: no dark hair cap, no cylinder brim and no horizontal band.
-    const dome = mesh(new THREE.SphereGeometry(.30, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .29, 0);
+    // Extend the helmet shell below the equator so its cut edge sits inside the head.
+    // A half-sphere left a flat, polygon-like line behind the head on mobile.
+    const dome = mesh(new THREE.SphereGeometry(.30, 24, 16, 0, Math.PI * 2, 0, Math.PI * .62), helmetMat, head, 0, .29, 0);
     dome.scale.y = .92;
     mesh(new THREE.SphereGeometry(.08, 10, 8), lampMat, head, 0, .34, .29);
     // Helmet lamp stays emissive but does not add one expensive point light per player.
