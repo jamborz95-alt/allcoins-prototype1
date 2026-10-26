@@ -107,6 +107,81 @@ try {
     await page.locator('button[data-page="profile"]').click();
   }
 
+  const standalonePages = [
+    { file: "blockblast.html", source: "Недельный турнир ALLCOINS", translations: {
+      de: "ALLCOINS-Wochenturnier", fr: "Tournoi hebdomadaire ALLCOINS",
+      pt: "Torneio semanal ALLCOINS", zh: "ALLCOINS 每周锦标赛"
+    }},
+    { file: "billiards.html", source: "Бильярд Онлайн", translations: {
+      de: "Online-Billard", fr: "Billard en ligne", pt: "Bilhar online", zh: "在线台球"
+    }},
+    { file: "bomb.html", source: "Передай бомбу", translations: {
+      de: "Bombe weitergeben", fr: "Passer la bombe", pt: "Passe a bomba", zh: "传递炸弹"
+    }},
+    { file: "checkers.html", source: "Шашки Онлайн", translations: {
+      de: "Online-Dame", fr: "Jeu de dames en ligne", pt: "Damas online", zh: "在线跳棋"
+    }},
+    { file: "rps.html", source: "Камень · Ножницы · Бумага", translations: {
+      de: "Schere · Stein · Papier", fr: "Pierre · Feuille · Ciseaux",
+      pt: "Pedra · Papel · Tesoura", zh: "石头 · 剪刀 · 布"
+    }},
+    { file: "seka.html", source: "Сека Онлайн", translations: {
+      de: "Online-Seka", fr: "Seka en ligne", pt: "Seka online", zh: "在线 Seka"
+    }},
+    { file: "towers.html", source: "Захватывай башни.", translations: {
+      de: "Erobere Türme.", fr: "Capture les tours.", pt: "Conquiste as torres.", zh: "占领塔楼。"
+    }},
+    { file: "uno.html", source: "УНО Онлайн", translations: {
+      de: "UNO Online", fr: "UNO en ligne", pt: "UNO online", zh: "UNO 在线"
+    }}
+  ];
+  const standaloneLocaleResults = [];
+  const standaloneLocales = ["de", "fr", "pt", "zh"];
+  const publicRoot = new URL(".", publicUrl).href;
+  for (const game of standalonePages) {
+    for (const locale of standaloneLocales) {
+      await page.evaluate(code => localStorage.setItem("allcoins_language", code), locale);
+      const url = new URL(game.file + "?locale-visual-check=20261026g", publicRoot).href;
+      const gameResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+      assert.ok(gameResponse, locale + " " + game.file + " did not return a page response.");
+      assert.equal(gameResponse.status(), 200, locale + " " + game.file + " should return HTTP 200.");
+      await page.waitForFunction(code =>
+        document.documentElement.lang === code &&
+        localStorage.getItem("allcoins_language") === code &&
+        window.ALLCOINS_I18N_EXTRA &&
+        Object.keys(window.ALLCOINS_I18N_EXTRA[code] || {}).length >= 489,
+        locale, { timeout: 25000 }
+      );
+      await page.waitForFunction(({ target }) => document.body.innerText.includes(target),
+        { target: game.translations[locale] }, { timeout: 10000 }
+      );
+      const state = await page.evaluate(({ source, target }) => {
+        const visibleText = (document.body.innerText || "").replace(/\\s+/g, " ").trim();
+        return {
+          language: document.documentElement.lang,
+          storedLanguage: localStorage.getItem("allcoins_language"),
+          targetVisible: visibleText.includes(target),
+          sourceVisible: visibleText.includes(source),
+          viewportWidth: innerWidth,
+          documentWidth: document.documentElement.scrollWidth
+        };
+      }, { source: game.source, target: game.translations[locale] });
+      assert.equal(state.language, locale, game.file + " reset language " + locale + " on entry.");
+      assert.equal(state.storedLanguage, locale, game.file + " failed to preserve " + locale + " in storage.");
+      assert.ok(state.targetVisible, game.file + " did not display its " + locale + " label.");
+      assert.ok(!state.sourceVisible, game.file + " still shows untranslated source label: " + game.source);
+      assert.equal(state.documentWidth, state.viewportWidth,
+        game.file + " has horizontal overflow in " + locale + ": " + JSON.stringify(state));
+      standaloneLocaleResults.push({ file: game.file, locale, ...state });
+      if (locale === "de") {
+        await page.screenshot({ path: resolve(out, "standalone-" + game.file.replace(".html", "") + "-de-mobile.png") });
+      }
+    }
+  }
+
+  await page.goto(publicUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForSelector('button[data-page="games"]', { timeout: 20000 });
+  await page.locator("#allcoinsLanguage").selectOption("zh");
   await page.locator('button[data-page="games"]').click();
   await page.setViewportSize({ width: 360, height: 740 });
   const narrowState = await page.evaluate(() => ({
@@ -126,6 +201,9 @@ try {
     baseState,
     gamesWidth,
     renderedLocales,
+    standalonePageCount: standalonePages.length,
+    standaloneLocaleChecks: standaloneLocaleResults.length,
+    standaloneLocaleResults,
     narrowState,
     pageErrors,
     relevantFailedRequests
