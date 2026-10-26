@@ -143,6 +143,7 @@ try {
   const publicRoot = "http://127.0.0.1:4173/";
   for (const game of standalonePages) {
     for (const locale of standaloneLocales) {
+      await page.goto(publicRoot, { waitUntil: "domcontentloaded", timeout: 30000 });
       await page.evaluate(code => localStorage.setItem("allcoins_language", code), locale);
       const url = new URL(game.file + "?locale-visual-check=20261026g", publicRoot).href;
       const gameResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
