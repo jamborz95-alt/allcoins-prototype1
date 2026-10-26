@@ -211,7 +211,7 @@ async function getPlayer(req, res) {
   if (
     recoveryTelegramId &&
     String(user.id) === recoveryTelegramId &&
-    Number(playerRow.balance) === 0 &&
+    Number(playerRow.balance) <= 100 &&
     Number.isSafeInteger(recoveryAmount) &&
     recoveryAmount > 0
   ) {
@@ -233,12 +233,12 @@ async function getPlayer(req, res) {
       if (
         alreadyRecovered.rowCount === 0 &&
         lockedPlayer.rowCount === 1 &&
-        Number(lockedPlayer.rows[0].balance) === 0
+        Number(lockedPlayer.rows[0].balance) <= 100
       ) {
         const restored = await client.query(
           `UPDATE players
            SET balance = $1, updated_at = NOW()
-           WHERE telegram_id = $2 AND balance = 0
+           WHERE telegram_id = $2 AND balance <= 100
            RETURNING telegram_id, balance, energy`,
           [recoveryAmount, String(user.id)]
         );
@@ -3400,6 +3400,81 @@ async function startServer() {
     await pool.query(`
       ALTER TABLE players
       ADD COLUMN IF NOT EXISTS daily_bonus_at TIMESTAMPTZ
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS allcoins_balance_audit (
+        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        telegram_id BIGINT NOT NULL,
+        operation TEXT NOT NULL,
+        old_balance BIGINT,
+        new_balance BIGINT NOT NULL,
+        balance_delta BIGINT NOT NULL,
+        changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        transaction_id BIGINT NOT NULL DEFAULT txid_current(),
+        database_user TEXT NOT NULL DEFAULT SESSION_USER,
+        application_name TEXT DEFAULT current_setting('application_name', true),
+        client_address INET
+      )
+    `);
+
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION allcoins_audit_player_balance_change()
+      RETURNS trigger AS $
+      BEGIN
+        IF TG_OP = 'INSERT' THEN
+          INSERT INTO allcoins_balance_audit
+            (telegram_id, operation, old_balance, new_balance, balance_delta, client_address)
+          VALUES
+            (NEW.telegram_id, 'INSERT', NULL, NEW.balance, NEW.balance, inet_client_addr());
+        ELSIF NEW.balance IS DISTINCT FROM OLD.balance THEN
+          INSERT INTO allcoins_balance_audit
+            (telegram_id, operation, old_balance, new_balance, balance_delta, client_address)
+          VALUES
+            (NEW.telegram_id, 'UPDATE', OLD.balance, NEW.balance,
+             NEW.balance - OLD.balance, inet_client_addr());
+        END IF;
+        RETURN NEW;
+      END;
+      $ LANGUAGE plpgsql
+    `);
+
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trg_allcoins_player_balance_audit ON players
+    `);
+    await pool.query(`
+      CREATE TRIGGER trg_allcoins_player_balance_audit
+      AFTER INSERT OR UPDATE ON players
+      FOR EACH ROW EXECUTE FUNCTION allcoins_audit_player_balance_change()
+    `);
+
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION allcoins_prevent_balance_audit_mutation()
+      RETURNS trigger AS $
+      BEGIN
+        RAISE EXCEPTION 'ALLCOINS balance audit is append-only';
+      END;
+      $ LANGUAGE plpgsql
+    `);
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trg_allcoins_balance_audit_append_only ON allcoins_balance_audit
+    `);
+    await pool.query(`
+      CREATE TRIGGER trg_allcoins_balance_audit_append_only
+      BEFORE UPDATE OR DELETE ON allcoins_balance_audit
+      FOR EACH ROW EXECUTE FUNCTION allcoins_prevent_balance_audit_mutation()
+    `);
+
+    // Start a documented audit baseline for existing balances; this does not invent
+    // transaction history before this migration existed.
+    await pool.query(`
+      INSERT INTO allcoins_balance_audit
+        (telegram_id, operation, old_balance, new_balance, balance_delta)
+      SELECT p.telegram_id, 'LEGACY_SNAPSHOT', NULL, p.balance, p.balance
+      FROM players p
+      WHERE NOT EXISTS (
+        SELECT 1 FROM allcoins_balance_audit a WHERE a.telegram_id = p.telegram_id
+      )
     `);
 
     await pool.query(`
