@@ -218,18 +218,37 @@ try {
   assert.deepEqual(outfitColors, ["#a6f1ff", "#f7b6ff", "#ddff9d"],
     "The three visible bot miners must have different blue, purple and green jackets.");
 
-  assert.equal(await page.locator("#playerCharacter").isVisible(), true,
-    "The full-screen arena should show the custom player character.");
+  const visibleRendererState = await page.locator("#arena").evaluate(arena => {
+    const canvas = arena.querySelector("canvas.bomb-3d-canvas");
+    const style = canvas ? getComputedStyle(canvas) : null;
+    return {
+      threeReady: arena.classList.contains("three-ready"),
+      canvasPresent: Boolean(canvas),
+      canvasVisibility: style?.visibility || "missing",
+      canvasDisplay: style?.display || "missing",
+      canvasWidth: canvas?.width || 0,
+      canvasHeight: canvas?.height || 0
+    };
+  });
+  assert.equal(visibleRendererState.threeReady, true,
+    "The full-screen arena must run the 3D renderer in the visual test.");
+  assert.equal(visibleRendererState.canvasPresent, true,
+    "The 3D renderer canvas must be present for the visible miner models.");
+  assert.equal(visibleRendererState.canvasVisibility, "visible");
+  assert.equal(visibleRendererState.canvasDisplay, "block");
+  assert.ok(visibleRendererState.canvasWidth >= 300 && visibleRendererState.canvasHeight >= 500,
+    "The 3D canvas must cover the mobile playfield: " + JSON.stringify(visibleRendererState));
   const characterVisual = await page.locator("#playerCharacter").evaluate(el => {
     const s = getComputedStyle(el);
     const figure = el.querySelector(".runner-figure");
     const r = figure.getBoundingClientRect();
     return {display:s.display,visibility:s.visibility,opacity:Number(s.opacity),figureWidth:r.width,figureHeight:r.height};
   });
-  assert.notEqual(characterVisual.display,"none","The player character must not be hidden by CSS.");
-  assert.equal(characterVisual.visibility,"visible","The character should remain visible during play.");
-  assert.ok(characterVisual.opacity > .9 && characterVisual.figureWidth >= 70 && characterVisual.figureHeight >= 90,
-    "The character should be large and visible on a phone: " + JSON.stringify(characterVisual));
+  assert.notEqual(characterVisual.display,"none","The fallback character DOM must remain mounted.");
+  assert.equal(characterVisual.visibility,"hidden",
+    "The fallback SVG miner should be hidden when the fully rendered 3D miner is active.");
+  assert.ok(characterVisual.figureWidth >= 70 && characterVisual.figureHeight >= 90,
+    "The fallback figure must retain its mobile layout dimensions: " + JSON.stringify(characterVisual));
   assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"),"0",
     "The predictable contact test should start with the human player holding the bomb.");
   assert.equal(await page.locator("#playerCharacter .runner-figure").count(), 1,
