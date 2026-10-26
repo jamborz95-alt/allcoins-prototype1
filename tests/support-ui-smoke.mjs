@@ -117,7 +117,7 @@ try {
   await player.page.locator("#supportCategory").selectOption("Карты / анимация");
   await player.page.locator("#supportDescription").fill("В УНО карта исчезает на секунду и появляется снова.");
   await player.page.locator("#supportSubmitButton").click();
-  await player.page.getByText(/Заявка #15 принята/).waitFor();
+  await player.page.getByText(/Заявка #15 сохранена/).waitFor();
   const submitCall = player.apiCalls.find(item => item.path === "/api/support/submit");
   assert.equal(submitCall?.body?.category, "Карты / анимация");
   assert.equal(submitCall?.body?.description, "В УНО карта исчезает на секунду и появляется снова.");
