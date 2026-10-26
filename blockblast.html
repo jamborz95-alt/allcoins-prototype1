@@ -172,6 +172,7 @@ body.playing .top{display:none}
 <style id="block-blast-tray-compact-final">
 .tray .piece-grid{transform:scale(.72);transform-origin:center;will-change:transform}
 .drag-ghost .piece-dot{animation:blockBlastPickup 120ms cubic-bezier(.2,.85,.25,1) both;transform-origin:center}
+.piece-slot.is-drag-source .piece-grid{opacity:0!important;visibility:hidden!important}
 @keyframes blockBlastPickup{from{transform:scale(.72)}to{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.drag-ghost .piece-dot{animation-duration:1ms!important}}
 </style>
@@ -245,7 +246,7 @@ var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
 var BOARD_SIZE=8;
 var lastPlacedCells=[];
-var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0;
 var shapes=[
  [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
  [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
@@ -458,6 +459,7 @@ function beginDrag(ev,index){
 }
 function makeDragGhost(index,x,y,anchorRow,anchorCol){
  clearDragGhost();var piece=pieces[index];if(!piece)return;
+ dragSourceSlot=$("tray").querySelector('.piece-slot[data-index="'+index+'"]');if(dragSourceSlot)dragSourceSlot.classList.add("is-drag-source");
  var maxRow=0,maxCol=0;piece.forEach(function(p){maxRow=Math.max(maxRow,p[0]);maxCol=Math.max(maxCol,p[1]);});
  dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";
  for(var r=0;r<=maxRow;r++)for(var c=0;c<=maxCol;c++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece.some(function(p){return p[0]===r&&p[1]===c;}))dot.className="piece-dot";dragGhost.appendChild(dot);}
@@ -471,15 +473,15 @@ function moveDragGhost(x,y){
 function animateDragGhost(){
  dragMotionFrame=0;
  if(!dragGhost)return;
- dragCurrentX+=(dragTargetX-dragCurrentX)*0.62;
- dragCurrentY+=(dragTargetY-dragCurrentY)*0.62;
- if(Math.abs(dragTargetX-dragCurrentX)<0.45)dragCurrentX=dragTargetX;
- if(Math.abs(dragTargetY-dragCurrentY)<0.45)dragCurrentY=dragTargetY;
+ dragCurrentX+=(dragTargetX-dragCurrentX)*0.82;
+ dragCurrentY+=(dragTargetY-dragCurrentY)*0.82;
+ if(Math.abs(dragTargetX-dragCurrentX)<0.65)dragCurrentX=dragTargetX;
+ if(Math.abs(dragTargetY-dragCurrentY)<0.65)dragCurrentY=dragTargetY;
  dragGhost.style.left=dragCurrentX+"px";
  dragGhost.style.top=dragCurrentY+"px";
  if(dragCurrentX!==dragTargetX||dragCurrentY!==dragTargetY)dragMotionFrame=requestAnimationFrame(animateDragGhost);
 }
-function clearDragGhost(){if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;}
+function clearDragGhost(){if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;if(dragSourceSlot)dragSourceSlot.classList.remove("is-drag-source");dragSourceSlot=null;}
 function clearDrag(){dragState=null;clearDragGhost();}
 function findBoardCellAtPoint(x,y){
  var boardEl=$("board");if(!boardEl)return null;
