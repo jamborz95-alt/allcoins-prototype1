@@ -86,7 +86,7 @@ async function analyzeTicket(ticket) {
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 220, temperature: 0.2 }
         }),
-        signal: AbortSignal.timeout(9000)
+        signal: AbortSignal.timeout(20000)
       }
     );
     const payload = await response.json().catch(() => ({}));
@@ -154,7 +154,7 @@ async function notifyAdmin(ticket, triage) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: adminId, text: notification, disable_web_page_preview: true }),
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(12000)
     });
     const result = await response.json().catch(() => ({}));
     return response.ok && result?.ok === true;
