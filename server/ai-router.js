@@ -87,7 +87,7 @@ function extractAnswer(data) {
       }
     }
   }
-  return { answer: parts.join("\\n").trim(), sources };
+  return { answer: parts.join("\n").trim(), sources };
 }
 
 function shouldUseWebSearch(message) {
@@ -184,8 +184,8 @@ export function createAIRouter({ verifyTelegram }) {
       }
 
       const answer = extracted.sources.length
-        ? extracted.answer + "\\n\\nИсточники:\\n" +
-          extracted.sources.map((source, index) => (index + 1) + ". " + source.title + " — " + source.url).join("\\n")
+        ? extracted.answer + "\n\nИсточники:\n" +
+          extracted.sources.map((source, index) => (index + 1) + ". " + source.title + " — " + source.url).join("\n")
         : extracted.answer;
 
       return res.json({
