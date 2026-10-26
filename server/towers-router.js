@@ -71,9 +71,10 @@ function rememberRoad(game, fromId, toId, ownerId = null) {
 }
 
 function tickAutoRoads(game, now) {
+  const towerById = new Map((game && game.towers || []).map(tower => [Number(tower.id), tower]));
   for (const road of (game && game.roads || [])) {
-    const from = (game.towers || []).find(t => Number(t.id) === Number(road.fromId));
-    const to = (game.towers || []).find(t => Number(t.id) === Number(road.toId));
+    const from = towerById.get(Number(road.fromId));
+    const to = towerById.get(Number(road.toId));
     if (!from || !to) continue;
     if (road.ownerId == null && from.ownerId != null) road.ownerId = String(from.ownerId);
     if (!["blue", "red", "green"].includes(road.ownerColor)) {
@@ -146,13 +147,14 @@ function makeGame(players, stake) {
 
 function tickShooterTowers(game, now) {
   if (!game || !Array.isArray(game.towers) || !Array.isArray(game.fleets)) return;
+  const towerById = new Map(game.towers.map(tower => [Number(tower.id), tower]));
   for (const tower of game.towers) {
     if (tower.type !== "shooter" || tower.ownerId == null || now < Number(tower.nextShotAt || 0)) continue;
     let closest = null;
     for (const fleet of game.fleets) {
       if (String(fleet.ownerId) === String(tower.ownerId) || Number(fleet.units) <= 0) continue;
-      const from = game.towers.find(t => Number(t.id) === Number(fleet.fromId));
-      const to = game.towers.find(t => Number(t.id) === Number(fleet.toId));
+      const from = towerById.get(Number(fleet.fromId));
+      const to = towerById.get(Number(fleet.toId));
       if (!from || !to) continue;
       const progress = Math.max(0, Math.min(1, Number(fleet.progress) || 0));
       const x = Number(from.x) + (Number(to.x) - Number(from.x)) * progress;
@@ -174,6 +176,7 @@ function tickShooterTowers(game, now) {
 function tickGame(game, now) {
   if (!game || game.status !== "playing") return;
   const dt = Math.max(0, Math.min(3.5, (now - Number(game.lastTick || now)) / 1000));
+  const towerById = new Map(game.towers.map(tower => [Number(tower.id), tower]));
   game.lastTick = now;
   for (const tower of game.towers) {
     if (tower.ownerId) tower.units = Math.min(999, Number(tower.units || 0) + Number(tower.income || 1) * dt);
@@ -188,7 +191,7 @@ function tickGame(game, now) {
   const landed = game.fleets.filter(f => f.progress >= 1);
   game.fleets = game.fleets.filter(f => f.progress < 1);
   for (const fleet of landed) {
-    const target = game.towers.find(t => t.id === fleet.toId);
+    const target = towerById.get(Number(fleet.toId));
     if (!target) continue;
     const troops = Math.floor(fleet.units);
     if (target.ownerId === fleet.ownerId) {
