@@ -54,7 +54,8 @@ function makeHarness({
           row.ai_summary = params[0];
           row.ai_severity = params[1];
           row.needs_developer = params[2];
-          row.notification_status = params[3];
+          const statusMatch = statement.match(/notification_status\\s*=\\s*'([^']+)'/i);
+          row.notification_status = statusMatch?.[1] || params[3];
         }
         return { rows: [], rowCount: 1 };
       }
@@ -179,7 +180,7 @@ test("validates category and minimum description length", async () => {
   assert.equal(harness.inserted.length, 0);
 });
 
-test("saves a support request quickly, then asks Gemini to triage and notifies owner", async () => {
+test("saves a support request quickly, then asks Gemini to triage it in the support inbox", async () => {
   const harness = makeHarness();
   await harness.router.initialize();
   const result = await harness.call("/submit", {
@@ -195,14 +196,11 @@ test("saves a support request quickly, then asks Gemini to triage and notifies o
   assert.equal(harness.inserted[0].category, "Зависание / тормоза");
 
   await waitFor(() => harness.updates.some(item => item.type === "triage") &&
-    harness.fetchCalls.some(item => item.url.includes("api.telegram.org/bot")));
+    harness.ticketRows[0]?.notification_status === "not_needed");
   assert.ok(harness.fetchCalls.some(item => item.url.includes("/models/gemini-3.5-flash-lite:generateContent")));
-  const telegramCall = harness.fetchCalls.find(item => item.url.includes("api.telegram.org/bot"));
-  const telegramBody = JSON.parse(telegramCall.options.body);
-  assert.equal(telegramBody.chat_id, "999");
-  assert.match(telegramBody.text, /Новое обращение ALLCOINS #15/);
-  assert.match(telegramBody.text, /Диагностика ALLCOINS ИИ/);
-  assert.equal(harness.ticketRows[0].notification_status, "sent");
+  assert.equal(harness.fetchCalls.some(item => item.url.includes("api.telegram.org/bot")), false);
+  assert.equal(harness.ticketRows[0].notification_status, "not_needed");
+  assert.equal(harness.ticketRows[0].needs_developer, true);
   assert.match(harness.ticketRows[0].ai_summary, /Нужен разработчик/);
 });
 
