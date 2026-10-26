@@ -15,7 +15,8 @@
   let renderer, scene, camera, worldRoot, playerRoot, bombRoot, bombShadow;
   let floorMesh, floorMaterial, mainCurve, sideCurve, dustPoints, dustGeometry;
   let rendererWidth = 0, rendererHeight = 0, worldMap = '';
-  let frameId = 0, lastFrame = 0, lastTrailTime = 0;
+  let frameId = 0, lastFrame = 0, lastTrailTime = 0, lastDrawAt = 0;
+  let rendererFailed = false;
   let previousExplosion = false, explosionEffect = null;
   let lastBombScreen = null;
   const miners = new Map();
@@ -118,8 +119,8 @@
   }
   function makeShadow(parent, width, depth, y) {
     const mat = new THREE.MeshBasicMaterial({
-      map: softShadowTexture, color: 0x1a0e0a, transparent: true,
-      opacity: .75, depthWrite: false, side: THREE.DoubleSide
+      map: softShadowTexture, color: 0x4b2c1c, transparent: true,
+      opacity: .38, depthWrite: false, side: THREE.DoubleSide
     });
     const m = mesh(new THREE.PlaneGeometry(width, depth), mat, parent, 0, y || .025, 0);
     m.rotation.x = -Math.PI / 2;
@@ -137,15 +138,23 @@
 
       renderer = new THREE.WebGLRenderer({
         antialias: true, alpha: false, powerPreference: 'high-performance',
-        stencil: false, depth: true
+        stencil: false, depth: true, precision: 'mediump'
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.45));
+      // Keep the full 3D effect while limiting GPU load on mid-range Android phones.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.2));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.2;
       renderer.setClearColor(0x1c1518, 1);
       renderer.domElement.className = 'bomb-3d-canvas';
       renderer.domElement.setAttribute('aria-hidden', 'true');
+      renderer.domElement.addEventListener('webglcontextlost', (event) => {
+        event.preventDefault();
+        fallbackTo2D(new Error('WebGL context lost'));
+      }, { passive: false });
+      renderer.domElement.addEventListener('webglcontextcreationerror', () => {
+        fallbackTo2D(new Error('WebGL context creation failed'));
+      });
       arena.insertBefore(renderer.domElement, arena.firstChild);
 
       scene.add(new THREE.HemisphereLight(0xcadfff, 0x4c2418, 1.65));
@@ -190,10 +199,21 @@
       });
       frameId = requestAnimationFrame(loop);
     } catch (error) {
-      console.warn('ALLCOINS 3D renderer unavailable; keeping the original arena.', error);
-      arena.classList.remove('three-ready');
-      if (renderer && renderer.domElement) renderer.domElement.remove();
+      fallbackTo2D(error);
     }
+  }
+
+  function fallbackTo2D(error) {
+    if (rendererFailed) return;
+    rendererFailed = true;
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = 0;
+    arena.classList.remove('three-ready');
+    if (renderer && renderer.domElement) {
+      try { renderer.dispose(); } catch (_) {}
+      try { renderer.domElement.remove(); } catch (_) {}
+    }
+    console.warn('ALLCOINS 3D renderer stopped; gameplay continues in fallback mode.', error || 'Renderer stopped');
   }
 
   function screenToWorld(px, py, y) {
@@ -368,9 +388,7 @@
       const post = mesh(new THREE.CylinderGeometry(.08, .12, 1.55, 8), woodMat, worldRoot, p.x, .78, p.z);
       const hood = mesh(new THREE.CylinderGeometry(.19, .15, .15, 10), metalMat, worldRoot, p.x, 1.6, p.z);
       const bulb = mesh(new THREE.SphereGeometry(.12, 12, 8), glowMaterial(crystal ? 0x8ee8ff : 0xffc466, 3), worldRoot, p.x, 1.44, p.z);
-      const lamp = new THREE.PointLight(crystal ? 0x807aff : 0xff9a45, 7, 7, 2);
-      lamp.position.set(p.x, 1.65, p.z);
-      worldRoot.add(lamp);
+      // Glowing lantern meshes are lit by the shared scene lights to keep mobile GPU load low.
     });
 
     addObstacles(crystal, palette, rockGeo, borderMat, rockHighMat, woodMat, woodLightMat, metalMat, crystalMat, crystalMat2);
@@ -487,9 +505,7 @@
           gem.scale.set(w * .20, .8 + (j === 1 ? .45 : 0), d * .14);
           gem.rotation.set(rand(-.15, .15), rand(0, Math.PI), rand(-.18, .18));
         }
-        const light = new THREE.PointLight(0x72bfff, 4, 4, 2);
-        light.position.set(0, 1.2, 0);
-        group.add(light);
+        // Crystal emissive material provides the glow without another per-obstacle light.
       } else if (node.classList.contains('crate')) {
         const box = mesh(new THREE.BoxGeometry(w * .78, .84, d * .62), woodMat, group, 0, .52, 0);
         box.rotation.y = rand(-.12, .12);
@@ -619,7 +635,7 @@
     const bootMat = standard(0x302521, .82, .05);
     const metalMat = standard(0x9babb3, .34, .72);
     const lampMat = glowMaterial(0xffe9a4, 2.2);
-    const shadow = makeShadow(root, 1.55, .9, .022);
+    const shadow = makeShadow(root, 1.18, .64, .022);
     const legs = [];
     const arms = [];
     const legGeo = new THREE.CylinderGeometry(.15, .19, .65, 9);
@@ -653,8 +669,11 @@
     mesh(new THREE.BoxGeometry(.55, .52, .075), trimMat, torso, 0, .19, .36);
     mesh(new THREE.BoxGeometry(.86, .12, .51), standard(0x493025, .7, .05), torso, 0, -.28, .015);
     mesh(new THREE.BoxGeometry(.2, .16, .07), metalMat, torso, 0, -.28, .29);
-    mesh(new THREE.BoxGeometry(.42, .56, .23), standard(0x6a4125, .87, .03), torso, 0, .22, -.35);
-    mesh(new THREE.BoxGeometry(.48, .1, .08), trimMat, torso, 0, .34, -.47);
+    // A visible leather mining satchel (warm brown with gold fittings, not a black blob).
+    const satchelMat = standard(0x9c7042, .83, .02);
+    mesh(new THREE.BoxGeometry(.34, .46, .16), satchelMat, torso, 0, .22, -.34);
+    mesh(new THREE.BoxGeometry(.36, .055, .18), trimMat, torso, 0, .39, -.34);
+    mesh(new THREE.BoxGeometry(.08, .34, .035), trimMat, torso, 0, .2, -.435);
 
     const neck = mesh(new THREE.CylinderGeometry(.15, .17, .25, 10), skinMat, torso, 0, .69, 0);
     const head = new THREE.Group();
@@ -674,9 +693,8 @@
     const dome = mesh(new THREE.SphereGeometry(.37, 16, 9, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .37, 0);
     dome.scale.y = .88;
     mesh(new THREE.SphereGeometry(.105, 10, 8), lampMat, head, 0, .36, .34);
-    const lamp = new THREE.PointLight(0xffd16a, 2.2, 4.5, 2);
-    lamp.position.set(0, .37, .42);
-    head.add(lamp);
+    // Helmet lamp stays emissive but does not add one expensive point light per player.
+    const lamp = null;
 
     const nameSprite = makeNameSprite(name, accent);
     root.add(nameSprite);
@@ -965,6 +983,13 @@
 
   function loop(time) {
     frameId = 0;
+    if (rendererFailed || !renderer || !scene || !camera) return;
+    // Cap expensive scene updates near 40–45 FPS; the gameplay logic remains independent.
+    if (lastDrawAt && time - lastDrawAt < 22) {
+      frameId = requestAnimationFrame(loop);
+      return;
+    }
+    lastDrawAt = time;
     const rect = arena.getBoundingClientRect();
     if (document.hidden || rect.width < 10 || rect.height < 10) {
       setTimeout(() => { if (!frameId) frameId = requestAnimationFrame(loop); }, 160);
@@ -990,7 +1015,12 @@
       }
       attr.needsUpdate = true;
     }
-    renderer.render(scene, camera);
+    try {
+      renderer.render(scene, camera);
+    } catch (error) {
+      fallbackTo2D(error);
+      return;
+    }
     frameId = requestAnimationFrame(loop);
   }
 
