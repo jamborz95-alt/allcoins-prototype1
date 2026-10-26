@@ -156,7 +156,7 @@ try {
         { target: game.translations[locale] }, { timeout: 10000 }
       );
       const state = await page.evaluate(({ source, target }) => {
-        const visibleText = (document.body.innerText || "").replace(/\\s+/g, " ").trim();
+        const visibleText = (document.body.innerText || "").replace(/\s+/g, " ").trim();
         return {
           language: document.documentElement.lang,
           storedLanguage: localStorage.getItem("allcoins_language"),
