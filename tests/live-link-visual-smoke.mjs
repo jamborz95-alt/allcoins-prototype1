@@ -225,6 +225,8 @@ try {
       await page.waitForFunction(({ target }) => document.body.innerText.includes(target),
         { target: game.translations[locale] }, { timeout: 10000 }
       );
+      // Let asynchronous room-list messages settle and pass through the shared MutationObserver translator.
+      await page.waitForTimeout(300);
       const state = await page.evaluate(({ source, target }) => {
         const visibleText = (document.body.innerText || "").replace(/\s+/g, " ").trim();
         const cyrillicLines = [...new Set((document.body.innerText || "")
@@ -286,6 +288,10 @@ try {
     relevantFailedRequests
   };
   fs.writeFileSync(resolve(out, "live-link-visual-report.json"), JSON.stringify(report, null, 2));
+  const untranslated = standaloneLocaleResults.filter(item => item.untranslatedCyrillicCount > 0)
+    .map(item => ({ file: item.file, locale: item.locale, samples: item.untranslatedCyrillicSamples }));
+  assert.equal(untranslated.length, 0,
+    "Standalone game pages still contain untranslated Cyrillic labels: " + JSON.stringify(untranslated));
   assert.equal(relevantFailedRequests.length, 0,
     "Public page or locale script requests failed: " + JSON.stringify(relevantFailedRequests));
   assert.equal(pageErrors.length, 0, "Browser runtime errors: " + pageErrors.join(" | "));
