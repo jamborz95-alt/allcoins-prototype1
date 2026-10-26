@@ -1626,42 +1626,19 @@ app.post("/api/durak/game", async (req, res) => {
             if (lockedState?.status === "finished" &&
                 lockedState?.finishedReason === "timeout" &&
                 lockedState?.timeoutBalanceSettled !== true) {
+              // Тайм-аут заканчивает партию, но НЕ конфискует кошелёк игрока.
+              // Проигрыш ограничивается ставкой, которая уже была удержана при старте игры.
               const loserId = String(lockedState.loserTelegramId || "");
-              const balanceRow = await timeoutClient.query(
-                "SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE",
-                [loserId]
-              );
-              const loserBalance = Math.max(0, Math.floor(Number(balanceRow.rows[0]?.balance) || 0));
-              const recipients = (Array.isArray(lockedState.players) ? lockedState.players : [])
-                .map(player => String(player.telegramId))
-                .filter(id => id && id !== "0" && id !== loserId);
-              if (loserBalance > 0 && recipients.length > 0) {
-                const share = Math.floor(loserBalance / recipients.length);
-                let remainder = loserBalance % recipients.length;
-                for (const recipientId of recipients) {
-                  const amount = share + (remainder > 0 ? 1 : 0);
-                  if (remainder > 0) remainder -= 1;
-                  if (amount > 0) {
-                    const credit = await timeoutClient.query(
-                      "UPDATE players SET balance = balance + $1, updated_at = NOW() WHERE telegram_id = $2",
-                      [amount, recipientId]
-                    );
-                    if (credit.rowCount !== 1) throw new Error("Не найден баланс игрока для выплаты за тайм-аут");
-                  }
-                }
-              }
-              if (loserBalance > 0) {
+              if (loserId && loserId !== "0") {
                 await timeoutClient.query(
-                  "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2",
-                  [loserBalance, loserId]
+                  "DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2",
+                  [roomId, loserId]
                 );
               }
-              await timeoutClient.query(
-                "DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2",
-                [roomId, loserId]
-              );
               lockedState.timeoutBalanceSettled = true;
-              lockedState.timeoutBalanceTransferred = loserBalance;
+              lockedState.timeoutBalanceTransferred = 0;
+              lockedState.timeoutBalanceForfeited = 0;
+              lockedState.timeoutBalanceAwards = [];
               await timeoutClient.query(
                 "UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2",
                 [JSON.stringify(lockedState), roomId]
@@ -1708,34 +1685,19 @@ app.post("/api/durak/game", async (req, res) => {
             if (gameState?.pot && gameState.pot.settled !== true) {
               await settleDurakGamePayout(payoutClient, gameState, roomId);
             }
-            // Тайм-аут: остаток баланса проигравшего делится один раз в этой транзакции.
+            // Тайм-аут не конфискует свободный баланс: удерживается только ранее внесённая ставка.
             if (gameState.finishedReason === "timeout" && gameState.timeoutBalanceSettled !== true) {
               const loserId = String(gameState.loserTelegramId || "");
-              const winners = [...new Set((Array.isArray(gameState.players) ? gameState.players : [])
-                .map(player => String(player.telegramId))
-                .filter(id => id && id !== "0" && id !== loserId))];
-              if (loserId && winners.length) {
-                const balanceResult = await payoutClient.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [loserId]);
-                const balance = Math.max(0, Math.floor(Number(balanceResult.rows[0]?.balance) || 0));
-                const zeroed = balance > 0 ? await payoutClient.query(
-                  "UPDATE players SET balance = 0, updated_at = NOW() WHERE telegram_id = $1 AND balance = $2 RETURNING telegram_id",
-                  [loserId, balance]
-                ) : { rows: [] };
-                if (balance === 0 || zeroed.rows.length) {
-                  const share = Math.floor(balance / winners.length);
-                  let remainder = balance % winners.length;
-                  gameState.timeoutBalanceAwards = [];
-                  for (const winnerId of winners) {
-                    const amount = share + (remainder > 0 ? 1 : 0);
-                    if (remainder > 0) remainder -= 1;
-                    if (amount > 0) await payoutClient.query("UPDATE players SET balance = balance + $1, updated_at = NOW() WHERE telegram_id = $2", [amount, winnerId]);
-                    gameState.timeoutBalanceAwards.push({ telegramId: winnerId, amount });
-                  }
-                  gameState.timeoutBalanceForfeited = balance;
-                  await payoutClient.query("DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2", [roomId, loserId]);
-                  gameState.timeoutBalanceSettled = true;
-                }
+              if (loserId && loserId !== "0") {
+                await payoutClient.query(
+                  "DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2",
+                  [roomId, loserId]
+                );
               }
+              gameState.timeoutBalanceAwards = [];
+              gameState.timeoutBalanceForfeited = 0;
+              gameState.timeoutBalanceTransferred = 0;
+              gameState.timeoutBalanceSettled = true;
             }
             await payoutClient.query(`UPDATE durak_games SET game_state = $1::jsonb, updated_at = NOW() WHERE room_id = $2`, [JSON.stringify(gameState), roomId]);
             await payoutClient.query("UPDATE durak_rooms SET status = 'finished' WHERE id = $1 AND status = 'playing'", [roomId]);
@@ -3513,6 +3475,17 @@ async function startServer() {
       CREATE INDEX IF NOT EXISTS allcoins_balance_audit_player_time_idx
       ON allcoins_balance_audit (telegram_id, changed_at DESC)
     `);
+
+    const balanceConstraint = await pool.query(
+      "SELECT 1 FROM pg_constraint WHERE conname = $1 AND conrelid = 'players'::regclass",
+      ["players_balance_nonnegative"]
+    );
+    if (balanceConstraint.rowCount === 0) {
+      await pool.query(
+        "ALTER TABLE players ADD CONSTRAINT players_balance_nonnegative CHECK (balance >= 0) NOT VALID"
+      );
+    }
+    await pool.query("ALTER TABLE players VALIDATE CONSTRAINT players_balance_nonnegative");
 
     console.log("Players table is ready");
     await initializeCommissionTables(pool);
