@@ -271,19 +271,21 @@ body.playing #play #modeLabel{display:none!important}
   animation:blockBlastCellShatter 370ms cubic-bezier(.18,.76,.2,1) both;
   will-change:transform,opacity,filter;
 }
-.cell.clearing:before{
+.cell.filled.clearing:before,.cell.filled.clearing.coral:before{
   content:"";position:absolute;z-index:9;pointer-events:none;
   inset:-34%;border:0;border-radius:50%;
   background:radial-gradient(circle,rgba(255,255,255,.98) 0 7%,rgba(255,246,255,.9) 9%,rgba(255,222,251,.68) 17%,rgba(255,208,237,.25) 38%,transparent 70%);
   box-shadow:0 0 13px #fff7,0 0 24px #f8b5ff88;
   animation:blockBlastCoreBurst 390ms cubic-bezier(.16,.78,.18,1) both;
+  animation-delay:inherit;
 }
-.cell.clearing:after{
+.cell.filled.clearing:after,.cell.filled.clearing.coral:after{
   content:"";position:absolute;z-index:10;pointer-events:none;
   inset:-23%;border:0;border-radius:50%;
   background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.94) 7deg,transparent 15deg,transparent 43deg,rgba(255,235,255,.9) 51deg,transparent 59deg,transparent 87deg,rgba(255,255,255,.9) 95deg,transparent 103deg,transparent 131deg,rgba(255,228,250,.9) 139deg,transparent 147deg,transparent 175deg,rgba(255,255,255,.9) 183deg,transparent 191deg,transparent 219deg,rgba(255,235,255,.9) 227deg,transparent 235deg,transparent 263deg,rgba(255,255,255,.9) 271deg,transparent 279deg,transparent 307deg,rgba(255,235,255,.9) 315deg,transparent 323deg,transparent 360deg);
   mix-blend-mode:screen;
   animation:blockBlastPrismBurst 390ms ease-out both;
+  animation-delay:inherit;
 }
 @keyframes blockBlastCoreBurst{
   0%{transform:scale(.15);opacity:0}
