@@ -216,6 +216,121 @@ body.playing #play #modeLabel{display:none!important}
 }
 </style>
 
+
+<style id="block-blast-crystal-burst">
+/* Premium jewel-like blocks: soft enamel, bright top bevel, inner rim and deeper lower edge. */
+.cell.filled{
+  position:relative;
+  isolation:isolate;
+  overflow:visible;
+  border:1px solid #f8eaff;
+  background:linear-gradient(145deg,#fff6ff 0%,#efe0ff 13%,#d8c2ff 30%,#c1a5f3 52%,#a184df 74%,#8868c5 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 1px 0 1px #fff9,inset 0 -4px 2px #7551a5,0 2px 0 #986fc0,0 3px 5px #673e845c;
+  transform:translateZ(0);
+}
+.cell.filled:before{
+  content:"";position:absolute;inset:2px;border-radius:3px;border:1px solid #ffffff70;
+  box-shadow:inset 0 0 0 1px #7656a51a;pointer-events:none;
+}
+.cell.filled:after{
+  content:"";position:absolute;inset:1px 1px 54%;border-radius:3px;
+  background:linear-gradient(180deg,#ffffffb8 0%,#ffffff4d 38%,transparent 100%);
+  pointer-events:none;
+}
+.cell.filled.coral{
+  border-color:#fff0e6;
+  background:linear-gradient(145deg,#fff8f2 0%,#ffe5e5 15%,#ffcbd8 34%,#f4a9c6 55%,#e18bb3 75%,#c96f9b 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 1px 0 1px #fff9,inset 0 -4px 2px #ae5d87,0 2px 0 #db8aab,0 3px 5px #9f47745c;
+}
+.cell.filled.coral:before{border-color:#ffffff88;box-shadow:inset 0 0 0 1px #a950751c}
+.piece-dot:not(.empty){
+  border:1px solid #fff0ff;
+  border-radius:4px;
+  background:linear-gradient(145deg,#fff8ff 0%,#f1e4ff 13%,#dfccff 32%,#c2a8f4 58%,#9d7cdb 82%,#8060bd 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #7c58ae,0 2px 0 #ac88d4,0 3px 5px #8d477b55;
+  position:relative;
+}
+.piece-dot:not(.empty):after{
+  inset:1px 1px 56%;border-radius:3px;background:linear-gradient(180deg,#ffffffc9,#ffffff40 54%,transparent);
+}
+.piece-slot.selected .piece-dot:not(.empty){
+  filter:brightness(1.08) saturate(1.08);
+}
+
+/* Full-row/column clear: a bright pulse, jewel shatter and floating glassy sparks. */
+@keyframes blockBlastCellShatter{
+  0%{transform:scale(1);opacity:1;filter:brightness(1) saturate(1)}
+  14%{transform:scale(1.16);opacity:1;filter:brightness(1.75) saturate(1.25)}
+  30%{transform:scale(1.04) rotate(-3deg);opacity:1;filter:brightness(1.5) saturate(1.35)}
+  56%{transform:scale(.78) rotate(5deg);opacity:.88;filter:brightness(1.35) saturate(1.3)}
+  78%{transform:scale(.42) rotate(-8deg);opacity:.45;filter:brightness(1.55)}
+  100%{transform:scale(.12) rotate(12deg);opacity:0;filter:brightness(2)}
+}
+.cell.clearing{
+  z-index:8;
+  animation:blockBlastCellShatter 370ms cubic-bezier(.18,.76,.2,1) both;
+  will-change:transform,opacity,filter;
+}
+.cell.clearing:before{
+  content:"";position:absolute;z-index:9;pointer-events:none;
+  inset:-34%;border:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.98) 0 7%,rgba(255,246,255,.9) 9%,rgba(255,222,251,.68) 17%,rgba(255,208,237,.25) 38%,transparent 70%);
+  box-shadow:0 0 13px #fff7,0 0 24px #f8b5ff88;
+  animation:blockBlastCoreBurst 390ms cubic-bezier(.16,.78,.18,1) both;
+}
+.cell.clearing:after{
+  content:"";position:absolute;z-index:10;pointer-events:none;
+  inset:-23%;border:0;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.94) 7deg,transparent 15deg,transparent 43deg,rgba(255,235,255,.9) 51deg,transparent 59deg,transparent 87deg,rgba(255,255,255,.9) 95deg,transparent 103deg,transparent 131deg,rgba(255,228,250,.9) 139deg,transparent 147deg,transparent 175deg,rgba(255,255,255,.9) 183deg,transparent 191deg,transparent 219deg,rgba(255,235,255,.9) 227deg,transparent 235deg,transparent 263deg,rgba(255,255,255,.9) 271deg,transparent 279deg,transparent 307deg,rgba(255,235,255,.9) 315deg,transparent 323deg,transparent 360deg);
+  mix-blend-mode:screen;
+  animation:blockBlastPrismBurst 390ms ease-out both;
+}
+@keyframes blockBlastCoreBurst{
+  0%{transform:scale(.15);opacity:0}
+  18%{transform:scale(.72);opacity:1}
+  54%{transform:scale(1.12);opacity:.72}
+  100%{transform:scale(1.58);opacity:0}
+}
+@keyframes blockBlastPrismBurst{
+  0%{transform:scale(.25) rotate(0deg);opacity:0}
+  22%{transform:scale(.8) rotate(24deg);opacity:.95}
+  100%{transform:scale(1.8) rotate(85deg);opacity:0}
+}
+.block-blast-shard,.block-blast-spark{
+  position:fixed;left:0;top:0;z-index:1100;pointer-events:none;
+  will-change:transform,opacity;animation:blockBlastFly 380ms cubic-bezier(.12,.72,.22,1) var(--delay,0ms) both;
+}
+.block-blast-shard{
+  width:var(--size,5px);height:calc(var(--size,5px)*1.45);
+  clip-path:polygon(50% 0,100% 33%,72% 100%,8% 75%,0 28%);
+  border:1px solid #fff;
+  background:linear-gradient(145deg,#fffaff 0%,#f2d5ff 38%,#bd8cf1 100%);
+  filter:drop-shadow(0 0 3px #ffffffb0) drop-shadow(0 1px 3px #9850d899);
+}
+.block-blast-shard.coral{
+  background:linear-gradient(145deg,#fffdf4 0%,#ffd4e5 40%,#e782b3 100%);
+  filter:drop-shadow(0 0 3px #fff0b8) drop-shadow(0 1px 3px #a34475a8);
+}
+.block-blast-shard.gold{
+  background:linear-gradient(145deg,#fffde7 0%,#ffe69a 42%,#ffb84d 100%);
+  filter:drop-shadow(0 0 4px #fff0ad) drop-shadow(0 1px 3px #d98a41a8);
+}
+.block-blast-spark{
+  width:var(--size,5px);height:var(--size,5px);border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,#fff9d8 24%,#ffb8ed 56%,transparent 78%);
+  box-shadow:0 0 7px #fff,0 0 14px #ffb3e9;
+}
+@keyframes blockBlastFly{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(.2);opacity:0}
+  14%{opacity:1;transform:translate(-50%,-50%) rotate(15deg) scale(1.05)}
+  100%{transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) rotate(var(--spin,90deg)) scale(.12);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell.clearing,.cell.clearing:before,.cell.clearing:after,
+  .block-blast-shard,.block-blast-spark{animation-duration:1ms!important}
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -287,6 +402,7 @@ var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
 var BOARD_SIZE=8;
 var lastPlacedCells=[];
+var blastParticlesCreated=0;
 var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0,continueUsed=false,adPending=false,adController=null,audioContext=null,soundEnabled=true;
 try{soundEnabled=localStorage.getItem("allcoins_blockblast_sound")!=="off";}catch(soundPreferenceError){}
 var shapes=[
@@ -633,6 +749,42 @@ function fits(piece,row,col){
  return true;
 }
 function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)if(fits(pieces[p],r,c))return true;return false;}
+function spawnBlastParticles(cell,index){
+ var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if(reduced||blastParticlesCreated>=120)return;
+ var rect=cell.getBoundingClientRect();
+ var centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+ var coral=cell.classList.contains("coral");
+ for(var i=0;i<6&&blastParticlesCreated<120;i++){
+  var shard=document.createElement("span");
+  shard.className="block-blast-shard"+(coral?" coral":"")+(i%3===0?" gold":"");
+  var angle=(Math.PI*2*i/6)+(index%5)*.13;
+  var distance=18+((i*7+index*3)%24);
+  shard.style.left=centerX+"px";shard.style.top=centerY+"px";
+  shard.style.setProperty("--dx",(Math.cos(angle)*distance).toFixed(1)+"px");
+  shard.style.setProperty("--dy",(Math.sin(angle)*distance-((i%2)*7)-4).toFixed(1)+"px");
+  shard.style.setProperty("--spin",((i%2?1:-1)*(95+(i%4)*55))+"deg");
+  shard.style.setProperty("--size",(3+((i+index)%4))+"px");
+  shard.style.setProperty("--delay",(Math.min(index,5)*6+(i%3)*5)+"ms");
+  document.body.appendChild(shard);blastParticlesCreated++;
+  window.setTimeout(function(node){if(node&&node.parentNode)node.parentNode.removeChild(node);},520,shard);
+ }
+ for(var j=0;j<2&&blastParticlesCreated<120;j++){
+  var spark=document.createElement("span");
+  spark.className="block-blast-spark";
+  var sparkAngle=(j?Math.PI*.72:Math.PI*1.72)+(index%4)*.2;
+  var sparkDistance=25+j*14+(index%3)*4;
+  spark.style.left=centerX+"px";spark.style.top=centerY+"px";
+  spark.style.setProperty("--dx",(Math.cos(sparkAngle)*sparkDistance).toFixed(1)+"px");
+  spark.style.setProperty("--dy",(Math.sin(sparkAngle)*sparkDistance-9).toFixed(1)+"px");
+  spark.style.setProperty("--spin",(j?135:-135)+"deg");
+  spark.style.setProperty("--size",(4+j*2)+"px");
+  spark.style.setProperty("--delay",(Math.min(index,5)*6+j*7)+"ms");
+  document.body.appendChild(spark);blastParticlesCreated++;
+  window.setTimeout(function(node){if(node&&node.parentNode)node.parentNode.removeChild(node);},520,spark);
+ }
+}
+
 async function placeSelected(row,col){
  if(!gameActive||isResolving||selected<0||!pieces[selected]){$("gameHint").textContent="Сначала выбери фигуру снизу.";return;}
  var piece=pieces[selected];
@@ -656,11 +808,16 @@ async function placeSelected(row,col){
   fullCols.forEach(function(col){for(var r=0;r<BOARD_SIZE;r++)clearSet.add(r+","+col);});
   var clearCells=[];
   clearSet.forEach(function(key){var parts=key.split(",");var cell=$("board").querySelector('.cell[data-row="'+parts[0]+'"][data-col="'+parts[1]+'"]');if(cell)clearCells.push(cell);});
-  clearCells.forEach(function(cell,index){cell.classList.add("clearing");cell.style.animationDelay=(index%4)*8+"ms";});
+  blastParticlesCreated=0;
+  clearCells.forEach(function(cell,index){
+   cell.classList.add("clearing");
+   cell.style.animationDelay=(index%6)*8+"ms";
+   spawnBlastParticles(cell,index);
+  });
   await new Promise(function(resolve){
    requestAnimationFrame(function(){requestAnimationFrame(function(){
     var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setTimeout(resolve,reduced?20:290);
+    setTimeout(resolve,reduced?20:440);
    });});
   });
   fullRows.forEach(function(row){for(var c=0;c<BOARD_SIZE;c++)board[row][c]=0;});
