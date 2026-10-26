@@ -5122,8 +5122,10 @@ function render() {
   // In Telegram, never display local/demo storage as a real wallet while auth is missing.
   const telegramContext = Boolean(tg);
   const walletAuthenticated = Boolean(state.user && (state.user.telegramId || state.user.id));
+  // Keep locally earned demo/task rewards visible beside the latest server balance;
+  // these rewards remain device-local and are not sent to the wallet API.
   const displayedBalance = walletAuthenticated
-    ? Number(state.balance || 0)
+    ? Number(state.balance || 0) + getClickerLocalRewardTotal()
     : (telegramContext ? null : Number(state.balance || 0) + getClickerLocalRewardTotal());
   const displayedBalanceText = displayedBalance === null ? "—" : displayedBalance.toLocaleString("ru-RU");
   const displayedEnergyText = telegramContext && !walletAuthenticated ? "—" : String(state.energy);
