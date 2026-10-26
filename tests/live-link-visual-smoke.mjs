@@ -138,7 +138,7 @@ try {
   ];
   const standaloneLocaleResults = [];
   const standaloneLocales = ["de", "fr", "pt", "zh"];
-  const publicRoot = new URL(".", publicUrl).href;
+  // Standalone game pages are tested against this commit, not the live Pages deployment,\n  // which may still be publishing while the push-triggered workflow starts.\n  const publicRoot = "http://127.0.0.1:4173/";
   for (const game of standalonePages) {
     for (const locale of standaloneLocales) {
       await page.evaluate(code => localStorage.setItem("allcoins_language", code), locale);
@@ -146,7 +146,7 @@ try {
       const gameResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       assert.ok(gameResponse, locale + " " + game.file + " did not return a page response.");
       assert.equal(gameResponse.status(), 200, locale + " " + game.file + " should return HTTP 200.");
-      await page.waitForFunction(() => !!window.ALLCOINS_I18N_EXTRA, undefined, { timeout: 25000 });
+      await page.waitForFunction(({ code }) => document.documentElement.lang === code &&\n        !!window.ALLCOINS_I18N_EXTRA &&\n        Object.keys(window.ALLCOINS_I18N_EXTRA[code] || {}).length >= 489,\n        { code: locale }, { timeout: 25000 }\n      );
       const localeState = await page.evaluate(() => ({
         language: document.documentElement.lang,
         storedLanguage: localStorage.getItem("allcoins_language"),
