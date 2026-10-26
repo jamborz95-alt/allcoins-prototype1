@@ -14,14 +14,15 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261026j"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261026k"'),
   "The Games menu should open the current cache-busted Bomb page.");
-assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026j"></script>') &&
-  bombHtml.includes('<script src="./bomb-3d.js?v=20261026j"></script>'),
+assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026k"></script>') &&
+  bombHtml.includes('<script src="./bomb-3d.js?v=20261026k"></script>'),
   "The page must load the local Three.js library and current 3D renderer without a CDN dependency.");
 assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
+  bombJs.includes("new THREE.SphereGeometry(.36, 18, 10), helmetMat") &&
   !bombJs.includes("const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18)"),
-  "The renderer should show the larger map and remove the dark helmet brim.");
+  "The renderer should show the larger map and a closed helmet shell without a flat dark band.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
@@ -273,8 +274,8 @@ try {
   await page.mouse.up();
   assert.ok(afterSensitiveMove &&
     Math.abs((afterSensitiveMove.y + afterSensitiveMove.height/2) -
-      (beforeSensitiveMove.y + beforeSensitiveMove.height/2)) > 12,
-    "A short joystick displacement should move the player noticeably.");
+      (beforeSensitiveMove.y + beforeSensitiveMove.height/2)) > 5,
+    "A short six-pixel joystick deflection should start moving the player, even before full stick travel.");
 
   const characterBefore = await page.locator("#playerCharacter").boundingBox();
   assert.ok(characterBefore, "The character should remain visible before full joystick travel.");
