@@ -13,6 +13,7 @@ import { createCheckersRouter } from "./checkers-router.js";
 import { createTowersRouter } from "./towers-router.js";
 import { createAIRouter } from "./ai-router.js";
 import { createSupportRouter } from "./support-router.js";
+import { createBlockBlastRouter } from "./blockblast-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -232,6 +233,8 @@ const aiRouter = createAIRouter({ verifyTelegram });
 app.use("/api/ai", aiRouter);
 const supportRouter = createSupportRouter({ pool, verifyTelegram });
 app.use("/api/support", supportRouter);
+const blockBlastRouter = createBlockBlastRouter({ pool, verifyTelegram, recordGameCommission });
+app.use("/api/block-blast", blockBlastRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3331,6 +3334,7 @@ async function startServer() {
     console.log("Players table is ready");
     await initializeCommissionTables(pool);
     console.log("Game commission ledger is ready");
+    await blockBlastRouter.initialize();
     await supportRouter.initialize();
     console.log("AI-assisted support ticket table is ready");
 
