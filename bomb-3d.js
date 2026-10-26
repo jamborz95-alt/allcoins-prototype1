@@ -630,7 +630,7 @@
     const p = colorSet[index % colorSet.length];
     const jacketMat = standard(p.jacket, .51, .03);
     const trimMat = standard(p.trim, .35, .08);
-    const helmetMat = standard(p.helmet, .34, .16);
+    const helmetMat = standard(p.helmet, .58, .02);
     const pantsMat = standard(p.pants, .68, .02);
     const skinMat = standard(p.skin, .72, 0);
     const bootMat = standard(0x302521, .82, .05);
@@ -688,10 +688,10 @@
     mesh(new THREE.SphereGeometry(.055, 8, 6), skinMat, head, 0, -.045, .315);
     mesh(new THREE.TorusGeometry(.085, .012, 4, 12), standard(0x8c4839, .75, 0), head, 0, -.13, .302);
 
-    // A closed, softly scaled helmet shell avoids the flat hemisphere edge that looked like a stripe.
-    const dome = mesh(new THREE.SphereGeometry(.36, 18, 10), helmetMat, head, 0, .43, 0);
-    dome.scale.set(1, .82, 1);
-    mesh(new THREE.SphereGeometry(.095, 10, 8), lampMat, head, 0, .34, .32);
+    // A smaller matte shell follows the head contour without a projecting horizontal band.
+    const dome = mesh(new THREE.SphereGeometry(.31, 18, 12), helmetMat, head, 0, .40, 0);
+    dome.scale.set(1, .90, 1);
+    mesh(new THREE.SphereGeometry(.08, 10, 8), lampMat, head, 0, .34, .29);
     // Helmet lamp stays emissive but does not add one expensive point light per player.
     const lamp = null;
 
