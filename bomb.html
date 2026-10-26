@@ -1466,26 +1466,34 @@
       $('bomb').classList.remove('moving');
       window.__allcoinsBombFlight = null;
       roundToken++;
+      const explosionToken = roundToken;
       $('fuseLabel').textContent = '💥 Взрыв';
       $('fuseFill').style.transform = 'scaleX(0)';
-      $('bomb').classList.remove('urgent','moving'); $('bomb').classList.add('exploding');
-      $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
+      $('bomb').classList.remove('urgent','moving');
+      $('bomb').classList.add('exploding');
+      $('flash').classList.remove('on');
+      void $('flash').offsetWidth;
+      $('flash').classList.add('on');
       players[unlucky].lives = Math.max(0, players[unlucky].lives - 1);
       updateSeats();
       playExplosionSound();
       if (navigator.vibrate) { try { navigator.vibrate([90,45,180]); } catch (_) {} }
       setStatusText('БУМ!', safeText(players[unlucky].name) + ' теряет жизнь');
-      setInstruction('<strong>' + safeText(players[unlucky].name) + '</strong> попал под взрыв. Посмотри, кто ещё остался в игре.');
+      setInstruction('<strong>' + safeText(players[unlucky].name) + '</strong> попал под взрыв. Следующий раунд начнётся автоматически.');
       const alive = activePlayers();
+      // Let the explosion finish on screen, then continue without requiring a button press.
       window.setTimeout(() => {
+        if (explosionToken !== roundToken || phase !== 'boom') return;
         if (alive.length <= 1) {
           endGame(alive[0], unlucky);
-        } else {
-          showResult('💥','БУМ!', `<strong>${safeText(players[unlucky].name)}</strong> остался с бомбой и потерял сердце.`, `${players[unlucky].lives > 0 ? 'У него осталось жизней: ' + players[unlucky].lives : 'Игрок выбыл из игры.'} · В игре осталось ${alive.length} ${plural(alive.length,'игрок','игрока','игроков')}.`, 'Следующий раунд', startRound);
-          $('continueRound').hidden = false;
-          $('continueRound').textContent = 'Следующий раунд';
+          return;
         }
-      }, 620);
+        setStatusText('НОВЫЙ РАУНД', 'Приготовься передавать бомбу!');
+        window.setTimeout(() => {
+          if (explosionToken !== roundToken || phase !== 'boom') return;
+          startRound();
+        }, 260);
+      }, 930);
     }
 
     function endGame(winner, unlucky) {
@@ -1751,6 +1759,6 @@
   document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
 })();
 </script>
-  <script src="./bomb-3d.js?v=20261026e"></script>
+  <script src="./bomb-3d.js?v=20261026f"></script>
 </body>
 </html>
