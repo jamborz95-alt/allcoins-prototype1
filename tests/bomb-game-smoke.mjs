@@ -14,10 +14,10 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261026i"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261026j"'),
   "The Games menu should open the current cache-busted Bomb page.");
-assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026i"></script>') &&
-  bombHtml.includes('<script src="./bomb-3d.js?v=20261026i"></script>'),
+assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026j"></script>') &&
+  bombHtml.includes('<script src="./bomb-3d.js?v=20261026j"></script>'),
   "The page must load the local Three.js library and current 3D renderer without a CDN dependency.");
 assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
   !bombJs.includes("const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18)"),
