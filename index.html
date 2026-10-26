@@ -5119,25 +5119,30 @@ function showStatus(id, message) {
 }
 
 function render() {
-  // Claimed client-only demo tasks must never be added to an authenticated server wallet.
-  const displayedBalance = Number(state.balance || 0) +
-    (state.user ? 0 : getClickerLocalRewardTotal());
-  $("balance").textContent = displayedBalance;
-  $("energy").textContent = state.energy;
-  $("energyBar").style.width = state.energy + "%";
-  $("tapButton").disabled = state.energy <= 0;
-  $("restoreButton").disabled = state.energy >= 100;
+  // In Telegram, never display local/demo storage as a real wallet while auth is missing.
+  const telegramContext = Boolean(tg);
+  const walletAuthenticated = Boolean(state.user && (state.user.telegramId || state.user.id));
+  const displayedBalance = walletAuthenticated
+    ? Number(state.balance || 0)
+    : (telegramContext ? null : Number(state.balance || 0) + getClickerLocalRewardTotal());
+  const displayedBalanceText = displayedBalance === null ? "—" : displayedBalance.toLocaleString("ru-RU");
+  const displayedEnergyText = telegramContext && !walletAuthenticated ? "—" : String(state.energy);
+  $("balance").textContent = displayedBalanceText;
+  $("energy").textContent = displayedEnergyText;
+  $("energyBar").style.width = telegramContext && !walletAuthenticated ? "0%" : state.energy + "%";
+  $("tapButton").disabled = state.energy <= 0 || (telegramContext && !walletAuthenticated);
+  $("restoreButton").disabled = state.energy >= 100 || (telegramContext && !walletAuthenticated);
   $("tickets").textContent = state.tickets;
-  $("withdrawBalance").textContent = displayedBalance;
-  $("profileBalance").textContent = displayedBalance;
-  $("profileEnergy").textContent = state.energy;
+  $("withdrawBalance").textContent = displayedBalanceText;
+  $("profileBalance").textContent = displayedBalanceText;
+  $("profileEnergy").textContent = displayedEnergyText;
 
   $("profileName").textContent =
     state.user?.firstName || state.user?.first_name || state.user?.username || "Гость";
 
   // The server profile uses camelCase (telegramId); Telegram's raw user object uses id.
   $("profileId").textContent = state.user?.telegramId || state.user?.id || "не авторизован";
-  $("loginStatus").textContent = state.user ? "TELEGRAM" : "ДЕМО";
+  $("loginStatus").textContent = walletAuthenticated ? "TELEGRAM" : (telegramContext ? "ВХОД НЕ ПОДТВЕРЖДЁН" : "ДЕМО");
 
   $("roomsList").innerHTML = "";
   state.rooms.forEach((room, index) => {
@@ -9380,6 +9385,10 @@ $("tapButton").onclick = async () => {
   }
 
   if (!state.user) {
+    if (tg) {
+      showStatus("homeStatus", "Баланс не подтверждён сервером. Нажми «Повторить вход»; демонстрационные монеты в Telegram отключены.");
+      return;
+    }
     state.energy -= 1;
     state.balance += 100;
     recordClickerTap();
