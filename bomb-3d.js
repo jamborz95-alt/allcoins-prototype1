@@ -6,7 +6,7 @@
   if (!arena || !window.THREE) return;
 
   const THREE = window.THREE;
-  const VIEW_H = 16.8;
+  const VIEW_H = 15.6;
   const ELEVATION = Math.atan2(34, 28);
   const SIN_E = Math.sin(ELEVATION);
   const COS_E = Math.cos(ELEVATION);
@@ -688,10 +688,9 @@
     mesh(new THREE.SphereGeometry(.055, 8, 6), skinMat, head, 0, -.045, .315);
     mesh(new THREE.TorusGeometry(.085, .012, 4, 12), standard(0x8c4839, .75, 0), head, 0, -.13, .302);
 
-    const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18), helmetMat, head, 0, .34, .005);
-    brim.scale.z = .88;
-    const dome = mesh(new THREE.SphereGeometry(.37, 16, 9, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .37, 0);
-    dome.scale.y = .88;
+    // A smooth hard-hat dome without the dark horizontal brim that looked like a black stripe.
+    const dome = mesh(new THREE.SphereGeometry(.38, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), helmetMat, head, 0, .31, 0);
+    dome.scale.y = .9;
     mesh(new THREE.SphereGeometry(.105, 10, 8), lampMat, head, 0, .36, .34);
     // Helmet lamp stays emissive but does not add one expensive point light per player.
     const lamp = null;
