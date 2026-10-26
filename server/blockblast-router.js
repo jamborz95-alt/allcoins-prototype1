@@ -68,7 +68,7 @@ async function settleExpiredTournaments(pool, recordGameCommission) {
       "FROM block_blast_tournament_entries e " +
       "LEFT JOIN block_blast_tournament_settlements s ON s.week_start = e.week_start " +
       "WHERE e.week_start < $1::DATE AND s.week_start IS NULL " +
-      "ORDER BY e.week_start ASC LIMIT 100",
+      "ORDER BY week_start ASC LIMIT 100",
       [thisWeek]
     );
 
@@ -305,9 +305,9 @@ export function createBlockBlastRouter({ pool, verifyTelegram, recordGameCommiss
         [week, telegramId]
       );
       if (alreadyJoined.rows.length) {
+        const board = await loadLeaderboard(client, week);
         await client.query("COMMIT");
         open = false;
-        const board = await loadLeaderboard(client, week);
         return res.json({ ok: true, joined: true, alreadyJoined: true, balance, player: { balance }, ...board });
       }
       if (balance < ENTRY_FEE) {
@@ -338,10 +338,10 @@ export function createBlockBlastRouter({ pool, verifyTelegram, recordGameCommiss
         "SET display_name = EXCLUDED.display_name, username = EXCLUDED.username",
         [week, telegramId, displayName, username]
       );
+      const board = await loadLeaderboard(client, week);
       await client.query("COMMIT");
       open = false;
       const newBalance = Number(charged.rows[0] && charged.rows[0].balance || 0);
-      const board = await loadLeaderboard(client, week);
       return res.json({ ok: true, joined: true, alreadyJoined: false, balance: newBalance, player: { balance: newBalance }, ...board });
     } catch (error) {
       if (client && open) {
