@@ -129,60 +129,22 @@ async function analyzeTicket(ticket) {
   }
 }
 
-async function notifyAdmin(ticket, triage) {
-  const botToken = String(process.env.BOT_TOKEN || "").trim();
-  const adminId = configuredAdminTelegramId();
-  if (!botToken || !adminId) return false;
-
-  const notification = [
-    "🛟 Новое обращение ALLCOINS #" + ticket.id,
-    "Статус: " + (triage.needsDeveloper ? "нужна проверка разработчика" : "первичная проверка ИИ"),
-    "Категория: " + ticket.category,
-    "Игрок: " + (ticket.first_name || "Игрок") +
-      (ticket.username ? " (@" + ticket.username + ")" : ""),
-    "Telegram ID: " + ticket.telegram_id,
-    "",
-    "Сообщение:",
-    ticket.description,
-    "",
-    "Диагностика ALLCOINS ИИ:",
-    triage.summary
-  ].join("\n").slice(0, 3900);
-
-  try {
-    const response = await fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: adminId, text: notification, disable_web_page_preview: true }),
-      signal: AbortSignal.timeout(12000)
-    });
-    const result = await response.json().catch(() => ({}));
-    return response.ok && result?.ok === true;
-  } catch (error) {
-    console.error("Support Telegram notification failed:", error?.name || "network");
-    return false;
-  }
-}
-
 async function processTicket(ticket) {
   try {
     const triage = await analyzeTicket(ticket);
-    // Every support ticket must reach the owner; AI triage only sets the urgency.
-    const notificationSent = await notifyAdmin(ticket, triage);
-    const notificationStatus = notificationSent ? "sent" : "failed";
+    // Keep support requests in the ALLCOINS support inbox; never send Telegram messages.
     await ticket.pool.query(
       `UPDATE allcoins_support_tickets
        SET ai_summary = $1,
            ai_severity = $2,
            needs_developer = $3,
-           notification_status = $4,
+           notification_status = 'not_needed',
            updated_at = NOW()
-       WHERE id = $5`,
+       WHERE id = $4`,
       [
         triage.summary,
         triage.severity,
         triage.needsDeveloper,
-        notificationStatus,
         ticket.id
       ]
     );
@@ -191,9 +153,11 @@ async function processTicket(ticket) {
     try {
       await ticket.pool.query(
         `UPDATE allcoins_support_tickets
-         SET ai_summary = $1, notification_status = 'failed', updated_at = NOW()
+         SET ai_summary = $1,
+             notification_status = 'not_needed',
+             updated_at = NOW()
          WHERE id = $2`,
-        ["Обращение сохранено, но автоматическая диагностика/уведомление не завершились. Проверь панель поддержки в ALLCOINS.", ticket.id]
+        ["Обращение сохранено. Автоматическая диагностика временно недоступна; проверь панель поддержки ALLCOINS.", ticket.id]
       );
     } catch (saveError) {
       console.error("Support ticket status update failed:", saveError?.message || saveError);
@@ -286,7 +250,7 @@ export function createSupportRouter({ pool, verifyTelegram }) {
         ok: true,
         ticketId: ticket.id,
         status: "open",
-        message: "Обращение сохранено. ALLCOINS ИИ анализирует проблему и отправит уведомление владельцу."
+        message: "Обращение сохранено. ALLCOINS ИИ попробует проанализировать его; сообщения в Telegram не отправляются."
       });
       void processTicket(ticket);
       return;
