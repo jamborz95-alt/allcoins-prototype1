@@ -444,10 +444,11 @@ async function initTower3D(){
  try{
   const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
   const renderer=new THREE.WebGLRenderer({alpha:false,antialias:true,powerPreference:'high-performance',stencil:false,depth:true});
-  const lowPower=(Number(navigator.hardwareConcurrency||4)<=4)||(Number(navigator.deviceMemory||4)<=4);
+  const mobileDevice=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+  const lowPower=mobileDevice||(Number(navigator.hardwareConcurrency||4)<=4)||(Number(navigator.deviceMemory||4)<=4);
   renderer.domElement.className='tower3d-canvas';
   renderer.domElement.setAttribute('aria-label','Трёхмерная карта Захват башен. Нажми на свою башню, затем на цель. Перетаскивай войска пальцем.');
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,lowPower?1.25:1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,lowPower?1.35:1.8));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.22;
@@ -468,6 +469,7 @@ async function initTower3D(){
   const towerMeshes=new Map();
   const towerElements=new Map();
   const troopGroups=new Map();
+  const visualFleetCap=lowPower?28:54;
   const routeMeshes=new Map();
   const projectiles=[];
   const particles=[];
@@ -483,7 +485,7 @@ async function initTower3D(){
   const sun=new THREE.DirectionalLight(0xffe5b6,3.1);
   sun.position.set(-18,32,18);
   sun.castShadow=true;
-  sun.shadow.mapSize.set(lowPower?768:1536,lowPower?768:1536);
+  sun.shadow.mapSize.set(lowPower?1024:2048,lowPower?1024:2048);
   sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;
   sun.shadow.camera.near=.5;sun.shadow.camera.far=90;sun.shadow.bias=-.00035;sun.shadow.normalBias=.025;
   scene.add(sun);sun.target.position.set(0,0,0);scene.add(sun.target);
@@ -772,14 +774,36 @@ async function initTower3D(){
    const leg2=new THREE.Mesh(new THREE.CapsuleGeometry(.065,.24,2,5),armor);leg2.position.set(.09,.27,0);g.add(leg2);
    g.userData.legs=[leg1,leg2];g.userData.body=body;return g;
   }
-  function makeTroopGroup(f){
-   const g=new THREE.Group();const count=(gameState&&gameState.fleets||[]).length>=18?1:((gameState&&gameState.fleets||[]).length>=9?3:5);
+  function desiredSoldierCount(fleetCount){return fleetCount>=18?1:(fleetCount>=9?3:5);}
+  function clearSoldierMeshes(group){
+   const children=group.children.slice();
+   for(const child of children){
+    group.remove(child);
+    child.traverse(obj=>{
+     if(obj.geometry)obj.geometry.dispose();
+     if(obj.material){
+      const materials=Array.isArray(obj.material)?obj.material:[obj.material];
+      for(const mat of materials)if(mat&&mat!==ironMat&&typeof mat.dispose==='function')mat.dispose();
+     }
+    });
+   }
+  }
+  function populateTroopGroup(group,ownerId,count){
+   clearSoldierMeshes(group);
    const scale=count===1?.78:(count===3?.69:.61);
    const offsets=count===1?[[0,0]]:(count===3?[[-.22,0],[.22,.06],[0,-.22]]:[[-.30,.05],[0,.08],[.30,.05],[-.15,-.22],[.15,-.22]]);
    const soldiers=[];
-   for(const p of offsets){const soldier=makeSoldier(f.ownerId,scale);soldier.position.set(p[0],0,p[1]);g.add(soldier);soldiers.push(soldier);}
-   scene.add(g);g.userData.soldiers=soldiers;g.userData.fleetId=String(f.id);g.userData.ownerId=String(f.ownerId);g.userData.targetId=Number(f.toId);g.userData.fromId=Number(f.fromId);
-   troopGroups.set(String(f.id),g);return g;
+   for(const p of offsets){const soldier=makeSoldier(ownerId,scale);soldier.position.set(p[0],0,p[1]);group.add(soldier);soldiers.push(soldier);}
+   group.userData.soldiers=soldiers;group.userData.visualCount=count;group.userData.ownerId=String(ownerId);
+  }
+  function disposeTroopGroup(group){
+   if(!group)return;
+   scene.remove(group);clearSoldierMeshes(group);
+  }
+  function makeTroopGroup(f){
+   const g=new THREE.Group();populateTroopGroup(g,f.ownerId,desiredSoldierCount((gameState&&gameState.fleets||[]).length));
+   g.userData.fleetId=String(f.id);g.userData.ownerId=String(f.ownerId);g.userData.targetId=Number(f.toId);g.userData.fromId=Number(f.fromId);
+   scene.add(g);troopGroups.set(String(f.id),g);return g;
   }
   function addImpact(position,color,force){
    const count=force?8:5,baseColor=color||0xf5d579;
@@ -824,17 +848,22 @@ async function initTower3D(){
     if(t.type==='shooter'&&shotAt>seen){shotSeen.set(key,shotAt);if(!document.hidden)addProjectile(t,now);}
    }
    const fleetIds=new Set((state.fleets||[]).map(f=>String(f.id)));
+   const visualFleetIds=new Set(),desiredCount=desiredSoldierCount((state.fleets||[]).length);
    for(const f of(state.fleets||[])){
-    const key=String(f.id);active.add(key);
+    const key=String(f.id);
+    if(visualFleetIds.size>=visualFleetCap)continue;
+    visualFleetIds.add(key);active.add(key);
     let g=troopGroups.get(key);
     if(!g)g=makeTroopGroup(f);
-    if(String(g.userData.ownerId)!==String(f.ownerId)){g.traverse(o=>{if(o.material&&o.material.color)o.material.color.setHex(ownerHex(f.ownerId));});g.userData.ownerId=String(f.ownerId);}
+    if(String(g.userData.ownerId)!==String(f.ownerId)||Number(g.userData.visualCount)!==desiredCount)populateTroopGroup(g,f.ownerId,desiredCount);
     g.userData.fromId=Number(f.fromId);g.userData.targetId=Number(f.toId);g.userData.units=Number(f.units)||0;
    }
    for(const [key,g] of troopGroups){
-    if(!fleetIds.has(key)){
+    if(!visualFleetIds.has(key)){
+     const stillInGame=fleetIds.has(key);
      const tower=(state.towers||[]).find(t=>Number(t.id)===Number(g.userData.targetId));
-     const oldPos=g.position.clone();scene.remove(g);troopGroups.delete(key);
+     const oldPos=g.position.clone();disposeTroopGroup(g);troopGroups.delete(key);
+     if(stillInGame)continue;
      if(tower){
       const dest=worldPosition(tower.x,tower.y);
       if(String(tower.ownerId)===String(g.userData.ownerId)){
@@ -923,12 +952,13 @@ async function initTower3D(){
   function updateFrame(now){
    raf=null;
    if(disposed||document.hidden||gameView.classList.contains('hidden'))return;
-   if(now-lastRenderAt<(lowPower?1000/38:1000/60)){raf=requestAnimationFrame(updateFrame);return;}
+   if(now-lastRenderAt<(lowPower?1000/45:1000/60)){raf=requestAnimationFrame(updateFrame);return;}
    const delta=lastRenderAt?Math.min(.05,(now-lastRenderAt)/1000):.016;lastRenderAt=now;elapsedTime+=delta;
    const currentState=gameState;
    if(currentState){
     fleetPositionCache.clear();
     for(const f of(currentState.fleets||[])){
+     if(!troopGroups.has(String(f.id)))continue;
      const from=towerAt(f.fromId),to=towerAt(f.toId);if(!from||!to)continue;
      const progress=fleetProgressAt(f,now);
      const x=from.x+(to.x-from.x)*progress,y=from.y+(to.y-from.y)*progress;
