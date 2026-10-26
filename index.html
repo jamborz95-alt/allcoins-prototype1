@@ -4599,6 +4599,140 @@
 
 <script>
 const API = "https://allcoins-server.onrender.com";
+
+/* ALLCOINS multilingual UI: language preference is stored on this device and
+   translated text is refreshed when game screens dynamically update. */
+const ALLCOINS_LANGUAGES = {
+  ru: {},
+  en: {
+    "Главная":"Home","Игры":"Games","Вывод":"Withdraw","Профиль":"Profile","Задание":"Tasks",
+    "Пользователь Telegram":"Telegram user","Гость":"Guest","не авторизован":"Not logged in",
+    "Баланс:":"Balance:","Энергия:":"Energy:","Повторить вход":"Log in again",
+    "🌐 Язык приложения / Language":"🌐 App language / Language",
+    "Язык будет применяться к меню и игровым интерфейсам.":"Your language preference is saved on this device.",
+    "🛟 Нужна помощь?":"🛟 Need help?","Обратиться в поддержку":"Contact support",
+    "Что случилось?":"What happened?","Зависание / тормоза":"Freezing / lag",
+    "Ошибка или вылет":"Error or crash","Карты / анимация":"Cards / animation",
+    "Комнаты / подключение":"Rooms / connection","Баланс / ставка":"Balance / bet","Другое":"Other",
+    "Опиши проблему":"Describe the problem","Отправить обращение ➤":"Send support request ➤",
+    "Обновить обращения":"Refresh reports","Решено":"Resolved","В работу":"In progress",
+    "Создать":"Create","Отмена":"Cancel","Назад":"Back","Готов":"Ready","Начать игру":"Start game",
+    "Добавить бота":"Add bot","Играть":"Play","Присоединиться":"Join","Комната":"Room",
+    "Ставка":"Bet","Игроки":"Players","Выигрыш":"Winnings","Поражение":"Loss",
+    "Победа":"Win","Проигрыш":"Loss","Загрузка...":"Loading...","Загрузка…":"Loading…",
+    "Да":"Yes","Нет":"No","Закрыть":"Close","Сохранить":"Save","Отправить":"Send",
+    "Обновить":"Refresh","Баланс":"Balance","Энергия":"Energy","Правила":"Rules",
+    "Выберите ставку":"Choose a bet","Публичная":"Public","Приватная":"Private",
+    "Новая игра":"New game","Играть снова":"Play again","Бито":"Beaten","Беру":"Taking",
+    "Выйти из комнаты":"Leave room","Выйти из игры":"Leave game","Ожидание игроков":"Waiting for players"
+  },
+  nl: {
+    "Главная":"Home","Игры":"Spellen","Вывод":"Opnemen","Профиль":"Profiel","Задание":"Taken",
+    "Пользователь Telegram":"Telegram-gebruiker","Гость":"Gast","не авторизован":"Niet ingelogd",
+    "Баланс:":"Saldo:","Энергия:":"Energie:","Повторить вход":"Opnieuw inloggen",
+    "🌐 Язык приложения / Language":"🌐 App-taal / Language",
+    "Язык будет применяться к меню и игровым интерфейсам.":"Je taalkeuze wordt op dit apparaat opgeslagen.",
+    "🛟 Нужна помощь?":"🛟 Hulp nodig?","Обратиться в поддержку":"Contact opnemen met support",
+    "Что случилось?":"Wat is er gebeurd?","Зависание / тормоза":"Vastlopen / vertraging",
+    "Ошибка или вылет":"Fout of crash","Карты / анимация":"Kaarten / animatie",
+    "Комнаты / подключение":"Kamers / verbinding","Баланс / ставка":"Saldo / inzet","Другое":"Overig",
+    "Опиши проблему":"Beschrijf het probleem","Отправить обращение ➤":"Supportverzoek verzenden ➤",
+    "Создать":"Maken","Отмена":"Annuleren","Назад":"Terug","Готов":"Klaar","Начать игру":"Spel starten",
+    "Добавить бота":"Bot toevoegen","Играть":"Spelen","Присоединиться":"Deelnemen","Комната":"Kamer",
+    "Ставка":"Inzet","Игроки":"Spelers","Победа":"Gewonnen","Проигрыш":"Verloren",
+    "Загрузка...":"Laden...","Да":"Ja","Нет":"Nee","Закрыть":"Sluiten","Сохранить":"Opslaan",
+    "Отправить":"Verzenden","Обновить":"Vernieuwen","Баланс":"Saldo","Энергия":"Energie",
+    "Правила":"Regels","Публичная":"Openbaar","Приватная":"Privé","Бито":"Geslagen","Беру":"Ik neem"
+  },
+  tr: {
+    "Главная":"Ana Sayfa","Игры":"Oyunlar","Вывод":"Para çekme","Профиль":"Profil","Задание":"Görevler",
+    "Пользователь Telegram":"Telegram kullanıcısı","Гость":"Misafir","не авторизован":"Giriş yapılmadı",
+    "Баланс:":"Bakiye:","Энергия:":"Enerji:","Повторить вход":"Tekrar giriş yap",
+    "🌐 Язык приложения / Language":"🌐 Uygulama dili / Language",
+    "Язык будет применяться к меню и игровым интерфейсам.":"Dil tercihin bu cihazda kaydedilir.",
+    "🛟 Нужна помощь?":"🛟 Yardım mı gerekiyor?","Обратиться в поддержку":"Desteğe başvur",
+    "Что случилось?":"Ne oldu?","Зависание / тормоза":"Donma / gecikme","Ошибка или вылет":"Hata veya çökme",
+    "Карты / анимация":"Kartlar / animasyon","Комнаты / подключение":"Odalar / bağlantı",
+    "Баланс / ставка":"Bakiye / bahis","Другое":"Diğer","Опиши проблему":"Sorunu açıkla",
+    "Отправить обращение ➤":"Destek talebi gönder ➤","Создать":"Oluştur","Отмена":"İptal",
+    "Назад":"Geri","Готов":"Hazır","Начать игру":"Oyunu başlat","Добавить бота":"Bot ekle",
+    "Играть":"Oyna","Присоединиться":"Katıl","Комната":"Oda","Ставка":"Bahis",
+    "Игроки":"Oyuncular","Победа":"Zafer","Проигрыш":"Mağlubiyet","Загрузка...":"Yükleniyor...",
+    "Да":"Evet","Нет":"Hayır","Закрыть":"Kapat","Сохранить":"Kaydet","Отправить":"Gönder",
+    "Обновить":"Yenile","Баланс":"Bakiye","Энергия":"Enerji","Правила":"Kurallar",
+    "Публичная":"Herkese açık","Приватная":"Özel","Бито":"Yendi","Беру":"Alıyorum"
+  },
+  es: {
+    "Главная":"Inicio","Игры":"Juegos","Вывод":"Retirar","Профиль":"Perfil","Задание":"Tareas",
+    "Пользователь Telegram":"Usuario de Telegram","Гость":"Invitado","не авторизован":"No has iniciado sesión",
+    "Баланс:":"Saldo:","Энергия:":"Energía:","Повторить вход":"Volver a iniciar sesión",
+    "🌐 Язык приложения / Language":"🌐 Idioma de la aplicación / Language",
+    "Язык будет применяться к меню и игровым интерфейсам.":"Tu idioma se guarda en este dispositivo.",
+    "🛟 Нужна помощь?":"🛟 ¿Necesitas ayuda?","Обратиться в поддержку":"Contactar con soporte",
+    "Что случилось?":"¿Qué ha ocurrido?","Зависание / тормоза":"Bloqueo / retraso",
+    "Ошибка или вылет":"Error o cierre inesperado","Карты / анимация":"Cartas / animación",
+    "Комнаты / подключение":"Salas / conexión","Баланс / ставка":"Saldo / apuesta","Другое":"Otro",
+    "Опиши проблему":"Describe el problema","Отправить обращение ➤":"Enviar solicitud de soporte ➤",
+    "Создать":"Crear","Отмена":"Cancelar","Назад":"Atrás","Готов":"Listo","Начать игру":"Iniciar juego",
+    "Добавить бота":"Añadir bot","Играть":"Jugar","Присоединиться":"Unirse","Комната":"Sala",
+    "Ставка":"Apuesta","Игроки":"Jugadores","Победа":"Victoria","Проигрыш":"Derrota",
+    "Загрузка...":"Cargando...","Да":"Sí","Нет":"No","Закрыть":"Cerrar","Сохранить":"Guardar",
+    "Отправить":"Enviar","Обновить":"Actualizar","Баланс":"Saldo","Энергия":"Energía",
+    "Правила":"Reglas","Публичная":"Pública","Приватная":"Privada","Бито":"Cubierto","Беру":"Recojo"
+  }
+};
+let allcoinsCurrentLanguage = "ru";
+function allcoinsApplyLanguage(language) {
+  const lang = ALLCOINS_LANGUAGES[language] ? language : "ru";
+  allcoinsCurrentLanguage = lang;
+  try { localStorage.setItem("allcoins_language", lang); } catch (_) {}
+  const dict = ALLCOINS_LANGUAGES[lang] || {};
+  document.documentElement.lang = lang;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    if (!node.__allcoinsOriginalText) node.__allcoinsOriginalText = node.nodeValue;
+    const original = node.__allcoinsOriginalText;
+    const trimmed = original.trim();
+    if (!trimmed) continue;
+    const translated = dict[trimmed];
+    if (translated) node.nodeValue = original.replace(trimmed, translated);
+    else if (lang === "ru") node.nodeValue = original;
+  }
+  document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach(el => {
+    if (!el.dataset.allcoinsOriginalPlaceholder) el.dataset.allcoinsOriginalPlaceholder = el.placeholder;
+    const original = el.dataset.allcoinsOriginalPlaceholder;
+    el.placeholder = dict[original] || (lang === "ru" ? original : original);
+  });
+  const selector = document.getElementById("allcoinsLanguage");
+  if (selector && selector.value !== lang) selector.value = lang;
+  const status = document.getElementById("languageStatus");
+  if (status) status.textContent = lang === "ru" ? "Язык будет применяться к меню и игровым интерфейсам." :
+    (lang === "en" ? "Language preference saved on this device." :
+    lang === "nl" ? "Je taalkeuze wordt op dit apparaat opgeslagen." :
+    lang === "tr" ? "Dil tercihin bu cihazda kaydedilir." : "Tu idioma se guarda en este dispositivo.");
+}
+document.addEventListener("change", event => {
+  if (event.target && event.target.id === "allcoinsLanguage") {
+    allcoinsApplyLanguage(event.target.value);
+  }
+});
+document.addEventListener("DOMContentLoaded", () => {
+  let saved = "ru";
+  try { saved = localStorage.getItem("allcoins_language") || "ru"; } catch (_) {}
+  allcoinsApplyLanguage(saved);
+  // Game interfaces are dynamically rendered; translate newly added text nodes too.
+  const observer = new MutationObserver(() => {
+    if (allcoinsCurrentLanguage !== "ru") {
+      observer.disconnect();
+      allcoinsApplyLanguage(allcoinsCurrentLanguage);
+      observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+    }
+  });
+  observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+});
+
 let selectedDurakCardId = null;
 let currentDurakRoomId = null;
 let durakLastGameStatus = null;
