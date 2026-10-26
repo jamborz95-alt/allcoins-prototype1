@@ -803,6 +803,8 @@ async function initTower3D(){
   function makeTroopGroup(f){
    const g=new THREE.Group();populateTroopGroup(g,f.ownerId,desiredSoldierCount((gameState&&gameState.fleets||[]).length));
    g.userData.fleetId=String(f.id);g.userData.ownerId=String(f.ownerId);g.userData.targetId=Number(f.toId);g.userData.fromId=Number(f.fromId);
+   const from=towerAt(f.fromId),to=towerAt(f.toId);
+   if(from&&to){const progress=fleetProgressAt(f,performance.now()),a=worldPosition(from.x,from.y),b=worldPosition(to.x,to.y);g.position.set(a.x+(b.x-a.x)*progress,.08,a.z+(b.z-a.z)*progress);}
    scene.add(g);troopGroups.set(String(f.id),g);return g;
   }
   function addImpact(position,color,force){
@@ -890,7 +892,7 @@ async function initTower3D(){
   function resize(){
    const r=field.getBoundingClientRect();if(!r.width||!r.height)return;
    const aspect=r.width/r.height;
-   viewHeight=Math.max(31,Math.min(39,28.5/aspect))/zoomFactor;
+   viewHeight=Math.max(27.5,Math.min(39,25/aspect))/zoomFactor;
    camera.left=-viewHeight*aspect/2;camera.right=viewHeight*aspect/2;camera.top=viewHeight/2;camera.bottom=-viewHeight/2;camera.updateProjectionMatrix();
    renderer.setSize(Math.round(r.width),Math.round(r.height),false);
    updateCamera();
