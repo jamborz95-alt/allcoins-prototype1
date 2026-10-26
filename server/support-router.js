@@ -225,6 +225,13 @@ export function createSupportRouter({ pool, verifyTelegram }) {
       )
     `);
     await pool.query(
+      "ALTER TABLE allcoins_support_tickets DROP CONSTRAINT IF EXISTS allcoins_support_tickets_notification_status_check"
+    );
+    await pool.query(
+      "ALTER TABLE allcoins_support_tickets ADD CONSTRAINT allcoins_support_tickets_notification_status_check " +
+      "CHECK (notification_status IN ('pending', 'sent', 'failed', 'not_needed'))"
+    );
+    await pool.query(
       "CREATE INDEX IF NOT EXISTS allcoins_support_tickets_created_idx " +
       "ON allcoins_support_tickets(created_at DESC)"
     );
