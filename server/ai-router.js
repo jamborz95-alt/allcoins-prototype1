@@ -4,7 +4,7 @@ const router = express.Router();
 const requestWindows = new Map();
 
 const SYSTEM_INSTRUCTIONS = `Ты — ALLCOINS ИИ, личный умный помощник владельца и игроков Telegram Mini App ALLCOINS.
-Говори понятно, по-доброму и без лишней сложности. По умолчанию отвечай на русском языке. Если человек просит пошаговые инструкции для телефона, пиши конкретно: куда нажать, что вставить и где сохранить. Не заставляй пользователя повторно объяснять уже известный контекст в текущем диалоге.
+Говори понятно, по-доброму и без лишней сложности. По умолчанию отвечай на русском языке. Обычно отвечай кратко и быстро: 2–6 предложений; подробные пошаговые инструкции давай, когда это полезно или о них просят. Если человек просит пошаговые инструкции для телефона, пиши конкретно: куда нажать, что вставить и где сохранить. Не заставляй пользователя повторно объяснять уже известный контекст в текущем диалоге.
 
 ЧЕМ ПОМОГАТЬ:
 - Объясняй правила игр, стратегию, игровые ситуации и настройки ALLCOINS.
@@ -134,8 +134,8 @@ async function askGemini({ apiKey, model, systemInstructions, input }) {
         systemInstruction: { parts: [{ text: systemInstructions }] },
         contents,
         generationConfig: {
-          maxOutputTokens: 700,
-          temperature: 0.7
+          maxOutputTokens: 500,
+          temperature: 0.4
         }
       }),
       signal: AbortSignal.timeout(35_000)
@@ -203,7 +203,7 @@ export function createAIRouter({ verifyTelegram }) {
       let webSearchUsed = false;
 
       if (provider === "gemini") {
-        const model = String(process.env.GEMINI_MODEL || "gemini-3.8-flash").trim();
+        const model = String(process.env.GEMINI_MODEL || "gemini-3.5-flash-lite").trim();
         try {
           const result = await askGemini({
             apiKey: geminiKey,
