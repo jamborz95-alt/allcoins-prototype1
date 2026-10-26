@@ -6,7 +6,7 @@
   if (!arena || !window.THREE) return;
 
   const THREE = window.THREE;
-  const VIEW_H = 18.2;
+  const VIEW_H = 16.8;
   const ELEVATION = Math.atan2(34, 28);
   const SIN_E = Math.sin(ELEVATION);
   const COS_E = Math.cos(ELEVATION);
