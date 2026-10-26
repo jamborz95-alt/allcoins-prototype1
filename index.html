@@ -9045,8 +9045,8 @@ async function copySupportReport(ticket) {
 async function updateSupportTicketStatus(ticketId, status) {
   try {
     await apiRequest("/api/support/admin/status", { ticketId, status });
-    showStatus("adminSupportStatus", "Статус обращения #" + ticketId + " обновлён.");
     await refreshAdminSupportInbox(false);
+    showStatus("adminSupportStatus", "Статус обращения #" + ticketId + " обновлён.");
   } catch (error) {
     showStatus("adminSupportStatus", error?.message || "Не удалось обновить статус обращения.");
   }
