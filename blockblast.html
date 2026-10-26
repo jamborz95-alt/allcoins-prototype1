@@ -385,7 +385,7 @@ body.playing #play #modeLabel{display:none!important}
    <div class="section">
     <div class="tourney">
      <div class="tourney-symbol">🏆</div>
-     <div class="tourney-copy"><strong>Недельный турнир ALLCOINS</strong><p>Оплати вход один раз на эту неделю. Твой лучший результат попадёт в недельный рекорд.</p></div>
+     <div class="tourney-copy"><strong>Недельный турнир ALLCOINS</strong><p>Оплати вход один раз на неделю. Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.</p></div>
      <div class="fee">1 000 AC</div>
     </div>
     <div style="height:10px"></div>
@@ -1013,6 +1013,12 @@ window.addEventListener("resize",function(){if(gameActive)renderBoard();});
 if(tg&&tg.BackButton){try{tg.BackButton.onClick(function(){backToMenu();});tg.BackButton.show();}catch(e){}}
 updateRecords();updateWeekCaption();loadProfile();
 setInterval(function(){safeWeek();updateWeekCaption();},60000);
+setInterval(function(){
+ if(!authenticated||!tg||!tg.initData)return;
+ var setup=$("setup");
+ if(!setup||getComputedStyle(setup).display==="none")return;
+ post("/api/block-blast/leaderboard").then(function(data){if(data&&data.ok)renderTournamentBoard(data);}).catch(function(){});
+},30000);
 })();
 </script>
 </body>
