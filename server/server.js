@@ -180,7 +180,10 @@ function verifyTelegram(initData) {
   }
 }
 
-// Получаем пользователя и создаём профиль при первом входе
+// Получаем пользователя и создаём профиль при первом входе.
+// Одноразовое восстановление выполняется только для Telegram ID, явно заданного
+// через переменные Render, если баланс профиля равен нулю и запись восстановления
+// для него ещё не существует.
 async function getPlayer(req, res) {
   const user = verifyTelegram(req.body?.initData);
 
@@ -201,10 +204,78 @@ async function getPlayer(req, res) {
     [String(user.id)]
   );
 
+  let playerRow = result.rows[0];
+  const recoveryTelegramId = String(process.env.BALANCE_RECOVERY_TELEGRAM_ID || "");
+  const recoveryAmount = Number(process.env.BALANCE_RECOVERY_AMOUNT || 0);
+
+  if (
+    recoveryTelegramId &&
+    String(user.id) === recoveryTelegramId &&
+    Number(playerRow.balance) === 0 &&
+    Number.isSafeInteger(recoveryAmount) &&
+    recoveryAmount > 0
+  ) {
+    const client = await pool.connect();
+    let transactionOpen = false;
+    try {
+      await client.query("BEGIN");
+      transactionOpen = true;
+
+      const alreadyRecovered = await client.query(
+        "SELECT telegram_id FROM allcoins_balance_recoveries WHERE telegram_id = $1",
+        [String(user.id)]
+      );
+      const lockedPlayer = await client.query(
+        "SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE",
+        [String(user.id)]
+      );
+
+      if (
+        alreadyRecovered.rowCount === 0 &&
+        lockedPlayer.rowCount === 1 &&
+        Number(lockedPlayer.rows[0].balance) === 0
+      ) {
+        const restored = await client.query(
+          `UPDATE players
+           SET balance = $1, updated_at = NOW()
+           WHERE telegram_id = $2 AND balance = 0
+           RETURNING telegram_id, balance, energy`,
+          [recoveryAmount, String(user.id)]
+        );
+
+        if (restored.rowCount === 1) {
+          await client.query(
+            `INSERT INTO allcoins_balance_recoveries
+               (telegram_id, restored_balance, reason)
+             VALUES ($1, $2, $3)`,
+            [String(user.id), recoveryAmount, "one-time recovery of reported missing balance"]
+          );
+          playerRow = restored.rows[0];
+          console.log("One-time ALLCOINS balance recovery completed");
+        }
+      } else if (alreadyRecovered.rowCount > 0 && lockedPlayer.rowCount === 1) {
+        playerRow = (await client.query(
+          "SELECT telegram_id, balance, energy FROM players WHERE telegram_id = $1",
+          [String(user.id)]
+        )).rows[0];
+      }
+
+      await client.query("COMMIT");
+      transactionOpen = false;
+    } catch (error) {
+      if (transactionOpen) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   return {
-    telegramId: String(result.rows[0].telegram_id),
-    balance: Number(result.rows[0].balance),
-    energy: result.rows[0].energy,
+    telegramId: String(playerRow.telegram_id),
+    balance: Number(playerRow.balance),
+    energy: playerRow.energy,
     firstName: user.first_name || "Игрок",
     username: user.username || null
   };
@@ -3329,6 +3400,15 @@ async function startServer() {
     await pool.query(`
       ALTER TABLE players
       ADD COLUMN IF NOT EXISTS daily_bonus_at TIMESTAMPTZ
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS allcoins_balance_recoveries (
+        telegram_id BIGINT PRIMARY KEY,
+        restored_balance BIGINT NOT NULL,
+        reason TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
     `);
 
     console.log("Players table is ready");
