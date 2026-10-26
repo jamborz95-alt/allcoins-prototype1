@@ -102,7 +102,7 @@ body.playing .top{display:none}
 .crown-numbers{min-width:0}.crown-numbers strong{display:block;font-size:clamp(19px,5vw,30px);line-height:1.02;font-weight:1000;letter-spacing:.3px;white-space:nowrap}
 .crown-numbers small{display:block;margin-top:4px;color:#a85270;font-size:8px;font-weight:1000;letter-spacing:1px;text-shadow:none}
 .week-mini{display:block;margin-top:2px;color:#97516b;font-size:9px;font-weight:900;text-shadow:none;white-space:nowrap}
-.game-controls{display:flex;align-items:center;gap:9px}.exit-round{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:#ffdae7aa;color:#984b68;font-size:20px;box-shadow:inset 0 1px 0 #fff8}
+.game-controls{display:flex;align-items:center;gap:9px}.exit-round,.sound-toggle{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:#ffdae7aa;color:#984b68;font-size:20px;box-shadow:inset 0 1px 0 #fff8}.sound-toggle{font-size:17px}
 .new-round{position:relative;display:grid;place-items:center;width:50px;height:54px;border:0;background:transparent;color:#fff6fc;font-size:34px;text-shadow:0 2px 2px #a4546e}
 .new-round span{position:absolute;top:0;right:-3px;border:1px solid #f0b03a;border-radius:9px;padding:3px 6px;background:linear-gradient(180deg,#fff1a2,#ffc43c);color:#9e651a;font-size:10px;font-weight:1000;line-height:1;text-shadow:none;box-shadow:0 2px 2px #a85b7044}
 .current-score-wrap{height:10.5dvh;min-height:82px;max-height:150px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;margin-top:-1dvh}
@@ -154,7 +154,8 @@ body.playing .top{display:none}
   65%{transform:scale(1.07);filter:brightness(1.08)}
   100%{transform:scale(1);filter:brightness(1)}
 }
-.cell.just-placed{animation:blockBlastLand 180ms cubic-bezier(.2,.8,.25,1) both;will-change:transform}
+.cell.just-placed{animation:blockBlastLand 230ms cubic-bezier(.2,.8,.25,1) both;will-change:transform}
+.drag-ghost.is-dropping .piece-dot:not(.empty){filter:brightness(1.1)}
 .drag-ghost{will-change:left,top;contain:layout style;backface-visibility:hidden}
 @media(prefers-reduced-motion:reduce){.cell.just-placed{animation-duration:1ms!important}}
 </style>
@@ -213,6 +214,7 @@ body.playing .top{display:none}
    <div class="play-recordbar">
     <div class="crown-record"><span class="crown-icon" aria-hidden="true">👑</span><div class="crown-numbers"><strong id="inGameBest">0</strong><small>ЛИЧНЫЙ РЕКОРД</small><span class="week-mini">НЕДЕЛЯ · <b id="playingWeeklyRecord">0</b></span></div></div>
     <div class="game-controls">
+     <button class="sound-toggle" id="soundToggle" type="button" aria-label="Выключить звук" aria-pressed="true" title="Звук включён">🔊</button>
      <button class="exit-round" id="leaveGameButton" type="button" aria-label="В меню" title="В меню">↩</button>
      <button class="new-round" id="restartButton" type="button" aria-label="Новая игра" title="Начать новую игру">↻<span>NEW</span></button>
     </div>
@@ -249,7 +251,8 @@ var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
 var BOARD_SIZE=8;
 var lastPlacedCells=[];
-var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0,continueUsed=false,adPending=false,adController=null;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0,continueUsed=false,adPending=false,adController=null,audioContext=null,soundEnabled=true;
+try{soundEnabled=localStorage.getItem("allcoins_blockblast_sound")!=="off";}catch(soundPreferenceError){}
 var shapes=[
  [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
  [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
@@ -262,6 +265,42 @@ var shapes=[
 function readNumber(key){try{return Math.max(0,Number(localStorage.getItem(key)||0)||0);}catch(e){return 0;}}
 function storeNumber(key,value){try{localStorage.setItem(key,String(Math.max(0,Math.floor(value||0))));}catch(e){}}
 function setStatus(message,type){var el=$("setupStatus");el.textContent=message;el.className="status"+(type?" "+type:"");}
+function ensureAudioContext(){
+ if(!soundEnabled)return null;
+ var AudioConstructor=window.AudioContext||window.webkitAudioContext;
+ if(!AudioConstructor)return null;
+ try{
+  if(!audioContext)audioContext=new AudioConstructor();
+  if(audioContext.state==="suspended"){var resumed=audioContext.resume();if(resumed&&resumed.catch)resumed.catch(function(){});}
+  return audioContext;
+ }catch(audioError){return null;}
+}
+function playTone(ctx,frequency,duration,wave,volume,delay,endingFrequency){
+ try{
+  var oscillator=ctx.createOscillator(),gain=ctx.createGain(),startAt=ctx.currentTime+Math.max(0,delay||0);
+  oscillator.type=wave||"sine";oscillator.frequency.setValueAtTime(frequency,startAt);
+  if(endingFrequency&&endingFrequency>0)oscillator.frequency.exponentialRampToValueAtTime(endingFrequency,startAt+duration*.86);
+  gain.gain.setValueAtTime(.0001,startAt);gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),startAt+Math.min(.014,duration*.25));gain.gain.exponentialRampToValueAtTime(.0001,startAt+duration);
+  oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start(startAt);oscillator.stop(startAt+duration+.025);
+ }catch(toneError){}
+}
+function playGameSound(kind){
+ if(!soundEnabled)return;
+ var ctx=ensureAudioContext();if(!ctx)return;
+ if(kind==="pickup"){playTone(ctx,490,.065,"sine",.035,0,730);}
+ else if(kind==="place"){playTone(ctx,255,.095,"triangle",.055,0,180);playTone(ctx,470,.065,"sine",.025,.025,520);}
+ else if(kind==="bad"){playTone(ctx,190,.11,"triangle",.045,0,135);}
+ else if(kind==="clear"){playTone(ctx,520,.12,"sine",.045,0,740);playTone(ctx,660,.13,"sine",.04,.045,920);playTone(ctx,820,.15,"sine",.035,.09,1080);}
+ else if(kind==="start"){playTone(ctx,440,.09,"sine",.028,0,560);playTone(ctx,660,.11,"sine",.03,.055,790);}
+ else if(kind==="over"){playTone(ctx,470,.13,"sine",.04,0,390);playTone(ctx,370,.18,"sine",.035,.085,310);playTone(ctx,285,.22,"sine",.03,.17,230);}
+}
+function updateSoundButton(){
+ var button=$("soundToggle");if(!button)return;
+ button.textContent=soundEnabled?"🔊":"🔇";
+ button.title=soundEnabled?"Выключить звук":"Включить звук";
+ button.setAttribute("aria-label",soundEnabled?"Выключить звук":"Включить звук");
+ button.setAttribute("aria-pressed",soundEnabled?"true":"false");
+}
 function safeWeek(){var now=weekStart().toISOString().slice(0,10);if(now!==weekDate){location.reload();}}
 function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));var mini=$("playingWeeklyRecord");if(mini)mini.textContent=String(readNumber(weeklyKey));}
 function updateWeekCaption(){var now=new Date();var end=weekStart();end.setUTCDate(end.getUTCDate()+7);var ms=end-now;var days=Math.max(0,Math.floor(ms/86400000));var hours=Math.max(0,Math.floor(ms%86400000/3600000));$("weeklyCaption").textContent="Сброс через "+days+" дн. "+hours+" ч. (UTC)";}
@@ -398,7 +437,7 @@ function canPlaceAllThree(startBoard,candidate){
  return search(startBoard,[0,1,2]);
 }
 function startGame(){
- $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
+ playGameSound("start");$("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
  $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
  $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
@@ -454,6 +493,7 @@ function getDefaultPieceAnchor(piece){return [0,0];}
 function setDefaultAnchor(piece){var anchor=getDefaultPieceAnchor(piece);selectedAnchorRow=anchor[0];selectedAnchorCol=anchor[1];}
 function beginDrag(ev,index){
  if(!gameActive||isResolving||!pieces[index])return;
+ playGameSound("pickup");
  try{if(ev.currentTarget&&ev.currentTarget.setPointerCapture)ev.currentTarget.setPointerCapture(ev.pointerId);}catch(captureError){}
  var grid=ev.currentTarget.querySelector(".piece-grid");
  var anchor=getClosestPieceAnchor(pieces[index],ev.clientX,ev.clientY,grid);
@@ -485,6 +525,22 @@ function animateDragGhost(){
  if(dragCurrentX!==dragTargetX||dragCurrentY!==dragTargetY)dragMotionFrame=requestAnimationFrame(animateDragGhost);
 }
 function clearDragGhost(){if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;if(dragSourceSlot)dragSourceSlot.classList.remove("is-drag-source");dragSourceSlot=null;}
+function animateDropGhostToBoard(row,col,anchorRow,anchorCol){
+ return new Promise(function(resolve){
+  if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}
+  if(!dragGhost){resolve();return;}
+  var targetCell=$("board").querySelector('.cell[data-row="'+(row+anchorRow)+'"][data-col="'+(col+anchorCol)+'"]');
+  if(!targetCell){resolve();return;}
+  var rect=targetCell.getBoundingClientRect(),targetX=rect.left+rect.width/2,targetY=rect.top+rect.height/2;
+  dragGhost.classList.add("is-dropping");
+  dragGhost.style.transition="left 220ms cubic-bezier(.2,.8,.2,1), top 220ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease, filter 220ms ease";
+  requestAnimationFrame(function(){
+   if(!dragGhost){resolve();return;}
+   dragGhost.style.left=targetX+"px";dragGhost.style.top=targetY+"px";dragGhost.style.opacity=".28";dragGhost.style.filter="drop-shadow(0 3px 3px #7c365944) brightness(1.08)";
+  });
+  setTimeout(resolve,235);
+ });
+}
 function clearDrag(){dragState=null;clearDragGhost();}
 function findBoardCellAtPoint(x,y){
  var boardEl=$("board");if(!boardEl)return null;
@@ -505,13 +561,26 @@ document.addEventListener("pointermove",function(ev){
 },{passive:false});
 document.addEventListener("pointerup",function(ev){
  if(!dragState||ev.pointerId!==dragState.pointerId)return;
- var state=dragState;dragState=null;clearDragGhost();
+ var state=dragState;dragState=null;
  if(state.moved){
   ignorePieceClick=true;var cell=findBoardCellAtPoint(ev.clientX,ev.clientY);
-  if(cell&&!isResolving){selected=state.index;selectedAnchorRow=state.anchorRow;selectedAnchorCol=state.anchorCol;placeSelected(Number(cell.dataset.row)-state.anchorRow,Number(cell.dataset.col)-state.anchorCol);}
-  else{$("gameHint").textContent="Отпусти фигуру над игровым полем, чтобы поставить её.";}
-  renderTray();setTimeout(function(){ignorePieceClick=false;},180);
- }
+  if(cell&&!isResolving){
+   selected=state.index;selectedAnchorRow=state.anchorRow;selectedAnchorCol=state.anchorCol;
+   var row=Number(cell.dataset.row)-state.anchorRow,col=Number(cell.dataset.col)-state.anchorCol;
+   if(pieces[state.index]&&fits(pieces[state.index],row,col)){
+    isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
+    animateDropGhostToBoard(row,col,state.anchorRow,state.anchorCol).then(function(){
+     clearDragGhost();$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");isResolving=false;
+     placeSelected(row,col);
+    });
+   }else{
+    clearDragGhost();$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";renderTray();playGameSound("bad");
+   }
+  }else{
+   clearDragGhost();$("gameHint").textContent="Отпусти фигуру над игровым полем, чтобы поставить её.";renderTray();
+  }
+  setTimeout(function(){ignorePieceClick=false;},260);
+ }else{clearDragGhost();}
 });
 document.addEventListener("pointercancel",function(){clearDrag();});
 function fits(piece,row,col){
@@ -523,7 +592,7 @@ function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var
 async function placeSelected(row,col){
  if(!gameActive||isResolving||selected<0||!pieces[selected]){$("gameHint").textContent="Сначала выбери фигуру снизу.";return;}
  var piece=pieces[selected];
- if(!fits(piece,row,col)){$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";return;}
+ if(!fits(piece,row,col)){$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";playGameSound("bad");return;}
  var usedIndex=selected;
  lastPlacedCells=[];for(var i=0;i<piece.length;i++){var placedRow=row+piece[i][0],placedCol=col+piece[i][1];board[placedRow][placedCol]=(Math.random()<0.38?2:1);lastPlacedCells.push(placedRow+","+placedCol);}
  score+=piece.length;
@@ -531,6 +600,7 @@ async function placeSelected(row,col){
  for(var r=0;r<BOARD_SIZE;r++)if(board[r].every(Boolean))fullRows.push(r);
  for(var c=0;c<BOARD_SIZE;c++){var full=true;for(var rr=0;rr<BOARD_SIZE;rr++)if(!board[rr][c]){full=false;break;}if(full)fullCols.push(c);}
  var lines=fullRows.length+fullCols.length;
+ playGameSound(lines?"clear":"place");
  pieces[usedIndex]=null;selected=-1;selectedAnchorRow=0;selectedAnchorCol=0;
  if(lines){
   score+=lines*10;if(lines>1)score+=(lines-1)*5;
@@ -616,7 +686,7 @@ async function continueAfterAd(){
  }
 }
 async function endGame(){
- if(!gameActive)return;gameActive=false;isResolving=false;$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");renderTray();
+ if(!gameActive)return;playGameSound("over");gameActive=false;isResolving=false;$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");renderTray();
  var prevPersonal=readNumber(personalKey);if(score>prevPersonal)storeNumber(personalKey,score);
  var prevWeekly=readNumber(weeklyKey);var weeklyUpdated=false;
  if(tournamentMode&&joined&&score>prevWeekly){storeNumber(weeklyKey,score);weeklyUpdated=true;}
@@ -630,6 +700,10 @@ async function endGame(){
   catch(error){$("resultMessage").textContent+=" Внимание: серверный рейтинг пока не подтвердил результат. Локальные рекорды сохранены на этом устройстве.";}
  }
 }
+$("soundToggle").addEventListener("click",function(){
+ soundEnabled=!soundEnabled;try{localStorage.setItem("allcoins_blockblast_sound",soundEnabled?"on":"off");}catch(soundPreferenceError){}updateSoundButton();if(soundEnabled)playGameSound("pickup");
+});
+updateSoundButton();
 $("joinButton").addEventListener("click",joinTournament);
 $("practiceButton").addEventListener("click",function(){tournamentMode=false;startGame();});
 $("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261025-blockblast1";});
