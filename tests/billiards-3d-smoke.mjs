@@ -7,6 +7,7 @@ import fs from "node:fs";
 
 const root = process.cwd();
 const html = await readFile(resolve(root, "billiards.html"), "utf8");
+const i18nExtra = await readFile(resolve(root, "i18n-extra.js"), "utf8");
 const out = resolve(root, "visual-test-output");
 fs.mkdirSync(out, { recursive: true });
 
@@ -15,6 +16,9 @@ const server = createServer((req, res) => {
   if (pathname === "/billiards.html" || pathname === "/") {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     res.end(html);
+  } else if (pathname === "/i18n-extra.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-store" });
+    res.end(i18nExtra);
   } else if (pathname === "/favicon.ico") {
     res.writeHead(204); res.end();
   } else {
