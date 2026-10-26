@@ -4079,7 +4079,7 @@
       <div class="status" id="profileStatus"></div>
       <hr style="border-color:#293650;margin:18px 0">
       <h3 style="margin:0 0 8px">🛟 Нужна помощь?</h3>
-      <p class="muted" style="line-height:1.5">Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. ALLCOINS ИИ проверит обращение, а владельцу придёт уведомление.</p>
+      <p class="muted" style="line-height:1.5">Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.</p>
       <button type="button" class="secondary full" id="supportOpenButton">Обратиться в поддержку</button>
       <div id="supportFormPanel" class="hidden" style="margin-top:14px">
         <form id="supportForm">
@@ -9010,11 +9010,7 @@ function buildSupportReport(ticket) {
     "",
     "Приоритет: " + (ticket.ai_severity || "не определён"),
     "Нужен разработчик: " + (ticket.needs_developer ? "да" : "не определено"),
-    "Уведомление владельцу: " + (
-      ticket.notification_status === "sent" ? "отправлено в Telegram" :
-      ticket.notification_status === "not_needed" ? "ИИ решил, что передача владельцу не нужна" :
-      "не подтверждено"
-    )
+    "Telegram-уведомления: отключены"
   ].join("\n");
 }
 
@@ -9090,11 +9086,7 @@ function renderAdminSupportTickets(tickets) {
     status.textContent =
       "Статус: " + (supportStatusLabels[ticket.status] || ticket.status || "неизвестен") +
       " · Приоритет: " + (ticket.ai_severity || "не определён") +
-      " · Уведомление: " + (
-        ticket.notification_status === "sent" ? "отправлено" :
-        ticket.notification_status === "pending" ? "в обработке" :
-        ticket.notification_status === "not_needed" ? "ИИ не считает нужным" : "не отправлено"
-      );
+      " · Telegram-уведомления отключены";
     card.appendChild(status);
 
     const description = document.createElement("div");
@@ -10354,7 +10346,7 @@ $("supportForm").addEventListener("submit", async event => {
     $("supportDescription").value = "";
     showStatus(
       "supportStatus",
-      "Заявка #" + result.ticketId + " принята. ALLCOINS ИИ анализирует сообщение; если требуется проверка, владельцу придёт уведомление в Telegram."
+      "Заявка #" + result.ticketId + " сохранена. ALLCOINS ИИ попробует проанализировать сообщение; уведомления в Telegram отключены."
     );
     if (adminCommissionVerified) {
       window.setTimeout(() => refreshAdminSupportInbox(false), 1800);
