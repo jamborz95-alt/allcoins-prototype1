@@ -487,7 +487,7 @@ async function initTower3D(){
   sun.castShadow=true;
   sun.shadow.mapSize.set(lowPower?1024:2048,lowPower?1024:2048);
   sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;
-  sun.shadow.camera.near=.5;sun.shadow.camera.far=90;sun.shadow.bias=-.00035;sun.shadow.normalBias=.025;
+  sun.shadow.camera.near=.5;sun.shadow.camera.far=90;sun.shadow.camera.updateProjectionMatrix();sun.shadow.bias=-.00035;sun.shadow.normalBias=.025;
   scene.add(sun);sun.target.position.set(0,0,0);scene.add(sun.target);
 
   function material(color,roughness,metalness,extra){
@@ -668,7 +668,7 @@ async function initTower3D(){
     const head=new THREE.Mesh(shared.turretHeadGeo,ironMat);head.scale.set(1.05,.75,.9);head.position.y=.22;head.castShadow=true;turret.add(head);
     barrel=new THREE.Group();barrel.position.set(0,.28,.17);turret.add(barrel);
     const cannon=new THREE.Mesh(shared.barrelGeo,ironMat);cannon.rotation.x=Math.PI/2;cannon.position.z=.64;cannon.castShadow=true;barrel.add(cannon);
-    const muzzle=new THREE.Mesh(shared.muzzleRingGeo,goldMat);muzzle.rotation.x=Math.PI/2;muzzle.position.z=1.36;barrel.add(muzzle);
+    const muzzle=new THREE.Mesh(shared.muzzleRingGeo,goldMat);muzzle.rotation.x=0;muzzle.position.z=1.36;barrel.add(muzzle);
     for(let i=0;i<3;i++){const fin=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.68),goldMat);fin.position.set(i===0?-.12:(i===1?.12:0),i===2?.18:-.11,.67);barrel.add(fin);}
     const rear=new THREE.Mesh(new THREE.BoxGeometry(.48,.29,.4),ironMat);rear.position.set(0,.06,-.36);turret.add(rear);
    }
