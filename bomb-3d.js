@@ -130,7 +130,7 @@
     try {
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x1c1518);
-      scene.fog = new THREE.Fog(0x1c1518, 26, 54);
+      scene.fog = new THREE.Fog(0x1c1518, 40, 75);
       camera = new THREE.OrthographicCamera(-8, 8, VIEW_H / 2, -VIEW_H / 2, .1, 100);
       camera.position.set(0, 34, 28);
       camera.lookAt(0, 0, 0);
@@ -219,6 +219,7 @@
 
   function clearWorld() {
     if (!worldRoot) return;
+    if (floorMaterial && floorMaterial.map && floorMaterial.map.dispose) floorMaterial.map.dispose();
     scene.remove(worldRoot);
     worldRoot.traverse((o) => {
       if (o.geometry && o.geometry.dispose) o.geometry.dispose();
