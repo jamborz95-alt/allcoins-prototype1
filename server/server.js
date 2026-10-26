@@ -12,6 +12,7 @@ import { createBilliardsRouter } from "./billiards-router.js";
 import { createCheckersRouter } from "./checkers-router.js";
 import { createTowersRouter } from "./towers-router.js";
 import { createAIRouter } from "./ai-router.js";
+import { createSupportRouter } from "./support-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -229,6 +230,8 @@ app.use("/api/checkers", checkersRouter);
 app.use("/api/towers", towersRouter);
 const aiRouter = createAIRouter({ verifyTelegram });
 app.use("/api/ai", aiRouter);
+const supportRouter = createSupportRouter({ pool, verifyTelegram });
+app.use("/api/support", supportRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3328,6 +3331,8 @@ async function startServer() {
     console.log("Players table is ready");
     await initializeCommissionTables(pool);
     console.log("Game commission ledger is ready");
+    await supportRouter.initialize();
+    console.log("AI-assisted support ticket table is ready");
 
     await lottoRouter.initialize();
     console.log("Lotto Online tables and scheduler are ready");
