@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 22
       - name: Install browser test tool
-        run: npm install --no-save playwright three@0.160.0
+        run: npm install --no-save playwright
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Test Durak server game rules and route safeguards
