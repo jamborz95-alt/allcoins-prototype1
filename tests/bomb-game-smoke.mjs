@@ -389,20 +389,32 @@ try {
   await page.locator("#gameBack").click();
   await page.locator('#playerCountControl button[data-count="4"]').click();
   await page.locator('#modeControl button[data-mode="bots"]').click();
-  await page.evaluate(() => { Math.random = () => 0.9999; });
+  await page.evaluate(() => {
+    window.__allcoinsOriginalMathRandom = Math.random;
+    Math.random = () => 0.9999;
+  });
   await page.locator("#startGame").click();
   const botHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.ok(["1", "2", "3"].includes(botHolder), "Deterministic setup should start with a bot holding the bomb.");
   assert.equal(await page.locator("#botCharacters .bot-character").count(), 3,
     "All three computer opponents should be shown as miner characters.");
+  // Keep the bot start deterministic, then target the first player across the arena.
+  // The fixed random value could otherwise select an adjacent bot and skip walking.
+  await page.evaluate(() => { Math.random = () => 0; });
   await page.waitForFunction(() => Boolean(document.querySelector("#botCharacters .bot-character.walking")),
-    undefined, { timeout: 2400 });
+    undefined, { timeout: 3500 });
   await page.waitForFunction((previousHolder) => {
     const current = document.querySelector("#seats .seat.current")?.dataset.player;
     return Boolean(current && current !== previousHolder);
-  }, botHolder, { timeout: 4000 });
+  }, botHolder, { timeout: 5000 });
   const nextHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.notEqual(nextHolder, botHolder, "A bot should walk to an opponent and pass the bomb on contact.");
+  await page.evaluate(() => {
+    if (window.__allcoinsOriginalMathRandom) {
+      Math.random = window.__allcoinsOriginalMathRandom;
+      delete window.__allcoinsOriginalMathRandom;
+    }
+  });
 
   await page.setViewportSize({ width: 320, height: 700 });
   const dimensions = await page.locator("#gameView").evaluate((el) => ({
