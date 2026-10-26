@@ -196,6 +196,7 @@ try {
 
   await page.goto(publicUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForSelector('button[data-page="games"]', { timeout: 20000 });
+  await page.locator('button[data-page="profile"]').click();
   await page.locator("#allcoinsLanguage").selectOption("zh");
   await page.locator('button[data-page="games"]').click();
   await page.setViewportSize({ width: 360, height: 740 });
