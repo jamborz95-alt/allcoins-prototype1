@@ -4073,6 +4073,16 @@
       <h2 id="profileName">Гость</h2>
       <p class="muted">ID: <span id="profileId">не авторизован</span></p>
       <hr style="border-color:#293650">
+      <label for="allcoinsLanguage" class="muted">🌐 Язык приложения / Language</label>
+      <select id="allcoinsLanguage" aria-label="Язык приложения">
+        <option value="ru">🇷🇺 Русский</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="nl">🇳🇱 Nederlands</option>
+        <option value="tr">🇹🇷 Türkçe</option>
+        <option value="es">🇪🇸 Español</option>
+      </select>
+      <div class="muted" id="languageStatus" role="status">Язык будет применяться к меню и игровым интерфейсам.</div>
+      <hr style="border-color:#293650">
       <p>Баланс: <b><span id="profileBalance">10000</span> AC</b></p>
       <p>Энергия: <b><span id="profileEnergy">100</span> / 100</b></p>
       <button class="secondary full" id="loginButton">Повторить вход</button>
@@ -4697,7 +4707,7 @@ function allcoinsApplyLanguage(language) {
     const trimmed = original.trim();
     if (!trimmed) continue;
     const translated = dict[trimmed];
-    if (translated) node.nodeValue = original.replace(trimmed, translated);
+    if (translated) { const nextText = original.replace(trimmed, translated); if (node.nodeValue !== nextText) node.nodeValue = nextText; }
     else if (lang === "ru") node.nodeValue = original;
   }
   document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach(el => {
