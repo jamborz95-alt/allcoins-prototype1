@@ -158,6 +158,8 @@ test("initializes support tickets table and indices", async () => {
   const harness = makeHarness();
   await harness.router.initialize();
   assert.ok(harness.queries.some(item => item.sql.includes("CREATE TABLE IF NOT EXISTS allcoins_support_tickets")));
+  assert.ok(harness.queries.some(item => item.sql.includes("DROP CONSTRAINT IF EXISTS allcoins_support_tickets_notification_status_check")));
+  assert.ok(harness.queries.some(item => item.sql.includes("ADD CONSTRAINT allcoins_support_tickets_notification_status_check")));
   assert.ok(harness.queries.filter(item => item.sql.includes("CREATE INDEX IF NOT EXISTS allcoins_support_tickets_")).length >= 2);
 });
 
@@ -202,6 +204,30 @@ test("saves a support request quickly, then asks Gemini to triage and notifies o
   assert.match(telegramBody.text, /Диагностика ALLCOINS ИИ/);
   assert.equal(harness.ticketRows[0].notification_status, "sent");
   assert.match(harness.ticketRows[0].ai_summary, /Нужен разработчик/);
+});
+
+test("does not interrupt the owner when AI decides no developer is needed", async () => {
+  const noDeveloperFetch = async url => {
+    if (String(url).includes("generativelanguage.googleapis.com")) {
+      return {
+        ok: true, status: 200,
+        json: async () => ({ candidates: [{ content: { parts: [{
+          text: "Приоритет: низкий\\nКратко: игрок задаёт общий вопрос по правилам.\\nЧто проверить: отправить ссылку на правила.\\nНужен разработчик: нет"
+        }] } }] })
+      };
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  const harness = makeHarness({ fetchImpl: noDeveloperFetch });
+  const result = await harness.call("/submit", {
+    initData: "player-init",
+    category: "Другое",
+    description: "Как играть в эту игру и где найти правила?"
+  });
+  assert.equal(result.statusCode, 201);
+  await waitFor(() => harness.ticketRows[0]?.notification_status === "not_needed");
+  assert.equal(harness.fetchCalls.some(item => item.url.includes("api.telegram.org/bot")), false);
+  assert.match(harness.ticketRows[0].ai_summary, /Нужен разработчик: нет/);
 });
 
 test("limits repeated support submissions", async () => {
