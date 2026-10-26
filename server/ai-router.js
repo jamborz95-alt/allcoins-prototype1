@@ -179,13 +179,8 @@ export function createAIRouter({ verifyTelegram }) {
         });
       }
 
-      if (!consumeRateLimit(user.id)) {
-        return res.status(429).json({
-          ok: false,
-          error: "Слишком много сообщений подряд. Подожди минуту и попробуй снова."
-        });
-      }
-
+      // No extra per-user request cap in the ALLCOINS app.
+      // The selected cloud provider still enforces its own free-tier quotas and safety limits.
       const openAIKey = String(process.env.OPENAI_API_KEY || "").trim();
       const geminiKey = String(process.env.GEMINI_API_KEY || "").trim();
       // Prefer Gemini when configured so ALLCOINS can run on its free API tier.
