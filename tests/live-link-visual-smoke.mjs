@@ -172,11 +172,17 @@ try {
       );
       const state = await page.evaluate(({ source, target }) => {
         const visibleText = (document.body.innerText || "").replace(/\s+/g, " ").trim();
+        const cyrillicLines = [...new Set((document.body.innerText || "")
+          .split(/\n+/)
+          .map(line => line.replace(/\s+/g, " ").trim())
+          .filter(line => line.length > 1 && /[А-Яа-яЁё]/.test(line)))];
         return {
           language: document.documentElement.lang,
           storedLanguage: localStorage.getItem("allcoins_language"),
           targetVisible: visibleText.includes(target),
           sourceVisible: visibleText.includes(source),
+          untranslatedCyrillicCount: cyrillicLines.length,
+          untranslatedCyrillicSamples: cyrillicLines.slice(0, 5),
           viewportWidth: innerWidth,
           documentWidth: document.documentElement.scrollWidth
         };
