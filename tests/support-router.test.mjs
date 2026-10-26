@@ -54,8 +54,9 @@ function makeHarness({
           row.ai_summary = params[0];
           row.ai_severity = params[1];
           row.needs_developer = params[2];
-          const statusMatch = statement.match(/notification_status\\s*=\\s*'([^']+)'/i);
-          row.notification_status = statusMatch?.[1] || params[3];
+          row.notification_status = statement.includes("notification_status = 'not_needed'")
+            ? "not_needed"
+            : statement.includes("notification_status = 'sent'") ? "sent" : params[3];
         }
         return { rows: [], rowCount: 1 };
       }
