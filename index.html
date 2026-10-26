@@ -4034,7 +4034,7 @@
           <p class="ai-subtitle">Поможет с играми, правилами, стратегией и вопросами по ALLCOINS.</p>
         </div>
       </div>
-      <div id="aiStatus" class="ai-status" role="status" aria-live="polite">Облачный ALLCOINS ИИ: модель отвечает на сервере, скачивать её на телефон не нужно. Для первого запуска потребуется ключ Gemini API в Render.</div>
+      <div id="aiStatus" class="ai-status" role="status" aria-live="polite">Облачный режим: ответы формируются на сервере ALLCOINS. Модель не скачивается на телефон.</div>
       <div class="muted ai-local-note">Работа как в обычном онлайн-чате: сообщение отправляется серверу ALLCOINS, а ответ возвращается в приложение. Бесплатный тариф Google имеет собственные квоты.</div>
     </div>
     <div class="card">
@@ -4930,6 +4930,21 @@ function switchAllcoinsPage(pageName) {
 
   if (pageName === "tasks") renderClickerTasks();
 
+  if (pageName === "ai") {
+    showStatus("aiStatus", "Подключаю облачный сервер…");
+    warmupAIBackend().then(ready => {
+      const aiSection = $("ai");
+      if (!allcoinsAISending && aiSection && !aiSection.classList.contains("hidden")) {
+        showStatus(
+          "aiStatus",
+          ready
+            ? "Облачный сервер готов. Можешь задавать вопрос."
+            : "Отправь вопрос — сервер подключится при запросе."
+        );
+      }
+    });
+  }
+
   try {
     if (typeof tg !== "undefined" && tg && typeof tg.HapticFeedback?.selectionChanged === "function") {
       tg.HapticFeedback.selectionChanged();
@@ -5136,9 +5151,30 @@ const responseText = await response.text();
   return result;
 }
 
-const ALLCOINS_AI_STORAGE_KEY = "allcoinsAIHistoryV1";
+const ALLCOINS_AI_STORAGE_KEY = "allcoinsAIHistoryV2";
 let allcoinsAIHistory = [];
 let allcoinsAISending = false;
+let allcoinsAIBackendWarmup = null;
+
+// Render free services may sleep when idle. Start waking the backend
+// as soon as the player opens the AI screen, rather than on their first question.
+function warmupAIBackend() {
+  if (!allcoinsAIBackendWarmup) {
+    allcoinsAIBackendWarmup = fetch(API + "/api/health", { method: "GET", cache: "no-store" })
+      .then(response => {
+        if (!response.ok) {
+          allcoinsAIBackendWarmup = null;
+          return false;
+        }
+        return true;
+      })
+      .catch(() => {
+        allcoinsAIBackendWarmup = null;
+        return false;
+      });
+  }
+  return allcoinsAIBackendWarmup;
+}
 
 function loadAIHistory() {
   try {
