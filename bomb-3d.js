@@ -6,7 +6,7 @@
   if (!arena || !window.THREE) return;
 
   const THREE = window.THREE;
-  const VIEW_H = 19.5;
+  const VIEW_H = 18.2;
   const ELEVATION = Math.atan2(34, 28);
   const SIN_E = Math.sin(ELEVATION);
   const COS_E = Math.cos(ELEVATION);
@@ -681,8 +681,7 @@
     head.position.set(0, .93, .035);
     torso.add(head);
     mesh(new THREE.SphereGeometry(.34, 16, 12), skinMat, head, 0, .04, .01);
-    const hairMat = standard(0x493027, .92, 0);
-    mesh(new THREE.SphereGeometry(.325, 12, 8, 0, Math.PI * 2, 0, Math.PI * .54), hairMat, head, 0, .12, -.025);
+    // No dark hair-cap under the helmet: keep the forehead/helmet edge clean.
     // Simple face details remain legible even on a small phone screen.
     mesh(new THREE.SphereGeometry(.035, 8, 6), standard(0x2c211e, .55, 0), head, -.105, .045, .315);
     mesh(new THREE.SphereGeometry(.035, 8, 6), standard(0x2c211e, .55, 0), head, .105, .045, .315);
