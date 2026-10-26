@@ -293,7 +293,12 @@ try {
   const characterWhileMoving = await page.locator("#playerCharacter").boundingBox();
   const walkingClassDuringMove = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
   await page.mouse.up();
-  await page.waitForTimeout(280);
+  // Smooth inertial movement can continue briefly after finger release; wait for the coasting animation to settle.
+  await page.waitForFunction(() =>
+    !document.querySelector("#playerCharacter")?.classList.contains("walking"),
+    undefined,
+    { timeout: 2200 }
+  );
   const characterAfterMove = await page.locator("#playerCharacter").boundingBox();
   const walkingClassAfterRelease = await page.locator("#playerCharacter").evaluate(el => el.classList.contains("walking"));
   assert.ok(characterWhileMoving && characterAfterMove, "The character should stay rendered while moving.");
@@ -301,7 +306,7 @@ try {
     (characterBefore.y + characterBefore.height / 2)) > 12,
     "Dragging the joystick should physically move the character across the arena.");
   assert.equal(walkingClassDuringMove, true, "Leg and arm running animations should activate while moving.");
-  assert.equal(walkingClassAfterRelease, false, "The character should stop walking when the joystick is released.");
+  assert.equal(walkingClassAfterRelease, false, "The running animation should stop after the short inertial coast finishes.");
 
   assert.equal(await page.evaluate(() => typeof window.__allcoinsBackHandler), "function",
     "The Telegram back-button handler should be registered.");
