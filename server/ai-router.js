@@ -90,6 +90,70 @@ function extractAnswer(data) {
   return { answer: parts.join("\n").trim(), sources };
 }
 
+function extractGeminiAnswer(data) {
+  const candidate = Array.isArray(data?.candidates) ? data.candidates[0] : null;
+  const answer = (Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [])
+    .map(part => typeof part?.text === "string" ? part.text : "")
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  const sources = [];
+  const seen = new Set();
+  const chunks = candidate?.groundingMetadata?.groundingChunks;
+  for (const chunk of Array.isArray(chunks) ? chunks : []) {
+    const web = chunk?.web;
+    if (!web || typeof web.uri !== "string") continue;
+    let url;
+    try { url = new URL(web.uri); } catch (_) { continue; }
+    if (url.protocol !== "https:" && url.protocol !== "http:") continue;
+    if (seen.has(url.href)) continue;
+    seen.add(url.href);
+    sources.push({
+      title: String(web.title || url.hostname).slice(0, 180),
+      url: url.href
+    });
+  }
+  return { answer, sources };
+}
+
+async function askGemini({ apiKey, model, systemInstructions, input }) {
+  const contents = input.map(item => ({
+    role: item.role === "assistant" ? "model" : "user",
+    parts: [{ text: item.content }]
+  }));
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstructions }] },
+        contents,
+        generationConfig: {
+          maxOutputTokens: 700,
+          temperature: 0.7
+        }
+      }),
+      signal: AbortSignal.timeout(35_000)
+    }
+  );
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error("Gemini API request failed");
+    error.status = response.status;
+    error.providerCode = payload?.error?.status || payload?.error?.code || "unknown";
+    throw error;
+  }
+  return {
+    ...extractGeminiAnswer(payload),
+    model: payload?.modelVersion || model
+  };
+}
+
 function shouldUseWebSearch(message) {
   return /(сегодня|сейчас|актуальн|последн|новост|найди|поищи|поиск|интернет|ссылк|источник|цена|стоимост|курс валют|обновлен|на данный момент|текущ(ая|ие|ий|его|их)\s+(цена|версия|информация|правила)|latest|today|current|look up|search the web|recent news|source link)/i.test(message);
 }
@@ -102,14 +166,6 @@ export function createAIRouter({ verifyTelegram }) {
         return res.status(401).json({
           ok: false,
           error: "Открой ALLCOINS через Telegram, чтобы поговорить с ИИ."
-        });
-      }
-
-      const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
-      if (!apiKey) {
-        return res.status(503).json({
-          ok: false,
-          error: "ИИ почти готов. Нужно добавить OPENAI_API_KEY в переменные окружения Render."
         });
       }
 
@@ -130,60 +186,106 @@ export function createAIRouter({ verifyTelegram }) {
         });
       }
 
+      const openAIKey = String(process.env.OPENAI_API_KEY || "").trim();
+      const geminiKey = String(process.env.GEMINI_API_KEY || "").trim();
+      // Prefer Gemini when configured so ALLCOINS can run on its free API tier.
+      // OpenAI remains available as an optional provider if its key is configured instead.
+      const provider = geminiKey ? "gemini" : (openAIKey ? "openai" : "");
+      if (!provider) {
+        return res.status(503).json({
+          ok: false,
+          error: "Нужно подключить ИИ один раз: создай бесплатный ключ Google AI Studio и сохрани его в Render как GEMINI_API_KEY. Не отправляй ключ сюда в чат."
+        });
+      }
+
       const input = [
         ...takeHistory(req.body?.history),
         { role: "user", content: message }
       ];
 
-      const model = String(process.env.OPENAI_MODEL || "gpt-6.1-sol").trim();
-      const needsWebSearch = shouldUseWebSearch(message);
-      const requestBody = {
-        model,
-        instructions: SYSTEM_INSTRUCTIONS,
-        input,
-        max_output_tokens: 700,
-        store: false
-      };
-      // Search only when the user asks for current facts or explicitly asks to look online.
-      // Keeping it conditional avoids unnecessary web-search calls on ordinary chat.
-      if (needsWebSearch) {
-        requestBody.tools = [{ type: "web_search", search_context_size: "low" }];
-      }
+      let extracted;
+      let responseModel;
+      let webSearchUsed = false;
 
-      const upstream = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + apiKey,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(35_000)
-      });
+      if (provider === "gemini") {
+        const model = String(process.env.GEMINI_MODEL || "gemini-3.8-flash").trim();
+        try {
+          const result = await askGemini({
+            apiKey: geminiKey,
+            model,
+            systemInstructions: SYSTEM_INSTRUCTIONS,
+            input
+          });
+          extracted = { answer: result.answer, sources: result.sources };
+          responseModel = result.model;
+        } catch (providerError) {
+          console.error("ALLCOINS Gemini provider error:", providerError?.status || "network", providerError?.providerCode || "unknown");
+          if (providerError?.status === 429) {
+            return res.status(429).json({
+              ok: false,
+              error: "У бесплатного лимита ИИ закончились запросы на сегодня или сейчас слишком много обращений. Попробуй позже."
+            });
+          }
+          if (providerError?.status === 400 || providerError?.status === 403 || providerError?.status === 404) {
+            return res.status(502).json({
+              ok: false,
+              error: "Google AI не принял запрос. Проверь, что GEMINI_API_KEY сохранён в Render и модель GEMINI_MODEL не менялась."
+            });
+          }
+          throw providerError;
+        }
+      } else {
+        const model = String(process.env.OPENAI_MODEL || "gpt-6.1-sol").trim();
+        const needsWebSearch = shouldUseWebSearch(message);
+        const requestBody = {
+          model,
+          instructions: SYSTEM_INSTRUCTIONS,
+          input,
+          max_output_tokens: 700,
+          store: false
+        };
+        if (needsWebSearch) {
+          requestBody.tools = [{ type: "web_search", search_context_size: "low" }];
+        }
 
-      const payload = await upstream.json().catch(() => ({}));
-      if (!upstream.ok) {
-        console.error("ALLCOINS AI provider error:", upstream.status, payload?.error?.code || payload?.error?.type || "unknown");
-        if (upstream.status === 429) {
-          return res.status(429).json({
+        const upstream = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + openAIKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(35_000)
+        });
+
+        const payload = await upstream.json().catch(() => ({}));
+        if (!upstream.ok) {
+          console.error("ALLCOINS OpenAI provider error:", upstream.status, payload?.error?.code || payload?.error?.type || "unknown");
+          if (upstream.status === 429) {
+            return res.status(429).json({
+              ok: false,
+              error: "Сейчас ИИ перегружен или закончился лимит API. Попробуй немного позже."
+            });
+          }
+          return res.status(502).json({
             ok: false,
-            error: "Сейчас ИИ перегружен или закончился лимит API. Попробуй немного позже."
+            error: "Сервис ИИ не ответил. Проверь настройки API в Render и попробуй снова."
           });
         }
-        return res.status(502).json({
-          ok: false,
-          error: "Сервис ИИ не ответил. Проверь настройки API в Render и попробуй снова."
-        });
+
+        extracted = extractAnswer(payload);
+        responseModel = payload.model || model;
+        webSearchUsed = needsWebSearch;
       }
 
-      const extracted = extractAnswer(payload);
-      if (!extracted.answer) {
+      if (!extracted?.answer) {
         return res.status(502).json({
           ok: false,
           error: "ИИ вернул пустой ответ. Попробуй задать вопрос иначе."
         });
       }
 
-      const answer = extracted.sources.length
+      const answer = extracted.sources?.length
         ? extracted.answer + "\n\nИсточники:\n" +
           extracted.sources.map((source, index) => (index + 1) + ". " + source.title + " — " + source.url).join("\n")
         : extracted.answer;
@@ -191,9 +293,10 @@ export function createAIRouter({ verifyTelegram }) {
       return res.json({
         ok: true,
         answer,
-        model: payload.model || model,
-        webSearchUsed: needsWebSearch,
-        sources: extracted.sources
+        model: responseModel,
+        provider,
+        webSearchUsed,
+        sources: extracted.sources || []
       });
     } catch (error) {
       const isTimeout = error?.name === "TimeoutError" || error?.name === "AbortError";
