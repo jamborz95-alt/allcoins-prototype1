@@ -1750,5 +1750,231 @@
   document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
 })();
 </script>
+
+<style id="uno-3d-polish">
+  /* 3D UNO table: the Three.js canvas is decorative; all existing DOM cards stay interactive. */
+  .table-felt{isolation:isolate;transform:translateZ(0)}
+  .uno-3d-canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block;z-index:0;pointer-events:none;border-radius:inherit;will-change:contents}
+  .table-felt.uno-3d-ready{border-color:transparent!important;background:transparent!important;box-shadow:none!important;overflow:visible}
+  .table-felt.uno-3d-ready:before{inset:11px;border-color:rgba(222,244,224,.12);box-shadow:0 0 22px rgba(72,224,172,.05)}
+  .table-felt .pile-wrap{z-index:2;position:relative}
+  .table-felt .pile-caption{padding:4px 8px;border:1px solid rgba(226,244,226,.17);border-radius:999px;background:rgba(5,24,22,.64);backdrop-filter:blur(5px);text-shadow:0 2px 4px #000}
+  .table-felt .active-color{padding:4px 7px;border-radius:999px;background:rgba(4,24,22,.62);border:1px solid rgba(229,240,217,.16);backdrop-filter:blur(5px);text-shadow:0 1px 3px #000}
+  .table-felt .pile-count{box-shadow:0 2px 8px #00130f9c, inset 0 1px 0 #fff6}
+  .uno-card{transform-style:preserve-3d;border-bottom-width:3px;box-shadow:0 7px 13px #00110c80,inset 0 0 0 1px #0002,inset 0 1px 0 #fff9}
+  .uno-card:not(.card-back):after{content:"";position:absolute;z-index:3;inset:1px;border-radius:7px;pointer-events:none;background:linear-gradient(127deg,#fff3,transparent 25%,transparent 73%,#00000012)}
+  .uno-card.card-back{box-shadow:0 8px 15px #00110ca6,inset 0 0 0 1px #fff9,inset 0 -2px 0 #0006}
+  .opponent{backdrop-filter:blur(8px);box-shadow:0 5px 12px #0004,inset 0 1px 0 #ffffff12;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .opponent.active{box-shadow:0 0 0 1px #ffe58a9c,0 0 22px #ffe58a2e,inset 0 1px 0 #fff8}
+  .op-hand .op-mini-card{box-shadow:0 3px 6px #00110ca6,inset 0 0 0 1px #ffffff6b,inset 0 -2px 0 #0006;transform-style:preserve-3d}
+  @media(max-width:680px){
+    .table-felt.uno-3d-ready:before{inset:8px}
+    .table-felt .pile-caption{padding:3px 6px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .opponent{transition:none}
+  }
+</style>
+
+
+<script id="uno-3d-scene">
+(function(){
+  "use strict";
+  const host=document.querySelector(".table-felt");
+  const gameView=document.getElementById("gameView");
+  if(!host||!gameView||host.dataset.uno3dStarted==="1") return;
+  host.dataset.uno3dStarted="1";
+  let THREE=null,renderer=null,scene=null,camera=null,raf=0,disposed=false,lastFrame=0;
+  let resizeObserver=null,resizeHandler=null,turntableMaterial=null,edgeGlowMaterial=null;
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||"")||Math.min(window.innerWidth||999,window.innerHeight||999)<520;
+  const fit=(v,min,max)=>Math.max(min,Math.min(max,v));
+  function roundedRect(w,h,r){
+    const s=new THREE.Shape(),x=-w/2,z=-h/2;
+    s.moveTo(x+r,z);s.lineTo(x+w-r,z);s.quadraticCurveTo(x+w,z,x+w,z+r);
+    s.lineTo(x+w,z+h-r);s.quadraticCurveTo(x+w,z+h,x+w-r,z+h);
+    s.lineTo(x+r,z+h);s.quadraticCurveTo(x,z+h,x,z+h-r);
+    s.lineTo(x,z+r);s.quadraticCurveTo(x,z,x+r,z);return s;
+  }
+  function std(color,roughness,metalness,extra){
+    return new THREE.MeshStandardMaterial(Object.assign({color,roughness:roughness==null?.78:roughness,metalness:metalness||0},extra||{}));
+  }
+  function makeFeltTexture(){
+    const can=document.createElement("canvas");can.width=512;can.height=512;
+    const ctx=can.getContext("2d");
+    const g=ctx.createLinearGradient(0,0,512,512);g.addColorStop(0,"#17694d");g.addColorStop(.42,"#11563f");g.addColorStop(1,"#0a382f");
+    ctx.fillStyle=g;ctx.fillRect(0,0,512,512);
+    for(let i=0;i<(mobile?7800:14500);i++){
+      const x=Math.random()*512,y=Math.random()*512;
+      ctx.strokeStyle=Math.random()>.48?"rgba(208,248,207,.07)":"rgba(0,16,12,.105)";
+      ctx.lineWidth=.4+Math.random()*.75;ctx.beginPath();ctx.moveTo(x,y);
+      ctx.lineTo(x+(Math.random()-.5)*4,y+(Math.random()-.5)*3);ctx.stroke();
+    }
+    for(let i=0;i<280;i++){
+      const x=Math.random()*512,y=Math.random()*512;
+      ctx.fillStyle=Math.random()>.5?"rgba(220,255,210,.035)":"rgba(0,12,9,.045)";
+      ctx.beginPath();ctx.arc(x,y,.5+Math.random()*1.7,0,Math.PI*2);ctx.fill();
+    }
+    const tex=new THREE.CanvasTexture(can);tex.colorSpace=THREE.SRGBColorSpace;
+    tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(1.55,1.15);
+    tex.anisotropy=Math.min(mobile?4:8,renderer.capabilities.getMaxAnisotropy());return tex;
+  }
+  function makeLogoTexture(){
+    const can=document.createElement("canvas");can.width=640;can.height=300;
+    const x=can.getContext("2d");x.clearRect(0,0,640,300);
+    x.save();x.translate(320,150);x.rotate(-.1);
+    x.fillStyle="rgba(255,255,255,.14)";x.strokeStyle="rgba(248,226,157,.25)";x.lineWidth=6;
+    x.beginPath();x.ellipse(0,0,248,98,0,0,Math.PI*2);x.fill();x.stroke();
+    x.strokeStyle="rgba(255,255,255,.12)";x.lineWidth=2;x.beginPath();x.ellipse(0,0,226,80,0,0,Math.PI*2);x.stroke();
+    x.font="italic 1000 128px Arial,Helvetica,sans-serif";x.textAlign="center";x.textBaseline="middle";
+    x.lineJoin="round";x.lineWidth=13;x.strokeStyle="rgba(5,25,20,.25)";x.strokeText("UNO",0,5);
+    x.fillStyle="rgba(239,255,238,.17)";x.fillText("UNO",0,5);x.restore();
+    const tex=new THREE.CanvasTexture(can);tex.colorSpace=THREE.SRGBColorSpace;return tex;
+  }
+  function addOutline(shape,y,color,opacity){
+    const points=shape.getPoints(120).map(p=>new THREE.Vector3(p.x,y,-p.y));
+    const geometry=new THREE.BufferGeometry().setFromPoints(points);
+    const material=new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false});
+    const line=new THREE.LineLoop(geometry,material);scene.add(line);return line;
+  }
+  function addFlatCircle(x,z,r,y,material){
+    const m=new THREE.Mesh(new THREE.CircleGeometry(r,32),material);m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;scene.add(m);return m;
+  }
+  async function setup(){
+    if(disposed||renderer) return;
+    try{
+      THREE=await import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js");
+      if(disposed)return;
+      renderer=new THREE.WebGLRenderer({alpha:true,antialias:!mobile,powerPreference:"high-performance",stencil:false,depth:true});
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1.35:1.8));
+      renderer.outputColorSpace=THREE.SRGBColorSpace;
+      renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
+      renderer.setClearColor(0x000000,0);
+      renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+      renderer.domElement.className="uno-3d-canvas";renderer.domElement.setAttribute("aria-hidden","true");
+      scene=new THREE.Scene();
+      camera=new THREE.OrthographicCamera(-12,12,8,-8,.1,90);
+      camera.position.set(0,14,7.5);camera.lookAt(0,-.16,0);
+      scene.add(new THREE.HemisphereLight(0xd8fff0,0x12362d,2.25));
+      scene.add(new THREE.AmbientLight(0xffffff,.62));
+      const key=new THREE.DirectionalLight(0xfff0cb,3.0);key.position.set(-8,18,10);key.castShadow=true;
+      key.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);
+      key.shadow.camera.left=-13;key.shadow.camera.right=13;key.shadow.camera.top=10;key.shadow.camera.bottom=-10;
+      key.shadow.camera.near=.5;key.shadow.camera.far=45;key.shadow.bias=-.00025;key.shadow.normalBias=.025;
+      scene.add(key);
+      const fill=new THREE.DirectionalLight(0x6dffcf,.65);fill.position.set(10,8,-8);scene.add(fill);
+
+      const shape=roundedRect(18.8,11.8,1.38);
+      const woodSide=std(0x40251a,.34,.28),woodTop=std(0x593422,.4,.2);
+      const bodyGeo=new THREE.ExtrudeGeometry(shape,{depth:.58,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.13,bevelThickness:.13,curveSegments:12});
+      bodyGeo.computeVertexNormals();
+      const body=new THREE.Mesh(bodyGeo,[woodSide,woodTop]);
+      body.rotation.x=-Math.PI/2;body.position.y=-.84;body.castShadow=true;body.receiveShadow=true;scene.add(body);
+
+      const shadowCanvas=document.createElement("canvas");shadowCanvas.width=256;shadowCanvas.height=256;
+      const sctx=shadowCanvas.getContext("2d"),sg=sctx.createRadialGradient(128,128,30,128,128,125);
+      sg.addColorStop(0,"rgba(0,0,0,.28)");sg.addColorStop(.7,"rgba(0,0,0,.12)");sg.addColorStop(1,"rgba(0,0,0,0)");
+      sctx.fillStyle=sg;sctx.fillRect(0,0,256,256);
+      const shadowTex=new THREE.CanvasTexture(shadowCanvas);
+      const shadow=new THREE.Mesh(new THREE.PlaneGeometry(21.3,14.3),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:.78}));
+      shadow.rotation.x=-Math.PI/2;shadow.position.set(0,-1.015,0);scene.add(shadow);
+
+      const topShape=roundedRect(18.38,11.38,1.15);
+      const topGeo=new THREE.ShapeGeometry(topShape,16);
+      const felt=new THREE.Mesh(topGeo,std(0xffffff,.95,.015,{map:makeFeltTexture()}));
+      felt.rotation.x=-Math.PI/2;felt.position.y=-.105;felt.receiveShadow=true;scene.add(felt);
+      addOutline(roundedRect(18.58,11.58,1.24),-.072,0x583b25,1);
+      addOutline(roundedRect(18.14,11.14,1.06),-.072,0xd6b76c,.78);
+      addOutline(roundedRect(17.88,10.88,.96),-.071,0x6af3c2,.32);
+
+      // Brushed brass bolts along the wooden rail.
+      const boltGeo=new THREE.CylinderGeometry(.075,.075,.035,8);
+      const boltMat=std(0xb6a16c,.3,.72);
+      const boltPoints=[];
+      for(let x=-7.1;x<=7.11;x+=2.35){boltPoints.push([x,-5.42], [x,5.42]);}
+      for(let z=-3.1;z<=3.11;z+=2.05){boltPoints.push([-8.62,z],[8.62,z]);}
+      boltPoints.forEach(([x,z])=>{const b=new THREE.Mesh(boltGeo,boltMat);b.position.set(x,-.075,z);b.castShadow=false;scene.add(b);});
+
+      // Inlaid metal cup holders around the corners, deliberately kept away from the play piles.
+      const cupOuter=std(0x8e7445,.28,.78),cupInner=std(0x061b17,.36,.35);
+      const cupBaseGeo=new THREE.CylinderGeometry(.47,.47,.055,32),cupRingGeo=new THREE.TorusGeometry(.39,.05,8,32);
+      for(const [x,z] of [[-7.65,-4.0],[7.65,-4.0],[-7.65,4.0],[7.65,4.0]]){
+        const base=new THREE.Mesh(cupBaseGeo,cupInner);base.position.set(x,-.084,z);base.castShadow=true;scene.add(base);
+        const ring=new THREE.Mesh(cupRingGeo,cupOuter);ring.rotation.x=-Math.PI/2;ring.position.set(x,-.047,z);ring.castShadow=true;scene.add(ring);
+        addFlatCircle(x,z,.285,-.052,std(0x071612,.36,.12));
+      }
+
+      // Fine decorative loops are etched into the felt; card piles remain real, clickable HTML elements.
+      const grooveMat=new THREE.MeshStandardMaterial({color:0xc7e5c8,roughness:.5,metalness:.2,transparent:true,opacity:.17,emissive:0x113628,emissiveIntensity:.3,depthWrite:false});
+      for(const [x,z,scale] of [[-4.85,0,1],[4.85,0,1]]){
+        const loop=new THREE.Mesh(new THREE.TorusGeometry(1.48,.018,5,72),grooveMat);loop.rotation.x=-Math.PI/2;loop.position.set(x,-.073,z);loop.scale.set(scale,1,.78);scene.add(loop);
+        const tick=new THREE.Mesh(new THREE.TorusGeometry(1.72,.012,4,72),grooveMat);tick.rotation.x=-Math.PI/2;tick.position.set(x,-.073,z);tick.scale.set(1,1,.78);scene.add(tick);
+      }
+      const logoMat=new THREE.MeshBasicMaterial({map:makeLogoTexture(),transparent:true,opacity:.64,depthWrite:false,side:THREE.DoubleSide});
+      const logo=new THREE.Mesh(new THREE.PlaneGeometry(5.6,2.65),logoMat);logo.rotation.x=-Math.PI/2;logo.position.set(0,-.068,0);scene.add(logo);
+
+      turntableMaterial=grooveMat;edgeGlowMaterial=new THREE.MeshStandardMaterial({color:0x2fe0a3,emissive:0x136d51,emissiveIntensity:.45,roughness:.35,metalness:.4});
+      // Small emerald inserts catch the key light and make the table edge feel machined.
+      const insertGeo=new THREE.BoxGeometry(1.15,.035,.055);
+      for(const z of [-5.6,5.6]) for(const x of [-5.5,-3.8,3.8,5.5]){
+        const insert=new THREE.Mesh(insertGeo,edgeGlowMaterial);insert.position.set(x,-.145,z);scene.add(insert);
+      }
+
+      const canvas=renderer.domElement;
+      host.prepend(canvas);
+      const rect=host.getBoundingClientRect();
+      camera.userData.baseHeight=12.6;
+      function resize(){
+        if(!renderer||!camera||disposed)return;
+        const r=host.getBoundingClientRect();if(!r.width||!r.height)return;
+        const aspect=r.width/r.height;
+        let vh=camera.userData.baseHeight;
+        if(aspect<1.35)vh+=1.7;
+        camera.left=-vh*aspect/2;camera.right=vh*aspect/2;camera.top=vh/2;camera.bottom=-vh/2;camera.updateProjectionMatrix();
+        renderer.setSize(Math.round(r.width),Math.round(r.height),false);
+        renderer.render(scene,camera);
+      }
+      resizeHandler=resize;window.addEventListener("resize",resizeHandler,{passive:true});
+      if(typeof ResizeObserver!=="undefined"){resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);}
+      resize();
+      host.classList.add("uno-3d-ready");
+      host.dataset.uno3dReady="1";
+      startIfVisible();
+    }catch(err){
+      try{if(renderer){renderer.dispose();renderer.domElement.remove();}}catch(_){}
+      renderer=null;host.classList.remove("uno-3d-ready");delete host.dataset.uno3dReady;
+      // Leave the original felt table and the entire UNO game usable if WebGL/CDN is unavailable.
+      console.warn("[UNO 3D] Using original table fallback.",err);
+    }
+  }
+  function visible(){return !disposed&&!gameView.classList.contains("hidden")&&host.getBoundingClientRect().width>0&&host.getBoundingClientRect().height>0;}
+  function draw(now){
+    raf=0;if(!visible())return;
+    const interval=mobile?1000/40:1000/60;
+    if(!lastFrame||now-lastFrame>=interval){
+      const t=now*.001;
+      if(turntableMaterial)turntableMaterial.opacity=.145+Math.sin(t*1.25)*.025;
+      if(edgeGlowMaterial)edgeGlowMaterial.emissiveIntensity=.38+Math.sin(t*1.65)*.12;
+      renderer.render(scene,camera);lastFrame=now;
+    }
+    raf=requestAnimationFrame(draw);
+  }
+  function startIfVisible(){
+    if(!renderer||!visible()){if(raf){cancelAnimationFrame(raf);raf=0;}return;}
+    if(!raf){lastFrame=0;raf=requestAnimationFrame(draw);}
+  }
+  const viewObserver=new MutationObserver(startIfVisible);
+  viewObserver.observe(gameView,{attributes:true,attributeFilter:["class"]});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(raf)cancelAnimationFrame(raf);raf=0;}else startIfVisible();});
+  window.addEventListener("pagehide",()=>{disposed=true;if(raf)cancelAnimationFrame(raf);if(resizeObserver)resizeObserver.disconnect();if(resizeHandler)window.removeEventListener("resize",resizeHandler);viewObserver.disconnect();if(renderer)renderer.dispose();},{once:true});
+  if(!gameView.classList.contains("hidden"))setup();
+  else{
+    const waitObserver=new MutationObserver(()=>{
+      if(!gameView.classList.contains("hidden")){waitObserver.disconnect();setup();}
+    });
+    waitObserver.observe(gameView,{attributes:true,attributeFilter:["class"]});
+  }
+})();
+</script>
+
 </body>
 </html>
