@@ -49,7 +49,7 @@ function makeHarness({
 
       if (statement.includes("SET ai_summary = $1")) {
         updates.push({ type: "triage", params });
-        const row = ticketRows.find(item => String(item.id) === String(params[4]));
+        const row = ticketRows.find(item => String(item.id) === String(params[4] ?? params[3]));
         if (row) {
           row.ai_summary = params[0];
           row.ai_severity = params[1];
