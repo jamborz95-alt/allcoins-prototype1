@@ -4077,6 +4077,36 @@
       <p>Энергия: <b><span id="profileEnergy">100</span> / 100</b></p>
       <button class="secondary full" id="loginButton">Повторить вход</button>
       <div class="status" id="profileStatus"></div>
+      <hr style="border-color:#293650;margin:18px 0">
+      <h3 style="margin:0 0 8px">🛟 Нужна помощь?</h3>
+      <p class="muted" style="line-height:1.5">Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. ALLCOINS ИИ проверит обращение, а владельцу придёт уведомление.</p>
+      <button type="button" class="secondary full" id="supportOpenButton">Обратиться в поддержку</button>
+      <div id="supportFormPanel" class="hidden" style="margin-top:14px">
+        <form id="supportForm">
+          <label for="supportCategory" class="muted">Что случилось?</label>
+          <select id="supportCategory" required>
+            <option value="Зависание / тормоза">Зависание / тормоза</option>
+            <option value="Ошибка или вылет">Ошибка или вылет</option>
+            <option value="Карты / анимация">Карты / анимация</option>
+            <option value="Комнаты / подключение">Комнаты / подключение</option>
+            <option value="Баланс / ставка">Баланс / ставка</option>
+            <option value="Другое">Другое</option>
+          </select>
+          <label for="supportDescription" class="muted">Опиши проблему</label>
+          <textarea id="supportDescription" class="ai-input" rows="4" maxlength="1500" placeholder="Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой." required style="margin-top:7px!important;min-height:100px"></textarea>
+          <p class="muted" style="line-height:1.4">Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.</p>
+          <button type="submit" class="full" id="supportSubmitButton">Отправить обращение ➤</button>
+          <div class="status" id="supportStatus" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
+    <div id="adminSupportCard" class="card hidden">
+      <div class="section-title">🛟 Поддержка игроков</div>
+      <p class="muted">Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.</p>
+      <div id="adminSupportCounts" class="notice">Заявки ещё не загружены.</div>
+      <button type="button" class="secondary full" id="adminSupportRefresh">↻ Обновить обращения</button>
+      <div id="adminSupportList" style="display:grid;gap:10px;margin-top:12px"></div>
+      <div class="status" id="adminSupportStatus" role="status" aria-live="polite"></div>
     </div>
     <div id="adminCommissionCard" class="card hidden">
       <div class="section-title">🛡 Администрирование ALLCOINS</div>
@@ -8945,6 +8975,202 @@ setInterval(() => {
 
 let adminCommissionBusy = false;
 let adminCommissionVerified = false;
+let adminSupportBusy = false;
+let adminSupportTicketCache = [];
+
+const supportStatusLabels = {
+  open: "Новая",
+  in_progress: "В работе",
+  resolved: "Решена"
+};
+const supportCategoryLabels = {
+  "Зависание / тормоза": "Зависание / тормоза",
+  "Ошибка или вылет": "Ошибка или вылет",
+  "Карты / анимация": "Карты / анимация",
+  "Комнаты / подключение": "Комнаты / подключение",
+  "Баланс / ставка": "Баланс / ставка",
+  "Другое": "Другое"
+};
+
+function buildSupportReport(ticket) {
+  const date = ticket.created_at ? new Date(ticket.created_at) : null;
+  const dateText = date && Number.isFinite(date.getTime()) ? date.toLocaleString("ru-RU") : "неизвестно";
+  return [
+    "ALLCOINS — обращение поддержки #" + ticket.id,
+    "Категория: " + (ticket.category || "не указана"),
+    "Статус: " + (supportStatusLabels[ticket.status] || ticket.status || "неизвестен"),
+    "Игрок: " + (ticket.first_name || "Игрок") + (ticket.username ? " (@" + ticket.username + ")" : ""),
+    "Telegram ID: " + (ticket.telegram_id || "неизвестен"),
+    "Дата: " + dateText,
+    "",
+    "Сообщение игрока:",
+    ticket.description || "",
+    "",
+    "Первичная диагностика ALLCOINS ИИ:",
+    ticket.ai_summary || "Диагностика ещё выполняется или временно недоступна.",
+    "",
+    "Приоритет: " + (ticket.ai_severity || "не определён"),
+    "Нужен разработчик: " + (ticket.needs_developer ? "да" : "не определено"),
+    "Уведомление владельцу: " + (ticket.notification_status === "sent" ? "отправлено в Telegram" : "не подтверждено")
+  ].join("\n");
+}
+
+async function copySupportReport(ticket) {
+  const report = buildSupportReport(ticket);
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(report);
+      showStatus("adminSupportStatus", "Отчёт #" + ticket.id + " скопирован. Его можно вставить в ChatGPT для помощи с исправлением.");
+      return;
+    }
+  } catch (_) {}
+  const temporary = document.createElement("textarea");
+  temporary.value = report;
+  temporary.setAttribute("readonly", "");
+  temporary.style.position = "fixed";
+  temporary.style.opacity = "0";
+  document.body.appendChild(temporary);
+  temporary.select();
+  let copied = false;
+  try { copied = document.execCommand("copy"); } catch (_) {}
+  temporary.remove();
+  showStatus(
+    "adminSupportStatus",
+    copied
+      ? "Отчёт #" + ticket.id + " скопирован. Его можно вставить в ChatGPT."
+      : "Не удалось скопировать автоматически. Открой обращение и скопируй его текст вручную."
+  );
+}
+
+async function updateSupportTicketStatus(ticketId, status) {
+  try {
+    await apiRequest("/api/support/admin/status", { ticketId, status });
+    showStatus("adminSupportStatus", "Статус обращения #" + ticketId + " обновлён.");
+    await refreshAdminSupportInbox(false);
+  } catch (error) {
+    showStatus("adminSupportStatus", error?.message || "Не удалось обновить статус обращения.");
+  }
+}
+
+function renderAdminSupportTickets(tickets) {
+  const root = $("adminSupportList");
+  if (!root) return;
+  root.textContent = "";
+  if (!tickets.length) {
+    const empty = document.createElement("div");
+    empty.className = "notice";
+    empty.textContent = "Обращений пока нет.";
+    root.appendChild(empty);
+    return;
+  }
+
+  tickets.forEach(ticket => {
+    const card = document.createElement("article");
+    card.className = "notice";
+    card.style.cssText = "display:grid;gap:8px;white-space:normal;overflow-wrap:anywhere";
+
+    const title = document.createElement("strong");
+    title.textContent = "#" + ticket.id + " · " + (supportCategoryLabels[ticket.category] || ticket.category || "Поддержка");
+    card.appendChild(title);
+
+    const meta = document.createElement("div");
+    const date = ticket.created_at ? new Date(ticket.created_at) : null;
+    const dateText = date && Number.isFinite(date.getTime()) ? date.toLocaleString("ru-RU") : "";
+    meta.textContent =
+      (ticket.first_name || "Игрок") +
+      (ticket.username ? " (@" + ticket.username + ")" : "") +
+      " · Telegram ID: " + (ticket.telegram_id || "—") +
+      (dateText ? " · " + dateText : "");
+    card.appendChild(meta);
+
+    const status = document.createElement("div");
+    status.textContent =
+      "Статус: " + (supportStatusLabels[ticket.status] || ticket.status || "неизвестен") +
+      " · Приоритет: " + (ticket.ai_severity || "не определён") +
+      " · Уведомление: " + (ticket.notification_status === "sent" ? "отправлено" : ticket.notification_status === "pending" ? "в обработке" : "не отправлено");
+    card.appendChild(status);
+
+    const description = document.createElement("div");
+    description.style.cssText = "white-space:pre-wrap;overflow-wrap:anywhere;color:#edf4ff";
+    description.textContent = "Сообщение игрока:\n" + (ticket.description || "");
+    card.appendChild(description);
+
+    const summary = document.createElement("div");
+    summary.style.cssText = "white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid #67f5b5;padding-left:9px";
+    summary.textContent = "Диагностика ALLCOINS ИИ:\n" + (ticket.ai_summary || "Ещё выполняется. Нажми «Обновить обращения» через несколько секунд.");
+    card.appendChild(summary);
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;gap:7px;flex-wrap:wrap";
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "secondary";
+    copy.textContent = "📋 Копировать отчёт для ChatGPT";
+    copy.onclick = () => copySupportReport(ticket);
+    actions.appendChild(copy);
+
+    if (ticket.status !== "in_progress") {
+      const working = document.createElement("button");
+      working.type = "button";
+      working.className = "secondary";
+      working.textContent = ticket.status === "resolved" ? "↩ Открыть снова" : "В работу";
+      working.onclick = () => updateSupportTicketStatus(ticket.id, "in_progress");
+      actions.appendChild(working);
+    }
+    if (ticket.status !== "resolved") {
+      const resolved = document.createElement("button");
+      resolved.type = "button";
+      resolved.className = "secondary";
+      resolved.textContent = "✓ Решено";
+      resolved.onclick = () => updateSupportTicketStatus(ticket.id, "resolved");
+      actions.appendChild(resolved);
+    }
+    if (ticket.status === "in_progress") {
+      const reopen = document.createElement("button");
+      reopen.type = "button";
+      reopen.className = "secondary";
+      reopen.textContent = "↩ Вернуть в новые";
+      reopen.onclick = () => updateSupportTicketStatus(ticket.id, "open");
+      actions.appendChild(reopen);
+    }
+    card.appendChild(actions);
+    root.appendChild(card);
+  });
+}
+
+async function refreshAdminSupportInbox(showErrors = false) {
+  if (adminSupportBusy || !tg?.initData || !adminCommissionVerified) return false;
+  adminSupportBusy = true;
+  try {
+    const result = await apiRequest("/api/support/admin/list");
+    if (result.admin !== true) {
+      $("adminSupportCard").classList.add("hidden");
+      return false;
+    }
+    $("adminSupportCard").classList.remove("hidden");
+    const counts = result.counts || {};
+    $("adminSupportCounts").textContent =
+      "Всего: " + Number(counts.total || 0) +
+      " · Новые: " + Number(counts.open || 0) +
+      " · В работе: " + Number(counts.in_progress || 0) +
+      " · Решены: " + Number(counts.resolved || 0);
+    adminSupportTicketCache = Array.isArray(result.tickets) ? result.tickets : [];
+    renderAdminSupportTickets(adminSupportTicketCache);
+    showStatus("adminSupportStatus", adminSupportTicketCache.length
+      ? "Показаны последние " + adminSupportTicketCache.length + " обращений."
+      : "Обращений пока нет.");
+    return true;
+  } catch (error) {
+    if (/HTTP (401|403|503)/.test(String(error?.message || ""))) {
+      $("adminSupportCard").classList.add("hidden");
+    } else if (showErrors) {
+      showStatus("adminSupportStatus", error?.message || "Не удалось загрузить обращения.");
+    }
+    return false;
+  } finally {
+    adminSupportBusy = false;
+  }
+}
 
 async function refreshAdminCommissionSummary(showErrors = false) {
   if (adminCommissionBusy || !tg?.initData) return false;
@@ -9029,6 +9255,7 @@ async function refreshAdminCommissionSummary(showErrors = false) {
       showStatus("profileStatus", "Вход через Telegram выполнен.");
       render();
       await refreshAdminCommissionSummary(false);
+      if (adminCommissionVerified) await refreshAdminSupportInbox(false);
       await loadDurakRooms();
     } else {
       showStatus("profileStatus", "Сервер не подтвердил вход.");
@@ -10089,6 +10316,51 @@ $("withdrawInfo").onclick = () => {
 };
 
 $("loginButton").onclick = login;
+
+$("supportOpenButton").onclick = () => {
+  const panel = $("supportFormPanel");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) {
+    $("supportDescription")?.focus();
+    if (!tg?.initData) showStatus("supportStatus", "Открой ALLCOINS через Telegram, чтобы отправить обращение.");
+  }
+};
+
+$("supportForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!tg?.initData || !state.user) {
+    showStatus("supportStatus", "Открой приложение через Telegram и дождись входа перед отправкой.");
+    return;
+  }
+  const category = $("supportCategory").value;
+  const description = String($("supportDescription").value || "").trim();
+  if (description.length < 10) {
+    showStatus("supportStatus", "Опиши проблему подробнее — минимум 10 символов.");
+    return;
+  }
+  const button = $("supportSubmitButton");
+  button.disabled = true;
+  showStatus("supportStatus", "Сохраняю обращение…");
+  try {
+    const result = await apiRequest("/api/support/submit", { category, description });
+    $("supportDescription").value = "";
+    showStatus(
+      "supportStatus",
+      "Заявка #" + result.ticketId + " принята. ALLCOINS ИИ анализирует сообщение; если требуется проверка, владельцу придёт уведомление в Telegram."
+    );
+    if (adminCommissionVerified) {
+      window.setTimeout(() => refreshAdminSupportInbox(false), 1800);
+    }
+  } catch (error) {
+    showStatus("supportStatus", error?.message || "Не удалось отправить обращение. Попробуй позже.");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("adminSupportRefresh").onclick = () => refreshAdminSupportInbox(true);
+
 $("adminCommissionToggle").onclick = async () => {
   const details = $("adminCommissionDetails");
   details.classList.toggle("hidden");
@@ -10110,7 +10382,9 @@ document.querySelectorAll(".nav button").forEach(button => {
       if (page) page.classList.toggle("hidden", pageId !== button.dataset.page);
     });
     if (button.dataset.page === "profile" && state.user) {
-      refreshAdminCommissionSummary(false);
+      refreshAdminCommissionSummary(false).then(verified => {
+        if (verified) refreshAdminSupportInbox(false);
+      });
     }
   };
 });
