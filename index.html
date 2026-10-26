@@ -1996,6 +1996,27 @@
   display: none !important;
 }
 
+
+/* ALLCOINS AI assistant */
+.ai-hero { border:1px solid #38604f; background:linear-gradient(145deg,#152b2a,#151e33 70%); }
+.ai-title-row { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
+.ai-mark { display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#a9ffd1,#42d9a0);color:#06251b;font-size:22px;box-shadow:0 5px 18px #42d9a022; }
+.ai-subtitle { color:#a6b4cc;font-size:13px;line-height:1.45;margin:0; }
+.ai-status { min-height:18px;margin:8px 0;color:#9ff4cb;font-size:12px;line-height:1.45;overflow-wrap:anywhere; }
+.ai-prompts { display:flex;flex-wrap:wrap;gap:7px;margin:12px 0; }
+.ai-prompt { flex:1 1 42%;min-width:0;padding:10px 9px;border:1px solid #3a4a68;border-radius:12px;background:#1c2940;color:#e6fff4;font-size:12px;line-height:1.35; }
+.ai-messages { display:flex;flex-direction:column;gap:10px;max-height:45vh;min-height:170px;overflow:auto;padding:4px 1px 12px;overscroll-behavior:contain;scroll-behavior:smooth; }
+.ai-message { max-width:92%;padding:11px 13px;border:1px solid #2e3c55;border-radius:15px;background:#1a263b;color:#edf4ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5; }
+.ai-message.ai-user { align-self:flex-end;background:#153a31;border-color:#28664f;color:#edfff7;border-bottom-right-radius:5px; }
+.ai-message.ai-assistant { align-self:flex-start;border-bottom-left-radius:5px; }
+.ai-message-label { display:block;margin-bottom:4px;color:#8ea9c1;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase; }
+.ai-form { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:8px; }
+.ai-input { width:100%;min-height:48px;max-height:120px;resize:vertical;margin:0!important;padding:12px!important;border:1px solid #3a4a68!important;border-radius:14px!important;background:#0e1728!important;color:#fff!important;font:inherit;line-height:1.4; }
+.ai-send { min-height:48px;padding:12px 14px;border-radius:14px;white-space:nowrap; }
+.ai-disclaimer { margin-top:10px;font-size:11px; }
+.ai-prompt:active,.ai-send:active { transform:scale(.98); }
+@media (max-width:360px) { .ai-form { grid-template-columns:1fr; } .ai-send { width:100%; } .ai-prompts { gap:6px; } .ai-prompt { flex-basis:100%; } }
+
 </style>
 
 <style id="allcoins-lotto-online-style">
@@ -4001,6 +4022,35 @@
 
 </section>
 
+  <section id="ai" class="hidden">
+    <div class="section-title">✨ ALLCOINS ИИ</div>
+    <div class="card ai-hero">
+      <div class="ai-title-row">
+        <div class="ai-mark" aria-hidden="true">✦</div>
+        <div>
+          <h3 style="margin:0 0 4px">Твой умный помощник</h3>
+          <p class="ai-subtitle">Поможет с играми, правилами, стратегией и вопросами по ALLCOINS.</p>
+        </div>
+      </div>
+      <div id="aiStatus" class="ai-status" role="status" aria-live="polite">Чат готов. Подключение ИИ требует ключ API на сервере.</div>
+    </div>
+    <div class="card">
+      <div class="muted" style="margin-bottom:8px">БЫСТРЫЕ ВОПРОСЫ</div>
+      <div class="ai-prompts">
+        <button type="button" class="ai-prompt" data-ai-prompt="Объясни правила Дурака Онлайн и как лучше защищаться.">🃏 Стратегия в Дураке</button>
+        <button type="button" class="ai-prompt" data-ai-prompt="Какие игры уже есть в ALLCOINS и как развивать проект дальше?">🚀 Развитие ALLCOINS</button>
+        <button type="button" class="ai-prompt" data-ai-prompt="Объясни правила УНО и подскажи хорошую стратегию.">🎴 Правила УНО</button>
+        <button type="button" class="ai-prompt" data-ai-prompt="Помоги придумать план улучшения моего игрового проекта шаг за шагом.">💡 Идея или план</button>
+      </div>
+      <div id="aiMessages" class="ai-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      <form id="aiForm" class="ai-form">
+        <textarea id="aiInput" class="ai-input" rows="2" maxlength="1000" placeholder="Спроси что-нибудь..." aria-label="Сообщение для ALLCOINS ИИ"></textarea>
+        <button id="aiSend" class="ai-send" type="submit">Отправить ➤</button>
+      </form>
+      <div class="muted ai-disclaimer">Не отправляй пароли, токены бота, ключи API или платёжные данные. Ответы ИИ могут содержать ошибки.</div>
+    </div>
+  </section>
+
   <section id="withdraw" class="hidden">
     <div class="section-title">💳 Вывод</div>
     <div class="card">
@@ -4508,6 +4558,7 @@
   <div class="nav-inner">
     <button class="active" data-page="home"><span>🏠</span>Главная</button>
     <button data-page="games"><span>🎮</span>Игры</button>
+    <button data-page="ai"><span>✦</span>ИИ</button>
     <button data-page="withdraw"><span>💳</span>Вывод</button>
     <button data-page="profile"><span>👤</span>Профиль</button>
     <button data-page="tasks"><span>🎯</span>Задание</button>
@@ -4860,7 +4911,7 @@ function markClickerDailyBonusReceived() {
 
 // Переключение главных разделов ALLCOINS (работает и в демо-режиме).
 function switchAllcoinsPage(pageName) {
-  const validPages = ["home", "games", "withdraw", "profile", "tasks"];
+  const validPages = ["home", "games", "ai", "withdraw", "profile", "tasks"];
   if (!validPages.includes(pageName)) return;
 
   validPages.forEach((name) => {
@@ -5081,6 +5132,126 @@ const responseText = await response.text();
 
   return result;
 }
+
+const ALLCOINS_AI_STORAGE_KEY = "allcoinsAIHistoryV1";
+let allcoinsAIHistory = [];
+let allcoinsAISending = false;
+
+function loadAIHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ALLCOINS_AI_STORAGE_KEY) || "[]");
+    if (Array.isArray(saved)) {
+      allcoinsAIHistory = saved
+        .filter(item => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
+        .slice(-24)
+        .map(item => ({ role: item.role, content: item.content.slice(0, 4000) }));
+    }
+  } catch (_) {
+    allcoinsAIHistory = [];
+  }
+  renderAIHistory();
+}
+
+function saveAIHistory() {
+  try {
+    allcoinsAIHistory = allcoinsAIHistory.slice(-24);
+    localStorage.setItem(ALLCOINS_AI_STORAGE_KEY, JSON.stringify(allcoinsAIHistory));
+  } catch (_) {}
+}
+
+function renderAIHistory() {
+  const root = $("aiMessages");
+  if (!root) return;
+  root.textContent = "";
+  if (!allcoinsAIHistory.length) {
+    allcoinsAIHistory.push({
+      role: "assistant",
+      content: "Привет! Я ALLCOINS ИИ. Спроси меня о правилах игр, стратегиях или развитии проекта. По мере подключения функций я буду помогать тебе прямо внутри приложения."
+    });
+    saveAIHistory();
+  }
+  for (const item of allcoinsAIHistory) {
+    const bubble = document.createElement("div");
+    bubble.className = "ai-message " + (item.role === "user" ? "ai-user" : "ai-assistant");
+    const label = document.createElement("span");
+    label.className = "ai-message-label";
+    label.textContent = item.role === "user" ? "Ты" : "ALLCOINS ИИ";
+    const text = document.createElement("div");
+    text.textContent = item.content;
+    bubble.append(label, text);
+    root.appendChild(bubble);
+  }
+  root.scrollTop = root.scrollHeight;
+}
+
+async function sendAIMessage(message) {
+  if (allcoinsAISending) return;
+  const cleanMessage = String(message || "").trim().slice(0, 1000);
+  if (!cleanMessage) return;
+
+  allcoinsAISending = true;
+  const input = $("aiInput");
+  const sendButton = $("aiSend");
+  if (input) input.disabled = true;
+  if (sendButton) {
+    sendButton.disabled = true;
+    sendButton.textContent = "Думаю…";
+  }
+
+  const previousHistory = allcoinsAIHistory.slice(-8);
+  allcoinsAIHistory.push({ role: "user", content: cleanMessage });
+  saveAIHistory();
+  renderAIHistory();
+  showStatus("aiStatus", "ИИ думает над ответом…");
+
+  try {
+    const result = await apiRequest("/api/ai/chat", {
+      message: cleanMessage,
+      history: previousHistory
+    });
+    allcoinsAIHistory.push({
+      role: "assistant",
+      content: String(result.answer || "Не удалось получить текст ответа.")
+    });
+    saveAIHistory();
+    renderAIHistory();
+    showStatus("aiStatus", "Ответ готов.");
+    if (typeof tg !== "undefined" && tg?.HapticFeedback?.notificationOccurred) {
+      tg.HapticFeedback.notificationOccurred("success");
+    }
+  } catch (error) {
+    showStatus("aiStatus", error?.message || "Не удалось связаться с ИИ.");
+  } finally {
+    allcoinsAISending = false;
+    if (input) {
+      input.disabled = false;
+      input.value = "";
+      input.focus();
+    }
+    if (sendButton) {
+      sendButton.disabled = false;
+      sendButton.textContent = "Отправить ➤";
+    }
+  }
+}
+
+const aiForm = $("aiForm");
+if (aiForm) {
+  aiForm.addEventListener("submit", event => {
+    event.preventDefault();
+    sendAIMessage($("aiInput")?.value || "");
+  });
+}
+document.querySelectorAll("[data-ai-prompt]").forEach(button => {
+  button.addEventListener("click", () => {
+    const input = $("aiInput");
+    if (!input || allcoinsAISending) return;
+    input.value = button.dataset.aiPrompt || "";
+    sendAIMessage(input.value);
+  });
+});
+loadAIHistory();
+
 async function durakAction(action, requestedCardIds = null) {
   if (!currentDurakRoomId) {
     alert("Сначала открой игровую комнату.");
@@ -9890,7 +10061,7 @@ document.querySelectorAll(".nav button").forEach(button => {
 
     // Hide only the four top-level ALLCOINS pages. Don't hide nested
     // sections inside separate games (for example, the 21 table/dealer/player areas).
-    ["home", "games", "withdraw", "profile"].forEach(pageId => {
+    ["home", "games", "ai", "withdraw", "profile", "tasks"].forEach(pageId => {
       const page = $(pageId);
       if (page) page.classList.toggle("hidden", pageId !== button.dataset.page);
     });
