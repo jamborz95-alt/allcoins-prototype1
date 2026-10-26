@@ -501,7 +501,7 @@ async function initTower3D(){
    const ctx=c.getContext('2d');
    const grad=ctx.createLinearGradient(0,0,512,512);grad.addColorStop(0,'#9ccc5b');grad.addColorStop(.45,'#75ad43');grad.addColorStop(1,'#4f893c');
    ctx.fillStyle=grad;ctx.fillRect(0,0,512,512);
-   for(let i=0;i<18000;i++){
+   for(let i=0;i<(lowPower?7500:18000);i++){
     const x=Math.random()*512,y=Math.random()*512;
     const light=Math.random()>.53;
     ctx.strokeStyle=light?'rgba(224,245,153,.16)':'rgba(30,77,28,.18)';
@@ -808,7 +808,7 @@ async function initTower3D(){
   function addImpact(position,color,force){
    const count=force?8:5,baseColor=color||0xf5d579;
    for(let i=0;i<count;i++){
-    if(particles.length>=26){const old=particles.shift();scene.remove(old.mesh);old.mesh.geometry.dispose();}
+    if(particles.length>=26){const old=particles.shift();scene.remove(old.mesh);old.mesh.geometry.dispose();old.mat.dispose();}
     const geo=new THREE.OctahedronGeometry(.09+Math.random()*.08,0);
     const mat=new THREE.MeshStandardMaterial({color:baseColor,emissive:baseColor,emissiveIntensity:1.4,roughness:.34,metalness:.15});
     const mesh=new THREE.Mesh(geo,mat);mesh.position.copy(position);mesh.position.y+=.3+Math.random()*.4;scene.add(mesh);
@@ -868,7 +868,7 @@ async function initTower3D(){
       const dest=worldPosition(tower.x,tower.y);
       if(String(tower.ownerId)===String(g.userData.ownerId)){
        entryEffects.push({from:oldPos,to:dest,toId:Number(tower.id),age:0,owner:g.userData.ownerId,units:Math.min(5,g.userData.units||3)});
-       if(entryEffects.length>5)entryEffects.shift();
+       if(entryEffects.length>5){const old=entryEffects.shift();if(old.mesh)disposeTroopGroup(old.mesh);}
       }else addImpact(oldPos,ownerHex(g.userData.ownerId),false);
      }else addImpact(oldPos,ownerHex(g.userData.ownerId),false);
     }
@@ -1014,7 +1014,7 @@ async function initTower3D(){
     let mesh=e.mesh;
     if(!mesh){mesh=makeSoldier(e.owner,.76);scene.add(mesh);e.mesh=mesh;}
     mesh.position.copy(p);mesh.rotation.y=Math.atan2(e.to.x-e.from.x,e.to.z-e.from.z);
-    if(q>=1){scene.remove(mesh);entryEffects.splice(i,1);const record=towerMeshes.get(String(e.toId));if(record)record.flashUntil=now+500;}
+    if(q>=1){disposeTroopGroup(mesh);entryEffects.splice(i,1);const record=towerMeshes.get(String(e.toId));if(record)record.flashUntil=now+500;}
    }
    renderer.render(scene,camera);
    raf=requestAnimationFrame(updateFrame);
@@ -1030,6 +1030,7 @@ async function initTower3D(){
   if(!gameView.classList.contains('hidden'))start();
   console.info('Tower Capture 3D scene ready');
  }catch(error){
+  const failedCanvas=field.querySelector('.tower3d-canvas');if(failedCanvas)failedCanvas.remove();field.classList.remove('tower3d-active');
   console.warn('Tower Capture 3D could not start; keeping the original view.',error);
   tower3D=null;tower3DInit=false;
   setApiStatus('Не удалось загрузить 3D-графику. Используется обычный режим карты.');
