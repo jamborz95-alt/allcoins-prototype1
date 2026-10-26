@@ -118,7 +118,7 @@ try {
       fr: "Tournoi hebdomadaire ALLCOINS",
       pt: "Torneio semanal ALLCOINS",
       zh: "ALLCOINS 每周锦标赛"
-    },
+    }},
     { file: "billiards.html", source: "Бильярд Онлайн", translations: {
       en: "Online Billiards",
       nl: "Biljart Online",
@@ -128,7 +128,7 @@ try {
       fr: "Billard en ligne",
       pt: "Bilhar online",
       zh: "在线台球"
-    },
+    }},
     { file: "bomb.html", source: "Передай бомбу", translations: {
       en: "Pass the Bomb",
       nl: "Geef de bom door",
@@ -138,7 +138,7 @@ try {
       fr: "Passer la bombe",
       pt: "Passe a bomba",
       zh: "传递炸弹"
-    },
+    }},
     { file: "checkers.html", source: "Шашки Онлайн", translations: {
       en: "Online Checkers",
       nl: "Dammen Online",
@@ -148,7 +148,7 @@ try {
       fr: "Jeu de dames en ligne",
       pt: "Damas online",
       zh: "在线跳棋"
-    },
+    }},
     { file: "rps.html", source: "Камень · Ножницы · Бумага", translations: {
       en: "Rock · Paper · Scissors",
       nl: "Steen · Papier · Schaar",
@@ -158,7 +158,7 @@ try {
       fr: "Pierre · Feuille · Ciseaux",
       pt: "Pedra · Papel · Tesoura",
       zh: "石头 · 剪刀 · 布"
-    },
+    }},
     { file: "seka.html", source: "Сека Онлайн", translations: {
       en: "Seka Online",
       nl: "Seka Online",
@@ -168,7 +168,7 @@ try {
       fr: "Seka en ligne",
       pt: "Seka online",
       zh: "在线 Seka"
-    },
+    }},
     { file: "towers.html", source: "Захватывай башни.", translations: {
       en: "Capture towers.",
       nl: "Verover torens.",
@@ -178,7 +178,7 @@ try {
       fr: "Capture les tours.",
       pt: "Conquiste as torres.",
       zh: "占领塔楼。"
-    },
+    }},
     { file: "uno.html", source: "УНО Онлайн", translations: {
       en: "UNO Online",
       nl: "UNO Online",
@@ -188,7 +188,7 @@ try {
       fr: "UNO en ligne",
       pt: "UNO online",
       zh: "UNO 在线"
-    }
+    }}
   ];
   const standaloneLocaleResults = [];
   const standaloneLocales = ["en", "nl", "tr", "es", "de", "fr", "pt", "zh"];
