@@ -180,6 +180,42 @@ body.playing .top{display:none}
   #continueAdButton[hidden]{display:none!important}
   #continueAdButton:disabled{opacity:.72;filter:saturate(.7)}
 </style>
+
+<style id="block-blast-fullscreen-smooth-final">
+/* Keep the active game inside the entire Telegram viewport without page scrolling. */
+html,body{width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#app{position:fixed;inset:0;width:100%;height:100%;height:100dvh;min-height:0;overflow:auto}
+body.playing #app{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;padding:calc(env(safe-area-inset-top) + 2px) 0 calc(env(safe-area-inset-bottom) + 4px)}
+body.playing .page{width:100%;max-width:none;height:100%;min-height:0;gap:0;overflow:hidden}
+body.playing #play{display:flex!important;flex:1 1 auto;flex-direction:column;gap:0;width:100%;height:100%;min-height:0;overflow:hidden}
+body.playing .play-recordbar{height:clamp(58px,9dvh,100px);min-height:58px;max-height:none;flex:0 0 auto;padding:0 max(12px,3.5vw)}
+body.playing .current-score-wrap{height:clamp(54px,8dvh,90px);min-height:54px;max-height:none;flex:0 0 auto;margin:0}
+body.playing .score{font-size:clamp(46px,8vh,76px)}
+body.playing #play .board-wrap{width:100%;height:auto;max-height:100%;flex:1 1 auto;min-height:0;margin:0;padding:0 2px;display:flex;align-items:center;justify-content:center;overflow:visible}
+body.playing #play .board{width:min(92vw,calc(100dvh - 180px),640px);max-width:100%;max-height:100%;height:auto;aspect-ratio:1;flex:0 1 auto;margin:auto}
+body.playing #play .tray{width:min(96vw,540px);min-height:calc(var(--block-size)*2.3);flex:0 0 auto;gap:2px;margin:max(4px,.8dvh) auto 0}
+body.playing #play .game-hints{flex:0 0 auto;min-height:14px;margin:3px auto 0;padding:0 8px;max-width:98%;font-size:clamp(9px,1.5vh,11px);line-height:1.2}
+body.playing #play #modeLabel{display:none!important}
+/* A block settles into its final cell instead of fading away before the board updates. */
+@keyframes blockBlastLand{
+  0%{transform:scale(.82);opacity:.84;filter:brightness(1.22) saturate(1.08)}
+  56%{transform:scale(1.045);opacity:1;filter:brightness(1.09) saturate(1.04)}
+  78%{transform:scale(.99);filter:brightness(1.02)}
+  100%{transform:scale(1);opacity:1;filter:brightness(1)}
+}
+.cell.just-placed{animation:blockBlastLand 270ms cubic-bezier(.2,.78,.22,1) both;will-change:transform,filter,opacity;transform-origin:center}
+.drag-ghost{opacity:1;will-change:left,top,filter;backface-visibility:hidden}
+.drag-ghost.is-dropping .piece-dot:not(.empty){animation:blockBlastGhostSettle 190ms cubic-bezier(.2,.8,.22,1) both}
+@keyframes blockBlastGhostSettle{
+  0%{transform:scale(1.035);filter:brightness(1.18)}
+  70%{transform:scale(.985);filter:brightness(1.08)}
+  100%{transform:scale(1);filter:brightness(1.06)}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell.just-placed,.drag-ghost.is-dropping .piece-dot:not(.empty){animation-duration:1ms!important}
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -207,7 +243,7 @@ body.playing .top{display:none}
     <p class="rules" style="margin-top:9px">Турнирная неделя завершается в понедельник в 00:00 UTC. Недельный рекорд начинает считаться заново, личный рекорд остаётся.</p>
    </div>
    <div class="status" id="setupStatus" role="status" aria-live="polite">Подключаем профиль и проверяем баланс…</div>
-   <p class="rules">Ставь фигуры на поле 10×10. Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков. Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.</p>
+   <p class="rules">Ставь фигуры на поле 8×8. Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков. Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.</p>
   </section>
 
   <section id="play">
@@ -436,12 +472,20 @@ function canPlaceAllThree(startBoard,candidate){
  }
  return search(startBoard,[0,1,2]);
 }
+function setTelegramGameChrome(playing){
+ if(!tg)return;
+ try{
+  tg.ready();
+  tg.expand();
+  if(tg.BackButton){if(playing)tg.BackButton.hide();else tg.BackButton.show();}
+ }catch(telegramChromeError){}
+}
 function startGame(){
- playGameSound("start");$("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
- $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
+ playGameSound("start");$("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");setTelegramGameChrome(true);board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
+ $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · личный рекорд сохраняется";
  $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
-function backToMenu(){gameActive=false;document.body.classList.remove("playing");clearDrag();$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
+function backToMenu(){gameActive=false;document.body.classList.remove("playing");setTelegramGameChrome(false);clearDrag();$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
 function renderBoard(){
  var root=$("board");root.innerHTML="";
  for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
@@ -533,12 +577,12 @@ function animateDropGhostToBoard(row,col,anchorRow,anchorCol){
   if(!targetCell){resolve();return;}
   var rect=targetCell.getBoundingClientRect(),targetX=rect.left+rect.width/2,targetY=rect.top+rect.height/2;
   dragGhost.classList.add("is-dropping");
-  dragGhost.style.transition="left 220ms cubic-bezier(.2,.8,.2,1), top 220ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease, filter 220ms ease";
+  dragGhost.style.transition="left 200ms cubic-bezier(.2,.8,.2,1), top 200ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease-out, filter 200ms ease-out";
   requestAnimationFrame(function(){
    if(!dragGhost){resolve();return;}
-   dragGhost.style.left=targetX+"px";dragGhost.style.top=targetY+"px";dragGhost.style.opacity=".28";dragGhost.style.filter="drop-shadow(0 3px 3px #7c365944) brightness(1.08)";
+   dragGhost.style.left=targetX+"px";dragGhost.style.top=targetY+"px";dragGhost.style.opacity=".98";dragGhost.style.filter="drop-shadow(0 5px 5px #9f496e66) brightness(1.12) saturate(1.04)";
   });
-  setTimeout(resolve,235);
+  setTimeout(resolve,210);
  });
 }
 function clearDrag(){dragState=null;clearDragGhost();}
