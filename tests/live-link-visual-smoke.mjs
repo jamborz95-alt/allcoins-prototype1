@@ -110,34 +110,88 @@ try {
 
   const standalonePages = [
     { file: "blockblast.html", source: "Недельный турнир ALLCOINS", translations: {
-      de: "ALLCOINS-Wochenturnier", fr: "Tournoi hebdomadaire ALLCOINS",
-      pt: "Torneio semanal ALLCOINS", zh: "ALLCOINS 每周锦标赛"
-    }},
+      en: "ALLCOINS weekly tournament",
+      nl: "ALLCOINS-weektoernooi",
+      tr: "ALLCOINS haftalık turnuvası",
+      es: "Torneo semanal de ALLCOINS",
+      de: "ALLCOINS-Wochenturnier",
+      fr: "Tournoi hebdomadaire ALLCOINS",
+      pt: "Torneio semanal ALLCOINS",
+      zh: "ALLCOINS 每周锦标赛"
+    },
     { file: "billiards.html", source: "Бильярд Онлайн", translations: {
-      de: "Online-Billard", fr: "Billard en ligne", pt: "Bilhar online", zh: "在线台球"
-    }},
+      en: "Online Billiards",
+      nl: "Biljart Online",
+      tr: "Çevrimiçi Bilardo",
+      es: "Billar en línea",
+      de: "Online-Billard",
+      fr: "Billard en ligne",
+      pt: "Bilhar online",
+      zh: "在线台球"
+    },
     { file: "bomb.html", source: "Передай бомбу", translations: {
-      de: "Bombe weitergeben", fr: "Passer la bombe", pt: "Passe a bomba", zh: "传递炸弹"
-    }},
+      en: "Pass the Bomb",
+      nl: "Geef de bom door",
+      tr: "Bombayı aktar",
+      es: "Pasa la bomba",
+      de: "Bombe weitergeben",
+      fr: "Passer la bombe",
+      pt: "Passe a bomba",
+      zh: "传递炸弹"
+    },
     { file: "checkers.html", source: "Шашки Онлайн", translations: {
-      de: "Online-Dame", fr: "Jeu de dames en ligne", pt: "Damas online", zh: "在线跳棋"
-    }},
+      en: "Online Checkers",
+      nl: "Dammen Online",
+      tr: "Çevrimiçi Dama",
+      es: "Damas en línea",
+      de: "Online-Dame",
+      fr: "Jeu de dames en ligne",
+      pt: "Damas online",
+      zh: "在线跳棋"
+    },
     { file: "rps.html", source: "Камень · Ножницы · Бумага", translations: {
-      de: "Schere · Stein · Papier", fr: "Pierre · Feuille · Ciseaux",
-      pt: "Pedra · Papel · Tesoura", zh: "石头 · 剪刀 · 布"
-    }},
+      en: "Rock · Paper · Scissors",
+      nl: "Steen · Papier · Schaar",
+      tr: "Taş · Kağıt · Makas",
+      es: "Piedra · Papel · Tijera",
+      de: "Schere · Stein · Papier",
+      fr: "Pierre · Feuille · Ciseaux",
+      pt: "Pedra · Papel · Tesoura",
+      zh: "石头 · 剪刀 · 布"
+    },
     { file: "seka.html", source: "Сека Онлайн", translations: {
-      de: "Online-Seka", fr: "Seka en ligne", pt: "Seka online", zh: "在线 Seka"
-    }},
+      en: "Seka Online",
+      nl: "Seka Online",
+      tr: "Seka Online",
+      es: "Seka Online",
+      de: "Online-Seka",
+      fr: "Seka en ligne",
+      pt: "Seka online",
+      zh: "在线 Seka"
+    },
     { file: "towers.html", source: "Захватывай башни.", translations: {
-      de: "Erobere Türme.", fr: "Capture les tours.", pt: "Conquiste as torres.", zh: "占领塔楼。"
-    }},
+      en: "Capture towers.",
+      nl: "Verover torens.",
+      tr: "Kuleleri ele geçir.",
+      es: "Conquista las torres.",
+      de: "Erobere Türme.",
+      fr: "Capture les tours.",
+      pt: "Conquiste as torres.",
+      zh: "占领塔楼。"
+    },
     { file: "uno.html", source: "УНО Онлайн", translations: {
-      de: "UNO Online", fr: "UNO en ligne", pt: "UNO online", zh: "UNO 在线"
-    }}
+      en: "UNO Online",
+      nl: "UNO Online",
+      tr: "UNO Çevrimiçi",
+      es: "UNO en línea",
+      de: "UNO Online",
+      fr: "UNO en ligne",
+      pt: "UNO online",
+      zh: "UNO 在线"
+    }
   ];
   const standaloneLocaleResults = [];
-  const standaloneLocales = ["de", "fr", "pt", "zh"];
+  const standaloneLocales = ["en", "nl", "tr", "es", "de", "fr", "pt", "zh"];
   // Standalone game pages are tested against this commit, not the live Pages deployment,
   // which may still be publishing while the push-triggered workflow starts.
   const publicRoot = "http://127.0.0.1:4173/";
@@ -149,10 +203,11 @@ try {
       const gameResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       assert.ok(gameResponse, locale + " " + game.file + " did not return a page response.");
       assert.equal(gameResponse.status(), 200, locale + " " + game.file + " should return HTTP 200.");
-      await page.waitForFunction(({ code }) => document.documentElement.lang === code &&
+      const minExtraKeyCount = ["de", "fr", "pt", "zh"].includes(locale) ? 489 : 20;
+      await page.waitForFunction(({ code, minimum }) => document.documentElement.lang === code &&
         !!window.ALLCOINS_I18N_EXTRA &&
-        Object.keys(window.ALLCOINS_I18N_EXTRA[code] || {}).length >= 489,
-        { code: locale }, { timeout: 25000 }
+        Object.keys(window.ALLCOINS_I18N_EXTRA[code] || {}).length >= minimum,
+        { code: locale, minimum: minExtraKeyCount }, { timeout: 25000 }
       );
       const localeState = await page.evaluate(() => ({
         language: document.documentElement.lang,
@@ -165,7 +220,7 @@ try {
         game.file + " reset document language: " + JSON.stringify(localeState));
       assert.equal(localeState.storedLanguage, locale,
         game.file + " lost stored language: " + JSON.stringify(localeState));
-      assert.ok(localeState.requestedLocaleCount >= 489,
+      assert.ok(localeState.requestedLocaleCount >= minExtraKeyCount,
         game.file + " shared dictionary is incomplete: " + JSON.stringify(localeState));
       await page.waitForFunction(({ target }) => document.body.innerText.includes(target),
         { target: game.translations[locale] }, { timeout: 10000 }
