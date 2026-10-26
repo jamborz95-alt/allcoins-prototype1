@@ -3464,6 +3464,14 @@ async function startServer() {
       BEFORE UPDATE OR DELETE ON allcoins_balance_audit
       FOR EACH ROW EXECUTE FUNCTION allcoins_prevent_balance_audit_mutation()
     `);
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trg_allcoins_balance_audit_no_truncate ON allcoins_balance_audit
+    `);
+    await pool.query(`
+      CREATE TRIGGER trg_allcoins_balance_audit_no_truncate
+      BEFORE TRUNCATE ON allcoins_balance_audit
+      FOR EACH STATEMENT EXECUTE FUNCTION allcoins_prevent_balance_audit_mutation()
+    `);
 
     // Start a documented audit baseline for existing balances; this does not invent
     // transaction history before this migration existed.
@@ -3484,6 +3492,26 @@ async function startServer() {
         reason TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trg_allcoins_recovery_marker_append_only ON allcoins_balance_recoveries
+    `);
+    await pool.query(`
+      CREATE TRIGGER trg_allcoins_recovery_marker_append_only
+      BEFORE UPDATE OR DELETE ON allcoins_balance_recoveries
+      FOR EACH ROW EXECUTE FUNCTION allcoins_prevent_balance_audit_mutation()
+    `);
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trg_allcoins_recovery_marker_no_truncate ON allcoins_balance_recoveries
+    `);
+    await pool.query(`
+      CREATE TRIGGER trg_allcoins_recovery_marker_no_truncate
+      BEFORE TRUNCATE ON allcoins_balance_recoveries
+      FOR EACH STATEMENT EXECUTE FUNCTION allcoins_prevent_balance_audit_mutation()
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS allcoins_balance_audit_player_time_idx
+      ON allcoins_balance_audit (telegram_id, changed_at DESC)
     `);
 
     console.log("Players table is ready");
