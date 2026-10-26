@@ -582,6 +582,7 @@
     let fuseDuration = 0;
     let tickTimer = null;
     let botTimer = null;
+    let transferTimer = null;
     let lastTickSound = 0;
     let soundOn = true;
     let roundToken = 0;
@@ -1269,10 +1270,10 @@
     }
 
     function passBomb(target) {
-      if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      if (phase !== 'playing' || target === holder || !players[target] || players[target].lives <= 0) return;
       stopBotMovement();
       const owner = holder;
-      if (players[owner].bot) return;
+      if (!players[owner] || players[owner].bot) return;
       clearTimeout(botTimer); botTimer = null;
       const token = roundToken;
       phase = 'passing';
@@ -1283,19 +1284,39 @@
       playTone(780, .09, 'triangle', .045);
       if (navigator.vibrate) { try { navigator.vibrate(35); } catch (_) {} }
       positionBomb(target, true);
-      window.setTimeout(() => {
-        if (token !== roundToken || phase !== 'passing') return;
-        holder = target;
+      clearTimeout(transferTimer);
+      // Finish slightly after the visual flight and force-sync the bomb to its new carrier.
+      // This watchdog prevents a stalled WAAPI animation from leaving phase='passing'.
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 540);
+    }
+
+    function finishBombTransfer(target, token) {
+      clearTimeout(transferTimer); transferTimer = null;
+      if (token !== roundToken || phase !== 'passing') return;
+      if (!players[target] || players[target].lives <= 0) {
         phase = 'playing';
-        updateSeats();
-        if (holder === 0) syncBombToCarrier();
+        if (players[holder] && players[holder].lives > 0) syncBombToCarrier();
         renderCharacterPosition();
         resumeJoystickMotion();
-        setStatusText('Передай бомбу!', players[holder].bot ? 'Бот быстро решает, кому отдать её' : 'Не медли — передавай дальше');
-        setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
         scheduleBot();
-        playTone(610, .05, 'sine', .026);
-      }, 485);
+        return;
+      }
+      holder = target;
+      phase = 'playing';
+      // Cancel any late animation frame and place the bomb on the carrier deterministically.
+      if (bombFlightAnimation) {
+        try { bombFlightAnimation.cancel(); } catch (_) {}
+        bombFlightAnimation = null;
+      }
+      syncBombToCarrier();
+      document.querySelectorAll('.seat').forEach(seat => seat.classList.remove('target'));
+      updateSeats();
+      renderCharacterPosition();
+      resumeJoystickMotion();
+      setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Не медли — передавай дальше');
+      setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
+      scheduleBot();
+      playTone(610, .05, 'sine', .026);
     }
 
     function stopBotMovement() {
@@ -1395,25 +1416,19 @@
       }, 420 + Math.random() * 420);
     }
     function passBombFromBot(target) {
-      if (phase !== 'playing' || target === holder || players[target].lives <= 0) return;
+      if (phase !== 'playing' || target === holder || !players[target] || players[target].lives <= 0) return;
       stopBotMovement();
-      const owner = holder; const token = roundToken;
+      const owner = holder;
+      if (!players[owner]) return;
+      const token = roundToken;
       phase = 'passing';
       pauseJoystickMotion();
       setStatusText('ПЕРЕДАЧА!', players[owner].name + ' → ' + players[target].name);
       setInstruction('<strong>' + safeText(players[owner].name) + '</strong> передаёт бомбу игроку <strong>' + safeText(players[target].name) + '</strong>…');
       playTone(710, .08, 'triangle', .035);
       positionBomb(target, true);
-      window.setTimeout(() => {
-        if (token !== roundToken || phase !== 'passing') return;
-        holder = target; phase = 'playing'; updateSeats();
-        if (holder === 0) syncBombToCarrier();
-        renderCharacterPosition();
-        resumeJoystickMotion();
-        setStatusText('Передай бомбу!', players[holder].bot ? 'Бот выбирает следующую цель' : 'Нажми на другого игрока');
-        setInstruction(players[holder].bot ? 'Бомба у <strong>' + safeText(players[holder].name) + '</strong>. Бот готовит передачу…' : '<strong>Бомба у ' + safeText(players[holder].name) + '.</strong> Нажми на другого активного игрока!');
-        scheduleBot();
-      }, 485);
+      clearTimeout(transferTimer);
+      transferTimer = window.setTimeout(() => finishBombTransfer(target, token), 540);
     }
 
     function explode() {
@@ -1473,6 +1488,7 @@
     function stopTimers() {
       if (tickTimer) clearInterval(tickTimer); tickTimer = null;
       if (botTimer) clearTimeout(botTimer); botTimer = null;
+      if (transferTimer) clearTimeout(transferTimer); transferTimer = null;
       stopBotMovement();
     }
 
