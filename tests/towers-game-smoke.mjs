@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
-assert.ok(index.includes('id="towersEntry"') && index.includes('href="./towers.html?v=20261025-tower-smooth-movement1"'),
+assert.ok(index.includes('id="towersEntry"') && /href="\.\/towers\.html\?v=[^"]+"/.test(index),
   "The Games menu should link to Towers Capture.");
 assert.ok(html.includes('id="gameView"') && html.includes('id="practice"') &&
   html.includes('id="stakeInput"') && html.includes('id="playersInput"'),
