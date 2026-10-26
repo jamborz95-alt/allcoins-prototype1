@@ -104,6 +104,7 @@ try {
     await page.locator('button[data-page="profile"]').click();
   }
 
+  await page.locator('button[data-page="games"]').click();
   await page.setViewportSize({ width: 360, height: 740 });
   const narrowState = await page.evaluate(() => ({
     viewportWidth: innerWidth,
