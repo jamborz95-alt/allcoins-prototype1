@@ -167,11 +167,9 @@ async function notifyAdmin(ticket, triage) {
 async function processTicket(ticket) {
   try {
     const triage = await analyzeTicket(ticket);
-    // Only escalate to the owner when AI believes developer attention is needed.
-    const notificationSent = triage.needsDeveloper ? await notifyAdmin(ticket, triage) : false;
-    const notificationStatus = triage.needsDeveloper
-      ? (notificationSent ? "sent" : "failed")
-      : "not_needed";
+    // Every support ticket must reach the owner; AI triage only sets the urgency.
+    const notificationSent = await notifyAdmin(ticket, triage);
+    const notificationStatus = notificationSent ? "sent" : "failed";
     await ticket.pool.query(
       `UPDATE allcoins_support_tickets
        SET ai_summary = $1,
