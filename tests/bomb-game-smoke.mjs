@@ -1,17 +1,26 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 
 const root = process.cwd();
 const bombHtml = await readFile(resolve(root, "bomb.html"), "utf8");
+const bombJs = await readFile(resolve(root, "bomb-3d.js"), "utf8");
+const i18nExtraJs = await readFile(resolve(root, "i18n-extra.js"), "utf8");
+const threeBundle = await readFile(resolve(root, "node_modules/three/build/three.min.js"), "utf8");
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
+await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261025-obstacles2"'),
-  "The game link should load the smoother physics build with its on-field joystick.");
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261026h"'),
+  "The Games menu should open the current cache-busted Bomb page.");
+assert.ok(bombHtml.includes('<script src="./bomb-3d.js?v=20261026h"></script>'),
+  "The current game page must load the updated 3D renderer.");
+assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
+  !bombJs.includes("const brim = mesh(new THREE.CylinderGeometry(.43, .43, .1, 18)"),
+  "The renderer should show the larger map and remove the dark helmet brim.");
 assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   bombTile < indexHtml.indexOf('id="unoEntry"'),
   "Pass the Bomb should appear in the first row after Durak.");
@@ -77,6 +86,16 @@ const server = createServer((req, res) => {
     res.end(bombHtml);
     return;
   }
+  if (pathname === "/bomb-3d.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
+    res.end(bombJs);
+    return;
+  }
+  if (pathname === "/i18n-extra.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
+    res.end(i18nExtraJs);
+    return;
+  }
   res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
   res.end("Not found");
 });
@@ -84,14 +103,26 @@ await new Promise((resolveListen) => server.listen(4175, "127.0.0.1", resolveLis
 
 let browser;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
+  });
   const page = await browser.newPage({
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true
   });
   const pageErrors = [];
+  const consoleErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await page.route("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/javascript",
+    body: threeBundle
+  }));
   await page.route("https://telegram.org/**", (route) => route.fulfill({
     status: 200,
     contentType: "application/javascript",
@@ -104,6 +135,7 @@ try {
   assert.equal(await page.title(), "Передай бомбу — ALLCOINS");
   assert.equal(await page.locator("#setupView").isVisible(), true);
   assert.equal(await page.locator("#startGame").isVisible(), true);
+  await page.screenshot({ path: resolve(root, "artifacts/bomb-lobby-mobile.png"), fullPage: true });
   assert.equal(await page.locator("#mapControl [data-map]").count(), 2,
     "The lobby should offer two original selectable map cards.");
   await page.locator('#mapControl [data-map="crystal"]').click();
@@ -134,12 +166,42 @@ try {
       "The joystick should belong to the arena, not the footer.");
     assert.equal(await page.locator("#arena").getAttribute("data-map"), "crystal",
       "The selected map should be applied to the full-screen game arena.");
+    if (count === 4) {
+      await page.waitForFunction(() => {
+        const arena = document.querySelector("#arena");
+        const canvas = arena?.querySelector("canvas.bomb-3d-canvas");
+        return Boolean(arena?.classList.contains("three-ready") && canvas &&
+          canvas.width >= 300 && canvas.height >= 300);
+      }, undefined, { timeout: 10000 });
+      await page.waitForTimeout(500);
+      const rendererState = await page.locator("#arena").evaluate((arena) => {
+        const canvas = arena.querySelector("canvas.bomb-3d-canvas");
+        return {
+          threeReady: arena.classList.contains("three-ready"),
+          canvasWidth: canvas?.width || 0,
+          canvasHeight: canvas?.height || 0,
+          gameWidth: Math.round(arena.getBoundingClientRect().width),
+          gameHeight: Math.round(arena.getBoundingClientRect().height),
+          visibleCharacterFallbacks: [...arena.querySelectorAll(".player-character,.bot-character")]
+            .filter((el) => getComputedStyle(el).visibility !== "hidden").length
+        };
+      });
+      console.log("Bomb mobile visual renderer check: " + JSON.stringify(rendererState));
+      await page.screenshot({ path: resolve(root, "artifacts/bomb-game-mobile.png"), fullPage: true });
+      assert.equal(rendererState.threeReady, true, "The visible game must actually render with the 3D layer.");
+      assert.ok(rendererState.canvasWidth >= 300 && rendererState.canvasHeight >= 300,
+        "The 3D renderer should draw to a mobile-sized canvas.");
+    }
     await page.locator("#gameBack").click();
   }
 
   await page.locator('#playerCountControl button[data-count="4"]').click();
   await page.locator('#modeControl button[data-mode="local"]').click();
-  await page.evaluate(() => { Math.random = () => 0; });
+  // Keep player 0 as the first holder, and give the fuse the full 15.4-second test window.
+  await page.evaluate(() => {
+    let randomCall = 0;
+    Math.random = () => (++randomCall === 1 ? 0 : 0.9999);
+  });
   await page.locator("#startGame").click();
 
   const outfitColors = await page.evaluate(() => [1,2,3].map(index =>
@@ -257,20 +319,34 @@ try {
   const heartsBefore = await page.locator(
     '#seats .seat[data-player="' + target + '"] .lives .heart.on'
   ).count();
-  // The fuse lasts at most 15.4 seconds. Allow extra time for the result overlay.
-  await page.waitForTimeout(16300);
-  assert.equal(await page.locator("#resultOverlay").isVisible(), true,
-    "The fuse should end with an explosion result.");
-  assert.ok(["БУМ!", "ПОБЕДА!"].includes(await page.locator("#resultTitle").innerText()));
+  // Wait for the first explosion, then verify the game automatically starts round 2 without a button.
+  await page.waitForFunction(() =>
+    (document.querySelector("#fuseLabel")?.textContent || "").includes("Взрыв") ||
+    Number(document.querySelector("#roundLabel")?.textContent || "0") >= 2,
+    undefined,
+    { timeout: 18000 }
+  );
+  await page.waitForFunction(() => {
+    const round = Number(document.querySelector("#roundLabel")?.textContent || "0");
+    const fuse = document.querySelector("#fuseLabel")?.textContent || "";
+    const overlay = document.querySelector("#resultOverlay");
+    const continueButton = document.querySelector("#continueRound");
+    return round >= 2 && fuse.includes("Горит") &&
+      overlay?.classList.contains("hidden") && continueButton?.hidden === true;
+  }, undefined, { timeout: 7000 });
   const heartsAfter = await page.locator(
     '#seats .seat[data-player="' + target + '"] .lives .heart.on'
   ).count();
   assert.equal(heartsAfter, heartsBefore - 1,
     "The player who holds the bomb at explosion must visibly lose one heart.");
-  assert.equal(await page.locator("#resultPrimary").innerText(), "Следующий раунд");
-  await page.locator("#resultPrimary").click();
+  assert.equal(await page.locator("#resultOverlay").isVisible(), false,
+    "A regular explosion must not open a result dialog.");
+  assert.equal(await page.locator("#continueRound").isVisible(), false,
+    "There must be no manual Next Round button after an ordinary explosion.");
   assert.equal(await page.locator("#roundLabel").innerText(), "2",
-    "The next round should start and be numbered correctly.");
+    "The next round should begin automatically and be numbered correctly.");
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: resolve(root, "artifacts/bomb-next-round-mobile.png"), fullPage: true });
 
   await page.locator("#gameBack").click();
   await page.locator('#playerCountControl button[data-count="4"]').click();
@@ -335,7 +411,8 @@ try {
   assert.equal(await page.locator("#gameView").isVisible(), true,
     "The current round must stay open after the bot hand-off and joystick recovery.");
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
-  console.log("Pass the Bomb smoke test passed: lobby/maps, visible human and bot miners, joystick movement, contact transfers, dynamite audio code, active-round back guard, explosions and 320px mobile layout.");
+  assert.deepEqual(consoleErrors, [], "The browser should not report console errors during the visual test.");
+  console.log("Pass the Bomb browser and visual test passed: 3D canvas, lobby/maps, miner models, joystick movement, contact transfers, automatic next round, active-round back guard, explosions and 320px mobile layout.");
 } finally {
   if (browser) await browser.close();
   await new Promise((resolveClose, rejectClose) => server.close((err) => err ? rejectClose(err) : resolveClose()));
