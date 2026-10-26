@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#ef9fba">
 <title>Block Blast — ALLCOINS</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <style>
 :root{color-scheme:dark;--bg:#080d19;--panel:#121b2d;--panel2:#19243a;--line:#293951;--gold:#f3c969;--text:#f6f8fc;--muted:#9cacc3;--cyan:#67e3d0;--pink:#eaa7ff;--cell:#202d42;--cellBorder:#32445f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -175,6 +176,8 @@ body.playing .top{display:none}
 .piece-slot.is-drag-source .piece-grid{opacity:0!important;visibility:hidden!important}
 @keyframes blockBlastPickup{from{transform:scale(.72)}to{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.drag-ghost .piece-dot{animation-duration:1ms!important}}
+  #continueAdButton[hidden]{display:none!important}
+  #continueAdButton:disabled{opacity:.72;filter:saturate(.7)}
 </style>
 </head>
 <body>
@@ -228,7 +231,7 @@ body.playing .top{display:none}
   <div class="trophy">🏆</div><h2 id="gameOverTitle">Игра окончена</h2>
   <div class="final-score" id="finalScore">0</div>
   <p id="resultMessage">Результат сохранён.</p>
-  <div class="modal-actions"><button class="primary" id="playAgainButton" type="button">Сыграть ещё раз</button><button class="secondary" id="resultMenuButton" type="button">В меню</button></div>
+  <div class="modal-actions"><button class="primary" id="continueAdButton" type="button">▶ Посмотреть рекламу и продолжить</button><button class="primary" id="playAgainButton" type="button">Сыграть ещё раз</button><button class="secondary" id="resultMenuButton" type="button">В меню</button></div>
  </div>
 </div>
 
@@ -246,7 +249,7 @@ var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
 var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
 var BOARD_SIZE=8;
 var lastPlacedCells=[];
-var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0,continueUsed=false,adPending=false,adController=null;
 var shapes=[
  [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
  [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
@@ -395,7 +398,7 @@ function canPlaceAllThree(startBoard,candidate){
  return search(startBoard,[0,1,2]);
 }
 function startGame(){
- $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;generatePieces();renderBoard();renderTray();renderScore();
+ $("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
  $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · недельный рекорд не меняется";
  $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
 }
@@ -558,6 +561,60 @@ async function placeSelected(row,col){
  if(!anyMoveAvailable()){endGame();return;}
 }
 function renderScore(){$("currentScore").textContent=String(score);$("inGameBest").textContent=String(Math.max(readNumber(personalKey),score));$("playingWeeklyRecord").textContent=String(readNumber(weeklyKey));}
+function pickRandomOccupiedCells(count){
+ var occupied=[];
+ for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)if(board[r][c])occupied.push([r,c]);
+ for(var i=occupied.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),tmp=occupied[i];occupied[i]=occupied[j];occupied[j]=tmp;}
+ return occupied.slice(0,Math.min(count,occupied.length));
+}
+function waitFor(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
+async function resumeAfterAd(){
+ $("gameover").style.display="none";
+ isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
+ var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ var totalCleared=0;
+ for(var attempt=0;attempt<9;attempt++){
+  var occupied=pickRandomOccupiedCells(8);
+  if(!occupied.length){generatePieces();break;}
+  occupied.forEach(function(pos){
+   var cell=$("board").querySelector('.cell[data-row="'+pos[0]+'"][data-col="'+pos[1]+'"]');
+   if(cell)cell.classList.add("clearing");
+  });
+  $("gameHint").textContent="Продолжение после рекламы · освобождаем клетки…";
+  await waitFor(reduced?20:270);
+  occupied.forEach(function(pos){board[pos[0]][pos[1]]=0;});
+  totalCleared+=occupied.length;
+  renderBoard();generatePieces();
+  if(anyMoveAvailable())break;
+ }
+ gameActive=true;isResolving=false;
+ $("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");
+ renderBoard();renderTray();renderScore();
+ $("gameHint").textContent="Продолжаем игру! Освобождено клеток: "+totalCleared+". Счёт сохранён — играй дальше.";
+}
+async function continueAfterAd(){
+ if(adPending||continueUsed)return;
+ adPending=true;
+ var button=$("continueAdButton");
+ button.disabled=true;button.textContent="Загружаем рекламу…";
+ try{
+  if(!window.Adsgram||typeof window.Adsgram.init!=="function")throw new Error("Реклама не загрузилась. Проверь подключение и попробуй ещё раз.");
+  if(!adController)adController=window.Adsgram.init({blockId:"54021"});
+  var adResult=await adController.show();
+  if(!adResult||adResult.done!==true)throw new Error("Реклама не была досмотрена до конца. Продолжение не начислено.");
+  continueUsed=true;
+  button.hidden=true;
+  await resumeAfterAd();
+ }catch(error){
+  var reason=error&&error.message?error.message:"Не удалось показать рекламу.";
+  $("resultMessage").textContent="Продолжение доступно после полного просмотра ролика. "+reason;
+ }finally{
+  adPending=false;
+  button.disabled=continueUsed;
+  button.hidden=continueUsed;
+  if(!continueUsed)button.textContent="▶ Посмотреть рекламу и продолжить";
+ }
+}
 async function endGame(){
  if(!gameActive)return;gameActive=false;isResolving=false;$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");renderTray();
  var prevPersonal=readNumber(personalKey);if(score>prevPersonal)storeNumber(personalKey,score);
@@ -578,7 +635,8 @@ $("practiceButton").addEventListener("click",function(){tournamentMode=false;sta
 $("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261025-blockblast1";});
 $("leaveGameButton").addEventListener("click",backToMenu);
 $("restartButton").addEventListener("click",startGame);
-$("playAgainButton").addEventListener("click",function(){startGame();});
+$("continueAdButton").addEventListener("click",continueAfterAd);
+ $("playAgainButton").addEventListener("click",function(){startGame();});
 $("resultMenuButton").addEventListener("click",backToMenu);
 window.addEventListener("resize",function(){if(gameActive)renderBoard();});
 if(tg&&tg.BackButton){try{tg.BackButton.onClick(function(){backToMenu();});tg.BackButton.show();}catch(e){}}
