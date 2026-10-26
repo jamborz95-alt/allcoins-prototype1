@@ -146,13 +146,20 @@ try {
       const gameResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       assert.ok(gameResponse, locale + " " + game.file + " did not return a page response.");
       assert.equal(gameResponse.status(), 200, locale + " " + game.file + " should return HTTP 200.");
-      await page.waitForFunction(code =>
-        document.documentElement.lang === code &&
-        localStorage.getItem("allcoins_language") === code &&
-        window.ALLCOINS_I18N_EXTRA &&
-        Object.keys(window.ALLCOINS_I18N_EXTRA[code] || {}).length >= 489,
-        locale, { timeout: 25000 }
-      );
+      await page.waitForFunction(() => !!window.ALLCOINS_I18N_EXTRA, undefined, { timeout: 25000 });
+      const localeState = await page.evaluate(() => ({
+        language: document.documentElement.lang,
+        storedLanguage: localStorage.getItem("allcoins_language"),
+        extraLocaleCount: Object.keys(window.ALLCOINS_I18N_EXTRA?.[document.documentElement.lang] || {}).length,
+        requestedLocaleCount: Object.keys(window.ALLCOINS_I18N_EXTRA?.[localStorage.getItem("allcoins_language")] || {}).length,
+        requestedLocale: localStorage.getItem("allcoins_language")
+      }));
+      assert.equal(localeState.language, locale,
+        game.file + " reset document language: " + JSON.stringify(localeState));
+      assert.equal(localeState.storedLanguage, locale,
+        game.file + " lost stored language: " + JSON.stringify(localeState));
+      assert.ok(localeState.requestedLocaleCount >= 489,
+        game.file + " shared dictionary is incomplete: " + JSON.stringify(localeState));
       await page.waitForFunction(({ target }) => document.body.innerText.includes(target),
         { target: game.translations[locale] }, { timeout: 10000 }
       );
