@@ -14,7 +14,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261026h"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261026i"'),
   "The Games menu should open the current cache-busted Bomb page.");
 assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026i"></script>') &&
   bombHtml.includes('<script src="./bomb-3d.js?v=20261026i"></script>'),
@@ -100,6 +100,11 @@ const server = createServer((req, res) => {
   if (pathname === "/i18n-extra.js") {
     res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
     res.end(i18nExtraJs);
+    return;
+  }
+  if (pathname === "/favicon.ico") {
+    res.writeHead(204);
+    res.end();
     return;
   }
   res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
