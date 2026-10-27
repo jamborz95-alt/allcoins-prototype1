@@ -42,3 +42,10 @@ test("car purchases, upgrades and tuning are verified and persisted server-side"
   assert.match(router, /drag_racing_player_cars/);
   assert.match(router, /drag_racing_player_profiles/);
 });
+
+test("abandoned waiting rooms refund stakes before cleanup and finished rooms expire", () => {
+  assert.match(router, /last_seen_at >= NOW\(\) - INTERVAL '2 minutes'/);
+  assert.match(router, /UPDATE players SET balance = balance \+ \$1::BIGINT/);
+  assert.match(router, /DELETE FROM drag_racing_rooms WHERE status = 'finished' AND updated_at < NOW\(\) - INTERVAL '2 minutes'/);
+  assert.match(router, /timeMs \+ 2500 < elapsedSinceGreen/);
+});
