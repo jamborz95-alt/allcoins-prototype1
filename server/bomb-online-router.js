@@ -76,12 +76,27 @@ async function advanceRoom(client, roomId, now = Date.now()) {
       }
     }
 
-    if (status === "playing" && game.phase === "passing" && Number(game.transferEndsAt) <= now) {
+    if (status === "playing" && game.phase === "passing" && alive.length <= 1) {
+      status = "finished";
       game = {
-        ...game, phase: "playing", holderId: String(game.passToId || game.holderId),
-        passToId: null, transferEndsAt: null,
-        fuseEndsAt: Number(game.fuseEndsAt) || now + 1000
+        ...game, phase: "finished",
+        winnerId: alive[0] ? String(alive[0].player_id) : null,
+        passToId: null, transferEndsAt: null, finishedAt: now
       };
+    } else if (status === "playing" && game.phase === "passing" && Number(game.transferEndsAt) <= now) {
+      const intendedReceiver = alive.find((p) => String(p.player_id) === String(game.passToId));
+      const alternatives = alive.filter((p) => String(p.player_id) !== String(game.holderId));
+      const receiver = intendedReceiver || alternatives[Math.floor(Math.random() * alternatives.length)] || alive[0];
+      if (receiver) {
+        game = {
+          ...game, phase: "playing", holderId: String(receiver.player_id),
+          passToId: null, transferEndsAt: null,
+          fuseEndsAt: Number(game.fuseEndsAt) || now + 1000
+        };
+      } else {
+        status = "finished";
+        game = { ...game, phase: "finished", winnerId: null, finishedAt: now };
+      }
     }
 
     if (status === "playing" && game.phase === "playing" && Number(game.fuseEndsAt) <= now) {
