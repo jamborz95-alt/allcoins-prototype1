@@ -13,13 +13,14 @@ function validRoomId(value) {
   return match ? match[1] : null;
 }
 
-function mapRoom(row) {
+function mapRoom(row, userId = null) {
   return {
     id: "SH-" + String(row.id),
     roomId: String(row.id),
     name: String(row.name || "Комната шашек"),
     stake: Number(row.stake),
     owner: String(row.owner_name || "Игрок"),
+    isOwner: userId !== null && String(row.owner_telegram_id) === String(userId),
     status: row.status === "waiting" ? "Ожидает игрока" : String(row.status),
     statusCode: String(row.status),
     playersCount: Number(row.players_count || 0),
@@ -200,7 +201,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
          ORDER BY r.created_at DESC
          LIMIT 50`
       );
-      return res.json({ ok: true, rooms: result.rows.map(mapRoom) });
+      return res.json({ ok: true, rooms: result.rows.map((row) => mapRoom(row, user.id)) });
     } catch (error) {
       console.error("List Checkers rooms error:", error.message || error);
       return res.status(500).json({ ok: false, error: "Не удалось загрузить общий список комнат шашек." });
@@ -238,7 +239,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       );
       await client.query("COMMIT");
       transactionOpen = false;
-      return res.json({ ok: true, room: mapRoom({ ...row, players_count: 1 }) });
+      return res.json({ ok: true, room: mapRoom({ ...row, players_count: 1 }, user.id) });
     } catch (error) {
       if (client && transactionOpen) {
         try { await client.query("ROLLBACK"); } catch (_) {}
@@ -291,7 +292,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       const updatedRoom = await loadRoom(client, roomId);
       await client.query("COMMIT");
       transactionOpen = false;
-      return res.json({ ok: true, room: mapRoom(updatedRoom), playersCount: Number(updatedRoom.players_count) });
+      return res.json({ ok: true, room: mapRoom(updatedRoom, user.id), playersCount: Number(updatedRoom.players_count) });
     } catch (error) {
       if (client && transactionOpen) {
         try { await client.query("ROLLBACK"); } catch (_) {}
@@ -319,7 +320,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       const state = gameResult.rows[0]?.state || null;
       return res.json({
         ok: true,
-        room: mapRoom(room),
+        room: mapRoom(room, user.id),
         players: members.map((player) => ({
           name: player.display_name,
           isYou: player.telegram_id === String(user.id),
@@ -357,7 +358,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       if (room.status === "playing") {
         const current = await client.query("SELECT state FROM checkers_games WHERE room_id = $1", [roomId]);
         await client.query("COMMIT"); transactionOpen = false;
-        return res.json({ ok: true, room: mapRoom(room), game: publicGame(current.rows[0]?.state, user.id) });
+        return res.json({ ok: true, room: mapRoom(room, user.id), game: publicGame(current.rows[0]?.state, user.id) });
       }
       if (room.status !== "waiting") {
         await client.query("ROLLBACK"); transactionOpen = false;
@@ -387,7 +388,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       transactionOpen = false;
       return res.json({
         ok: true,
-        room: mapRoom({ ...playingRoom.rows[0], players_count: players.length }),
+        room: mapRoom({ ...playingRoom.rows[0], players_count: players.length }, user.id),
         game: publicGame(state, user.id)
       });
     } catch (error) {
@@ -468,7 +469,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       transactionOpen = false;
       return res.json({
         ok: true,
-        room: mapRoom({ ...updatedRoom, players_count: 2 }),
+        room: mapRoom({ ...updatedRoom, players_count: 2 }, user.id),
         game: publicGame(nextState, user.id)
       });
     } catch (error) {
