@@ -59,6 +59,10 @@ async function advanceRoom(client, roomId, now = Date.now()) {
   }
   let status = room.status;
   let game = room.game_state && typeof room.game_state === "object" ? room.game_state : { phase: "waiting", round: 0 };
+  // Avoid rewriting the same room/game JSON on every heartbeat. Polling can be
+  // frequent on mobile; only persist this row when the authoritative state moves.
+  const previousStatus = String(status);
+  const previousGameJson = JSON.stringify(game);
 
   if (status === "waiting") {
     // A waiting player who disappeared should not occupy a lobby seat forever.
@@ -161,10 +165,12 @@ async function advanceRoom(client, roomId, now = Date.now()) {
     }
   }
 
-  await client.query(
-    "UPDATE bomb_rooms SET status = $2, game_state = $3::jsonb, updated_at = NOW() WHERE id = $1",
-    [roomId, status, JSON.stringify(game)]
-  );
+  if (String(status) !== previousStatus || JSON.stringify(game) !== previousGameJson) {
+    await client.query(
+      "UPDATE bomb_rooms SET status = $2, game_state = $3::jsonb, updated_at = NOW() WHERE id = $1",
+      [roomId, status, JSON.stringify(game)]
+    );
+  }
   roster = await readPlayers(client, roomId);
   return {
     room: {
@@ -502,9 +508,19 @@ export function createBombOnlineRouter({ pool }) {
         await client.query("ROLLBACK");
         return res.status(403).json({ ok: false, error: "Ты больше не находишься в этой комнате." });
       }
+      const xPct = clampPercent(req.body?.xPct, 50);
+      const yPct = clampPercent(req.body?.yPct, 66);
+      // Keep movement responsive without a DB write for tiny sub-pixel moves
+      // or a heartbeat on every 350ms poll.
       await client.query(
-        "UPDATE bomb_room_players SET x_pct = $3, y_pct = $4, last_seen_at = NOW() WHERE room_id = $1 AND player_id = $2",
-        [roomId, playerId, clampPercent(req.body?.xPct, 50), clampPercent(req.body?.yPct, 66)]
+        "UPDATE bomb_room_players SET " +
+        "x_pct = CASE WHEN ABS(COALESCE(x_pct, 50) - $3) > 0.35 THEN $3 ELSE x_pct END, " +
+        "y_pct = CASE WHEN ABS(COALESCE(y_pct, 66) - $4) > 0.35 THEN $4 ELSE y_pct END, " +
+        "last_seen_at = CASE WHEN last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '2 seconds' THEN NOW() ELSE last_seen_at END " +
+        "WHERE room_id = $1 AND player_id = $2 AND (" +
+        "ABS(COALESCE(x_pct, 50) - $3) > 0.35 OR ABS(COALESCE(y_pct, 66) - $4) > 0.35 OR " +
+        "last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '2 seconds')",
+        [roomId, playerId, xPct, yPct]
       );
       const snapshot = await advanceRoom(client, roomId);
       if (!snapshot) {
