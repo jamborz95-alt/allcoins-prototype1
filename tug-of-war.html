@@ -512,6 +512,11 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       loadRooms(true);
     }
   }
+  function scenePlayerCount(){
+    var requested = currentRoom ? Number(currentRoom.maxPlayers) : NaN;
+    if([2,4,6].indexOf(requested) < 0) requested = Number(selectedCount);
+    return [2,4,6].indexOf(requested) >= 0 ? requested : 2;
+  }
   function updateGameUi(){
     if(!currentRoom) return;
     var game = currentGame || {};
@@ -726,6 +731,19 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     groundLine(2.85,0x72cbff,.075);
     groundLine(-4.1,0xeff2e5,.028);
     groundLine(4.1,0xeff2e5,.028);
+    // Clear painted field boundaries and yard marks make the play area readable on mobile.
+    var fieldLineMat = new THREE.MeshStandardMaterial({color:0xdce8d8,emissive:0x344d38,emissiveIntensity:.24,roughness:.86});
+    function fieldMark(width,depth,x,z){
+      var mark = new THREE.Mesh(new THREE.BoxGeometry(width,.016,depth),fieldLineMat);
+      mark.position.set(x,-.012,z);mark.receiveShadow=true;scene.add(mark);return mark;
+    }
+    fieldMark(13.8,.045,0,-2.62);
+    fieldMark(13.8,.045,0,2.62);
+    fieldMark(.045,5.28,-6.9,0);
+    fieldMark(.045,5.28,6.9,0);
+    for(var yardX=-6;yardX<=6.001;yardX+=1.2){
+      fieldMark(.032,.36,yardX,0);
+    }
     var centerCircle = new THREE.Mesh(new THREE.TorusGeometry(0.68,0.025,6,48),new THREE.MeshStandardMaterial({color:0xf0d18c,emissive:0x87652a,emissiveIntensity:.35}));
     centerCircle.rotation.x=Math.PI/2;centerCircle.position.y=.012;centerCircle.position.z=0;scene.add(centerCircle);
 
@@ -834,15 +852,20 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       return pullPose;
     }
     var firstNames=['Игрок 1','Игрок 2','Игрок 3'];
-    for(var p=0;p<3;p++){createPerson(1,p,firstNames[p]);createPerson(2,p,firstNames[p+3]||('Игрок '+(p+4)));}
+    var initialTeamSize=scenePlayerCount()/2;
+    for(var p=0;p<3;p++){createPerson(1,p,firstNames[p]);createPerson(2,p,'Игрок '+(p+initialTeamSize+1));}
     function updatePeople(delta,progress,time){
       var portrait=window.innerWidth<window.innerHeight;
       var horizontalScale=portrait?0.84:1;
+      var teamSize=scenePlayerCount()/2;
       var finishElapsed=sceneState.finishedAt ? Math.max(0,(performance.now()-sceneState.finishedAt)/1000) : 0;
       var pullDirection=progress>0?1:(progress<0?-1:(progressVelocity>=0?1:-1));
       var pullBurst=Math.min(1,Math.abs(progressVelocity)*.55);
       for(var i=0;i<people.length;i++){
         var p=people[i];
+        // Render exactly the requested number of animated figures: 1, 2 or 3 per team.
+        p.root.visible = p.index < teamSize;
+        if(!p.root.visible) continue;
         // Team 1 stands on the left; Team 2 stands on the right.
         // When a side gains ground, its own players step backwards away from the centre,
         // while the other team is physically dragged towards the winning side.
@@ -913,34 +936,64 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       return x*x*(3-2*x);
     }
     function makeDynamicRope(progress,time){
-      if(!ropeDirty && rafCounter%3!==0) return;
+      if(!ropeMesh || !knotGroup) return;
       ropeDirty=false;
       var portrait=window.innerWidth<window.innerHeight;
-      var ropeHalf=portrait?3.12:4.35;
       var tension=Math.min(1,Math.abs(progress));
-      // The rope tightens and straightens as the teams gain leverage; a travelling wave
-      // keeps it alive without making the motion jittery on mobile.
-      var ropeDrift=progress*(portrait?1.45:2.45);
-      var start=-ropeHalf+ropeDrift;
-      var end=ropeHalf+ropeDrift;
-      var sag=.23*(1-tension*.76);
-      var points=[];
-      for(var n=0;n<=38;n++){
-        var t=n/38;
-        var x=start+(end-start)*t;
-        var y=1.13-sag*Math.sin(t*Math.PI)
-          +Math.sin(time*(2.8+tension*1.8)+t*13)*(.012+tension*.014);
-        var z=Math.sin(time*2.6+t*18)*(.012+tension*.01);
-        points.push(new THREE.Vector3(x,y,z));
+      var sag=.19*(1-tension*.74);
+      // Read the actual hand positions after the character rigs have moved. The rope spline
+      // passes through every visible player's grip each frame, so it cannot slide out of hands.
+      scene.updateMatrixWorld(true);
+      var anchors=[];
+      people.forEach(function(person){
+        if(!person.root.visible) return;
+        [person.handL,person.handR].forEach(function(hand){
+          var grip=new THREE.Vector3();
+          hand.getWorldPosition(grip);
+          anchors.push(grip);
+        });
+      });
+      anchors.sort(function(a,b){return a.x-b.x;});
+      if(anchors.length<2) return;
+      var ropeHalf=portrait?3.72:4.35;
+      var first=anchors[0],last=anchors[anchors.length-1];
+      var points=[new THREE.Vector3(Math.min(-ropeHalf,first.x-.72),first.y,first.z)];
+      for(var n=0;n<anchors.length;n++){
+        var grip=anchors[n];
+        points.push(grip.clone());
+        if(n<anchors.length-1){
+          var next=anchors[n+1];
+          var gap=Math.abs(next.x-grip.x);
+          var wave=Math.sin(time*2.5+n*.7)*(.006+tension*.01);
+          // Sag only between grips; each hand point itself stays exactly on the rope.
+          points.push(new THREE.Vector3(
+            (grip.x+next.x)*.5,
+            (grip.y+next.y)*.5-sag*Math.min(1,gap/1.05)+wave,
+            (grip.z+next.z)*.5+Math.sin(time*2+n*.55)*.008
+          ));
+        }
       }
+      points.push(new THREE.Vector3(Math.max(ropeHalf,last.x+.72),last.y,last.z));
       var curve=new THREE.CatmullRomCurve3(points);
-      var nextGeometry=new THREE.TubeGeometry(curve,50,.052,7,false);
-      var nextCore=new THREE.TubeGeometry(curve,50,.019,5,false);
+      var segments=Math.max(48,anchors.length*9+18);
+      var nextGeometry=new THREE.TubeGeometry(curve,segments,.052,7,false);
+      var nextCore=new THREE.TubeGeometry(curve,segments,.019,5,false);
       var old=ropeMesh.geometry;ropeMesh.geometry=nextGeometry;old.dispose();
       var core=scene.getObjectByName('ropeCore');
-      var oldCore=core.geometry;core.geometry=nextCore;oldCore.dispose();
-      var finishCross=portrait?3.02:3.12;
-      knotGroup.position.set(progress*finishCross,1.13-sag,0);
+      if(core){
+        var oldCore=core.geometry;core.geometry=nextCore;oldCore.dispose();
+      }else{
+        nextCore.dispose();
+      }
+      // Keep the marked knot on the rendered rope rather than moving it independently.
+      var targetX=Math.max(-3.18,Math.min(3.18,progress*(portrait?3.12:3.22)));
+      var samples=curve.getPoints(160);
+      var marker=samples[0],bestDistance=Infinity;
+      for(var q=0;q<samples.length;q++){
+        var distance=Math.abs(samples[q].x-targetX);
+        if(distance<bestDistance){bestDistance=distance;marker=samples[q];}
+      }
+      knotGroup.position.copy(marker);
       knotGroup.rotation.z=Math.sin(time*(3+tension*2))*(.025+tension*.028)-progressVelocity*.035;
       knotGroup.rotation.x=Math.sin(time*3.8)*tension*.035;
       var knotMesh=knotGroup.children[0];
@@ -1003,9 +1056,13 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       ctx.setTransform(dpr,0,0,dpr,0,0);
       var grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#18382e');grad.addColorStop(1,'#061218');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
       var cx=w/2,cy=h*.53,scale=Math.min(w/7.6,h/5.5);ctx.lineCap='round';
+      // Visible boundary, centre and yard marks on the lightweight fallback field.
+      ctx.strokeStyle='#dce8d8';ctx.lineWidth=2.4;ctx.strokeRect(cx-3.4*scale,cy-1.32*scale,6.8*scale,2.64*scale);
+      ctx.strokeStyle='#8eaf95';ctx.lineWidth=1.1;for(var yard=-3;yard<=3;yard++){ctx.beginPath();ctx.moveTo(cx+yard*scale,cy-scale*1.12);ctx.lineTo(cx+yard*scale,cy+scale*1.12);ctx.stroke();}
       for(var i=-1;i<=1;i+=2){ctx.strokeStyle=i<0?'#e96b7c':'#6bc8f4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+i*2.85*scale,cy-scale*1.5);ctx.lineTo(cx+i*2.85*scale,cy+scale*1.5);ctx.stroke();}
       ctx.strokeStyle='#d6ad64';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-3.8*scale,cy);ctx.lineTo(cx+3.8*scale,cy);ctx.stroke();
-      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var teamDir=team===1?-1:1;var advantage=sceneState.progress*teamDir;var winPull=Math.pow(Math.max(0,Math.min(1,advantage)),.58);var losePull=Math.pow(Math.max(0,Math.min(1,-advantage)),.58);var lostMatch=sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==team;var finishPull=lostMatch?Math.max(0,Math.min(1,(performance.now()-(sceneState.finishedAt||performance.now()))/700))*.72:0;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+teamDir*(winPull*1.05-losePull*2.8-finishPull))*scale;var drag=Math.max(winPull,losePull);var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(finishPull)y+=finishPull*scale*.14*teamDir;x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
+      var fallbackTeamSize=scenePlayerCount()/2;
+      for(var team=1;team<=2;team++){for(var p=0;p<fallbackTeamSize;p++){var teamDir=team===1?-1:1;var advantage=sceneState.progress*teamDir;var winPull=Math.pow(Math.max(0,Math.min(1,advantage)),.58);var losePull=Math.pow(Math.max(0,Math.min(1,-advantage)),.58);var lostMatch=sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==team;var finishPull=lostMatch?Math.max(0,Math.min(1,(performance.now()-(sceneState.finishedAt||performance.now()))/700))*.72:0;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+teamDir*(winPull*1.05-losePull*2.8-finishPull))*scale;var drag=Math.max(winPull,losePull);var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(finishPull)y+=finishPull*scale*.14*teamDir;x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
       ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+sceneState.progress*2.7*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
       requestAnimationFrame(draw);
     }
