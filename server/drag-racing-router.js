@@ -42,16 +42,36 @@ async function payload(pool,id,userId) {
   return {room:{id:room.id,ownerId:room.owner_id,ownerName:room.owner_name,stake:room.stake,maxPlayers:Number(room.max_players),mode:room.race_mode,status:room.status,game:room.game_state,createdAt:room.created_at},players:pr.rows.map(p=>({...p,isMe:String(p.id)===String(userId)}))};
 }
 export function createDragRacingRouter({pool,verifyTelegram}) {
- const router=express.Router(); let tablesPromise=null, cleanupTimer=null;
+ const router=express.Router(); let tablesPromise=null, cleanupTimer=null, cleanupBusy=false;
  const tables=()=>tablesPromise||(tablesPromise=ensureTables(pool).catch(e=>{tablesPromise=null;throw e}));
+ async function cleanupDormantRooms(){
+   if(cleanupBusy)return;
+   cleanupBusy=true;
+   try{
+     await pool.query("DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW()-INTERVAL '2 minutes'");
+     const stale=await pool.query("SELECT r.id::TEXT AS id FROM drag_racing_rooms r WHERE r.status='waiting' AND r.created_at<NOW()-INTERVAL '2 minutes' AND NOT EXISTS (SELECT 1 FROM drag_racing_room_players p WHERE p.room_id=r.id AND p.last_seen_at>NOW()-INTERVAL '2 minutes') ORDER BY r.created_at LIMIT 20");
+     for(const item of stale.rows){
+       const client=await pool.connect();
+       let open=false;
+       try{
+         await client.query("BEGIN");open=true;
+         const room=(await client.query("SELECT stake::TEXT AS stake,status FROM drag_racing_rooms WHERE id=$1 FOR UPDATE",[item.id])).rows[0];
+         if(!room||room.status!=="waiting"){await client.query("COMMIT");open=false;continue}
+         const players=(await client.query("SELECT telegram_id::TEXT AS id FROM drag_racing_room_players WHERE room_id=$1 FOR UPDATE",[item.id])).rows;
+         const active=await client.query("SELECT 1 FROM drag_racing_room_players WHERE room_id=$1 AND last_seen_at>NOW()-INTERVAL '2 minutes' LIMIT 1",[item.id]);
+         if(active.rows.length){await client.query("COMMIT");open=false;continue}
+         for(const player of players)await credit(client,player.id,room.stake);
+         await client.query("DELETE FROM drag_racing_rooms WHERE id=$1",[item.id]);
+         await client.query("COMMIT");open=false;
+       }catch(error){if(open)await client.query("ROLLBACK").catch(()=>{});throw error}
+       finally{client.release()}
+     }
+   }finally{cleanupBusy=false}
+ }
  router.use(async(_req,_res,next)=>{try{
    await tables();
-   // Completed results stay visible for two minutes; cleanup never edits a wallet.
-   // The room's foreign-key cascade removes only the room and its participant rows.
    if(!cleanupTimer){
-     cleanupTimer=setInterval(()=>{
-       pool.query("DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW()-INTERVAL '2 minutes'").catch(()=>{});
-     },15000);
+     cleanupTimer=setInterval(()=>cleanupDormantRooms().catch(()=>{}),15000);
      if(typeof cleanupTimer.unref==="function")cleanupTimer.unref();
    }
    next()
