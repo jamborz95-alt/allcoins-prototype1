@@ -579,22 +579,21 @@
     const canvas = document.createElement('canvas');
     canvas.width = 512; canvas.height = 112;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(17,14,19,.92)';
-    roundRect(ctx, 8, 8, 496, 96, 22);
-    ctx.fill();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 5;
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,232,180,.45)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, 15, 15, 482, 82, 17);
-    ctx.stroke();
+
+    // Keep only the floating nickname above each 3D miner.
+    // No badge fill, rounded rectangle, accent frame, or outer glow.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff1cb';
+    ctx.strokeStyle = 'rgba(5,8,14,.96)';
+    ctx.lineWidth = 6;
+    ctx.lineJoin = 'round';
     ctx.font = 'bold 43px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let text = String(name || 'Игрок').slice(0, 18);
     while (ctx.measureText(text).width > 448 && text.length > 3) text = text.slice(0, -1);
+    // A subtle outline keeps the letters readable without drawing a nameplate frame.
+    ctx.strokeText(text, 256, 57);
     ctx.fillText(text, 256, 57);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
