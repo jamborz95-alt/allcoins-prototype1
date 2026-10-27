@@ -170,6 +170,15 @@ test("two mobile players share a Tug of War room, start online, and see team str
     await wireApi(guest, shared, {id:200,name:"Соперник"});
 
     await creator.goto(origin + "/tug-of-war.html");
+    const ariaLabelCount = await creator.locator("[aria-label]").count();
+    assert.ok(ariaLabelCount > 0, "Tug of War should expose accessible labels for controls.");
+    assert.equal(
+      await creator.locator("[aria-label]").evaluateAll(nodes =>
+        nodes.every(node => node.dataset.tugOriginalAriaLabel !== undefined)
+      ),
+      true,
+      "The language helper must store aria-label originals under a valid camelCase dataset key."
+    );
     await creator.locator("#createRoom").click();
     await creator.locator("#roomScreen:not(.hidden)").waitFor();
     assert.equal(await creator.locator("#startGame").isVisible(), false, "creator cannot start a two-player match alone");
