@@ -657,6 +657,10 @@
     let preserveJoystickPointerThroughTransfer = false;
     let lastJoystickClientX = null;
     let lastJoystickClientY = null;
+    // Prevent a fresh carrier from immediately bouncing the bomb back to the
+    // opponent they just touched. Their sprites may still overlap at hand-off.
+    let handoffGracePlayer = -1;
+    let handoffGraceUntil = 0;
     let moveFrame = 0;
     let lastMoveFrameTime = 0;
     let playerVelocityX = 0;
@@ -1672,7 +1676,15 @@
         const targetX = targetRect.left + targetRect.width / 2 - arenaRect.left;
         const targetY = targetRect.top + targetRect.height * .45 - arenaRect.top;
         const targetRadius = Math.min(targetRect.width * .36, 28);
-        if (Math.hypot(characterCenterX - targetX, characterCenterY - targetY) <= characterRadius + targetRadius) {
+        const distance = Math.hypot(characterCenterX - targetX, characterCenterY - targetY);
+        if (target === handoffGracePlayer) {
+          // Ignore only the just-transferred-from opponent while the receiver
+          // clears the hand-off overlap; other opponents remain immediately touchable.
+          if (distance <= characterRadius + targetRadius + 18 && performance.now() < handoffGraceUntil) continue;
+          handoffGracePlayer = -1;
+          handoffGraceUntil = 0;
+        }
+        if (distance <= characterRadius + targetRadius) {
           const seat = arena.querySelector('.seat[data-player="' + target + '"]');
           if (seat) seat.classList.add('contact-hit');
           opponent.classList.add('contact-nearby');
@@ -2064,6 +2076,8 @@
     function startRound() {
       stopTimers();
       resetJoystick();
+      handoffGracePlayer = -1;
+      handoffGraceUntil = 0;
       resetCharacterPosition();
       roundToken++;
       round++;
@@ -2155,7 +2169,17 @@
         scheduleBot();
         return;
       }
+      const previousHolder = holder;
       holder = target;
+      if (target === 0 && previousHolder > 0) {
+        // Give the player a brief chance to move clear after a bot walks into them.
+        // Without this, the first movement frame can instantly trigger a return pass.
+        handoffGracePlayer = previousHolder;
+        handoffGraceUntil = performance.now() + 1200;
+      } else {
+        handoffGracePlayer = -1;
+        handoffGraceUntil = 0;
+      }
       phase = 'playing';
       // Cancel any late animation frame and place the bomb on the carrier deterministically.
       if (bombFlightAnimation) {
