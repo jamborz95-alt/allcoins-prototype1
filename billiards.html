@@ -229,7 +229,7 @@
         if(!response.ok||data.ok===false)throw apiError(data);return data;
       }
       function stopPolling(){if(state.pollTimer)clearInterval(state.pollTimer);state.pollTimer=null;}
-      function startPolling(){stopPolling();state.pollTimer=setInterval(function(){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game"&&state.animatingSeq===null)refreshGame(true);},650);}
+      function startPolling(){stopPolling();state.pollTimer=setInterval(function(){if(state.stage==="lobby")loadRooms(true);else if(state.stage==="waiting")refreshWaiting(true);else if(state.stage==="game"&&state.animatingSeq===null)refreshGame(true);},450);}
       function protectTelegram(stage){
         if(!tg)return;
         const protectedStage=stage==="game"||stage==="waiting";
