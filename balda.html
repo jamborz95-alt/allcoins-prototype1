@@ -517,9 +517,10 @@
           state.room = data.room || state.room;
           state.players = data.players || state.players;
           state.game = data.game || state.game;
+          state.clientMessage = "";
           renderRoom(data);
         } catch (error) {
-          $("gameMessage").textContent = error.message || "Не удалось сделать ход.";
+          showGameMessage(error.message || "Не удалось сделать ход.");
         } finally {
           state.busy = false;
           if (state.game && state.stage === "game") renderGame();
@@ -531,9 +532,10 @@
         try {
           const data = await api("/game/pass", { roomId: state.room.roomId || state.room.id });
           state.room = data.room || state.room; state.players = data.players || state.players; state.game = data.game || state.game;
+          state.clientMessage = "";
           renderRoom(data);
         } catch (error) {
-          $("gameMessage").textContent = error.message || "Пропустить ход нельзя.";
+          showGameMessage(error.message || "Пропустить ход нельзя.");
         } finally { state.busy = false; if (state.game && state.stage === "game") renderGame(); }
       }
       function returnLobbyAfterGame() {
