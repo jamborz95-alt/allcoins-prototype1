@@ -156,6 +156,50 @@
         wheel.userData.rotating=true;
       }
     }
+    // Each owned VAZ/LADA has its own paint and proportions in the 3D garage preview.
+    const baseRoofGeometry=new THREE.BoxGeometry(1.35,0.48,1.38);
+    const baseGlassGeometry=new THREE.BoxGeometry(1.25,0.34,1.13);
+    const carVariants={
+      "2104":{paint:0xd7dce2,x:1.02,z:1.04,roof:"wagon"},
+      "2105":{paint:0x254c72,x:0.99,z:0.99},
+      "2106":{paint:0x8f2936,x:1.01,z:1.02},
+      "2107":{paint:0xe52e3d,x:1.0,z:1.0},
+      "2109":{paint:0x24486f,x:0.95,z:0.93,roof:"hatch"},
+      "2110":{paint:0xd9dde0,x:1.0,z:1.01},
+      "2112":{paint:0xe2bd3d,x:0.97,z:0.94,roof:"hatch"},
+      "2114":{paint:0x2773a2,x:0.96,z:0.94,roof:"hatch"},
+      "priora":{paint:0x20262d,x:1.0,z:1.0},
+      "granta":{paint:0xaebdc8,x:1.0,z:1.0},
+      "niva":{paint:0x637650,x:1.07,z:1.07,roof:"suv"},
+      "vesta":{paint:0xf1f1e8,x:1.03,z:1.03}
+    };
+    const roofMesh=car.children[3], roofGlassMesh=car.children[4];
+    function applyCarVariant(carId){
+      const model=carVariants[String(carId)]||carVariants["2107"];
+      red.color.setHex(model.paint);
+      car.scale.set(model.x,1,model.z);
+      roofMesh.geometry.dispose();roofGlassMesh.geometry.dispose();
+      roofMesh.geometry=baseRoofGeometry.clone();
+      roofGlassMesh.geometry=baseGlassGeometry.clone();
+      roofMesh.position.set(0,0.98,0.13);
+      roofGlassMesh.position.set(0,1.02,0.11);
+      if(model.roof==="wagon"){
+        roofMesh.geometry.dispose();roofMesh.geometry=new THREE.BoxGeometry(1.35,0.49,1.7);
+        roofGlassMesh.geometry.dispose();roofGlassMesh.geometry=new THREE.BoxGeometry(1.25,0.34,1.43);
+        roofMesh.position.set(0,1.0,0.29);roofGlassMesh.position.set(0,1.04,0.25);
+      } else if(model.roof==="hatch"){
+        roofMesh.geometry.dispose();roofMesh.geometry=new THREE.BoxGeometry(1.34,0.44,1.16);
+        roofGlassMesh.geometry.dispose();roofGlassMesh.geometry=new THREE.BoxGeometry(1.24,0.29,0.91);
+        roofMesh.position.set(0,0.95,0.03);roofGlassMesh.position.set(0,0.99,0.02);
+      } else if(model.roof==="suv"){
+        roofMesh.geometry.dispose();roofMesh.geometry=new THREE.BoxGeometry(1.42,0.58,1.42);
+        roofGlassMesh.geometry.dispose();roofGlassMesh.geometry=new THREE.BoxGeometry(1.3,0.42,1.15);
+        roofMesh.position.set(0,1.04,0.13);roofGlassMesh.position.set(0,1.08,0.11);
+      }
+    }
+    window.addEventListener("allcoins:car-selected",event=>applyCarVariant(event.detail?.carId));
+    applyCarVariant(window.__allcoinsDragRacingCarId||"2107");
+
     // Rear spoiler and a pair of exhaust tips add a visible drag-build silhouette.
     addBox(car,new THREE.BoxGeometry(1.35,0.055,0.23),dark,0,1.18,1.41);
     for(const x of [-0.47,0.47]){
