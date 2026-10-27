@@ -43,6 +43,14 @@ assert.ok(bombOnlineRouter.includes('router.post("/matchmaking/join"') &&
   bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_rooms') &&
   bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_room_players'),
   "Bomb Online backend should create persistent rooms and support matchmaking, sync, pass and leave.");
+assert.ok(bombOnlineRouter.includes('router.post("/rooms/create"') &&
+  bombOnlineRouter.includes('router.post("/rooms/join"') &&
+  bombOnlineRouter.includes("invite_code TEXT") &&
+  bombHtml.includes('id="createOnlineRoom"') &&
+  bombHtml.includes('id="joinOnlineRoom"') &&
+  bombHtml.includes('id="shareOnlineInvite"') &&
+  bombHtml.includes('searchParams.set("room"'),
+  "Bomb Online should support shareable friend rooms, invite codes and direct-join links.");
 
 assert.ok(bombHtml.includes('<div class="obstacle-layer" id="obstacleLayer"') &&
   bombHtml.includes("const MAP_OBSTACLES =") &&
@@ -174,10 +182,13 @@ try {
   let onlineJoinRequests = 0;
   let onlineStateRequests = 0;
   let onlineLeaveRequests = 0;
+  let friendRoomCreateRequests = 0;
+  let friendRoomJoinRequests = 0;
+  const friendInviteCode = "ABC2345";
   let onlinePlayerId = "";
   let onlineRoster = [];
   let onlineGameState = {};
-  const onlineRoom = { id: "901234", status: "playing", maxPlayers: 2, map: "copper", createdAt: new Date().toISOString() };
+  const onlineRoom = { id: "901234", status: "playing", maxPlayers: 2, map: "copper", inviteCode: friendInviteCode, createdAt: new Date().toISOString() };
   await page.route("https://allcoins-server.onrender.com/api/bomb/**", async (route) => {
     const request = route.request();
     if (request.method() === "OPTIONS") {
@@ -194,6 +205,47 @@ try {
     }
     const url = new URL(request.url());
     const body = request.postDataJSON() || {};
+    if (url.pathname.endsWith("/rooms/create")) {
+      friendRoomCreateRequests++;
+      onlinePlayerId = String(body.playerId);
+      onlineRoom.status = "waiting";
+      onlineRoom.maxPlayers = Number(body.maxPlayers) || 2;
+      onlineRoom.map = body.map === "crystal" ? "crystal" : "copper";
+      onlineRoom.inviteCode = friendInviteCode;
+      onlineRoster = [
+        { playerId: onlinePlayerId, name: String(body.name || "Test Player"), lives: 3, xPct: 50, yPct: 66, connected: true }
+      ];
+      onlineGameState = {
+        phase: "waiting", round: 0, holderId: null, fuseEndsAt: null,
+        phaseEndsAt: null, passToId: null, transferEndsAt: null,
+        lastExplosionId: null, loserId: null, winnerId: null
+      };
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
+      });
+      return;
+    }
+    if (url.pathname.endsWith("/rooms/join")) {
+      friendRoomJoinRequests++;
+      onlinePlayerId = String(body.playerId);
+      onlineRoom.status = "waiting";
+      onlineRoom.inviteCode = friendInviteCode;
+      onlineRoster = [
+        { playerId: "friend_room_host_01", name: "Friend Host", lives: 3, xPct: 50, yPct: 66, connected: true },
+        { playerId: onlinePlayerId, name: String(body.name || "Test Player"), lives: 3, xPct: 28, yPct: 46, connected: true }
+      ];
+      onlineGameState = {
+        phase: "waiting", round: 0, holderId: null, fuseEndsAt: null,
+        phaseEndsAt: null, passToId: null, transferEndsAt: null,
+        lastExplosionId: null, loserId: null, winnerId: null
+      };
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
+      });
+      return;
+    }
     if (url.pathname.endsWith("/matchmaking/join")) {
       onlineJoinRequests++;
       onlinePlayerId = String(body.playerId);
@@ -228,6 +280,29 @@ try {
     if (url.pathname.endsWith("/rooms/leave")) onlineLeaveRequests++;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
   });
+  await page.locator("#createOnlineRoom").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#onlineInviteCode")?.textContent === "ABC2345" &&
+    !document.querySelector("#onlineRoomCodeRow")?.classList.contains("hidden"),
+    undefined, { timeout: 8000 }
+  );
+  assert.equal(friendRoomCreateRequests, 1, "The friend-room button should create a server room.");
+  assert.ok((await page.locator("#onlineStatusText").innerText()).includes("Комната создана"),
+    "The creator should see confirmation and an invite code while waiting.");
+  await page.locator("#cancelOnlineSearch").click();
+  await page.locator("#joinRoomCode").fill(friendInviteCode);
+  await page.locator("#joinOnlineRoom").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#onlineInviteCode")?.textContent === "ABC2345" &&
+    !document.querySelector("#onlinePanel")?.classList.contains("hidden"),
+    undefined, { timeout: 8000 }
+  );
+  assert.equal(friendRoomJoinRequests, 1, "The invite-code action should join the friend room.");
+  assert.ok((await page.locator("#onlineStatusText").innerText()).includes("В комнате"),
+    "A player joining by code should see the room occupancy.");
+  await page.locator("#cancelOnlineSearch").click();
+
+  onlineRoom.status = "playing";
   await page.locator("#startGame").click();
   await page.waitForFunction(() =>
     !document.querySelector("#gameView")?.classList.contains("hidden") &&
