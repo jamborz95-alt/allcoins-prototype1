@@ -709,8 +709,20 @@
           $("letterGrid").appendChild(button);
         });
         $("letterModal").classList.remove("hidden");
-        // Focus synchronously during the tap/click gesture so Android can open its soft keyboard.
+        // The tap on an empty cell is the user's gesture: focus the real text field immediately,
+        // then retry once after the modal has been painted (Telegram Android WebView can delay focus).
+        letterInput.readOnly = false;
         try { letterInput.focus({ preventScroll: true }); } catch (_) { letterInput.focus(); }
+        requestAnimationFrame(() => {
+          if (state.pendingCell !== cell || $("letterModal").classList.contains("hidden")) return;
+          try { letterInput.focus({ preventScroll: true }); } catch (_) { letterInput.focus(); }
+        });
+        setTimeout(() => {
+          if (state.pendingCell !== cell || $("letterModal").classList.contains("hidden")) return;
+          if (document.activeElement !== letterInput) {
+            try { letterInput.focus({ preventScroll: true }); } catch (_) { letterInput.focus(); }
+          }
+        }, 80);
       }
       async function makeMove(letter) {
         if (state.pendingCell == null || state.busy || !state.room) return;
