@@ -839,56 +839,64 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var portrait=window.innerWidth<window.innerHeight;
       var horizontalScale=portrait?0.84:1;
       var finishElapsed=sceneState.finishedAt ? Math.max(0,(performance.now()-sceneState.finishedAt)/1000) : 0;
+      var pullDirection=progress>0?1:(progress<0?-1:(progressVelocity>=0?1:-1));
+      var pullBurst=Math.min(1,Math.abs(progressVelocity)*.55);
       for(var i=0;i<people.length;i++){
         var p=people[i];
-        // Positive progress means blue is winning; negative progress means red is winning.
-        // The losing team visibly retreats backwards into its own half while the rope is pulled.
-        var strain=p.team===1?progress:-progress;
-        var drag=Math.max(0,Math.min(1,strain));
-        // Use a responsive curve so even small score changes visibly move the losing team.
-        // Make the losing side visibly give ground whenever the rope is pulled,
-        // including short bursts between server progress updates.
-        var pullBurst=Math.min(1,Math.abs(progressVelocity)*0.55);
-        var dragCurve=Math.min(1,Math.pow(drag,.48)+pullBurst*.22);
-        var backwardDir=p.team===1?-1:1;
-        var pullDir=p.team===1?1:-1;
+        // Team 1 stands on the left; Team 2 stands on the right.
+        // When a side gains ground, its own players step backwards away from the centre,
+        // while the other team is physically dragged towards the winning side.
+        var teamDirection=p.team===1?-1:1;
+        var teamAdvantage=progress*teamDirection;
+        var winningForce=Math.max(0,Math.min(1,teamAdvantage));
+        var losingForce=Math.max(0,Math.min(1,-teamAdvantage));
+        var winPull=winningForce>0
+          ? Math.min(1,Math.pow(winningForce,.48)+pullBurst*.14) : 0;
+        var losePull=losingForce>0
+          ? Math.min(1,Math.pow(losingForce,.48)+pullBurst*.16) : 0;
         var active=sceneState.status==='playing';
-        var finishFall=(sceneState.status==='finished' && strain>0)
-          ? smoothStep(0.12,0.78,finishElapsed) : 0;
-        // Stronger backward displacement makes the whole opposing line retreat,
-        // not just the centre marker; momentum keeps the movement visible while pulling.
-        var slide=1.72*dragCurve + finishFall*.48;
+        var lostMatch=sceneState.status==='finished' && sceneState.winnerTeam && p.team!==sceneState.winnerTeam;
+        var finishFall=lostMatch?smoothStep(.08,.78,finishElapsed):0;
+        // The winner backs away while the losing line is hauled towards the winner.
+        // The end-of-round tug pulls the defeated team a little farther across the centre line.
+        var finishPull=finishFall*.72;
+        var travel=winPull*1.2+losePull*2.55+finishPull;
         var pulse=Math.min(1,Math.abs(progressVelocity)*2.8);
-        p.root.position.x=(p.baseX+backwardDir*slide)*horizontalScale;
+        var offset=teamDirection*(winPull*1.2-losePull*2.55-finishPull);
+        p.root.position.x=(p.baseX+offset)*horizontalScale;
         p.root.position.z=p.baseZ
-          +Math.sin(time*2.3+p.phase)*(.018+drag*.04)
-          +Math.sin(time*7.2+p.phase)*drag*.045;
-        // The torso leans back under tension; feet/body slide backwards rather than towards the centre.
-        p.body.rotation.z=(p.team===1?1:-1)*(
-          .045+drag*(.29+Math.sin(time*5.4+p.phase)*.04)
-          +(active?Math.sin(time*5+p.phase)*.018:0)
-        )+(p.team===1?1:-1)*pulse*.025;
-        // Lean the torso against the pull instead of pitching forward.
+          +Math.sin(time*2.3+p.phase)*(.018+Math.max(winPull,losePull)*.04)
+          +Math.sin(time*7.2+p.phase)*Math.max(winPull,losePull)*.045;
+        // Lean opposite to the pull when hauling; the losing side tips towards the winner.
+        p.body.rotation.z=pullDirection*(
+          winPull*(.19+Math.sin(time*5.4+p.phase)*.035)
+          -losePull*(.12+Math.sin(time*5.1+p.phase)*.025)
+          -finishFall*.18
+        )+(active?Math.sin(time*5+p.phase)*.012:0)+pullDirection*pulse*.018;
         p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0)
-          -drag*(.12+Math.sin(time*4.8+p.phase)*.025)-finishFall*.12;
-        // Alternate short back-steps so the retreat is visible while the rope is moving.
-        var stepWave=Math.sin(time*(5+drag*3.2)+p.phase);
-        var stepAmount=(active?(drag*.055+pullBurst*.12+Math.min(1,Math.abs(progressVelocity)*1.6)*.15):drag*.025)+finishFall*.14;
+          +winPull*(.055+Math.sin(time*4.8+p.phase)*.018)
+          -losePull*(.085+Math.sin(time*4.8+p.phase)*.025)
+          -finishFall*.12;
+        // Alternating backward steps for the pulling team and unsteady steps for the dragged team.
+        var stepWave=Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase);
+        var stepAmount=(active
+          ? winPull*.09+losePull*.12+pullBurst*.035
+          : Math.max(winPull,losePull)*.025)+finishFall*.16;
         p.legL.rotation.x=stepWave*stepAmount;
-        p.legR.rotation.x=-Math.sin(time*(5+drag*3.2)+p.phase+Math.PI)*stepAmount;
-        p.legL.position.x=-.12+Math.max(0,stepWave)*(.015+drag*.035);
-        p.legR.position.x=.12+Math.max(0,-stepWave)*(.015+drag*.035);
-        // A brief backward stumble at the end of the round.
-        p.root.rotation.z=pullDir*(drag*.04+finishFall*.56);
+        p.legR.rotation.x=-Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase+Math.PI)*stepAmount;
+        p.legL.position.x=-.12+Math.max(0,stepWave)*(.015+Math.max(winPull,losePull)*.035);
+        p.legR.position.x=.12+Math.max(0,-stepWave)*(.015+Math.max(winPull,losePull)*.035);
+        // The losing players stagger as the rope carries them towards the opposing line.
+        p.root.rotation.z=pullDirection*(winPull*.035-losePull*.07-finishFall*.48);
         var front=p.team===1?1:-1;
-        var wristY=1.15-drag*.075+Math.sin(time*5+p.phase)*(.02+drag*.018);
-        // Reach forward with both arms to keep the hands aligned with the moving rope.
-        var elbowL=new THREE.Vector3(front*(.04+slide*.42),1.37-drag*.025,.23);
-        var elbowR=new THREE.Vector3(front*(.04+slide*.42),1.37-drag*.025,.24);
-        var b1=new THREE.Vector3(front*(.13+drag*.055+slide*.9),wristY,.38);
-        var b2=new THREE.Vector3(front*(.13+drag*.055+slide*.9),wristY,.46);
-        var a1=new THREE.Vector3(-.22,1.52-drag*.035,.04);
-        var a2=new THREE.Vector3(.22,1.52-drag*.035,.04);
+        var wristY=1.15-Math.max(winPull,losePull)*.075+Math.sin(time*5+p.phase)*(.02+Math.max(winPull,losePull)*.018);
+        var reach=.13+winPull*.18+losePull*.48+finishFall*.18;
+        var elbowL=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.23);
+        var elbowR=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.24);
+        var b1=new THREE.Vector3(front*(reach+travel*.66),wristY,.38);
+        var b2=new THREE.Vector3(front*(reach+travel*.66),wristY,.46);
+        var a1=new THREE.Vector3(-.22,1.52-Math.max(winPull,losePull)*.035,.04);
+        var a2=new THREE.Vector3(.22,1.52-Math.max(winPull,losePull)*.035,.04);
         segment(p.armL,a1,elbowL);
         segment(p.foreL,elbowL,b1);
         segment(p.armR,a2,elbowR);
@@ -993,7 +1001,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var cx=w/2,cy=h*.53,scale=Math.min(w/7.6,h/5.5);ctx.lineCap='round';
       for(var i=-1;i<=1;i+=2){ctx.strokeStyle=i<0?'#e96b7c':'#6bc8f4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+i*2.85*scale,cy-scale*1.5);ctx.lineTo(cx+i*2.85*scale,cy+scale*1.5);ctx.stroke();}
       ctx.strokeStyle='#d6ad64';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-3.8*scale,cy);ctx.lineTo(cx+3.8*scale,cy);ctx.stroke();
-      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var strain=team===1?sceneState.progress:-sceneState.progress;var drag=Math.pow(Math.max(0,Math.min(1,strain)),.58);var backwardDir=team===1?-1:1;var pullDir=team===1?1:-1;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+backwardDir*drag*2.8)*scale;var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==(team)){x+=backwardDir*.42*scale;y+=Math.min(1,(performance.now()-(sceneState.finishedAt||performance.now()))/700)*scale*.14;}x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
+      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var teamDir=team===1?-1:1;var advantage=sceneState.progress*teamDir;var winPull=Math.pow(Math.max(0,Math.min(1,advantage)),.58);var losePull=Math.pow(Math.max(0,Math.min(1,-advantage)),.58);var lostMatch=sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==team;var finishPull=lostMatch?Math.max(0,Math.min(1,(performance.now()-(sceneState.finishedAt||performance.now()))/700))*.72:0;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+teamDir*(winPull*1.05-losePull*2.8-finishPull))*scale;var drag=Math.max(winPull,losePull);var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(finishPull)y+=finishPull*scale*.14*teamDir;x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
       ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+sceneState.progress*2.7*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
       requestAnimationFrame(draw);
     }
