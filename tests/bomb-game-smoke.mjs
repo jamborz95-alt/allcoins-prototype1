@@ -43,6 +43,12 @@ assert.ok(bombOnlineRouter.includes('router.post("/matchmaking/join"') &&
   bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_rooms') &&
   bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_room_players'),
   "Bomb Online backend should create persistent rooms and support matchmaking, sync, pass and leave.");
+assert.ok(bombHtml.includes("function animateOnlineRemotePlayers(time)") &&
+  bombHtml.includes("window.__allcoinsOnlineBombFollowing = followRemoteCarrier") &&
+  bombHtml.includes(".bot-character.online-remote{transition:none") &&
+  bombHtml.includes("oldPlayerStatusKey !== nextPlayerStatusKey") &&
+  bombJs.includes("miner.position.distanceToSquared(pos) > 900"),
+  "Online remote characters should interpolate smoothly, avoid unnecessary DOM refreshes and keep the bomb attached to its carrier.");
 assert.ok(bombOnlineRouter.includes('router.post("/rooms/create"') &&
   bombOnlineRouter.includes('router.post("/rooms/join"') &&
   bombOnlineRouter.includes('router.post("/rooms/list"') &&
@@ -352,6 +358,30 @@ try {
     "A remote human opponent should be rendered in the arena.");
   assert.ok((await page.locator("#seats").innerText()).includes("Live Opponent"),
     "The remote player's nickname should appear in the online seats.");
+
+  // Simulate a server hand-off to the remote player and a later movement snapshot.
+  onlineGameState.holderId = "opponent_online_01";
+  onlineRoster = onlineRoster.map(player => player.playerId === "opponent_online_01"
+    ? { ...player, xPct: 78, yPct: 52 }
+    : player);
+  await page.waitForFunction(() =>
+    window.__allcoinsOnlineBombFollowing === true &&
+    !document.querySelector("#bomb")?.classList.contains("moving"),
+    undefined, { timeout: 8000 }
+  );
+  const bombBeforeRemoteMove = await page.evaluate(() => window.__allcoinsBombScreenPosition?.x ?? null);
+  onlineRoster = onlineRoster.map(player => player.playerId === "opponent_online_01"
+    ? { ...player, xPct: 54, yPct: 43 }
+    : player);
+  await page.waitForFunction(
+    x => Number.isFinite(window.__allcoinsBombScreenPosition?.x) &&
+      window.__allcoinsBombScreenPosition.x < x - 35,
+    bombBeforeRemoteMove,
+    { timeout: 8000 }
+  );
+  assert.ok(await page.evaluate(() => window.__allcoinsOnlineBombFollowing === true),
+    "The bomb should follow the opponent's interpolated position instead of remaining behind.");
+
   const listRequestsBeforeExit = openRoomListRequests;
   await page.locator("#gameBack").click();
   await page.waitForFunction(() =>
