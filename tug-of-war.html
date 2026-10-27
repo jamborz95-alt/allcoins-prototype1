@@ -466,6 +466,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     el('gameMessage').textContent = game.message || (game.phase==='playing'?'Держи ритм — тяни канат!':'Ожидаем игроков');
     el('pullButton').disabled = game.phase !== 'playing' || Boolean(currentMe && currentMe.disqualified);
     el('tapHint').textContent = currentMe && currentMe.disqualified ? 'Ты дисквалифицирован — матч для тебя проигран.' : 'Сила складывается из нажатий всей команды · Не удерживай кнопку';
+    updateSceneNames(currentPlayers);
     var progress = Math.max(-1,Math.min(1,Number(game.progress)||0));
     el('scoreMeter').style.left = (50+progress*48)+'%';
     el('scoreMeter').style.clipPath = 'none';
@@ -493,6 +494,33 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     }else{
       el('resultCard').classList.add('hidden');
     }
+  }
+  function updateSceneNames(playersList){
+    if(!Array.isArray(playersList) || !people.length) return;
+    var rosters = {
+      1: playersList.filter(function(player){return Number(player.team)===1;}),
+      2: playersList.filter(function(player){return Number(player.team)===2;})
+    };
+    people.forEach(function(person){
+      var player = rosters[person.team][person.index];
+      var name = player ? String(player.name||'Игрок').slice(0,18) : 'Ожидание';
+      if(person.labelName === name || !person.labelCanvas || !person.labelTexture) return;
+      person.labelName = name;
+      var ctx = person.labelCanvas.getContext('2d');
+      if(!ctx) return;
+      ctx.clearRect(0,0,256,64);
+      ctx.fillStyle = person.team===1 ? '#59202b' : '#103b56';
+      ctx.fillRect(0,0,256,64);
+      ctx.strokeStyle = person.team===1 ? '#ffb2b8' : '#a6e4ff';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(3,3,250,58);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(name,128,32);
+      person.labelTexture.needsUpdate = true;
+    });
   }
   function showWarning(text){
     el('warningText').textContent = text;
@@ -698,6 +726,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       root.rotation.y=team===1?Math.PI/2:-Math.PI/2;
       scene.add(root);
       var pullPose={team:team,index:index,root:root,body:bodyGroup,armL:armL,armR:armR,foreL:foreL,foreR:foreR,handL:handL,handR:handR,
+        labelSprite:nameSprite,labelTexture:labelTex,labelCanvas:labelCanvas,labelName:String(name||'Игрок'),
         baseX:baseX,baseZ:baseZ,phase:index*1.8+(team===1?0:1.1),team:team};
       people.push(pullPose);
       return pullPose;
