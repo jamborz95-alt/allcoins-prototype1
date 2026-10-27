@@ -69,14 +69,14 @@ try {
   await page.screenshot({ path: resolve(out, "live-link-games-ru-mobile.png") });
 
   const languageChecks = [
-    { code: "en", home: "Home", games: "Games", bomb: "Pass the Bomb", promo: "Weekly Tournament" },
-    { code: "nl", home: "Home", games: "Spellen", bomb: "Geef de bom door", promo: "Wekelijks toernooi" },
-    { code: "tr", home: "Ana sayfa", games: "Oyunlar", bomb: "Bombayı aktar", promo: "Haftalık turnuva" },
-    { code: "es", home: "Inicio", games: "Juegos", bomb: "Pasa la bomba", promo: "Torneo semanal" },
-    { code: "de", home: "Startseite", games: "Spiele", bomb: "Bombe weitergeben", promo: "Wochenturnier" },
-    { code: "fr", home: "Accueil", games: "Jeux", bomb: "Passer la bombe", promo: "Tournoi hebdomadaire" },
-    { code: "pt", home: "Início", games: "Jogos", bomb: "Passe a bomba", promo: "Torneio semanal" },
-    { code: "zh", home: "首页", games: "游戏", bomb: "传递炸弹", promo: "每周锦标赛" }
+    { code: "en", home: "Home", games: "Games", bomb: "Pass the Bomb", balda: "Online Balda", promo: "Weekly Tournament" },
+    { code: "nl", home: "Home", games: "Spellen", bomb: "Geef de bom door", balda: "Balda Online", promo: "Wekelijks toernooi" },
+    { code: "tr", home: "Ana sayfa", games: "Oyunlar", bomb: "Bombayı aktar", balda: "Çevrimiçi Balda", promo: "Haftalık turnuva" },
+    { code: "es", home: "Inicio", games: "Juegos", bomb: "Pasa la bomba", balda: "Balda en línea", promo: "Torneo semanal" },
+    { code: "de", home: "Startseite", games: "Spiele", bomb: "Bombe weitergeben", balda: "Online-Balda", promo: "Wochenturnier" },
+    { code: "fr", home: "Accueil", games: "Jeux", bomb: "Passer la bombe", balda: "Balda en ligne", promo: "Tournoi hebdomadaire" },
+    { code: "pt", home: "Início", games: "Jogos", bomb: "Passe a bomba", balda: "Balda Online", promo: "Torneio semanal" },
+    { code: "zh", home: "首页", games: "游戏", bomb: "传递炸弹", balda: "在线巴尔达", promo: "每周锦标赛" }
   ];
   const renderedLocales = [];
   await page.locator('button[data-page="profile"]').click();
@@ -98,6 +98,9 @@ try {
     const bombTitle = (await page.locator("#bombEntry").innerText()).replace(/\s+/g, " ").trim();
     assert.ok(bombTitle.includes(item.bomb),
       item.code + " language did not translate the Pass the Bomb tile: " + bombTitle);
+    const baldaTitle = (await page.locator("#baldaEntry").innerText()).replace(/\\s+/g, " ").trim();
+    assert.ok(baldaTitle.includes(item.balda),
+      item.code + " language did not translate the Balda tile: " + baldaTitle);
     const promoText = (await page.locator("#openBlockBlast").innerText()).replace(/\s+/g, " ").trim();
     assert.ok(promoText.includes(item.promo),
       item.code + " language did not translate the Block Blast promotion: " + promoText);
