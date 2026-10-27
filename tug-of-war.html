@@ -827,7 +827,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       root.position.set(baseX,0,baseZ);
       root.rotation.y=team===1?Math.PI/2:-Math.PI/2;
       scene.add(root);
-      var pullPose={team:team,index:index,root:root,body:bodyGroup,armL:armL,armR:armR,foreL:foreL,foreR:foreR,handL:handL,handR:handR,
+      var pullPose={team:team,index:index,root:root,body:bodyGroup,armL:armL,armR:armR,foreL:foreL,foreR:foreR,handL:handL,handR:handR,legL:legL,legR:legR,
         labelSprite:nameSprite,labelTexture:labelTex,labelCanvas:labelCanvas,labelName:String(name||'Игрок'),
         baseX:baseX,baseZ:baseZ,phase:index*1.8+(team===1?0:1.1),team:team};
       people.push(pullPose);
@@ -845,24 +845,35 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
         // The losing team is physically pulled toward and then beyond the other team's line.
         var strain=p.team===1?progress:-progress;
         var drag=Math.max(0,Math.min(1,strain));
-        var dragCurve=Math.pow(drag,1.42);
+        // React early to small pulls so the defending team visibly gives ground.
+        var dragCurve=Math.pow(drag,.88);
         var pullDir=p.team===1?1:-1;
         var active=sceneState.status==='playing';
         var finishFall=(sceneState.status==='finished' && strain>0)
           ? smoothStep(0.12,0.78,finishElapsed) : 0;
-        var slide=7.25*dragCurve + finishFall*.38;
+        var pullImpulse=active?Math.min(1,Math.abs(progressVelocity)*1.8):0;
+        // The losing team slides with the rope, but leans and back-steps against its pull.
+        var slide=4.65*dragCurve + finishFall*.72;
         var pulse=Math.min(1,Math.abs(progressVelocity)*2.8);
         p.root.position.x=(p.baseX+pullDir*slide)*horizontalScale;
         p.root.position.z=p.baseZ
           +Math.sin(time*2.3+p.phase)*(.018+drag*.04)
           +Math.sin(time*7.2+p.phase)*drag*.045;
-        // A convincing brace: hips stay low, shoulders lean away from the pull.
         p.body.rotation.z=(p.team===1?1:-1)*(
-          .045+drag*(.24+Math.sin(time*5.4+p.phase)*.035)
-          +(active?Math.sin(time*5+p.phase)*.018:0)
+          .045+drag*(.25+Math.sin(time*5.4+p.phase)*.035)
+          +(active?Math.sin(time*5+p.phase)*(.018+pullImpulse*.025):0)
         )+(p.team===1?1:-1)*pulse*.025;
+        // Negative local X rotation makes the shoulders lean backward, away from the rope's pull.
         p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0)
-          +drag*(.045+Math.sin(time*4.8+p.phase)*.035);
+          -drag*(.17+Math.sin(time*4.8+p.phase)*.025+pullImpulse*.13)
+          -finishFall*.16;
+        // Alternate a visible recovery step when the rope advances; feet do not stay planted.
+        var stepWave=Math.sin(time*(4.8+drag*3.2)+p.phase);
+        var stepAmount=(active?(.035+drag*.10+pullImpulse*.16):drag*.035)+finishFall*.08;
+        p.legL.rotation.x=stepWave*stepAmount;
+        p.legR.rotation.x=-Math.sin(time*(4.8+drag*3.2)+p.phase+Math.PI)*stepAmount;
+        p.legL.position.x=-.12+Math.max(0,stepWave)*(.018+pullImpulse*.045);
+        p.legR.position.x=.12+Math.max(0,-stepWave)*(.018+pullImpulse*.045);
         // At the finish, the losing players stumble over the line instead of stopping on it.
         p.root.rotation.z=pullDir*(drag*.025+finishFall*.48);
         var front=p.team===1?1:-1;
