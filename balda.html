@@ -195,7 +195,7 @@
       const $ = id => document.getElementById(id);
       const state = {
         room: null, players: [], game: null, meId: "", busy: false, polling: null,
-        listPolling: null, listBusy: false, roomBusy: false, stage: "lobby", pendingCell: null
+        listPolling: null, listBusy: false, roomBusy: false, stage: "lobby", pendingCell: null, clientMessage: ""
       };
       const alphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("");
 
@@ -453,7 +453,7 @@
         } else {
           $("lastWord").textContent = "Начальное слово: БАЛДА · за ход добавляется одна буква";
         }
-        $("gameMessage").textContent = game.message || (myTurn ? "Твой ход: добавь букву и составь слово." : "Ход соперника.");
+        $("gameMessage").textContent = state.clientMessage || game.message || (myTurn ? "Твой ход: добавь букву и составь слово." : "Ход соперника.");
         $("passBtn").classList.toggle("hidden", game.status !== "playing" || !myTurn);
         $("passBtn").disabled = state.busy || !myTurn;
         $("finishLobbyBtn").classList.toggle("hidden", game.status !== "finished");
@@ -471,16 +471,27 @@
           $("passBtn").classList.add("hidden");
         }
       }
+      function showGameMessage(message) {
+        const text = String(message || "Не удалось выполнить действие.");
+        state.clientMessage = text;
+        $("gameMessage").textContent = text;
+        setTimeout(() => {
+          if (state.clientMessage !== text) return;
+          state.clientMessage = "";
+          if (state.stage === "game" && state.game) renderGame();
+        }, 3600);
+      }
+
       function chooseCell(cell) {
         if (!state.game || state.game.status !== "playing" || state.busy) return;
         const me = (state.game.players || []).find(player => player.isYou);
         if (!me || String(state.game.currentPlayerId) !== String(me.id)) {
-          $("gameMessage").textContent = "Сейчас ход соперника.";
+          showGameMessage("Сейчас ход соперника.");
           return;
         }
         if (state.game.board[cell]) return;
         if (!isAdjacent(cell, state.game.board)) {
-          $("gameMessage").textContent = "Выбери пустую клетку рядом с уже заполненной.";
+          showGameMessage("Выбери пустую клетку рядом с уже заполненной.");
           return;
         }
         state.pendingCell = cell;
