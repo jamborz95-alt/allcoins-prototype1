@@ -1933,6 +1933,22 @@ app.post("/api/durak/action", async (req, res) => {
     const timeoutCheck = expireDurakTurnIfNeeded(game);
     if (timeoutCheck.timedOut) {
       await settleDurakGamePayout(client, game, roomId);
+
+      // Apply the same timeout housekeeping as the state-poll recovery path.
+      // This action returns HTTP 409 immediately, so there may be no later poll
+      // to detach the timed-out loser and mark housekeeping complete.
+      const timeoutLoserId = String(game.loserTelegramId || "");
+      if (timeoutLoserId && timeoutLoserId !== "0") {
+        await client.query(
+          "DELETE FROM durak_room_players WHERE room_id = $1 AND telegram_id = $2",
+          [roomId, timeoutLoserId]
+        );
+      }
+      game.timeoutBalanceAwards = [];
+      game.timeoutBalanceForfeited = 0;
+      game.timeoutBalanceTransferred = 0;
+      game.timeoutBalanceSettled = true;
+
       await client.query(
         `UPDATE durak_games
          SET game_state = $1::jsonb, updated_at = NOW()
