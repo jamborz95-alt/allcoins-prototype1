@@ -16,6 +16,7 @@ import { createSupportRouter } from "./support-router.js";
 import { registerNeonMigrationRoute } from "./neon-migration.js";
 import { createBlockBlastRouter } from "./blockblast-router.js";
 import { createBombOnlineRouter } from "./bomb-online-router.js";
+import { createTugOfWarRouter } from "./tug-of-war-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -314,6 +315,8 @@ const blockBlastRouter = createBlockBlastRouter({ pool, verifyTelegram, recordGa
 app.use("/api/block-blast", blockBlastRouter);
 const bombOnlineRouter = createBombOnlineRouter({ pool });
 app.use("/api/bomb", bombOnlineRouter);
+const tugOfWarRouter = createTugOfWarRouter({ pool, verifyTelegram, recordGameCommission });
+app.use("/api/tug-of-war", tugOfWarRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3674,6 +3677,9 @@ async function startServer() {
 
     await bombOnlineRouter.initialize();
     console.log("Bomb Online room tables are ready");
+
+    await tugOfWarRouter.initialize();
+    console.log("Tug of War Online tables are ready");
 
     const port = process.env.PORT || 3000;
     
