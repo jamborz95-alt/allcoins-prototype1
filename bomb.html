@@ -1789,9 +1789,30 @@
       botVelocityY += (desiredVY - botVelocityY) * blend;
       const boundedX = Math.max(38, Math.min(rect.width - 38, from.x + botVelocityX * dt));
       const boundedY = Math.max(52, Math.min(rect.height - 72, from.y + botVelocityY * dt));
-      const resolved = slideAroundObstacles(from.x, from.y, boundedX, boundedY, 22);
-      if (resolved.x !== boundedX) botVelocityX = 0;
-      if (resolved.y !== boundedY) botVelocityY = 0;
+      let resolved = slideAroundObstacles(from.x, from.y, boundedX, boundedY, 22);
+      // If the two-axis slide reaches a tight obstacle corner, try small safe
+      // detours around it. Without this fallback the bot can stay stuck forever.
+      if (Math.hypot(resolved.x - from.x, resolved.y - from.y) < .25) {
+        const step = Math.max(3, desiredSpeed * dt * 1.6);
+        const ux = dx / distance, uy = dy / distance;
+        const candidates = [
+          [ux, uy], [ux * .707 - uy * .707, uy * .707 + ux * .707],
+          [ux * .707 + uy * .707, uy * .707 - ux * .707],
+          [-uy, ux], [uy, -ux], [Math.sign(dx), 0], [0, Math.sign(dy)],
+          [-Math.sign(dx), 0], [0, -Math.sign(dy)]
+        ].map(([vx, vy]) => ({
+          x: Math.max(38, Math.min(rect.width - 38, from.x + vx * step)),
+          y: Math.max(52, Math.min(rect.height - 72, from.y + vy * step))
+        })).filter(point =>
+          Math.hypot(point.x - from.x, point.y - from.y) > .25 &&
+          !isBlockedByObstacle(point.x, point.y, 22)
+        ).sort((a, b) =>
+          Math.hypot(a.x - to.x, a.y - to.y) - Math.hypot(b.x - to.x, b.y - to.y)
+        );
+        if (candidates.length) resolved = candidates[0];
+      }
+      if (Math.abs(resolved.x - boundedX) > .25) botVelocityX = 0;
+      if (Math.abs(resolved.y - boundedY) > .25) botVelocityY = 0;
       mover.style.left = resolved.x + 'px';
       mover.style.top = resolved.y + 'px';
       mover.classList.toggle('facing-left', dx < 0);
