@@ -365,6 +365,7 @@ const path = require("node:path");
         { id: "tugEntry", selector: ".tug-entry-appicon", title: "Перетягивание каната" },
         { id: "towersEntry", selector: ".towers-entry-appicon", title: "Захват башен" },
         { id: "unoEntry", selector: ".uno-entry-appicon", title: "УНО Онлайн" },
+        { id: "baldaEntry", selector: ".balda-entry-appicon", title: "Балда Онлайн" },
         { id: "billiardsEntry", selector: ".billiards-entry-appicon", title: "Бильярд Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
         { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
