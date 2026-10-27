@@ -934,6 +934,7 @@
       setStatus("createStatus", error.message, true);
     } finally {
       busy = false;
+      if (currentState) renderRoom(currentState);
       scheduleSekaRefreshIfReady();
       $("createRoomButton").disabled = false;
     }
@@ -957,6 +958,7 @@
       setStatus("lobbyStatus", error.message, true);
     } finally {
       busy = false;
+      if (currentState) renderRoom(currentState);
       scheduleSekaRefreshIfReady();
     }
   }
@@ -1245,6 +1247,7 @@
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
+      if (currentState) renderRoom(currentState);
       scheduleSekaRefreshIfReady();
       if ($("addBotButton")) $("addBotButton").disabled = false;
     }
@@ -1269,6 +1272,7 @@
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
+      if (currentState) renderRoom(currentState);
       scheduleSekaRefreshIfReady();
       if (currentState && currentState.room && currentState.room.status === "waiting") {
         $("startGameButton").disabled = (currentState.players || []).length < 2;
