@@ -343,7 +343,9 @@
         renderedGame: null,
         cardAnimationInProgress: false,
         renderQueued: false,
-        lastDraggedPlayCardId: null
+        lastDraggedPlayCardId: null,
+        // Prevent a poll started before a player's move from overwriting the move response.
+        gameActionVersion: 0
       };
       const colors = ["red", "blue", "green", "yellow"];
       const colorNames = { red: "Красный", blue: "Синий", green: "Зелёный", yellow: "Жёлтый" };
@@ -1548,15 +1550,29 @@
       }
 
       async function refreshGame(quiet) {
-        if (!state.room || state.stage !== "game" || state.gamePollBusy) return;
+        if (!state.room || state.stage !== "game" || state.gamePollBusy || state.busy) return;
         state.gamePollBusy = true;
+        const roomIdAtStart = String(state.room.id);
+        const actionVersionAtStart = state.gameActionVersion;
         try {
-          const data = await api("/game/state", { roomId: state.room.id });
-          state.game = data.game;
-          if (state.game) state.game.myId = state.myId || "";
+          const data = await api("/game/state", { roomId: roomIdAtStart });
+          // Do not let a stale poll repaint the table after a card was just played.
+          if (state.stage !== "game" || !state.room ||
+              String(state.room.id) !== roomIdAtStart ||
+              state.busy || actionVersionAtStart !== state.gameActionVersion) return;
+          const incoming = data.game;
+          if (!incoming) return;
+          const sameRevision = state.game && incoming.updatedAt &&
+            state.game.updatedAt === incoming.updatedAt &&
+            state.game.status === incoming.status;
+          if (sameRevision) return;
+          state.game = incoming;
+          state.game.myId = state.myId || "";
           renderGame();
         } catch (error) {
-          if (!quiet) $("gameMessage").textContent = error.message || "Не удалось обновить партию.";
+          if (!quiet && !state.busy && actionVersionAtStart === state.gameActionVersion) {
+            $("gameMessage").textContent = error.message || "Не удалось обновить партию.";
+          }
         } finally { state.gamePollBusy = false; }
       }
 
@@ -1582,6 +1598,7 @@
       async function sendAction(action, extra) {
         if (!state.room || state.busy) return;
         state.busy = true;
+        state.gameActionVersion += 1;
         const buttons = [$("drawBtn"), $("passBtn"), $("drawPileBtn")];
         buttons.forEach(button => { if (button) button.disabled = true; });
         try {
@@ -1594,7 +1611,8 @@
           }
         } catch (error) {
           $("gameMessage").textContent = error.message || "Не удалось выполнить ход.";
-          await refreshGame(true);
+          // A poll may still be in flight, but its version is now stale. The next
+          // scheduled refresh will fetch the authoritative server state.
         } finally {
           state.busy = false;
           if (state.game && state.game.status === "playing") renderGame();
