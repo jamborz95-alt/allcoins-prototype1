@@ -44,7 +44,36 @@
     scene.add(fill);
 
     const mat = (color, roughness=0.75, metalness=0) => new THREE.MeshStandardMaterial({color,roughness,metalness});
-    const roadMat = new THREE.MeshStandardMaterial({color:0x252c35,roughness:0.94,metalness:0.02});
+    const roadCanvas=document.createElement("canvas");
+    roadCanvas.width=256;roadCanvas.height=256;
+    const roadContext=roadCanvas.getContext("2d");
+    roadContext.fillStyle="#2b3038";roadContext.fillRect(0,0,256,256);
+    for(let n=0;n<850;n++){
+      const shade=36+Math.floor(Math.random()*20);
+      roadContext.fillStyle="rgba("+shade+","+shade+","+shade+","+(0.08+Math.random()*0.12)+")";
+      roadContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*3,1+Math.random()*2);
+    }
+    for(const laneX of [83,128,173]){
+      for(let y=0;y<256;y+=48){
+        roadContext.fillStyle=laneX===128?"#eee6d3":"#cdd1d4";
+        roadContext.fillRect(laneX-1.5,y,3,23);
+      }
+    }
+    const roadTexture=new THREE.CanvasTexture(roadCanvas);
+    roadTexture.wrapS=THREE.RepeatWrapping;roadTexture.wrapT=THREE.RepeatWrapping;
+    roadTexture.repeat.set(1,40);roadTexture.colorSpace=THREE.SRGBColorSpace;
+    const roadMat = new THREE.MeshStandardMaterial({map:roadTexture,color:0xffffff,roughness:0.94,metalness:0.02});
+    const curbCanvas=document.createElement("canvas");
+    curbCanvas.width=64;curbCanvas.height=128;
+    const curbContext=curbCanvas.getContext("2d");
+    for(let y=0;y<128;y+=32){
+      curbContext.fillStyle=(y/32)%2===0?"#e4e4df":"#c22635";
+      curbContext.fillRect(0,y,64,32);
+    }
+    const curbTexture=new THREE.CanvasTexture(curbCanvas);
+    curbTexture.wrapS=THREE.RepeatWrapping;curbTexture.wrapT=THREE.RepeatWrapping;
+    curbTexture.repeat.set(1,65);curbTexture.colorSpace=THREE.SRGBColorSpace;
+    const curbMaterial=new THREE.MeshStandardMaterial({map:curbTexture,roughness:0.82});
     const white = mat(0xf4f0df,0.5);
     const red = mat(0xe52e3d,0.3,0.32);
     const dark = mat(0x10151c,0.4,0.1);
@@ -58,35 +87,22 @@
     const road = new THREE.Mesh(new THREE.PlaneGeometry(13,520),roadMat);
     road.rotation.x=-Math.PI/2;road.position.set(0,-0.08,-225);scene.add(road);
 
-    const markings=[];
-    for(let lane=-1;lane<=1;lane++){
-      for(let i=0;i<31;i++){
-        const marker=new THREE.Mesh(new THREE.BoxGeometry(lane===0?0.11:0.075,0.018,4.1),white);
-        marker.position.set(lane*2.25,-0.055,-265+i*9);
-        marker.userData.baseZ=marker.position.z;
-        scene.add(marker);markings.push(marker);
-      }
-    }
-    const curbs=[];
+    // Lane dashes and red/white curbs are textures, not hundreds of meshes.
+    // This cuts draw calls significantly on entry-level Android phones.
     for(const side of [-1,1]){
-      const rail=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.38,520),mat(0x68717c,0.65,0.2));
-      rail.position.set(side*6.35,0.12,-225);scene.add(rail);
-      for(let i=0;i<65;i++){
-        const stripe=new THREE.Mesh(new THREE.BoxGeometry(0.235,0.4,3.3),mat(i%2?0xf3eee1:0xb52332,0.75));
-        stripe.position.set(side*6.35,0.13,-485+i*8);
-        stripe.userData.baseZ=stripe.position.z;
-        scene.add(stripe);curbs.push(stripe);
-      }
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.38,520),curbMaterial);
+      rail.position.set(side*6.35,0.12,-225);
+      scene.add(rail);
     }
 
     const buildings=[];
     const buildingMats=[0x344351,0x46515d,0x394958,0x58606a,0x2d3b48].map(c=>mat(c,0.91));
     const windowMat=new THREE.MeshStandardMaterial({color:0xffd99a,emissive:0x825c31,emissiveIntensity:0.18,roughness:0.5});
     for(let side of [-1,1]){
-      for(let i=0;i<19;i++){
+      for(let i=0;i<13;i++){
         const width=2.2+(i%4)*0.55, depth=3+(i%3)*1.2, height=5+(i%7)*2.1;
         const building=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),buildingMats[(i+(side===1?2:0))%buildingMats.length]);
-        building.position.set(side*(9.8+(i%3)*1.7),height/2-0.1,-240+i*14);
+        building.position.set(side*(9.8+(i%3)*1.7),height/2-0.1,-240+i*21);
         building.userData.baseZ=building.position.z;
         scene.add(building);buildings.push(building);
         const windowStrip=new THREE.Mesh(new THREE.BoxGeometry(width*0.74,0.17,0.035),windowMat);
@@ -100,8 +116,8 @@
     const lampMetal=mat(0x5e6b79,0.42,0.72);
     const lampGlow=new THREE.MeshStandardMaterial({color:0xffe7ba,emissive:0xffd08a,emissiveIntensity:1.5});
     for(const side of [-1,1]){
-      for(let i=0;i<12;i++){
-        const z=-225+i*23;
+      for(let i=0;i<7;i++){
+        const z=-225+i*38;
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.07,5.5,7),lampMetal);
         pole.position.set(side*7.5,2.7,z);
         pole.userData.baseZ=z;scene.add(pole);lamps.push(pole);
@@ -159,8 +175,8 @@
       const speed=Number(document.getElementById("speed")?.textContent||0);
       const running=host.classList.contains("racing");
       progress+=speed/3.6*dt*(running?1.35:0.12);
-      for(const mesh of markings){mesh.position.z=mod(mesh.userData.baseZ+progress+265,270)-265;}
-      for(const mesh of curbs){mesh.position.z=mod(mesh.userData.baseZ+progress+485,520)-485;}
+      roadTexture.offset.y=mod(progress/520,1);
+      curbTexture.offset.y=mod(progress/520,1);
       for(const mesh of buildings){mesh.position.z=mod(mesh.userData.baseZ+progress+240,280)-240;}
       for(const mesh of lamps){mesh.position.z=mod(mesh.userData.baseZ+progress+225,276)-225;}
       const factor=Math.min(1,speed/210);
