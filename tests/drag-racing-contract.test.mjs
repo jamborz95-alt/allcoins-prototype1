@@ -72,6 +72,11 @@ test("Online race polling does not overlap and 3D race view receives every parti
   assert.match(router, /bestFinishFraction=Infinity/);
 });
 
+test("A finished racer may close the result screen without refunding or altering the pot", () => {
+  assert.match(router, /if\(room\.status==="finished"\)\{const finishedMember=/);
+  assert.match(router, /finished:true,refunded:false/);
+});
+
 test("Completed Drag Racing rooms disappear after the result grace period without changing balances", () => {
   assert.match(router, /DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW\(\)-INTERVAL '2 minutes'/);
   assert.match(router, /if\(typeof cleanupTimer\.unref==="function"\)cleanupTimer\.unref\(\)/);
