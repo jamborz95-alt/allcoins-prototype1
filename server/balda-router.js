@@ -510,7 +510,8 @@ export function createBaldaRouter({ pool, verifyTelegram }) {
       const user = authenticatedUser(req, verifyTelegram);
       const roomId = parseRoomId(req.body?.roomId);
       const cell = Number(req.body?.cell);
-      const letter = NORMALIZE(req.body?.letter);
+      const rawLetter = String(req.body?.letter ?? "").trim().toUpperCase();
+      const letter = rawLetter === "Ё" ? "Ё" : NORMALIZE(rawLetter);
       if (!roomId) throw new BaldaError(400, "Номер комнаты указан неверно.");
       if (!Number.isInteger(cell) || cell < 0 || cell >= 25) throw new BaldaError(400, "Выбери клетку на поле.");
       if (letter.length !== 1 || !ALPHABET.includes(letter)) throw new BaldaError(400, "Выбери одну русскую букву.");
