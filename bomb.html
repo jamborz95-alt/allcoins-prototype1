@@ -1619,6 +1619,10 @@
     function resumeJoystickMotion() {
       if (movePointerId !== null && lastJoystickClientX !== null && lastJoystickClientY !== null &&
           phase === 'playing') {
+        // Animated hand-offs can make some mobile WebViews drop element pointer capture
+        // even though the finger is still down. Re-acquire it before applying the stored
+        // coordinates; the window-level pointermove fallback remains active as well.
+        try { $('moveJoystick').setPointerCapture(movePointerId); } catch (_) {}
         setJoystickFromCoordinates(lastJoystickClientX, lastJoystickClientY);
       }
     }
@@ -1745,6 +1749,10 @@
     });
     window.addEventListener('pointercancel', event => {
       if (movePointerId !== event.pointerId) return;
+      // During a bomb flight some mobile WebViews emit pointercancel when capture is
+      // interrupted by the animated layer. Keep the gesture alive until the hand-off
+      // settles; resumeJoystickMotion() will try to capture the still-held pointer again.
+      if (phase === 'passing') return;
       resetJoystick();
     });
     window.addEventListener('keydown', event => {
