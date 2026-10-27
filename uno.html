@@ -1605,7 +1605,6 @@
           const data = await api("/game/action", Object.assign({ roomId: state.room.id, action }, extra || {}));
           state.game = data.game;
           if (state.game) state.game.myId = state.myId || "";
-          renderGame();
           if (state.game.status === "playing") {
             // The next poll advances a bot turn on the server.
           }
@@ -1615,7 +1614,9 @@
           // scheduled refresh will fetch the authoritative server state.
         } finally {
           state.busy = false;
-          if (state.game && state.game.status === "playing") renderGame();
+          // Render once after the request; rendering before and after this block
+          // rebuilt the card hand twice and could interrupt animations on mobile.
+          if (state.game) renderGame();
         }
       }
 
