@@ -1413,6 +1413,46 @@
         }
       }
 
+      function fitUnoHand() {
+        const host = $("unoHand");
+        if (!host) return;
+        const cards = host.querySelectorAll(".uno-card");
+        const count = cards.length;
+        if (!count) return;
+
+        // Fit every card into the visible hand width. Keep the familiar card size
+        // for small hands, then gently shrink cards and increase overlap as needed.
+        const available = Math.max(180, host.clientWidth - 8);
+        const mobile = window.innerWidth <= 680;
+        const baseWidth = mobile ? 52 : 57;
+        const baseHeight = mobile ? 78 : 84;
+        const desiredOverlap = 12;
+        let cardWidth = Math.min(baseWidth, (available + (count - 1) * desiredOverlap) / count);
+        cardWidth = Math.max(30, cardWidth);
+        let overlap = count > 1 ? Math.max(desiredOverlap, (count * cardWidth - available) / (count - 1)) : 0;
+
+        // In extreme hands keep a narrow visible strip of each card instead of
+        // letting the row create horizontal overflow.
+        overlap = Math.min(Math.max(0, cardWidth - 6), overlap);
+        const cardHeight = cardWidth * (baseHeight / baseWidth);
+        host.style.setProperty("--uno-hand-card-width", cardWidth.toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-card-height", cardHeight.toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-overlap", overlap.toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-center-size", Math.min(mobile ? 32 : 35, Math.max(14, cardWidth * .62)).toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-action-size", Math.min(mobile ? 25 : 27, Math.max(12, cardWidth * .48)).toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-word-size", Math.max(6, Math.min(10, cardWidth * .19)).toFixed(2) + "px");
+        host.style.setProperty("--uno-hand-corner-size", Math.max(6, Math.min(10, cardWidth * .19)).toFixed(2) + "px");
+      }
+
+      let unoHandFitFrame = 0;
+      function scheduleUnoHandFit() {
+        if (unoHandFitFrame) cancelAnimationFrame(unoHandFitFrame);
+        unoHandFitFrame = requestAnimationFrame(function () {
+          unoHandFitFrame = 0;
+          if (state.stage === "game") fitUnoHand();
+        });
+      }
+
       function renderGame() {
         const game = state.game;
         if (!game) return;
@@ -1479,6 +1519,7 @@
           attachUnoCardDrag(element, card, turn);
           handHost.appendChild(element);
         });
+        fitUnoHand();
 
         const drawLocked = !turn || game.status !== "playing" || Boolean(game.drawnCardId);
         $("drawPileBtn").disabled = drawLocked;
@@ -1609,6 +1650,8 @@
       $("drawBtn").addEventListener("click", function () { sendAction("draw"); });
       $("drawPileBtn").addEventListener("click", function () { sendAction("draw"); });
       $("passBtn").addEventListener("click", function () { sendAction("pass"); });
+      window.addEventListener("resize", scheduleUnoHandFit, { passive: true });
+      window.addEventListener("orientationchange", scheduleUnoHandFit, { passive: true });
 
       // The human Telegram ID is taken from validated initData on the server response.
       // The room-player list returns the flag isYou; obtain the authenticated seat ID from it.
@@ -1846,6 +1889,60 @@
   }
   @media(prefers-reduced-motion:reduce){
     .uno-hand .uno-card,.draw-pile .uno-card{transition:none!important}
+  }
+</style>
+
+<style id="uno-hand-fit-and-visible-color-picker">
+  /* Keep every card inside the screen; responsive sizes are calculated in fitUnoHand(). */
+  #gameView .hand-zone { width:100%; max-width:900px; min-width:0; }
+  #gameView .hand-zone .uno-hand {
+    width:100%; min-width:0; overflow:visible!important; overflow-x:visible!important;
+    justify-content:center!important; gap:0!important;
+    padding-left:4px!important; padding-right:4px!important;
+    scrollbar-width:none;
+  }
+  #gameView .hand-zone .uno-hand::-webkit-scrollbar { display:none; }
+  #gameView .hand-zone .uno-hand .uno-card {
+    width:var(--uno-hand-card-width,52px)!important;
+    height:var(--uno-hand-card-height,78px)!important;
+    flex:0 0 var(--uno-hand-card-width,52px)!important;
+    max-width:none!important;
+  }
+  #gameView .hand-zone .uno-hand .uno-card + .uno-card {
+    margin-left:calc(var(--uno-hand-overlap,12px) * -1)!important;
+  }
+  #gameView .hand-zone .uno-hand .card-center {
+    font-size:var(--uno-hand-center-size,32px)!important;
+  }
+  #gameView .hand-zone .uno-hand .card-center.action {
+    font-size:var(--uno-hand-action-size,25px)!important;
+  }
+  #gameView .hand-zone .uno-hand .card-center.word {
+    font-size:var(--uno-hand-word-size,9px)!important;
+    letter-spacing:0!important;
+  }
+  #gameView .hand-zone .uno-hand .card-corner {
+    font-size:var(--uno-hand-corner-size,10px)!important;
+  }
+  /* The picker stays above the table, not over the hand; a light veil keeps the cards visible. */
+  #colorModal.modal-backdrop {
+    align-items:flex-start!important;
+    justify-content:center!important;
+    padding:calc(env(safe-area-inset-top) + 58px) 14px 12px!important;
+    background:rgba(3,8,13,.16)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  #colorModal .modal { width:min(100%,360px); }
+  @media (max-height:520px), (orientation:landscape) {
+    #colorModal.modal-backdrop {
+      padding:calc(env(safe-area-inset-top) + 34px) 12px 8px!important;
+    }
+    #colorModal .modal { padding:12px 14px; width:min(100%,340px); }
+    #colorModal .modal h3 { margin-bottom:4px; font-size:17px; }
+    #colorModal .modal p { margin-bottom:9px; font-size:11px; }
+    #colorModal .color-picker { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+    #colorModal .color-pick { height:40px; border-width:2px; border-radius:10px; }
   }
 </style>
 
