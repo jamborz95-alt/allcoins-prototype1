@@ -634,6 +634,8 @@
     let onlineSyncBusy = false;
     let onlineMotionFrame = 0;
     let onlineMotionLastTime = 0;
+    let onlineMotionWidth = 0;
+    let onlineMotionHeight = 0;
     let onlineFuseEndsAt = 0;
     let onlineFuseDuration = 1;
     let lastOnlineExplosionId = null;
@@ -1215,6 +1217,8 @@
     function applyOnlinePositions() {
       if (!onlineGame) return;
       const arenaRect = $("arena").getBoundingClientRect();
+      onlineMotionWidth = arenaRect.width;
+      onlineMotionHeight = arenaRect.height;
       players.forEach((p, index) => {
         if (index === 0) return;
         const character = botCharacterFor(index);
@@ -1244,8 +1248,9 @@
         return;
       }
       const arena = $("arena");
-      const rect = arena.getBoundingClientRect();
-      if (!rect.width || !rect.height) {
+      const width = onlineMotionWidth || arena.clientWidth;
+      const height = onlineMotionHeight || arena.clientHeight;
+      if (!width || !height) {
         onlineMotionFrame = requestAnimationFrame(animateOnlineRemotePlayers);
         return;
       }
@@ -1258,13 +1263,13 @@
         if (index === 0) return;
         const character = botCharacterFor(index);
         if (!character) return;
-        const targetX = rect.width * p.xPct / 100;
-        const targetY = rect.height * p.yPct / 100;
+        const targetX = width * p.xPct / 100;
+        const targetY = height * p.yPct / 100;
         if (!Number.isFinite(p.renderX) || !Number.isFinite(p.renderY)) {
           p.renderX = targetX;
           p.renderY = targetY;
-        } else if (Math.abs(targetX - p.renderX) > Math.max(220, rect.width * .48) ||
-                   Math.abs(targetY - p.renderY) > Math.max(180, rect.height * .48)) {
+        } else if (Math.abs(targetX - p.renderX) > Math.max(220, width * .48) ||
+                   Math.abs(targetY - p.renderY) > Math.max(180, height * .48)) {
           // A reconnect or resized screen can produce a genuine relocation; don't drag across the whole arena.
           p.renderX = targetX;
           p.renderY = targetY;
@@ -1274,8 +1279,10 @@
           if (Math.abs(targetX - p.renderX) < .18) p.renderX = targetX;
           if (Math.abs(targetY - p.renderY) < .18) p.renderY = targetY;
         }
-        character.style.left = p.renderX + "px";
-        character.style.top = p.renderY + "px";
+        const renderedLeft = p.renderX + "px";
+        const renderedTop = p.renderY + "px";
+        if (character.style.left !== renderedLeft) character.style.left = renderedLeft;
+        if (character.style.top !== renderedTop) character.style.top = renderedTop;
       });
       // The 3D renderer and 2D fallback read this live point each frame.
       const bomb = $("bomb");
@@ -1287,8 +1294,8 @@
         const carrier = players[holder];
         const character = botCharacterFor(holder);
         const facing = character && character.classList.contains("facing-left") ? -1 : 1;
-        const x = Math.max(28, Math.min(rect.width - 28, carrier.renderX + 22 * facing));
-        const y = Math.max(30, Math.min(rect.height - 30, carrier.renderY - 20));
+        const x = Math.max(28, Math.min(width - 28, carrier.renderX + 22 * facing));
+        const y = Math.max(30, Math.min(height - 30, carrier.renderY - 20));
         window.__allcoinsBombScreenPosition = { x, y };
         if (!arena.classList.contains("three-ready")) {
           bomb.classList.add("following");
