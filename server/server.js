@@ -837,14 +837,14 @@ async function cleanupFinishedGameRooms() {
               AND updated_at < NOW() - INTERVAL '5 minutes'`
     },
     // A waiting room has not started a game, so no game payout is touched.
-    { name: "old UNO waiting rooms", sql: `DELETE FROM uno_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '30 minutes'` },
-    { name: "old billiards waiting rooms", sql: `DELETE FROM billiards_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
-    { name: "old Towers waiting rooms", sql: `DELETE FROM towers_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
-    { name: "old Seka waiting rooms", sql: `DELETE FROM seka_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
-    { name: "old Checkers waiting rooms", sql: `DELETE FROM checkers_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
-    { name: "old 21 Ochko waiting rooms", sql: `DELETE FROM twentyone_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '12 minutes'` },
-    { name: "old Bomb waiting rooms", sql: `DELETE FROM bomb_rooms WHERE status = 'waiting' AND updated_at < NOW() - INTERVAL '2 minutes'` },
-    { name: "old idle Rock-Paper-Scissors waiting rooms", sql: `DELETE FROM rps_rooms WHERE status = 'waiting' AND updated_at < NOW() - INTERVAL '24 hours'` }
+    { name: "old UNO waiting rooms", sql: `DELETE FROM uno_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '30 minutes' AND NOT EXISTS (SELECT 1 FROM uno_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old billiards waiting rooms", sql: `DELETE FROM billiards_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM billiards_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Towers waiting rooms", sql: `DELETE FROM towers_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM towers_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Seka waiting rooms", sql: `DELETE FROM seka_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM seka_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Checkers waiting rooms", sql: `DELETE FROM checkers_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM checkers_games g WHERE g.room_id = r.id AND g.state->>'status' = 'playing')` },
+    { name: "old 21 Ochko waiting rooms", sql: `DELETE FROM twentyone_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '12 minutes' AND NOT EXISTS (SELECT 1 FROM twentyone_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Bomb waiting rooms", sql: `DELETE FROM bomb_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '2 minutes' AND COALESCE(r.game_state->>'phase', 'waiting') <> 'playing'` },
+    { name: "old idle Rock-Paper-Scissors waiting rooms", sql: `DELETE FROM rps_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '24 hours' AND NOT EXISTS (SELECT 1 FROM rps_room_rounds rr WHERE rr.room_id = r.id AND rr.status = 'playing')` }
   ];
 
   let removedTotal = 0;
