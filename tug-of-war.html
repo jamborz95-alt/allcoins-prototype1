@@ -890,7 +890,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var tension=Math.min(1,Math.abs(progress));
       // The rope tightens and straightens as the teams gain leverage; a travelling wave
       // keeps it alive without making the motion jittery on mobile.
-      var ropeDrift=progress*(portrait?0.25:0.55);
+      var ropeDrift=progress*(portrait?1.45:2.45);
       var start=-ropeHalf+ropeDrift;
       var end=ropeHalf+ropeDrift;
       var sag=.23*(1-tension*.76);
