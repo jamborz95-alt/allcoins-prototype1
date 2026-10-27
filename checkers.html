@@ -562,7 +562,7 @@
         refreshOnlineRoomState(true);
         onlineRoomPollTimer = setInterval(function () {
           if (!document.hidden && !$("onlineRoomPanel").classList.contains("hidden")) refreshOnlineRoomState(true);
-        }, 2500);
+        }, 700);
       }
       async function joinOnlineRoom(room) {
         if (!room || onlineRoomBusy) return;
@@ -676,7 +676,7 @@
         syncOnlineGame(game);
         onlineGamePollTimer = setInterval(function () {
           if (!document.hidden && onlineMode) refreshOnlineGameState(true);
-        }, 1800);
+        }, 500);
       }
       function syncOnlineGame(game) {
         if (!game || !Array.isArray(game.board)) return;
@@ -706,8 +706,8 @@
           $("resultMark").textContent = won ? "🏆" : "♟";
           $("resultTitle").textContent = won ? "Ты победил!" : "Партия завершена";
           $("resultText").textContent = won
-            ? "Ты выиграл онлайн-партию. AC в этой версии остаются демонстрационными."
-            : (game.winner ? "Победил " + (opponent ? opponent.name : "соперник") + ". AC в этой версии остаются демонстрационными." : "Партия завершена.");
+            ? "Выигрыш: " + Number(game.payout || 0).toLocaleString("ru-RU") + " AC · комиссия: " + Number(game.commission || 0).toLocaleString("ru-RU") + " AC."
+            : (game.winner ? "Победил " + (opponent ? opponent.name : "соперник") + ". Выигрыш: " + Number(game.payout || 0).toLocaleString("ru-RU") + " AC после комиссии." : "Ничья. Обе ставки возвращены.");
           $("newGame").textContent = "Выйти из партии";
           $("playAgain").textContent = "Вернуться в комнаты";
           $("resultOverlay").classList.remove("hidden");
