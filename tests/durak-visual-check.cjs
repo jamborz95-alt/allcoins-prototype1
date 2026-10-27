@@ -362,6 +362,7 @@ const path = require("node:path");
       const definitions = [
         { id: "durakEntry", selector: ".durak-entry-appicon", title: "Дурак Онлайн" },
         { id: "bombEntry", selector: ".bomb-entry-appicon", title: "Передай бомбу" },
+        { id: "tugEntry", selector: ".tug-entry-appicon", title: "Перетягивание каната" },
         { id: "towersEntry", selector: ".towers-entry-appicon", title: "Захват башен" },
         { id: "unoEntry", selector: ".uno-entry-appicon", title: "УНО Онлайн" },
         { id: "billiardsEntry", selector: ".billiards-entry-appicon", title: "Бильярд Онлайн" },
@@ -424,8 +425,8 @@ const path = require("node:path");
     });
     fs.writeFileSync(path.join(out, "games-icons-report.json"), JSON.stringify(gamesIconDiagnostics, null, 2));
     assert.equal(gamesIconDiagnostics.gamesSectionVisible, true, "Раздел «Игры» должен открываться");
-    assert.equal(gamesIconDiagnostics.tiles, 10, "В разделе должны отображаться десять игровых плиток, включая Передай бомбу, Захват башен, УНО Онлайн и Бильярд Онлайн");
-    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Передай бомбу", "Захват башен", "УНО Онлайн", "Бильярд Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
+    assert.equal(gamesIconDiagnostics.tiles, 11, "В разделе должны отображаться одиннадцать игровых плиток, включая Перетягивание каната, Передай бомбу, Захват башен, УНО Онлайн и Бильярд Онлайн");
+    assert.deepEqual(gamesIconDiagnostics.icons.map(icon => icon.title), ["Дурак Онлайн", "Передай бомбу", "Перетягивание каната", "Захват башен", "УНО Онлайн", "Бильярд Онлайн", "Лото Онлайн", "21 Очко", "Сека Онлайн", "Камень Ножницы Бумага", "Шашки Онлайн"]);
     assert.ok(gamesIconDiagnostics.durakLauncher, "Не найдена кнопка запуска Дурак Онлайн");
     assert.equal(gamesIconDiagnostics.durakLauncher.backgroundImage, "none",
       "На значке Дурак Онлайн остался старый золотой градиент");
