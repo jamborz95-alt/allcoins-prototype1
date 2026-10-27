@@ -255,7 +255,22 @@ function initDragRacing3D(){
     mark.material.transparent=true;mark.material.opacity=.38;
   }
 
-  const concreteMats=[mat(0x999b98,.98),mat(0xa6a8a4,.96),mat(0x777b7b,.98),mat(0xb7b7b1,.98)];
+  const concreteCanvas=document.createElement('canvas');concreteCanvas.width=384;concreteCanvas.height=192;
+  const concreteCtx=concreteCanvas.getContext('2d');
+  concreteCtx.fillStyle='#9da09d';concreteCtx.fillRect(0,0,384,192);
+  concreteCtx.fillStyle='#b4b5b0';concreteCtx.fillRect(0,18,384,8);concreteCtx.fillStyle='#777d7d';concreteCtx.fillRect(0,150,384,12);
+  for(let i=0;i<2600;i++){
+    const value=Math.floor(92+rnd()*93),alpha=.035+rnd()*.22;
+    concreteCtx.fillStyle='rgba('+value+','+(value+1)+','+Math.max(0,value-1)+','+alpha+')';
+    const x=rnd()*384,y=rnd()*192;
+    concreteCtx.fillRect(x,y,1+rnd()*5,.5+rnd()*2.3);
+  }
+  for(let i=0;i<16;i++){
+    concreteCtx.strokeStyle='rgba(39,43,43,'+(.08+rnd()*.18)+')';concreteCtx.lineWidth=.5+rnd()*1.4;
+    concreteCtx.beginPath();const x=rnd()*384,y=rnd()*192;concreteCtx.moveTo(x,y);concreteCtx.lineTo(x+(rnd()-.5)*24,y+6+rnd()*24);concreteCtx.lineTo(x+(rnd()-.5)*31,y+16+rnd()*32);concreteCtx.stroke();
+  }
+  const concreteTex=new T.CanvasTexture(concreteCanvas);if(T.SRGBColorSpace)concreteTex.colorSpace=T.SRGBColorSpace;
+  const concreteMats=[0x999b98,0xa6a8a4,0x858987,0xb7b7b1].map(color=>new T.MeshStandardMaterial({color,map:concreteTex,roughness:.96,metalness:.015}));
   for(const z of [-7.65,7.65]){
     for(let x=-112;x<=112;x+=6.45){
       const group=new T.Group();
@@ -455,6 +470,22 @@ function initDragRacing3D(){
     line(group,[[-.63,1.12],[-.63,.58]],windowFrame,glassZ+.008);
     line(group,[[-1.75,.92],[-.75,.97],[.25,.98],[1.43,.93]],chrome,.74);
     line(group,[[-.48,.57],[-.44,1.04]],windowFrame,.744);
+    // Subtle panel gaps and shaped wheel arches add layered bodywork without borrowing another game's car assets.
+    const panelSeam=mat(0x24292d,.78,.1),archTrim=mat(0x515b62,.58,.52);
+    line(group,[[-.53,.56],[-.53,.99]],panelSeam,.752);
+    line(group,[[.86,.56],[.86,.96]],panelSeam,.752);
+    line(group,[[-.52,.56],[.14,.535],[.85,.56]],panelSeam,.752);
+    const seamWheelbase=isSuv?1.35:1.27;
+    for(const wheelCenter of [-seamWheelbase,seamWheelbase]){
+      const outer=[],inner=[];
+      for(let step=0;step<=20;step++){
+        const angle=Math.PI*step/20;
+        outer.push([wheelCenter+Math.cos(angle)*.49,.385+Math.sin(angle)*.49]);
+        inner.push([wheelCenter+Math.cos(angle)*.445,.385+Math.sin(angle)*.445]);
+      }
+      line(group,outer,panelSeam,.795);
+      line(group,inner,archTrim,.80);
+    }
     // Door handle, mirror, side repeater and a fine gold pinstripe.
     box(group,new T.BoxGeometry(.2,.045,.035),chrome,-.37,.98,.756);
     box(group,new T.BoxGeometry(.11,.13,.13),bodyMat,-.58,1.17,.79);
