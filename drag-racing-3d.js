@@ -207,6 +207,39 @@
       pipe.rotation.x=Math.PI/2;pipe.position.set(x,0.49,1.78);car.add(pipe);
     }
 
+    const opponentCars=new Map();
+    let raceState={room:null,players:[]};
+    const paintByCar={"2104":0xd7dce2,"2105":0x254c72,"2106":0x8f2936,"2107":0xe52e3d,"2109":0x24486f,"2110":0xd9dde0,"2112":0xe2bd3d,"2114":0x2773a2,"priora":0x20262d,"granta":0xaebdc8,"niva":0x637650,"vesta":0xf1f1e8};
+    const scaleByCar={"2104":[1.02,1.04],"2105":[0.99,0.99],"2106":[1.01,1.02],"2107":[1,1],"2109":[0.95,0.93],"2110":[1,1.01],"2112":[0.97,0.94],"2114":[0.96,0.94],"priora":[1,1],"granta":[1,1],"niva":[1.07,1.07],"vesta":[1.03,1.03]};
+    function setRaceState(detail){
+      raceState=detail||{room:null,players:[]};
+      const players=Array.isArray(raceState.players)?raceState.players:[];
+      const ids=new Set(players.filter(p=>!p.isMe).map(p=>String(p.id)));
+      for(const [id,model] of opponentCars){
+        if(!ids.has(id)){scene.remove(model);opponentCars.delete(id);}
+      }
+      for(const p of players){
+        const id=String(p.id);
+        if(p.isMe||opponentCars.has(id))continue;
+        const model=car.clone(true);
+        model.traverse(node=>{
+          if(!node.isMesh)return;
+          if(node.material===red){
+            node.material=red.clone();
+            node.material.color.setHex(paintByCar[p.car_id]||0xe52e3d);
+          }
+        });
+        const scale=scaleByCar[p.car_id]||[1,1];
+        model.scale.set(scale[0],1,scale[1]);
+        model.userData.racerId=id;
+        model.userData.carId=String(p.car_id||"2107");
+        scene.add(model);
+        opponentCars.set(id,model);
+      }
+    }
+    window.addEventListener("allcoins:race-state",event=>setRaceState(event.detail));
+    if(window.__allcoinsRaceState)setRaceState(window.__allcoinsRaceState);
+
     let progress=0, previous=performance.now();
     const resize=()=>{
       const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);
@@ -223,6 +256,26 @@
       curbTexture.offset.y=mod(progress/520,1);
       for(const mesh of buildings){mesh.position.z=mod(mesh.userData.baseZ+progress+240,280)-240;}
       for(const mesh of lamps){mesh.position.z=mod(mesh.userData.baseZ+progress+225,276)-225;}
+      const players=Array.isArray(raceState.players)?raceState.players:[];
+      const me=players.find(p=>p.isMe);
+      const myDistance=Number(me?.distance)||0;
+      const myIndex=Math.max(0,players.findIndex(p=>p.isMe));
+      const laneOf=index=>(index-(Math.max(1,players.length)-1)/2)*2.25;
+      car.position.x=players.length>1?laneOf(myIndex):0;
+      for(let index=0;index<players.length;index++){
+        const player=players[index];
+        if(player.isMe)continue;
+        const model=opponentCars.get(String(player.id));
+        if(!model)continue;
+        const delta=Number(player.distance||0)-myDistance;
+        model.position.x=laneOf(index);
+        model.position.z=2.6-Math.max(-8,Math.min(70,delta))*0.45;
+        model.position.y=-0.07;
+        model.rotation.y=Math.sin(now*0.0013+index)*0.012*Math.min(1,Number(player.speed||0)/210);
+        model.traverse(node=>{
+          if(node.userData.rotating)node.children.forEach(child=>{child.rotation.x+=Number(player.speed||0)*dt*0.0017;});
+        });
+      }
       const factor=Math.min(1,speed/210);
       car.rotation.y=Math.sin(now*0.0013)*0.014*factor;
       car.position.y=-0.07+(running?Math.abs(Math.sin(now*0.024))*0.012*factor:0);
