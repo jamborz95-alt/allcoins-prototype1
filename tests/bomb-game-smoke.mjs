@@ -302,6 +302,8 @@ try {
   assert.ok((await page.locator("#onlineStatusText").innerText()).includes("В комнате"),
     "A player joining by code should see the room occupancy.");
   await page.locator("#cancelOnlineSearch").click();
+  const friendRoomLeaves = onlineLeaveRequests;
+  assert.equal(friendRoomLeaves, 2, "Cancelling friend-room creation and joining should release both waiting-room memberships.");
 
   onlineRoom.status = "playing";
   await page.locator("#startGame").click();
@@ -318,7 +320,8 @@ try {
     "The remote player's nickname should appear in the online seats.");
   await page.locator("#gameBack").click();
   await page.waitForTimeout(120);
-  assert.equal(onlineLeaveRequests, 1, "Leaving an online game should notify the server and release the room.");
+  assert.equal(onlineLeaveRequests, friendRoomLeaves + 1,
+    "Leaving a public online game should release that room in addition to the two friend-room exits.");
 
   console.log("Bomb Online mocked multiplayer flow passed: matchmaking, remote player render, sync and clean leave.");
 
