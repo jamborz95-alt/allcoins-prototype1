@@ -762,7 +762,13 @@
       $("startGame").textContent = "Ищем игроков…";
       displayOnlineStatus("Подключаемся к серверу и ищем комнату на " + chosenCount + " игрока(ов)...");
       try {
-        const name = ($("playerName").value || "Игрок").trim().slice(0, 18) || "Игрок";
+        let name = ($("playerName").value || "Игрок").trim().slice(0, 18) || "Игрок";
+        const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+        const telegramName = tgUser && (tgUser.username ? "@" + tgUser.username : tgUser.first_name);
+        if (telegramName && ["Ты", "Игрок", "Игрок 1"].includes(name)) {
+          name = String(telegramName).trim().slice(0, 18) || name;
+          $("playerName").value = name;
+        }
         const data = await bombOnlineRequest("/matchmaking/join", {
           playerId: onlinePlayerId, name: name, maxPlayers: chosenCount, map: chosenMap
         });
