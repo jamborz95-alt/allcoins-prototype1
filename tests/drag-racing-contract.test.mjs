@@ -61,6 +61,17 @@ test("Online gear shifts are sent immediately and disconnected throttle input ti
   assert.match(router, /if\(!throttleInput\)speed=Math\.max\(0,speed-dt\*0\.65\)/);
 });
 
+
+test("Online race polling does not overlap and 3D race view receives every participant", () => {
+  assert.match(page, /onlinePollBusy=false/);
+  assert.match(page, /if\(!activeOnlineRoomId\|\|onlinePollBusy\)return/);
+  assert.match(page, /window\.__allcoinsRaceState=\{room,players\}/);
+  assert.match(scene3d, /const opponentCars=new Map\(\)/);
+  assert.match(scene3d, /allcoins:race-state/);
+  assert.match(scene3d, /player\.distance/);
+  assert.match(router, /bestFinishFraction=Infinity/);
+});
+
 test("Completed Drag Racing rooms disappear after the result grace period without changing balances", () => {
   assert.match(router, /DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW\(\)-INTERVAL '2 minutes'/);
   assert.match(router, /if\(typeof cleanupTimer\.unref==="function"\)cleanupTimer\.unref\(\)/);
