@@ -83,6 +83,10 @@ assert.ok(bombHtml.includes("function pauseJoystickMotion()") &&
   bombHtml.includes("function resumeJoystickMotion()") &&
   bombHtml.includes("movePointerId !== null && lastJoystickClientX !== null"),
   "A bomb hand-off must preserve an active joystick gesture and resume movement afterward.");
+assert.ok(bombHtml.includes("let handoffGracePlayer = -1;") &&
+  bombHtml.includes("handoffGraceUntil = performance.now() + 1200;") &&
+  bombHtml.includes("if (distance <= characterRadius + targetRadius + 18 && performance.now() < handoffGraceUntil) continue;"),
+  "The new bomb carrier must be able to move away before the same overlapping opponent can trigger an immediate return pass.");
 assert.ok(bombHtml.includes("width:108px;height:108px") &&
   bombHtml.includes("width:100px;height:100px") &&
   bombHtml.includes("rect.width * .24") &&
