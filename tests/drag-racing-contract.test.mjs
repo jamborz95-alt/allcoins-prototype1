@@ -62,7 +62,7 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
 
 test("Online gear shifts are sent immediately and disconnected throttle input times out", () => {
   assert.match(page, /queueOnlineAction\(\)\}/);
-  assert.match(router, /p\.last_seen_at,g\.upgrades,g\.tuning/);
+  assert.match(router, /p\\.last_seen_at,p\\.gear_changed_at,g\\.upgrades,g\\.tuning/);
   assert.match(router, /const activeInput=Date\.now\(\)-new Date\(p\.last_seen_at\|\|0\)\.getTime\(\)<4000/);
   assert.match(router, /if\(!throttleInput\)speed=Math\.max\(0,speed-dt\*0\.65\)/);
 });
