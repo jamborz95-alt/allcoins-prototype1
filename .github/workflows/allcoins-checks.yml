@@ -1,5 +1,11 @@
 name: ALLCOINS automatic checks
 
+# Keep only the newest check for a given PR/ref so frequent fix commits do not
+# leave obsolete browser-test runs queued behind the current revision.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
