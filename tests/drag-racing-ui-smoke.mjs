@@ -142,6 +142,15 @@ try {
   assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "The same live 3D canvas should render inside the full-screen drag cockpit.");
   assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-mobile.png"), fullPage: true });
+
+  // The reference game is landscape-first. Verify the cockpit also fits a wide phone/tablet screen.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.waitForTimeout(150);
+  assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientWidth) >= 1200,
+    "Landscape mode should fill the full width of the device.");
+  assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientHeight) >= 300,
+    "Landscape mode should leave enough room for the race scene.");
+  await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-landscape.png"), fullPage: false });
   await page.locator("#proShiftUp").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The right paddle should upshift in the cockpit.");
   await page.locator("#proShiftDown").click();
@@ -150,6 +159,8 @@ try {
   await page.waitForFunction(() => document.querySelector("#proRaceCockpit")?.classList.contains("hidden"));
   assert.equal(await page.locator("#race3dCanvas").evaluate(el => el.parentElement.id), "scene",
     "Exiting single-player should return the 3D canvas to the game page.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
   assert.equal((await page.locator("#balance").textContent()).replace(/\s/g, ""), "10000");
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/profile" && call.body.initData === "mock-init-data"),
     "Profile request should contain Telegram initData.");
