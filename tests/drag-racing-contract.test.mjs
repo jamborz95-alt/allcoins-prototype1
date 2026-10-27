@@ -97,6 +97,15 @@ test("Completed Drag Racing rooms disappear after the result grace period withou
   assert.match(router, /Object\.hasOwn\(partPrices,part\)/);
 });
 
+
+test("Large AC balances and stakes retain integer precision in the browser", () => {
+  assert.match(page, /inputmode="numeric"/);
+  assert.match(page, /stakeText=\$\('stake'\)\.value\.trim\(\)\.replace/);
+  assert.match(page, /BigInt\(stakeText\)/);
+  assert.match(page, /BigInt\(room\.stake\)\*BigInt\(players\.length\)/);
+  assert.match(page, /state\.balance=String\(data\.balance\)/);
+});
+
 test("Drag Racing screen is linked from Games and uses real online room APIs", () => {
   assert.match(index, /id="dragRacingEntry"/);
   assert.match(index, /\.\/drag-racing\.html\?v=/);
