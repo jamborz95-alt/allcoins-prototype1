@@ -212,6 +212,7 @@
           </div>
           <div class="notice" id="onlineRoomStatus" role="status" aria-live="polite">Подключаемся к комнате…</div>
           <div class="room-meta" id="onlineRoomPlayers"></div>
+          <button type="button" class="primary" id="startOnlineGame" disabled>♟ Начать онлайн-партию · ждём второго игрока</button>
           <div class="button-row">
             <button type="button" class="secondary" id="refreshOnlineRoom">↻ Обновить комнату</button>
             <button type="button" class="secondary" id="leaveOnlineRoom">Выйти из комнаты</button>
@@ -252,7 +253,7 @@
           <span class="stake-pill"><span id="gameStake">100</span> AC</span>
         </div>
         <div class="playerbar">
-          <div class="player-meta"><div class="player-name">🤖 Тестовый бот</div><div class="player-note" id="botColorNote">Соперник · чёрные</div></div>
+          <div class="player-meta"><div class="player-name"><span id="opponentName">🤖 Тестовый бот</span></div><div class="player-note" id="botColorNote">Соперник · чёрные</div></div>
           <div class="piece-count" id="botCount">12</div>
         </div>
         <div class="turn" id="turnStatus" aria-live="polite">Твой ход — белые</div>
@@ -291,6 +292,10 @@
       var currentRoomRole = "guest";
       var onlineRoomPollTimer = null;
       var onlineRoomBusy = false;
+      var onlineMode = false;
+      var onlineGameState = null;
+      var onlineGamePollTimer = null;
+      var onlineGameBusy = false;
       var board = [];
       var turn = "w";
       var humanColor = "w";
@@ -438,11 +443,8 @@
             open.className = "secondary";
             open.textContent = "Войти";
             open.addEventListener("click", function () {
-              if (currentRoom && String(currentRoom.id) === String(room.id) && currentRoomRole === "creator") {
-                showOnlineRoom(currentRoom, "creator");
-              } else {
-                joinOnlineRoom(room);
-              }
+              if (room.isOwner) showOnlineRoom(room, "creator");
+              else joinOnlineRoom(room);
             });
             item.appendChild(info);
             item.appendChild(open);
@@ -486,57 +488,91 @@
       $("refreshOnlineRoom").addEventListener("click", function () { refreshOnlineRoomState(false); });
       $("leaveOnlineRoom").addEventListener("click", leaveOnlineRoom);
       $("backToAllcoins").addEventListener("click", function () { window.location.href = "./index.html"; });
-      $("backToLobby").addEventListener("click", showLobby);
-      $("quitGame").addEventListener("click", showLobby);
+      $("backToLobby").addEventListener("click", returnFromGame);
+      $("quitGame").addEventListener("click", returnFromGame);
       $("newGame").addEventListener("click", startRematch);
       $("playAgain").addEventListener("click", startRematch);
-      $("resultToLobby").addEventListener("click", showLobby);
+      $("resultToLobby").addEventListener("click", returnFromGame);
+      $("startOnlineGame").addEventListener("click", startOnlineRoomGame);
 
       function showLobby() {
         gameSession += 1;
         if (botTimer) clearTimeout(botTimer);
         botTimer = null;
         stopOnlineRoomPolling();
+        stopOnlineGamePolling();
+        onlineMode = false;
+        onlineGameState = null;
         $("onlineRoomPanel").classList.add("hidden");
         busy = false;
         $("gameScreen").classList.add("hidden");
         $("lobbyScreen").classList.remove("hidden");
         $("resultOverlay").classList.add("hidden");
+        $("startOnlineGame").disabled = true;
+        $("startOnlineGame").style.display = "none";
         if (telegram && telegram.BackButton) {
           try { telegram.BackButton.show(); } catch (_) {}
         }
+      }
+      async function returnFromGame() {
+        if (onlineMode && currentRoom) {
+          await leaveOnlineRoom();
+          return;
+        }
+        showLobby();
       }
       function stopOnlineRoomPolling() {
         if (onlineRoomPollTimer) clearInterval(onlineRoomPollTimer);
         onlineRoomPollTimer = null;
         onlineRoomBusy = false;
       }
+      function stopOnlineGamePolling() {
+        if (onlineGamePollTimer) clearInterval(onlineGamePollTimer);
+        onlineGamePollTimer = null;
+        onlineGameBusy = false;
+      }
+      function roomIdValue(room) {
+        return room ? String(room.roomId || room.id || "").replace(/^SH-/, "") : "";
+      }
+      function roomStatusLabel(room) {
+        var code = room && (room.statusCode || room.status);
+        if (code === "playing") return "партия идёт";
+        if (code === "finished") return "партия завершена";
+        return "ожидает игрока";
+      }
       function showOnlineRoom(room, role) {
         if (!room) return;
+        stopOnlineGamePolling();
+        onlineMode = false;
+        onlineGameState = null;
         currentRoom = room;
-        currentRoomRole = role || "guest";
+        currentRoomRole = role || (room.isOwner ? "creator" : "guest");
         if (onlineRoomPollTimer) clearInterval(onlineRoomPollTimer);
-        $("onlineRoomTitle").textContent = "#" + String(room.id);
-        $("onlineRoomMeta").textContent = formatNumber(room.stake || stake) + " AC · " + (room.status || "ожидает игрока");
+        $("onlineRoomTitle").textContent = "#" + roomIdValue(room);
+        $("onlineRoomMeta").textContent = formatNumber(room.stake || stake) + " AC · " + roomStatusLabel(room);
         $("onlineRoomPlayers").textContent = "";
+        $("startOnlineGame").style.display = currentRoomRole === "creator" || room.isOwner ? "block" : "none";
+        $("startOnlineGame").disabled = true;
+        $("startOnlineGame").textContent = "♟ Начать онлайн-партию · ждём второго игрока";
         $("onlineRoomPanel").classList.remove("hidden");
         $("onlineRoomPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
         $("onlineRoomStatus").textContent = currentRoomRole === "creator"
-          ? "Комната создана. Ждём второго реального игрока. Бот не добавляется."
-          : "Ты вошёл в комнату. Проверяем подключение соперника.";
+          ? "Комната открыта. Когда подключится второй человек, создатель запускает партию. Бот не добавляется."
+          : "Ты вошёл в онлайн-комнату. Ожидаем создателя и второго участника.";
         refreshOnlineRoomState(true);
         onlineRoomPollTimer = setInterval(function () {
           if (!document.hidden && !$("onlineRoomPanel").classList.contains("hidden")) refreshOnlineRoomState(true);
-        }, 3000);
+        }, 2500);
       }
       async function joinOnlineRoom(room) {
         if (!room || onlineRoomBusy) return;
         onlineRoomBusy = true;
         $("roomsStatus").textContent = "Входим в онлайн-комнату…";
         try {
-          var result = await checkersApi("/rooms/join", { roomId: String(room.id) });
-          showOnlineRoom(result.room || room, "player");
-          $("roomsStatus").textContent = "Вход в комнату выполнен.";
+          var result = await checkersApi("/rooms/join", { roomId: roomIdValue(room) });
+          var joinedRoom = result.room || room;
+          showOnlineRoom(joinedRoom, joinedRoom.isOwner ? "creator" : "player");
+          $("roomsStatus").textContent = "Ты подключён к общей комнате.";
         } catch (error) {
           $("roomsStatus").textContent = error.message || "Не удалось войти в комнату.";
         } finally {
@@ -547,48 +583,184 @@
         if (!currentRoom || onlineRoomBusy) return;
         onlineRoomBusy = true;
         try {
-          var result = await checkersApi("/rooms/state", { roomId: String(currentRoom.id) });
+          var result = await checkersApi("/rooms/state", { roomId: roomIdValue(currentRoom) });
           if (result.room) currentRoom = result.room;
+          if (currentRoom.isOwner) currentRoomRole = "creator";
           var players = Array.isArray(result.players) ? result.players : [];
-          var count = Number(currentRoom.playersCount !== undefined ? currentRoom.playersCount : (result.playersCount !== undefined ? result.playersCount : players.length));
+          var count = Number(currentRoom.playersCount !== undefined ? currentRoom.playersCount : players.length);
           if (!Number.isFinite(count) || count < 0) count = players.length;
-          $("onlineRoomMeta").textContent = formatNumber(currentRoom.stake || stake) + " AC · " + count + "/2 игрока · " + (currentRoom.status || "ожидает игрока");
+          $("onlineRoomMeta").textContent = formatNumber(currentRoom.stake || stake) + " AC · " + count + "/2 игрока · " + roomStatusLabel(currentRoom);
           $("onlineRoomPlayers").textContent = players.length
-            ? "В комнате: " + players.map(function (player) { return player.name || player.username || player.first_name || (player.isYou ? "Ты" : "Игрок"); }).join(" · ")
-            : "Список участников пока не предоставлен сервером.";
-          if (currentRoom.status === "playing" || (result.game && result.game.status === "playing")) {
-            $("onlineRoomStatus").textContent = "Соперник подключился, но сервер пока не передаёт ходы шашек между устройствами. Бот не подменяет второго игрока; онлайн-доску нужно синхронизировать на сервере.";
-          } else if (currentRoom.status === "finished") {
-            $("onlineRoomStatus").textContent = "Эта комната уже завершена. Выйди и выбери другую.";
+            ? "В комнате: " + players.map(function (player) { return (player.isYou ? "Ты" : (player.name || "Игрок")); }).join(" · ")
+            : "Пока нет списка участников.";
+          var ownerCanStart = Boolean(currentRoom.isOwner || currentRoomRole === "creator");
+          $("startOnlineGame").style.display = ownerCanStart ? "block" : "none";
+          $("startOnlineGame").disabled = !ownerCanStart || count < 2 || currentRoom.statusCode !== "waiting";
+          $("startOnlineGame").textContent = count < 2
+            ? "♟ Начать онлайн-партию · ждём второго игрока"
+            : "♟ Начать онлайн-партию";
+          if (currentRoom.statusCode === "playing" || (result.game && result.game.status === "playing")) {
+            var game = result.game;
+            if (!game) {
+              var gameResult = await checkersApi("/game/state", { roomId: roomIdValue(currentRoom) });
+              game = gameResult.game;
+            }
+            if (game) {
+              onlineRoomBusy = false;
+              startOnlineGame(currentRoom, game);
+              return;
+            }
+          } else if (currentRoom.statusCode === "finished") {
+            $("onlineRoomStatus").textContent = "Эта партия завершена. Выйди в список комнат и выбери новую.";
           } else {
-            $("onlineRoomStatus").textContent = currentRoomRole === "creator"
-              ? "Комната открыта и ожидает второго реального игрока. Бот автоматически не добавляется."
-              : "Ты подключён к комнате. Ожидаем второго игрока/начала партии.";
+            $("onlineRoomStatus").textContent = ownerCanStart
+              ? (count >= 2
+                ? "Оба игрока подключены. Нажми «Начать онлайн-партию». Бот не добавляется."
+                : "Комната открыта и ожидает второго реального игрока. Бот автоматически не добавляется.")
+              : "Ты подключён к комнате. Ожидаем, пока создатель запустит партию.";
           }
         } catch (error) {
-          if (!quiet) $("onlineRoomStatus").textContent = (error.message || "Не удалось обновить комнату.") + " Бот не будет запускаться вместо игрока.";
+          if (!quiet) $("onlineRoomStatus").textContent = error.message || "Не удалось обновить комнату.";
         } finally {
           onlineRoomBusy = false;
+        }
+      }
+      async function startOnlineRoomGame() {
+        if (!currentRoom || onlineRoomBusy || $("startOnlineGame").disabled) return;
+        onlineRoomBusy = true;
+        $("startOnlineGame").disabled = true;
+        $("onlineRoomStatus").textContent = "Запускаем онлайн-партию…";
+        try {
+          var result = await checkersApi("/rooms/start", { roomId: roomIdValue(currentRoom) });
+          currentRoom = result.room || currentRoom;
+          if (!result.game) throw new Error("Сервер не вернул состояние партии. Обнови комнату.");
+          startOnlineGame(currentRoom, result.game);
+        } catch (error) {
+          $("onlineRoomStatus").textContent = error.message || "Не удалось начать онлайн-партию.";
+        } finally {
+          onlineRoomBusy = false;
+          if (!$("onlineRoomPanel").classList.contains("hidden")) refreshOnlineRoomState(true);
+        }
+      }
+      function startOnlineGame(room, game) {
+        if (!game || !Array.isArray(game.board)) return;
+        stopOnlineRoomPolling();
+        stopOnlineGamePolling();
+        currentRoom = room;
+        onlineMode = true;
+        onlineGameState = game;
+        gameSession += 1;
+        stake = normalizeStake(room.stake || stake);
+        $("gameStake").textContent = formatNumber(stake);
+        $("lobbyScreen").classList.add("hidden");
+        $("onlineRoomPanel").classList.add("hidden");
+        $("gameScreen").classList.remove("hidden");
+        $("resultOverlay").classList.add("hidden");
+        board = game.board.map(function (row) { return row.map(function (piece) { return piece ? { color: piece.color, king: Boolean(piece.king) } : null; }); });
+        humanColor = game.myColor || "w";
+        botColor = humanColor === "w" ? "b" : "w";
+        turn = game.turn || "w";
+        selectedPos = null;
+        selectedMoves = [];
+        lastMove = game.lastMove || null;
+        busy = false;
+        finished = game.status === "finished";
+        var players = Array.isArray(game.players) ? game.players : [];
+        var mine = players.find(function (player) { return player.isYou; });
+        var opponent = players.find(function (player) { return !player.isYou; });
+        $("humanName").textContent = mine ? mine.name : personName;
+        $("opponentName").textContent = opponent ? opponent.name : "Соперник";
+        $("newGame").textContent = "Выйти из партии";
+        $("playAgain").textContent = "Вернуться в комнаты";
+        refreshColorLabels();
+        syncOnlineGame(game);
+        onlineGamePollTimer = setInterval(function () {
+          if (!document.hidden && onlineMode) refreshOnlineGameState(true);
+        }, 1800);
+      }
+      function syncOnlineGame(game) {
+        if (!game || !Array.isArray(game.board)) return;
+        onlineGameState = game;
+        board = game.board.map(function (row) { return row.map(function (piece) { return piece ? { color: piece.color, king: Boolean(piece.king) } : null; }); });
+        if (game.myColor) humanColor = game.myColor;
+        botColor = humanColor === "w" ? "b" : "w";
+        turn = game.turn || turn;
+        selectedPos = null;
+        selectedMoves = [];
+        lastMove = game.lastMove || null;
+        busy = false;
+        finished = game.status === "finished";
+        var players = Array.isArray(game.players) ? game.players : [];
+        var mine = players.find(function (player) { return player.isYou; });
+        var opponent = players.find(function (player) { return !player.isYou; });
+        if (mine) $("humanName").textContent = mine.name;
+        if (opponent) $("opponentName").textContent = opponent.name;
+        refreshColorLabels();
+        renderBoard();
+        if (finished) {
+          var won = game.winner === humanColor;
+          $("resultMark").textContent = won ? "🏆" : "♟";
+          $("resultTitle").textContent = won ? "Ты победил!" : "Партия завершена";
+          $("resultText").textContent = won
+            ? "Ты выиграл онлайн-партию. AC в этой версии остаются демонстрационными."
+            : (game.winner ? "Победил " + (opponent ? opponent.name : "соперник") + ". AC в этой версии остаются демонстрационными." : "Партия завершена.");
+          $("newGame").textContent = "Выйти из партии";
+          $("playAgain").textContent = "Вернуться в комнаты";
+          $("resultOverlay").classList.remove("hidden");
+          updateStatus(won ? "Победа" : "Партия завершена", game.message || "Партия завершена.");
+        } else {
+          $("resultOverlay").classList.add("hidden");
+          if (game.currentPlayerIsMe) {
+            updateStatus(humanTurnLabel(), game.mustContinue ? "Продолжи обязательное взятие той же шашкой." : "Твой ход. Выбери шашку и затем подсвеченную клетку.");
+          } else {
+            updateStatus("Ход соперника", (game.currentPlayerLabel || "Соперник") + " выбирает ход.");
+          }
+        }
+      }
+      async function refreshOnlineGameState(quiet) {
+        if (!onlineMode || !currentRoom || onlineGameBusy || busy) return;
+        onlineGameBusy = true;
+        try {
+          var result = await checkersApi("/game/state", { roomId: roomIdValue(currentRoom) });
+          syncOnlineGame(result.game);
+        } catch (error) {
+          if (!quiet) updateStatus(onlineGameState && onlineGameState.currentPlayerIsMe ? humanTurnLabel() : "Онлайн-партия", error.message || "Не удалось обновить состояние.");
+        } finally {
+          onlineGameBusy = false;
         }
       }
       async function leaveOnlineRoom() {
         var room = currentRoom;
         stopOnlineRoomPolling();
+        stopOnlineGamePolling();
         $("onlineRoomPanel").classList.add("hidden");
         currentRoom = null;
         currentRoomRole = "guest";
+        onlineMode = false;
+        onlineGameState = null;
         if (room) {
-          try { await checkersApi("/rooms/leave", { roomId: String(room.id) }); }
-          catch (error) { $("lobbyStatus").textContent = error.message || "Вышли из комнаты только на этом устройстве."; }
+          try { await checkersApi("/rooms/leave", { roomId: roomIdValue(room) }); }
+          catch (error) { $("lobbyStatus").textContent = error.message || "Не удалось выйти с сервера. Комната может остаться активной."; }
         }
+        showLobby();
         await renderRooms();
       }
       function startRematch() {
+        if (onlineMode) {
+          returnFromGame();
+          return;
+        }
         humanColor = humanColor === "w" ? "b" : "w";
         botColor = humanColor === "w" ? "b" : "w";
         startGame(stake);
       }
       function startGame(selectedStake) {
+        onlineMode = false;
+        onlineGameState = null;
+        stopOnlineGamePolling();
+        $("newGame").textContent = "↻ Новая партия";
+        $("playAgain").textContent = "Играть ещё";
+        $("opponentName").textContent = "🤖 Тестовый бот";
         gameSession += 1;
         stake = normalizeStake(selectedStake);
         $("gameStake").textContent = formatNumber(stake);
@@ -798,6 +970,10 @@
         if (!matching.length || !selectedPos) return;
         var from = {r:selectedPos.r,c:selectedPos.c};
         var to = {r:r,c:c};
+        if (onlineMode) {
+          sendOnlineMove(from, to);
+          return;
+        }
         var moving = board[from.r][from.c];
         if (!moving) return;
         var captured = matching[0].captures.length ? matching[0].captures[0] : null;
@@ -825,6 +1001,26 @@
         updateStatus("Ходит бот…", "Бот выбирает ход.");
         var scheduledSession = gameSession;
         botTimer = setTimeout(function () { botTurn(scheduledSession); }, 480);
+      }
+      async function sendOnlineMove(from, to) {
+        if (!onlineMode || !currentRoom || busy || finished) return;
+        busy = true;
+        selectedPos = null;
+        selectedMoves = [];
+        try {
+          var result = await checkersApi("/game/action", {
+            roomId: roomIdValue(currentRoom),
+            action: "move",
+            from: from,
+            to: to
+          });
+          syncOnlineGame(result.game);
+        } catch (error) {
+          updateStatus(humanTurnLabel(), error.message || "Ход не принят сервером.");
+          await refreshOnlineGameState(true);
+        } finally {
+          busy = false;
+        }
       }
       function finishIfNoMoves(colorToMove) {
         if (countPieces(colorToMove) === 0 || getAllMoves(board, colorToMove).length === 0) {
