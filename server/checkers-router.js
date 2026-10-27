@@ -112,7 +112,6 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
   }
 
   async function loadRoom(client, roomId, lock = false) {
-    const result = await client.query(
     if (lock) {
       const locked = await client.query(
         `SELECT id, name, owner_telegram_id, owner_name, stake, max_players, status, created_at
@@ -137,7 +136,6 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
     );
     return result.rows[0] || null;
   }
-
   async function requireMember(client, roomId, userId) {
     const result = await client.query(
       "SELECT 1 FROM checkers_room_players WHERE room_id = $1 AND telegram_id = $2",
