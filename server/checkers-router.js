@@ -21,7 +21,7 @@ function mapRoom(row, userId = null) {
     stake: Number(row.stake),
     owner: String(row.owner_name || "Игрок"),
     isOwner: userId !== null && String(row.owner_telegram_id) === String(userId),
-    status: row.status === "waiting" ? "Ожидает игрока" : String(row.status),
+    status: row.status === "waiting" ? "Ожидает игрока" : row.status === "playing" ? "Партия идёт" : "Завершена",
     statusCode: String(row.status),
     playersCount: Number(row.players_count || 0),
     maxPlayers: Number(row.max_players || 2),
@@ -58,6 +58,7 @@ function publicGame(state, userId) {
     myColor: me?.color || null,
     currentPlayerIsMe: Boolean(state.status === "playing" && String(state.turnTelegramId) === String(userId)),
     currentPlayerLabel: currentPlayer?.name || "Игрок",
+    updatedAt: state.updatedAt || null,
     message: state.status === "finished"
       ? (state.winner === me?.color ? "Ты победил!" : state.winner ? "Партия завершена." : "Ничья.")
       : (String(state.turnTelegramId) === String(userId) ? "Твой ход." : "Ход соперника.")
