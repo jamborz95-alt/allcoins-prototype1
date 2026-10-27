@@ -43,9 +43,16 @@ async function advanceRoom(client, roomId, now = Date.now()) {
   let status = room.status;
   let game = room.game_state && typeof room.game_state === "object" ? room.game_state : { phase: "waiting", round: 0 };
 
-  if (status === "waiting" || status === "playing") {
+  if (status === "waiting") {
+    // A waiting player who disappeared should not occupy a lobby seat forever.
     await client.query(
-      "UPDATE bomb_room_players SET lives = 0 WHERE room_id = $1 AND lives > 0 AND last_seen_at < NOW() - INTERVAL '45 seconds'",
+      "DELETE FROM bomb_room_players WHERE room_id = $1 AND last_seen_at < NOW() - INTERVAL '90 seconds'",
+      [roomId]
+    );
+  } else if (status === "playing") {
+    // Give suspended mobile Mini Apps a little longer before treating a player as gone.
+    await client.query(
+      "UPDATE bomb_room_players SET lives = 0 WHERE room_id = $1 AND lives > 0 AND last_seen_at < NOW() - INTERVAL '90 seconds'",
       [roomId]
     );
   }
@@ -184,15 +191,22 @@ export function createBombOnlineRouter({ pool }) {
         await client.query("UPDATE bomb_room_players SET display_name = $2, last_seen_at = NOW() WHERE room_id = $1 AND player_id = $3", [roomId, name, playerId]);
       } else {
         await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["bomb:" + maxPlayers + ":" + map]);
-        await client.query("DELETE FROM bomb_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '2 minutes'");
+        // Expire lobbies by inactivity, not by their creation time: a lone player may
+        // keep searching longer than two minutes while still sending heartbeats.
+        await client.query("DELETE FROM bomb_rooms WHERE status = 'waiting' AND updated_at < NOW() - INTERVAL '2 minutes'");
+        await client.query("DELETE FROM bomb_rooms WHERE status = 'finished' AND updated_at < NOW() - INTERVAL '1 day'");
         const candidates = await client.query(
-          "SELECT id, max_players FROM bomb_rooms WHERE status = 'waiting' AND max_players = $1 AND map = $2 AND created_at > NOW() - INTERVAL '2 minutes' ORDER BY created_at ASC LIMIT 20",
+          "SELECT id, max_players FROM bomb_rooms WHERE status = 'waiting' AND max_players = $1 AND map = $2 AND updated_at > NOW() - INTERVAL '2 minutes' ORDER BY created_at ASC LIMIT 20",
           [maxPlayers, map]
         );
         for (const candidate of candidates.rows) {
           await client.query("SELECT id FROM bomb_rooms WHERE id = $1 FOR UPDATE", [candidate.id]);
+          await client.query(
+            "DELETE FROM bomb_room_players WHERE room_id = $1 AND last_seen_at < NOW() - INTERVAL '90 seconds'",
+            [candidate.id]
+          );
           const count = await client.query(
-            "SELECT COUNT(*)::int AS count FROM bomb_room_players WHERE room_id = $1 AND lives > 0 AND last_seen_at > NOW() - INTERVAL '45 seconds'",
+            "SELECT COUNT(*)::int AS count FROM bomb_room_players WHERE room_id = $1 AND lives > 0 AND last_seen_at > NOW() - INTERVAL '90 seconds'",
             [candidate.id]
           );
           if (Number(count.rows[0]?.count || 0) < Number(candidate.max_players)) {
