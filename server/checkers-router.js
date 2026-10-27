@@ -1,4 +1,5 @@
 import express from "express";
+import { recordGameCommission } from "./commission.js";
 import { createCheckersGame, applyCheckersStep, getCheckersMoves } from "./checkers-game.js";
 
 function validStake(value) {
@@ -59,8 +60,16 @@ function publicGame(state, userId) {
     currentPlayerIsMe: Boolean(state.status === "playing" && String(state.turnTelegramId) === String(userId)),
     currentPlayerLabel: currentPlayer?.name || "Игрок",
     updatedAt: state.updatedAt || null,
+    payout: Number(state.payout || 0),
+    commission: Number(state.commission || 0),
+    settlementApplied: Boolean(state.settlementApplied),
     message: state.status === "finished"
-      ? (state.winner === me?.color ? "Ты победил!" : state.winner ? "Партия завершена." : "Ничья.")
+      ? (state.winner === me?.color
+          ? "Ты победил! На баланс начислено " + Number(state.payout || 0).toLocaleString("ru-RU") +
+            " AC. Комиссия: " + Number(state.commission || 0).toLocaleString("ru-RU") + " AC."
+          : state.winner
+            ? "Партия завершена. Победитель получил " + Number(state.payout || 0).toLocaleString("ru-RU") + " AC."
+            : "Ничья. Обе ставки возвращены.")
       : (String(state.turnTelegramId) === String(userId) ? "Твой ход." : "Ход соперника.")
   };
 }
@@ -91,6 +100,48 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
        ON CONFLICT (telegram_id) DO UPDATE SET updated_at = NOW()`,
       [String(user.id)]
     );
+  }
+
+  // Settlement shares the same PostgreSQL transaction as the finishing move.
+  // The state flag prevents duplicate payouts; the unique commission event key
+  // provides a second idempotency barrier.
+  async function settleCheckersGame(client, room, state) {
+    if (!state || state.status !== "finished" || state.settlementApplied) return;
+    const players = Array.isArray(state.players) ? state.players : [];
+    const winner = players.find((player) => String(player.color) === String(state.winner));
+    if (!winner) {
+      for (const player of players) {
+        await client.query(
+          "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
+          [String(room.stake), String(player.telegramId)]
+        );
+      }
+      state.payout = "0";
+      state.commission = "0";
+      state.message = "Ничья. Обе ставки возвращены.";
+    } else {
+      const gross = BigInt(String(room.stake)) * 2n;
+      const commissionResult = await recordGameCommission(client, {
+        game: "checkers",
+        eventKey: "checkers:" + String(room.id) + ":finished",
+        grossAmount: Number(gross)
+      });
+      const commission = BigInt(Math.max(0, Math.min(Number(gross), Math.floor(Number(commissionResult?.amount) || 0))));
+      const payout = gross - commission;
+      const credited = await client.query(
+        "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT RETURNING balance",
+        [payout.toString(), String(winner.telegramId)]
+      );
+      if (!credited.rows.length) throw new Error("Не найден профиль победителя для начисления выигрыша в шашках.");
+      state.winnerTelegramId = String(winner.telegramId);
+      state.payout = payout.toString();
+      state.commission = commission.toString();
+      state.message = String(winner.name || "Игрок") + " победил! Выигрыш " + payout.toString() + " AC после комиссии.";
+    }
+    state.settlementApplied = true;
+    state.settledAt = new Date().toISOString();
+    state.updatedAt = new Date().toISOString();
+    await client.query("UPDATE checkers_rooms SET status = 'finished' WHERE id = $1", [String(room.id)]);
   }
 
   async function roomPlayers(client, roomId) {
@@ -368,6 +419,20 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
         await client.query("ROLLBACK"); transactionOpen = false;
         return res.status(409).json({ ok: false, error: "Для начала онлайн-партии нужны два реальных игрока. Бот не добавляется." });
       }
+      const stake = BigInt(String(room.stake));
+      for (const player of players) {
+        const charged = await client.query(
+          "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+          "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance",
+          [stake.toString(), String(player.telegram_id)]
+        );
+        if (!charged.rows.length) {
+          const error = new Error("У игрока «" + String(player.display_name || "Игрок") +
+            "» недостаточно AC для ставки " + stake.toString() + ". Ставка не списана ни у кого.");
+          error.statusCode = 400;
+          throw error;
+        }
+      }
       const mappedPlayers = players.map((player, index) => ({
         telegramId: player.telegram_id,
         name: player.display_name,
@@ -375,6 +440,10 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
         isOwner: player.isOwner
       }));
       const state = createCheckersGame(mappedPlayers);
+      state.pot = (stake * 2n).toString();
+      state.payout = "0";
+      state.commission = "0";
+      state.settlementApplied = false;
       await client.query(
         "INSERT INTO checkers_games (room_id, state) VALUES ($1, $2::jsonb) ON CONFLICT (room_id) DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()",
         [roomId, JSON.stringify(state)]
@@ -394,8 +463,9 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       if (client && transactionOpen) {
         try { await client.query("ROLLBACK"); } catch (_) {}
       }
-      console.error("Start Checkers game error:", error.message || error);
-      return res.status(500).json({ ok: false, error: "Не удалось начать онлайн-партию шашек." });
+      const status = error?.statusCode || 500;
+      if (status >= 500) console.error("Start Checkers game error:", error.message || error);
+      return res.status(status).json({ ok: false, error: error.message || "Не удалось начать онлайн-партию шашек." });
     } finally {
       client?.release();
     }
@@ -456,13 +526,13 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       }
       const currentState = gameResult.rows[0].state;
       const nextState = applyCheckersStep(currentState, String(user.id), req.body?.from, req.body?.to);
+      if (nextState.status === "finished") {
+        await settleCheckersGame(client, room, nextState);
+      }
       await client.query(
         "UPDATE checkers_games SET state = $2::jsonb, updated_at = NOW() WHERE room_id = $1",
         [roomId, JSON.stringify(nextState)]
       );
-      if (nextState.status === "finished") {
-        await client.query("UPDATE checkers_rooms SET status = 'finished' WHERE id = $1", [roomId]);
-      }
       const updatedRoom = await loadRoom(client, roomId);
       await client.query("COMMIT");
       transactionOpen = false;
@@ -516,8 +586,8 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
           state.turnTelegramId = winner?.telegramId || null;
           state.mustContinue = null;
           state.message = (leavingPlayer?.name || "Игрок") + " покинул партию.";
+          await settleCheckersGame(client, room, state);
           await client.query("UPDATE checkers_games SET state = $2::jsonb, updated_at = NOW() WHERE room_id = $1", [roomId, JSON.stringify(state)]);
-          await client.query("UPDATE checkers_rooms SET status = 'finished' WHERE id = $1", [roomId]);
         }
       } else if (room.status === "waiting" && isOwner) {
         await client.query("DELETE FROM checkers_rooms WHERE id = $1", [roomId]);
