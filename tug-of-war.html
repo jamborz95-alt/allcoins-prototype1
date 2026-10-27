@@ -831,7 +831,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var old=ropeMesh.geometry;ropeMesh.geometry=nextGeometry;old.dispose();
       var core=scene.getObjectByName('ropeCore');
       var oldCore=core.geometry;core.geometry=nextCore;oldCore.dispose();
-      knotGroup.position.set(progress*2.85,1.13-.23*Math.sin(.5*Math.PI),0);
+      var finishCross=window.innerWidth<window.innerHeight?3.02:3.12;
+      knotGroup.position.set(progress*finishCross,1.13-.23*Math.sin(.5*Math.PI),0);
       knotGroup.rotation.z=Math.sin(time*3)*.025;
     }
     function resizeScene(){
