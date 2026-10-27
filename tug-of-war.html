@@ -105,8 +105,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
 .score-name .team-dot{width:7px;height:7px;flex:0 0 7px}
 .score-number{font-size:20px;font-weight:1000;letter-spacing:.4px;margin-top:4px}
 .score-names{font-size:9px;line-height:1.35;color:#b8cbd0;margin-top:4px;min-height:12px;overflow-wrap:anywhere}
-.progress-wrap{margin:9px 2px 0;height:8px;border:1px solid #d6d9bb66;background:#091b20d6;border-radius:99px;overflow:hidden;box-shadow:0 2px 6px #0005}
-.progress-center{position:relative;width:100%;height:100%;background:linear-gradient(90deg,#ed6575 0%,#4d4b45 48%,#4d4b45 52%,#4ba9dc 100%)}
+.progress-wrap{position:relative;margin:9px 2px 0;height:8px;border:1px solid #d6d9bb66;background:linear-gradient(90deg,#ed6575 0%,#4d4b45 48%,#4d4b45 52%,#4ba9dc 100%);border-radius:99px;overflow:hidden;box-shadow:0 2px 6px #0005}
+.progress-center{position:absolute;left:50%;top:-2px;bottom:-2px;width:3px;height:auto;background:#fff;border-radius:4px;box-shadow:0 0 6px #fff;transform:translateX(-50%);will-change:left}
 .progress-center:after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#fff;box-shadow:0 0 5px #fff}
 .game-mid{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding-bottom:8px}
 .pull-center-label{margin-bottom:8px;color:#eaf3ed;text-shadow:0 2px 8px #000;text-align:center;font-size:11px;font-weight:900;letter-spacing:1.2px;opacity:.88}
@@ -466,8 +466,9 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     el('pullButton').disabled = game.phase !== 'playing' || Boolean(currentMe && currentMe.disqualified);
     el('tapHint').textContent = currentMe && currentMe.disqualified ? 'Ты дисквалифицирован — матч для тебя проигран.' : 'Сила складывается из нажатий всей команды · Не удерживай кнопку';
     var progress = Math.max(-1,Math.min(1,Number(game.progress)||0));
-    el('scoreMeter').style.transform = 'scaleX(1)';
-    el('scoreMeter').style.clipPath = 'inset(0 '+Math.max(0,50+progress*50)+'% 0 '+Math.max(0,50-progress*50)+'%)';
+    el('scoreMeter').style.left = (50+progress*48)+'%';
+    el('scoreMeter').style.clipPath = 'none';
+    el('scoreMeter').style.transform = 'translateX(-50%)';
     sceneState.progress = progress;
     sceneState.status = game.phase || 'waiting';
     sceneState.winnerTeam = game.winnerTeam == null ? null : Number(game.winnerTeam);
@@ -629,13 +630,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     var flag = new THREE.Mesh(new THREE.PlaneGeometry(.28,.18),new THREE.MeshStandardMaterial({color:0xf8e7b7,side:THREE.DoubleSide,roughness:.8}));
     flag.position.set(.12,.42,0);knotGroup.add(flag);
     scene.add(knotGroup);
-    var shadowMat = new THREE.MeshBasicMaterial({color:0x06110f,transparent:true,opacity:.26});
-    for(var s=0;s<6;s++){
-      var shadow = new THREE.Mesh(new THREE.CircleGeometry(.34,24),shadowMat);
-      shadow.rotation.x=-Math.PI/2;shadow.position.set(0,.002,0);scene.add(shadow);
-    }
-
-    function mat(color,roughness,metalness){return new THREE.MeshStandardMaterial({color:color,roughness:roughness==null?.66:roughness,metalness:metalness||0});}
+    function mat(color,roughness,metalness){return new THREE.MeshStandardMaterial({color:color,roughness:roughness == null ? 0.66 : roughness,metalness:metalness||0});}
     var skinMat=mat(0xd4a17b,.78);
     var hairMats=[mat(0x272321,.91),mat(0x3d261b,.89),mat(0x5c4030,.86)];
     var pantsMat=mat(0x17252d,.85);
