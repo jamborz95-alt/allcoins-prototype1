@@ -729,9 +729,9 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var line = new THREE.Mesh(new THREE.BoxGeometry(width,0.018,6.1),new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:0.18,roughness:.78}));
       line.position.set(x,-0.018,0);line.receiveShadow=true;scene.add(line);return line;
     }
-    groundLine(0,0xf4e7bd,.055);
-    groundLine(-2.85,0xf06f79,.075);
-    groundLine(2.85,0x72cbff,.075);
+    groundLine(0,0xfff2c7,.085);
+    groundLine(-2.85,0xff7b86,.095);
+    groundLine(2.85,0x72cbff,.095);
     groundLine(-4.1,0xeff2e5,.028);
     groundLine(4.1,0xeff2e5,.028);
     // Clear painted field boundaries and yard marks make the play area readable on mobile.
@@ -745,7 +745,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     fieldMark(.045,5.28,-6.9,0);
     fieldMark(.045,5.28,6.9,0);
     for(var yardX=-6;yardX<=6.001;yardX+=1.2){
-      fieldMark(.032,.36,yardX,0);
+      fieldMark(.045,.52,yardX,0);
     }
     var centerCircle = new THREE.Mesh(new THREE.TorusGeometry(0.68,0.025,6,48),new THREE.MeshStandardMaterial({color:0xf0d18c,emissive:0x87652a,emissiveIntensity:.35}));
     centerCircle.rotation.x=Math.PI/2;centerCircle.position.y=.012;centerCircle.position.z=0;scene.add(centerCircle);
@@ -921,10 +921,12 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
         var front=p.team===1?1:-1;
         var wristY=1.15-Math.max(winPull,losePull)*.075+Math.sin(time*5+p.phase)*(.02+Math.max(winPull,losePull)*.018);
         var reach=.13+winPull*.22+losePull*.62+finishFall*.22;
-        var elbowL=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.23);
-        var elbowR=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.24);
-        var b1=new THREE.Vector3(front*(reach+travel*.66),wristY,.38);
-        var b2=new THREE.Vector3(front*(reach+travel*.66),wristY,.46);
+        // Arms extend along the character's forward axis (local Z), which points
+        // down the rope after the team-facing rotation. Both palms stay on the rope.
+        var elbowL=new THREE.Vector3(-.24,1.37-losePull*.025,front*(.04+travel*.38));
+        var elbowR=new THREE.Vector3(.24,1.37-losePull*.025,front*(.04+travel*.38));
+        var b1=new THREE.Vector3(-.26,wristY,front*(reach+travel*.66));
+        var b2=new THREE.Vector3(.26,wristY,front*(reach+travel*.66));
         var a1=new THREE.Vector3(-.22,1.52-Math.max(winPull,losePull)*.035,.04);
         var a2=new THREE.Vector3(.22,1.52-Math.max(winPull,losePull)*.035,.04);
         segment(p.armL,a1,elbowL);
@@ -946,7 +948,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var tension=Math.min(1,Math.abs(progress));
       var sag=.19*(1-tension*.74);
       // Read the actual hand positions after the character rigs have moved. The rope spline
-      // passes through every visible player's grip each frame, so it cannot slide out of hands.
+      // passes through both palms of every visible player each frame, keeping the rope gripped.
       scene.updateMatrixWorld(true);
       var anchors=[];
       people.forEach(function(person){
