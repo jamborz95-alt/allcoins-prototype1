@@ -454,7 +454,7 @@ const path = require("node:path");
     assert.equal(gamesIconDiagnostics.previewButtonCount, 0, "Старая кнопка просмотра премиум-карт ещё показывается");
     assert.equal(gamesIconDiagnostics.previewPanelCount, 0, "На странице осталась панель предпросмотра карт");
     assert.equal(gamesIconDiagnostics.previewFunctionType, "undefined", "Код удалённого предпросмотра остался доступен");
-    assert.equal(gamesIconDiagnostics.sekaHref, "./seka.html?v=20261024-editable-bets2",
+    assert.equal(gamesIconDiagnostics.sekaHref, "./seka.html?v=20261027-reaction-fast1",
       "Адрес отдельной страницы Сека изменился");
     assert.equal(gamesIconDiagnostics.documentWidth, gamesIconDiagnostics.viewportWidth,
       "Появилась горизонтальная прокрутка в разделе игр");
