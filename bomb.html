@@ -834,7 +834,7 @@
         renderOpenRooms(data.rooms || []);
       } catch (_) {
         const list = $('openRoomsList');
-        if (list && !list.children.length) {
+        if (list && (!list.children.length || list.querySelector('.open-rooms-empty'))) {
           const empty = document.createElement('div');
           empty.className = 'open-rooms-empty';
           empty.textContent = 'Не удалось загрузить комнаты. Нажми «Обновить».';
