@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { DURAK_TURN_TIMEOUT_MS, expireDurakTurnIfNeeded } from "../server/durak-rules.js";
 
 function gameWith({ phase = "attack", active = "attacker", startedAgo = 0, status = "playing" } = {}) {
