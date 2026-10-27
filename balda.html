@@ -648,7 +648,8 @@
         $("gameMessage").textContent = state.clientMessage || game.message || (myTurn ? "Твой ход: добавь букву и составь слово." : "Ход соперника.");
         $("passBtn").classList.toggle("hidden", game.status !== "playing" || !myTurn);
         $("passBtn").disabled = state.busy || !myTurn;
-        $("finishLobbyBtn").classList.toggle("hidden", game.status !== "finished");
+        $("finishLobbyBtn").classList.toggle("hidden", game.status !== "finished" && !state.practice);
+        $("finishLobbyBtn").textContent = state.practice && game.status === "playing" ? "Завершить тест" : "Вернуться в комнаты";
         $("passBtn").textContent = "Нет хода · пропустить";
         const history = $("history");
         history.innerHTML = "";
