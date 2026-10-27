@@ -60,6 +60,20 @@
     .online-action-row input{flex:1;min-width:0;width:0;padding:10px 12px;border:1px solid #38546b;border-radius:10px;background:#081522;color:#fff;font:inherit;font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
     .online-action-row input::placeholder{color:#8294a8;letter-spacing:0;text-transform:none;font-weight:500}
     .online-actions small{display:block;margin-top:8px;color:#a9bbca;font-size:11px;line-height:1.4}
+    .open-rooms-panel{margin-top:12px;padding:12px;border:1px solid #5c4a8e;border-radius:14px;background:linear-gradient(145deg,#21173a,#10182a);box-shadow:inset 0 1px #ffffff08}
+    .open-rooms-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+    .open-rooms-title{min-width:0}
+    .open-rooms-title strong{display:block;color:#f2deff;font-size:13px}
+    .open-rooms-title small{display:block;margin-top:3px;color:#b7accf;font-size:10px;line-height:1.4}
+    .open-rooms-header button{flex:0 0 auto;min-height:36px;padding:7px 10px;font-size:11px}
+    .open-rooms-list{display:grid;gap:8px}
+    .open-room-card{display:flex;align-items:center;justify-content:space-between;gap:9px;min-width:0;padding:10px;border:1px solid #4b4168;border-radius:12px;background:linear-gradient(140deg,#171b30,#101725)}
+    .open-room-info{flex:1;min-width:0}
+    .open-room-name{display:block;overflow:hidden;color:#fff2c9;font-size:12px;font-weight:900;text-overflow:ellipsis;white-space:nowrap}
+    .open-room-meta{display:block;margin-top:4px;color:#c2cbe0;font-size:10px;line-height:1.4}
+    .open-room-players{display:block;margin-top:3px;overflow:hidden;color:#9db5c9;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+    .open-room-join{flex:0 0 auto;min-width:72px;min-height:38px;padding:8px 10px;font-size:11px}
+    .open-rooms-empty{padding:13px 9px;border:1px dashed #4a4761;border-radius:11px;color:#bac3d7;text-align:center;font-size:11px;line-height:1.5}
     .online-room-code-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:10px;padding:9px 10px;border:1px dashed #56d8b3;border-radius:10px;background:#09262d}
     .online-room-code{font-size:20px;letter-spacing:.15em;font-weight:900;color:#a9ffe2;overflow-wrap:anywhere}
     .online-panel .online-room-code-row .secondary{flex:1;width:auto;min-width:120px;margin-top:0}
@@ -349,13 +363,25 @@
       <input id="playerName" maxlength="18" autocomplete="off" placeholder="Игрок 1" value="Ты">
       <div class="online-actions hidden" id="onlineActions">
         <div class="online-action-row">
-          <button class="secondary" id="createOnlineRoom" type="button">👥 Создать комнату для друзей</button>
+          <button class="secondary" id="createOnlineRoom" type="button">➕ Создать открытую комнату</button>
         </div>
         <div class="online-action-row">
           <input id="joinRoomCode" type="text" maxlength="7" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Код комнаты" placeholder="Код комнаты — 7 символов">
           <button class="secondary" id="joinOnlineRoom" type="button">Войти</button>
         </div>
-        <small>Чтобы играть с другом, создай комнату и отправь ему ссылку или код. Для случайных соперников нажми «Найти игроков».</small>
+        <small>Комната появится в общем списке. Также можно отправить другу ссылку или код приглашения.</small>
+      </div>
+      <div class="open-rooms-panel hidden" id="openRoomsPanel">
+        <div class="open-rooms-header">
+          <div class="open-rooms-title">
+            <strong>🌐 Открытые комнаты</strong>
+            <small>Вход доступен всем игрокам · список обновляется автоматически</small>
+          </div>
+          <button class="secondary" id="refreshOpenRooms" type="button">↻ Обновить</button>
+        </div>
+        <div class="open-rooms-list" id="openRoomsList" aria-live="polite">
+          <div class="open-rooms-empty">Подключаемся к списку комнат…</div>
+        </div>
       </div>
       <div class="online-panel hidden" id="onlinePanel" aria-live="polite">
         <strong id="onlinePanelTitle">🌐 Поиск соперников</strong>
@@ -603,6 +629,8 @@
     let onlineGame = false;
     let onlineSearchActive = false;
     let onlinePollTimer = null;
+    let openRoomsPollTimer = null;
+    let openRoomsLoading = false;
     let onlineSyncBusy = false;
     let onlineFuseEndsAt = 0;
     let onlineFuseDuration = 1;
@@ -685,7 +713,14 @@
       chosenMode = mode;
       document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
       $('onlineActions').classList.toggle('hidden', mode !== 'online');
+      $('openRoomsPanel').classList.toggle('hidden', mode !== 'online');
       $('startGame').textContent = mode === 'online' ? '🌐 Найти игроков' : '▶ Начать игру';
+      if (mode === 'online') {
+        loadOpenRooms();
+        startOpenRoomsPolling();
+      } else {
+        stopOpenRoomsPolling();
+      }
     }
     function chooseMap(map) {
       chosenMap = map === 'crystal' ? 'crystal' : 'copper';
@@ -749,6 +784,96 @@
     });
 
     function safeText(value) { return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+    function stopOpenRoomsPolling() {
+      if (openRoomsPollTimer) clearInterval(openRoomsPollTimer);
+      openRoomsPollTimer = null;
+    }
+    function startOpenRoomsPolling() {
+      stopOpenRoomsPolling();
+      if (chosenMode !== 'online' || onlineSearchActive) return;
+      openRoomsPollTimer = window.setInterval(() => {
+        if (chosenMode === 'online' && !onlineSearchActive && $('openRoomsPanel') && !$('openRoomsPanel').classList.contains('hidden')) loadOpenRooms();
+      }, 5000);
+    }
+    function renderOpenRooms(rooms) {
+      const list = $('openRoomsList');
+      if (!list) return;
+      list.replaceChildren();
+      if (!Array.isArray(rooms) || rooms.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'open-rooms-empty';
+        empty.textContent = 'Пока нет открытых комнат. Создай первую или нажми «Найти игроков».';
+        list.appendChild(empty);
+        return;
+      }
+      rooms.forEach(room => {
+        const count = Math.max(0, Number(room.playerCount) || 0);
+        const maximum = Math.max(2, Number(room.maxPlayers) || 2);
+        const full = count >= maximum;
+        const mapName = room.map === 'crystal' ? 'Кристальная шахта' : 'Медная шахта';
+        const names = Array.isArray(room.players)
+          ? room.players.map(p => typeof p === 'string' ? p : p && p.name).filter(Boolean).join(', ')
+          : '';
+        const card = document.createElement('div');
+        card.className = 'open-room-card';
+        card.innerHTML = '<div class="open-room-info">' +
+          '<b class="open-room-name">' + safeText(mapName) + '</b>' +
+          '<span class="open-room-meta">👥 ' + count + ' из ' + maximum + ' игроков · ' + safeText(room.inviteCode || 'Открытая') + '</span>' +
+          '<span class="open-room-players">' + safeText(names || 'Ожидание игроков…') + '</span>' +
+          '</div><button class="primary open-room-join" type="button" data-join-open-room="' + safeText(room.id) + '"' +
+          (full ? ' disabled' : '') + '>' + (full ? 'Заполнена' : 'Войти') + '</button>';
+        list.appendChild(card);
+      });
+    }
+    async function loadOpenRooms() {
+      if (openRoomsLoading || chosenMode !== 'online' || onlineSearchActive) return;
+      openRoomsLoading = true;
+      try {
+        const data = await bombOnlineRequest('/rooms/list', { playerId: onlinePlayerId });
+        renderOpenRooms(data.rooms || []);
+      } catch (_) {
+        const list = $('openRoomsList');
+        if (list && !list.children.length) {
+          const empty = document.createElement('div');
+          empty.className = 'open-rooms-empty';
+          empty.textContent = 'Не удалось загрузить комнаты. Нажми «Обновить».';
+          list.appendChild(empty);
+        }
+      } finally {
+        openRoomsLoading = false;
+      }
+    }
+    async function joinOpenRoom(roomId) {
+      if (onlineSearchActive) return;
+      if (!(await beginInviteRoomRequest('🌐 Вход в открытую комнату', 'Подключаемся к открытой комнате…'))) return;
+      try {
+        const name = ($('playerName').value || 'Игрок').trim().slice(0, 18) || 'Игрок';
+        const data = await bombOnlineRequest('/rooms/join-open', {
+          roomId: String(roomId), playerId: onlinePlayerId, name: name
+        });
+        if (!onlineSearchActive) {
+          try { await bombOnlineRequest('/rooms/leave', { roomId: data.room.id, playerId: onlinePlayerId }); } catch (_) {}
+          return;
+        }
+        onlineRoomId = String(data.room.id);
+        setOnlineInviteCode(data.room.inviteCode || '');
+        displayOnlineStatus(buildWaitingMessage(data));
+        $('startGame').disabled = false;
+        $('startGame').textContent = 'Подключено к комнате';
+        startOnlinePolling();
+        await syncOnlineRoom();
+      } catch (error) {
+        if (!onlineSearchActive) return;
+        onlineSearchActive = false;
+        $('startGame').disabled = false;
+        $('startGame').textContent = '🌐 Найти игроков';
+        $('openRoomsPanel').classList.remove('hidden');
+        displayOnlineStatus('Не удалось войти: ' + (error.message || 'обнови список комнат'));
+        startOpenRoomsPolling();
+        loadOpenRooms();
+      }
+    }
 
     async function bombOnlineRequest(path, body) {
       const response = await fetch(BOMB_API_BASE + path, {
@@ -825,6 +950,8 @@
     async function startOnlineMatchmaking() {
       if (onlineSearchActive) return;
       onlineSearchActive = true;
+      stopOpenRoomsPolling();
+      $("openRoomsPanel").classList.add("hidden");
       onlineGame = false;
       onlineRoomId = null;
       onlineInviteCode = null;
@@ -872,12 +999,16 @@
         onlineSearchActive = false;
         $("startGame").disabled = false;
         $("startGame").textContent = "Попробовать снова";
+        $("openRoomsPanel").classList.toggle("hidden", chosenMode !== "online");
+        if (chosenMode === "online") { startOpenRoomsPolling(); loadOpenRooms(); }
         displayOnlineStatus("Не удалось подключиться: " + (error.message || "ошибка сети"));
       }
     }
     async function beginInviteRoomRequest(title, statusText) {
       if (onlineSearchActive) return false;
       onlineSearchActive = true;
+      stopOpenRoomsPolling();
+      $("openRoomsPanel").classList.add("hidden");
       onlineGame = false;
       onlineRoomId = null;
       onlineInviteCode = null;
@@ -917,6 +1048,8 @@
         onlineSearchActive = false;
         $("startGame").disabled = false;
         $("startGame").textContent = "Повторить";
+        $("openRoomsPanel").classList.toggle("hidden", chosenMode !== "online");
+        if (chosenMode === "online") { startOpenRoomsPolling(); loadOpenRooms(); }
         displayOnlineStatus("Не удалось создать комнату: " + (error.message || "ошибка сети"));
       }
     }
@@ -952,6 +1085,8 @@
         onlineSearchActive = false;
         $("startGame").disabled = false;
         $("startGame").textContent = "🌐 Найти игроков";
+        $("openRoomsPanel").classList.toggle("hidden", chosenMode !== "online");
+        if (chosenMode === "online") { startOpenRoomsPolling(); loadOpenRooms(); }
         displayOnlineStatus("Не удалось войти: " + (error.message || "проверь код и соединение"));
       }
     }
@@ -969,6 +1104,11 @@
       $("startGame").textContent = chosenMode === "online" ? "🌐 Найти игроков" : "▶ Начать игру";
       if (roomId) {
         try { await bombOnlineRequest("/rooms/leave", { roomId: roomId, playerId: onlinePlayerId }); } catch (_) {}
+      }
+      if (chosenMode === "online") {
+        $("openRoomsPanel").classList.remove("hidden");
+        startOpenRoomsPolling();
+        loadOpenRooms();
       }
     }
     async function leaveOnlineRoom() {
@@ -2142,6 +2282,11 @@
     });
     $('createOnlineRoom').addEventListener('click', createOnlineRoom);
     $('joinOnlineRoom').addEventListener('click', () => joinOnlineRoomByCode($('joinRoomCode').value));
+    $('refreshOpenRooms').addEventListener('click', loadOpenRooms);
+    $('openRoomsList').addEventListener('click', event => {
+      const button = event.target.closest('[data-join-open-room]');
+      if (button && !button.disabled) joinOpenRoom(button.dataset.joinOpenRoom);
+    });
     $('joinRoomCode').addEventListener('input', () => {
       $('joinRoomCode').value = $('joinRoomCode').value.toUpperCase().replace(/\s+/g, "").slice(0, 7);
       $('joinRoomCode').setCustomValidity("");
