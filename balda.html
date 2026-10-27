@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10182a">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Балда Онлайн — ALLCOINS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#080d18;--panel:#121e32;--panel2:#192941;--line:#354760;--gold:#f1d28a;--mint:#72f1bb;--muted:#9fb1c9;--red:#ff7284;--blue:#75c6ff}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#253b58 0,#10192b 42%,#070c16 100%);color:#f7f9fc;font-family:Arial,Helvetica,sans-serif}
+    body{padding:max(9px,env(safe-area-inset-top)) 10px max(14px,env(safe-area-inset-bottom));overscroll-behavior:none}
+    button,input{font:inherit}
+    button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    button:disabled{opacity:.42;cursor:not-allowed}
+    .app{max-width:960px;margin:0 auto}
+    .hidden{display:none!important}
+    .topbar{display:flex;align-items:center;gap:10px;margin:3px 0 14px}
+    .back{flex:0 0 42px;width:42px;height:42px;border:1px solid #4a5c76;border-radius:13px;background:#17263d;color:#eef5ff;font-size:23px;font-weight:900}
+    .brand-mark{flex:0 0 46px;width:46px;height:46px;display:grid;place-items:center;border:1px solid #efd28a;border-radius:15px;background:linear-gradient(145deg,#26435a,#111b2d);box-shadow:inset 0 1px #fff5,0 6px 17px #0005;color:#f5d88d;font-size:19px;font-weight:1000}
+    .title-wrap{flex:1;min-width:0}
+    h1{margin:0 0 4px;font-size:clamp(20px,5vw,27px);font-weight:950;letter-spacing:.2px}
+    .subtitle{font-size:11px;line-height:1.45;color:var(--muted)}
+    .tag{flex:0 0 auto;padding:7px 9px;border:1px solid #7c673d;border-radius:10px;background:#262318;color:#f3d98e;font-size:10px;font-weight:1000;letter-spacing:.8px}
+    .status{display:flex;gap:8px;align-items:center;min-height:37px;margin:0 0 12px;padding:9px 11px;border:1px solid #32465b;border-radius:12px;background:#101b2b;color:#c9d7e7;font-size:12px;line-height:1.45}
+    .status-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--mint);box-shadow:0 0 9px #72f1bb88}
+    .status.error{border-color:#824655;color:#ffd7dc;background:#291721}
+    .grid-lobby{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:13px;align-items:start}
+    .panel{min-width:0;padding:16px;border:1px solid #2c3c55;border-radius:19px;background:linear-gradient(150deg,#18253aee,#0e1828f5);box-shadow:0 12px 34px #0003;margin-bottom:13px}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+    h2{margin:0;font-size:17px;font-weight:950}
+    .muted{color:var(--muted)}
+    .tiny{font-size:11px;line-height:1.5}
+    label{display:block;margin:13px 0 6px;color:#d2deed;font-size:12px;font-weight:800}
+    input{display:block;width:100%;min-height:46px;border:1px solid #3a4e68;border-radius:11px;background:#081320;color:#fff;padding:10px 12px;outline:none}
+    input:focus{border-color:var(--gold);box-shadow:0 0 0 2px #efd28a21}
+    .stake-row{display:flex;align-items:center;gap:8px}
+    .stake-row input{flex:1;min-width:0}
+    .ac-pill{flex:0 0 auto;padding:10px 11px;border:1px solid #726039;border-radius:10px;background:#282317;color:#f2d98f;font-size:12px;font-weight:1000}
+    .hint{margin-top:6px;color:#a2b4ca;font-size:10px;line-height:1.45}
+    .primary,.secondary,.gold-button{min-height:44px;border-radius:12px;padding:10px 13px;font-weight:900;border:1px solid transparent}
+    .primary{background:linear-gradient(135deg,#8bffd1,#46dca0);color:#09271d;box-shadow:0 5px 18px #32db9b20}
+    .gold-button{background:linear-gradient(135deg,#f7df9d,#b88b3c);border-color:#f4d791;color:#231b0d}
+    .secondary{background:#1b2c43;color:#f3f7fc;border-color:#425773}
+    .full{width:100%;margin-top:14px}
+    .rooms-list{display:grid;gap:9px}
+    .room-row{display:flex;align-items:center;gap:10px;min-width:0;padding:11px;border:1px solid #344861;border-radius:13px;background:linear-gradient(130deg,#112035,#0b1625)}
+    .room-symbol{flex:0 0 43px;width:43px;height:43px;display:grid;place-items:center;border:1px solid #e4c776;border-radius:12px;background:linear-gradient(145deg,#5b4727,#172339);color:#ffe7a7;font-size:23px;font-weight:1000;box-shadow:inset 0 1px #fff5}
+    .room-info{flex:1;min-width:0}
+    .room-name{font-size:12px;font-weight:950;overflow-wrap:anywhere;color:#f7f3e8}
+    .room-meta{margin-top:4px;color:#a9bad0;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+    .room-row button{flex:0 0 auto;min-width:70px;padding:8px 10px;min-height:38px;font-size:11px}
+    .empty{padding:19px 12px;border:1px dashed #3b4d64;border-radius:13px;color:#9dafc6;text-align:center;font-size:12px;line-height:1.6}
+    .hero-rule{margin:0 0 13px;padding:13px;border:1px solid #554b36;border-radius:14px;background:linear-gradient(135deg,#28261d,#121d2b);color:#d8e3ee;font-size:11px;line-height:1.6}
+    .hero-rule strong{color:#f4d891}
+    .waiting-view{max-width:700px;margin:0 auto}
+    .room-hero{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .room-title{font-size:23px;font-weight:1000;overflow-wrap:anywhere}
+    .stake-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid #8c7240;border-radius:10px;background:#262317;color:#f5da8d;font-weight:950;font-size:12px;padding:8px 10px}
+    .seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:16px 0}
+    .seat{display:flex;align-items:center;gap:9px;min-width:0;padding:12px;border:1px solid #344962;border-radius:13px;background:#0c1929}
+    .seat-avatar{flex:0 0 35px;width:35px;height:35px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#f0d78d,#a87b2d);color:#201909;font-weight:1000}
+    .seat-name{font-size:12px;font-weight:900;overflow-wrap:anywhere}
+    .seat-sub{margin-top:3px;color:#93a9c0;font-size:10px}
+    #gameView{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;gap:8px;overflow:auto;overscroll-behavior:contain;padding:max(7px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 39%,#243e5d 0,#111d32 50%,#070c16 100%)}
+    .game-shell{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px;min-height:100%}
+    .game-top{display:flex;align-items:center;gap:9px;min-height:39px}
+    .game-title{flex:1;min-width:0}
+    .game-title strong{display:block;font-size:14px;letter-spacing:.6px}
+    .game-title small{display:block;margin-top:3px;color:#aebed2;font-size:10px}
+    .game-room-tag{max-width:38%;padding:7px 8px;border:1px solid #5d5b46;border-radius:10px;background:#1b241f;color:#f1d88f;font-size:10px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .scores{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .score-card{position:relative;min-width:0;padding:9px 10px;border:1px solid #3e526d;border-radius:13px;background:linear-gradient(145deg,#17273d,#0d1928);box-shadow:inset 0 1px #ffffff0a}
+    .score-card.active{border-color:#f3d98f;box-shadow:0 0 0 1px #f3d98f66,0 0 16px #f3d98f12,inset 0 1px #fff2}
+    .score-card.me .score-name{color:#a9f6d0}
+    .score-name{font-size:10px;font-weight:850;color:#b9cce0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .score-value{margin-top:4px;color:#f6df9a;font-size:22px;font-weight:1000;line-height:1}
+    .score-meta{margin-top:4px;color:#91a8c1;font-size:9px}
+    .board-wrap{flex:0 0 auto;display:flex;justify-content:center;align-items:center;padding:7px;border:1px solid #607b9a;border-radius:20px;background:linear-gradient(145deg,#213a53,#101b2e);box-shadow:0 9px 24px #0005,inset 0 1px #ffffff20}
+    .board{width:min(100%,min(67vh,430px));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;aspect-ratio:1/1;padding:8px;border:1px solid #c4a86a;border-radius:14px;background:linear-gradient(145deg,#d2bd8d,#7a6746);box-shadow:inset 0 0 0 2px #3c3020a8}
+    .cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;aspect-ratio:1;border:1px solid #a5b7c8;border-radius:8px;background:linear-gradient(145deg,#f8f3e8,#d9e0e5);color:#17263b;font-size:clamp(18px,5.6vw,31px);font-weight:1000;box-shadow:0 2px 0 #8c9ca6,0 4px 5px #342c1d30,inset 0 1px #fff;transition:transform .12s,border-color .12s,background .12s}
+    .cell.filled{border-color:#c69b4e;background:linear-gradient(145deg,#fff7d9,#d7b86f);color:#3b2814;text-shadow:0 1px #fff9}
+    .cell.last{outline:3px solid #70f0b3;outline-offset:-4px}
+    .cell.can-pick{border-color:#64e4b2;background:linear-gradient(145deg,#e4ffef,#a4e8c6);box-shadow:0 0 0 2px #64e4b277,0 3px 9px #0003;animation:cellPulse 1.15s ease-in-out infinite}
+    .cell:active{transform:scale(.95)}
+    @keyframes cellPulse{0%,100%{box-shadow:0 0 0 1px #64e4b255,0 3px 7px #0003}50%{box-shadow:0 0 0 3px #64e4b2bb,0 3px 10px #0003}}
+    .last-word{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;min-height:35px;padding:8px 10px;border:1px solid #405875;border-radius:11px;background:#0c1828a8;color:#cfdeee;text-align:center;font-size:11px;line-height:1.4}
+    .last-word strong{color:#f5d98f}
+    .message{min-height:38px;display:flex;align-items:center;justify-content:center;padding:8px 11px;border:1px solid #47604f;border-radius:12px;background:#0b2b25a8;color:#e3f3e9;text-align:center;font-size:11px;line-height:1.5}
+    .game-actions{display:flex;gap:8px;justify-content:center}
+    .game-actions button{flex:1;max-width:260px}
+    .history{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:4px 0}
+    .history-chip{padding:5px 8px;border:1px solid #344960;border-radius:8px;background:#101d2f;color:#b7c9dc;font-size:10px}
+    .result{padding:13px;border:1px solid #9b7e42;border-radius:15px;background:linear-gradient(145deg,#332b1a,#111d2b);text-align:center}
+    .result h2{margin:0 0 6px;color:#f5db8c;font-size:21px}
+    .result p{margin:0;color:#d5e0ec;font-size:12px;line-height:1.55}
+    .result button{margin-top:12px}
+    .letter-backdrop{position:fixed;inset:0;z-index:3000;display:flex;align-items:flex-end;justify-content:center;padding:14px;background:#07101cc4;backdrop-filter:blur(4px)}
+    .letter-panel{width:min(100%,560px);padding:15px;border:1px solid #aa8b4d;border-radius:20px;background:linear-gradient(150deg,#1b2b40,#0b1524);box-shadow:0 20px 65px #000b}
+    .letter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .letter-head h2{font-size:17px}
+    .letter-head small{color:#aabbd0;font-size:10px}
+    .letter-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+    .letter-key{min-width:0;min-height:42px;padding:4px;border:1px solid #c5a765;border-radius:9px;background:linear-gradient(145deg,#f9e8b0,#c09b4e);color:#231a0a;font-size:17px;font-weight:1000;box-shadow:inset 0 1px #fff8}
+    .letter-key:active{transform:translateY(1px);filter:brightness(.93)}
+    .letter-cancel{margin-top:10px;width:100%;min-height:39px}
+    .rules{color:#9fb2ca;font-size:10px;line-height:1.55;text-align:center;padding:1px 0 4px}
+    @media(max-width:700px){.grid-lobby{grid-template-columns:1fr;gap:0}.panel{padding:13px}.board{width:min(100%,min(55vh,410px));gap:4px;padding:6px}.board-wrap{padding:5px}.cell{border-radius:6px;font-size:clamp(18px,6.2vw,30px)}#gameView{gap:6px}.game-shell{gap:6px}.score-card{padding:8px}.score-value{font-size:20px}}
+    @media(max-width:360px){.tag{display:none}.topbar{gap:7px}.board{gap:3px;padding:5px}.cell{border-radius:5px}.letter-grid{gap:4px}.letter-key{min-height:38px;font-size:15px}.letter-panel{padding:11px}}
+    @media(max-height:700px){#gameView{gap:5px}.game-shell{gap:5px}.game-top{min-height:34px}.scores{gap:5px}.score-card{padding:6px 8px}.score-value{font-size:19px}.board{width:min(100%,min(48vh,380px));gap:3px;padding:5px}.board-wrap{padding:4px}.cell{border-radius:5px}.last-word{min-height:30px;padding:5px 8px}.message{min-height:31px;padding:6px 8px}.letter-backdrop{align-items:center}.letter-panel{padding:11px}.letter-key{min-height:35px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;animation-iteration-count:1!important}}
+  </style>
+</head>
+<body>
+  <main class="app" id="lobbyView">
+    <header class="topbar">
+      <button class="back" id="backAllcoins" type="button" aria-label="Назад">‹</button>
+      <div class="brand-mark" aria-hidden="true">Б</div>
+      <div class="title-wrap"><h1>Балда Онлайн</h1><div class="subtitle">Слова, стратегия и соревнование 1 на 1</div></div>
+      <span class="tag">ALLCOINS</span>
+    </header>
+    <div class="status" id="lobbyStatus"><span class="status-dot"></span><span>Подключаем онлайн-комнаты…</span></div>
+    <div class="grid-lobby">
+      <section>
+        <div class="panel">
+          <div class="panel-head"><h2>＋ Создать комнату</h2></div>
+          <p class="tiny muted">Играй с другим человеком. Ставка спишется только после начала партии и подтверждения, что оба игрока могут её оплатить.</p>
+          <label for="roomName">Название комнаты</label>
+          <input id="roomName" maxlength="32" placeholder="Комната Балды">
+          <label for="stakeInput">Ставка за игрока</label>
+          <div class="stake-row"><input id="stakeInput" type="text" inputmode="numeric" autocomplete="off" value="100" aria-label="Ставка в AC"><span class="ac-pill">AC</span></div>
+          <div class="hint">Минимум 100 AC. Верхнего лимита нет — ставка ограничена доступным балансом и техническим диапазоном счёта.</div>
+          <div class="hero-rule" style="margin-top:13px"><strong>Как играть:</strong><br>На поле уже написано «БАЛДА». За ход добавь одну букву в соседнюю свободную клетку, чтобы получилось новое слово по горизонтали или вертикали. Каждое новое слово приносит очки по числу букв.</div>
+          <button id="createRoomBtn" class="primary full" type="button">＋ Создать комнату</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>🌐 Открытые комнаты</h2><button id="refreshRoomsBtn" class="secondary" type="button" style="min-height:35px;padding:7px 10px;font-size:11px">↻ Обновить</button></div>
+        <div id="roomsList" class="rooms-list"><div class="empty">Загрузка комнат…</div></div>
+      </section>
+    </div>
+    <p class="rules">AC — виртуальные монеты ALLCOINS. После победы приз начисляется за вычетом 5% комиссии проекта.</p>
+  </main>
+
+  <main id="waitingView" class="waiting-view hidden">
+    <header class="topbar">
+      <button class="back" id="roomBackBtn" type="button" aria-label="Назад">‹</button>
+      <div class="brand-mark" aria-hidden="true">Б</div>
+      <div class="title-wrap"><h1>Комната Балды</h1><div class="subtitle">Ждём второго игрока</div></div>
+      <span class="tag">1 × 1</span>
+    </header>
+    <div class="status" id="roomStatus"><span class="status-dot"></span><span>Комната создана.</span></div>
+    <section class="panel">
+      <div class="room-hero"><div><div class="room-title" id="roomTitle">Комната Балды</div><div id="roomIdLabel" class="subtitle"></div></div><div class="stake-badge">🎟 <span id="roomStakeLabel">100 AC</span></div></div>
+      <div class="seats" id="roomSeats"></div>
+      <button id="startGameBtn" class="primary full" type="button" disabled>▶ Начать партию · 2 игрока</button>
+      <button id="leaveRoomBtn" class="secondary full" type="button">Выйти из комнаты</button>
+      <p class="hint">Обе ставки спишутся только при успешном запуске партии. Если баланса не хватит хотя бы одному игроку, списания не произойдут.</p>
+    </section>
+  </main>
+
+  <section id="gameView" class="hidden" aria-label="Игровое поле Балды">
+    <div class="game-shell">
+      <header class="game-top">
+        <div class="brand-mark" aria-hidden="true" style="width:36px;height:36px;flex-basis:36px;border-radius:11px;font-size:16px">Б</div>
+        <div class="game-title"><strong>БАЛДА ОНЛАЙН</strong><small id="gameRoomName">Комната Балды</small></div>
+        <div class="game-room-tag" id="gamePot">Банк: 200 AC</div>
+      </header>
+      <div class="scores" id="scores"></div>
+      <div class="board-wrap"><div class="board" id="baldaBoard" aria-label="Игровое поле 5 на 5"></div></div>
+      <div class="last-word" id="lastWord">Начальное слово: <strong>БАЛДА</strong></div>
+      <div class="message" id="gameMessage" aria-live="polite">Добавь букву к полю, чтобы составить новое слово.</div>
+      <div class="game-actions"><button id="passBtn" class="secondary" type="button">Нет хода · пропустить</button><button id="finishLobbyBtn" class="gold-button hidden" type="button">Вернуться в комнаты</button></div>
+      <div class="history" id="history"></div>
+      <div class="rules">Выбирай пустую клетку рядом с буквой. Слово должно быть новым и находиться в словаре. Считаются все новые слова, образованные в двух направлениях.</div>
+    </div>
+  </section>
+
+  <div id="letterModal" class="letter-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="letterModalTitle">
+    <div class="letter-panel">
+      <div class="letter-head"><div><h2 id="letterModalTitle">Выбери букву</h2><small>Она должна образовать новое слово</small></div><span class="stake-badge" id="letterCellLabel">Клетка 1</span></div>
+      <div id="letterGrid" class="letter-grid"></div>
+      <button type="button" id="cancelLetterBtn" class="secondary letter-cancel">Отмена</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      const API = "https://allcoins-server.onrender.com/api/balda";
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+      if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
+      const $ = id => document.getElementById(id);
+      const state = {
+        room: null, players: [], game: null, meId: "", busy: false, polling: null,
+        listPolling: null, listBusy: false, roomBusy: false, stage: "lobby", pendingCell: null
+      };
+      const alphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("");
+
+      function formatAC(value) {
+        try {
+          const raw = String(value ?? "0").replace(/[\s,_]/g, "");
+          return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(BigInt(raw || "0"));
+        } catch (_) { return String(value ?? "0"); }
+      }
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+      }
+      function setStatus(text, error, target) {
+        const host = $(target || (state.stage === "lobby" ? "lobbyStatus" : "roomStatus"));
+        if (!host) return;
+        host.classList.toggle("error", Boolean(error));
+        host.innerHTML = '<span class="status-dot"></span><span></span>';
+        host.lastElementChild.textContent = String(text || "");
+      }
+      function telegramInitData() { return tg ? String(tg.initData || "") : ""; }
+      async function api(path, data) {
+        const response = await fetch(API + path, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({}, data || {}, { initData: telegramInitData() }))
+        });
+        let payload;
+        try { payload = await response.json(); }
+        catch (_) { throw new Error("Сервер вернул некорректный ответ. Попробуй ещё раз."); }
+        if (!response.ok || payload.ok === false) throw new Error(payload.error || "Ошибка сервера.");
+        return payload;
+      }
+      function showStage(stage) {
+        state.stage = stage;
+        $("lobbyView").classList.toggle("hidden", stage !== "lobby");
+        $("waitingView").classList.toggle("hidden", stage !== "waiting");
+        $("gameView").classList.toggle("hidden", stage !== "game");
+        $("letterModal").classList.add("hidden");
+        if (stage === "game") {
+          try { $("gameView").scrollTop = 0; } catch (_) {}
+        }
+      }
+      function stopRoomPolling() { if (state.polling) clearInterval(state.polling); state.polling = null; }
+      function startRoomPolling() {
+        stopRoomPolling();
+        if (!state.room) return;
+        state.polling = setInterval(() => { refreshRoom(true); }, 1000);
+      }
+      function startListPolling() {
+        if (state.listPolling) clearInterval(state.listPolling);
+        state.listPolling = setInterval(() => {
+          if (state.stage === "lobby") loadRooms(true);
+        }, 5000);
+      }
+      function renderRooms(rooms) {
+        const host = $("roomsList");
+        host.innerHTML = "";
+        if (!rooms || !rooms.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Свободных комнат нет. Создай свою или обнови список.";
+          host.appendChild(empty);
+          return;
+        }
+        rooms.forEach(room => {
+          const row = document.createElement("div");
+          row.className = "room-row";
+          const icon = document.createElement("div");
+          icon.className = "room-symbol";
+          icon.textContent = "Б";
+          const info = document.createElement("div");
+          info.className = "room-info";
+          const name = document.createElement("div");
+          name.className = "room-name";
+          name.textContent = room.name || "Комната Балды";
+          const meta = document.createElement("div");
+          meta.className = "room-meta";
+          meta.textContent = (room.ownerName || "Игрок") + " · " + room.playersCount + "/2 игроков · " + formatAC(room.stake) + " AC";
+          info.append(name, meta);
+          const join = document.createElement("button");
+          join.className = "primary";
+          join.type = "button";
+          join.textContent = "Войти";
+          join.addEventListener("click", () => joinRoom(room.roomId || room.id));
+          row.append(icon, info, join);
+          host.appendChild(row);
+        });
+      }
+      async function loadRooms(silent) {
+        if (state.listBusy) return;
+        state.listBusy = true;
+        try {
+          const data = await api("/rooms/list", {});
+          state.meId = String(data.userId || state.meId || "");
+          renderRooms(data.rooms || []);
+          if (!silent) setStatus("Онлайн-сервер подключён. Комнаты обновляются автоматически.", false, "lobbyStatus");
+        } catch (error) {
+          if (!silent) setStatus(error.message, true, "lobbyStatus");
+          if (!telegramInitData()) renderRooms([]);
+        } finally { state.listBusy = false; }
+      }
+      function renderRoom(data) {
+        state.room = data.room || state.room;
+        state.players = Array.isArray(data.players) ? data.players : state.players;
+        state.game = data.game || state.game;
+        if (!state.room) return;
+        if (state.room.status === "playing" || state.room.status === "finished") {
+          if (state.game) {
+            showStage("game");
+            renderGame();
+          }
+          return;
+        }
+        showStage("waiting");
+        $("roomTitle").textContent = state.room.name || "Комната Балды";
+        $("roomIdLabel").textContent = "Номер комнаты: " + state.room.id;
+        $("roomStakeLabel").textContent = formatAC(state.room.stake) + " AC за игрока";
+        const host = $("roomSeats");
+        host.innerHTML = "";
+        for (let index = 0; index < 2; index++) {
+          const player = state.players[index];
+          const seat = document.createElement("div");
+          seat.className = "seat";
+          const avatar = document.createElement("div");
+          avatar.className = "seat-avatar";
+          avatar.textContent = player ? String(player.name || "И").trim().charAt(0).toUpperCase() : "?";
+          const info = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "seat-name";
+          name.textContent = player ? player.name + (player.isYou ? " (ты)" : "") : "Ждём соперника…";
+          const sub = document.createElement("div");
+          sub.className = "seat-sub";
+          sub.textContent = player ? (player.isOwner ? "Создатель комнаты" : "Игрок") : "Свободное место";
+          info.append(name, sub);
+          seat.append(avatar, info);
+          host.appendChild(seat);
+        }
+        const ready = state.players.length === 2;
+        $("startGameBtn").disabled = !ready || !state.room.isOwner || state.busy;
+        $("startGameBtn").classList.toggle("hidden", !state.room.isOwner);
+        $("leaveRoomBtn").classList.toggle("hidden", state.room.status !== "waiting");
+        setStatus(ready ? "Оба места заняты. Создатель может начать партию." : "Ожидаем второго игрока. Ставки пока не списаны.", false, "roomStatus");
+      }
+      async function createRoom() {
+        if (state.busy) return;
+        const stake = String($("stakeInput").value || "").replace(/[\s,_]/g, "");
+        if (!/^\d+$/.test(stake) || BigInt(stake) < 100n) {
+          setStatus("Введи целую ставку не меньше 100 AC.", true, "lobbyStatus");
+          return;
+        }
+        state.busy = true;
+        $("createRoomBtn").disabled = true;
+        try {
+          const data = await api("/rooms/create", { name: $("roomName").value, stake });
+          state.room = data.room; state.players = data.players || []; state.game = data.game || null;
+          state.meId = data.room.ownerId || state.meId;
+          renderRoom(data); startRoomPolling();
+        } catch (error) {
+          setStatus(error.message, true, "lobbyStatus");
+        } finally { state.busy = false; $("createRoomBtn").disabled = false; }
+      }
+      async function joinRoom(roomId) {
+        if (state.busy) return;
+        state.busy = true;
+        try {
+          const data = await api("/rooms/join", { roomId });
+          state.room = data.room; state.players = data.players || []; state.game = data.game || null;
+          state.meId = (data.players || []).find(p => p.isYou)?.id || state.meId;
+          renderRoom(data); startRoomPolling();
+        } catch (error) {
+          setStatus(error.message, true, "lobbyStatus");
+          await loadRooms(true);
+        } finally { state.busy = false; }
+      }
+      async function refreshRoom(silent) {
+        if (!state.room || state.roomBusy) return;
+        state.roomBusy = true;
+        try {
+          const data = await api("/rooms/state", { roomId: state.room.roomId || state.room.id });
+          state.room = data.room || state.room;
+          state.players = data.players || state.players;
+          state.game = data.game || state.game;
+          renderRoom(data);
+        } catch (error) {
+          if (!silent) setStatus(error.message, true, state.stage === "lobby" ? "lobbyStatus" : "roomStatus");
+        } finally { state.roomBusy = false; }
+      }
+      async function startGame() {
+        if (!state.room || !state.room.isOwner || state.busy) return;
+        state.busy = true; $("startGameBtn").disabled = true;
+        try {
+          const data = await api("/rooms/start", { roomId: state.room.roomId || state.room.id });
+          state.room = data.room; state.players = data.players || []; state.game = data.game;
+          renderRoom(data); startRoomPolling();
+        } catch (error) {
+          setStatus(error.message, true, "roomStatus");
+        } finally { state.busy = false; if (state.room && state.stage === "waiting") $("startGameBtn").disabled = state.players.length !== 2 || !state.room.isOwner; }
+      }
+      async function leaveRoom() {
+        if (!state.room || state.busy) return;
+        state.busy = true;
+        try {
+          await api("/rooms/leave", { roomId: state.room.roomId || state.room.id });
+          state.room = null; state.players = []; state.game = null; state.pendingCell = null;
+          stopRoomPolling(); showStage("lobby"); await loadRooms(false);
+        } catch (error) { setStatus(error.message, true, "roomStatus"); }
+        finally { state.busy = false; }
+      }
+      function isAdjacent(index, board) {
+        const row = Math.floor(index / 5), col = index % 5;
+        return [[row-1,col],[row+1,col],[row,col-1],[row,col+1]].some(([r,c]) => r>=0 && r<5 && c>=0 && c<5 && board[r*5+c]);
+      }
+      function renderGame() {
+        const game = state.game;
+        if (!game) return;
+        $("gameRoomName").textContent = (state.room?.name || "Комната Балды") + " · " + (state.room?.id || "");
+        $("gamePot").textContent = "Банк: " + formatAC(game.pot) + " AC";
+        const scores = $("scores");
+        scores.innerHTML = "";
+        (game.players || []).forEach((player, index) => {
+          const card = document.createElement("div");
+          card.className = "score-card" + (String(game.currentPlayerId) === String(player.id) && game.status === "playing" ? " active" : "") + (player.isYou ? " me" : "");
+          const name = document.createElement("div");
+          name.className = "score-name";
+          name.textContent = (player.name || "Игрок") + (player.isYou ? " · ТЫ" : "");
+          const score = document.createElement("div");
+          score.className = "score-value";
+          score.textContent = String(player.score || 0);
+          const meta = document.createElement("div");
+          meta.className = "score-meta";
+          meta.textContent = String(game.currentPlayerId) === String(player.id) && game.status === "playing" ? "СЕЙЧАС ХОДИТ" : "ОЧКИ";
+          card.append(name, score, meta); scores.appendChild(card);
+        });
+        const host = $("baldaBoard");
+        host.innerHTML = "";
+        const board = Array.isArray(game.board) ? game.board : Array(25).fill("");
+        const myTurn = game.status === "playing" && String(game.currentPlayerId) === String(state.meId || (game.players.find(p=>p.isYou)||{}).id || "");
+        board.forEach((letter, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "cell" + (letter ? " filled" : "") + (game.lastMove && Number(game.lastMove.cell) === index && !game.lastMove.pass ? " last" : "");
+          button.textContent = letter || "";
+          button.setAttribute("aria-label", letter ? "Клетка " + (index+1) + ": " + letter : "Пустая клетка " + (index+1));
+          button.disabled = !myTurn || Boolean(letter) || state.busy;
+          if (myTurn && !letter && isAdjacent(index, board)) button.classList.add("can-pick");
+          button.addEventListener("click", () => chooseCell(index));
+          host.appendChild(button);
+        });
+        const last = game.lastMove;
+        $("lastWord").innerHTML = "";
+        if (last && !last.pass && Array.isArray(last.words) && last.words.length) {
+          const lead = document.createElement("span"); lead.textContent = (last.playerName || "Игрок") + " составил: ";
+          const word = document.createElement("strong"); word.textContent = last.words.join(" · ");
+          const points = document.createElement("span"); points.textContent = " +" + String(last.points || 0) + " очков";
+          $("lastWord").append(lead, word, points);
+        } else {
+          $("lastWord").textContent = "Начальное слово: БАЛДА · за ход добавляется одна буква";
+        }
+        $("gameMessage").textContent = game.message || (myTurn ? "Твой ход: добавь букву и составь слово." : "Ход соперника.");
+        $("passBtn").classList.toggle("hidden", game.status !== "playing" || !myTurn);
+        $("passBtn").disabled = state.busy || !myTurn;
+        $("finishLobbyBtn").classList.toggle("hidden", game.status !== "finished");
+        $("passBtn").textContent = "Нет хода · пропустить";
+        const history = $("history");
+        history.innerHTML = "";
+        (game.history || []).slice(-6).reverse().forEach(item => {
+          const chip = document.createElement("span"); chip.className = "history-chip";
+          chip.textContent = item.pass ? (item.playerName || "Игрок") + ": пас" : (item.playerName || "Игрок") + " · " + (item.words || []).join("+") + " · +" + item.points;
+          history.appendChild(chip);
+        });
+        if (game.status === "finished") {
+          $("gameMessage").textContent = game.message || "Партия завершена.";
+          $("lastWord").textContent = game.draw ? "Ничья — ставки возвращены." : "Победитель: " + (game.winnerName || "Игрок") + " · " + formatAC(game.payout) + " AC";
+          $("passBtn").classList.add("hidden");
+        }
+      }
+      function chooseCell(cell) {
+        if (!state.game || state.game.status !== "playing" || state.busy) return;
+        const me = (state.game.players || []).find(player => player.isYou);
+        if (!me || String(state.game.currentPlayerId) !== String(me.id)) {
+          $("gameMessage").textContent = "Сейчас ход соперника.";
+          return;
+        }
+        if (state.game.board[cell]) return;
+        if (!isAdjacent(cell, state.game.board)) {
+          $("gameMessage").textContent = "Выбери пустую клетку рядом с уже заполненной.";
+          return;
+        }
+        state.pendingCell = cell;
+        $("letterCellLabel").textContent = "Клетка " + (cell+1);
+        $("letterModalTitle").textContent = "Выбери букву";
+        $("letterGrid").innerHTML = "";
+        alphabet.forEach(letter => {
+          const button = document.createElement("button");
+          button.type = "button"; button.className = "letter-key"; button.textContent = letter;
+          button.addEventListener("click", () => makeMove(letter));
+          $("letterGrid").appendChild(button);
+        });
+        $("letterModal").classList.remove("hidden");
+      }
+      async function makeMove(letter) {
+        if (state.pendingCell == null || state.busy || !state.room) return;
+        const cell = state.pendingCell;
+        state.busy = true;
+        $("letterModal").classList.add("hidden");
+        state.pendingCell = null;
+        try {
+          const data = await api("/game/move", { roomId: state.room.roomId || state.room.id, cell, letter });
+          state.room = data.room || state.room;
+          state.players = data.players || state.players;
+          state.game = data.game || state.game;
+          renderRoom(data);
+        } catch (error) {
+          $("gameMessage").textContent = error.message || "Не удалось сделать ход.";
+        } finally {
+          state.busy = false;
+          if (state.game && state.stage === "game") renderGame();
+        }
+      }
+      async function passTurn() {
+        if (!state.room || state.busy) return;
+        state.busy = true; $("passBtn").disabled = true;
+        try {
+          const data = await api("/game/pass", { roomId: state.room.roomId || state.room.id });
+          state.room = data.room || state.room; state.players = data.players || state.players; state.game = data.game || state.game;
+          renderRoom(data);
+        } catch (error) {
+          $("gameMessage").textContent = error.message || "Пропустить ход нельзя.";
+        } finally { state.busy = false; if (state.game && state.stage === "game") renderGame(); }
+      }
+      function returnLobbyAfterGame() {
+        stopRoomPolling();
+        state.room = null; state.players = []; state.game = null; state.pendingCell = null; state.busy = false;
+        showStage("lobby"); void loadRooms(false); startRoomPollingIfNeeded();
+      }
+      function startRoomPollingIfNeeded() {
+        if (state.polling) clearInterval(state.polling);
+        state.polling = null;
+        startListPolling();
+      }
+
+      $("createRoomBtn").addEventListener("click", createRoom);
+      $("refreshRoomsBtn").addEventListener("click", () => loadRooms(false));
+      $("startGameBtn").addEventListener("click", startGame);
+      $("leaveRoomBtn").addEventListener("click", leaveRoom);
+      $("roomBackBtn").addEventListener("click", leaveRoom);
+      $("passBtn").addEventListener("click", passTurn);
+      $("finishLobbyBtn").addEventListener("click", returnLobbyAfterGame);
+      $("cancelLetterBtn").addEventListener("click", () => { state.pendingCell = null; $("letterModal").classList.add("hidden"); });
+      $("backAllcoins").addEventListener("click", () => {
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = "./index.html";
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !$("letterModal").classList.contains("hidden")) {
+          state.pendingCell = null; $("letterModal").classList.add("hidden");
+        }
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && state.room) refreshRoom(true);
+        else if (!document.hidden && state.stage === "lobby") loadRooms(true);
+      });
+      window.addEventListener("pageshow", () => { if (state.stage === "lobby") loadRooms(true); });
+
+      $("stakeInput").addEventListener("keydown", event => {
+        if (event.key === "Enter") createRoom();
+      });
+      startListPolling();
+      if (!telegramInitData()) setStatus("Открой игру через ALLCOINS в Telegram, чтобы создавать комнаты и играть онлайн.", false, "lobbyStatus");
+      else void loadRooms(false);
+    })();
+  </script>
+</body>
+</html>
