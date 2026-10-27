@@ -366,6 +366,7 @@ const path = require("node:path");
         { id: "towersEntry", selector: ".towers-entry-appicon", title: "Захват башен" },
         { id: "unoEntry", selector: ".uno-entry-appicon", title: "УНО Онлайн" },
         { id: "baldaEntry", selector: ".balda-entry-appicon", title: "Балда Онлайн" },
+        { id: "dragRacingEntry", selector: ".drag-racing-entry-appicon", title: "Драг-рейсинг 3D" },
         { id: "billiardsEntry", selector: ".billiards-entry-appicon", title: "Бильярд Онлайн" },
         { id: "lottoEntry", selector: ".lotto-entry-appicon", title: "Лото Онлайн" },
         { id: "twentyOneEntry", selector: ".twentyone-entry-appicon", title: "21 Очко" },
@@ -468,7 +469,7 @@ const path = require("node:path");
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       icons: [...document.querySelectorAll("#games .game-app-tile")].map(tile => {
-        const icon = tile.querySelector(".durak-entry-appicon,.bomb-entry-appicon,.tug-entry-appicon,.uno-entry-appicon,.balda-entry-appicon,.billiards-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
+        const icon = tile.querySelector(".durak-entry-appicon,.bomb-entry-appicon,.tug-entry-appicon,.uno-entry-appicon,.balda-entry-appicon,.drag-racing-entry-appicon,.billiards-entry-appicon,.lotto-entry-appicon,.twentyone-entry-appicon,.seka-entry-appicon,.rps-entry-appicon,.checkers-entry-appicon");
         const r = icon?.getBoundingClientRect();
         return { id: tile.id, width: r?.width ?? null, height: r?.height ?? null };
       })
