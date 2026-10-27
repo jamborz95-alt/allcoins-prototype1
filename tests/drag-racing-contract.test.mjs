@@ -53,6 +53,14 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
 });
 
 
+
+test("Online gear shifts are sent immediately and disconnected throttle input times out", () => {
+  assert.match(page, /queueOnlineAction\(\)\}/);
+  assert.match(router, /p\.last_seen_at,g\.upgrades,g\.tuning/);
+  assert.match(router, /const activeInput=Date\.now\(\)-new Date\(p\.last_seen_at\|\|0\)\.getTime\(\)<4000/);
+  assert.match(router, /if\(!throttleInput\)speed=Math\.max\(0,speed-dt\*0\.65\)/);
+});
+
 test("Completed Drag Racing rooms disappear after the result grace period without changing balances", () => {
   assert.match(router, /DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW\(\)-INTERVAL '2 minutes'/);
   assert.match(router, /if\(typeof cleanupTimer\.unref==="function"\)cleanupTimer\.unref\(\)/);
