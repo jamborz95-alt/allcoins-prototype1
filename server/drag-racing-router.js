@@ -76,14 +76,14 @@ export function createDragRacingRouter({pool,verifyTelegram}) {
    cleanupBusy=true;
    try{
      await pool.query("DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW()-INTERVAL '2 minutes'");
-     const stale=await pool.query("SELECT r.id::TEXT AS id FROM drag_racing_rooms r WHERE r.status='waiting' AND r.created_at<NOW()-INTERVAL '2 minutes' AND NOT EXISTS (SELECT 1 FROM drag_racing_room_players p WHERE p.room_id=r.id AND p.last_seen_at>NOW()-INTERVAL '2 minutes') ORDER BY r.created_at LIMIT 20");
+     const stale=await pool.query("SELECT r.id::TEXT AS id FROM drag_racing_rooms r WHERE r.status IN ('waiting','playing') AND r.updated_at<NOW()-INTERVAL '2 minutes' AND NOT EXISTS (SELECT 1 FROM drag_racing_room_players p WHERE p.room_id=r.id AND p.last_seen_at>NOW()-INTERVAL '2 minutes') ORDER BY r.created_at LIMIT 20");
      for(const item of stale.rows){
        const client=await pool.connect();
        let open=false;
        try{
          await client.query("BEGIN");open=true;
          const room=(await client.query("SELECT stake::TEXT AS stake,status FROM drag_racing_rooms WHERE id=$1 FOR UPDATE",[item.id])).rows[0];
-         if(!room||room.status!=="waiting"){await client.query("COMMIT");open=false;continue}
+         if(!room||!["waiting","playing"].includes(room.status)){await client.query("COMMIT");open=false;continue}
          const players=(await client.query("SELECT telegram_id::TEXT AS id FROM drag_racing_room_players WHERE room_id=$1 FOR UPDATE",[item.id])).rows;
          const active=await client.query("SELECT 1 FROM drag_racing_room_players WHERE room_id=$1 AND last_seen_at>NOW()-INTERVAL '2 minutes' LIMIT 1",[item.id]);
          if(active.rows.length){await client.query("COMMIT");open=false;continue}
