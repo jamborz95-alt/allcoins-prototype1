@@ -378,7 +378,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   function schedulePolling(){
     stopPolling();
     if(!currentRoom) return;
-    pollTimer = setInterval(function(){ refreshRoomState(true); }, 1000);
+    pollTimer = setInterval(function(){ refreshRoomState(true); }, 550);
     refreshRoomState(true);
   }
   async function loadRooms(silent){
