@@ -273,3 +273,46 @@ test("21 Ochko shows player count and all scores without exposing opponent hands
   assert.match(body, /hand: revealHand \? player\.hand : \[\]/);
   assert.match(body, /cardsCount: Array\.isArray\(player\.hand\) \? player\.hand\.length : 0/);
 });
+
+
+test("completed rooms disappear after the result grace period without touching any wallet", () => {
+  const reconcileStart = source.indexOf("async function reconcileFinishedRoomStatuses()");
+  const cleanupStart = source.indexOf("async function cleanupFinishedGameRooms()");
+  const routeStart = source.indexOf('\napp.post("/api/durak/rooms/list"', cleanupStart);
+  assert.ok(reconcileStart >= 0 && cleanupStart > reconcileStart && routeStart > cleanupStart,
+    "room reconciliation and cleanup should be defined before room-list routes");
+  const reconcileBody = source.slice(reconcileStart, cleanupStart);
+  const cleanupBody = source.slice(cleanupStart, routeStart);
+
+  for (const [table, gameTable, settledField] of [
+    ["uno_rooms", "uno_games", "settlementApplied"],
+    ["billiards_rooms", "billiards_games", "settlementApplied"],
+    ["towers_rooms", "towers_games", "settled"],
+    ["seka_rooms", "seka_games", "settlementApplied"],
+    ["twentyone_rooms", "twentyone_games", "settlementApplied"]
+  ]) {
+    assert.ok(reconcileBody.includes(table) && reconcileBody.includes(gameTable),
+      table + " should reconcile finished game state");
+    assert.ok(reconcileBody.includes("g.game_state->>'" + settledField + "' = 'true'"),
+      table + " status reconciliation must wait for settlement");
+    assert.ok(cleanupBody.includes("DELETE FROM " + table),
+      table + " should be cleaned after a completed result");
+    assert.ok(cleanupBody.includes("g.game_state->>'" + settledField + "' = 'true'"),
+      table + " deletion must require a saved payout marker");
+  }
+
+  for (const table of ["durak_rooms", "checkers_rooms", "bomb_rooms"]) {
+    assert.ok(cleanupBody.includes("DELETE FROM " + table),
+      table + " should be cleaned after its completed result");
+  }
+  assert.match(cleanupBody, /INTERVAL '5 minutes'/,
+    "finished rooms should retain their result screen briefly before cleanup");
+  assert.match(cleanupBody, /rematch_deadline_at IS NULL OR r\.rematch_deadline_at <= NOW\(\) - INTERVAL '5 minutes'/,
+    "21 Ochko rooms must remain while a rematch window is still open");
+  assert.doesNotMatch(cleanupBody, /UPDATE\s+players|balance\s*=|recordGameCommission|settleDurakGamePayout/i,
+    "room cleanup must never alter balances, commissions, or winner payouts");
+  assert.doesNotMatch(cleanupBody, /DELETE FROM lotto_rooms/,
+    "Lotto finished reports should remain available in the player's report list");
+  assert.match(source, /const roomMaintenanceTimer = setInterval\([\s\S]*?cleanupFinishedGameRooms\(\)/,
+    "the cleanup should run automatically without a manual room-list refresh");
+});
