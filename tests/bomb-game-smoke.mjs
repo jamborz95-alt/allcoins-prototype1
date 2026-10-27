@@ -352,12 +352,19 @@ try {
     "A remote human opponent should be rendered in the arena.");
   assert.ok((await page.locator("#seats").innerText()).includes("Live Opponent"),
     "The remote player's nickname should appear in the online seats.");
+  const listRequestsBeforeExit = openRoomListRequests;
   await page.locator("#gameBack").click();
-  await page.waitForTimeout(120);
+  await page.waitForFunction(() =>
+    !document.querySelector("#openRoomsPanel")?.classList.contains("hidden"),
+    undefined, { timeout: 8000 }
+  );
+  await page.waitForTimeout(150);
   assert.equal(onlineLeaveRequests, friendRoomLeaves + 1,
     "Leaving a public online game should release that room in addition to the two friend-room exits.");
+  assert.ok(openRoomListRequests > listRequestsBeforeExit,
+    "Returning from an online game should refresh the public room browser.");
 
-  console.log("Bomb Online mocked multiplayer flow passed: matchmaking, remote player render, sync and clean leave.");
+  console.log("Bomb Online mocked multiplayer flow passed: public rooms, matchmaking, remote player render, sync and clean leave.");
 
   for (const count of [2, 3, 4]) {
     await page.locator('#playerCountControl button[data-count="' + count + '"]').click();
