@@ -254,6 +254,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   var ropeDirty = true;
   var rafCounter = 0;
   var sceneReady = false;
+  var resizeSceneGlobal = null;
   var statusEl = document.getElementById('lobbyStatus');
 
   function el(id){ return document.getElementById(id); }
@@ -304,7 +305,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     if(name === 'game' && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton){
       try { window.Telegram.WebApp.BackButton.show(); } catch(e) {}
     }
-    if(sceneReady) resizeScene();
+    if(sceneReady && resizeSceneGlobal) resizeSceneGlobal();
   }
   function roomIdentifier(room){
     return room ? String(room.roomId || room.id || '').replace(/^TW-/,'') : '';
@@ -766,6 +767,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       makeDynamicRope(sceneState.progress,time);
       if(renderer&&scene&&camera)renderer.render(scene,camera);
     }
+    resizeSceneGlobal = resizeScene;
     window.addEventListener('resize',resizeScene,{passive:true});
     window.addEventListener('orientationchange',function(){setTimeout(resizeScene,200);},{passive:true});
     resizeScene();
