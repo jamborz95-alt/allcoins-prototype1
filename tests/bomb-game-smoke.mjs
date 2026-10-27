@@ -298,6 +298,10 @@ try {
     !document.querySelector("#onlinePanel")?.classList.contains("hidden"),
     undefined, { timeout: 8000 }
   );
+  await page.waitForFunction(() =>
+    document.querySelector("#onlineStatusText")?.textContent.includes("В комнате"),
+    undefined, { timeout: 8000 }
+  );
   assert.equal(friendRoomJoinRequests, 1, "The invite-code action should join the friend room.");
   assert.ok((await page.locator("#onlineStatusText").innerText()).includes("В комнате"),
     "A player joining by code should see the room occupancy.");
@@ -686,7 +690,8 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('#seats .seat.current')?.dataset.player === "0",
     undefined,
-    { timeout: 5000 }
+    // Under loaded CI runners the bot's walk/contact hand-off can span several polls.
+    { timeout: 12000 }
   );
   await page.waitForTimeout(520);
   const humanBeforeContinuedDrag = await page.locator("#playerCharacter").boundingBox();
