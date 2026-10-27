@@ -136,10 +136,12 @@ try {
   await mkdir(resolve(root, "artifacts"), { recursive: true });
   await page.screenshot({ path: resolve(root, "artifacts/drag-racing-mobile.png"), fullPage: true });
 
+  await page.locator('[data-tab="shop"]').click();
   const carPrice = await page.locator('[data-buycar="2104"]').evaluate(button => button.parentElement.textContent);
   assert.match(carPrice, /95\s*000\s*AC/);
   await page.locator('[data-buycar="2104"]').click();
   await page.waitForFunction(() => document.getElementById("balance")?.textContent.replace(/\D/g, "") === "905000");
+  await page.locator('[data-tab="garage"]').click();
   assert.ok((await page.locator("#garageContent").textContent()).includes("ВАЗ-2104"));
 
   await page.locator('[data-tab="race"]').click();
