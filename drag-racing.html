@@ -46,10 +46,10 @@
 .pro-tach-hub{position:absolute;left:50%;top:50%;z-index:5;width:22px;height:22px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid #969da4;background:radial-gradient(circle,#e1e4e6,#393f44 58%,#050608 61%);box-shadow:0 0 8px #000}
 .pro-tach-center{position:absolute;left:50%;top:58%;transform:translateX(-50%);z-index:3;color:#e6edf2;text-align:center;font:italic 800 clamp(10px,1.4vw,17px)/1.2 Arial,sans-serif;letter-spacing:-.3px;text-shadow:0 2px 2px #000}
 .pro-tach-center small{display:block;margin-top:5px;color:#99b6cc;font:800 9px Arial,sans-serif;letter-spacing:2px}
-.pro-shift-paddle{position:absolute;top:56%;z-index:12;width:clamp(56px,7vw,106px);height:clamp(120px,26vh,205px);padding:0;border:2px solid #59616b;border-radius:38% 38% 20% 20%;background:repeating-linear-gradient(115deg,#3b4148 0 3px,#30363d 3px 6px);box-shadow:inset 0 3px 8px #ffffff20,inset 0 -12px 16px #0008,0 8px 12px #0009;color:#1ecfff;text-shadow:0 0 12px #06c8ff,0 2px 2px #000;font:900 clamp(32px,4vw,51px)/1 Arial,sans-serif;clip-path:polygon(18% 0,80% 0,100% 19%,88% 90%,65% 100%,30% 100%,8% 85%,0 18%);touch-action:manipulation}
+.pro-shift-paddle{position:absolute;top:8%;z-index:15;width:clamp(56px,7vw,106px);height:clamp(110px,32vh,235px);padding:0;border:2px solid #59616b;border-radius:38% 38% 20% 20%;background:repeating-linear-gradient(115deg,#3b4148 0 3px,#30363d 3px 6px);box-shadow:inset 0 3px 8px #ffffff20,inset 0 -12px 16px #0008,0 8px 12px #0009;color:#1ecfff;text-shadow:0 0 12px #06c8ff,0 2px 2px #000;font:900 clamp(32px,4vw,51px)/1 Arial,sans-serif;clip-path:polygon(18% 0,80% 0,100% 19%,88% 90%,65% 100%,30% 100%,8% 85%,0 18%);touch-action:manipulation}
 .pro-shift-paddle:active{filter:brightness(1.35);transform:translateY(3px)}
 .pro-shift-paddle.down{left:4.4%}.pro-shift-paddle.up{right:4.4%}
-.pro-dash-controls{position:absolute;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));z-index:13;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:0 5.3%;pointer-events:none}
+.pro-dash-controls{position:absolute;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));z-index:13;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:0 15%;pointer-events:none}
 .pro-pedal{pointer-events:auto;min-width:90px;max-width:160px;width:15%;height:56px;padding:6px;border-radius:9px;border:1px solid #727c85;background:linear-gradient(145deg,#363e46,#171b20);box-shadow:inset 0 1px #ffffff2a,0 5px 10px #0009;color:#eef4f6;font-size:12px;letter-spacing:1px;touch-action:none}
 .pro-pedal.gas{background:linear-gradient(145deg,#8d252a,#4b1318);border-color:#bd5a5e;color:#fff}
 .pro-pedal.held{filter:brightness(1.55);box-shadow:0 0 18px #5ed5ff55,inset 0 0 10px #ffffff35}
@@ -68,12 +68,13 @@
  .pro-race-status{bottom:70px}
 }
 @media (orientation:portrait){
+ .pro-dash-controls{padding:0 14%}
  .pro-race-cockpit{width:100dvh;height:100vw;left:100vw;top:0;right:auto;bottom:auto;transform:rotate(90deg);transform-origin:top left}
  .pro-race-track{flex-basis:53%;height:53%;min-height:190px}
  .pro-tachometer{width:clamp(300px,38dvh,360px)}
  .pro-digital-readout{top:42%;min-width:85px;padding:5px 7px 3px}
  .pro-digital-readout.left{left:3.4%}.pro-digital-readout.right{right:3.4%}
- .pro-shift-paddle{top:56%;height:clamp(110px,29vh,170px);width:65px}
+ .pro-shift-paddle{top:8%;height:clamp(110px,29vh,150px);width:65px}
  .pro-race-timer{min-width:106px}
 }
 @media(prefers-reduced-motion:reduce){.pro-tach-needle{transition:none}}
