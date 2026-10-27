@@ -1,9 +1,10 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 
+await mkdir(resolve(process.cwd(), "artifacts"), { recursive: true });
 const html = await readFile(resolve(process.cwd(), "towers.html"), "utf8");
 const index = await readFile(resolve(process.cwd(), "index.html"), "utf8");
 const towersRouter = await readFile(resolve(process.cwd(), "server/towers-router.js"), "utf8");
@@ -99,6 +100,9 @@ try {
   await page.route("https://allcoins-server.onrender.com/**", route => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, rooms: [] })
   }));
+  // This smoke scenario exercises the DOM interaction layer deterministically.
+  // A separate page below checks that the real WebGL battlefield also starts.
+  await page.route("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", route => route.abort());
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4175/towers.html", { waitUntil: "domcontentloaded" });
   await page.locator("#practice").waitFor();
@@ -127,8 +131,44 @@ try {
   assert.ok(await page.locator("#fleets .fleet-soldier").count() >= 6, "Armies on multiple roads should contain animated soldier figures.");
 
   assert.deepEqual(errors, [], "The Towers Capture page should not throw browser errors.");
+
+  // Independent runtime check for the actual Three.js battlefield. The preceding
+  // scenario intentionally forces the safe DOM fallback so interaction assertions
+  // do not target hidden DOM layers underneath the WebGL canvas.
+  const visualPage = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    isMobile: true,
+    hasTouch: true
+  });
+  const visualErrors = [];
+  await visualPage.route("https://telegram.org/**", route => route.fulfill({
+    status: 200, contentType: "application/javascript", body: `
+      window.Telegram={WebApp:{initData:"mock-init-data",initDataUnsafe:{user:{id:12345,first_name:"Тестовый игрок"}},ready(){},expand(){},setHeaderColor(){},setBackgroundColor(){},requestFullscreen(){window.__fullscreenRequests=(window.__fullscreenRequests||0)+1;return Promise.resolve();},BackButton:{show(){},hide(){},onClick(){}}}};
+    `
+  }));
+  await visualPage.route("https://allcoins-server.onrender.com/**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, rooms: [] })
+  }));
+  visualPage.on("pageerror", error => visualErrors.push(error.message));
+  await visualPage.goto("http://127.0.0.1:4175/towers.html", { waitUntil: "domcontentloaded" });
+  await visualPage.locator("#practice").click();
+  await visualPage.locator("#field.tower3d-active").waitFor({ timeout: 20000 });
+  const canvas = visualPage.locator("#field > canvas.tower3d-canvas");
+  await canvas.waitFor({ state: "visible", timeout: 10000 });
+  const canvasInfo = await canvas.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const ctx = el.getContext("webgl2") || el.getContext("webgl");
+    return { width: rect.width, height: rect.height, backingWidth: el.width, backingHeight: el.height, hasWebGL: Boolean(ctx) };
+  });
+  assert.ok(canvasInfo.width >= 300 && canvasInfo.height >= 350 && canvasInfo.backingWidth >= 300 && canvasInfo.backingHeight >= 350,
+    "The Three.js battlefield canvas should render at mobile viewport size: " + JSON.stringify(canvasInfo));
+  assert.equal(canvasInfo.hasWebGL, true, "The 3D battlefield should have a working WebGL context.");
+  assert.deepEqual(visualErrors, [], "The 3D Towers Capture page should not throw browser errors.");
+  await visualPage.screenshot({ path: resolve(process.cwd(), "artifacts/towers-3d-mobile.png"), fullPage: true });
+  await visualPage.close();
 } finally {
   await browser?.close();
   await new Promise(resolveClose => server.close(resolveClose));
 }
-console.log("Towers Capture mobile smoke test passed.");
+console.log("Towers Capture mobile smoke test passed: DOM fallback interactions and real 3D battlefield renderer.");
