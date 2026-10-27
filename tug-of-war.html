@@ -937,12 +937,18 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       // passes through both palms of every visible player each frame, keeping the rope gripped.
       scene.updateMatrixWorld(true);
       var anchors=[];
+      var innerLeftGrip=null;
+      var innerRightGrip=null;
       people.forEach(function(person){
         if(!person.root.visible) return;
         [person.handL,person.handR].forEach(function(hand){
           var grip=new THREE.Vector3();
           hand.getWorldPosition(grip);
           anchors.push(grip);
+          // Use the two innermost real hand positions as the moving flag's anchor.
+          // This keeps the flag attached to the rope when players step or stumble.
+          if(person.team===1 && (!innerLeftGrip || grip.x>innerLeftGrip.x)) innerLeftGrip=grip.clone();
+          if(person.team===2 && (!innerRightGrip || grip.x<innerRightGrip.x)) innerRightGrip=grip.clone();
         });
       });
       anchors.sort(function(a,b){return a.x-b.x;});
@@ -977,12 +983,19 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       }else{
         nextCore.dispose();
       }
-      // Keep the marked knot on the rendered rope rather than moving it independently.
-      var targetX=Math.max(-3.18,Math.min(3.18,progress*(portrait?3.12:3.22)));
-      var samples=curve.getPoints(160);
+      // Anchor the knot and flag to the actual rope segment between the two teams'
+      // innermost hands, rather than placing it at a fixed progress-based X coordinate.
+      // As the animated players move, their hands move first; the flag follows that same
+      // rope segment every frame, including when 2, 4, or 6 players are in the arena.
+      var fallbackTargetX=progress*(portrait?3.12:3.22);
+      var targetGrip=(innerLeftGrip && innerRightGrip)
+        ? innerLeftGrip.clone().add(innerRightGrip).multiplyScalar(.5)
+        : new THREE.Vector3(fallbackTargetX,.9,0);
+      targetGrip.x=Math.max(-3.18,Math.min(3.18,targetGrip.x));
+      var samples=curve.getPoints(200);
       var marker=samples[0],bestDistance=Infinity;
       for(var q=0;q<samples.length;q++){
-        var distance=Math.abs(samples[q].x-targetX);
+        var distance=samples[q].distanceToSquared(targetGrip);
         if(distance<bestDistance){bestDistance=distance;marker=samples[q];}
       }
       knotGroup.position.copy(marker);
