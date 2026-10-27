@@ -754,6 +754,18 @@ async function reconcileFinishedRoomStatuses() {
       console.log(`Reconciled ${result.rowCount} completed ${item.name} room(s)`);
     }
   }
+
+  // Tug of War stores the live game inside tug_rooms instead of a separate games table.
+  const tugResult = await pool.query(`
+    UPDATE tug_rooms
+    SET status = 'finished'
+    WHERE status = 'playing'
+      AND game_state->>'phase' = 'finished'
+      AND game_state->>'settled' = 'true'
+  `);
+  if (tugResult.rowCount > 0) {
+    console.log(`Reconciled ${tugResult.rowCount} completed Tug of War room(s)`);
+  }
 }
 
 // Result screens get a five-minute grace period. After that, only room/game/member
@@ -839,6 +851,14 @@ async function cleanupFinishedGameRooms() {
             WHERE status = 'finished'
               AND updated_at < NOW() - INTERVAL '5 minutes'`
     },
+    {
+      name: "Tug of War results",
+      sql: `DELETE FROM tug_rooms
+            WHERE status = 'finished'
+              AND game_state->>'phase' = 'finished'
+              AND game_state->>'settled' = 'true'
+              AND updated_at < NOW() - INTERVAL '5 minutes'`
+    },
     // A waiting room has not started a game, so no game payout is touched.
     { name: "old UNO waiting rooms", sql: `DELETE FROM uno_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '30 minutes' AND NOT EXISTS (SELECT 1 FROM uno_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
     { name: "old billiards waiting rooms", sql: `DELETE FROM billiards_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM billiards_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
@@ -847,6 +867,7 @@ async function cleanupFinishedGameRooms() {
     { name: "old Checkers waiting rooms", sql: `DELETE FROM checkers_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM checkers_games g WHERE g.room_id = r.id AND g.state->>'status' = 'playing')` },
     { name: "old 21 Ochko waiting rooms", sql: `DELETE FROM twentyone_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '12 minutes' AND NOT EXISTS (SELECT 1 FROM twentyone_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
     { name: "old Bomb waiting rooms", sql: `DELETE FROM bomb_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '2 minutes' AND COALESCE(r.game_state->>'phase', 'waiting') <> 'playing'` },
+    { name: "old Tug of War waiting rooms", sql: `DELETE FROM tug_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
     { name: "old idle Rock-Paper-Scissors waiting rooms", sql: `DELETE FROM rps_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '24 hours' AND NOT EXISTS (SELECT 1 FROM rps_room_rounds rr WHERE rr.room_id = r.id AND rr.status = 'playing')` }
   ];
 
