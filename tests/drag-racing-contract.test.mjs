@@ -91,6 +91,13 @@ test("Online gear shifts are sent immediately and disconnected throttle input ti
 });
 
 
+
+test("A guest whose waiting room is cancelled stops polling the deleted room", () => {
+  assert.match(page, /catch\(error\)\{if\(\/Комната не найдена\|Ты не участник этой комнаты\//);
+  assert.match(page, /stopOnlineRoom\(\);\$\('roomStatus'\)\.textContent='Комната закрыта/);
+  assert.match(page, /await syncAccount\(\);await loadRooms\(\);return\}throw error/);
+});
+
 test("Online race polling does not overlap and 3D race view receives every participant", () => {
   assert.match(page, /onlinePollBusy=false/);
   assert.match(page, /if\(!activeOnlineRoomId\|\|onlinePollBusy\)return/);
