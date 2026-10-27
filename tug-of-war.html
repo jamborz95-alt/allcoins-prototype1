@@ -211,6 +211,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       <button type="button" data-count="6">6 игроков</button>
     </div>
     <button id="createRoom" class="primary full create-button">Создать комнату</button>
+    <button id="testBotButton" class="secondary full" style="margin-top:9px">🤖 Тестировать с ботом · без ставки</button>
+    <div class="muted" style="margin-top:6px">Тренировка против бота не списывает AC и не влияет на рейтинг.</div>
     <div id="lobbyStatus" class="notice" role="status"></div>
   </section>
   <section class="panel">
@@ -308,6 +310,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   var sceneReady = false;
   var resizeSceneGlobal = null;
   var statusEl = document.getElementById('lobbyStatus');
+  var testBotMode = false;
+  var testBotTimer = null;
 
   function el(id){ return document.getElementById(id); }
   function telegramData(){ return window.Telegram && window.Telegram.WebApp ? String(window.Telegram.WebApp.initData || '') : ''; }
@@ -492,6 +496,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       return;
     }
     stopPolling();
+    if(testBotTimer){clearInterval(testBotTimer);testBotTimer=null;}
+    testBotMode = false;
     if(flushTimer){clearInterval(flushTimer);flushTimer=null;}
     pendingTaps = 0; pendingIntervals = []; sendBusy = false;
     var room = currentRoom;
@@ -508,7 +514,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     var game = currentGame || {};
     var p1 = currentPlayers.filter(function(p){return Number(p.team)===1;});
     var p2 = currentPlayers.filter(function(p){return Number(p.team)===2;});
-    el('gameRoomLabel').textContent = currentRoom.id+' · '+formatNumber(currentRoom.stake)+' AC на игрока';
+    el('gameRoomLabel').textContent = testBotMode ? 'ТРЕНИРОВКА С БОТОМ · БЕЗ СТАВКИ' : currentRoom.id+' · '+formatNumber(currentRoom.stake)+' AC на игрока';
     el('team1Count').textContent = String(p1.length);
     el('team2Count').textContent = String(p2.length);
     el('team1Score').textContent = formatNumber(game.teamScores && game.teamScores['1'] || 0);
@@ -540,7 +546,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var won = Number(game.winnerTeam) === Number(currentMe && currentMe.team);
       el('resultIcon').textContent = won ? '🏆' : '🪢';
       el('resultTitle').textContent = won ? 'ТВОЯ КОМАНДА ПОБЕДИЛА!' : (currentMe && currentMe.disqualified ? 'ТЫ ДИСКВАЛИФИЦИРОВАН' : 'МАТЧ ЗАВЕРШЁН');
-      var payoutText = 'Комиссия: '+formatNumber(game.commission||0)+' AC. Призовой фонд команды: '+formatNumber(game.payout||0)+' AC.';
+      var payoutText = testBotMode ? 'Тренировочный матч: ставки не списывались, выигрыши не начисляются.' : 'Комиссия: '+formatNumber(game.commission||0)+' AC. Призовой фонд команды: '+formatNumber(game.payout||0)+' AC.';
       el('resultText').textContent = (game.message||'')+' '+payoutText;
       el('pullButton').disabled = true;
     }else{
@@ -579,9 +585,45 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     el('warningBanner').classList.remove('hidden');
     setTimeout(function(){el('warningBanner').classList.add('hidden');},6500);
   }
+  function startTestBot(){
+    if(currentRoom){setNotice('Сначала выйди из текущей комнаты.');return;}
+    stopPolling();
+    if(testBotTimer){clearInterval(testBotTimer);testBotTimer=null;}
+    testBotMode=true;
+    warningShown=false;
+    var names=['Тестовый бот','Бот-Спринтер','Бот-Силач','Бот-Ритм','Бот-Тактик','Бот-Мастер'];
+    currentRoom={id:'ТРЕНИРОВКА',roomId:'demo',stake:0,maxPlayers:selectedCount,playersCount:selectedCount,status:'playing',isOwner:false};
+    currentMe={id:'demo-player',team:1,isOwner:true,disqualified:false};
+    currentPlayers=[{id:'demo-player',name:'Ты',team:1,isYou:true,isOwner:true,connected:true}];
+    for(var i=1;i<selectedCount;i++)currentPlayers.push({id:'demo-bot-'+i,name:names[(i-1)%names.length],team:i%2===0?1:2,isYou:false,isOwner:false,connected:true});
+    currentGame={phase:'playing',progress:0,teamScores:{'1':0,'2':0},target:24,winnerTeam:null,totalTaps:0,startedAt:Date.now(),finishedAt:null,message:'Тренировка против тестового бота. Ставка не используется.',commission:0,payout:0};
+    renderRoom({room:currentRoom,me:currentMe,players:currentPlayers,game:currentGame});
+    showScreen('game');
+    updateGameUi();
+    setNotice('');
+    testBotTimer=setInterval(function(){
+      if(!testBotMode||!currentGame||currentGame.phase!=='playing'){clearInterval(testBotTimer);testBotTimer=null;return;}
+      currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)-0.018-Math.random()*0.028);
+      currentGame.teamScores['2']=(currentGame.teamScores['2']||0)+1;
+      currentGame.totalTaps=(currentGame.totalTaps||0)+1;
+      if(currentGame.progress<=-1){currentGame.progress=-1;currentGame.phase='finished';currentGame.winnerTeam=2;currentGame.message='Тестовый бот перетянул канат. Попробуй нажимать чаще!';currentGame.finishedAt=Date.now();clearInterval(testBotTimer);testBotTimer=null;}
+      else currentGame.message='Тренировка: бот тянет канат. Нажимай коротко и ритмично!';
+      updateGameUi();
+    },520);
+  }
+
   function queueTap(event){
     if(event && event.cancelable) event.preventDefault();
     if(!currentRoom || !currentGame || currentGame.phase !== 'playing' || (currentMe && currentMe.disqualified)) return;
+    if(testBotMode){
+      currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)+0.045+Math.random()*0.018));
+      currentGame.teamScores['1']=(currentGame.teamScores['1']||0)+1;
+      currentGame.totalTaps=(currentGame.totalTaps||0)+1;
+      if(currentGame.progress>=1){currentGame.progress=1;currentGame.phase='finished';currentGame.winnerTeam=1;currentGame.message='Ты победил тестового бота!';if(testBotTimer){clearInterval(testBotTimer);testBotTimer=null;}}
+      updateGameUi();
+      if(currentGame.phase==='playing')el('gameMessage').textContent='Тренировка: твои нажатия усиливают команду. Бот сопротивляется!';
+      return;
+    }
     var now = performance.now();
     if(lastTapAt) pendingIntervals.push(Math.max(1,Math.min(2000,now-lastTapAt)));
     lastTapAt = now;
@@ -592,6 +634,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     if(pendingTaps >= 4) flushTapBatch();
   }
   async function flushTapBatch(){
+    if(testBotMode){pendingTaps=0;pendingIntervals=[];return;}
     if(sendBusy || !pendingTaps || !currentRoom) return;
     sendBusy = true;
     var count = pendingTaps;
@@ -897,6 +940,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     });
   });
   el('createRoom').addEventListener('click',createRoom);
+  el('testBotButton').addEventListener('click',startTestBot);
   el('refreshRooms').addEventListener('click',function(){loadRooms(false);});
   el('roomsList').addEventListener('click',function(event){
     var button=event.target.closest('[data-join]');
