@@ -697,6 +697,206 @@ async function reconcileFinishedDurakRoomStatuses() {
   return result.rowCount || 0;
 }
 
+async function reconcileFinishedRoomStatuses() {
+  await reconcileFinishedDurakRoomStatuses();
+  const reconciliations = [
+    {
+      name: "UNO",
+      sql: `UPDATE uno_rooms AS r SET status = 'finished'
+            FROM uno_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'`
+    },
+    {
+      name: "Billiards",
+      sql: `UPDATE billiards_rooms AS r SET status = 'finished'
+            FROM billiards_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'`
+    },
+    {
+      name: "Towers",
+      sql: `UPDATE towers_rooms AS r SET status = 'finished'
+            FROM towers_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settled' = 'true'`
+    },
+    {
+      name: "Seka",
+      sql: `UPDATE seka_rooms AS r SET status = 'finished'
+            FROM seka_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'`
+    },
+    {
+      name: "21 Ochko",
+      sql: `UPDATE twentyone_rooms AS r SET status = 'finished'
+            FROM twentyone_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'`
+    },
+    {
+      name: "Checkers",
+      sql: `UPDATE checkers_rooms AS r SET status = 'finished'
+            FROM checkers_games AS g
+            WHERE g.room_id = r.id AND r.status = 'playing'
+              AND g.state->>'status' = 'finished'`
+    }
+  ];
+  for (const item of reconciliations) {
+    const result = await pool.query(item.sql);
+    if (result.rowCount > 0) {
+      console.log(`Reconciled ${result.rowCount} completed ${item.name} room(s)`);
+    }
+  }
+
+  // Tug of War stores the live game inside tug_rooms instead of a separate games table.
+  const tugResult = await pool.query(`
+    UPDATE tug_rooms
+    SET status = 'finished'
+    WHERE status = 'playing'
+      AND game_state->>'phase' = 'finished'
+      AND game_state->>'settled' = 'true'
+  `);
+  if (tugResult.rowCount > 0) {
+    console.log(`Reconciled ${tugResult.rowCount} completed Tug of War room(s)`);
+  }
+}
+
+// Result screens get a five-minute grace period. After that, only room/game/member
+// rows are removed. All AC credits and the independent commission ledger are left alone.
+// Never delete a monetary game whose payout/settlement marker is missing.
+async function cleanupFinishedGameRooms() {
+  const cleanupQueries = [
+    {
+      name: "Durak results",
+      sql: `DELETE FROM durak_rooms AS r
+            USING durak_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'
+              AND (
+                (
+                  g.game_state->>'finishedReason' = 'timeout'
+                  AND g.game_state->>'timeoutBalanceSettled' = 'true'
+                )
+                OR (
+                  COALESCE(g.game_state->>'finishedReason', '') <> 'timeout'
+                  AND g.game_state->'pot'->>'settled' = 'true'
+                )
+              )`
+    },
+    {
+      name: "UNO results",
+      sql: `DELETE FROM uno_rooms AS r
+            USING uno_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Billiards results",
+      sql: `DELETE FROM billiards_rooms AS r
+            USING billiards_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Towers results",
+      sql: `DELETE FROM towers_rooms AS r
+            USING towers_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settled' = 'true'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Seka results",
+      sql: `DELETE FROM seka_rooms AS r
+            USING seka_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "21 Ochko results",
+      sql: `DELETE FROM twentyone_rooms AS r
+            USING twentyone_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.game_state->>'status' = 'finished'
+              AND g.game_state->>'settlementApplied' = 'true'
+              AND (r.rematch_deadline_at IS NULL OR r.rematch_deadline_at <= NOW() - INTERVAL '5 minutes')
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Checkers results",
+      sql: `DELETE FROM checkers_rooms AS r
+            USING checkers_games AS g
+            WHERE g.room_id = r.id AND r.status = 'finished'
+              AND g.state->>'status' = 'finished'
+              AND g.updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Pass the Bomb results",
+      sql: `DELETE FROM bomb_rooms
+            WHERE status = 'finished'
+              AND updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    {
+      name: "Tug of War results",
+      sql: `DELETE FROM tug_rooms
+            WHERE status = 'finished'
+              AND game_state->>'phase' = 'finished'
+              AND game_state->>'settled' = 'true'
+              AND updated_at < NOW() - INTERVAL '5 minutes'`
+    },
+    // A waiting room has not started a game, so no game payout is touched.
+    { name: "old UNO waiting rooms", sql: `DELETE FROM uno_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '30 minutes' AND NOT EXISTS (SELECT 1 FROM uno_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old billiards waiting rooms", sql: `DELETE FROM billiards_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM billiards_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Towers waiting rooms", sql: `DELETE FROM towers_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM towers_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Seka waiting rooms", sql: `DELETE FROM seka_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM seka_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Checkers waiting rooms", sql: `DELETE FROM checkers_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '45 minutes' AND NOT EXISTS (SELECT 1 FROM checkers_games g WHERE g.room_id = r.id AND g.state->>'status' = 'playing')` },
+    { name: "old 21 Ochko waiting rooms", sql: `DELETE FROM twentyone_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '12 minutes' AND NOT EXISTS (SELECT 1 FROM twentyone_games g WHERE g.room_id = r.id AND g.game_state->>'status' = 'playing')` },
+    { name: "old Bomb waiting rooms", sql: `DELETE FROM bomb_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '2 minutes' AND COALESCE(r.game_state->>'phase', 'waiting') <> 'playing'` },
+    { name: "old Tug of War waiting rooms", sql: `DELETE FROM tug_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'` },
+    { name: "old idle Rock-Paper-Scissors waiting rooms", sql: `DELETE FROM rps_rooms r WHERE r.status = 'waiting' AND r.updated_at < NOW() - INTERVAL '24 hours' AND NOT EXISTS (SELECT 1 FROM rps_room_rounds rr WHERE rr.room_id = r.id AND rr.status = 'playing')` }
+  ];
+
+  let removedTotal = 0;
+  for (const item of cleanupQueries) {
+    const result = await pool.query(item.sql);
+    removedTotal += result.rowCount || 0;
+  }
+  if (removedTotal > 0) {
+    console.log(`Cleaned ${removedTotal} expired/completed room record(s); player balances were not changed`);
+  }
+  return removedTotal;
+}
+
+let roomMaintenanceBusy = false;
+async function runRoomMaintenance() {
+  if (roomMaintenanceBusy) return;
+  roomMaintenanceBusy = true;
+  try {
+    await reconcileFinishedRoomStatuses();
+    await cleanupExpiredEmptyDurakRooms();
+    await cleanupFinishedGameRooms();
+  } finally {
+    roomMaintenanceBusy = false;
+  }
+}
+
+
+
 app.post("/api/durak/rooms/list", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
@@ -3655,31 +3855,28 @@ async function startServer() {
     console.log("21 Ochko room tables are ready");
 
 
-    // Repair ended-room statuses proactively, even if players do not reopen old games.
-    // A maintenance failure must not prevent the game server from starting; the timer retries.
-    try {
-      await reconcileFinishedDurakRoomStatuses();
-    } catch (error) {
-      console.error("Durak initial room reconciliation error:", error.message);
-    }
-
-    const durakRoomCleanupTimer = setInterval(() => {
-      cleanupExpiredEmptyDurakRooms().catch((error) => {
-        console.error("Durak room cleanup error:", error.message);
-      });
-      reconcileFinishedDurakRoomStatuses().catch((error) => {
-        console.error("Durak finished-room reconciliation error:", error.message);
-      });
-    }, 15000);
-    if (typeof durakRoomCleanupTimer.unref === "function") {
-      durakRoomCleanupTimer.unref();
-    }
-
     await bombOnlineRouter.initialize();
     console.log("Bomb Online room tables are ready");
 
     await tugOfWarRouter.initialize();
     console.log("Tug of War Online tables are ready");
+
+    // Run room maintenance after every game schema has initialized.
+    // Payouts are never recalculated here; completed results get five minutes on screen.
+    try {
+      await runRoomMaintenance();
+    } catch (error) {
+      console.error("Initial finished-room cleanup error:", error.message);
+    }
+
+    const roomMaintenanceTimer = setInterval(() => {
+      runRoomMaintenance().catch((error) => {
+        console.error("Completed-room maintenance error:", error.message);
+      });
+    }, 15000);
+    if (typeof roomMaintenanceTimer.unref === "function") {
+      roomMaintenanceTimer.unref();
+    }
 
     const port = process.env.PORT || 3000;
     
