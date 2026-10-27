@@ -15,7 +15,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-smooth2"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-smooth3"'),
   "The Games menu should open the current cache-busted Bomb page.");
 assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026n"></script>') &&
   bombHtml.includes('<script src="./bomb-3d.js?v=20261027-smooth-1"></script>'),
@@ -44,6 +44,7 @@ assert.ok(bombOnlineRouter.includes('router.post("/matchmaking/join"') &&
   bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_room_players'),
   "Bomb Online backend should create persistent rooms and support matchmaking, sync, pass and leave.");
 assert.ok(bombHtml.includes("onlinePollTimer = window.setInterval(syncOnlineRoom, 250)") &&
+  bombHtml.includes("const width = onlineMotionWidth || arena.clientWidth") &&
   bombHtml.includes("function animateOnlineRemotePlayers(time)") &&
   bombHtml.includes("window.__allcoinsOnlineBombFollowing = followRemoteCarrier") &&
   bombHtml.includes(".bot-character.online-remote{transition:none") &&
