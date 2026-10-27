@@ -35,6 +35,12 @@ test("Drag Racing commission uses exact BIGINT arithmetic and credits the config
   assert.match(router, /balance=balance\+\$1::BIGINT/);
 });
 
+test("A racer cannot change the car, buy performance parts, or enter a second active room mid-race", () => {
+  assert.match(router, /async function ensureNotInActiveRace\(client,userId\)/);
+  assert.match(router, /r\.status IN \('waiting','playing'\)/);
+  assert.equal((router.match(/ensureNotInActiveRace\(client,user\.id\)/g)||[]).length,6);
+});
+
 test("Drag Racing garage purchases are persisted and server-priced", () => {
   assert.match(router, /drag_racing_garage/);
   assert.match(router, /"2104":95000,"2105":75000,"2106":85000,"2109":125000,"2110":165000,"2112":205000,"2114":220000/);
