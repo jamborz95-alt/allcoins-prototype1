@@ -33,13 +33,13 @@ class DragRacingError extends Error {
 }
 
 function parseRoomId(value) {
-  const match = String(value ?? "").trim().match(/^(?:DR-)?([1-9]\\d{0,17})$/);
+  const match = String(value ?? "").trim().match(/^(?:DR-)?([1-9]\d{0,17})$/);
   return match ? match[1] : null;
 }
 
 function safeStake(value) {
-  const raw = String(value ?? "").trim().replace(/[\\s,_]/g, "");
-  if (!/^\\d+$/.test(raw)) return null;
+  const raw = String(value ?? "").trim().replace(/[\s,_]/g, "");
+  if (!/^\d+$/.test(raw)) return null;
   try {
     const amount = BigInt(raw);
     if (amount < 100n || amount > MAX_STAKE) return null;
@@ -634,6 +634,11 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       );
       const room = roomResult.rows[0];
       if (!room) throw new DragRacingError(404, "Комната не найдена.");
+      const membershipCheck = await client.query(
+        "SELECT 1 FROM drag_racing_room_players WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT",
+        [roomId, user.id]
+      );
+      if (!membershipCheck.rows.length) throw new DragRacingError(403, "Ты не состоишь в этой комнате.");
       if (room.status === "finished") {
         await client.query("COMMIT"); open = false;
         return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
