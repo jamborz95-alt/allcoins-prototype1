@@ -400,14 +400,29 @@ try {
     undefined,
     { timeout: 18000 }
   );
-  await page.waitForFunction(() => {
-    const round = Number(document.querySelector("#roundLabel")?.textContent || "0");
-    const fuse = document.querySelector("#fuseLabel")?.textContent || "";
-    const overlay = document.querySelector("#resultOverlay");
-    const continueButton = document.querySelector("#continueRound");
-    return round >= 2 && fuse.includes("Горит") &&
-      overlay?.classList.contains("hidden") && continueButton?.hidden === true;
-  }, undefined, { timeout: 7000 });
+  try {
+    await page.waitForFunction(() => {
+      const round = Number(document.querySelector("#roundLabel")?.textContent || "0");
+      const fuse = document.querySelector("#fuseLabel")?.textContent || "";
+      const overlay = document.querySelector("#resultOverlay");
+      const continueButton = document.querySelector("#continueRound");
+      // "Скоро" is also an active second-round state when a slow CI frame is delayed.
+      return round >= 2 && /Горит|Скоро/.test(fuse) &&
+        overlay?.classList.contains("hidden") && continueButton?.hidden === true;
+    }, undefined, { timeout: 12000 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      round: document.querySelector("#roundLabel")?.textContent || "",
+      fuse: document.querySelector("#fuseLabel")?.textContent || "",
+      message: document.querySelector("#centerMessage")?.textContent || "",
+      instruction: document.querySelector("#instruction")?.innerText || "",
+      overlayClass: document.querySelector("#resultOverlay")?.className || "",
+      continueHidden: document.querySelector("#continueRound")?.hidden ?? null,
+      alive: document.querySelector("#aliveLabel")?.textContent || ""
+    }));
+    console.error("Bomb automatic next-round diagnostic: " + JSON.stringify(state));
+    throw error;
+  }
   const heartsAfter = await page.locator(
     '#seats .seat[data-player="' + target + '"] .lives .heart.on'
   ).count();
