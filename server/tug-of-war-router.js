@@ -480,7 +480,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
       if (flagged) {
         integrity.consecutiveFlags = Number(integrity.consecutiveFlags || 0) + 1;
         integrity.warnings = Number(integrity.warnings || 0) + 1;
-        if (integrity.consecutiveFlags >= 2) {
+        if (integrity.warnings >= 2) {
           integrity.disqualified = true;
           await client.query(
             "UPDATE tug_room_players SET disqualified = TRUE, warnings = $3, last_seen_at = NOW() WHERE room_id = $1 AND telegram_id = $2",
