@@ -16,9 +16,7 @@
     "Медная шахта":["Kupfermine","Mine de cuivre","Mina de cobre","铜矿井"],
     "Ожидание игроков…":["Warte auf Spieler…","En attente de joueurs…","À espera de jogadores…","等待玩家加入…"],
     "Заполнена":["Voll","Complète","Cheia","已满"],
-    "Войти":["Beitreten","Rejoindre","Entrar","加入"]
-  };
-  const rows = {
+    "Войти":["Beitreten","Rejoindre","Entrar","加入"],
       "Не удалось загрузить комнаты:":["Räume konnten nicht geladen werden:","Impossible de charger les salons :","Não foi possível carregar as salas:","无法加载房间："],
     "Открой мини-приложение через @allcoins95_bot и обнови страницу.":["Öffne die Mini-App über @allcoins95_bot und lade die Seite neu.","Ouvrez la mini-application via @allcoins95_bot et actualisez la page.","Abra o miniaplicativo por @allcoins95_bot e atualize a página.","请通过 @allcoins95_bot 打开小程序并刷新页面。"],
 
