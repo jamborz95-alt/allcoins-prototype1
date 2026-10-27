@@ -345,7 +345,8 @@
         renderQueued: false,
         lastDraggedPlayCardId: null,
         // Prevent a poll started before a player's move from overwriting the move response.
-        gameActionVersion: 0
+        gameActionVersion: 0,
+        refreshAfterPendingPoll: false
       };
       const colors = ["red", "blue", "green", "yellow"];
       const colorNames = { red: "Красный", blue: "Синий", green: "Зелёный", yellow: "Жёлтый" };
@@ -1549,8 +1550,23 @@
         else if (state.renderQueued) state.renderQueued = false;
       }
 
-      async function refreshGame(quiet) {
-        if (!state.room || state.stage !== "game" || state.gamePollBusy || state.busy) return;
+      function scheduleUnoRefreshIfReady() {
+        if (!state.refreshAfterPendingPoll) return;
+        if (!state.room || state.stage !== "game") {
+          state.refreshAfterPendingPoll = false;
+          return;
+        }
+        if (state.busy || state.gamePollBusy) return;
+        state.refreshAfterPendingPoll = false;
+        queueMicrotask(() => { void refreshGame(true).catch(() => {}); });
+      }
+
+      async function refreshGame(quiet, allowBusy = false) {
+        if (!state.room || state.stage !== "game" || (state.busy && !allowBusy)) return;
+        if (state.gamePollBusy) {
+          if (allowBusy) state.refreshAfterPendingPoll = true;
+          return;
+        }
         state.gamePollBusy = true;
         const roomIdAtStart = String(state.room.id);
         const actionVersionAtStart = state.gameActionVersion;
@@ -1573,7 +1589,10 @@
           if (!quiet && !state.busy && actionVersionAtStart === state.gameActionVersion) {
             $("gameMessage").textContent = error.message || "Не удалось обновить партию.";
           }
-        } finally { state.gamePollBusy = false; }
+        } finally {
+          state.gamePollBusy = false;
+          scheduleUnoRefreshIfReady();
+        }
       }
 
       function askColor() {
@@ -1610,13 +1629,14 @@
           }
         } catch (error) {
           $("gameMessage").textContent = error.message || "Не удалось выполнить ход.";
-          // A poll may still be in flight, but its version is now stale. The next
-          // scheduled refresh will fetch the authoritative server state.
+          // Ask for a fresh server state; if an older poll is still running, it is queued.
+          await refreshGame(true, true);
         } finally {
           state.busy = false;
           // Render once after the request; rendering before and after this block
           // rebuilt the card hand twice and could interrupt animations on mobile.
           if (state.game) renderGame();
+          scheduleUnoRefreshIfReady();
         }
       }
 
