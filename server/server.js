@@ -17,6 +17,7 @@ import { registerNeonMigrationRoute } from "./neon-migration.js";
 import { createBlockBlastRouter } from "./blockblast-router.js";
 import { createBombOnlineRouter } from "./bomb-online-router.js";
 import { createTugOfWarRouter } from "./tug-of-war-router.js";
+import { createBaldaRouter } from "./balda-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -317,6 +318,8 @@ const bombOnlineRouter = createBombOnlineRouter({ pool });
 app.use("/api/bomb", bombOnlineRouter);
 const tugOfWarRouter = createTugOfWarRouter({ pool, verifyTelegram, recordGameCommission });
 app.use("/api/tug-of-war", tugOfWarRouter);
+const baldaRouter = createBaldaRouter({ pool, verifyTelegram });
+app.use("/api/balda", baldaRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3845,6 +3848,9 @@ async function startServer() {
 
     await tugOfWarRouter.initialize();
     console.log("Tug of War Online tables are ready");
+
+    await baldaRouter.initialize();
+    console.log("Balda Online tables are ready");
 
     // Run room maintenance only after every game's room/game table has initialized.
     // The grace period preserves the result screen; payout processing is not part of cleanup.
