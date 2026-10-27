@@ -466,27 +466,41 @@ export function createUnoRouter({ pool, verifyTelegram }) {
 
   router.post("/game/state", async (req, res) => {
     const client = await pool.connect();
+    let transactionOpen = false;
     try {
       const user = authenticatedUser(req);
       const roomId = String(req.body?.roomId || "");
       if (!/^\d+$/.test(roomId)) throw new UnoHttpError(400, "Неверный номер комнаты.");
-      await client.query("BEGIN");
+
+      // Human-vs-human reads stay read-only: polling must not lock the same game row
+      // that an incoming player action needs to update.
       await assertRoomMember(client, roomId, user.id);
-      const result = await client.query("SELECT game_state FROM uno_games WHERE room_id = $1 FOR UPDATE", [roomId]);
-      if (!result.rows.length) throw new UnoHttpError(404, "Партия ещё не подготовлена.");
-      const game = result.rows[0].game_state;
+      const initial = await client.query("SELECT game_state FROM uno_games WHERE room_id = $1", [roomId]);
+      if (!initial.rows.length) throw new UnoHttpError(404, "Партия ещё не подготовлена.");
+      let game = initial.rows[0].game_state;
+
+      // Only bot turns need a write lock. Re-read under the lock because another
+      // request may have advanced the game while this request was waiting.
       if (game.status === "playing" && currentPlayer(game)?.bot) {
-        runBotTurn(game);
-        await saveGame(client, roomId, game);
+        await client.query("BEGIN");
+        transactionOpen = true;
+        await assertRoomMember(client, roomId, user.id);
+        const locked = await client.query("SELECT game_state FROM uno_games WHERE room_id = $1 FOR UPDATE", [roomId]);
+        if (!locked.rows.length) throw new UnoHttpError(404, "Партия ещё не подготовлена.");
+        game = locked.rows[0].game_state;
+        if (game.status === "playing" && currentPlayer(game)?.bot) {
+          runBotTurn(game);
+          await saveGame(client, roomId, game);
+        }
+        await client.query("COMMIT");
+        transactionOpen = false;
       }
-      await client.query("COMMIT");
       return res.json({ ok: true, game: publicGame(game, user.id) });
     } catch (error) {
-      try { await client.query("ROLLBACK"); } catch {}
+      if (transactionOpen) { try { await client.query("ROLLBACK"); } catch {} }
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось обновить партию УНО." });
     } finally { client.release(); }
   });
-
   router.post("/game/action", async (req, res) => {
     const client = await pool.connect();
     try {
