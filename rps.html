@@ -301,6 +301,9 @@
   let lastState = null;
   let busy = false;
   let pollBusy = false;
+  let roomStateVersion = 0;
+  let refreshAfterPoll = false;
+  let lastRenderedStateFingerprint = "";
   let roomListBusy = false;
   let selectedChoice = null;
   let selectedRoundNumber = null;
@@ -387,6 +390,7 @@
   async function createRoom() {
     if (busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("createRoom").disabled = true;
     try {
       const raw = $("stakeInput").value.trim();
@@ -401,6 +405,7 @@
       showStatus("lobbyStatus", error.message, "error");
     } finally {
       busy = false;
+      scheduleRpsRefreshIfReady();
       $("createRoom").disabled = false;
     }
   }
@@ -409,9 +414,11 @@
     const targetId = String(id);
     if (join) await api("rooms/join", { roomId: targetId });
     roomId = targetId;
+    roomStateVersion += 1;
+    lastRenderedStateFingerprint = "";
     sessionStorage.setItem("allcoins-rps-room-id", roomId);
     showRoom();
-    await refreshState();
+    await refreshState(true);
   }
 
   function renderPlayers(room, round) {
@@ -562,39 +569,67 @@
     renderChoices(room, round);
   }
 
-  async function refreshState() {
-    if (!roomId || pollBusy) return;
+  function scheduleRpsRefreshIfReady() {
+    if (!refreshAfterPoll) return;
+    if (!roomId) { refreshAfterPoll = false; return; }
+    if (busy || pollBusy) return;
+    refreshAfterPoll = false;
+    queueMicrotask(() => { void refreshState().catch(() => {}); });
+  }
+
+  async function refreshState(allowBusy = false) {
+    if (!roomId || (busy && !allowBusy)) return;
+    if (pollBusy) {
+      if (allowBusy) refreshAfterPoll = true;
+      return;
+    }
     pollBusy = true;
+    const roomIdAtStart = String(roomId);
+    const versionAtStart = roomStateVersion;
     try {
-      const data = await api("rooms/state", { roomId });
+      const data = await api("rooms/state", { roomId: roomIdAtStart });
+      // Ignore old responses racing a choice, room change or leave request.
+      if (!roomId || String(roomId) !== roomIdAtStart ||
+          versionAtStart !== roomStateVersion || (busy && !allowBusy)) return;
+      const fingerprint = JSON.stringify(data);
+      if (fingerprint === lastRenderedStateFingerprint) return;
+      lastRenderedStateFingerprint = fingerprint;
       renderState(data);
     } catch (error) {
-      showStatus("roomStatus", error.message, "error");
-      if (error.status === 403 || error.status === 404) {
-        sessionStorage.removeItem("allcoins-rps-room-id");
-        roomId = null;
-        showLobby();
-        await loadRooms();
+      if (roomId && String(roomId) === roomIdAtStart &&
+          versionAtStart === roomStateVersion && (!busy || allowBusy)) {
+        showStatus("roomStatus", error.message, "error");
+        if (error.status === 403 || error.status === 404) {
+          sessionStorage.removeItem("allcoins-rps-room-id");
+          roomId = null;
+          lastRenderedStateFingerprint = "";
+          roomStateVersion += 1;
+          showLobby();
+          await loadRooms();
+        }
       }
     } finally {
       pollBusy = false;
+      scheduleRpsRefreshIfReady();
     }
   }
 
   async function addTestBot() {
     if (!roomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     const button = document.querySelector("[data-add-bot]");
     if (button) button.disabled = true;
     try {
       await api("rooms/add-bot", { roomId });
       showStatus("roomStatus", "Бот подключён. Это тестовый режим: баланс AC не изменяется.", "success");
-      await refreshState();
+      await refreshState(true);
     } catch (error) {
       showStatus("roomStatus", error.message, "error");
-      await refreshState();
+      await refreshState(true);
     } finally {
       busy = false;
+      scheduleRpsRefreshIfReady();
     }
   }
 
@@ -607,24 +642,30 @@
   async function submitChoice(choice) {
     if (!roomId || busy || !choices[choice]) return;
     busy = true;
+    roomStateVersion += 1;
     document.querySelectorAll("[data-choice], [data-ready-choice]").forEach(button => { button.disabled = true; });
     try {
       await api("rooms/choose", { roomId, choice });
-      await refreshState();
+      await refreshState(true);
     } catch (error) {
       showStatus("roomStatus", error.message, "error");
-      await refreshState();
+      await refreshState(true);
     } finally {
       busy = false;
+      scheduleRpsRefreshIfReady();
     }
   }
 
   async function leaveRoom() {
     if (!roomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("leaveRoom").disabled = true;
     try {
       await api("rooms/leave", { roomId });
+      roomId = null;
+      lastRenderedStateFingerprint = "";
+      roomStateVersion += 1;
       showLobby();
       showStatus("lobbyStatus", "Ты вышел из комнаты.", "success");
       await loadRooms();
@@ -632,6 +673,7 @@
       showStatus("roomStatus", error.message, "error");
     } finally {
       busy = false;
+      scheduleRpsRefreshIfReady();
       $("leaveRoom").disabled = false;
     }
   }
