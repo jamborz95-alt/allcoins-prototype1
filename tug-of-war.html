@@ -43,7 +43,7 @@
     });
     ["placeholder","title","aria-label","alt"].forEach(function(attr){
       document.querySelectorAll("["+attr+"]").forEach(function(node){
-        const marker="tugOriginal"+attr.charAt(0).toUpperCase()+attr.slice(1),last=marker+"Last";
+        const marker="tugOriginal"+attr.replace(/(^|-)(.)/g,function(_,dash,char){return char.toUpperCase();}),last=marker+"Last";
         const actual=node.getAttribute(attr);
         if(node.dataset[marker]===undefined||(node.dataset[last]!==undefined&&actual!==node.dataset[last]))node.dataset[marker]=actual;
         const source=node.dataset[marker],target=current==="ru"?source:translateText(source);
