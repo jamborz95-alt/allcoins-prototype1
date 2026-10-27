@@ -717,6 +717,8 @@
   let currentState = null;
   let busy = false;
   let pollBusy = false;
+  let roomStateVersion = 0;
+  let refreshAfterCurrentPoll = false;
   let balance = 0;
   let listBusy = false;
 
@@ -911,6 +913,7 @@
   async function createRoom() {
     if (busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("createRoomButton").disabled = true;
     setStatus("createStatus", "Создаём комнату…");
     try {
@@ -924,11 +927,12 @@
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
       setStatus("createStatus", "");
-      await refreshRoomState();
+      await refreshRoomState(true);
     } catch (error) {
       setStatus("createStatus", error.message, true);
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       $("createRoomButton").disabled = false;
     }
   }
@@ -936,6 +940,7 @@
   async function joinRoom(roomId) {
     if (busy) return;
     busy = true;
+    roomStateVersion += 1;
     try {
       setStatus("lobbyStatus", "Входим в комнату…");
       await api("/rooms/join", { roomId: String(roomId) });
@@ -944,11 +949,12 @@
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
       setStatus("lobbyStatus", "");
-      await refreshRoomState();
+      await refreshRoomState(true);
     } catch (error) {
       setStatus("lobbyStatus", error.message, true);
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
     }
   }
 
@@ -1191,25 +1197,48 @@
     }
   }
 
-  async function refreshRoomState() {
-    if (!currentRoomId) return;
-    const result = await api("/rooms/state", { roomId: currentRoomId });
-    renderRoom(result);
+  function scheduleSekaRefreshIfReady() {
+    if (!refreshAfterCurrentPoll || busy || pollBusy || !currentRoomId) return;
+    refreshAfterCurrentPoll = false;
+    queueMicrotask(() => { void refreshRoomState().catch(() => {}); });
+  }
+
+  async function refreshRoomState(allowBusy = false) {
+    if (!currentRoomId || (busy && !allowBusy)) return;
+    if (pollBusy) {
+      if (allowBusy) refreshAfterCurrentPoll = true;
+      return;
+    }
+    pollBusy = true;
+    const roomIdAtStart = String(currentRoomId);
+    const versionAtStart = roomStateVersion;
+    try {
+      const result = await api("/rooms/state", { roomId: roomIdAtStart });
+      // Ignore results from polls that began before a move or room change.
+      if (!currentRoomId || String(currentRoomId) !== roomIdAtStart ||
+          versionAtStart !== roomStateVersion || (busy && !allowBusy)) return;
+      renderRoom(result);
+    } finally {
+      pollBusy = false;
+      scheduleSekaRefreshIfReady();
+    }
   }
 
   async function addBot() {
     if (!currentRoomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("addBotButton").disabled = true;
     setStatus("roomStatus", "Добавляем тестового бота…");
     try {
       await api("/rooms/add-bot", { roomId: currentRoomId });
-      await refreshRoomState();
+      await refreshRoomState(true);
       setStatus("roomStatus", "Бот добавлен. Можно начинать проверку игры.");
     } catch (error) {
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       if ($("addBotButton")) $("addBotButton").disabled = false;
     }
   }
@@ -1217,6 +1246,7 @@
   async function startGame() {
     if (!currentRoomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("startGameButton").disabled = true;
     setStatus("roomStatus", "Раздаём карты…");
     // Запрашиваем полноэкранный режим прямо из нажатия пользователя,
@@ -1225,13 +1255,14 @@
     setStatus("roomStatus", "Запускаем игру…");
     try {
       await api("/rooms/start", { roomId: currentRoomId });
-      await refreshRoomState();
+      await refreshRoomState(true);
       setStatus("roomStatus", "");
     } catch (error) {
       setSekaFullscreen(false);
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       if (currentState && currentState.room && currentState.room.status === "waiting") {
         $("startGameButton").disabled = (currentState.players || []).length < 2;
       }
@@ -1241,11 +1272,12 @@
   async function requestRematch() {
     if (!currentRoomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("rematchButton").disabled = true;
     setStatus("roomStatus", "Запрашиваем рематч…");
     try {
       const result = await api("/rooms/rematch", { roomId: currentRoomId });
-      await refreshRoomState();
+      await refreshRoomState(true);
       if (result.started) {
         setStatus("roomStatus", "Рематч начался! Новые карты уже розданы.");
       } else {
@@ -1253,9 +1285,10 @@
       }
     } catch (error) {
       setStatus("roomStatus", error.message, true);
-      try { await refreshRoomState(); } catch (_) {}
+      try { await refreshRoomState(true); } catch (_) {}
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       if (currentState) renderRoom(currentState);
     }
   }
@@ -1263,17 +1296,19 @@
   async function sendAction(action, amount) {
     if (!currentRoomId || busy) return;
     busy = true;
+    roomStateVersion += 1;
     $("actionArea").querySelectorAll("button").forEach(button => { button.disabled = true; });
     setStatus("roomStatus", "Отправляем ход…");
     try {
       await api("/rooms/action", { roomId: currentRoomId, action: action, amount: amount });
-      await refreshRoomState();
+      await refreshRoomState(true);
       setStatus("roomStatus", "");
     } catch (error) {
       setStatus("roomStatus", error.message, true);
-      try { await refreshRoomState(); } catch (_) {}
+      try { await refreshRoomState(true); } catch (_) {}
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       if (currentState) renderRoom(currentState);
     }
   }
@@ -1285,6 +1320,7 @@
       return;
     }
     busy = true;
+    roomStateVersion += 1;
     $("leaveRoomButton").disabled = true;
     try {
       await api("/rooms/leave", { roomId: currentRoomId });
@@ -1301,6 +1337,7 @@
       setStatus("roomStatus", error.message, true);
     } finally {
       busy = false;
+      scheduleSekaRefreshIfReady();
       $("leaveRoomButton").disabled = false;
     }
   }
@@ -1315,15 +1352,12 @@
   }
 
   async function poll() {
-    if (pollBusy) return;
-    pollBusy = true;
+    if (pollBusy || busy) return;
     try {
       if (currentRoomId) await refreshRoomState();
       else await loadRooms(true);
     } catch (_) {
       // A short network hiccup should not erase the current game state.
-    } finally {
-      pollBusy = false;
     }
   }
 
