@@ -1581,11 +1581,11 @@
     }
 
     function setJoystickFromPointer(event) {
-      // During the 485 ms bomb-transfer animation keep pointer capture, but do not
-      // let a finger move the character until the hand-off finishes.
-      if (phase !== 'playing') return;
+      // Always remember the latest finger position during an animated pass.
+      // Movement is paused while passing, then resumes from this same held input.
       lastJoystickClientX = event.clientX;
       lastJoystickClientY = event.clientY;
+      if (phase !== 'playing') return;
       setJoystickFromCoordinates(lastJoystickClientX, lastJoystickClientY);
     }
 
@@ -1721,26 +1721,31 @@
       moveFrame = requestAnimationFrame(moveCharacterFrame);
     }
 
-    $('moveJoystick').addEventListener('pointerdown', event => {
+    const moveJoystick = $('moveJoystick');
+    moveJoystick.addEventListener('pointerdown', event => {
       if (phase !== 'playing') return;
       event.preventDefault();
       movePointerId = event.pointerId;
-      try { $('moveJoystick').setPointerCapture(event.pointerId); } catch (_) {}
+      lastJoystickClientX = event.clientX;
+      lastJoystickClientY = event.clientY;
+      try { moveJoystick.setPointerCapture(event.pointerId); } catch (_) {}
       setJoystickFromPointer(event);
     });
-    $('moveJoystick').addEventListener('pointermove', event => {
+    // Listen at window level as well as capturing the initial press. Some mobile
+    // WebViews revoke element capture during an animated hand-off; the active
+    // pointer must still drive the joystick until a real pointerup/cancel occurs.
+    window.addEventListener('pointermove', event => {
       if (movePointerId !== event.pointerId) return;
-      event.preventDefault();
+      if (event.cancelable) event.preventDefault();
       setJoystickFromPointer(event);
-    });
-    $('moveJoystick').addEventListener('pointerup', event => {
+    }, { passive: false });
+    window.addEventListener('pointerup', event => {
       if (movePointerId !== event.pointerId) return;
-      try { if ($('moveJoystick').hasPointerCapture(event.pointerId)) $('moveJoystick').releasePointerCapture(event.pointerId); } catch (_) {}
       resetJoystick();
     });
-    $('moveJoystick').addEventListener('pointercancel', resetJoystick);
-    $('moveJoystick').addEventListener('lostpointercapture', () => {
-      if (movePointerId !== null) resetJoystick();
+    window.addEventListener('pointercancel', event => {
+      if (movePointerId !== event.pointerId) return;
+      resetJoystick();
     });
     window.addEventListener('keydown', event => {
       if ($('gameView').classList.contains('hidden') || phase !== 'playing') return;
