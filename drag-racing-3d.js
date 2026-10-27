@@ -6,7 +6,7 @@
   if (!host || !canvas) return;
   let THREE;
   try {
-    THREE = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js");
+    THREE = await import("https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js");
   } catch (error) {
     const note = document.createElement("div");
     note.className = "scene3d-warning";
