@@ -49,6 +49,11 @@
     .segmented button{background:#0c1627;color:#d9e2ef;border:1px solid #35445e;min-height:48px}
     .segmented button.selected{border-color:var(--gold);background:linear-gradient(145deg,#4c4028,#292719);color:#ffe9ab;box-shadow:0 0 0 1px #f0d18424}
     .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    #modeControl [data-mode="online"]{grid-column:1/-1}
+    .online-panel{margin-top:12px;padding:12px;border:1px solid #347c75;border-radius:13px;background:linear-gradient(140deg,#102d30,#102035);color:#e2fff7;font-size:12px;line-height:1.45}
+    .online-panel strong{display:block;margin-bottom:4px;color:#8ef3ce;font-size:13px}
+    .online-panel .secondary{margin-top:9px;min-height:42px;width:100%}
+    .bot-character.online-remote{transition:left .22s linear,top .22s linear}
     .mode-card{display:flex;gap:9px;align-items:flex-start;text-align:left;padding:12px;background:#0e1829;border:1px solid #31425d;border-radius:14px;color:#fff;min-height:80px}
     .mode-card.selected{background:#202b31;border-color:var(--mint);box-shadow:inset 0 0 0 1px #67f5b524}
     .mode-icon{font-size:23px;line-height:1.2}
@@ -326,9 +331,17 @@
         <button type="button" class="mode-card" data-mode="local">
           <span class="mode-icon">👥</span><span><span class="mode-title">Игроки на одном экране</span><span class="mode-note">Все участники по очереди нажимают на игрока-получателя.</span></span>
         </button>
+        <button type="button" class="mode-card" data-mode="online">
+          <span class="mode-icon">🌐</span><span><span class="mode-title">Онлайн с игроками</span><span class="mode-note">Найди соперников через интернет. Движение и передача бомбы синхронизируются между телефонами.</span></span>
+        </button>
       </div>
       <label class="name-label" for="playerName">Твой ник</label>
       <input id="playerName" maxlength="18" autocomplete="off" placeholder="Игрок 1" value="Ты">
+      <div class="online-panel hidden" id="onlinePanel" aria-live="polite">
+        <strong>🌐 Поиск соперников</strong>
+        <span id="onlineStatusText">Подключаемся к серверу…</span>
+        <button class="secondary" id="cancelOnlineSearch" type="button">Отменить поиск</button>
+      </div>
       <button class="primary start" id="startGame" type="button">▶ Начать игру</button>
       <div class="tip">В игре нет ставок и списания AC. Это отдельный аркадный режим для проверки анимации и механики передачи.</div>
       <details>
@@ -548,6 +561,32 @@
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
 
+    const BOMB_API_BASE = "https://allcoins-server.onrender.com/api/bomb";
+    const onlinePlayerId = (() => {
+      try {
+        let id = sessionStorage.getItem("allcoins_bomb_online_player_id");
+        if (!id) {
+          const randomPart = window.crypto && typeof window.crypto.randomUUID === "function"
+            ? window.crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+          id = "p_" + randomPart;
+          sessionStorage.setItem("allcoins_bomb_online_player_id", id);
+        }
+        return id;
+      } catch (_) { return "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
+    })();
+    let onlineRoomId = null;
+    let onlineGame = false;
+    let onlineSearchActive = false;
+    let onlinePollTimer = null;
+    let onlineSyncBusy = false;
+    let onlineFuseEndsAt = 0;
+    let onlineFuseDuration = 1;
+    let lastOnlineExplosionId = null;
+    let lastOnlineTransferKey = null;
+    let lastOnlineTransferTargetId = null;
+    let localOnlineTransferTargetId = null;
+    let lastOnlineStatusText = "";
+
     let chosenCount = 4;
     let chosenMode = 'bots';
     let chosenMap = 'copper';
@@ -617,8 +656,10 @@
       document.querySelectorAll('[data-count]').forEach(b => b.classList.toggle('selected', Number(b.dataset.count) === count));
     }
     function chooseMode(mode) {
+      if (onlineSearchActive) return;
       chosenMode = mode;
       document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+      $('startGame').textContent = mode === 'online' ? '🌐 Найти игроков' : '▶ Начать игру';
     }
     function chooseMap(map) {
       chosenMap = map === 'crystal' ? 'crystal' : 'copper';
@@ -682,6 +723,327 @@
     });
 
     function safeText(value) { return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+    async function bombOnlineRequest(path, body) {
+      const response = await fetch(BOMB_API_BASE + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      let data = null;
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok || !data || data.ok !== true) {
+        throw new Error(data && data.error ? data.error : "Сервер онлайн-игры временно недоступен.");
+      }
+      return data;
+    }
+    function displayOnlineStatus(message) {
+      if (message === lastOnlineStatusText) return;
+      lastOnlineStatusText = message;
+      const node = $("onlineStatusText");
+      if (node) node.textContent = message;
+    }
+    function startOnlinePolling() {
+      if (onlinePollTimer) clearInterval(onlinePollTimer);
+      onlinePollTimer = window.setInterval(syncOnlineRoom, 280);
+    }
+    async function startOnlineMatchmaking() {
+      if (onlineSearchActive) return;
+      onlineSearchActive = true;
+      onlineGame = false;
+      onlineRoomId = null;
+      lastOnlineExplosionId = null;
+      lastOnlineTransferKey = null;
+      lastOnlineTransferTargetId = null;
+      localOnlineTransferTargetId = null;
+      lastOnlineStatusText = "";
+      $("onlinePanel").classList.remove("hidden");
+      $("startGame").disabled = true;
+      $("startGame").textContent = "Ищем игроков…";
+      displayOnlineStatus("Подключаемся к серверу и ищем комнату на " + chosenCount + " игрока(ов)...");
+      try {
+        const name = ($("playerName").value || "Игрок").trim().slice(0, 18) || "Игрок";
+        const data = await bombOnlineRequest("/matchmaking/join", {
+          playerId: onlinePlayerId, name: name, maxPlayers: chosenCount, map: chosenMap
+        });
+        onlineRoomId = data.room.id;
+        displayOnlineStatus("В комнате " + data.players.length + " из " + data.room.maxPlayers + ". Ожидаем соперников…");
+        $("startGame").disabled = false;
+        $("startGame").textContent = "Поиск идёт…";
+        startOnlinePolling();
+        await syncOnlineRoom();
+      } catch (error) {
+        onlineSearchActive = false;
+        $("startGame").disabled = false;
+        $("startGame").textContent = "Попробовать снова";
+        displayOnlineStatus("Не удалось подключиться: " + (error.message || "ошибка сети"));
+      }
+    }
+    async function cancelOnlineSearch() {
+      const roomId = onlineRoomId;
+      onlineSearchActive = false;
+      onlineGame = false;
+      onlineRoomId = null;
+      if (onlinePollTimer) clearInterval(onlinePollTimer);
+      onlinePollTimer = null;
+      $("onlinePanel").classList.add("hidden");
+      $("startGame").disabled = false;
+      $("startGame").textContent = chosenMode === "online" ? "🌐 Найти игроков" : "▶ Начать игру";
+      if (roomId) {
+        try { await bombOnlineRequest("/rooms/leave", { roomId: roomId, playerId: onlinePlayerId }); } catch (_) {}
+      }
+    }
+    async function leaveOnlineRoom() {
+      const roomId = onlineRoomId;
+      onlineRoomId = null;
+      onlineSearchActive = false;
+      if (onlinePollTimer) clearInterval(onlinePollTimer);
+      onlinePollTimer = null;
+      if (roomId) {
+        try { await bombOnlineRequest("/rooms/leave", { roomId: roomId, playerId: onlinePlayerId }); } catch (_) {}
+      }
+      onlineGame = false;
+      localOnlineTransferTargetId = null;
+      lastOnlineTransferTargetId = null;
+      lastOnlineTransferKey = null;
+    }
+    function normalizeOnlinePlayers(rows) {
+      const source = Array.isArray(rows) ? rows : [];
+      const mine = source.find(p => String(p.playerId) === onlinePlayerId);
+      const ordered = mine ? [mine, ...source.filter(p => String(p.playerId) !== onlinePlayerId)] : source;
+      return ordered.map((p, index) => ({
+        id: index,
+        playerId: String(p.playerId),
+        name: String(p.name || "Игрок").slice(0, 18),
+        bot: false,
+        lives: Math.max(0, Math.min(MAX_LIVES, Number(p.lives) || 0)),
+        emoji: index === 0 ? "🧑" : ["🧑‍🚀", "🦊", "🐼"][(index - 1) % 3],
+        xPct: Math.max(4, Math.min(96, Number(p.xPct) || 50)),
+        yPct: Math.max(8, Math.min(90, Number(p.yPct) || (index === 0 ? 66 : 45))),
+        connected: !!p.connected
+      }));
+    }
+    function onlineIndexForId(playerId) {
+      return players.findIndex(p => p && String(p.playerId) === String(playerId));
+    }
+    function enterOnlineGame(data) {
+      if (!data || !data.room || !data.game) return;
+      onlineGame = true;
+      onlineSearchActive = false;
+      onlineRoomId = String(data.room.id);
+      chosenMap = data.room.map === "crystal" ? "crystal" : "copper";
+      players = normalizeOnlinePlayers(data.players);
+      round = Number(data.game.round) || 1;
+      holder = onlineIndexForId(data.game.holderId);
+      phase = data.game.phase || "playing";
+      onlineFuseEndsAt = Number(data.game.fuseEndsAt) || Date.now() + 10000;
+      onlineFuseDuration = Math.max(1, onlineFuseEndsAt - Date.now());
+      lastOnlineExplosionId = data.game.lastExplosionId || null;
+      lastOnlineTransferKey = null;
+      lastOnlineTransferTargetId = null;
+      localOnlineTransferTargetId = null;
+      stopTimers();
+      roundToken++;
+      resetJoystick();
+      try { history.pushState({ allcoinsBombGuard: true }, "", window.location.href); navigationGuardArmed = true; } catch (_) {}
+      $("setupView").classList.add("hidden");
+      $("onlinePanel").classList.add("hidden");
+      $("gameView").classList.remove("hidden");
+      document.documentElement.classList.add("bomb-active");
+      document.body.classList.add("game-active");
+      $("arena").dataset.map = chosenMap;
+      renderMapObstacles();
+      const nick = players[0] ? players[0].name : "Игрок";
+      $("playerCharacter").querySelector(".character-name").textContent = nick.slice(0, 12);
+      $("playerCharacter").setAttribute("aria-label", "Персонаж " + nick);
+      $("resultOverlay").classList.add("hidden");
+      $("modeCaption").textContent = "🌐 Онлайн · " + players.length + " игроков";
+      $("continueRound").hidden = true;
+      renderSeats();
+      const rect = $("arena").getBoundingClientRect();
+      characterX = rect.width * ((players[0] && players[0].xPct) || 50) / 100;
+      characterY = rect.height * ((players[0] && players[0].yPct) || 66) / 100;
+      moveX = 0; moveY = 0;
+      renderCharacterPosition();
+      applyOnlinePositions();
+      updateSeats();
+      positionBomb(holder, false);
+      tickTimer = window.setInterval(tickFuse, 40);
+      setStatusText("Передай бомбу!", holder === 0 ? "Бомба у тебя — подойди к сопернику" : "Бомба у " + playerLabel(holder));
+      setInstruction(holder === 0
+        ? "<strong>Бомба у тебя!</strong> Подведи шахтёра к сопернику, чтобы передать её."
+        : "<strong>" + safeText(playerLabel(holder)) + "</strong> держит бомбу. Следи за ним и будь готов принять её.");
+      $("startGame").disabled = false;
+      $("startGame").textContent = "🌐 Найти игроков";
+      if (tg && tg.BackButton) { try { tg.BackButton.show(); } catch (_) {} }
+      if (!onlinePollTimer) startOnlinePolling();
+    }
+    function applyOnlinePositions() {
+      if (!onlineGame) return;
+      const arenaRect = $("arena").getBoundingClientRect();
+      players.forEach((p, index) => {
+        if (index === 0) return;
+        const character = botCharacterFor(index);
+        if (!character) return;
+        character.classList.add("online-remote");
+        character.style.left = (arenaRect.width * p.xPct / 100) + "px";
+        character.style.top = (arenaRect.height * p.yPct / 100) + "px";
+        character.classList.toggle("walking", phase === "playing" && p.lives > 0);
+      });
+    }
+    function triggerOnlineExplosion(playerIndex) {
+      const unlucky = players[playerIndex];
+      $("bomb").classList.remove("moving", "urgent");
+      $("bomb").classList.add("exploding");
+      $("flash").classList.remove("on");
+      void $("flash").offsetWidth;
+      $("flash").classList.add("on");
+      $("fuseLabel").textContent = "💥 Взрыв";
+      $("fuseFill").style.transform = "scaleX(0)";
+      if (unlucky) {
+        setStatusText("БУМ!", unlucky.name + " теряет жизнь");
+        setInstruction("<strong>" + safeText(unlucky.name) + "</strong> попал под взрыв. Следующий раунд уже скоро.");
+      }
+      playExplosionSound();
+      if (navigator.vibrate) { try { navigator.vibrate([90, 45, 180]); } catch (_) {} }
+    }
+    function applyOnlineState(data) {
+      if (!data || !data.room || !data.game) return;
+      if (data.room.status === "waiting") {
+        const count = Array.isArray(data.players) ? data.players.length : 0;
+        displayOnlineStatus("В комнате " + count + " из " + data.room.maxPlayers + " игроков. Ожидаем соперников…");
+        return;
+      }
+      if (data.room.status === "playing" && !onlineGame) {
+        enterOnlineGame(data);
+        return;
+      }
+      if (!onlineGame) return;
+
+      const previousRound = round;
+      const previousPhase = phase;
+      const oldHolder = holder;
+      const oldRosterKey = players.map(p => p.playerId).join("|");
+      const nextPlayers = normalizeOnlinePlayers(data.players);
+      const newRosterKey = nextPlayers.map(p => p.playerId).join("|");
+      players = nextPlayers;
+      round = Number(data.game.round) || round || 1;
+      const nextHolder = onlineIndexForId(data.game.holderId);
+      const holderChanged = nextHolder >= 0 && nextHolder !== oldHolder;
+      holder = nextHolder >= 0 ? nextHolder : holder;
+      phase = data.game.phase || "playing";
+
+      const incomingFuse = Number(data.game.fuseEndsAt) || 0;
+      if (incomingFuse && incomingFuse !== onlineFuseEndsAt) {
+        onlineFuseEndsAt = incomingFuse;
+        onlineFuseDuration = Math.max(1, incomingFuse - Date.now());
+      } else if (!incomingFuse) {
+        onlineFuseEndsAt = 0;
+      }
+
+      if (oldRosterKey !== newRosterKey) renderSeats();
+      applyOnlinePositions();
+      updateSeats();
+
+      if (data.game.lastExplosionId && data.game.lastExplosionId !== lastOnlineExplosionId) {
+        lastOnlineExplosionId = data.game.lastExplosionId;
+        triggerOnlineExplosion(onlineIndexForId(data.game.loserId));
+      }
+      if (phase === "passing" && data.game.passToId) {
+        const transferKey = String(data.game.passToId) + ":" + String(data.game.transferEndsAt || "");
+        const targetIndex = onlineIndexForId(data.game.passToId);
+        if (transferKey !== lastOnlineTransferKey) {
+          lastOnlineTransferKey = transferKey;
+          lastOnlineTransferTargetId = String(data.game.passToId);
+          if (localOnlineTransferTargetId !== String(data.game.passToId) && targetIndex >= 0) positionBomb(targetIndex, true);
+        }
+        const fromIndex = onlineIndexForId(data.game.holderId);
+        setStatusText("ПЕРЕДАЧА!", playerLabel(fromIndex) + " → " + playerLabel(targetIndex));
+      } else if (phase === "boom") {
+        $("fuseLabel").textContent = "💥 Взрыв";
+        $("fuseFill").style.transform = "scaleX(0)";
+      } else if (phase === "finished" || data.room.status === "finished") {
+        const winnerIndex = onlineIndexForId(data.game.winnerId);
+        if (onlinePollTimer) clearInterval(onlinePollTimer);
+        onlinePollTimer = null;
+        endGame(winnerIndex >= 0 ? winnerIndex : null, onlineIndexForId(data.game.loserId));
+        return;
+      } else if (phase === "playing") {
+        $("bomb").classList.remove("exploding");
+        $("flash").classList.remove("on");
+        if (previousRound !== round) {
+          $("fuseFill").style.transform = "scaleX(1)";
+          $("fuseLabel").textContent = "🔥 Горит";
+        }
+        setStatusText("Передай бомбу!", holder === 0 ? "Бомба у тебя — подойди к сопернику" : "Бомба у " + playerLabel(holder));
+        setInstruction(holder === 0
+          ? "<strong>Бомба у тебя!</strong> Подведи шахтёра к сопернику, чтобы передать её."
+          : "<strong>" + safeText(playerLabel(holder)) + "</strong> держит бомбу. Следи за ним и будь готов принять её.");
+      }
+      if (holderChanged) {
+        const newHolderId = players[holder] ? players[holder].playerId : null;
+        if (newHolderId && (localOnlineTransferTargetId === newHolderId || lastOnlineTransferTargetId === newHolderId)) {
+          positionBomb(holder, false);
+          localOnlineTransferTargetId = null;
+          lastOnlineTransferTargetId = null;
+          lastOnlineTransferKey = null;
+        } else {
+          positionBomb(holder, previousPhase === "playing" && phase === "playing" && previousRound === round);
+        }
+      }
+      if (data.room.status === "finished" && phase !== "finished") {
+        const winnerIndex = onlineIndexForId(data.game.winnerId);
+        if (onlinePollTimer) clearInterval(onlinePollTimer);
+        onlinePollTimer = null;
+        endGame(winnerIndex >= 0 ? winnerIndex : null, onlineIndexForId(data.game.loserId));
+      }
+    }
+    async function syncOnlineRoom() {
+      if (!onlineRoomId || onlineSyncBusy) return;
+      onlineSyncBusy = true;
+      try {
+        let xPct = 50, yPct = 66;
+        if (onlineGame) {
+          const rect = $("arena").getBoundingClientRect();
+          xPct = rect.width ? characterX / rect.width * 100 : 50;
+          yPct = rect.height ? characterY / rect.height * 100 : 66;
+        }
+        const data = await bombOnlineRequest("/rooms/state", {
+          roomId: onlineRoomId, playerId: onlinePlayerId, xPct: xPct, yPct: yPct
+        });
+        applyOnlineState(data);
+      } catch (error) {
+        if (onlineSearchActive) displayOnlineStatus("Соединение восстанавливается… " + (error.message || ""));
+        else if (onlineGame) setInstruction("Связь с сервером потеряна. Переподключаемся…");
+      } finally {
+        onlineSyncBusy = false;
+      }
+    }
+    async function passBombOnline(target) {
+      if (!onlineRoomId || phase !== "playing" || holder !== 0 || !players[target] || players[target].lives <= 0) return;
+      const targetId = players[target].playerId;
+      localOnlineTransferTargetId = targetId;
+      lastOnlineTransferTargetId = targetId;
+      phase = "passing";
+      pauseJoystickMotion();
+      document.querySelectorAll(".seat").forEach(seat => seat.classList.toggle("target", Number(seat.dataset.player) === target));
+      setStatusText("ПЕРЕДАЧА!", players[0].name + " → " + players[target].name);
+      setInstruction("💨 Бомба летит к <strong>" + safeText(players[target].name) + "</strong>…");
+      playTone(780, .09, "triangle", .045);
+      if (navigator.vibrate) { try { navigator.vibrate(35); } catch (_) {} }
+      positionBomb(target, true);
+      try {
+        await bombOnlineRequest("/rooms/pass", { roomId: onlineRoomId, playerId: onlinePlayerId, targetPlayerId: targetId });
+      } catch (error) {
+        localOnlineTransferTargetId = null;
+        lastOnlineTransferTargetId = null;
+        phase = "playing";
+        positionBomb(holder, false);
+        resumeJoystickMotion();
+        setInstruction(error.message || "Передача не прошла. Попробуй ещё раз.");
+      }
+    }
+
     function startGame() {
       stopTimers();
       roundToken++;
@@ -716,8 +1078,13 @@
       const arena = $('arena');
       if (!arena) return;
       const rect = arena.getBoundingClientRect();
-      characterX = rect.width * .5;
-      characterY = rect.height * .65;
+      if (onlineGame && players[0]) {
+        characterX = rect.width * (Number(players[0].xPct) || 50) / 100;
+        characterY = rect.height * (Number(players[0].yPct) || 66) / 100;
+      } else {
+        characterX = rect.width * .5;
+        characterY = rect.height * .65;
+      }
       moveX = 0; moveY = 0;
       stopCharacterMotion();
       renderCharacterPosition();
@@ -1049,7 +1416,11 @@
         bubble.textContent = '✦';
         character.appendChild(bubble);
         layer.appendChild(character);
-        const point = spawnPointForBot(index, rect.width, rect.height);
+        const hasNetworkPosition = onlineGame && Number.isFinite(Number(player.xPct)) && Number.isFinite(Number(player.yPct));
+        const point = hasNetworkPosition
+          ? { x: rect.width * Number(player.xPct) / 100, y: rect.height * Number(player.yPct) / 100 }
+          : spawnPointForBot(index, rect.width, rect.height);
+        if (onlineGame) character.classList.add("online-remote");
         character.style.left = point.x + 'px';
         character.style.top = point.y + 'px';
       });
@@ -1096,7 +1467,7 @@
         seat.classList.remove('target');
         const badge = seat.querySelector('.holder-pill'); if (badge) badge.hidden = !(i === holder && phase === 'playing' && p && p.lives > 0);
         const state = seat.querySelector('[data-seat-state]');
-        if (state && p) state.textContent = p.lives <= 0 ? 'Выбыл' : (i === holder ? (p.bot ? 'Держит бомбу · бот' : 'Бомба у тебя') : (p.bot ? 'Бот' : 'Готов'));
+        if (state && p) state.textContent = p.lives <= 0 ? 'Выбыл' : (i === holder ? (onlineGame ? (i === 0 ? 'Бомба у тебя' : 'Держит бомбу') : (p.bot ? 'Держит бомбу · бот' : 'Бомба у тебя')) : (p.bot ? 'Бот' : (onlineGame ? (p.connected ? 'Онлайн' : 'Переподключение…') : 'Готов')));
         // Keep the visible hearts and accessibility label in sync after every explosion.
         if (p) {
           seat.setAttribute('aria-label', p.name + (p.lives ? ', жизни: ' + p.lives : ', выбыл'));
@@ -1266,7 +1637,10 @@
 
     function tickFuse() {
       if (phase !== 'playing' && phase !== 'passing') return;
-      const now = performance.now(); const left = Math.max(0, 1 - ((now - fuseStart) / fuseDuration));
+      const now = performance.now();
+      const left = onlineGame
+        ? Math.max(0, Math.min(1, onlineFuseEndsAt > 0 ? (onlineFuseEndsAt - Date.now()) / Math.max(1, onlineFuseDuration) : 0))
+        : Math.max(0, 1 - ((now - fuseStart) / fuseDuration));
       $('fuseFill').style.transform = `scaleX(${left})`;
       if (left < .24) {
         $('bomb').classList.add('urgent');
@@ -1277,7 +1651,7 @@
         playDynamiteFuseSound(left);
         lastTickSound = now;
       }
-      if (left <= 0) explode();
+      if (left <= 0 && !onlineGame) explode();
     }
 
     function onSeatClick(target) {
@@ -1294,6 +1668,7 @@
     }
 
     function passBomb(target) {
+      if (onlineGame) { passBombOnline(target); return; }
       if (phase !== 'playing' || target === holder || !players[target] || players[target].lives <= 0) return;
       stopBotMovement();
       const owner = holder;
@@ -1516,6 +1891,10 @@
     }
     function restartFromResult() {
       $('resultOverlay').classList.add('hidden');
+      if (onlineGame) {
+        leaveOnlineRoom().finally(() => { startOnlineMatchmaking(); });
+        return;
+      }
       players.forEach(p => p.lives = MAX_LIVES); round = 0; startRound();
     }
     function stopTimers() {
@@ -1527,6 +1906,7 @@
     }
 
     function onBack() {
+      if (onlineRoomId) { leaveOnlineRoom(); }
       stopTimers(); roundToken++; phase = 'setup'; holder = -1;
       navigationGuardArmed = false;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
@@ -1548,7 +1928,11 @@
       }
       onBack();
     }
-    $('startGame').addEventListener('click', startGame);
+    $('startGame').addEventListener('click', () => {
+      if (chosenMode === 'online') startOnlineMatchmaking();
+      else startGame();
+    });
+    $('cancelOnlineSearch').addEventListener('click', cancelOnlineSearch);
     $('continueRound').addEventListener('click', () => { if (phase === 'boom') { $('resultOverlay').classList.add('hidden'); startRound(); } });
     $('resultMenu').addEventListener('click', onBack);
     if (tg && tg.BackButton) { try { tg.BackButton.onClick(handleTelegramBack); } catch (_) {} }
@@ -1759,6 +2143,6 @@
   document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
 })();
 </script>
-  <script src="./bomb-3d.js?v=20261027-nameplate-1"></script>
+  <script src="./bomb-3d.js?v=20261027-online-1"></script>
 </body>
 </html>
