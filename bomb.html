@@ -2254,7 +2254,8 @@
     }
 
     function onBack() {
-      if (onlineRoomId) { leaveOnlineRoom(); }
+      const wasOnlineMode = chosenMode === "online";
+      const leaveRequest = onlineRoomId ? leaveOnlineRoom() : Promise.resolve();
       stopTimers(); roundToken++; phase = 'setup'; holder = -1;
       navigationGuardArmed = false;
       if (bombFlightAnimation) { try { bombFlightAnimation.cancel(); } catch (_) {} bombFlightAnimation = null; }
@@ -2263,6 +2264,16 @@
       $('gameView').classList.add('hidden'); $('resultOverlay').classList.add('hidden'); $('setupView').classList.remove('hidden');
       document.body.classList.remove('game-active');
       document.documentElement.classList.remove('bomb-active');
+      if (wasOnlineMode) {
+        $("onlineActions").classList.remove("hidden");
+        $("openRoomsPanel").classList.remove("hidden");
+        leaveRequest.finally(() => {
+          if (chosenMode === "online" && !$("setupView").classList.contains("hidden")) {
+            startOpenRoomsPolling();
+            loadOpenRooms();
+          }
+        });
+      }
       if (tg && tg.BackButton) { try { tg.BackButton.hide(); } catch (_) {} }
     }
     $('backToAllcoins').addEventListener('click', () => { window.location.replace('./index.html'); });
