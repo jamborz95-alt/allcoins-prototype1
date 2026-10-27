@@ -571,7 +571,10 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       1: playersList.filter(function(player){return Number(player.team)===1;}),
       2: playersList.filter(function(player){return Number(player.team)===2;})
     };
+    var visiblePerTeam = scenePlayerCount()/2;
     people.forEach(function(person){
+      // Room sizes 2/4/6 must render exactly 1/2/3 figures on each team.
+      person.root.visible = person.index < visiblePerTeam;
       var player = rosters[person.team][person.index];
       var name = player ? String(player.name||'Игрок').slice(0,18) : 'Ожидание';
       if(person.labelName === name || !person.labelCanvas || !person.labelTexture) return;
@@ -937,6 +940,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     }
     function makeDynamicRope(progress,time){
       if(!ropeMesh || !knotGroup) return;
+      if(!ropeDirty && rafCounter%2!==0) return;
       ropeDirty=false;
       var portrait=window.innerWidth<window.innerHeight;
       var tension=Math.min(1,Math.abs(progress));
