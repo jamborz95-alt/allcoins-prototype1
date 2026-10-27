@@ -296,6 +296,7 @@
       var onlineGameState = null;
       var onlineGamePollTimer = null;
       var onlineGameBusy = false;
+      var onlineGameActionVersion = 0;
       var board = [];
       var turn = "w";
       var humanColor = "w";
@@ -724,11 +725,18 @@
       async function refreshOnlineGameState(quiet) {
         if (!onlineMode || !currentRoom || onlineGameBusy || busy) return;
         onlineGameBusy = true;
+        var roomIdAtStart = roomIdValue(currentRoom);
+        var actionVersionAtStart = onlineGameActionVersion;
         try {
-          var result = await checkersApi("/game/state", { roomId: roomIdValue(currentRoom) });
+          var result = await checkersApi("/game/state", { roomId: roomIdAtStart });
+          // A slow state poll must never roll back a move that has just completed.
+          if (!onlineMode || !currentRoom || roomIdValue(currentRoom) !== roomIdAtStart ||
+              busy || actionVersionAtStart !== onlineGameActionVersion) return;
           syncOnlineGame(result.game);
         } catch (error) {
-          if (!quiet) updateStatus(onlineGameState && onlineGameState.currentPlayerIsMe ? humanTurnLabel() : "Онлайн-партия", error.message || "Не удалось обновить состояние.");
+          if (!quiet && !busy && actionVersionAtStart === onlineGameActionVersion) {
+            updateStatus(onlineGameState && onlineGameState.currentPlayerIsMe ? humanTurnLabel() : "Онлайн-партия", error.message || "Не удалось обновить состояние.");
+          }
         } finally {
           onlineGameBusy = false;
         }
@@ -1009,6 +1017,7 @@
       async function sendOnlineMove(from, to) {
         if (!onlineMode || !currentRoom || busy || finished) return;
         busy = true;
+        onlineGameActionVersion += 1;
         selectedPos = null;
         selectedMoves = [];
         try {
