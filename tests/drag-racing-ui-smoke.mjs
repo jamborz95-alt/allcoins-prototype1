@@ -125,6 +125,8 @@ try {
   });
 
   await page.goto(origin + "/drag-racing.html?v=ci-smoke", { waitUntil: "domcontentloaded" });
+  // The garage tab is the default; switch to the shop before waiting for visible car cards.
+  await page.locator('[data-tab="shop"]').click();
   await page.waitForSelector("#carShop .car-card", { timeout: 10000 });
   await page.waitForFunction(() => document.querySelectorAll("#carShop .car-card").length === 12);
   await page.waitForSelector("#scene", { timeout: 10000 });
