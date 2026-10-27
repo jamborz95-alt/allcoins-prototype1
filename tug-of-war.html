@@ -603,7 +603,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     setNotice('');
     testBotTimer=setInterval(function(){
       if(!testBotMode||!currentGame||currentGame.phase!=='playing'){clearInterval(testBotTimer);testBotTimer=null;return;}
-      currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)-0.018-Math.random()*0.028);
+      currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)-0.018-Math.random()*0.028));
       currentGame.teamScores['2']=(currentGame.teamScores['2']||0)+1;
       currentGame.totalTaps=(currentGame.totalTaps||0)+1;
       if(currentGame.progress<=-1){currentGame.progress=-1;currentGame.phase='finished';currentGame.winnerTeam=2;currentGame.message='Тестовый бот перетянул канат. Попробуй нажимать чаще!';currentGame.finishedAt=Date.now();clearInterval(testBotTimer);testBotTimer=null;}
