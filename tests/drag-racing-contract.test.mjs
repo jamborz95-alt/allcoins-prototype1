@@ -134,6 +134,10 @@ test("Completed Drag Racing rooms disappear after the result grace period withou
 });
 
 
+test("Joining a room refreshes the local wallet after the server reserves the stake", () => {
+  assert.match(page, /async function joinRoom\(id\).*?await syncAccount\(\).*?Ожидаем старт/s);
+});
+
 test("Large AC balances and stakes retain integer precision in the browser", () => {
   assert.match(page, /inputmode="numeric"/);
   assert.match(page, /stakeText=\$\('stake'\)\.value\.trim\(\)\.replace/);
