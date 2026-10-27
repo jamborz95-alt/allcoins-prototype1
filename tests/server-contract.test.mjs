@@ -303,9 +303,12 @@ test("completed rooms disappear after the result grace period without touching a
     assert.ok(cleanupBody.includes("DELETE FROM " + table),
       table + " should be cleaned after its completed result");
   }
-  assert.match(reconcileBody, /UPDATE tug_rooms[\\s\\S]*game_state->>'phase' = 'finished'[\\s\\S]*game_state->>'settled' = 'true'/,
+  assert.ok(reconcileBody.includes("UPDATE tug_rooms") &&
+    reconcileBody.includes("game_state->>'phase' = 'finished'") &&
+    reconcileBody.includes("game_state->>'settled' = 'true'"),
     "Tug of War status reconciliation must wait for the saved winner settlement.");
-  assert.match(cleanupBody, /DELETE FROM tug_rooms[\\s\\S]*game_state->>'settled' = 'true'/,
+  assert.ok(cleanupBody.includes("DELETE FROM tug_rooms") &&
+    cleanupBody.includes("game_state->>'settled' = 'true'"),
     "Tug of War cleanup must require the saved prize settlement marker.");
   assert.match(cleanupBody, /INTERVAL '5 minutes'/,
     "finished rooms should retain their result screen briefly before cleanup");
