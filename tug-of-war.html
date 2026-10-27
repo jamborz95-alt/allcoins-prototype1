@@ -744,11 +744,18 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     fieldMark(13.8,.045,0,2.62);
     fieldMark(.045,5.28,-6.9,0);
     fieldMark(.045,5.28,6.9,0);
+    // Full-width lane markings make the field easy to read on a phone.
+    var yardLineMat=new THREE.MeshStandardMaterial({color:0x91b8a0,emissive:0x284a39,emissiveIntensity:.32,roughness:.84});
     for(var yardX=-6;yardX<=6.001;yardX+=1.2){
-      fieldMark(.045,.52,yardX,0);
+      var yardLine=new THREE.Mesh(new THREE.BoxGeometry(.022,.018,5.15),yardLineMat);
+      yardLine.position.set(yardX,-.006,0);yardLine.receiveShadow=true;scene.add(yardLine);
+      fieldMark(.12,.42,yardX,0);
     }
+    var centreLineMat=new THREE.MeshStandardMaterial({color:0xffe3a0,emissive:0x9c702a,emissiveIntensity:.72,roughness:.65});
+    var centreLine=new THREE.Mesh(new THREE.BoxGeometry(.075,.024,5.25),centreLineMat);
+    centreLine.position.set(0,.002,0);centreLine.receiveShadow=true;scene.add(centreLine);
     var centerCircle = new THREE.Mesh(new THREE.TorusGeometry(0.68,0.025,6,48),new THREE.MeshStandardMaterial({color:0xf0d18c,emissive:0x87652a,emissiveIntensity:.35}));
-    centerCircle.rotation.x=Math.PI/2;centerCircle.position.y=.012;centerCircle.position.z=0;scene.add(centerCircle);
+    centerCircle.rotation.x=Math.PI/2;centerCircle.position.y=.018;centerCircle.position.z=0;scene.add(centerCircle);
 
     var railMat = new THREE.MeshStandardMaterial({color:0x1a3038,metalness:.45,roughness:.5});
     for(var side=-1;side<=1;side+=2){
@@ -863,76 +870,55 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var teamSize=scenePlayerCount()/2;
       var finishElapsed=sceneState.finishedAt ? Math.max(0,(performance.now()-sceneState.finishedAt)/1000) : 0;
       var pullDirection=progress>0?1:(progress<0?-1:(progressVelocity>=0?1:-1));
-      var pullBurst=Math.min(1,Math.abs(progressVelocity)*.55);
+      var pullBurst=Math.min(1,Math.abs(progressVelocity)*.7);
       for(var i=0;i<people.length;i++){
         var p=people[i];
-        // Render exactly the requested number of animated figures: 1, 2 or 3 per team.
-        p.root.visible = p.index < teamSize;
+        // 2/4/6 players means exactly 1/2/3 animated figures on each side.
+        p.root.visible=p.index<teamSize;
         if(!p.root.visible) continue;
-        // Team 1 stands on the left; Team 2 stands on the right.
-        // When a side gains ground, its own players step backwards away from the centre,
-        // while the other team is physically dragged towards the winning side.
+        // The team gaining ground steps BACKWARD, away from the centre.
+        // The losing team is dragged FORWARD toward the centre and the winning team.
         var teamDirection=p.team===1?-1:1;
         var teamAdvantage=progress*teamDirection;
         var winningForce=Math.max(0,Math.min(1,teamAdvantage));
         var losingForce=Math.max(0,Math.min(1,-teamAdvantage));
-        // Make the tug visible even during a small lead: the pulling team braces
-        // and steps backwards, while the losing team is hauled toward the centre marker.
-        var winPull=winningForce>0
-          ? Math.min(1,Math.pow(winningForce,.38)+pullBurst*.22) : 0;
-        var losePull=losingForce>0
-          ? Math.min(1,Math.pow(losingForce,.38)+pullBurst*.24) : 0;
+        var winPull=winningForce>0?Math.min(1,Math.pow(winningForce,.32)+pullBurst*.24):0;
+        var losePull=losingForce>0?Math.min(1,Math.pow(losingForce,.32)+pullBurst*.28):0;
         var active=sceneState.status==='playing';
         var lostMatch=sceneState.status==='finished' && sceneState.winnerTeam && p.team!==sceneState.winnerTeam;
         var finishFall=lostMatch?smoothStep(.08,.78,finishElapsed):0;
-        // The winner backs away while the losing line is hauled towards the winner.
-        // The end-of-round tug pulls the defeated team a little farther across the centre line.
-        var finishPull=finishFall*.72;
-        var travel=winPull*1.75+losePull*2.85+finishPull;
-        var pulse=Math.min(1,Math.abs(progressVelocity)*3.6);
-        // Winner backs away from the centre to gain leverage; defeated side slides
-        // in the opposite direction, toward the winning team and its line.
-        var offset=teamDirection*(winPull*1.75-losePull*2.85-finishPull);
+        var finishPull=finishFall*.9;
+        var retreat=winPull*2.05;
+        var dragged=losePull*2.45+finishPull;
+        var travel=retreat+dragged;
+        var effort=Math.max(winPull,losePull);
+        var pulse=Math.min(1,Math.abs(progressVelocity)*4.2);
+        // Sign is deliberate: winners move away from centre; losers move toward it.
+        var offset=teamDirection*(retreat-dragged);
         p.root.position.x=(p.baseX+offset)*horizontalScale;
-        p.root.position.z=p.baseZ
-          +Math.sin(time*2.3+p.phase)*(.018+Math.max(winPull,losePull)*.04)
-          +Math.sin(time*7.2+p.phase)*Math.max(winPull,losePull)*.045;
-        // Lean opposite to the pull when hauling; the losing side tips towards the winner.
-        p.body.rotation.z=pullDirection*(
-          winPull*(.19+Math.sin(time*5.4+p.phase)*.035)
-          -losePull*(.12+Math.sin(time*5.1+p.phase)*.025)
-          -finishFall*.18
-        )+(active?Math.sin(time*5+p.phase)*.012:0)+pullDirection*pulse*.018;
-        p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0)
-          +winPull*(.055+Math.sin(time*4.8+p.phase)*.018)
-          -losePull*(.085+Math.sin(time*4.8+p.phase)*.025)
-          -finishFall*.12;
-        // Alternating backward steps for the pulling team and unsteady steps for the dragged team.
-        var stepWave=Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase);
-        var stepAmount=(active
-          ? winPull*.14+losePull*.18+pullBurst*.055
-          : Math.max(winPull,losePull)*.035)+finishFall*.2;
+        p.root.position.z=p.baseZ+Math.sin(time*2.3+p.phase)*(.012+effort*.035)+Math.sin(time*7.2+p.phase)*effort*.05;
+        p.body.rotation.z=pullDirection*(winPull*(.24+Math.sin(time*5.4+p.phase)*.04)-losePull*(.17+Math.sin(time*5.1+p.phase)*.035)-finishFall*.22)+(active?Math.sin(time*5+p.phase)*.012:0)+pullDirection*pulse*.022;
+        p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0)+winPull*(.07+Math.sin(time*4.8+p.phase)*.02)-losePull*(.10+Math.sin(time*4.8+p.phase)*.025)-finishFall*.16;
+        // Visible backward steps for the pulling side and stumbling steps for the dragged side.
+        var stepWave=Math.sin(time*(5+effort*3.5)+p.phase);
+        var stepAmount=(active?winPull*.19+losePull*.22+pullBurst*.065:effort*.04)+finishFall*.24;
         p.legL.rotation.x=stepWave*stepAmount;
-        p.legR.rotation.x=-Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase+Math.PI)*stepAmount;
-        p.legL.position.x=-.12+Math.max(0,stepWave)*(.015+Math.max(winPull,losePull)*.035);
-        p.legR.position.x=.12+Math.max(0,-stepWave)*(.015+Math.max(winPull,losePull)*.035);
-        // The losing players stagger as the rope carries them towards the opposing line.
-        p.root.rotation.z=pullDirection*(winPull*.035-losePull*.07-finishFall*.48);
+        p.legR.rotation.x=-Math.sin(time*(5+effort*3.5)+p.phase+Math.PI)*stepAmount;
+        p.legL.position.x=-.12+Math.max(0,stepWave)*(.015+effort*.04);
+        p.legR.position.x=.12+Math.max(0,-stepWave)*(.015+effort*.04);
+        p.root.rotation.z=pullDirection*(winPull*.025-losePull*.085-finishFall*.52);
         var front=p.team===1?1:-1;
-        var wristY=1.15-Math.max(winPull,losePull)*.075+Math.sin(time*5+p.phase)*(.02+Math.max(winPull,losePull)*.018);
-        var reach=.13+winPull*.22+losePull*.62+finishFall*.22;
-        // Arms extend along the character's forward axis (local Z), which points
-        // down the rope after the team-facing rotation. Both palms stay on the rope.
-        var elbowL=new THREE.Vector3(-.24,1.37-losePull*.025,front*(.04+travel*.38));
-        var elbowR=new THREE.Vector3(.24,1.37-losePull*.025,front*(.04+travel*.38));
-        var b1=new THREE.Vector3(-.26,wristY,front*(reach+travel*.66));
-        var b2=new THREE.Vector3(.26,wristY,front*(reach+travel*.66));
-        var a1=new THREE.Vector3(-.22,1.52-Math.max(winPull,losePull)*.035,.04);
-        var a2=new THREE.Vector3(.22,1.52-Math.max(winPull,losePull)*.035,.04);
-        segment(p.armL,a1,elbowL);
-        segment(p.foreL,elbowL,b1);
-        segment(p.armR,a2,elbowR);
-        segment(p.foreR,elbowR,b2);
+        var wristY=1.15-effort*.08+Math.sin(time*5+p.phase)*(.015+effort*.02);
+        var reach=.15+winPull*.24+losePull*.56+finishFall*.24;
+        var elbowL=new THREE.Vector3(front*(.04+travel*.34),1.37-losePull*.035,.23);
+        var elbowR=new THREE.Vector3(front*(.04+travel*.34),1.37-losePull*.035,.24);
+        var b1=new THREE.Vector3(front*(reach+travel*.58),wristY,.38);
+        var b2=new THREE.Vector3(front*(reach+travel*.58),wristY,.46);
+        var a1=new THREE.Vector3(-.22,1.52-effort*.035,.04);
+        var a2=new THREE.Vector3(.22,1.52-effort*.035,.04);
+        segment(p.armL,a1,elbowL);segment(p.foreL,elbowL,b1);
+        segment(p.armR,a2,elbowR);segment(p.foreR,elbowR,b2);
+        // The rope is rebuilt through these exact hand positions every animation frame.
         p.handL.position.copy(b1);p.handR.position.copy(b2);
       }
     }
