@@ -850,19 +850,23 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
         var teamAdvantage=progress*teamDirection;
         var winningForce=Math.max(0,Math.min(1,teamAdvantage));
         var losingForce=Math.max(0,Math.min(1,-teamAdvantage));
+        // Make the tug visible even during a small lead: the pulling team braces
+        // and steps backwards, while the losing team is hauled toward the centre marker.
         var winPull=winningForce>0
-          ? Math.min(1,Math.pow(winningForce,.48)+pullBurst*.14) : 0;
+          ? Math.min(1,Math.pow(winningForce,.38)+pullBurst*.22) : 0;
         var losePull=losingForce>0
-          ? Math.min(1,Math.pow(losingForce,.48)+pullBurst*.16) : 0;
+          ? Math.min(1,Math.pow(losingForce,.38)+pullBurst*.24) : 0;
         var active=sceneState.status==='playing';
         var lostMatch=sceneState.status==='finished' && sceneState.winnerTeam && p.team!==sceneState.winnerTeam;
         var finishFall=lostMatch?smoothStep(.08,.78,finishElapsed):0;
         // The winner backs away while the losing line is hauled towards the winner.
         // The end-of-round tug pulls the defeated team a little farther across the centre line.
         var finishPull=finishFall*.72;
-        var travel=winPull*1.2+losePull*2.55+finishPull;
-        var pulse=Math.min(1,Math.abs(progressVelocity)*2.8);
-        var offset=teamDirection*(winPull*1.2-losePull*2.55-finishPull);
+        var travel=winPull*1.75+losePull*2.85+finishPull;
+        var pulse=Math.min(1,Math.abs(progressVelocity)*3.6);
+        // Winner backs away from the centre to gain leverage; defeated side slides
+        // in the opposite direction, toward the winning team and its line.
+        var offset=teamDirection*(winPull*1.75-losePull*2.85-finishPull);
         p.root.position.x=(p.baseX+offset)*horizontalScale;
         p.root.position.z=p.baseZ
           +Math.sin(time*2.3+p.phase)*(.018+Math.max(winPull,losePull)*.04)
@@ -880,8 +884,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
         // Alternating backward steps for the pulling team and unsteady steps for the dragged team.
         var stepWave=Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase);
         var stepAmount=(active
-          ? winPull*.09+losePull*.12+pullBurst*.035
-          : Math.max(winPull,losePull)*.025)+finishFall*.16;
+          ? winPull*.14+losePull*.18+pullBurst*.055
+          : Math.max(winPull,losePull)*.035)+finishFall*.2;
         p.legL.rotation.x=stepWave*stepAmount;
         p.legR.rotation.x=-Math.sin(time*(5+Math.max(winPull,losePull)*3.2)+p.phase+Math.PI)*stepAmount;
         p.legL.position.x=-.12+Math.max(0,stepWave)*(.015+Math.max(winPull,losePull)*.035);
@@ -890,7 +894,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
         p.root.rotation.z=pullDirection*(winPull*.035-losePull*.07-finishFall*.48);
         var front=p.team===1?1:-1;
         var wristY=1.15-Math.max(winPull,losePull)*.075+Math.sin(time*5+p.phase)*(.02+Math.max(winPull,losePull)*.018);
-        var reach=.13+winPull*.18+losePull*.48+finishFall*.18;
+        var reach=.13+winPull*.22+losePull*.62+finishFall*.22;
         var elbowL=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.23);
         var elbowR=new THREE.Vector3(front*(.04+travel*.38),1.37-losePull*.025,.24);
         var b1=new THREE.Vector3(front*(reach+travel*.66),wristY,.38);
