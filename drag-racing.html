@@ -32,7 +32,7 @@
 .pro-race-dashboard:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;background:repeating-linear-gradient(172deg,transparent 0 8px,#ffffff06 9px 10px),linear-gradient(90deg,#0008,transparent 14% 86%,#0008)}
 .pro-dashboard-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;color:#c1c8cd;font-size:9px;font-weight:900;letter-spacing:2.6px;white-space:nowrap}
 .pro-digital-readout{position:absolute;z-index:7;top:43%;min-width:102px;padding:6px 9px 4px;border:2px solid #91a1ad;border-radius:6px;background:linear-gradient(#d1d0d1,#9da2a8 52%,#d0d0d0);box-shadow:0 0 0 3px #282e34,inset 0 0 8px #505963;color:#171b20;text-align:center;text-shadow:0 1px #ffffff95}
-.pro-digital-readout.left{left:4.8%}.pro-digital-readout.right{right:4.8%}
+.pro-digital-readout.left{left:19%}.pro-digital-readout.right{right:19%}
 .pro-digital-readout strong{display:block;font:900 clamp(26px,3.4vw,44px)/.95 "Courier New",monospace;letter-spacing:-2px;font-variant-numeric:tabular-nums}
 .pro-digital-readout small{display:block;margin-top:2px;font-size:clamp(9px,1vw,13px);font-weight:900;font-style:italic;letter-spacing:.8px}
 .pro-tachometer{position:absolute;z-index:4;top:-8px;left:50%;width:clamp(345px,37vw,550px);aspect-ratio:1;transform:translateX(-50%);border-radius:50%;border:11px solid #15191c;background:radial-gradient(circle at 50% 52%,#0b0e12 0 29%,#23292f 29.5% 38%,#0a0c0f 39% 55%,#12171d 70%,#050607 100%);box-shadow:0 0 0 3px #a7aaad,0 0 0 8px #090b0d,0 8px 22px #000d,inset 0 0 24px #000}
@@ -73,7 +73,7 @@
  .pro-race-track{flex-basis:53%;height:53%;min-height:190px}
  .pro-tachometer{width:clamp(300px,38dvh,360px)}
  .pro-digital-readout{top:42%;min-width:85px;padding:5px 7px 3px}
- .pro-digital-readout.left{left:3.4%}.pro-digital-readout.right{right:3.4%}
+ .pro-digital-readout.left{left:19%}.pro-digital-readout.right{right:19%}
  .pro-shift-paddle{top:8%;height:clamp(110px,29vh,150px);width:65px}
  .pro-race-timer{min-width:106px}
 }
@@ -509,8 +509,8 @@ function initDragRacing3D(){
     }
     return wheelMeshes;
   }
-  const playerGroup=new T.Group();scene.add(playerGroup);playerGroup.position.set(-1.5,-.12,1.55);
-  const opponentGroup=new T.Group();scene.add(opponentGroup);opponentGroup.position.set(-1.65,-.12,-1.7);
+  const playerGroup=new T.Group();scene.add(playerGroup);playerGroup.position.set(-1.3,-.12,2.75);playerGroup.scale.setScalar(1.16);
+  const opponentGroup=new T.Group();scene.add(opponentGroup);opponentGroup.position.set(-1.55,-.12,-2.75);opponentGroup.scale.setScalar(1.16);
   let playerCarId=null,playerWheels=[],opponentWheels=[],premiumOpponent=null,opponentUsesPremium=false;
   function syncCar(){
     const id=String(state.selected||'2107');
@@ -518,7 +518,7 @@ function initDragRacing3D(){
       playerWheels=createCar(id,paintFor(id),playerGroup);
       playerCarId=id;
     }
-    playerGroup.position.z=1.56;
+    playerGroup.position.z=2.75;
   }
   syncCar();
   opponentWheels=createCar('2110',0xd9dce0,opponentGroup);
@@ -620,7 +620,7 @@ function initDragRacing3D(){
     playerGroup.position.y=-.12+(running?Math.sin(performance.now()*.026)*.018:0);
     playerGroup.rotation.z=running&&isGasHeld?Math.sin(performance.now()*.008)*.004:0;
     opponentGroup.position.x=-1.55+Math.sin(performance.now()*.00075)*.5+(currentSpeed>110?.22:0);
-    opponentGroup.position.y=-.12+(running?Math.sin(performance.now()*.023+1.2)*.012:0);
+    opponentGroup.position.z=-2.75;opponentGroup.position.y=-.12+(running?Math.sin(performance.now()*.023+1.2)*.012:0);
     playerWheels.forEach(w=>w.rotation.z=scroll*.72);
     opponentWheels.forEach(w=>w.rotation.z=scroll*.65);
     if(opponentUsesPremium&&premiumOpponent){
