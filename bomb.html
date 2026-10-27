@@ -53,6 +53,16 @@
     .online-panel{margin-top:12px;padding:12px;border:1px solid #347c75;border-radius:13px;background:linear-gradient(140deg,#102d30,#102035);color:#e2fff7;font-size:12px;line-height:1.45}
     .online-panel strong{display:block;margin-bottom:4px;color:#8ef3ce;font-size:13px}
     .online-panel .secondary{margin-top:9px;min-height:42px;width:100%}
+    .online-actions{margin-top:12px;padding:11px;border:1px solid #2b5362;border-radius:13px;background:linear-gradient(140deg,#0d1d2d,#102b30)}
+    .online-action-row{display:flex;align-items:stretch;gap:8px;margin-top:8px}
+    .online-action-row:first-child{margin-top:0}
+    .online-action-row button{flex:1;min-width:0;min-height:44px}
+    .online-action-row input{flex:1;min-width:0;width:0;padding:10px 12px;border:1px solid #38546b;border-radius:10px;background:#081522;color:#fff;font:inherit;font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+    .online-action-row input::placeholder{color:#8294a8;letter-spacing:0;text-transform:none;font-weight:500}
+    .online-actions small{display:block;margin-top:8px;color:#a9bbca;font-size:11px;line-height:1.4}
+    .online-room-code-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:10px;padding:9px 10px;border:1px dashed #56d8b3;border-radius:10px;background:#09262d}
+    .online-room-code{font-size:20px;letter-spacing:.15em;font-weight:900;color:#a9ffe2;overflow-wrap:anywhere}
+    .online-panel .online-room-code-row .secondary{flex:1;width:auto;min-width:120px;margin-top:0}
     .bot-character.online-remote{transition:left .22s linear,top .22s linear}
     .mode-card{display:flex;gap:9px;align-items:flex-start;text-align:left;padding:12px;background:#0e1829;border:1px solid #31425d;border-radius:14px;color:#fff;min-height:80px}
     .mode-card.selected{background:#202b31;border-color:var(--mint);box-shadow:inset 0 0 0 1px #67f5b524}
@@ -337,10 +347,24 @@
       </div>
       <label class="name-label" for="playerName">Твой ник</label>
       <input id="playerName" maxlength="18" autocomplete="off" placeholder="Игрок 1" value="Ты">
+      <div class="online-actions hidden" id="onlineActions">
+        <div class="online-action-row">
+          <button class="secondary" id="createOnlineRoom" type="button">👥 Создать комнату для друзей</button>
+        </div>
+        <div class="online-action-row">
+          <input id="joinRoomCode" type="text" maxlength="7" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Код комнаты" placeholder="Код комнаты — 7 символов">
+          <button class="secondary" id="joinOnlineRoom" type="button">Войти</button>
+        </div>
+        <small>Чтобы играть с другом, создай комнату и отправь ему ссылку или код. Для случайных соперников нажми «Найти игроков».</small>
+      </div>
       <div class="online-panel hidden" id="onlinePanel" aria-live="polite">
-        <strong>🌐 Поиск соперников</strong>
+        <strong id="onlinePanelTitle">🌐 Поиск соперников</strong>
         <span id="onlineStatusText">Подключаемся к серверу…</span>
-        <button class="secondary" id="cancelOnlineSearch" type="button">Отменить поиск</button>
+        <div class="online-room-code-row hidden" id="onlineRoomCodeRow">
+          <span>Код: <b class="online-room-code" id="onlineInviteCode">-------</b></span>
+          <button class="secondary" id="shareOnlineInvite" type="button">Пригласить друга</button>
+        </div>
+        <button class="secondary" id="cancelOnlineSearch" type="button">Отменить / выйти</button>
       </div>
       <button class="primary start" id="startGame" type="button">▶ Начать игру</button>
       <div class="tip">В игре нет ставок и списания AC. Это отдельный аркадный режим для проверки анимации и механики передачи.</div>
@@ -575,6 +599,7 @@
       } catch (_) { return "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
     })();
     let onlineRoomId = null;
+    let onlineInviteCode = null;
     let onlineGame = false;
     let onlineSearchActive = false;
     let onlinePollTimer = null;
@@ -659,6 +684,7 @@
       if (onlineSearchActive) return;
       chosenMode = mode;
       document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+      $('onlineActions').classList.toggle('hidden', mode !== 'online');
       $('startGame').textContent = mode === 'online' ? '🌐 Найти игроков' : '▶ Начать игру';
     }
     function chooseMap(map) {
@@ -743,6 +769,55 @@
       const node = $("onlineStatusText");
       if (node) node.textContent = message;
     }
+    function setOnlineInviteCode(code) {
+      onlineInviteCode = String(code || "").trim().toUpperCase();
+      const row = $("onlineRoomCodeRow");
+      if (!row) return;
+      if (!onlineInviteCode) {
+        row.classList.add("hidden");
+        return;
+      }
+      $("onlineInviteCode").textContent = onlineInviteCode;
+      row.classList.remove("hidden");
+    }
+    function roomInviteUrl(code) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", String(code || onlineInviteCode || ""));
+      return url.toString();
+    }
+    async function shareOnlineInvite() {
+      if (!onlineInviteCode) return;
+      const url = roomInviteUrl(onlineInviteCode);
+      const details = {
+        title: "ALLCOINS — Передай бомбу",
+        text: "Присоединяйся к моей комнате в игре «Передай бомбу». Код: " + onlineInviteCode,
+        url: url
+      };
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share(details);
+          return;
+        } catch (error) {
+          if (error && error.name === "AbortError") return;
+        }
+      }
+      try {
+        if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(url);
+        displayOnlineStatus("Ссылка приглашения скопирована. Отправь её другу.");
+      } catch (_) {
+        window.prompt("Скопируй ссылку и отправь другу:", url);
+      }
+    }
+    function buildWaitingMessage(data) {
+      const count = Array.isArray(data.players) ? data.players.length : 0;
+      const room = data.room || {};
+      const code = room.inviteCode || onlineInviteCode;
+      if (code) setOnlineInviteCode(code);
+      return "В комнате " + count + " из " + room.maxPlayers + " игроков. " +
+        (code ? "Код для друга: " + code + ". " : "") +
+        "Ожидаем соперников…";
+    }
     function startOnlinePolling() {
       if (onlinePollTimer) clearInterval(onlinePollTimer);
       onlinePollTimer = window.setInterval(syncOnlineRoom, 350);
@@ -752,6 +827,9 @@
       onlineSearchActive = true;
       onlineGame = false;
       onlineRoomId = null;
+      onlineInviteCode = null;
+      $("onlinePanelTitle").textContent = "🌐 Поиск соперников";
+      $("onlineRoomCodeRow").classList.add("hidden");
       lastOnlineExplosionId = null;
       lastOnlineTransferKey = null;
       lastOnlineTransferTargetId = null;
@@ -783,7 +861,8 @@
           return;
         }
         onlineRoomId = data.room.id;
-        displayOnlineStatus("В комнате " + data.players.length + " из " + data.room.maxPlayers + ". Ожидаем соперников…");
+        setOnlineInviteCode(data.room.inviteCode);
+        displayOnlineStatus(buildWaitingMessage(data));
         $("startGame").disabled = false;
         $("startGame").textContent = "Поиск идёт…";
         startOnlinePolling();
@@ -796,11 +875,93 @@
         displayOnlineStatus("Не удалось подключиться: " + (error.message || "ошибка сети"));
       }
     }
+    async function beginInviteRoomRequest(title, statusText) {
+      if (onlineSearchActive) return false;
+      onlineSearchActive = true;
+      onlineGame = false;
+      onlineRoomId = null;
+      onlineInviteCode = null;
+      lastOnlineExplosionId = null;
+      lastOnlineTransferKey = null;
+      lastOnlineTransferTargetId = null;
+      localOnlineTransferTargetId = null;
+      lastOnlineStatusText = "";
+      $("onlinePanelTitle").textContent = title;
+      $("onlineRoomCodeRow").classList.add("hidden");
+      $("onlinePanel").classList.remove("hidden");
+      $("startGame").disabled = true;
+      $("startGame").textContent = "Подключаемся…";
+      displayOnlineStatus(statusText);
+      return true;
+    }
+    async function createOnlineRoom() {
+      if (!(await beginInviteRoomRequest("👥 Комната для друзей", "Создаём комнату и готовим приглашение…"))) return;
+      try {
+        const name = ($("playerName").value || "Игрок").trim().slice(0, 18) || "Игрок";
+        const data = await bombOnlineRequest("/rooms/create", {
+          playerId: onlinePlayerId, name: name, maxPlayers: chosenCount, map: chosenMap
+        });
+        if (!onlineSearchActive) {
+          try { await bombOnlineRequest("/rooms/leave", { roomId: data.room.id, playerId: onlinePlayerId }); } catch (_) {}
+          return;
+        }
+        onlineRoomId = String(data.room.id);
+        setOnlineInviteCode(data.room.inviteCode);
+        displayOnlineStatus("Комната создана. Отправь другу ссылку или код — игра начнётся, когда он подключится.");
+        $("startGame").disabled = false;
+        $("startGame").textContent = "Комната создана";
+        startOnlinePolling();
+        await syncOnlineRoom();
+      } catch (error) {
+        if (!onlineSearchActive) return;
+        onlineSearchActive = false;
+        $("startGame").disabled = false;
+        $("startGame").textContent = "Повторить";
+        displayOnlineStatus("Не удалось создать комнату: " + (error.message || "ошибка сети"));
+      }
+    }
+    async function joinOnlineRoomByCode(value) {
+      if (onlineSearchActive) return;
+      const code = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+      if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{7}$/.test(code)) {
+        $("joinRoomCode").focus();
+        $("joinRoomCode").setCustomValidity("Введи код из 7 символов.");
+        $("joinRoomCode").reportValidity();
+        return;
+      }
+      $("joinRoomCode").setCustomValidity("");
+      if (!(await beginInviteRoomRequest("🌐 Вход в комнату", "Подключаемся к комнате друга…"))) return;
+      try {
+        const name = ($("playerName").value || "Игрок").trim().slice(0, 18) || "Игрок";
+        const data = await bombOnlineRequest("/rooms/join", {
+          inviteCode: code, playerId: onlinePlayerId, name: name
+        });
+        if (!onlineSearchActive) {
+          try { await bombOnlineRequest("/rooms/leave", { roomId: data.room.id, playerId: onlinePlayerId }); } catch (_) {}
+          return;
+        }
+        onlineRoomId = String(data.room.id);
+        setOnlineInviteCode(data.room.inviteCode || code);
+        displayOnlineStatus(buildWaitingMessage(data));
+        $("startGame").disabled = false;
+        $("startGame").textContent = "Подключено к комнате";
+        startOnlinePolling();
+        await syncOnlineRoom();
+      } catch (error) {
+        if (!onlineSearchActive) return;
+        onlineSearchActive = false;
+        $("startGame").disabled = false;
+        $("startGame").textContent = "🌐 Найти игроков";
+        displayOnlineStatus("Не удалось войти: " + (error.message || "проверь код и соединение"));
+      }
+    }
     async function cancelOnlineSearch() {
       const roomId = onlineRoomId;
       onlineSearchActive = false;
       onlineGame = false;
       onlineRoomId = null;
+      onlineInviteCode = null;
+      $("onlineRoomCodeRow").classList.add("hidden");
       if (onlinePollTimer) clearInterval(onlinePollTimer);
       onlinePollTimer = null;
       $("onlinePanel").classList.add("hidden");
@@ -820,6 +981,8 @@
         try { await bombOnlineRequest("/rooms/leave", { roomId: roomId, playerId: onlinePlayerId }); } catch (_) {}
       }
       onlineGame = false;
+      onlineInviteCode = null;
+      $("onlineRoomCodeRow").classList.add("hidden");
       localOnlineTransferTargetId = null;
       lastOnlineTransferTargetId = null;
       lastOnlineTransferKey = null;
@@ -927,8 +1090,7 @@
     function applyOnlineState(data) {
       if (!data || !data.room || !data.game) return;
       if (data.room.status === "waiting") {
-        const count = Array.isArray(data.players) ? data.players.length : 0;
-        displayOnlineStatus("В комнате " + count + " из " + data.room.maxPlayers + " игроков. Ожидаем соперников…");
+        displayOnlineStatus(buildWaitingMessage(data));
         return;
       }
       if (data.room.status === "playing" && !onlineGame) {
@@ -1978,9 +2140,22 @@
       if (chosenMode === 'online') startOnlineMatchmaking();
       else startGame();
     });
+    $('createOnlineRoom').addEventListener('click', createOnlineRoom);
+    $('joinOnlineRoom').addEventListener('click', () => joinOnlineRoomByCode($('joinRoomCode').value));
+    $('joinRoomCode').addEventListener('input', () => {
+      $('joinRoomCode').value = $('joinRoomCode').value.toUpperCase().replace(/\s+/g, "").slice(0, 7);
+      $('joinRoomCode').setCustomValidity("");
+    });
+    $('shareOnlineInvite').addEventListener('click', shareOnlineInvite);
     $('cancelOnlineSearch').addEventListener('click', cancelOnlineSearch);
     $('continueRound').addEventListener('click', () => { if (phase === 'boom') { $('resultOverlay').classList.add('hidden'); startRound(); } });
     $('resultMenu').addEventListener('click', onBack);
+    const inviteCodeFromUrl = new URLSearchParams(window.location.search).get("room");
+    if (inviteCodeFromUrl) {
+      chooseMode("online");
+      $("joinRoomCode").value = inviteCodeFromUrl.trim().toUpperCase().replace(/\s+/g, "").slice(0, 7);
+      window.setTimeout(() => joinOnlineRoomByCode(inviteCodeFromUrl), 350);
+    }
     if (tg && tg.BackButton) { try { tg.BackButton.onClick(handleTelegramBack); } catch (_) {} }
     function keepActiveGameOnHistoryNavigation() {
       if ($('gameView').classList.contains('hidden') || !['playing','passing','boom','ready'].includes(phase)) return;
