@@ -6,6 +6,7 @@ const router = await readFile(new URL("../server/drag-racing-router.js", import.
 const server = await readFile(new URL("../server/server.js", import.meta.url), "utf8");
 const page = await readFile(new URL("../drag-racing.html", import.meta.url), "utf8");
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const scene3d = await readFile(new URL("../drag-racing-3d.js", import.meta.url), "utf8");
 
 test("Drag Racing API is registered and validates Telegram identity", () => {
   assert.match(server, /createDragRacingRouter/);
@@ -33,6 +34,21 @@ test("Drag Racing garage purchases are persisted and server-priced", () => {
   assert.match(router, /router\.post\("\/shop\/buy-car"/);
   assert.match(router, /router\.post\("\/shop\/buy-part"/);
   assert.match(router, /router\.post\("\/tuning\/save"/);
+});
+
+
+test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authoritative race physics", () => {
+  assert.match(page, /id="race3dCanvas"/);
+  assert.match(page, /drag-racing-3d\.js\?v=/);
+  assert.match(scene3d, /three\.module\.js/);
+  assert.match(scene3d, /new THREE\.WebGLRenderer/);
+  assert.match(scene3d, /new THREE\.PerspectiveCamera/);
+  assert.match(scene3d, /new THREE\.BoxGeometry/);
+  assert.match(router, /const carSpecs=/);
+  assert.match(router, /engineFactor=/);
+  assert.match(router, /gripFactor=/);
+  assert.match(router, /p\.upgrades/);
+  assert.match(router, /p\.tuning/);
 });
 
 test("Drag Racing screen is linked from Games and uses real online room APIs", () => {
