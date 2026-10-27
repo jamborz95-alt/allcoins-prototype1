@@ -14021,6 +14021,27 @@ $("refreshDurakRooms").onclick = async () => {
     #games #checkersEntry .checkers-board-mini i { width:8px !important; height:8px !important; }
     #games #checkersEntry .checkers-piece-mini { width:21px !important; height:21px !important; }
   }
+  #games #tugEntry .tug-entry-appicon::before {
+    content:"" !important;
+    position:absolute !important;
+    inset:5px !important;
+    border:1px solid rgba(244,213,133,.58) !important;
+    border-radius:15px !important;
+    pointer-events:none !important;
+    z-index:4 !important;
+  }
+  #games #tugEntry .tug-launch-link:active { transform:scale(.96) !important; opacity:.84 !important; }
+  @media (max-width:360px) {
+    #games #tugEntry .tug-entry-appicon {
+      flex-basis:74px !important;
+      width:74px !important;
+      height:74px !important;
+      min-width:74px !important;
+      min-height:74px !important;
+      border-radius:19px !important;
+    }
+    #games #tugEntry .tug-entry-appicon::before { inset:4px !important; border-radius:14px !important; }
+  }
 </style>
 
 </body>
