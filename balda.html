@@ -102,6 +102,9 @@
     .letter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
     .letter-head h2{font-size:17px}
     .letter-head small{color:#aabbd0;font-size:10px}
+    .letter-type-input{display:block;width:100%;min-height:48px;margin:0 0 10px;padding:10px 14px;border:1px solid #b99a58;border-radius:12px;background:#091323;color:#fff;text-align:center;font-size:24px;font-weight:900;outline:none;caret-color:#f4d88c}
+    .letter-type-input:focus{border-color:#f5d88d;box-shadow:0 0 0 3px #f5d88d24}
+    .letter-type-input::placeholder{color:#7f91a8;font-size:14px;font-weight:500}
     .letter-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
     .letter-key{min-width:0;min-height:42px;padding:4px;border:1px solid #c5a765;border-radius:9px;background:linear-gradient(145deg,#f9e8b0,#c09b4e);color:#231a0a;font-size:17px;font-weight:1000;box-shadow:inset 0 1px #fff8}
     .letter-key:active{transform:translateY(1px);filter:brightness(.93)}
@@ -182,7 +185,8 @@
 
   <div id="letterModal" class="letter-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="letterModalTitle">
     <div class="letter-panel">
-      <div class="letter-head"><div><h2 id="letterModalTitle">Выбери букву</h2><small>Она должна образовать новое слово</small></div><span class="stake-badge" id="letterCellLabel">Клетка 1</span></div>
+      <div class="letter-head"><div><h2 id="letterModalTitle">Выбери букву</h2><small>Введи одну букву — откроется клавиатура Android</small></div><span class="stake-badge" id="letterCellLabel">Клетка 1</span></div>
+      <input id="letterTypeInput" class="letter-type-input" type="text" inputmode="text" enterkeyhint="done" maxlength="1" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Введи русскую букву" placeholder="Нажми и введи букву">
       <div id="letterGrid" class="letter-grid"></div>
       <button type="button" id="cancelLetterBtn" class="secondary letter-cancel">Отмена</button>
     </div>
@@ -695,6 +699,8 @@
         state.pendingCell = cell;
         $("letterCellLabel").textContent = "Клетка " + (cell+1);
         $("letterModalTitle").textContent = "Выбери букву";
+        const letterInput = $("letterTypeInput");
+        letterInput.value = "";
         $("letterGrid").innerHTML = "";
         alphabet.forEach(letter => {
           const button = document.createElement("button");
@@ -703,11 +709,14 @@
           $("letterGrid").appendChild(button);
         });
         $("letterModal").classList.remove("hidden");
+        // Focus synchronously during the tap/click gesture so Android can open its soft keyboard.
+        try { letterInput.focus({ preventScroll: true }); } catch (_) { letterInput.focus(); }
       }
       async function makeMove(letter) {
         if (state.pendingCell == null || state.busy || !state.room) return;
         const cell = state.pendingCell;
         state.busy = true;
+        $("letterTypeInput").blur();
         $("letterModal").classList.add("hidden");
         state.pendingCell = null;
         try {
@@ -768,13 +777,27 @@
 
       $("createRoomBtn").addEventListener("click", createRoom);
       $("practiceBotBtn").addEventListener("click", startPractice);
+      $("letterTypeInput").addEventListener("input", event => {
+        const input = event.currentTarget;
+        const clean = String(input.value || "").toUpperCase().replace(/[^А-ЯЁ]/g, "").slice(-1);
+        input.value = clean;
+        if (clean && alphabet.includes(clean) && state.pendingCell != null && !state.busy) void makeMove(clean);
+      });
+      $("letterTypeInput").addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          $("letterTypeInput").blur();
+          state.pendingCell = null;
+          $("letterModal").classList.add("hidden");
+        }
+      });
       $("refreshRoomsBtn").addEventListener("click", () => loadRooms(false));
       $("startGameBtn").addEventListener("click", startGame);
       $("leaveRoomBtn").addEventListener("click", leaveRoom);
       $("roomBackBtn").addEventListener("click", leaveRoom);
       $("passBtn").addEventListener("click", passTurn);
       $("finishLobbyBtn").addEventListener("click", returnLobbyAfterGame);
-      $("cancelLetterBtn").addEventListener("click", () => { state.pendingCell = null; $("letterModal").classList.add("hidden"); });
+      $("cancelLetterBtn").addEventListener("click", () => { state.pendingCell = null; $("letterTypeInput").blur(); $("letterModal").classList.add("hidden"); });
       $("backAllcoins").addEventListener("click", () => {
         if (window.history.length > 1) window.history.back();
         else window.location.href = "./index.html";
