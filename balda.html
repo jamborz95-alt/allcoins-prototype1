@@ -134,6 +134,8 @@
           <div class="hint">Минимум 100 AC. Верхнего лимита нет — ставка ограничена доступным балансом и техническим диапазоном счёта.</div>
           <div class="hero-rule" style="margin-top:13px"><strong>Как играть:</strong><br>На поле уже написано «БАЛДА». За ход добавь одну букву в соседнюю свободную клетку, чтобы получилось новое слово по горизонтали или вертикали. Каждое новое слово приносит очки по числу букв.</div>
           <button id="createRoomBtn" class="primary full" type="button">＋ Создать комнату</button>
+          <button id="practiceBotBtn" class="secondary full" type="button" style="margin-top:9px">🤖 Играть с ботом · тест</button>
+          <div class="hint">Бесплатная тренировочная партия против бота: без ставок, списаний AC и влияния на баланс.</div>
         </div>
       </section>
       <section class="panel">
@@ -195,7 +197,8 @@
       const $ = id => document.getElementById(id);
       const state = {
         room: null, players: [], game: null, meId: "", busy: false, polling: null,
-        listPolling: null, listBusy: false, roomBusy: false, stage: "lobby", pendingCell: null, clientMessage: ""
+        listPolling: null, listBusy: false, roomBusy: false, stage: "lobby", pendingCell: null, clientMessage: "",
+        practice: false, practiceWords: null, botTimer: null
       };
       const alphabet = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("");
 
@@ -407,11 +410,200 @@
         const row = Math.floor(index / 5), col = index % 5;
         return [[row-1,col],[row+1,col],[row,col-1],[row,col+1]].some(([r,c]) => r>=0 && r<5 && c>=0 && c<5 && board[r*5+c]);
       }
+      function practiceNormalize(value) { return String(value ?? "").toUpperCase().replace(/Ё/g, "Е"); }
+      async function startPractice() {
+        if (state.busy) return;
+        state.busy = true;
+        $("practiceBotBtn").disabled = true;
+        setStatus("Подготавливаем словарь для тренировочного бота…", false, "lobbyStatus");
+        try {
+          if (!state.practiceWords || state.practiceWords.size < 500) {
+            const response = await fetch(new URL("./server/balda-words.txt", window.location.href).href, { cache: "force-cache" });
+            if (!response.ok) throw new Error("Не удалось загрузить словарь для бота. Обнови страницу и попробуй ещё раз.");
+            const raw = await response.text();
+            const words = raw.split(/\\r?\\n/).map(line => practiceNormalize(line.trim())).filter(word => /^[А-Я]+$/.test(word) && word.length >= 2 && word.length <= 5);
+            if (words.length < 500) throw new Error("Словарь бота загрузился не полностью. Попробуй обновить страницу.");
+            state.practiceWords = new Set(words);
+          }
+          if (state.botTimer) clearTimeout(state.botTimer);
+          state.botTimer = null;
+          state.practice = true;
+          state.meId = "practice-human";
+          state.room = { id: "ТЕСТ", roomId: "practice", name: "Тренировка с ботом", stake: "0", status: "playing", isOwner: true };
+          state.players = [
+            { id: "practice-human", name: "Ты", isOwner: true, isYou: true },
+            { id: "practice-bot", name: "Балда-Бот", isOwner: false, isYou: false }
+          ];
+          state.game = {
+            status: "playing",
+            board: practiceBlankBoard(),
+            players: [
+              { id: "practice-human", name: "Ты", score: 0, isYou: true },
+              { id: "practice-bot", name: "Балда-Бот", score: 0, isYou: false }
+            ],
+            currentPlayerIndex: 0, currentPlayerId: "practice-human",
+            moves: 0, usedWords: [], history: [], lastMove: null, passStreak: 0,
+            pot: "0", winnerId: null, winnerName: null, draw: false, payout: "0", commission: "0",
+            settled: false, message: "Тренировка началась. Ходы и очки проверяются по словарю игры; AC не используются."
+          };
+          state.clientMessage = "";
+          stopRoomPolling();
+          showStage("game");
+          renderGame();
+        } catch (error) {
+          setStatus(error.message || "Не удалось запустить тренировочную партию.", true, "lobbyStatus");
+        } finally {
+          state.busy = false;
+          $("practiceBotBtn").disabled = false;
+          if (state.stage === "game") renderGame();
+        }
+      }
+      function practiceBlankBoard() {
+        const board = Array(25).fill("");
+        ["Б", "А", "Л", "Д", "А"].forEach((letter, col) => { board[10 + col] = letter; });
+        return board;
+      }
+      function practiceExtractAxisWord(board, cell, dx, dy) {
+        const row = Math.floor(cell / 5), col = cell % 5;
+        let startRow = row, startCol = col;
+        while (true) {
+          const nextRow = startRow - dy, nextCol = startCol - dx;
+          if (nextRow < 0 || nextRow >= 5 || nextCol < 0 || nextCol >= 5 || !board[nextRow * 5 + nextCol]) break;
+          startRow = nextRow; startCol = nextCol;
+        }
+        let word = "";
+        let currentRow = startRow, currentCol = startCol;
+        while (currentRow >= 0 && currentRow < 5 && currentCol >= 0 && currentCol < 5) {
+          const letter = board[currentRow * 5 + currentCol];
+          if (!letter) break;
+          word += letter;
+          currentRow += dy; currentCol += dx;
+        }
+        return practiceNormalize(word);
+      }
+      function practiceMoveWords(board, cell) {
+        return [...new Set([
+          practiceExtractAxisWord(board, cell, 1, 0),
+          practiceExtractAxisWord(board, cell, 0, 1)
+        ].filter(word => word.length >= 2))];
+      }
+      function listPracticeMoves(board, usedWords) {
+        const candidates = [];
+        if (!state.practiceWords) return candidates;
+        const used = new Set((usedWords || []).map(practiceNormalize));
+        for (let cell = 0; cell < board.length; cell++) {
+          if (board[cell] || !isAdjacent(cell, board)) continue;
+          for (const letter of alphabet) {
+            const next = board.slice();
+            next[cell] = letter;
+            const words = practiceMoveWords(next, cell);
+            if (!words.length || words.some(word => !state.practiceWords.has(word) || used.has(word))) continue;
+            candidates.push({ cell, letter, words, points: words.reduce((sum, word) => sum + word.length, 0) });
+          }
+        }
+        return candidates;
+      }
+      function finishPracticeGame() {
+        const game = state.game;
+        if (!game || game.status === "finished") return;
+        const [human, bot] = game.players;
+        game.draw = Number(human.score || 0) === Number(bot.score || 0);
+        if (game.draw) {
+          game.winnerId = null;
+          game.winnerName = null;
+          game.message = "Ничья по очкам. Тренировочная партия завершена — списаний AC нет.";
+        } else {
+          const winner = Number(human.score || 0) > Number(bot.score || 0) ? human : bot;
+          game.winnerId = winner.id;
+          game.winnerName = winner.name;
+          game.message = winner.name + " победил по очкам! Это была тренировка, ставки не использовались.";
+        }
+        game.payout = "0";
+        game.commission = "0";
+        game.settled = true;
+        game.status = "finished";
+        game.updatedAt = Date.now();
+      }
+      function applyPracticeMove(cell, letter) {
+        const game = state.game;
+        if (!state.practice || !game || game.status !== "playing") return false;
+        if (!Number.isInteger(cell) || cell < 0 || cell >= 25 || game.board[cell] || !isAdjacent(cell, game.board)) {
+          showGameMessage("Выбери пустую клетку рядом с уже заполненной.");
+          return false;
+        }
+        const next = game.board.slice();
+        next[cell] = letter;
+        const words = practiceMoveWords(next, cell);
+        const used = new Set((game.usedWords || []).map(practiceNormalize));
+        if (!words.length || words.some(word => !state.practiceWords.has(word) || used.has(word))) {
+          showGameMessage("Такое слово не подходит по словарю или уже использовалось. Попробуй другую букву.");
+          return false;
+        }
+        const player = game.players.find(item => String(item.id) === String(game.currentPlayerId));
+        if (!player) return false;
+        game.board = next;
+        const points = words.reduce((sum, word) => sum + word.length, 0);
+        player.score = Number(player.score || 0) + points;
+        game.usedWords.push(...words);
+        game.moves = Number(game.moves || 0) + 1;
+        game.passStreak = 0;
+        game.lastMove = { playerId: player.id, playerName: player.name, letter, cell, words, points, at: Date.now() };
+        game.history = [...(game.history || []), game.lastMove].slice(-40);
+        game.currentPlayerIndex = (Number(game.currentPlayerIndex) + 1) % 2;
+        game.currentPlayerId = game.players[game.currentPlayerIndex].id;
+        game.message = player.name + " составил: " + words.join(" · ") + " (+" + points + " очков).";
+        game.updatedAt = Date.now();
+        state.clientMessage = "";
+        if (game.board.every(Boolean)) finishPracticeGame();
+        return true;
+      }
+      function applyPracticePass() {
+        const game = state.game;
+        if (!state.practice || !game || game.status !== "playing") return false;
+        const possible = listPracticeMoves(game.board, game.usedWords);
+        if (possible.length) {
+          showGameMessage("У тебя ещё есть допустимый ход — составь слово, чтобы не пропускать.");
+          return false;
+        }
+        const player = game.players.find(item => String(item.id) === String(game.currentPlayerId));
+        game.passStreak = Number(game.passStreak || 0) + 1;
+        const pass = { playerId: player?.id || null, playerName: player?.name || "Игрок", pass: true, points: 0, at: Date.now() };
+        game.history = [...(game.history || []), pass].slice(-40);
+        game.lastMove = pass;
+        game.currentPlayerIndex = (Number(game.currentPlayerIndex) + 1) % 2;
+        game.currentPlayerId = game.players[game.currentPlayerIndex].id;
+        game.message = player.name + " пропустил ход: допустимых слов не осталось.";
+        game.updatedAt = Date.now();
+        state.clientMessage = "";
+        if (game.passStreak >= 2) finishPracticeGame();
+        return true;
+      }
+      function schedulePracticeBotTurn() {
+        if (state.botTimer) clearTimeout(state.botTimer);
+        state.botTimer = null;
+        if (!state.practice || !state.game || state.game.status !== "playing" || String(state.game.currentPlayerId) !== "practice-bot") return;
+        state.clientMessage = "Балда-Бот подбирает слово…";
+        renderGame();
+        state.botTimer = setTimeout(() => {
+          state.botTimer = null;
+          if (!state.practice || !state.game || state.game.status !== "playing" || String(state.game.currentPlayerId) !== "practice-bot") return;
+          const moves = listPracticeMoves(state.game.board, state.game.usedWords);
+          if (!moves.length) {
+            applyPracticePass();
+          } else {
+            moves.sort((a, b) => b.points - a.points || b.words.length - a.words.length || Math.abs(a.cell - 12) - Math.abs(b.cell - 12));
+            applyPracticeMove(moves[0].cell, moves[0].letter);
+          }
+          renderGame();
+          if (state.practice && state.game?.status === "playing" && String(state.game.currentPlayerId) === "practice-bot") schedulePracticeBotTurn();
+        }, 650);
+      }
+
       function renderGame() {
         const game = state.game;
         if (!game) return;
-        $("gameRoomName").textContent = (state.room?.name || "Комната Балды") + " · " + (state.room?.id || "");
-        $("gamePot").textContent = "Банк: " + formatAC(game.pot) + " AC";
+        $("gameRoomName").textContent = state.practice ? "Тренировка · без ставок" : (state.room?.name || "Комната Балды") + " · " + (state.room?.id || "");
+        $("gamePot").textContent = state.practice ? "ТЕСТ · 0 AC" : "Банк: " + formatAC(game.pot) + " AC";
         const scores = $("scores");
         scores.innerHTML = "";
         (game.players || []).forEach((player, index) => {
@@ -467,7 +659,12 @@
         });
         if (game.status === "finished") {
           $("gameMessage").textContent = game.message || "Партия завершена.";
-          $("lastWord").textContent = game.draw ? "Ничья — ставки возвращены." : "Победитель: " + (game.winnerName || "Игрок") + " · " + formatAC(game.payout) + " AC";
+          if (state.practice) {
+            const scoreLine = (game.players || []).map(player => (player.name || "Игрок") + " — " + String(player.score || 0) + " очков").join(" · ");
+            $("lastWord").textContent = (game.draw ? "Ничья. " : "Победитель: " + (game.winnerName || "Игрок") + ". ") + scoreLine + ".";
+          } else {
+            $("lastWord").textContent = game.draw ? "Ничья — ставки возвращены." : "Победитель: " + (game.winnerName || "Игрок") + " · " + formatAC(game.payout) + " AC";
+          }
           $("passBtn").classList.add("hidden");
         }
       }
@@ -513,6 +710,12 @@
         $("letterModal").classList.add("hidden");
         state.pendingCell = null;
         try {
+          if (state.practice) {
+            state.clientMessage = "";
+            const moved = applyPracticeMove(cell, letter);
+            if (moved && state.game?.status === "playing" && String(state.game.currentPlayerId) === "practice-bot") schedulePracticeBotTurn();
+            return;
+          }
           const data = await api("/game/move", { roomId: state.room.roomId || state.room.id, cell, letter });
           state.room = data.room || state.room;
           state.players = data.players || state.players;
@@ -530,6 +733,16 @@
         if (!state.room || state.busy) return;
         state.busy = true; $("passBtn").disabled = true;
         try {
+          if (state.practice) {
+            if (listPracticeMoves(state.game.board, state.game.usedWords).length) {
+              showGameMessage("У тебя ещё есть допустимый ход — составь слово, чтобы не пропускать.");
+            } else {
+              state.clientMessage = "";
+              applyPracticePass();
+              if (state.game?.status === "playing" && String(state.game.currentPlayerId) === "practice-bot") schedulePracticeBotTurn();
+            }
+            return;
+          }
           const data = await api("/game/pass", { roomId: state.room.roomId || state.room.id });
           state.room = data.room || state.room; state.players = data.players || state.players; state.game = data.game || state.game;
           state.clientMessage = "";
@@ -540,7 +753,10 @@
       }
       function returnLobbyAfterGame() {
         stopRoomPolling();
-        state.room = null; state.players = []; state.game = null; state.pendingCell = null; state.busy = false;
+        if (state.botTimer) clearTimeout(state.botTimer);
+        state.botTimer = null;
+        state.practice = false;
+        state.room = null; state.players = []; state.game = null; state.pendingCell = null; state.busy = false; state.clientMessage = "";
         showStage("lobby"); void loadRooms(false); startRoomPollingIfNeeded();
       }
       function startRoomPollingIfNeeded() {
@@ -550,6 +766,7 @@
       }
 
       $("createRoomBtn").addEventListener("click", createRoom);
+      $("practiceBotBtn").addEventListener("click", startPractice);
       $("refreshRoomsBtn").addEventListener("click", () => loadRooms(false));
       $("startGameBtn").addEventListener("click", startGame);
       $("leaveRoomBtn").addEventListener("click", leaveRoom);
@@ -567,7 +784,7 @@
         }
       });
       document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && state.room) refreshRoom(true);
+        if (!document.hidden && state.room && !state.practice) refreshRoom(true);
         else if (!document.hidden && state.stage === "lobby") loadRooms(true);
       });
       window.addEventListener("pageshow", () => { if (state.stage === "lobby") loadRooms(true); });
