@@ -674,6 +674,23 @@ async function cleanupExpiredEmptyDurakRooms() {
   }
 }
 
+// Repairs only a room-status mismatch after the saved game is already finished.
+// It never changes balances, settles a pot, or deletes game/room history.
+async function reconcileFinishedDurakRoomStatuses() {
+  const result = await pool.query(`
+    UPDATE durak_rooms AS r
+    SET status = 'finished'
+    FROM durak_games AS g
+    WHERE g.room_id = r.id
+      AND r.status = 'playing'
+      AND g.game_state->>'status' = 'finished'
+  `);
+  if (result.rowCount > 0) {
+    console.log(`Reconciled ${result.rowCount} finished Durak room status(es)`);
+  }
+  return result.rowCount || 0;
+}
+
 app.post("/api/durak/rooms/list", async (req, res) => {
   try {
     const user = verifyTelegram(req.body?.initData);
@@ -685,6 +702,7 @@ app.post("/api/durak/rooms/list", async (req, res) => {
       });
     }
 
+   await reconcileFinishedDurakRoomStatuses();
    await cleanupExpiredEmptyDurakRooms();
 
    const result = await pool.query(
@@ -3615,9 +3633,20 @@ async function startServer() {
     console.log("21 Ochko room tables are ready");
 
 
+    // Repair ended-room statuses proactively, even if players do not reopen old games.
+    // A maintenance failure must not prevent the game server from starting; the timer retries.
+    try {
+      await reconcileFinishedDurakRoomStatuses();
+    } catch (error) {
+      console.error("Durak initial room reconciliation error:", error.message);
+    }
+
     const durakRoomCleanupTimer = setInterval(() => {
       cleanupExpiredEmptyDurakRooms().catch((error) => {
         console.error("Durak room cleanup error:", error.message);
+      });
+      reconcileFinishedDurakRoomStatuses().catch((error) => {
+        console.error("Durak finished-room reconciliation error:", error.message);
       });
     }, 15000);
     if (typeof durakRoomCleanupTimer.unref === "function") {

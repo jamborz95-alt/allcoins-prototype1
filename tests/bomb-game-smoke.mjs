@@ -390,9 +390,12 @@ try {
     (afterPass.y + afterPass.height / 2) - (beforePass.y + beforePass.height / 2)
   ) > 35, "The bomb should animate from the moving character to the contacted opponent.");
 
-  const heartsBefore = await page.locator(
-    '#seats .seat[data-player="' + target + '"] .lives .heart.on'
-  ).count();
+  const livesBefore = await page.locator("#seats .seat").evaluateAll(seats =>
+    Object.fromEntries(seats.map(seat => [
+      seat.dataset.player,
+      seat.querySelectorAll(".lives .heart.on").length
+    ]))
+  );
   // Wait for the first explosion, then verify the game automatically starts round 2 without a button.
   await page.waitForFunction(() =>
     (document.querySelector("#fuseLabel")?.textContent || "").includes("Взрыв") ||
@@ -423,11 +426,22 @@ try {
     console.error("Bomb automatic next-round diagnostic: " + JSON.stringify(state));
     throw error;
   }
-  const heartsAfter = await page.locator(
-    '#seats .seat[data-player="' + target + '"] .lives .heart.on'
-  ).count();
-  assert.equal(heartsAfter, heartsBefore - 1,
-    "The player who holds the bomb at explosion must visibly lose one heart.");
+  const livesAfter = await page.locator("#seats .seat").evaluateAll(seats =>
+    Object.fromEntries(seats.map(seat => [
+      seat.dataset.player,
+      seat.querySelectorAll(".lives .heart.on").length
+    ]))
+  );
+  const playersWhoLostLife = Object.keys(livesBefore).filter(playerId =>
+    livesAfter[playerId] === livesBefore[playerId] - 1
+  );
+  assert.equal(playersWhoLostLife.length, 1,
+    "Exactly the player holding the bomb at explosion must visibly lose one heart.");
+  for (const [playerId, lives] of Object.entries(livesBefore)) {
+    if (playersWhoLostLife.includes(playerId)) continue;
+    assert.equal(livesAfter[playerId], lives,
+      "Players who were not holding the bomb at explosion must keep their lives.");
+  }
   assert.equal(await page.locator("#resultOverlay").isVisible(), false,
     "A regular explosion must not open a result dialog.");
   assert.equal(await page.locator("#continueRound").isVisible(), false,
