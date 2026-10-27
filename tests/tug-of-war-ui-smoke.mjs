@@ -197,8 +197,9 @@ test("two mobile players share a Tug of War room, start online, and see team str
     assert.equal(shared.game.teamScores["1"],1);
 
     await creator.locator("#pullButton").dispatchEvent("pointerdown",{pointerId:2,pointerType:"touch",isPrimary:true,button:0});
-    // The mock turns this into a warning only if multiple taps are batched together. This also
-    // ensures the normal single tap remains accepted and the UI keeps the 3D/fallback arena alive.
+    await creator.locator("#pullButton").dispatchEvent("pointerdown",{pointerId:3,pointerType:"touch",isPrimary:true,button:0});
+    await creator.locator("#warningBanner:not(.hidden)").waitFor({timeout:10000});
+    assert.equal(await creator.locator("#warningBanner").isVisible(),true,"anti-autoclicker warning should be visible when server requests it");
     await creator.waitForFunction(() => !!document.getElementById("scene3d").querySelector("canvas"),null,{timeout:10000});
     assert.deepEqual(errors,[],"no browser JavaScript exceptions should occur");
   } finally {
