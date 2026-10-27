@@ -103,5 +103,7 @@ test("server route contract has room join/state/start, authoritative move state 
   assert.match(page, /checkersApi\("\/game\/action"/);
   assert.match(page, /checkersApi\("\/game\/state"/);
   assert.match(page, /startOnlineGame\(currentRoom, game\)/);
+  assert.match(page, /var direction = piece\.color === "w" \? -1 : 1/);
+  assert.doesNotMatch(page, /piece\.color === humanColor \? -1 : 1/);
   assert.doesNotMatch(page, /Соперник подключился, но сервер пока не передаёт ходы шашек/);
 });
