@@ -3634,7 +3634,12 @@ async function startServer() {
 
 
     // Repair ended-room statuses proactively, even if players do not reopen old games.
-    await reconcileFinishedDurakRoomStatuses();
+    // A maintenance failure must not prevent the game server from starting; the timer retries.
+    try {
+      await reconcileFinishedDurakRoomStatuses();
+    } catch (error) {
+      console.error("Durak initial room reconciliation error:", error.message);
+    }
 
     const durakRoomCleanupTimer = setInterval(() => {
       cleanupExpiredEmptyDurakRooms().catch((error) => {
