@@ -293,7 +293,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   var sendBusy = false;
   var flushTimer = null;
   var warningShown = false;
-  var sceneState = { progress: 0, status: 'waiting', winnerTeam: null };
+  var sceneState = { progress: 0, status: 'waiting', winnerTeam: null, finishedAt: 0 };
   var THREERef = null;
   var renderer = null;
   var scene = null;
@@ -303,6 +303,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   var people = [];
   var ropeMaterial = null;
   var animationFrame = 0;
+  var visualProgress = 0;
+  var lastAnimationMs = 0;
   var lastSceneWidth = 0;
   var lastSceneHeight = 0;
   var ropeDirty = true;
@@ -529,9 +531,13 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     el('scoreMeter').style.left = (50+progress*48)+'%';
     el('scoreMeter').style.clipPath = 'none';
     el('scoreMeter').style.transform = 'translateX(-50%)';
+    var previousPhase = sceneState.status;
+    var nextPhase = game.phase || 'waiting';
     sceneState.progress = progress;
-    sceneState.status = game.phase || 'waiting';
     sceneState.winnerTeam = game.winnerTeam == null ? null : Number(game.winnerTeam);
+    if(nextPhase === 'finished' && previousPhase !== 'finished') sceneState.finishedAt = performance.now();
+    if(nextPhase !== 'finished') sceneState.finishedAt = 0;
+    sceneState.status = nextPhase;
     ropeDirty = true;
     if(currentMe && currentMe.disqualified){
       el('pullButton').disabled = true;
@@ -829,43 +835,71 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
     var firstNames=['Игрок 1','Игрок 2','Игрок 3'];
     for(var p=0;p<3;p++){createPerson(1,p,firstNames[p]);createPerson(2,p,firstNames[p+3]||('Игрок '+(p+4)));}
     function updatePeople(delta,progress,time){
+      var portrait=window.innerWidth<window.innerHeight;
+      var horizontalScale=portrait?0.84:1;
+      var finishElapsed=sceneState.finishedAt ? Math.max(0,(performance.now()-sceneState.finishedAt)/1000) : 0;
       for(var i=0;i<people.length;i++){
         var p=people[i];
-        var teamNet=progress*(p.team===1?1:-1);
+        // Positive progress means blue is winning; negative progress means red is winning.
+        // The losing team is physically pulled toward and then beyond the other team's line.
+        var strain=p.team===1?progress:-progress;
+        var drag=Math.max(0,Math.min(1,strain));
+        var dragCurve=Math.pow(drag,1.42);
+        var pullDir=p.team===1?1:-1;
         var active=sceneState.status==='playing';
-        var portrait=window.innerWidth<window.innerHeight;
-        var horizontalScale=portrait?0.84:1;
-        p.root.position.x=(p.baseX+progress*.38)*horizontalScale;
-        p.root.position.z=p.baseZ+Math.sin(time*2.3+p.phase)*.025;
-        p.body.rotation.z=(p.team===1?1:-1)*(.06+Math.max(0,teamNet)*.05)+(active?Math.sin(time*5+p.phase)*.025:0);
-        p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0);
+        var finishFall=(sceneState.status==='finished' && strain>0)
+          ? smoothStep(0.12,0.78,finishElapsed) : 0;
+        var slide=7.25*dragCurve + finishFall*.38;
+        var pulse=Math.min(1,Math.abs(progressVelocity)*2.8);
+        p.root.position.x=(p.baseX+pullDir*slide)*horizontalScale;
+        p.root.position.z=p.baseZ
+          +Math.sin(time*2.3+p.phase)*(.018+drag*.04)
+          +Math.sin(time*7.2+p.phase)*drag*.045;
+        // A convincing brace: hips stay low, shoulders lean away from the pull.
+        p.body.rotation.z=(p.team===1?1:-1)*(
+          .045+drag*(.24+Math.sin(time*5.4+p.phase)*.035)
+          +(active?Math.sin(time*5+p.phase)*.018:0)
+        )+(p.team===1?1:-1)*pulse*.025;
+        p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0)
+          +drag*(.045+Math.sin(time*4.8+p.phase)*.035);
+        // At the finish, the losing players stumble over the line instead of stopping on it.
+        p.root.rotation.z=pullDir*(drag*.025+finishFall*.48);
         var front=p.team===1?1:-1;
-        var wristY=1.15+Math.sin(time*5+p.phase)*.025;
-        var a1=new THREE.Vector3(-.22,1.52,.04);
-        var b1=new THREE.Vector3(front*.13,wristY,.38);
-        var a2=new THREE.Vector3(.22,1.52,.04);
-        var b2=new THREE.Vector3(front*.13,wristY,.46);
-        segment(p.armL,a1,new THREE.Vector3(front*.04,1.37,.23));
-        segment(p.foreL,new THREE.Vector3(front*.04,1.37,.23),b1);
-        segment(p.armR,a2,new THREE.Vector3(front*.04,1.37,.24));
-        segment(p.foreR,new THREE.Vector3(front*.04,1.37,.24),b2);
+        var wristY=1.15-drag*.075+Math.sin(time*5+p.phase)*(.02+drag*.018);
+        var a1=new THREE.Vector3(-.22,1.52-drag*.035,.04);
+        var b1=new THREE.Vector3(front*(.13+drag*.055),wristY,.38);
+        var a2=new THREE.Vector3(.22,1.52-drag*.035,.04);
+        var b2=new THREE.Vector3(front*(.13+drag*.055),wristY,.46);
+        segment(p.armL,a1,new THREE.Vector3(front*.04,1.37-drag*.025,.23));
+        segment(p.foreL,new THREE.Vector3(front*.04,1.37-drag*.025,.23),b1);
+        segment(p.armR,a2,new THREE.Vector3(front*.04,1.37-drag*.025,.24));
+        segment(p.foreR,new THREE.Vector3(front*.04,1.37-drag*.025,.24),b2);
         p.handL.position.copy(b1);p.handR.position.copy(b2);
       }
+    }
+    function smoothStep(edge0,edge1,value){
+      var x=Math.max(0,Math.min(1,(value-edge0)/(edge1-edge0)));
+      return x*x*(3-2*x);
     }
     function makeDynamicRope(progress,time){
       if(!ropeDirty && rafCounter%3!==0) return;
       ropeDirty=false;
       var portrait=window.innerWidth<window.innerHeight;
       var ropeHalf=portrait?3.12:4.35;
+      var tension=Math.min(1,Math.abs(progress));
+      // The rope tightens and straightens as the teams gain leverage; a travelling wave
+      // keeps it alive without making the motion jittery on mobile.
       var ropeDrift=progress*(portrait?0.25:0.55);
       var start=-ropeHalf+ropeDrift;
       var end=ropeHalf+ropeDrift;
+      var sag=.23*(1-tension*.76);
       var points=[];
       for(var n=0;n<=38;n++){
         var t=n/38;
         var x=start+(end-start)*t;
-        var y=1.13-.23*Math.sin(t*Math.PI)+Math.sin(time*3+t*13)*.018;
-        var z=Math.sin(time*2.6+t*18)*.018;
+        var y=1.13-sag*Math.sin(t*Math.PI)
+          +Math.sin(time*(2.8+tension*1.8)+t*13)*(.012+tension*.014);
+        var z=Math.sin(time*2.6+t*18)*(.012+tension*.01);
         points.push(new THREE.Vector3(x,y,z));
       }
       var curve=new THREE.CatmullRomCurve3(points);
@@ -874,10 +908,14 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var old=ropeMesh.geometry;ropeMesh.geometry=nextGeometry;old.dispose();
       var core=scene.getObjectByName('ropeCore');
       var oldCore=core.geometry;core.geometry=nextCore;oldCore.dispose();
-      var finishCross=window.innerWidth<window.innerHeight?3.02:3.12;
-      knotGroup.position.set(progress*finishCross,1.13-.23*Math.sin(.5*Math.PI),0);
-      knotGroup.rotation.z=Math.sin(time*3)*.025;
+      var finishCross=portrait?3.02:3.12;
+      knotGroup.position.set(progress*finishCross,1.13-sag,0);
+      knotGroup.rotation.z=Math.sin(time*(3+tension*2))*(.025+tension*.028)-progressVelocity*.035;
+      knotGroup.rotation.x=Math.sin(time*3.8)*tension*.035;
+      var knotMesh=knotGroup.children[0];
+      if(knotMesh && knotMesh.material) knotMesh.material.emissiveIntensity=.35+tension*.65;
     }
+    var cameraBaseY=7.1;
     function resizeScene(){
       if(!renderer||!camera||!el('scene3d'))return;
       var width=el('scene3d').clientWidth||window.innerWidth;
@@ -886,15 +924,34 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       lastSceneWidth=width;lastSceneHeight=height;
       renderer.setSize(width,height,false);camera.aspect=width/height;
       camera.fov=width<height?55:34;
-      camera.position.set(0,width<height?8.7:7.1,width<height?12.8:10.3);
+      cameraBaseY=width<height?8.7:7.1;
+      camera.position.set(0,cameraBaseY,width<height?12.8:10.3);
       camera.lookAt(0,.83,0);camera.updateProjectionMatrix();
     }
     function animate(timeMs){
       animationFrame=requestAnimationFrame(animate);
       rafCounter++;
       var time=timeMs/1000;
-      updatePeople(.016,sceneState.progress,time);
-      makeDynamicRope(sceneState.progress,time);
+      var delta=lastAnimationMs?Math.max(.001,Math.min(.05,(timeMs-lastAnimationMs)/1000)):.016;
+      lastAnimationMs=timeMs;
+      var targetProgress=sceneState.progress;
+      // A forfeit also gets a clear physical finish: the winner's pull carries the marker
+      // through the line while the losing team is dragged after it.
+      if(sceneState.status==='finished' && sceneState.winnerTeam){
+        targetProgress=sceneState.winnerTeam===2?Math.max(targetProgress,.985):Math.min(targetProgress,-.985);
+      }
+      visualProgress += (targetProgress-visualProgress)*(1-Math.exp(-delta*5.8));
+      if(Math.abs(targetProgress-visualProgress)<.001)visualProgress=targetProgress;
+      progressVelocity=(visualProgress-(animate.previousProgress||0))/delta;
+      animate.previousProgress=visualProgress;
+      updatePeople(delta,visualProgress,time);
+      makeDynamicRope(visualProgress,time);
+      if(sceneState.status==='finished' && sceneState.finishedAt){
+        var finishPulse=Math.max(0,1-(performance.now()-sceneState.finishedAt)/850);
+        camera.position.x=Math.sin(time*48)*.045*finishPulse;
+        camera.position.y=cameraBaseY+Math.sin(time*61)*.022*finishPulse;
+        camera.lookAt(0,.83,0);
+      }
       if(renderer&&scene&&camera)renderer.render(scene,camera);
     }
     resizeSceneGlobal = resizeScene;
@@ -917,7 +974,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       var cx=w/2,cy=h*.53,scale=Math.min(w/7.6,h/5.5);ctx.lineCap='round';
       for(var i=-1;i<=1;i+=2){ctx.strokeStyle=i<0?'#e96b7c':'#6bc8f4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+i*2.85*scale,cy-scale*1.5);ctx.lineTo(cx+i*2.85*scale,cy+scale*1.5);ctx.stroke();}
       ctx.strokeStyle='#d6ad64';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-3.8*scale,cy);ctx.lineTo(cx+3.8*scale,cy);ctx.stroke();
-      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var x=cx+(team===1?-1:1)*(1.45+p*.7)*scale;var y=cy+(p-1)*.26*scale;ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
+      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var strain=team===1?sceneState.progress:-sceneState.progress;var drag=Math.pow(Math.max(0,Math.min(1,strain)),1.42);var pullDir=team===1?1:-1;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+pullDir*drag*6.2)*scale;var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==(team)){x+=pullDir*.35*scale;y+=Math.min(1,(Date.now()-(sceneState.finishedAt||Date.now()))/700)*scale*.14;}x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
       ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+sceneState.progress*2.7*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
       requestAnimationFrame(draw);
     }
