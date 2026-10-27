@@ -229,6 +229,25 @@
             node.material.color.setHex(paintByCar[p.car_id]||0xe52e3d);
           }
         });
+        const spec=carVariants[String(p.car_id)]||carVariants["2107"];
+        const roof=model.children[3], windshield=model.children[4];
+        roof.geometry=baseRoofGeometry.clone();
+        windshield.geometry=baseGlassGeometry.clone();
+        roof.position.set(0,0.98,0.13);
+        windshield.position.set(0,1.02,0.11);
+        if(spec.roof==="wagon"){
+          roof.geometry=new THREE.BoxGeometry(1.35,0.49,1.7);
+          windshield.geometry=new THREE.BoxGeometry(1.25,0.34,1.43);
+          roof.position.set(0,1.0,0.29);windshield.position.set(0,1.04,0.25);
+        }else if(spec.roof==="hatch"){
+          roof.geometry=new THREE.BoxGeometry(1.34,0.44,1.16);
+          windshield.geometry=new THREE.BoxGeometry(1.24,0.29,0.91);
+          roof.position.set(0,0.95,0.03);windshield.position.set(0,0.99,0.02);
+        }else if(spec.roof==="suv"){
+          roof.geometry=new THREE.BoxGeometry(1.42,0.58,1.42);
+          windshield.geometry=new THREE.BoxGeometry(1.3,0.42,1.15);
+          roof.position.set(0,1.04,0.13);windshield.position.set(0,1.08,0.11);
+        }
         const scale=scaleByCar[p.car_id]||[1,1];
         model.scale.set(scale[0],1,scale[1]);
         model.userData.racerId=id;
