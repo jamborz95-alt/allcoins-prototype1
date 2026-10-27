@@ -47,6 +47,7 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
   assert.match(router, /const carSpecs=/);
   assert.match(router, /engineFactor=/);
   assert.match(router, /gripFactor=/);
+  assert.match(router, /const accel=1\\.05\\*ratio/);
   assert.match(router, /p\.upgrades/);
   assert.match(router, /p\.tuning/);
 });
