@@ -168,7 +168,6 @@ try {
     "Selecting a map should visibly update the selected state.");
 
   // Verify the online lobby and authoritative server snapshot in a second-client simulation.
-  await page.locator("#gameBack").click();
   await page.locator('#playerCountControl button[data-count="2"]').click();
   await page.locator('#modeControl button[data-mode="online"]').click();
   await page.locator("#playerName").fill("Test Player");
