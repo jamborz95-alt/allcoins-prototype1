@@ -43,6 +43,30 @@ async function readPlayers(client, roomId) {
   );
   return result.rows;
 }
+
+async function readRoomSnapshot(client, roomId) {
+  const roomResult = await client.query(
+    "SELECT id, status, max_players, map, game_state, created_at, invite_code FROM bomb_rooms WHERE id = $1",
+    [roomId]
+  );
+  if (!roomResult.rows.length) return null;
+  const room = roomResult.rows[0];
+  const players = await readPlayers(client, roomId);
+  return {
+    room: {
+      id: String(room.id),
+      status: String(room.status),
+      maxPlayers: Number(room.max_players),
+      map: room.map,
+      createdAt: room.created_at,
+      inviteCode: room.invite_code || null
+    },
+    game: room.game_state && typeof room.game_state === "object"
+      ? room.game_state
+      : { phase: "waiting", round: 0 },
+    players: publicPlayers(players)
+  };
+}
 async function advanceRoom(client, roomId, now = Date.now()) {
   const roomResult = await client.query(
     "SELECT id, status, max_players, map, game_state, created_at, invite_code FROM bomb_rooms WHERE id = $1 FOR UPDATE",
@@ -529,6 +553,21 @@ export function createBombOnlineRouter({ pool }) {
 
       await client.query("BEGIN");
       transactionOpen = true;
+
+      // A room is advanced by only one poll at a time. Other clients do a cheap
+      // read-only snapshot instead of waiting in a queue for the same room lock.
+      const roomLock = await client.query(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS acquired",
+        ["allcoins:bomb:" + roomId]
+      );
+      if (roomLock.rows[0]?.acquired !== true) {
+        await client.query("ROLLBACK");
+        transactionOpen = false;
+        const snapshot = await readRoomSnapshot(client, roomId);
+        if (!snapshot) return res.status(404).json({ ok: false, error: "Комната уже закрыта." });
+        return res.json({ ok: true, ...snapshot, playerId });
+      }
+
       const snapshot = await advanceRoom(client, roomId);
       if (!snapshot) {
         await client.query("ROLLBACK");
