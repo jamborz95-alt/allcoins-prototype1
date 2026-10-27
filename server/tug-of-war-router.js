@@ -469,7 +469,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
       const coefficientOfVariation = mean > 0 ? Math.sqrt(variance) / mean : 1;
       const mechanicalPattern = recentIntervals.length >= 10 && mean >= 20 && mean <= 125 && coefficientOfVariation < 0.035;
       const excessiveRate = requestRate > 24 && rawCount >= 4;
-      const oversizedBatch = rawCount > 6;
+      const oversizedBatch = rawCount > 10 || (rawCount > 6 && mean > 0 && mean < 48);
       const flagged = mechanicalPattern || excessiveRate || oversizedBatch;
 
       integrity.lastBatchId = batchId;
@@ -487,6 +487,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
             [roomId, user.id, integrity.warnings]
           );
           integrity.warningPending = false;
+          game.integrity[id] = integrity;
           game.message = "Игрок " + String(user.name) + " дисквалифицирован за повторное подозрительное нажатие.";
           const roster = await readPlayers(client, roomId);
           const eligibleTeams = new Set(roster.filter(p => !p.disqualified).map(p => Number(p.team)));
