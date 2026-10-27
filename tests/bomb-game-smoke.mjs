@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 const root = process.cwd();
 const bombHtml = await readFile(resolve(root, "bomb.html"), "utf8");
 const bombJs = await readFile(resolve(root, "bomb-3d.js"), "utf8");
+const bombOnlineRouter = await readFile(resolve(root, "server/bomb-online-router.js"), "utf8");
 const i18nExtraJs = await readFile(resolve(root, "i18n-extra.js"), "utf8");
 const threeBundle = await readFile(resolve(root, "three.min.js"), "utf8");
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
@@ -14,10 +15,10 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-nameplate-1"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-1"'),
   "The Games menu should open the current cache-busted Bomb page.");
 assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026n"></script>') &&
-  bombHtml.includes('<script src="./bomb-3d.js?v=20261027-nameplate-1"></script>'),
+  bombHtml.includes('<script src="./bomb-3d.js?v=20261027-online-1"></script>'),
   "The page must load the local Three.js library and current 3D renderer without a CDN dependency.");
 assert.ok(bombJs.includes("const VIEW_H = 15.6;") &&
   bombJs.includes("new THREE.SphereGeometry(.30, 24, 16, 0, Math.PI * 2, 0, Math.PI * .62), helmetMat") &&
@@ -29,6 +30,20 @@ assert.ok(indexHtml.indexOf('id="durakEntry"') < bombTile &&
   "Pass the Bomb should appear in the first row after Durak.");
 assert.ok(bombHtml.includes("function startGame()") && bombHtml.includes("function passBombFromBot(target)"),
   "The standalone game must include its start and bot-pass logic.");
+assert.ok(bombHtml.includes('data-mode="online"') &&
+  bombHtml.includes('function startOnlineMatchmaking()') &&
+  bombHtml.includes('function syncOnlineRoom()') &&
+  bombHtml.includes('function passBombOnline(target)') &&
+  bombHtml.includes('https://allcoins-server.onrender.com/api/bomb'),
+  "Bomb should expose server-backed online matchmaking, position sync and online bomb passing.");
+assert.ok(bombOnlineRouter.includes('router.post("/matchmaking/join"') &&
+  bombOnlineRouter.includes('router.post("/rooms/state"') &&
+  bombOnlineRouter.includes('router.post("/rooms/pass"') &&
+  bombOnlineRouter.includes('router.post("/rooms/leave"') &&
+  bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_rooms') &&
+  bombOnlineRouter.includes('CREATE TABLE IF NOT EXISTS bomb_room_players'),
+  "Bomb Online backend should create persistent rooms and support matchmaking, sync, pass and leave.");
+
 assert.ok(bombHtml.includes('<div class="obstacle-layer" id="obstacleLayer"') &&
   bombHtml.includes("const MAP_OBSTACLES =") &&
   bombHtml.includes("function slideAroundObstacles(") &&
