@@ -120,14 +120,14 @@ try {
   await page.goto("http://127.0.0.1:4174/drag-racing.html", { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
     document.querySelector("#roomStatus")?.textContent.includes("Открытых"));
-  assert.equal((await page.locator("#balance").textContent()).replace(/\\s/g, ""), "10000");
+  assert.equal((await page.locator("#balance").textContent()).replace(/\s/g, ""), "10000");
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/profile" && call.body.initData === "mock-init-data"),
     "Profile request should contain Telegram initData.");
 
   await page.getByRole("button", { name: "🛒 Магазин" }).click();
   const cheapCar = page.locator(".car-card").filter({ hasText: "ВАЗ-2104" });
   await cheapCar.getByRole("button", { name: "Купить" }).click();
-  await page.waitForFunction(() => Number(document.querySelector("#balance")?.textContent.replace(/\\D/g, "")) === 5500);
+  await page.waitForFunction(() => Number(document.querySelector("#balance")?.textContent.replace(/\D/g, "")) === 5500);
   assert.ok(ownedCars.includes("2104"), "The inexpensive VAZ-2104 should be bought through the mocked server wallet.");
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/garage/buy" && call.body.carId === "2104"),
     "Garage purchase should be sent to the authenticated server.");
