@@ -50,6 +50,12 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
   assert.match(router, /const accel=1\.05\*ratio/);
   assert.match(router, /p\.upgrades/);
   assert.match(router, /p\.tuning/);
+  assert.match(router, /ADD COLUMN IF NOT EXISTS gear_changed_at/);
+  assert.match(router, /gear_changed_at=CASE WHEN gear<>\$3 THEN NOW\(\)/);
+  assert.match(router, /const shiftFactor=sinceShift < shiftWindow \? 0\.15 : 1/);
+  assert.match(router, /const upgradePower=\{ecu:8,intake:5,exhaust:7,turbo:22\}/);
+  assert.match(page, /upg\(\)\.tires\?0\.12:0/);
+  assert.match(page, /car\(\)\.weight\*\(upg\(\)\.weight\?0\.9:1\)/);
 });
 
 
