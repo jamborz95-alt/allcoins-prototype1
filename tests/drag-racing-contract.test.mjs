@@ -108,6 +108,16 @@ test("Online race polling does not overlap and 3D race view receives every parti
   assert.match(router, /bestFinishFraction=Infinity/);
 });
 
+
+test("An idle race ends after two minutes and either pays the clear leader or refunds a draw", () => {
+  assert.match(router, /now-Number\(game\.raceStartedAt\|\|now\)>=120000/);
+  assert.match(router, /const maxDistance=Math\.max\(0,\.\.\.ps\.rows\.map/);
+  assert.match(router, /if\(maxDistance<1\|\|leaders\.length!==1\)/);
+  assert.match(router, /draw:true,refunded:true/);
+  assert.match(page, /room\.game\?\.refunded\?'Время вышло — ничья, все ставки возвращены\.'/);
+  assert.match(page, /room\.game\?\.timedOut\?'Время вышло\. Победитель: '/);
+});
+
 test("Abandoned waiting rooms refund each reserved stake before cleanup", () => {
   assert.match(router, /async function cleanupDormantRooms\(\)/);
   assert.match(router, /r\.status IN \('waiting','playing'\).*updated_at<NOW\(\)-INTERVAL '2 minutes'.*last_seen_at>NOW\(\)-INTERVAL '2 minutes'/);
