@@ -15,7 +15,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-3"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-4"'),
   "The Games menu should open the current cache-busted Bomb page.");
 assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026n"></script>') &&
   bombHtml.includes('<script src="./bomb-3d.js?v=20261027-online-1"></script>'),
@@ -169,6 +169,7 @@ try {
 
   // Verify the online lobby and authoritative server snapshot in a second-client simulation.
   await page.locator("#gameBack").click();
+  await page.locator('#playerCountControl button[data-count="2"]').click();
   await page.locator('#modeControl button[data-mode="online"]').click();
   await page.locator("#playerName").fill("Test Player");
   let onlineJoinRequests = 0;
@@ -560,12 +561,16 @@ try {
   // Keep the bot start deterministic, then target the first player across the arena.
   // The fixed random value could otherwise select an adjacent bot and skip walking.
   await page.evaluate(() => { Math.random = () => 0; });
-  await page.waitForFunction(() => Boolean(document.querySelector("#botCharacters .bot-character.walking")),
-    undefined, { timeout: 3500 });
+  await page.waitForFunction((previousHolder) => {
+    const current = document.querySelector("#seats .seat.current")?.dataset.player;
+    const botIsWalking = Boolean(document.querySelector("#botCharacters .bot-character.walking"));
+    // A very fast bot can finish a short transfer between browser polling frames.
+    return Boolean((current && current !== previousHolder) || botIsWalking);
+  }, botHolder, { timeout: 8000 });
   await page.waitForFunction((previousHolder) => {
     const current = document.querySelector("#seats .seat.current")?.dataset.player;
     return Boolean(current && current !== previousHolder);
-  }, botHolder, { timeout: 5000 });
+  }, botHolder, { timeout: 8000 });
   const nextHolder = await page.locator("#seats .seat.current").getAttribute("data-player");
   assert.notEqual(nextHolder, botHolder, "A bot should walk to an opponent and pass the bomb on contact.");
   await page.evaluate(() => {

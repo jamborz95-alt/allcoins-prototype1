@@ -772,6 +772,16 @@
         const data = await bombOnlineRequest("/matchmaking/join", {
           playerId: onlinePlayerId, name: name, maxPlayers: chosenCount, map: chosenMap
         });
+        // Cancel may be tapped while the initial network request is still in flight.
+        // If the room arrives afterward, leave it instead of silently reopening search.
+        if (!onlineSearchActive) {
+          try {
+            await bombOnlineRequest("/rooms/leave", {
+              roomId: data.room.id, playerId: onlinePlayerId
+            });
+          } catch (_) {}
+          return;
+        }
         onlineRoomId = data.room.id;
         displayOnlineStatus("В комнате " + data.players.length + " из " + data.room.maxPlayers + ". Ожидаем соперников…");
         $("startGame").disabled = false;
@@ -779,6 +789,7 @@
         startOnlinePolling();
         await syncOnlineRoom();
       } catch (error) {
+        if (!onlineSearchActive) return;
         onlineSearchActive = false;
         $("startGame").disabled = false;
         $("startGame").textContent = "Попробовать снова";
