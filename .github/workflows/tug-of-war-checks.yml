@@ -1,0 +1,42 @@
+name: Tug of War multiplayer checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tug-of-war.html"
+      - "index.html"
+      - "server/server.js"
+      - "server/tug-of-war-router.js"
+      - "tests/tug-of-war-ui-smoke.mjs"
+      - ".github/workflows/tug-of-war-checks.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tug-of-war:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npm init -y && npm install --no-save playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Check backend and test syntax
+        run: |
+          node --check server/tug-of-war-router.js
+          node --check server/server.js
+          node --check tests/tug-of-war-ui-smoke.mjs
+      - name: Check inline game JavaScript syntax
+        run: |
+          node --input-type=module -e "import {readFileSync,writeFileSync} from 'node:fs'; const html=readFileSync('tug-of-war.html','utf8'); const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)]; if(!scripts.length) throw new Error('Inline app script was not found'); writeFileSync('tests/.tug-of-war-inline-check.mjs',scripts[scripts.length-1][1]);"
+          node --check tests/.tug-of-war-inline-check.mjs
+      - name: Test two mobile players, online pull state, and warning overlay
+        run: node tests/tug-of-war-ui-smoke.mjs
