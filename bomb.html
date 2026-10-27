@@ -947,7 +947,7 @@
     }
     function startOnlinePolling() {
       if (onlinePollTimer) clearInterval(onlinePollTimer);
-      onlinePollTimer = window.setInterval(syncOnlineRoom, 350);
+      onlinePollTimer = window.setInterval(syncOnlineRoom, 250);
     }
     async function startOnlineMatchmaking() {
       if (onlineSearchActive) return;
