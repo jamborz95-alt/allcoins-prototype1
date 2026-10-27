@@ -1433,7 +1433,7 @@
 
         // In extreme hands keep a narrow visible strip of each card instead of
         // letting the row create horizontal overflow.
-        overlap = Math.min(Math.max(0, cardWidth - 6), overlap);
+        overlap = Math.min(Math.max(0, cardWidth - 2), overlap);
         const cardHeight = cardWidth * (baseHeight / baseWidth);
         host.style.setProperty("--uno-hand-card-width", cardWidth.toFixed(2) + "px");
         host.style.setProperty("--uno-hand-card-height", cardHeight.toFixed(2) + "px");
