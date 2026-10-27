@@ -330,21 +330,57 @@ try {
   assert.match(await page.locator("#instruction").innerText(), /физическом касании/i,
     "The game should tell the player that contact transfers the bomb.");
 
-  // Hold the virtual joystick diagonally. The animated miner should physically reach the opponent.
+  // Steer toward the actual opponent position instead of assuming a fixed diagonal
+  // reaches them on every viewport/map layout. Keep one pointer held to test real joystick input.
   const stick = await page.locator("#moveJoystick").boundingBox();
   assert.ok(stick, "The movement joystick should be visible before contact.");
   const sx = stick.x + stick.width / 2;
   const sy = stick.y + stick.height / 2;
+  const targetCharacter = page.locator('#botCharacters .bot-character[data-player="3"]');
+  assert.equal(await targetCharacter.count(), 1, "The target opponent should have a visible character.");
   await page.mouse.move(sx, sy);
   await page.mouse.down();
-  await page.mouse.move(sx + stick.width * .31, sy + stick.height * .31, {steps:8});
-  await page.waitForFunction(() =>
-    document.querySelector('#seats .seat.current')?.dataset.player === "3",
-    undefined,
-    { timeout: 3500 }
-  );
+  let contactReached = false;
+  const contactDeadline = Date.now() + 7000;
+  try {
+    while (Date.now() < contactDeadline) {
+      if (await page.locator('#seats .seat.current').getAttribute("data-player") === "3") {
+        contactReached = true;
+        break;
+      }
+      const positions = await page.evaluate(() => {
+        const player = document.querySelector("#playerCharacter");
+        const target = document.querySelector('#botCharacters .bot-character[data-player="3"]');
+        if (!player || !target) return null;
+        return {
+          playerX: Number.parseFloat(player.style.left),
+          playerY: Number.parseFloat(player.style.top),
+          targetX: Number.parseFloat(target.style.left),
+          targetY: Number.parseFloat(target.style.top)
+        };
+      });
+      if (!positions || !Object.values(positions).every(Number.isFinite)) break;
+      const dx = positions.targetX - positions.playerX;
+      const dy = positions.targetY - positions.playerY;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 1) break;
+      const joystickTravel = stick.width * .32;
+      await page.mouse.move(
+        sx + dx / distance * joystickTravel,
+        sy + dy / distance * joystickTravel,
+        { steps: 2 }
+      );
+      await page.waitForTimeout(90);
+    }
+  } finally {
+    await page.mouse.up();
+  }
+  if (!contactReached) {
+    contactReached = await page.locator('#seats .seat.current').getAttribute("data-player") === "3";
+  }
+  assert.equal(contactReached, true,
+    "Joystick movement should physically reach the selected opponent and transfer the bomb.");
   await page.waitForTimeout(560);
-  await page.mouse.up();
   assert.equal(await page.locator("#seats .seat.current").getAttribute("data-player"), target,
     "Physically touching the opponent should automatically transfer the bomb to them.");
   const afterPass = await page.locator("#bomb").boundingBox();
