@@ -70,6 +70,13 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
 
 
 
+test("Online countdown lights, race animation class and winner status follow server phase", () => {
+  assert.match(page, /classList\.toggle\('racing',isRacing\)/);
+  assert.match(page, /room\.game\?\.phase==='countdown'/);
+  assert.match(page, /room\.game\?\.phase==='race'/);
+  assert.match(page, /room\.game\.startAt/);
+});
+
 test("Online gear shifts are sent immediately and disconnected throttle input times out", () => {
   assert.match(page, /queueOnlineAction\(\)\}/);
   assert.match(router, /p\.last_seen_at,p\.gear_changed_at,g\.upgrades,g\.tuning/);
