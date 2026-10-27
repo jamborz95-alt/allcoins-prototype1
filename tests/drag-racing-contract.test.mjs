@@ -21,8 +21,18 @@ test("Drag Racing room stake is debited transactionally and room cancellation re
   assert.match(router, /UPDATE players SET balance=balance-\$1::BIGINT/);
   assert.match(router, /UPDATE players SET balance=balance\+\$1::BIGINT/);
   assert.match(router, /for\(const p of all\.rows\)await credit\(client,p\.id,stake\)/);
-  assert.match(router, /recordGameCommission\(client,\{game:"drag-racing",eventKey:"drag-racing:"\+id/);
+  assert.match(router, /recordDragRacingCommission\(client,\{eventKey:"drag-racing:"\+id/);
   assert.match(router, /settled:true/);
+});
+
+
+test("Drag Racing commission uses exact BIGINT arithmetic and credits the configured admin once", () => {
+  assert.match(router, /async function recordDragRacingCommission\(client,\{eventKey,grossAmount\}\)/);
+  assert.match(router, /const amount=gross\*5n\/100n/);
+  assert.match(router, /INSERT INTO allcoins_commissions/);
+  assert.match(router, /ON CONFLICT\(event_key\) DO NOTHING RETURNING id/);
+  assert.match(router, /configuredAdminTelegramId\(\)/);
+  assert.match(router, /balance=balance\+\$1::BIGINT/);
 });
 
 test("Drag Racing garage purchases are persisted and server-priced", () => {
