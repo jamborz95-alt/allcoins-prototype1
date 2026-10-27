@@ -494,6 +494,7 @@ export function createBombOnlineRouter({ pool }) {
 
   router.post("/rooms/state", async (req, res) => {
     let client;
+    let transactionOpen = false;
     try {
       const roomId = String(req.body?.roomId || "").trim();
       const playerId = String(req.body?.playerId || "").trim().slice(0, 80);
@@ -501,17 +502,20 @@ export function createBombOnlineRouter({ pool }) {
         return res.status(400).json({ ok: false, error: "Некорректный идентификатор комнаты." });
       }
       client = await pool.connect();
-      await client.query("BEGIN");
-      await client.query("SELECT id FROM bomb_rooms WHERE id = $1 FOR UPDATE", [roomId]);
-      const membership = await client.query("SELECT 1 FROM bomb_room_players WHERE room_id = $1 AND player_id = $2", [roomId, playerId]);
+
+      // Update the player's position before locking the shared room row. Previously
+      // every heartbeat held the room lock during several player/state queries, so
+      // all clients queued behind one another. Only the authoritative game advance
+      // below needs the room lock.
+      const membership = await client.query(
+        "SELECT 1 FROM bomb_room_players WHERE room_id = $1 AND player_id = $2",
+        [roomId, playerId]
+      );
       if (!membership.rows.length) {
-        await client.query("ROLLBACK");
         return res.status(403).json({ ok: false, error: "Ты больше не находишься в этой комнате." });
       }
       const xPct = clampPercent(req.body?.xPct, 50);
       const yPct = clampPercent(req.body?.yPct, 66);
-      // Keep movement responsive without a DB write for tiny sub-pixel moves
-      // or a heartbeat on every 350ms poll.
       await client.query(
         "UPDATE bomb_room_players SET " +
         "x_pct = CASE WHEN ABS(COALESCE(x_pct, 50) - $3) > 0.35 THEN $3 ELSE x_pct END, " +
@@ -522,22 +526,26 @@ export function createBombOnlineRouter({ pool }) {
         "last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL '2 seconds')",
         [roomId, playerId, xPct, yPct]
       );
+
+      await client.query("BEGIN");
+      transactionOpen = true;
       const snapshot = await advanceRoom(client, roomId);
       if (!snapshot) {
         await client.query("ROLLBACK");
+        transactionOpen = false;
         return res.status(404).json({ ok: false, error: "Комната уже закрыта." });
       }
       await client.query("COMMIT");
-      res.json({ ok: true, ...snapshot, playerId });
+      transactionOpen = false;
+      return res.json({ ok: true, ...snapshot, playerId });
     } catch (error) {
-      if (client) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      if (client && transactionOpen) { try { await client.query("ROLLBACK"); } catch (_) {} }
       console.error("Bomb online state error:", error.message);
-      res.status(500).json({ ok: false, error: "Не удалось обновить состояние онлайн-игры." });
+      return res.status(500).json({ ok: false, error: "Не удалось обновить состояние онлайн-игры." });
     } finally {
       if (client) client.release();
     }
   });
-
   router.post("/rooms/pass", async (req, res) => {
     let client;
     try {
