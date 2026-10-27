@@ -715,6 +715,7 @@
     } catch (_) {}
   }
   let currentState = null;
+  let currentStateFingerprint = "";
   let busy = false;
   let pollBusy = false;
   let roomStateVersion = 0;
@@ -923,6 +924,7 @@
         stake: Number($("anteInput").value)
       });
       currentRoomId = String(result.room.id);
+      currentStateFingerprint = "";
       saveCurrentRoom(currentRoomId);
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
@@ -945,6 +947,7 @@
       setStatus("lobbyStatus", "Входим в комнату…");
       await api("/rooms/join", { roomId: String(roomId) });
       currentRoomId = String(roomId);
+      currentStateFingerprint = "";
       saveCurrentRoom(currentRoomId);
       $("lobbyPanel").classList.add("hidden");
       $("roomPanel").classList.remove("hidden");
@@ -1217,6 +1220,10 @@
       // Ignore results from polls that began before a move or room change.
       if (!currentRoomId || String(currentRoomId) !== roomIdAtStart ||
           versionAtStart !== roomStateVersion || (busy && !allowBusy)) return;
+      // Avoid rebuilding the whole poker table and hand when the server state is identical.
+      const fingerprint = JSON.stringify(result);
+      if (fingerprint === currentStateFingerprint) return;
+      currentStateFingerprint = fingerprint;
       renderRoom(result);
     } finally {
       pollBusy = false;
@@ -1325,6 +1332,7 @@
     try {
       await api("/rooms/leave", { roomId: currentRoomId });
       currentRoomId = null;
+      currentStateFingerprint = "";
       saveCurrentRoom(null);
       setSekaFullscreen(false);
       currentRoomData = null;
