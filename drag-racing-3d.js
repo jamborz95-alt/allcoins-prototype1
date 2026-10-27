@@ -132,11 +132,48 @@
     const car=new THREE.Group();
     car.position.set(0,-0.07,2.6);scene.add(car);
     const addBox=(parent,geometry,material,x,y,z)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);parent.add(mesh);return mesh;};
-    addBox(car,new THREE.BoxGeometry(1.78,0.42,3.35),red,0,0.57,0);
-    addBox(car,new THREE.BoxGeometry(1.68,0.26,1.23),red,0,0.78,-0.91);
-    addBox(car,new THREE.BoxGeometry(1.62,0.24,0.78),red,0,0.78,1.18);
+    // Beveled low-poly body hull follows a sedan's nose, hood, cabin and rear quarter.
+    function makeSedanBody(){
+      const stations=[
+        [-1.79,0.72,0.43,0.63],[-1.62,0.84,0.39,0.76],
+        [-1.25,0.89,0.36,0.79],[-0.82,0.85,0.36,0.78],
+        [-0.36,0.81,0.36,0.73],[0.52,0.81,0.36,0.73],
+        [0.96,0.86,0.37,0.77],[1.38,0.85,0.40,0.71],
+        [1.74,0.74,0.43,0.62]
+      ];
+      const vertices=[];
+      for(const [z,width,bottom,top] of stations){
+        vertices.push(-width,bottom,z, width,bottom,z, -width,top,z, width,top,z);
+      }
+      const indices=[];
+      for(let i=0;i<stations.length-1;i++){
+        const a=i*4,b=(i+1)*4;
+        // left skin, right skin, hood/roofline skin and underbody
+        indices.push(a,a+2,b+2,a,b+2,b);
+        indices.push(a+1,b+1,b+3,a+1,b+3,a+3);
+        indices.push(a+2,a+3,b+3,a+2,b+3,b+2);
+        indices.push(a,b,b+1,a,b+1,a+1);
+      }
+      indices.push(0,1,3,0,3,2);
+      const last=(stations.length-1)*4;
+      indices.push(last,last+2,last+3,last,last+3,last+1);
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute("position",new THREE.Float32BufferAttribute(vertices,3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+      return geometry;
+    }
+    const bodyMesh=new THREE.Mesh(makeSedanBody(),red);
+    bodyMesh.name="sedan-body";car.add(bodyMesh);
+    const hood=addBox(car,new THREE.BoxGeometry(1.55,0.105,0.91),red,0,0.755,-1.02);
+    hood.rotation.x=-0.025;
+    const trunk=addBox(car,new THREE.BoxGeometry(1.52,0.105,0.58),red,0,0.755,1.22);
+    trunk.rotation.x=0.018;
     addBox(car,new THREE.BoxGeometry(1.35,0.48,1.38),red,0,0.98,0.13);
     addBox(car,new THREE.BoxGeometry(1.25,0.34,1.13),glass,0,1.02,0.11);
+    addBox(car,new THREE.BoxGeometry(1.28,0.045,0.075),dark,0,0.56,-1.79);
+    addBox(car,new THREE.BoxGeometry(0.52,0.18,0.08),mat(0x171b22,0.4,0.25),0,0.54,-1.805);
     addBox(car,new THREE.BoxGeometry(1.32,0.055,0.88),dark,0,0.705,0.42);
     addBox(car,new THREE.BoxGeometry(1.87,0.14,0.19),dark,0,0.46,1.63);
     addBox(car,new THREE.BoxGeometry(1.68,0.08,0.17),mat(0xd5d9de,0.3,0.85),0,0.52,1.75);
@@ -200,6 +237,16 @@
     window.addEventListener("allcoins:car-selected",event=>applyCarVariant(event.detail?.carId));
     applyCarVariant(window.__allcoinsDragRacingCarId||"2107");
 
+    // Door seams and side skirts create more definition in the moving body.
+    for(const side of [-1,1]){
+      const doorLine=addBox(car,new THREE.BoxGeometry(0.012,0.23,0.58),dark,side*0.814,0.61,-0.04);
+      doorLine.rotation.y=side<0?-0.025:0.025;
+      addBox(car,new THREE.BoxGeometry(0.065,0.055,0.54),dark,side*0.842,0.43,0.15);
+      addBox(car,new THREE.BoxGeometry(0.21,0.035,0.045),mat(0xb9c5ce,0.28,0.72),side*0.57,0.72,-1.735);
+      addBox(car,new THREE.BoxGeometry(0.18,0.035,0.035),tail,side*0.58,0.7,1.76);
+      // A small turn-signal lens on each front corner catches the key light.
+      addBox(car,new THREE.BoxGeometry(0.08,0.035,0.035),mat(0xffb34d,0.3),side*0.76,0.63,-1.77);
+    }
     // Rear spoiler and a pair of exhaust tips add a visible drag-build silhouette.
     addBox(car,new THREE.BoxGeometry(1.35,0.055,0.23),dark,0,1.18,1.41);
     for(const x of [-0.47,0.47]){
