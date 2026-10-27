@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#08151a">
+<title>Перетягивание каната — ALLCOINS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#08151a;--panel:#12242b;--panel2:#192e37;--line:#35515b;--gold:#f3d28c;--mint:#67f5b5;--muted:#a9bdc5;--red:#ff7781;--blue:#73c9ff}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:#f4f7f8;font-family:Inter,Arial,Helvetica,sans-serif;overscroll-behavior:none}
+body{min-height:100vh;min-height:100dvh}
+button,input{font:inherit}
+button{min-height:44px;border:0;border-radius:13px;padding:12px 14px;font-weight:850;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.42;cursor:default}
+.hidden{display:none!important}
+.app-shell{width:min(100%,760px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(13px + env(safe-area-inset-top)) 14px calc(22px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at top,#173238 0%,#0a1b21 40%,#08151a 80%)}
+.header{display:flex;align-items:center;gap:11px;margin:0 0 18px}
+.back{width:44px;flex:0 0 44px;padding:8px;background:#1c3038;border:1px solid #39515b;color:#fff}
+.logo-mark{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;position:relative;background:linear-gradient(140deg,#264d4b,#122631 70%);border:1px solid #e9c77c;box-shadow:inset 0 1px #fff4,0 6px 16px #0005;font-size:25px}
+.logo-mark:after{content:"✦";position:absolute;right:5px;top:3px;font-size:9px;color:var(--gold)}
+h1{margin:0;font-size:22px;letter-spacing:.15px;line-height:1.12}
+.subtitle{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.4}
+.brand-tag{margin-left:auto;color:var(--gold);font-size:9px;letter-spacing:1.2px;border:1px solid #e8c77a80;border-radius:9px;padding:8px 7px;background:#1d2d32;font-weight:900}
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:15px;padding:19px;border-radius:23px;border:1px solid #52706e;background:radial-gradient(circle at 12% 30%,#376f5e60,transparent 43%),linear-gradient(140deg,#203b3c,#122731 64%,#171f2b);box-shadow:0 18px 38px #0004;margin-bottom:14px}
+.hero-art{width:95px;height:95px;flex:0 0 95px;display:grid;place-items:center;position:relative;border-radius:26px;border:1px solid #efd38c99;background:linear-gradient(145deg,#34594c,#13242e);box-shadow:inset 0 1px #ffffff35,0 9px 18px #0005}
+.hero-art .rope-art{width:74px;height:8px;border-radius:10px;background:repeating-linear-gradient(0deg,#ba8744 0 3px,#e6ca84 3px 5px,#806037 5px 7px);box-shadow:0 3px 3px #0008;transform:rotate(-12deg);position:relative}
+.hero-art .rope-art:before,.hero-art .rope-art:after{content:"";position:absolute;top:-25px;width:21px;height:35px;border-radius:9px 9px 4px 4px;border:2px solid #edcb8c;background:linear-gradient(90deg,#207f89,#35bdc4);box-shadow:0 4px 4px #0005}
+.hero-art .rope-art:before{left:8px;transform:rotate(-16deg)}
+.hero-art .rope-art:after{right:8px;transform:rotate(16deg);background:linear-gradient(90deg,#a94150,#f0787b)}
+.hero-glint{position:absolute;right:10px;top:9px;color:#ffe7a6;font-size:15px;text-shadow:0 0 8px #f3d28caa}
+.hero h2{font-size:22px;line-height:1.15;margin:0 0 8px}
+.hero p{margin:0;color:#c6d6d9;font-size:12px;line-height:1.5}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.pill{padding:6px 9px;border-radius:999px;background:#10252a;border:1px solid #46615f;color:#d8e6e5;font-size:10px;font-weight:800}
+.panel{border:1px solid #2c4852;border-radius:20px;padding:16px;margin-bottom:13px;background:linear-gradient(150deg,#162c34eb,#10232cf5);box-shadow:0 10px 27px #0003}
+.panel-title{font-size:15px;font-weight:900;margin:0 0 13px}
+.field-label{display:block;color:#c5d5d9;font-size:12px;font-weight:800;margin:12px 0 7px}
+.field-label:first-of-type{margin-top:0}
+input{display:block;width:100%;min-width:0;min-height:47px;padding:11px 12px;border-radius:12px;border:1px solid #3d5b65;background:#091920;color:#fff;outline:none}
+input:focus{border-color:#edcf84;box-shadow:0 0 0 2px #edcf8424}
+.stake-help{font-size:10px;color:#91acb5;line-height:1.45;margin-top:-3px}
+.segmented{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.segmented button{min-height:47px;padding:10px 5px;background:#0b1a20;border:1px solid #35515a;color:#d3e1e4;font-size:13px}
+.segmented button.selected{background:linear-gradient(140deg,#584a2f,#2b352e);border-color:#f0d28a;color:#ffe5a4;box-shadow:inset 0 0 0 1px #f0d28a26}
+.primary{color:#101a18;background:linear-gradient(135deg,#ffe9b3,#d4a74f);box-shadow:0 6px 17px #dfb95a25}
+.secondary{background:#243a43;color:#fff;border:1px solid #3c5963}
+.full{width:100%}
+.row{display:flex;gap:9px}
+.row>*{flex:1;min-width:0}
+.create-button{margin-top:14px;min-height:52px;font-size:15px}
+.muted{color:var(--muted);font-size:11px;line-height:1.5}
+.rooms-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rooms-header .panel-title{margin:0}
+.room-item{display:flex;align-items:center;gap:10px;padding:12px;margin-top:8px;border-radius:14px;border:1px solid #2e4b55;background:linear-gradient(115deg,#0b1c22,#132a32)}
+.room-icon{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;border-radius:12px;background:#243d40;border:1px solid #d4b36b66;font-size:20px}
+.room-copy{flex:1;min-width:0}
+.room-copy strong{display:block;font-size:12px;line-height:1.35}
+.room-copy small{display:block;color:#a9c0c7;font-size:10px;margin-top:4px;line-height:1.4}
+.room-item button{padding:9px 12px;min-height:39px;font-size:12px}
+.notice{margin-top:10px;min-height:20px;color:#95eac3;font-size:12px;line-height:1.45}
+.empty{padding:20px 10px;text-align:center;color:#91a9b1;font-size:12px;line-height:1.5}
+.room-screen,.game-screen{position:fixed;inset:0;z-index:30;overflow:auto;overscroll-behavior:none;background:radial-gradient(ellipse at top,#1b3a3d,#0a181f 54%,#071217);padding:calc(13px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))}
+.room-wrap{width:min(100%,620px);margin:0 auto}
+.room-top{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.room-top h2{font-size:19px;margin:0}
+.room-code{margin-left:auto;color:#f0d18b;border:1px solid #b9974e88;background:#211f18;border-radius:9px;padding:8px 10px;font-size:12px;letter-spacing:.6px;font-weight:900}
+.room-status{padding:12px;border:1px solid #35565a;border-radius:14px;background:#10272d;color:#d9efea;font-size:12px;line-height:1.5;margin-bottom:13px}
+.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team-card{min-width:0;padding:13px;border-radius:16px;background:#101f26;border:1px solid #2f4a54}
+.team-card.team-red{border-color:#8c4751;background:linear-gradient(145deg,#3a222b,#16232b 75%)}
+.team-card.team-blue{border-color:#3b7185;background:linear-gradient(145deg,#193b4c,#16232b 75%)}
+.team-heading{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900;margin-bottom:10px}
+.team-dot{width:9px;height:9px;border-radius:50%;background:#fa7a85;box-shadow:0 0 9px #ff647055}
+.team-blue .team-dot{background:#76d0ff;box-shadow:0 0 9px #5fcaff55}
+.player-line{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:11px;color:#e2eaec;line-height:1.3;overflow-wrap:anywhere}
+.player-mini{width:23px;height:23px;flex:0 0 23px;border-radius:8px;display:grid;place-items:center;background:#5d313d;color:#ffdadd;font-size:11px}
+.team-blue .player-mini{background:#214f63;color:#d9f4ff}
+.player-state{margin-left:auto;color:#87edba;font-size:9px;font-weight:800;white-space:nowrap}
+.room-actions{margin-top:15px}
+.room-actions button{margin-top:8px}
+.room-rules{margin-top:13px;color:#a7bac0;font-size:11px;line-height:1.55}
+.game-screen{padding:0;overflow:hidden;background:#07151a;touch-action:pan-y}
+body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;touch-action:none;user-select:none;-webkit-user-select:none}
+#scene3d{position:absolute;inset:0;z-index:0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#315c50,#0a1a20 80%)}
+#scene3d canvas{display:block;width:100%;height:100%;touch-action:none}
+.scene-vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,#071318cf 0%,transparent 27%,transparent 63%,#08181ce8 100%);box-shadow:inset 0 0 90px #03090bc9}
+.game-ui{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;pointer-events:none;padding:calc(10px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}
+.game-ui button,.game-ui .tap-button,.game-ui .pointer{pointer-events:auto}
+.game-top{display:flex;align-items:center;gap:8px}
+.exit-game{width:40px;height:40px;min-height:40px;flex:0 0 40px;border-radius:13px;background:#0d2028c9;border:1px solid #a1bdc344;color:#f5f8f9;font-size:18px;padding:0;backdrop-filter:blur(8px)}
+.game-title{min-width:0;flex:1}
+.game-title b{display:block;font-size:14px;line-height:1.2;text-shadow:0 2px 6px #000}
+.game-title small{display:block;color:#c1d5d6;font-size:10px;margin-top:4px}
+.live-badge{border:1px solid #93e6bf77;color:#a8f5c9;border-radius:10px;padding:7px 8px;font-size:9px;font-weight:1000;background:#102b25c9;letter-spacing:.7px}
+.score-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.score-card{min-width:0;padding:10px 11px;border-radius:14px;background:#091a21b8;border:1px solid #63808755;backdrop-filter:blur(8px);box-shadow:0 5px 16px #0002}
+.score-card.red{border-color:#f37b8566}
+.score-card.blue{border-color:#6ecbff66}
+.score-name{display:flex;align-items:center;gap:6px;font-size:10px;color:#c2d7d9;font-weight:900}
+.score-name .team-dot{width:7px;height:7px;flex:0 0 7px}
+.score-number{font-size:20px;font-weight:1000;letter-spacing:.4px;margin-top:4px}
+.score-names{font-size:9px;line-height:1.35;color:#b8cbd0;margin-top:4px;min-height:12px;overflow-wrap:anywhere}
+.progress-wrap{margin:9px 2px 0;height:8px;border:1px solid #d6d9bb66;background:#091b20d6;border-radius:99px;overflow:hidden;box-shadow:0 2px 6px #0005}
+.progress-center{position:relative;width:100%;height:100%;background:linear-gradient(90deg,#ed6575 0%,#4d4b45 48%,#4d4b45 52%,#4ba9dc 100%)}
+.progress-center:after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#fff;box-shadow:0 0 5px #fff}
+.game-mid{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding-bottom:8px}
+.pull-center-label{margin-bottom:8px;color:#eaf3ed;text-shadow:0 2px 8px #000;text-align:center;font-size:11px;font-weight:900;letter-spacing:1.2px;opacity:.88}
+.bottom-control{display:flex;flex-direction:column;align-items:center;gap:9px}
+.tap-button{position:relative;display:flex;align-items:center;justify-content:center;width:min(64vw,235px);height:min(17vh,118px);min-height:82px;border-radius:25px;overflow:hidden;color:#211a0d;border:1px solid #fff0b6;background:radial-gradient(ellipse at 30% 12%,#fff6cd,#e6bd67 48%,#ab7430 100%);box-shadow:0 11px 0 #6c471f,0 16px 28px #0007,inset 0 2px #fff9;transform:translateY(-5px);transition:transform .07s ease,filter .12s ease;touch-action:manipulation}
+.tap-button:before{content:"";position:absolute;inset:6px;border:1px solid #8e632f77;border-radius:19px;pointer-events:none}
+.tap-button:after{content:"";position:absolute;width:140%;height:50%;left:-20%;top:-30%;transform:rotate(-12deg);background:linear-gradient(180deg,#fff7dc55,transparent);pointer-events:none}
+.tap-button:active,.tap-button.pressing{transform:translateY(2px) scale(.985);box-shadow:0 4px 0 #6c471f,0 8px 18px #0006,inset 0 2px #fff9;filter:brightness(1.08)}
+.tap-button b{position:relative;z-index:1;display:block;text-align:center;font-size:25px;line-height:1;font-weight:1000;letter-spacing:1px}
+.tap-button small{display:block;margin-top:6px;font-size:9px;letter-spacing:1.3px;font-weight:900;color:#67451f}
+.tap-hint{max-width:340px;text-align:center;color:#d1e0df;text-shadow:0 2px 6px #000;font-size:10px;line-height:1.4}
+.warning-banner{position:absolute;z-index:5;top:27%;left:12px;right:12px;max-width:520px;margin:auto;padding:15px 16px;border-radius:15px;background:linear-gradient(140deg,#592d2aee,#251b20f4);border:1px solid #ff9d6f;box-shadow:0 12px 40px #0009;color:#fff1df;font-size:12px;line-height:1.5;text-align:center;backdrop-filter:blur(10px)}
+.warning-banner strong{display:block;font-size:14px;color:#ffd19b;margin-bottom:5px}
+.result-card{position:absolute;z-index:4;left:14px;right:14px;top:40%;max-width:470px;margin:auto;border:1px solid #e9ce89;background:#10262df2;border-radius:22px;padding:21px;text-align:center;box-shadow:0 18px 50px #000b;backdrop-filter:blur(14px)}
+.result-card .trophy{font-size:36px}
+.result-card h2{font-size:22px;margin:8px 0}
+.result-card p{font-size:12px;line-height:1.5;color:#c4d6d8;margin:0 0 13px}
+.result-card .primary{width:100%}
+.no-webgl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px;color:#f3d28c;font-size:13px;line-height:1.5;background:radial-gradient(ellipse at center,#26483f,#08151a 75%)}
+@media(max-width:390px){.app-shell{padding-left:11px;padding-right:11px}.hero{padding:14px;gap:11px}.hero-art{width:79px;height:79px;flex-basis:79px;border-radius:22px}.hero h2{font-size:19px}.brand-tag{display:none}.panel{padding:13px}.room-screen{padding-left:10px;padding-right:10px}.team-card{padding:10px}.team-heading{font-size:11px}.score-card{padding:8px}.score-number{font-size:18px}.tap-button{width:min(70vw,222px);height:min(16vh,102px);min-height:78px;border-radius:23px}.tap-button b{font-size:23px}}
+@media(max-height:650px){.game-ui{padding-top:calc(5px + env(safe-area-inset-top));padding-bottom:calc(7px + env(safe-area-inset-bottom))}.score-cards{margin-top:6px}.score-card{padding:6px 9px}.progress-wrap{margin-top:6px}.game-mid{padding-bottom:2px}.tap-button{height:70px;min-height:70px;width:min(54vw,208px);border-radius:19px}.tap-button b{font-size:21px}.tap-hint{font-size:9px}.result-card{top:34%}}
+@media(prefers-reduced-motion:reduce){.tap-button{transition:none}}
+</style>
+</head>
+<body>
+<div id="lobbyScreen" class="app-shell">
+  <header class="header">
+    <button id="lobbyBack" class="back" aria-label="Назад">‹</button>
+    <div class="logo-mark" aria-hidden="true">🪢</div>
+    <div><h1>Перетягивание каната</h1><div class="subtitle">Сетевая арена ALLCOINS</div></div>
+    <div class="brand-tag">ALLCOINS</div>
+  </header>
+  <section class="hero">
+    <div class="hero-art" aria-hidden="true"><span class="rope-art"></span><span class="hero-glint">✦</span></div>
+    <div>
+      <h2>Команда против команды</h2>
+      <p>Собери команду, держи ритм и перетяни метку противника за линию.</p>
+      <div class="pill-row"><span class="pill">👥 До 6 игроков</span><span class="pill">⚔️ 3 на 3</span><span class="pill">🏆 Ставка в AC</span></div>
+    </div>
+  </section>
+  <section class="panel">
+    <h2 class="panel-title">＋ Создать комнату</h2>
+    <label class="field-label" for="stakeInput">Ставка на игрока · от 100 AC до ∞</label>
+    <input id="stakeInput" inputmode="numeric" autocomplete="off" value="100" placeholder="Например, 1000">
+    <div class="stake-help">При старте ставка списывается у каждого участника. Победившая команда делит приз за вычетом комиссии 5%.</div>
+    <label class="field-label">Размер комнаты</label>
+    <div class="segmented" id="playerCountButtons">
+      <button type="button" data-count="2" class="selected">2 игрока</button>
+      <button type="button" data-count="4">4 игрока</button>
+      <button type="button" data-count="6">6 игроков</button>
+    </div>
+    <button id="createRoom" class="primary full create-button">Создать комнату</button>
+    <div id="lobbyStatus" class="notice" role="status"></div>
+  </section>
+  <section class="panel">
+    <div class="rooms-header"><h2 class="panel-title">🌐 Найти соперников</h2><button id="refreshRooms" class="secondary">Обновить</button></div>
+    <div class="muted">Комнаты настоящих игроков обновляются автоматически.</div>
+    <div id="roomsList"><div class="empty">Загружаем комнаты…</div></div>
+  </section>
+  <section class="panel">
+    <h2 class="panel-title">Как победить</h2>
+    <div class="muted">Нажимай кнопку «ТЯНИ!» короткими нажатиями. Чем чаще нажимает вся команда, тем сильнее тяга. Удержание кнопки не даёт силы. Автокликер запрещён: сначала предупреждение, при повторном подозрительном ритме — автоматическая дисквалификация и проигрыш участника.</div>
+  </section>
+</div>
+
+<div id="roomScreen" class="room-screen hidden">
+  <div class="room-wrap">
+    <div class="room-top">
+      <button id="roomBack" class="back" aria-label="Выйти из комнаты">‹</button>
+      <div><h2 id="roomTitle">Комната каната</h2><div class="subtitle" id="roomSubtitle">Набираем игроков</div></div>
+      <div class="room-code" id="roomCode">TW-—</div>
+    </div>
+    <div id="roomStatus" class="room-status">Ожидаем игроков…</div>
+    <div class="team-grid">
+      <section class="team-card team-red"><div class="team-heading"><span class="team-dot"></span> КРАСНАЯ КОМАНДА</div><div id="team1Players"></div></section>
+      <section class="team-card team-blue"><div class="team-heading"><span class="team-dot"></span> СИНЯЯ КОМАНДА</div><div id="team2Players"></div></section>
+    </div>
+    <div class="room-actions">
+      <button id="startGame" class="primary full hidden">Начать матч</button>
+      <button id="copyRoomId" class="secondary full">Скопировать номер комнаты</button>
+    </div>
+    <div class="room-rules">Матч начинается, когда все места заняты. При старте ставка каждого игрока списывается атомарно: если у кого-то не хватает AC, списание отменяется у всех. Игроки автоматически распределяются между двумя командами.</div>
+    <div id="roomNotice" class="notice" role="status"></div>
+  </div>
+</div>
+
+<div id="gameScreen" class="game-screen hidden">
+  <div id="scene3d"></div>
+  <div class="scene-vignette"></div>
+  <div class="game-ui">
+    <div class="game-top">
+      <button id="exitGame" class="exit-game" aria-label="Выйти">‹</button>
+      <div class="game-title"><b>ПЕРЕТЯГИВАНИЕ КАНАТА</b><small id="gameRoomLabel">Команда против команды</small></div>
+      <div class="live-badge">● ONLINE</div>
+    </div>
+    <div class="score-cards">
+      <div class="score-card red"><div class="score-name"><span class="team-dot"></span> КРАСНАЯ · <span id="team1Count">0</span></div><div class="score-number" id="team1Score">0</div><div class="score-names" id="team1Names">Ждём игроков</div></div>
+      <div class="score-card blue"><div class="score-name"><span class="team-dot"></span> СИНЯЯ · <span id="team2Count">0</span></div><div class="score-number" id="team2Score">0</div><div class="score-names" id="team2Names">Ждём игроков</div></div>
+    </div>
+    <div class="progress-wrap"><div id="scoreMeter" class="progress-center"></div></div>
+    <div class="game-mid"><div class="pull-center-label" id="gameMessage">Держи ритм — тяни канат!</div></div>
+    <div class="bottom-control">
+      <button id="pullButton" class="tap-button" aria-label="Тянуть канат"><span><b>ТЯНИ!</b><small>НАЖИМАЙ РИТМИЧНО</small></span></button>
+      <div class="tap-hint" id="tapHint">Сила складывается из нажатий всей команды · Не удерживай кнопку</div>
+    </div>
+  </div>
+  <div id="warningBanner" class="warning-banner hidden" role="alert"><strong>⚠️ ПРЕДУПРЕЖДЕНИЕ</strong><span id="warningText">Автокликер запрещён.</span></div>
+  <div id="resultCard" class="result-card hidden">
+    <div class="trophy" id="resultIcon">🏆</div><h2 id="resultTitle">Матч завершён</h2><p id="resultText"></p><button id="resultExit" class="primary">Выйти в комнаты</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = 'https://allcoins-server.onrender.com/api/tug-of-war';
+  var selectedCount = 2;
+  var currentRoom = null;
+  var currentMe = null;
+  var currentPlayers = [];
+  var currentGame = null;
+  var pollTimer = null;
+  var roomListTimer = null;
+  var stateBusy = false;
+  var entering = false;
+  var pendingTaps = 0;
+  var pendingIntervals = [];
+  var lastTapAt = 0;
+  var batchId = 0;
+  var sendBusy = false;
+  var flushTimer = null;
+  var warningShown = false;
+  var sceneState = { progress: 0, status: 'waiting', winnerTeam: null };
+  var THREERef = null;
+  var renderer = null;
+  var scene = null;
+  var camera = null;
+  var ropeMesh = null;
+  var knotGroup = null;
+  var people = [];
+  var ropeMaterial = null;
+  var animationFrame = 0;
+  var lastSceneWidth = 0;
+  var lastSceneHeight = 0;
+  var ropeDirty = true;
+  var rafCounter = 0;
+  var sceneReady = false;
+  var statusEl = document.getElementById('lobbyStatus');
+
+  function el(id){ return document.getElementById(id); }
+  function telegramData(){ return window.Telegram && window.Telegram.WebApp ? String(window.Telegram.WebApp.initData || '') : ''; }
+  function escapeHtml(value){
+    return String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function formatNumber(value){ return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(Number(value)||0); }
+  function setNotice(text, roomNotice){
+    var node = roomNotice ? el('roomNotice') : statusEl;
+    if(node) node.textContent = String(text || '');
+  }
+  async function api(path, data){
+    var payload = Object.assign({}, data || {}, { initData: telegramData() });
+    var response = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store'
+    });
+    var result = await response.json().catch(function(){ return {ok:false,error:'Сервер вернул некорректный ответ.'}; });
+    if(!response.ok || result.ok === false) throw new Error(result.error || 'Ошибка соединения с сервером.');
+    return result;
+  }
+  function startTelegram(){
+    try {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if(!tg) return;
+      tg.ready();
+      tg.expand();
+      if(tg.setHeaderColor) tg.setHeaderColor('#08151a');
+      if(tg.setBackgroundColor) tg.setBackgroundColor('#08151a');
+      if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+      if(tg.BackButton){
+        tg.BackButton.show();
+        tg.BackButton.onClick(function(){ leaveCurrentRoom(true); });
+      }
+    } catch(e) {}
+  }
+  function showScreen(name){
+    el('lobbyScreen').classList.toggle('hidden', name !== 'lobby');
+    el('roomScreen').classList.toggle('hidden', name !== 'room');
+    el('gameScreen').classList.toggle('hidden', name !== 'game');
+    document.body.classList.toggle('playing', name === 'game');
+    if(name !== 'game' && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton){
+      try { window.Telegram.WebApp.BackButton.show(); } catch(e) {}
+    }
+    if(name === 'game' && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton){
+      try { window.Telegram.WebApp.BackButton.show(); } catch(e) {}
+    }
+    if(sceneReady) resizeScene();
+  }
+  function roomIdentifier(room){
+    return room ? String(room.roomId || room.id || '').replace(/^TW-/,'') : '';
+  }
+  function stopPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  function schedulePolling(){
+    stopPolling();
+    if(!currentRoom) return;
+    pollTimer = setInterval(function(){ refreshRoomState(true); }, 1000);
+    refreshRoomState(true);
+  }
+  async function loadRooms(silent){
+    try{
+      var result = await api('/rooms/list',{});
+      var rooms = Array.isArray(result.rooms) ? result.rooms : [];
+      if(!rooms.length){
+        el('roomsList').innerHTML = '<div class="empty">Свободных комнат пока нет.<br>Создай свою и пригласи соперников.</div>';
+        return;
+      }
+      el('roomsList').innerHTML = rooms.map(function(room){
+        return '<div class="room-item"><div class="room-icon">🪢</div><div class="room-copy"><strong>Комната '+escapeHtml(room.id)+'</strong><small>'+escapeHtml(room.ownerName)+' · '+room.playersCount+'/'+room.maxPlayers+' игроков · '+formatNumber(room.stake)+' AC</small></div><button class="primary" data-join="'+escapeHtml(room.roomId)+'">Войти</button></div>';
+      }).join('');
+    }catch(error){
+      if(!silent) setNotice(error.message);
+      if(!telegramData()) el('roomsList').innerHTML = '<div class="empty">Открой игру из Telegram Mini App, чтобы подключиться к общим комнатам.</div>';
+    }
+  }
+  function startRoomListPolling(){
+    if(roomListTimer) clearInterval(roomListTimer);
+    roomListTimer = setInterval(function(){
+      if(!currentRoom && !el('lobbyScreen').classList.contains('hidden')) loadRooms(true);
+    },5000);
+  }
+  function renderRoomTeams(){
+    var team1 = currentPlayers.filter(function(p){ return Number(p.team) === 1; });
+    var team2 = currentPlayers.filter(function(p){ return Number(p.team) === 2; });
+    function playerHtml(p){
+      var state = p.disqualified ? 'ПРОИГРАЛ' : (p.connected ? '● онлайн' : '○ нет связи');
+      return '<div class="player-line"><span class="player-mini">♟</span><span>'+escapeHtml(p.name)+(p.isYou?' <b>(ты)</b>':'')+'</span><span class="player-state" style="'+(p.disqualified?'color:#ff9a8c':'')+'">'+state+'</span></div>';
+    }
+    el('team1Players').innerHTML = team1.length ? team1.map(playerHtml).join('') : '<div class="muted">Ждём игроков…</div>';
+    el('team2Players').innerHTML = team2.length ? team2.map(playerHtml).join('') : '<div class="muted">Ждём игроков…</div>';
+  }
+  function renderRoom(data){
+    currentRoom = data.room || currentRoom;
+    currentMe = data.me || currentMe;
+    currentPlayers = Array.isArray(data.players) ? data.players : currentPlayers;
+    currentGame = data.game || currentGame;
+    if(!currentRoom) return;
+    el('roomCode').textContent = currentRoom.id;
+    el('roomTitle').textContent = currentRoom.status === 'waiting' ? 'Комната ожидания' : 'Перетягивание каната';
+    el('roomSubtitle').textContent = formatNumber(currentRoom.stake)+' AC · '+currentRoom.maxPlayers+' игрока';
+    el('roomStatus').textContent = currentRoom.status === 'waiting'
+      ? 'Игроков: '+currentRoom.playersCount+'/'+currentRoom.maxPlayers+'. Команды автоматически формируются 1 на 1, 2 на 2 или 3 на 3.'
+      : (currentRoom.status === 'playing' ? 'Матч уже начался. Нажимай «ТЯНИ!» в игровом экране.' : 'Матч завершён.');
+    renderRoomTeams();
+    var canStart = Boolean(currentRoom.isOwner && currentRoom.status === 'waiting' && currentRoom.playersCount === currentRoom.maxPlayers);
+    el('startGame').classList.toggle('hidden',!canStart);
+    el('startGame').textContent = 'Начать матч · списать '+formatNumber(currentRoom.stake)+' AC у каждого';
+    if(currentRoom.status === 'playing' || currentRoom.status === 'finished'){
+      showScreen('game');
+      updateGameUi();
+    }else{
+      showScreen('room');
+    }
+  }
+  async function refreshRoomState(silent){
+    if(!currentRoom || stateBusy) return;
+    stateBusy = true;
+    try{
+      var result = await api('/rooms/state',{roomId:roomIdentifier(currentRoom)});
+      renderRoom(result);
+    }catch(error){
+      if(!silent) setNotice(error.message,true);
+    }finally{ stateBusy = false; }
+  }
+  async function createRoom(){
+    var stake = String(el('stakeInput').value || '').replace(/[\s,_]/g,'');
+    if(!/^\d+$/.test(stake) || BigInt(stake) < 100n){
+      setNotice('Введи целую ставку не меньше 100 AC.');
+      return;
+    }
+    el('createRoom').disabled = true;
+    setNotice('Создаём общую комнату…');
+    try{
+      var result = await api('/rooms/create',{stake:stake,maxPlayers:selectedCount});
+      warningShown = false;
+      currentRoom = result.room;
+      currentMe = result.me;
+      currentPlayers = result.players || [];
+      currentGame = result.game || null;
+      renderRoom(result);
+      schedulePolling();
+      setNotice('');
+    }catch(error){ setNotice(error.message); }
+    finally{ el('createRoom').disabled = false; }
+  }
+  async function joinRoom(roomId){
+    if(entering) return;
+    entering = true;
+    setNotice('Подключаемся к комнате…');
+    try{
+      var result = await api('/rooms/join',{roomId:roomId});
+      warningShown = false;
+      currentRoom = result.room;
+      currentMe = result.me;
+      currentPlayers = result.players || [];
+      currentGame = result.game || null;
+      renderRoom(result);
+      schedulePolling();
+      setNotice('');
+    }catch(error){ setNotice(error.message); }
+    finally{ entering = false; }
+  }
+  async function startMatch(){
+    if(!currentRoom || !currentRoom.isOwner) return;
+    el('startGame').disabled = true;
+    setNotice('Проверяем балансы и запускаем матч…',true);
+    try{
+      var result = await api('/rooms/start',{roomId:roomIdentifier(currentRoom)});
+      renderRoom(result);
+      schedulePolling();
+    }catch(error){ setNotice(error.message,true); }
+    finally{ el('startGame').disabled = false; }
+  }
+  async function leaveCurrentRoom(returnToLobby){
+    if(!currentRoom) {
+      if(returnToLobby) showScreen('lobby');
+      return;
+    }
+    stopPolling();
+    if(flushTimer){clearInterval(flushTimer);flushTimer=null;}
+    pendingTaps = 0; pendingIntervals = []; sendBusy = false;
+    var room = currentRoom;
+    currentRoom = null; currentMe = null; currentPlayers = []; currentGame = null;
+    try{ await api('/rooms/leave',{roomId:roomIdentifier(room)}); }catch(error){}
+    if(returnToLobby !== false){
+      showScreen('lobby');
+      setNotice('Ты вышел из комнаты.');
+      loadRooms(true);
+    }
+  }
+  function updateGameUi(){
+    if(!currentRoom) return;
+    var game = currentGame || {};
+    var p1 = currentPlayers.filter(function(p){return Number(p.team)===1;});
+    var p2 = currentPlayers.filter(function(p){return Number(p.team)===2;});
+    el('gameRoomLabel').textContent = currentRoom.id+' · '+formatNumber(currentRoom.stake)+' AC на игрока';
+    el('team1Count').textContent = String(p1.length);
+    el('team2Count').textContent = String(p2.length);
+    el('team1Score').textContent = formatNumber(game.teamScores && game.teamScores['1'] || 0);
+    el('team2Score').textContent = formatNumber(game.teamScores && game.teamScores['2'] || 0);
+    el('team1Names').textContent = p1.map(function(p){return p.name+(p.disqualified?' ✕':'');}).join(' · ') || 'Ждём игроков';
+    el('team2Names').textContent = p2.map(function(p){return p.name+(p.disqualified?' ✕':'');}).join(' · ') || 'Ждём игроков';
+    el('gameMessage').textContent = game.message || (game.phase==='playing'?'Держи ритм — тяни канат!':'Ожидаем игроков');
+    el('pullButton').disabled = game.phase !== 'playing' || Boolean(currentMe && currentMe.disqualified);
+    el('tapHint').textContent = currentMe && currentMe.disqualified ? 'Ты дисквалифицирован — матч для тебя проигран.' : 'Сила складывается из нажатий всей команды · Не удерживай кнопку';
+    var progress = Math.max(-1,Math.min(1,Number(game.progress)||0));
+    el('scoreMeter').style.transform = 'scaleX(1)';
+    el('scoreMeter').style.clipPath = 'inset(0 '+Math.max(0,50+progress*50)+'% 0 '+Math.max(0,50-progress*50)+'%)';
+    sceneState.progress = progress;
+    sceneState.status = game.phase || 'waiting';
+    sceneState.winnerTeam = game.winnerTeam == null ? null : Number(game.winnerTeam);
+    ropeDirty = true;
+    if(currentMe && currentMe.disqualified){
+      el('pullButton').disabled = true;
+      el('tapHint').textContent = 'ДИСКВАЛИФИКАЦИЯ: матч для тебя проигран.';
+    }
+    if(game.warningForMe && !warningShown){
+      warningShown = true;
+      showWarning('Система заметила подозрительно частые или одинаковые по ритму нажатия. Останови автокликер. Повторное нарушение приведёт к автоматическому поражению.');
+    }
+    if(game.phase === 'finished'){
+      el('resultCard').classList.remove('hidden');
+      var won = Number(game.winnerTeam) === Number(currentMe && currentMe.team);
+      el('resultIcon').textContent = won ? '🏆' : '🪢';
+      el('resultTitle').textContent = won ? 'ТВОЯ КОМАНДА ПОБЕДИЛА!' : (currentMe && currentMe.disqualified ? 'ТЫ ДИСКВАЛИФИЦИРОВАН' : 'МАТЧ ЗАВЕРШЁН');
+      var payoutText = 'Комиссия: '+formatNumber(game.commission||0)+' AC. Призовой фонд команды: '+formatNumber(game.payout||0)+' AC.';
+      el('resultText').textContent = (game.message||'')+' '+payoutText;
+      el('pullButton').disabled = true;
+    }else{
+      el('resultCard').classList.add('hidden');
+    }
+  }
+  function showWarning(text){
+    el('warningText').textContent = text;
+    el('warningBanner').classList.remove('hidden');
+    setTimeout(function(){el('warningBanner').classList.add('hidden');},6500);
+  }
+  function queueTap(event){
+    if(event && event.cancelable) event.preventDefault();
+    if(!currentRoom || !currentGame || currentGame.phase !== 'playing' || (currentMe && currentMe.disqualified)) return;
+    var now = performance.now();
+    if(lastTapAt) pendingIntervals.push(Math.max(1,Math.min(2000,now-lastTapAt)));
+    lastTapAt = now;
+    pendingTaps++;
+    el('pullButton').classList.add('pressing');
+    setTimeout(function(){el('pullButton').classList.remove('pressing');},80);
+    if(!flushTimer) flushTimer = setInterval(flushTapBatch,220);
+    if(pendingTaps >= 4) flushTapBatch();
+  }
+  async function flushTapBatch(){
+    if(sendBusy || !pendingTaps || !currentRoom) return;
+    sendBusy = true;
+    var count = pendingTaps;
+    var intervals = pendingIntervals.slice(-30);
+    pendingTaps = 0;
+    pendingIntervals = [];
+    var id = ++batchId;
+    try{
+      var result = await api('/tap',{roomId:roomIdentifier(currentRoom),batchId:id,tapCount:count,intervals:intervals});
+      currentRoom = result.room || currentRoom;
+      currentMe = result.me || currentMe;
+      currentPlayers = result.players || currentPlayers;
+      currentGame = result.game || currentGame;
+      updateGameUi();
+      if(result.integrity === 'warning'){
+        showWarning(result.error || 'Останови автокликер. При повторном нарушении ты будешь дисквалифицирован.');
+      }else if(result.integrity === 'disqualified'){
+        showWarning('Повторное нарушение. Система автоматически присудила тебе поражение и исключила из матча.');
+      }
+    }catch(error){
+      if(/автокликер|дисквалифицирован/i.test(error.message)) showWarning(error.message);
+      else if(!currentGame || currentGame.phase==='playing') el('gameMessage').textContent = error.message;
+    }finally{
+      sendBusy = false;
+      if(!pendingTaps && flushTimer){clearInterval(flushTimer);flushTimer=null;}
+      if(pendingTaps) flushTapBatch();
+    }
+  }
+
+  function initScene(THREE){
+    THREERef = THREE;
+    var host = el('scene3d');
+    if(!host || sceneReady) return;
+    sceneReady = true;
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x08151a);
+    scene.fog = new THREE.Fog(0x08151a,12,26);
+    camera = new THREE.PerspectiveCamera(37,1,0.1,80);
+    camera.position.set(0,7.5,10.6);
+    camera.lookAt(0,0.72,0);
+    renderer = new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
+    renderer.setSize(host.clientWidth||window.innerWidth,host.clientHeight||window.innerHeight,false);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
+    host.appendChild(renderer.domElement);
+    var hemi = new THREE.HemisphereLight(0xdceaff,0x173529,2.0);
+    scene.add(hemi);
+    var key = new THREE.DirectionalLight(0xffe7bd,3.1);
+    key.position.set(-3,9,5);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024,1024);
+    key.shadow.camera.left=-9;key.shadow.camera.right=9;key.shadow.camera.top=8;key.shadow.camera.bottom=-8;
+    scene.add(key);
+    var blueLight = new THREE.PointLight(0x4aa9ff,34,12,2);
+    blueLight.position.set(4.6,3.8,-1.6);scene.add(blueLight);
+    var redLight = new THREE.PointLight(0xff526c,28,12,2);
+    redLight.position.set(-4.5,3.4,1.8);scene.add(redLight);
+    var goldLight = new THREE.PointLight(0xffd687,18,9,2);
+    goldLight.position.set(0,3.5,0);scene.add(goldLight);
+
+    var groundMat = new THREE.MeshStandardMaterial({color:0x1b503b,roughness:0.92,metalness:0});
+    var ground = new THREE.Mesh(new THREE.PlaneGeometry(18,13),groundMat);
+    ground.rotation.x=-Math.PI/2;ground.position.y=-0.055;ground.receiveShadow=true;scene.add(ground);
+    var grassMaterials = [
+      new THREE.MeshStandardMaterial({color:0x235d43,roughness:1}),
+      new THREE.MeshStandardMaterial({color:0x1d543d,roughness:1})
+    ];
+    for(var z=-5.7, stripe=0;z<6;z+=1.45,stripe++){
+      var grass = new THREE.Mesh(new THREE.PlaneGeometry(18,1.45),grassMaterials[stripe%2]);
+      grass.rotation.x=-Math.PI/2;grass.position.set(0,-0.045,z+0.72);grass.receiveShadow=true;scene.add(grass);
+    }
+    function groundLine(x,color,width){
+      var line = new THREE.Mesh(new THREE.BoxGeometry(width,0.018,6.1),new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:0.18,roughness:.78}));
+      line.position.set(x,-0.018,0);line.receiveShadow=true;scene.add(line);return line;
+    }
+    groundLine(0,0xf4e7bd,.055);
+    groundLine(-2.85,0xf06f79,.075);
+    groundLine(2.85,0x72cbff,.075);
+    groundLine(-4.1,0xeff2e5,.028);
+    groundLine(4.1,0xeff2e5,.028);
+    var centerCircle = new THREE.Mesh(new THREE.TorusGeometry(0.68,0.025,6,48),new THREE.MeshStandardMaterial({color:0xf0d18c,emissive:0x87652a,emissiveIntensity:.35}));
+    centerCircle.rotation.x=Math.PI/2;centerCircle.position.y=.012;centerCircle.position.z=0;scene.add(centerCircle);
+
+    var railMat = new THREE.MeshStandardMaterial({color:0x1a3038,metalness:.45,roughness:.5});
+    for(var side=-1;side<=1;side+=2){
+      var rail = new THREE.Mesh(new THREE.BoxGeometry(17,.28,.13),railMat);
+      rail.position.set(0,.25,side*6.25);scene.add(rail);
+      for(var lx=-7;lx<=7;lx+=1.4){
+        var post = new THREE.Mesh(new THREE.CylinderGeometry(.055,.07,.52,8),new THREE.MeshStandardMaterial({color:side<0?0x51798a:0x6b5240,metalness:.25,roughness:.65}));
+        post.position.set(lx,.24,side*6.2);scene.add(post);
+      }
+    }
+    for(var i=0;i<8;i++){
+      var tower = new THREE.Group();
+      var tx = -7.5+i*2.15;
+      var frame = new THREE.Mesh(new THREE.BoxGeometry(.1,2.5,.1),railMat);frame.position.set(tx,1.2,-6.6);tower.add(frame);
+      var lamp = new THREE.Mesh(new THREE.BoxGeometry(.55,.22,.16),new THREE.MeshStandardMaterial({color:0xffdf9a,emissive:0xffc76b,emissiveIntensity:1.6}));
+      lamp.position.set(tx,2.5,-6.55);tower.add(lamp);scene.add(tower);
+    }
+    var ropeMat = new THREE.MeshStandardMaterial({color:0xc99752,roughness:.82,metalness:.05});
+    var ropePath = new THREE.CatmullRomCurve3([new THREE.Vector3(-4,1,0),new THREE.Vector3(0,.85,0),new THREE.Vector3(4,1,0)]);
+    ropeMesh = new THREE.Mesh(new THREE.TubeGeometry(ropePath,56,.055,8,false),ropeMat);
+    ropeMesh.castShadow=true;scene.add(ropeMesh);
+    var ropeCore = new THREE.Mesh(new THREE.TubeGeometry(ropePath,56,.021,6,false),new THREE.MeshStandardMaterial({color:0xefd18a,roughness:.65}));
+    ropeCore.name='ropeCore';ropeCore.castShadow=true;scene.add(ropeCore);
+    knotGroup = new THREE.Group();
+    var knot = new THREE.Mesh(new THREE.SphereGeometry(.13,16,12),new THREE.MeshStandardMaterial({color:0xffe4a3,metalness:.22,roughness:.28,emissive:0x65451e,emissiveIntensity:.45}));
+    knot.castShadow=true;knotGroup.add(knot);
+    var knotBand = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.18,12),new THREE.MeshStandardMaterial({color:0xd34554,metalness:.12,roughness:.48}));
+    knotBand.rotation.z=Math.PI/2;knotBand.position.y=.02;knotGroup.add(knotBand);
+    var flagPole = new THREE.Mesh(new THREE.CylinderGeometry(.018,.024,.52,8),new THREE.MeshStandardMaterial({color:0xf5df9a,metalness:.5,roughness:.35}));
+    flagPole.position.set(0,.27,0);knotGroup.add(flagPole);
+    var flag = new THREE.Mesh(new THREE.PlaneGeometry(.28,.18),new THREE.MeshStandardMaterial({color:0xf8e7b7,side:THREE.DoubleSide,roughness:.8}));
+    flag.position.set(.12,.42,0);knotGroup.add(flag);
+    scene.add(knotGroup);
+    var shadowMat = new THREE.MeshBasicMaterial({color:0x06110f,transparent:true,opacity:.26});
+    for(var s=0;s<6;s++){
+      var shadow = new THREE.Mesh(new THREE.CircleGeometry(.34,24),shadowMat);
+      shadow.rotation.x=-Math.PI/2;shadow.position.set(0,.002,0);scene.add(shadow);
+    }
+
+    function mat(color,roughness,metalness){return new THREE.MeshStandardMaterial({color:color,roughness:roughness==null?.66:roughness,metalness:metalness||0});}
+    var skinMat=mat(0xd4a17b,.78);
+    var hairMats=[mat(0x272321,.91),mat(0x3d261b,.89),mat(0x5c4030,.86)];
+    var pantsMat=mat(0x17252d,.85);
+    var shoeMat=mat(0x11191c,.72);
+    var eyeMat=mat(0x151919,.52);
+    var redJersey=mat(0xb93549,.56,.03);
+    var blueJersey=mat(0x1677a8,.5,.05);
+    var redAccent=mat(0xf6a1a7,.45,.05);
+    var blueAccent=mat(0x9fe3ff,.43,.05);
+    function segment(mesh,a,b){
+      var dir=new THREE.Vector3().subVectors(b,a);
+      mesh.position.copy(a).add(b).multiplyScalar(.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+      mesh.scale.set(1,Math.max(.001,dir.length()),1);
+    }
+    function createPerson(team,index,name){
+      var root=new THREE.Group();
+      var bodyGroup=new THREE.Group();root.add(bodyGroup);
+      var jersey=team===1?redJersey:blueJersey;
+      var accent=team===1?redAccent:blueAccent;
+      var torso=new THREE.Mesh(new THREE.CapsuleGeometry(.225,.47,5,10),jersey);
+      torso.position.set(0,1.27,0);torso.castShadow=true;torso.receiveShadow=true;bodyGroup.add(torso);
+      var neck=new THREE.Mesh(new THREE.CylinderGeometry(.075,.09,.16,10),skinMat);neck.position.set(0,1.65,0);neck.castShadow=true;bodyGroup.add(neck);
+      var head=new THREE.Mesh(new THREE.SphereGeometry(.185,18,14),skinMat);head.position.set(0,1.86,0);head.castShadow=true;bodyGroup.add(head);
+      var hair=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI*.58),hairMats[index%hairMats.length]);hair.position.set(0,1.94,-.015);hair.castShadow=true;bodyGroup.add(hair);
+      var earGeo=new THREE.SphereGeometry(.045,8,8);
+      [-1,1].forEach(function(side){var ear=new THREE.Mesh(earGeo,skinMat);ear.position.set(side*.177,1.85,.01);bodyGroup.add(ear);});
+      var face=new THREE.Group();face.position.set(0,1.86,.17);bodyGroup.add(face);
+      [-1,1].forEach(function(side){
+        var eye=new THREE.Mesh(new THREE.SphereGeometry(.018,8,8),eyeMat);eye.position.set(side*.06,.005,.001);face.add(eye);
+        var brow=new THREE.Mesh(new THREE.BoxGeometry(.05,.012,.015),hairMats[index%hairMats.length]);brow.position.set(side*.06,.036,0);face.add(brow);
+      });
+      var nose=new THREE.Mesh(new THREE.ConeGeometry(.026,.07,8),skinMat);nose.rotation.x=-Math.PI/2;nose.position.set(0,-.025,.024);face.add(nose);
+      var belt=new THREE.Mesh(new THREE.CylinderGeometry(.21,.215,.055,12),team===1?redAccent:blueAccent);belt.position.set(0,.91,0);bodyGroup.add(belt);
+      var legGeo=new THREE.CapsuleGeometry(.09,.35,3,7);
+      var legL=new THREE.Mesh(legGeo,pantsMat);legL.position.set(-.12,.56,-.005);legL.rotation.z=-.035;legL.castShadow=true;bodyGroup.add(legL);
+      var legR=new THREE.Mesh(legGeo,pantsMat);legR.position.set(.12,.56,-.005);legR.rotation.z=.035;legR.castShadow=true;bodyGroup.add(legR);
+      [-.12,.12].forEach(function(x){
+        var boot=new THREE.Mesh(new THREE.BoxGeometry(.15,.10,.25),shoeMat);boot.position.set(x,.16,.055);boot.castShadow=true;bodyGroup.add(boot);
+        var sole=new THREE.Mesh(new THREE.BoxGeometry(.16,.025,.26),mat(0x43484a,.9));sole.position.set(x,.105,.055);bodyGroup.add(sole);
+      });
+      var armGeo=new THREE.CylinderGeometry(.07,.09,1,10);
+      var armL=new THREE.Mesh(armGeo,jersey);armL.castShadow=true;bodyGroup.add(armL);
+      var armR=new THREE.Mesh(armGeo,jersey);armR.castShadow=true;bodyGroup.add(armR);
+      var foreGeo=new THREE.CylinderGeometry(.052,.07,1,10);
+      var foreL=new THREE.Mesh(foreGeo,skinMat);foreL.castShadow=true;bodyGroup.add(foreL);
+      var foreR=new THREE.Mesh(foreGeo,skinMat);foreR.castShadow=true;bodyGroup.add(foreR);
+      var handGeo=new THREE.SphereGeometry(.075,10,8);
+      var handL=new THREE.Mesh(handGeo,skinMat);bodyGroup.add(handL);
+      var handR=new THREE.Mesh(handGeo,skinMat);bodyGroup.add(handR);
+      var sleeveL=new THREE.Mesh(new THREE.CylinderGeometry(.09,.082,.17,10),accent);sleeveL.position.set(-.25,1.51,.025);sleeveL.rotation.x=-.32;bodyGroup.add(sleeveL);
+      var sleeveR=new THREE.Mesh(new THREE.CylinderGeometry(.09,.082,.17,10),accent);sleeveR.position.set(.25,1.51,.025);sleeveR.rotation.x=-.32;bodyGroup.add(sleeveR);
+      var gloveStripe=new THREE.Mesh(new THREE.TorusGeometry(.076,.014,5,12),accent);gloveStripe.position.set(0,1.2,0);gloveStripe.rotation.x=Math.PI/2;bodyGroup.add(gloveStripe);
+      var labelCanvas=document.createElement('canvas');labelCanvas.width=256;labelCanvas.height=64;
+      var ctx=labelCanvas.getContext('2d');ctx.fillStyle=team===1?'#59202b':'#103b56';ctx.fillRect(0,0,256,64);
+      ctx.strokeStyle=team===1?'#ffb2b8':'#a6e4ff';ctx.lineWidth=4;ctx.strokeRect(3,3,250,58);
+      ctx.fillStyle='#ffffff';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(name||'Игрок').slice(0,16),128,32);
+      var labelTex=new THREE.CanvasTexture(labelCanvas);labelTex.colorSpace=THREE.SRGBColorSpace;
+      var nameSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex,transparent:true,depthTest:false}));
+      nameSprite.position.set(0,2.35,0);nameSprite.scale.set(1.12,.28,1);root.add(nameSprite);
+      var baseX=team===1?[-3.2,-2.35,-1.5][index%3]:[1.5,2.35,3.2][index%3];
+      var baseZ=team===1?[-.32,.12,.42][index%3]:[.42,.12,-.32][index%3];
+      root.position.set(baseX,0,baseZ);
+      root.rotation.y=team===1?Math.PI/2:-Math.PI/2;
+      scene.add(root);
+      var pullPose={team:team,index:index,root:root,body:bodyGroup,armL:armL,armR:armR,foreL:foreL,foreR:foreR,handL:handL,handR:handR,
+        baseX:baseX,baseZ:baseZ,phase:index*1.8+(team===1?0:1.1),team:team};
+      people.push(pullPose);
+      return pullPose;
+    }
+    var firstNames=['Игрок 1','Игрок 2','Игрок 3'];
+    for(var p=0;p<3;p++){createPerson(1,p,firstNames[p]);createPerson(2,p,firstNames[p+3]||('Игрок '+(p+4)));}
+    function updatePeople(delta,progress,time){
+      for(var i=0;i<people.length;i++){
+        var p=people[i];
+        var teamNet=progress*(p.team===1?1:-1);
+        var active=sceneState.status==='playing';
+        p.root.position.x=p.baseX+progress*.38;
+        p.root.position.z=p.baseZ+Math.sin(time*2.3+p.phase)*.025;
+        p.body.rotation.z=(p.team===1?1:-1)*(.06+Math.max(0,teamNet)*.05)+(active?Math.sin(time*5+p.phase)*.025:0);
+        p.body.rotation.x=(active?Math.sin(time*4.7+p.phase)*.018:0);
+        var front=p.team===1?1:-1;
+        var wristY=1.15+Math.sin(time*5+p.phase)*.025;
+        var a1=new THREE.Vector3(-.22,1.52,.04);
+        var b1=new THREE.Vector3(front*.13,wristY,.38);
+        var a2=new THREE.Vector3(.22,1.52,.04);
+        var b2=new THREE.Vector3(front*.13,wristY,.46);
+        segment(p.armL,a1,new THREE.Vector3(front*.04,1.37,.23));
+        segment(p.foreL,new THREE.Vector3(front*.04,1.37,.23),b1);
+        segment(p.armR,a2,new THREE.Vector3(front*.04,1.37,.24));
+        segment(p.foreR,new THREE.Vector3(front*.04,1.37,.24),b2);
+        p.handL.position.copy(b1);p.handR.position.copy(b2);
+      }
+    }
+    function makeDynamicRope(progress,time){
+      if(!ropeDirty && rafCounter%3!==0) return;
+      ropeDirty=false;
+      var start=-4.35+progress*.55;
+      var end=4.35+progress*.55;
+      var points=[];
+      for(var n=0;n<=38;n++){
+        var t=n/38;
+        var x=start+(end-start)*t;
+        var y=1.13-.23*Math.sin(t*Math.PI)+Math.sin(time*3+t*13)*.018;
+        var z=Math.sin(time*2.6+t*18)*.018;
+        points.push(new THREE.Vector3(x,y,z));
+      }
+      var curve=new THREE.CatmullRomCurve3(points);
+      var nextGeometry=new THREE.TubeGeometry(curve,50,.052,7,false);
+      var nextCore=new THREE.TubeGeometry(curve,50,.019,5,false);
+      var old=ropeMesh.geometry;ropeMesh.geometry=nextGeometry;old.dispose();
+      var core=scene.getObjectByName('ropeCore');
+      var oldCore=core.geometry;core.geometry=nextCore;oldCore.dispose();
+      knotGroup.position.set(progress*2.85,1.13-.23*Math.sin(.5*Math.PI),0);
+      knotGroup.rotation.z=Math.sin(time*3)*.025;
+    }
+    function resizeScene(){
+      if(!renderer||!camera||!el('scene3d'))return;
+      var width=el('scene3d').clientWidth||window.innerWidth;
+      var height=el('scene3d').clientHeight||window.innerHeight;
+      if(width===lastSceneWidth&&height===lastSceneHeight)return;
+      lastSceneWidth=width;lastSceneHeight=height;
+      renderer.setSize(width,height,false);camera.aspect=width/height;
+      camera.fov=width<height?42:34;
+      camera.position.set(0,width<height?8.7:7.1,width<height?12.8:10.3);
+      camera.lookAt(0,.83,0);camera.updateProjectionMatrix();
+    }
+    function animate(timeMs){
+      animationFrame=requestAnimationFrame(animate);
+      rafCounter++;
+      var time=timeMs/1000;
+      updatePeople(.016,sceneState.progress,time);
+      makeDynamicRope(sceneState.progress,time);
+      if(renderer&&scene&&camera)renderer.render(scene,camera);
+    }
+    window.addEventListener('resize',resizeScene,{passive:true});
+    window.addEventListener('orientationchange',function(){setTimeout(resizeScene,200);},{passive:true});
+    resizeScene();
+    animate(0);
+  }
+  function init2dFallback(){
+    var host=el('scene3d');
+    if(!host)return;
+    host.innerHTML='<canvas id="fallbackScene" aria-label="Игровое поле"></canvas>';
+    var canvas=el('fallbackScene');var ctx=canvas.getContext('2d');
+    function draw(){
+      var w=host.clientWidth||window.innerWidth;var h=host.clientHeight||window.innerHeight;
+      var dpr=Math.min(window.devicePixelRatio||1,1.5);
+      if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.width=w+'px';canvas.style.height=h+'px';}
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      var grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#18382e');grad.addColorStop(1,'#061218');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+      var cx=w/2,cy=h*.53,scale=Math.min(w/7.6,h/5.5);ctx.lineCap='round';
+      for(var i=-1;i<=1;i+=2){ctx.strokeStyle=i<0?'#e96b7c':'#6bc8f4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+i*2.85*scale,cy-scale*1.5);ctx.lineTo(cx+i*2.85*scale,cy+scale*1.5);ctx.stroke();}
+      ctx.strokeStyle='#d6ad64';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-3.8*scale,cy);ctx.lineTo(cx+3.8*scale,cy);ctx.stroke();
+      for(var team=1;team<=2;team++){for(var p=0;p<3;p++){var x=cx+(team===1?-1:1)*(1.45+p*.7)*scale;var y=cy+(p-1)*.26*scale;ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
+      ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+sceneState.progress*2.7*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+  async function bootScene(){
+    try{
+      var THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+      initScene(THREE);
+    }catch(error){
+      console.warn('3D module unavailable; using lightweight arena fallback.',error);
+      init2dFallback();
+    }
+  }
+
+  document.querySelectorAll('[data-count]').forEach(function(button){
+    button.addEventListener('click',function(){
+      selectedCount=Number(button.getAttribute('data-count'));
+      document.querySelectorAll('[data-count]').forEach(function(other){other.classList.toggle('selected',other===button);});
+    });
+  });
+  el('createRoom').addEventListener('click',createRoom);
+  el('refreshRooms').addEventListener('click',function(){loadRooms(false);});
+  el('roomsList').addEventListener('click',function(event){
+    var button=event.target.closest('[data-join]');
+    if(button)joinRoom(button.getAttribute('data-join'));
+  });
+  el('startGame').addEventListener('click',startMatch);
+  el('roomBack').addEventListener('click',function(){leaveCurrentRoom(true);});
+  el('exitGame').addEventListener('click',function(){leaveCurrentRoom(true);});
+  el('resultExit').addEventListener('click',function(){leaveCurrentRoom(true);});
+  el('lobbyBack').addEventListener('click',function(){location.href='./index.html';});
+  el('copyRoomId').addEventListener('click',async function(){
+    if(!currentRoom)return;
+    try{
+      await navigator.clipboard.writeText(currentRoom.id);
+      setNotice('Номер комнаты скопирован. Отправь его другу.',true);
+    }catch(e){setNotice('Номер комнаты: '+currentRoom.id,true);}
+  });
+  el('pullButton').addEventListener('pointerdown',queueTap,{passive:false});
+  el('pullButton').addEventListener('contextmenu',function(e){e.preventDefault();});
+  el('pullButton').addEventListener('dragstart',function(e){e.preventDefault();});
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden && currentRoom)refreshRoomState(true);
+  });
+  startTelegram();
+  bootScene();
+  loadRooms(false);
+  startRoomListPolling();
+  if(!telegramData()){
+    setNotice('Открой эту игру из ALLCOINS в Telegram, чтобы создать комнату с реальными игроками.');
+  }
+})();
+</script>
+</body>
+</html>
