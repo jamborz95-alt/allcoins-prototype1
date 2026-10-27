@@ -8,6 +8,16 @@ function clampPercent(value, fallback) {
 function fuseDuration() {
   return Math.floor(8200 + Math.random() * 7200);
 }
+const INVITE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+function makeInviteCode() {
+  const bytes = crypto.randomBytes(7);
+  let code = "";
+  for (let i = 0; i < 7; i++) code += INVITE_CODE_ALPHABET[bytes[i] % INVITE_CODE_ALPHABET.length];
+  return code;
+}
+function validPlayerId(value) {
+  return /^[a-zA-Z0-9_-]{8,80}$/.test(String(value || ""));
+}
 function spawnPoint(index) {
   return [
     { xPct: 50, yPct: 66 },
@@ -35,11 +45,18 @@ async function readPlayers(client, roomId) {
 }
 async function advanceRoom(client, roomId, now = Date.now()) {
   const roomResult = await client.query(
-    "SELECT id, status, max_players, map, game_state, created_at FROM bomb_rooms WHERE id = $1 FOR UPDATE",
+    "SELECT id, status, max_players, map, game_state, created_at, invite_code FROM bomb_rooms WHERE id = $1 FOR UPDATE",
     [roomId]
   );
   if (!roomResult.rows.length) return null;
   const room = roomResult.rows[0];
+  if (room.status === "waiting" && !room.invite_code) {
+    const assigned = await client.query(
+      "UPDATE bomb_rooms SET invite_code = $2 WHERE id = $1 AND invite_code IS NULL RETURNING invite_code",
+      [roomId, makeInviteCode()]
+    );
+    room.invite_code = assigned.rows[0]?.invite_code || room.invite_code || null;
+  }
   let status = room.status;
   let game = room.game_state && typeof room.game_state === "object" ? room.game_state : { phase: "waiting", round: 0 };
 
@@ -152,7 +169,7 @@ async function advanceRoom(client, roomId, now = Date.now()) {
   return {
     room: {
       id: String(room.id), status, maxPlayers: Number(room.max_players),
-      map: room.map, createdAt: room.created_at
+      map: room.map, createdAt: room.created_at, inviteCode: room.invite_code || null
     },
     game,
     players: publicPlayers(roster)
@@ -163,7 +180,9 @@ export function createBombOnlineRouter({ pool }) {
   const router = express.Router();
 
   router.initialize = async () => {
-    await pool.query("CREATE TABLE IF NOT EXISTS bomb_rooms (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','playing','finished')), max_players INTEGER NOT NULL CHECK (max_players BETWEEN 2 AND 4), map TEXT NOT NULL DEFAULT 'copper' CHECK (map IN ('copper','crystal')), game_state JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+    await pool.query("CREATE TABLE IF NOT EXISTS bomb_rooms (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','playing','finished')), max_players INTEGER NOT NULL CHECK (max_players BETWEEN 2 AND 4), map TEXT NOT NULL DEFAULT 'copper' CHECK (map IN ('copper','crystal')), game_state JSONB NOT NULL DEFAULT '{}'::jsonb, invite_code TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+    await pool.query("ALTER TABLE bomb_rooms ADD COLUMN IF NOT EXISTS invite_code TEXT");
+    await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS bomb_rooms_invite_code_idx ON bomb_rooms (invite_code) WHERE invite_code IS NOT NULL");
     await pool.query("CREATE TABLE IF NOT EXISTS bomb_room_players (room_id BIGINT NOT NULL REFERENCES bomb_rooms(id) ON DELETE CASCADE, player_id TEXT NOT NULL, display_name TEXT NOT NULL, lives INTEGER NOT NULL DEFAULT 3 CHECK (lives BETWEEN 0 AND 3), x_pct REAL NOT NULL DEFAULT 50, y_pct REAL NOT NULL DEFAULT 66, joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (room_id, player_id))");
     await pool.query("CREATE INDEX IF NOT EXISTS bomb_rooms_waiting_idx ON bomb_rooms (status, max_players, map, created_at)");
     await pool.query("CREATE INDEX IF NOT EXISTS bomb_room_players_presence_idx ON bomb_room_players (room_id, last_seen_at DESC)");
@@ -216,8 +235,8 @@ export function createBombOnlineRouter({ pool }) {
         }
         if (!roomId) {
           const created = await client.query(
-            "INSERT INTO bomb_rooms (status, max_players, map, game_state) VALUES ('waiting', $1, $2, $3::jsonb) RETURNING id",
-            [maxPlayers, map, JSON.stringify({ phase: "waiting", round: 0 })]
+            "INSERT INTO bomb_rooms (status, max_players, map, game_state, invite_code) VALUES ('waiting', $1, $2, $3::jsonb, $4) RETURNING id",
+            [maxPlayers, map, JSON.stringify({ phase: "waiting", round: 0 }), makeInviteCode()]
           );
           roomId = String(created.rows[0].id);
         }
@@ -235,6 +254,111 @@ export function createBombOnlineRouter({ pool }) {
       if (client) { try { await client.query("ROLLBACK"); } catch (_) {} }
       console.error("Bomb online matchmaking error:", error.message);
       res.status(500).json({ ok: false, error: "Не удалось подключиться к онлайн-игре. Повтори попытку." });
+    } finally {
+      if (client) client.release();
+    }
+  });
+
+  router.post("/rooms/create", async (req, res) => {
+    let client;
+    try {
+      const playerId = String(req.body?.playerId || "").trim().slice(0, 80);
+      const name = String(req.body?.name || "Игрок").trim().slice(0, 18) || "Игрок";
+      const maxPlayers = Math.max(2, Math.min(4, Math.floor(Number(req.body?.maxPlayers) || 2)));
+      const map = req.body?.map === "crystal" ? "crystal" : "copper";
+      if (!validPlayerId(playerId)) return res.status(400).json({ ok: false, error: "Некорректный идентификатор игрока." });
+
+      client = await pool.connect();
+      await client.query("BEGIN");
+      // A player may create a friend room from the setup screen after cancelling public matchmaking.
+      await client.query(
+        "DELETE FROM bomb_room_players WHERE player_id = $1 AND room_id IN (SELECT id FROM bomb_rooms WHERE status = 'waiting')",
+        [playerId]
+      );
+      const created = await client.query(
+        "INSERT INTO bomb_rooms (status, max_players, map, game_state, invite_code) VALUES ('waiting', $1, $2, $3::jsonb, $4) RETURNING id",
+        [maxPlayers, map, JSON.stringify({ phase: "waiting", round: 0 }), makeInviteCode()]
+      );
+      const roomId = String(created.rows[0].id);
+      const spawn = spawnPoint(0);
+      await client.query(
+        "INSERT INTO bomb_room_players (room_id, player_id, display_name, lives, x_pct, y_pct, last_seen_at) VALUES ($1, $2, $3, 3, $4, $5, NOW())",
+        [roomId, playerId, name, spawn.xPct, spawn.yPct]
+      );
+      const snapshot = await advanceRoom(client, roomId);
+      await client.query("COMMIT");
+      res.json({ ok: true, ...snapshot, playerId });
+    } catch (error) {
+      if (client) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Bomb online room creation error:", error.message);
+      res.status(500).json({ ok: false, error: "Не удалось создать комнату для друзей. Повтори попытку." });
+    } finally {
+      if (client) client.release();
+    }
+  });
+
+  router.post("/rooms/join", async (req, res) => {
+    let client;
+    try {
+      const inviteCode = String(req.body?.inviteCode || "").trim().toUpperCase().replace(/\s+/g, "");
+      const playerId = String(req.body?.playerId || "").trim().slice(0, 80);
+      const name = String(req.body?.name || "Игрок").trim().slice(0, 18) || "Игрок";
+      if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{7}$/.test(inviteCode) || !validPlayerId(playerId)) {
+        return res.status(400).json({ ok: false, error: "Проверь код комнаты и попробуй ещё раз." });
+      }
+
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const roomResult = await client.query(
+        "SELECT id, status, max_players FROM bomb_rooms WHERE invite_code = $1 FOR UPDATE",
+        [inviteCode]
+      );
+      if (!roomResult.rows.length || roomResult.rows[0].status !== "waiting") {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ ok: false, error: "Комната не найдена или игра уже началась. Попроси друга создать новую." });
+      }
+      const roomId = String(roomResult.rows[0].id);
+      await client.query(
+        "DELETE FROM bomb_room_players WHERE room_id = $1 AND last_seen_at < NOW() - INTERVAL '90 seconds'",
+        [roomId]
+      );
+      // Don't leave a duplicate stale lobby membership behind when switching from random matchmaking.
+      await client.query(
+        "DELETE FROM bomb_room_players WHERE player_id = $1 AND room_id <> $2 AND room_id IN (SELECT id FROM bomb_rooms WHERE status = 'waiting')",
+        [playerId, roomId]
+      );
+
+      const current = await client.query(
+        "SELECT COUNT(*)::int AS count FROM bomb_room_players WHERE room_id = $1 AND lives > 0",
+        [roomId]
+      );
+      const alreadyJoined = await client.query(
+        "SELECT 1 FROM bomb_room_players WHERE room_id = $1 AND player_id = $2",
+        [roomId, playerId]
+      );
+      if (!alreadyJoined.rows.length && Number(current.rows[0]?.count || 0) >= Number(roomResult.rows[0].max_players)) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ ok: false, error: "Комната уже заполнена. Попроси друга создать новую." });
+      }
+      if (alreadyJoined.rows.length) {
+        await client.query(
+          "UPDATE bomb_room_players SET display_name = $3, last_seen_at = NOW() WHERE room_id = $1 AND player_id = $2",
+          [roomId, playerId, name]
+        );
+      } else {
+        const spawn = spawnPoint(Number(current.rows[0]?.count || 0));
+        await client.query(
+          "INSERT INTO bomb_room_players (room_id, player_id, display_name, lives, x_pct, y_pct, last_seen_at) VALUES ($1, $2, $3, 3, $4, $5, NOW())",
+          [roomId, playerId, name, spawn.xPct, spawn.yPct]
+        );
+      }
+      const snapshot = await advanceRoom(client, roomId);
+      await client.query("COMMIT");
+      res.json({ ok: true, ...snapshot, playerId });
+    } catch (error) {
+      if (client) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Bomb online room join error:", error.message);
+      res.status(500).json({ ok: false, error: "Не удалось войти в комнату по коду." });
     } finally {
       if (client) client.release();
     }
