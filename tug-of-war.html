@@ -294,6 +294,8 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
   var flushTimer = null;
   var warningShown = false;
   var sceneState = { progress: 0, status: 'waiting', winnerTeam: null, finishedAt: 0 };
+  // The team wins when the centre flag reaches and crosses its side's marked line.
+  var FLAG_GOAL_PROGRESS = 0.86;
   var THREERef = null;
   var renderer = null;
   var scene = null;
@@ -621,7 +623,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)+0.018+Math.random()*0.028));
       currentGame.teamScores['2']=(currentGame.teamScores['2']||0)+1;
       currentGame.totalTaps=(currentGame.totalTaps||0)+1;
-      if(currentGame.progress>=1){currentGame.progress=1;currentGame.phase='finished';currentGame.winnerTeam=2;currentGame.message='Тестовый бот перетянул канат. Попробуй нажимать чаще!';currentGame.finishedAt=Date.now();clearInterval(testBotTimer);testBotTimer=null;}
+      if(currentGame.progress>=FLAG_GOAL_PROGRESS){currentGame.progress=Math.max(currentGame.progress,FLAG_GOAL_PROGRESS);currentGame.phase='finished';currentGame.winnerTeam=2;currentGame.message='Тестовый бот перетянул флаг за линию. Попробуй нажимать чаще!';currentGame.finishedAt=Date.now();clearInterval(testBotTimer);testBotTimer=null;}
       else currentGame.message='Тренировка: бот тянет канат. Нажимай коротко и ритмично!';
       updateGameUi();
     },520);
@@ -634,7 +636,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       currentGame.progress=Math.max(-1,Math.min(1,(Number(currentGame.progress)||0)-0.045-Math.random()*0.018));
       currentGame.teamScores['1']=(currentGame.teamScores['1']||0)+1;
       currentGame.totalTaps=(currentGame.totalTaps||0)+1;
-      if(currentGame.progress<=-1){currentGame.progress=-1;currentGame.phase='finished';currentGame.winnerTeam=1;currentGame.message='Ты победил тестового бота!';if(testBotTimer){clearInterval(testBotTimer);testBotTimer=null;}}
+      if(currentGame.progress<=-FLAG_GOAL_PROGRESS){currentGame.progress=Math.min(currentGame.progress,-FLAG_GOAL_PROGRESS);currentGame.phase='finished';currentGame.winnerTeam=1;currentGame.message='Ты перетянул флаг за линию и победил!';if(testBotTimer){clearInterval(testBotTimer);testBotTimer=null;}}
       updateGameUi();
       if(currentGame.phase==='playing')el('gameMessage').textContent='Тренировка: твои нажатия усиливают команду. Бот сопротивляется!';
       return;
@@ -983,15 +985,13 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       }else{
         nextCore.dispose();
       }
-      // Anchor the knot and flag to the actual rope segment between the two teams'
-      // innermost hands, rather than placing it at a fixed progress-based X coordinate.
-      // As the animated players move, their hands move first; the flag follows that same
-      // rope segment every frame, including when 2, 4, or 6 players are in the arena.
-      var fallbackTargetX=progress*(portrait?3.12:3.22);
-      var targetGrip=(innerLeftGrip && innerRightGrip)
-        ? innerLeftGrip.clone().add(innerRightGrip).multiplyScalar(.5)
-        : new THREE.Vector3(fallbackTargetX,.9,0);
-      targetGrip.x=Math.max(-3.18,Math.min(3.18,targetGrip.x));
+      // Drive the centre flag toward the red/blue goal line from the match progress,
+      // then snap it to the nearest point on the freshly rebuilt rope. This keeps the
+      // flag physically attached to the moving rope while guaranteeing it crosses the
+      // marked line at the exact moment the winning progress threshold is reached.
+      // Final animation deliberately carries it beyond the line so the win is unmistakable.
+      var targetX=Math.max(-3.35,Math.min(3.35,progress*3.35));
+      var targetGrip=new THREE.Vector3(targetX,.9,0);
       var samples=curve.getPoints(200);
       var marker=samples[0],bestDistance=Infinity;
       for(var q=0;q<samples.length;q++){
@@ -1068,7 +1068,7 @@ body.playing{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;heigh
       ctx.strokeStyle='#d6ad64';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(cx-3.8*scale,cy);ctx.lineTo(cx+3.8*scale,cy);ctx.stroke();
       var fallbackTeamSize=scenePlayerCount()/2;
       for(var team=1;team<=2;team++){for(var p=0;p<fallbackTeamSize;p++){var teamDir=team===1?-1:1;var advantage=sceneState.progress*teamDir;var winPull=Math.pow(Math.max(0,Math.min(1,advantage)),.58);var losePull=Math.pow(Math.max(0,Math.min(1,-advantage)),.58);var lostMatch=sceneState.status==='finished'&&sceneState.winnerTeam&&sceneState.winnerTeam!==team;var finishPull=lostMatch?Math.max(0,Math.min(1,(performance.now()-(sceneState.finishedAt||performance.now()))/700))*.72:0;var base=(team===1?-1:1)*(1.45+p*.7);var x=cx+(base+teamDir*(winPull*1.05-losePull*2.8-finishPull))*scale;var drag=Math.max(winPull,losePull);var y=cy+(p-1)*.26*scale+Math.sin(Date.now()/180+p)*drag*scale*.05;if(finishPull)y+=finishPull*scale*.14*teamDir;x=Math.max(scale*.2,Math.min(w-scale*.2,x));ctx.fillStyle=team===1?'#d84c5c':'#228dbc';ctx.beginPath();ctx.ellipse(x,y+scale*.8,scale*.23,scale*.15,0,0,Math.PI*2);ctx.fill();ctx.fillRect(x-scale*.18,y+scale*.1,scale*.36,scale*.66);ctx.fillStyle='#dab293';ctx.beginPath();ctx.arc(x,y,scale*.19,0,Math.PI*2);ctx.fill();}}
-      ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+sceneState.progress*2.7*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
+      var fallbackFlagProgress=Number(sceneState.progress)||0;if(sceneState.status==='finished'&&sceneState.winnerTeam){fallbackFlagProgress=sceneState.winnerTeam===2?Math.max(fallbackFlagProgress,.985):Math.min(fallbackFlagProgress,-.985);}ctx.fillStyle='#f8df9e';ctx.beginPath();ctx.arc(cx+fallbackFlagProgress*3.35*scale,cy,scale*.14,0,Math.PI*2);ctx.fill();
       requestAnimationFrame(draw);
     }
     draw();
