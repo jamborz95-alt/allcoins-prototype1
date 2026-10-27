@@ -15,7 +15,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 
 const bombTile = indexHtml.indexOf('id="bombEntry"');
 assert.ok(bombTile >= 0, "The Games menu must include the Pass the Bomb tile.");
-assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-online-4"'),
+assert.ok(indexHtml.includes('href="./bomb.html?v=20261027-open-rooms"'),
   "The Games menu should open the current cache-busted Bomb page.");
 assert.ok(bombHtml.includes('<script src="./three.min.js?v=20261026n"></script>') &&
   bombHtml.includes('<script src="./bomb-3d.js?v=20261027-online-1"></script>'),
