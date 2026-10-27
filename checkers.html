@@ -648,7 +648,7 @@
         stopOnlineGamePolling();
         currentRoom = room;
         onlineMode = true;
-        onlineGameState = game;
+        onlineGameState = null;
         gameSession += 1;
         stake = normalizeStake(room.stake || stake);
         $("gameStake").textContent = formatNumber(stake);
@@ -680,7 +680,11 @@
       }
       function syncOnlineGame(game) {
         if (!game || !Array.isArray(game.board)) return;
+        var previous = onlineGameState;
+        var sameRevision = previous && previous.updatedAt && game.updatedAt &&
+          previous.updatedAt === game.updatedAt && previous.status === game.status;
         onlineGameState = game;
+        if (sameRevision) return;
         board = game.board.map(function (row) { return row.map(function (piece) { return piece ? { color: piece.color, king: Boolean(piece.king) } : null; }); });
         if (game.myColor) humanColor = game.myColor;
         botColor = humanColor === "w" ? "b" : "w";
@@ -1016,6 +1020,7 @@
           });
           syncOnlineGame(result.game);
         } catch (error) {
+          busy = false;
           updateStatus(humanTurnLabel(), error.message || "Ход не принят сервером.");
           await refreshOnlineGameState(true);
         } finally {
