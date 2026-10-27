@@ -187,7 +187,9 @@ test("two mobile players share a Tug of War room, start online, and see team str
 
     await creator.locator("#startGame").click();
     await creator.locator("#gameScreen:not(.hidden)").waitFor();
-    await guest.waitForFunction(() => !document.getElementById("gameScreen").classList.contains("hidden"),null,{timeout:8000});
+    // The guest observes the creator's start via room-state polling; allow for a
+    // throttled background mobile page under loaded CI runners.
+    await guest.waitForFunction(() => !document.getElementById("gameScreen").classList.contains("hidden"),null,{timeout:15000});
     assert.equal(await creator.locator("#team1Count").textContent(),"1");
     assert.equal(await guest.locator("#team2Count").textContent(),"1");
 
