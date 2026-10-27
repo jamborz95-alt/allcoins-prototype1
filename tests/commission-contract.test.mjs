@@ -7,8 +7,9 @@ import {
   recordGameCommission
 } from "../server/commission.js";
 
-const [serverSource, lottoSource, sekaSource, rpsSource, clientSource] = await Promise.all([
+const [serverSource, checkersSource, lottoSource, sekaSource, rpsSource, clientSource] = await Promise.all([
   readFile(new URL("../server/server.js", import.meta.url), "utf8"),
+  readFile(new URL("../server/checkers-router.js", import.meta.url), "utf8"),
   readFile(new URL("../server/lotto.js", import.meta.url), "utf8"),
   readFile(new URL("../server/seka-router.js", import.meta.url), "utf8"),
   readFile(new URL("../server/rps-router.js", import.meta.url), "utf8"),
@@ -89,6 +90,15 @@ test("practice bot games never incur a commission", async () => {
 });
 
 test("all server-settled online games route commissions through one ledger", () => {
+  // Checkers settles the finishing move, winner payout and 5% commission in one guarded transaction.
+  assert.match(checkersSource, /game: "checkers"/);
+  assert.match(checkersSource, /eventKey: "checkers:"/);
+  assert.match(checkersSource, /const gross = BigInt\(String\(room\.stake\)\) \* 2n/);
+  assert.match(checkersSource, /const payout = gross - commission/);
+  assert.match(checkersSource, /UPDATE players SET balance = balance \+ \$1::BIGINT/);
+  assert.match(checkersSource, /state\.settlementApplied = true/);
+  assert.match(checkersSource, /state\.status !== "finished" \|\| state\.settlementApplied/);
+
   assert.match(serverSource, /initializeCommissionTables\(pool\)/);
   assert.match(serverSource, /game: "durak"/);
   assert.match(serverSource, /eventKey: "durak:"/);
