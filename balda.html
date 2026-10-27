@@ -425,7 +425,7 @@
             const response = await fetch(new URL("./server/balda-words.txt", window.location.href).href, { cache: "force-cache" });
             if (!response.ok) throw new Error("Не удалось загрузить словарь для бота. Обнови страницу и попробуй ещё раз.");
             const raw = await response.text();
-            const words = raw.split(/\\r?\\n/).map(line => practiceNormalize(line.trim())).filter(word => /^[А-Я]+$/.test(word) && word.length >= 2 && word.length <= 5);
+            const words = raw.split(/\r?\n/).map(line => practiceNormalize(line.trim())).filter(word => /^[А-Я]+$/.test(word) && word.length >= 2 && word.length <= 5);
             if (words.length < 500) throw new Error("Словарь бота загрузился не полностью. Попробуй обновить страницу.");
             state.practiceWords = new Set(words);
           }
