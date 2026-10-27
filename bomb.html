@@ -745,7 +745,7 @@
     }
     function startOnlinePolling() {
       if (onlinePollTimer) clearInterval(onlinePollTimer);
-      onlinePollTimer = window.setInterval(syncOnlineRoom, 280);
+      onlinePollTimer = window.setInterval(syncOnlineRoom, 350);
     }
     async function startOnlineMatchmaking() {
       if (onlineSearchActive) return;
@@ -1892,7 +1892,15 @@
     function restartFromResult() {
       $('resultOverlay').classList.add('hidden');
       if (onlineGame) {
-        leaveOnlineRoom().finally(() => { startOnlineMatchmaking(); });
+        const leaveRequest = leaveOnlineRoom();
+        chosenMode = "online";
+        document.querySelectorAll("[data-mode]").forEach(button => button.classList.toggle("selected", button.dataset.mode === "online"));
+        $("gameView").classList.add("hidden");
+        $("setupView").classList.remove("hidden");
+        $("onlinePanel").classList.remove("hidden");
+        document.body.classList.remove("game-active");
+        document.documentElement.classList.remove("bomb-active");
+        leaveRequest.finally(() => { startOnlineMatchmaking(); });
         return;
       }
       players.forEach(p => p.lives = MAX_LIVES); round = 0; startRound();
