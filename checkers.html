@@ -189,7 +189,10 @@
               <div class="room-name" id="createdRoomName">Комната шашек</div>
               <div class="room-meta" id="createdRoomMeta">Ставка 100 AC</div>
             </div>
-            <button type="button" class="secondary" id="startCreatedRoom">Тест с ботом</button>
+          </div>
+          <div class="button-row">
+            <button type="button" class="primary" id="openCreatedRoom">Открыть онлайн-комнату</button>
+            <button type="button" class="secondary" id="startCreatedRoom">Отдельный тест с ботом</button>
           </div>
         </div>
 
@@ -199,8 +202,24 @@
           <div class="status" id="roomsStatus" aria-live="polite"></div>
         </div>
 
+        <div id="onlineRoomPanel" class="panel hidden" aria-label="Онлайн-комната шашек">
+          <h2>🌐 Онлайн-комната <span id="onlineRoomTitle"></span></h2>
+          <div class="room-item">
+            <div class="room-info">
+              <div class="room-name">Участники</div>
+              <div class="room-meta" id="onlineRoomMeta">Подключаемся к серверу…</div>
+            </div>
+          </div>
+          <div class="notice" id="onlineRoomStatus" role="status" aria-live="polite">Подключаемся к комнате…</div>
+          <div class="room-meta" id="onlineRoomPlayers"></div>
+          <div class="button-row">
+            <button type="button" class="secondary" id="refreshOnlineRoom">↻ Обновить комнату</button>
+            <button type="button" class="secondary" id="leaveOnlineRoom">Выйти из комнаты</button>
+          </div>
+        </div>
+
         <div class="notice">
-          <b>Тестовый режим:</b> бот уже доступен для проверки ходов, взятий и дамок. Пока список комнат хранится только в этом браузере и не виден другим игрокам. Для настоящих онлайн-комнат между разными пользователями потребуется подключить отдельные маршруты на Render. Ставка сейчас демонстрационная: реальные AC не списываются и не начисляются.
+          <b>Важно:</b> онлайн-комната и тест с ботом — разные режимы. При входе в найденную комнату бот не запускается. Ставка демонстрационная: реальные AC не списываются и не начисляются.
         </div>
       </div>
     </section>
@@ -269,6 +288,9 @@
       var roomRequest = 0;
       var stake = 100;
       var currentRoom = null;
+      var currentRoomRole = "guest";
+      var onlineRoomPollTimer = null;
+      var onlineRoomBusy = false;
       var board = [];
       var turn = "w";
       var humanColor = "w";
@@ -414,10 +436,13 @@
             var open = document.createElement("button");
             open.type = "button";
             open.className = "secondary";
-            open.textContent = "Открыть";
+            open.textContent = "Войти";
             open.addEventListener("click", function () {
-              currentRoom = room;
-              startGame(room.stake);
+              if (currentRoom && String(currentRoom.id) === String(room.id) && currentRoomRole === "creator") {
+                showOnlineRoom(currentRoom, "creator");
+              } else {
+                joinOnlineRoom(room);
+              }
             });
             item.appendChild(info);
             item.appendChild(open);
@@ -436,8 +461,30 @@
       }
       $("createRoom").addEventListener("click", createRoom);
       $("showRooms").addEventListener("click", showRooms);
-      $("startCreatedRoom").addEventListener("click", function () { startGame(currentRoom ? currentRoom.stake : stake); });
-      $("startBot").addEventListener("click", function () { setStake($("stakeInput").value); currentRoom = null; startGame(stake); });
+      $("openCreatedRoom").addEventListener("click", function () {
+        if (!currentRoom) {
+          $("lobbyStatus").textContent = "Сначала создай комнату.";
+          return;
+        }
+        showOnlineRoom(currentRoom, "creator");
+      });
+      $("startCreatedRoom").addEventListener("click", function () {
+        stopOnlineRoomPolling();
+        $("onlineRoomPanel").classList.add("hidden");
+        currentRoom = null;
+        currentRoomRole = "guest";
+        startGame(stake);
+      });
+      $("startBot").addEventListener("click", function () {
+        setStake($("stakeInput").value);
+        stopOnlineRoomPolling();
+        $("onlineRoomPanel").classList.add("hidden");
+        currentRoom = null;
+        currentRoomRole = "guest";
+        startGame(stake);
+      });
+      $("refreshOnlineRoom").addEventListener("click", function () { refreshOnlineRoomState(false); });
+      $("leaveOnlineRoom").addEventListener("click", leaveOnlineRoom);
       $("backToAllcoins").addEventListener("click", function () { window.location.href = "./index.html"; });
       $("backToLobby").addEventListener("click", showLobby);
       $("quitGame").addEventListener("click", showLobby);
@@ -449,6 +496,8 @@
         gameSession += 1;
         if (botTimer) clearTimeout(botTimer);
         botTimer = null;
+        stopOnlineRoomPolling();
+        $("onlineRoomPanel").classList.add("hidden");
         busy = false;
         $("gameScreen").classList.add("hidden");
         $("lobbyScreen").classList.remove("hidden");
@@ -456,6 +505,83 @@
         if (telegram && telegram.BackButton) {
           try { telegram.BackButton.show(); } catch (_) {}
         }
+      }
+      function stopOnlineRoomPolling() {
+        if (onlineRoomPollTimer) clearInterval(onlineRoomPollTimer);
+        onlineRoomPollTimer = null;
+        onlineRoomBusy = false;
+      }
+      function showOnlineRoom(room, role) {
+        if (!room) return;
+        currentRoom = room;
+        currentRoomRole = role || "guest";
+        if (onlineRoomPollTimer) clearInterval(onlineRoomPollTimer);
+        $("onlineRoomTitle").textContent = "#" + String(room.id);
+        $("onlineRoomMeta").textContent = formatNumber(room.stake || stake) + " AC · " + (room.status || "ожидает игрока");
+        $("onlineRoomPlayers").textContent = "";
+        $("onlineRoomPanel").classList.remove("hidden");
+        $("onlineRoomPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        $("onlineRoomStatus").textContent = currentRoomRole === "creator"
+          ? "Комната создана. Ждём второго реального игрока. Бот не добавляется."
+          : "Ты вошёл в комнату. Проверяем подключение соперника.";
+        refreshOnlineRoomState(true);
+        onlineRoomPollTimer = setInterval(function () {
+          if (!document.hidden && !$("onlineRoomPanel").classList.contains("hidden")) refreshOnlineRoomState(true);
+        }, 3000);
+      }
+      async function joinOnlineRoom(room) {
+        if (!room || onlineRoomBusy) return;
+        onlineRoomBusy = true;
+        $("roomsStatus").textContent = "Входим в онлайн-комнату…";
+        try {
+          var result = await checkersApi("/rooms/join", { roomId: String(room.id) });
+          showOnlineRoom(result.room || room, "player");
+          $("roomsStatus").textContent = "Вход в комнату выполнен.";
+        } catch (error) {
+          $("roomsStatus").textContent = error.message || "Не удалось войти в комнату.";
+        } finally {
+          onlineRoomBusy = false;
+        }
+      }
+      async function refreshOnlineRoomState(quiet) {
+        if (!currentRoom || onlineRoomBusy) return;
+        onlineRoomBusy = true;
+        try {
+          var result = await checkersApi("/rooms/state", { roomId: String(currentRoom.id) });
+          if (result.room) currentRoom = result.room;
+          var players = Array.isArray(result.players) ? result.players : [];
+          var count = Number(currentRoom.playersCount !== undefined ? currentRoom.playersCount : (result.playersCount !== undefined ? result.playersCount : players.length));
+          if (!Number.isFinite(count) || count < 0) count = players.length;
+          $("onlineRoomMeta").textContent = formatNumber(currentRoom.stake || stake) + " AC · " + count + "/2 игрока · " + (currentRoom.status || "ожидает игрока");
+          $("onlineRoomPlayers").textContent = players.length
+            ? "В комнате: " + players.map(function (player) { return player.name || player.username || player.first_name || (player.isYou ? "Ты" : "Игрок"); }).join(" · ")
+            : "Список участников пока не предоставлен сервером.";
+          if (currentRoom.status === "playing" || (result.game && result.game.status === "playing")) {
+            $("onlineRoomStatus").textContent = "Соперник подключился, но сервер пока не передаёт ходы шашек между устройствами. Бот не подменяет второго игрока; онлайн-доску нужно синхронизировать на сервере.";
+          } else if (currentRoom.status === "finished") {
+            $("onlineRoomStatus").textContent = "Эта комната уже завершена. Выйди и выбери другую.";
+          } else {
+            $("onlineRoomStatus").textContent = currentRoomRole === "creator"
+              ? "Комната открыта и ожидает второго реального игрока. Бот автоматически не добавляется."
+              : "Ты подключён к комнате. Ожидаем второго игрока/начала партии.";
+          }
+        } catch (error) {
+          if (!quiet) $("onlineRoomStatus").textContent = (error.message || "Не удалось обновить комнату.") + " Бот не будет запускаться вместо игрока.";
+        } finally {
+          onlineRoomBusy = false;
+        }
+      }
+      async function leaveOnlineRoom() {
+        var room = currentRoom;
+        stopOnlineRoomPolling();
+        $("onlineRoomPanel").classList.add("hidden");
+        currentRoom = null;
+        currentRoomRole = "guest";
+        if (room) {
+          try { await checkersApi("/rooms/leave", { roomId: String(room.id) }); }
+          catch (error) { $("lobbyStatus").textContent = error.message || "Вышли из комнаты только на этом устройстве."; }
+        }
+        await renderRooms();
       }
       function startRematch() {
         humanColor = humanColor === "w" ? "b" : "w";
