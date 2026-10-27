@@ -72,6 +72,13 @@ test("Online race polling does not overlap and 3D race view receives every parti
   assert.match(router, /bestFinishFraction=Infinity/);
 });
 
+test("Abandoned waiting rooms refund each reserved stake before cleanup", () => {
+  assert.match(router, /async function cleanupDormantRooms\(\)/);
+  assert.match(router, /r\.status='waiting'.*last_seen_at>NOW\(\)-INTERVAL '2 minutes'/);
+  assert.match(router, /for\(const player of players\)await credit\(client,player\.id,room\.stake\)/);
+  assert.match(router, /await client\.query\("DELETE FROM drag_racing_rooms WHERE id=\$1",\[item\.id\]\)/);
+});
+
 test("A finished racer may close the result screen without refunding or altering the pot", () => {
   assert.match(router, /if\(room\.status==="finished"\)\{const finishedMember=/);
   assert.match(router, /finished:true,refunded:false/);
