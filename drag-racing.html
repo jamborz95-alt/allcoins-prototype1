@@ -69,7 +69,7 @@ let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}function setGear(g){gear=g;$('currentGear').textContent=g==='N'?'N':g;document.querySelectorAll('[data-gear]').forEach(x=>x.classList.toggle('active',x.dataset.gear===String(g)));if(running&&!clutchHeld&&g!=='N'&&Math.abs(rpm)>6800){speed=Math.max(0,speed-4)}}
 document.querySelectorAll('[data-gear]').forEach(b=>b.addEventListener('click',()=>setGear(b.dataset.gear==='N'?'N':Number(b.dataset.gear))));
 function holdButton(id,on,off){let el=$(id);const start=e=>{e.preventDefault();on();try{el.setPointerCapture(e.pointerId)}catch(_){}};const end=e=>{if(e)e.preventDefault();off()};el.addEventListener('pointerdown',start);['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));el.addEventListener('contextmenu',e=>e.preventDefault())}
-holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);holdButton('clutch',()=>clutchHeld=true,()=>clutchHeld=false);
+holdButton('gas',()=>{gasHeld=true;queueOnlineAction()},()=>{gasHeld=false;queueOnlineAction()});holdButton('clutch',()=>{clutchHeld=true;queueOnlineAction()},()=>{clutchHeld=false;queueOnlineAction()});
 function setLight(n){for(let i=1;i<=3;i++)$('l'+i).className='light'+(i<=n?' on':'')}
 function reset(){running=false;finished=false;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;clutchHeld=false;zeroAt=null;setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';$('raceStatus').textContent='Нажми «Старт заезда» и стартуй по сигналу.';updateHUD()}
 function updateHUD(){$('speed').textContent=Math.round(speed);$('speedHud').textContent=Math.round(speed)+' км/ч';$('distance').textContent=Math.min(maxDist,Math.round(distance));$('distanceHud').textContent=Math.max(0,Math.round(maxDist-distance))+' м';$('rpm').textContent=Math.round(rpm);$('speedbar').style.width=Math.min(100,speed/2.8)+'%';$('rpmbar').style.width=Math.min(100,rpm/80)+'%';$('zero100').textContent=zeroAt===null?'—':zeroAt.toFixed(2)+' с'}
@@ -85,6 +85,6 @@ function queueOnlineAction(){if(!activeOnlineRoomId||!activeOnlineRoom||activeOn
 async function createOnlineRoom(){let count=Number($('players').value),stake=Number($('stake').value);if(!Number.isSafeInteger(stake)||stake<100){$('roomStatus').textContent='Минимальная ставка — 100 AC.';return}$('createRoom').disabled=true;$('roomStatus').textContent='Создаю комнату на сервере…';try{const data=await apiPost('/rooms',{players:count,stake,mode:$('raceMode').value,carId:state.selected});renderActiveRoom(data);stopOnlineRoom();renderActiveRoom(data);onlinePoll=setInterval(()=>pollOnlineRoom().catch(()=>{}),300);$('roomStatus').textContent='Комната создана. Ставка зарезервирована на сервере.';await syncAccount();await loadRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось создать комнату.'}finally{$('createRoom').disabled=false}}
 $('createRoom').onclick=createOnlineRoom;
 
-render();reset();
+render();reset();syncAccount();loadRooms();setInterval(loadRooms,5000);
 })();
 </script></body></html>
