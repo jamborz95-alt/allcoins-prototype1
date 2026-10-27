@@ -130,6 +130,26 @@ try {
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-mobile.png"), fullPage: true });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
     document.querySelector("#roomStatus")?.textContent.includes("Открытых"));
+
+  // Race mode should open the landscape cockpit, move the actual 3D canvas into the track,
+  // and keep the touchscreen shifter responsive on a portrait Android-sized viewport.
+  await page.locator("#startRace").click();
+  await page.waitForFunction(() => {
+    const cockpit = document.querySelector("#proRaceCockpit");
+    return cockpit && !cockpit.classList.contains("hidden") &&
+      document.querySelector("#race3dCanvas")?.parentElement?.id === "proRaceTrack";
+  }, null, { timeout: 5000 });
+  assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "The same live 3D canvas should render inside the full-screen drag cockpit.");
+  assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
+  await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-mobile.png"), fullPage: true });
+  await page.locator("#proShiftUp").click();
+  assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The right paddle should upshift in the cockpit.");
+  await page.locator("#proShiftDown").click();
+  assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left paddle should downshift in the cockpit.");
+  await page.locator("#proExitRace").click();
+  await page.waitForFunction(() => document.querySelector("#proRaceCockpit")?.classList.contains("hidden"));
+  assert.equal(await page.locator("#race3dCanvas").evaluate(el => el.parentElement.id), "scene",
+    "Exiting single-player should return the 3D canvas to the game page.");
   assert.equal((await page.locator("#balance").textContent()).replace(/\s/g, ""), "10000");
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/profile" && call.body.initData === "mock-init-data"),
     "Profile request should contain Telegram initData.");
