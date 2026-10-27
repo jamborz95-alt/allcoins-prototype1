@@ -690,7 +690,8 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('#seats .seat.current')?.dataset.player === "0",
     undefined,
-    { timeout: 5000 }
+    // Under loaded CI runners the bot's walk/contact hand-off can span several polls.
+    { timeout: 12000 }
   );
   await page.waitForTimeout(520);
   const humanBeforeContinuedDrag = await page.locator("#playerCharacter").boundingBox();
