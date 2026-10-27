@@ -856,7 +856,7 @@
         if (!piece) return [];
         var moves = [];
         if (!piece.king) {
-          var direction = piece.color === humanColor ? -1 : 1;
+          var direction = piece.color === "w" ? -1 : 1;
           [-1,1].forEach(function (dc) {
             var nr = r + direction, nc = c + dc;
             if (inside(nr,nc) && !state[nr][nc]) moves.push({ from:{r:r,c:c}, path:[{r:nr,c:nc}], captures:[] });
