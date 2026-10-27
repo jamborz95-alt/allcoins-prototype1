@@ -167,6 +167,85 @@ try {
   assert.equal(await page.locator('#mapControl [data-map="crystal"]').getAttribute("aria-pressed"), "true",
     "Selecting a map should visibly update the selected state.");
 
+  // Verify the online lobby and authoritative server snapshot in a second-client simulation.
+  await page.locator("#gameBack").click();
+  await page.locator('#modeControl button[data-mode="online"]').click();
+  await page.locator("#playerName").fill("Test Player");
+  let onlineJoinRequests = 0;
+  let onlineStateRequests = 0;
+  let onlineLeaveRequests = 0;
+  let onlinePlayerId = "";
+  let onlineRoster = [];
+  let onlineGameState = {};
+  const onlineRoom = { id: "901234", status: "playing", maxPlayers: 2, map: "copper", createdAt: new Date().toISOString() };
+  await page.route("https://allcoins-server.onrender.com/api/bomb/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({
+        status: 204,
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "POST, OPTIONS",
+          "access-control-allow-headers": "content-type"
+        },
+        body: ""
+      });
+      return;
+    }
+    const url = new URL(request.url());
+    const body = request.postDataJSON() || {};
+    if (url.pathname.endsWith("/matchmaking/join")) {
+      onlineJoinRequests++;
+      onlinePlayerId = String(body.playerId);
+      onlineRoom.maxPlayers = Number(body.maxPlayers) || 2;
+      onlineRoom.map = body.map === "crystal" ? "crystal" : "copper";
+      onlineRoster = [
+        { playerId: onlinePlayerId, name: String(body.name || "Test Player"), lives: 3, xPct: 50, yPct: 66, connected: true },
+        { playerId: "opponent_online_01", name: "Live Opponent", lives: 3, xPct: 78, yPct: 52, connected: true }
+      ];
+      onlineGameState = {
+        phase: "playing", round: 1, holderId: onlinePlayerId, fuseEndsAt: Date.now() + 12000,
+        phaseEndsAt: null, passToId: null, transferEndsAt: null,
+        lastExplosionId: null, loserId: null, winnerId: null
+      };
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
+      });
+      return;
+    }
+    if (url.pathname.endsWith("/rooms/state")) {
+      onlineStateRequests++;
+      onlineRoster = onlineRoster.map(player => player.playerId === String(body.playerId)
+        ? { ...player, xPct: Number(body.xPct) || player.xPct, yPct: Number(body.yPct) || player.yPct }
+        : player);
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
+      });
+      return;
+    }
+    if (url.pathname.endsWith("/rooms/leave")) onlineLeaveRequests++;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+  });
+  await page.locator("#startGame").click();
+  await page.waitForFunction(() =>
+    !document.querySelector("#gameView")?.classList.contains("hidden") &&
+    document.querySelector("#modeCaption")?.textContent.includes("Онлайн"),
+    undefined, { timeout: 8000 }
+  );
+  assert.equal(onlineJoinRequests, 1, "Online mode should request a public matchmaking room.");
+  assert.ok(onlineStateRequests > 0, "Online mode should poll shared server state after matchmaking.");
+  assert.equal(await page.locator("#botCharacters .bot-character").count(), 1,
+    "A remote human opponent should be rendered in the arena.");
+  assert.ok((await page.locator("#seats").innerText()).includes("Live Opponent"),
+    "The remote player's nickname should appear in the online seats.");
+  await page.locator("#gameBack").click();
+  await page.waitForTimeout(120);
+  assert.equal(onlineLeaveRequests, 1, "Leaving an online game should notify the server and release the room.");
+
+  console.log("Bomb Online mocked multiplayer flow passed: matchmaking, remote player render, sync and clean leave.");
+
   for (const count of [2, 3, 4]) {
     await page.locator('#playerCountControl button[data-count="' + count + '"]').click();
     await page.locator('#modeControl button[data-mode="local"]').click();
@@ -540,83 +619,6 @@ try {
   await page.mouse.up();
   assert.equal(await page.locator("#gameView").isVisible(), true,
     "The current round must stay open after the bot hand-off and joystick recovery.");
-
-  // Verify the online lobby and authoritative server snapshot in a second-client simulation.
-  await page.locator("#gameBack").click();
-  await page.locator('#modeControl button[data-mode="online"]').click();
-  await page.locator("#playerName").fill("Test Player");
-  let onlineJoinRequests = 0;
-  let onlineStateRequests = 0;
-  let onlineLeaveRequests = 0;
-  let onlinePlayerId = "";
-  let onlineRoster = [];
-  let onlineGameState = {};
-  const onlineRoom = { id: "901234", status: "playing", maxPlayers: 2, map: "copper", createdAt: new Date().toISOString() };
-  await page.route("https://allcoins-server.onrender.com/api/bomb/**", async (route) => {
-    const request = route.request();
-    if (request.method() === "OPTIONS") {
-      await route.fulfill({
-        status: 204,
-        headers: {
-          "access-control-allow-origin": "*",
-          "access-control-allow-methods": "POST, OPTIONS",
-          "access-control-allow-headers": "content-type"
-        },
-        body: ""
-      });
-      return;
-    }
-    const url = new URL(request.url());
-    const body = request.postDataJSON() || {};
-    if (url.pathname.endsWith("/matchmaking/join")) {
-      onlineJoinRequests++;
-      onlinePlayerId = String(body.playerId);
-      onlineRoom.maxPlayers = Number(body.maxPlayers) || 2;
-      onlineRoom.map = body.map === "crystal" ? "crystal" : "copper";
-      onlineRoster = [
-        { playerId: onlinePlayerId, name: String(body.name || "Test Player"), lives: 3, xPct: 50, yPct: 66, connected: true },
-        { playerId: "opponent_online_01", name: "Live Opponent", lives: 3, xPct: 78, yPct: 52, connected: true }
-      ];
-      onlineGameState = {
-        phase: "playing", round: 1, holderId: onlinePlayerId, fuseEndsAt: Date.now() + 12000,
-        phaseEndsAt: null, passToId: null, transferEndsAt: null,
-        lastExplosionId: null, loserId: null, winnerId: null
-      };
-      await route.fulfill({
-        status: 200, contentType: "application/json",
-        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
-      });
-      return;
-    }
-    if (url.pathname.endsWith("/rooms/state")) {
-      onlineStateRequests++;
-      onlineRoster = onlineRoster.map(player => player.playerId === String(body.playerId)
-        ? { ...player, xPct: Number(body.xPct) || player.xPct, yPct: Number(body.yPct) || player.yPct }
-        : player);
-      await route.fulfill({
-        status: 200, contentType: "application/json",
-        body: JSON.stringify({ ok: true, room: onlineRoom, game: onlineGameState, players: onlineRoster, playerId: onlinePlayerId })
-      });
-      return;
-    }
-    if (url.pathname.endsWith("/rooms/leave")) onlineLeaveRequests++;
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
-  });
-  await page.locator("#startGame").click();
-  await page.waitForFunction(() =>
-    !document.querySelector("#gameView")?.classList.contains("hidden") &&
-    document.querySelector("#modeCaption")?.textContent.includes("Онлайн"),
-    undefined, { timeout: 8000 }
-  );
-  assert.equal(onlineJoinRequests, 1, "Online mode should request a public matchmaking room.");
-  assert.ok(onlineStateRequests > 0, "Online mode should poll shared server state after matchmaking.");
-  assert.equal(await page.locator("#botCharacters .bot-character").count(), 1,
-    "A remote human opponent should be rendered in the arena.");
-  assert.ok((await page.locator("#seats").innerText()).includes("Live Opponent"),
-    "The remote player's nickname should appear in the online seats.");
-  await page.locator("#gameBack").click();
-  await page.waitForTimeout(120);
-  assert.equal(onlineLeaveRequests, 1, "Leaving an online game should notify the server and release the room.");
 
   assert.deepEqual(pageErrors, [], "The game should not throw browser runtime errors.");
   assert.deepEqual(consoleErrors, [], "The browser should not report console errors during the visual test.");
