@@ -98,7 +98,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
        FROM checkers_room_players rp
        JOIN checkers_rooms r ON r.id = rp.room_id
        WHERE rp.room_id = $1
-       ORDER BY rp.joined_at ASC, rp.telegram_id ASC`,
+       ORDER BY (rp.telegram_id = r.owner_telegram_id) DESC, rp.joined_at ASC, rp.telegram_id ASC`,
       [roomId]
     );
     return result.rows.map((player) => ({
@@ -111,13 +111,26 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
 
   async function loadRoom(client, roomId, lock = false) {
     const result = await client.query(
+    if (lock) {
+      const locked = await client.query(
+        `SELECT id, name, owner_telegram_id, owner_name, stake, max_players, status, created_at
+         FROM checkers_rooms WHERE id = $1 FOR UPDATE`,
+        [roomId]
+      );
+      if (!locked.rows.length) return null;
+      const count = await client.query(
+        "SELECT COUNT(*)::INTEGER AS players_count FROM checkers_room_players WHERE room_id = $1",
+        [roomId]
+      );
+      return { ...locked.rows[0], players_count: Number(count.rows[0].players_count) };
+    }
+    const result = await client.query(
       `SELECT r.id, r.name, r.owner_telegram_id, r.owner_name, r.stake, r.max_players,
               r.status, r.created_at, COUNT(rp.telegram_id)::INTEGER AS players_count
        FROM checkers_rooms r
        LEFT JOIN checkers_room_players rp ON rp.room_id = r.id
        WHERE r.id = $1
-       GROUP BY r.id
-       ${lock ? "FOR UPDATE OF r" : ""}`,
+       GROUP BY r.id`,
       [roomId]
     );
     return result.rows[0] || null;
@@ -462,7 +475,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       if (client && transactionOpen) {
         try { await client.query("ROLLBACK"); } catch (_) {}
       }
-      const status = error?.statusCode || 400;
+      const status = error?.statusCode || 500;
       if (status >= 500) console.error("Checkers move error:", error.message || error);
       return res.status(status).json({ ok: false, error: error.message || "Не удалось выполнить ход." });
     } finally {
