@@ -718,10 +718,21 @@ function buildProTachScale(){
     scale.appendChild(num);
   }
 }
+function requestRaceLandscape(){
+  // Use native landscape/fullscreen when the Telegram WebView or browser supports it;
+  // the CSS-rotated layout remains the fallback for clients that deny orientation locking.
+  try{const p=tg?.requestFullscreen?.();if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
+  try{const p=window.screen?.orientation?.lock?.('landscape');if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
+}
+function restoreRaceOrientation(){
+  try{window.screen?.orientation?.unlock?.()}catch(_){}
+  try{const p=tg?.exitFullscreen?.();if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
+}
 function openProRaceCockpit(){
   const panel=$('proRaceCockpit'),track=$('proRaceTrack'),host=$('race3dCanvas');
   if(!panel||!track||!host)return;
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
+  requestRaceLandscape();
   track.appendChild(host);raceCockpitOpen=true;
   buildProTachScale();syncProRaceCockpit();
   requestAnimationFrame(()=>race3d?.resize?.());
@@ -731,6 +742,7 @@ function closeProRaceCockpit(){
   if(host&&sceneHost&&host.parentElement!==sceneHost)sceneHost.prepend(host);
   if(panel){panel.classList.add('hidden');panel.setAttribute('aria-hidden','true')}
   document.body.classList.remove('pro-race-open');raceCockpitOpen=false;
+  restoreRaceOrientation();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function syncProRaceCockpit(){
