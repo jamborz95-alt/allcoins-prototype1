@@ -21,12 +21,14 @@ test("Drag Racing room stake is debited transactionally and room cancellation re
   assert.match(router, /UPDATE players SET balance=balance\+\$1::BIGINT/);
   assert.match(router, /for\(const p of all\.rows\)await credit\(client,p\.id,stake\)/);
   assert.match(router, /recordGameCommission\(client,\{game:"drag-racing",eventKey:"drag-racing:"\+id/);
-  assert.match(router, /game\.settled=true/);
+  assert.match(router, /settled:true/);
 });
 
 test("Drag Racing garage purchases are persisted and server-priced", () => {
   assert.match(router, /drag_racing_garage/);
-  assert.match(router, /priora:329000,granta:850000,niva:1099000,vesta:1558000/);
+  assert.match(router, /"2104":95000,"2105":75000,"2106":85000,"2109":125000,"2110":165000,"2112":205000,"2114":220000/);
+  assert.match(router, /"priora":329000,"granta":850000,"niva":1099000,"vesta":1558000/);
+  for (const model of ["2104", "2105", "2106", "2109", "2110", "2112", "2114"]) assert.ok(page.includes("id:'" + model + "'"));
   assert.match(router, /ecu:25000,intake:18000,exhaust:32000,turbo:95000/);
   assert.match(router, /router\.post\("\/shop\/buy-car"/);
   assert.match(router, /router\.post\("\/shop\/buy-part"/);
