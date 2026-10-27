@@ -1981,7 +1981,21 @@
       bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
       // The 3D renderer animates the flight from the shared path state. Avoid animating
       // left/top on this hidden DOM element: it forces layout on every frame and stutters on phones.
-      if (arena.classList.contains('three-ready')) return;
+      if (arena.classList.contains('three-ready')) {
+        const flight = window.__allcoinsBombFlight;
+        window.setTimeout(() => {
+          // A newer transfer or an authoritative server correction may already have replaced this flight.
+          if (window.__allcoinsBombFlight !== flight) return;
+          window.__allcoinsBombScreenPosition = { x: endX, y: endY };
+          window.__allcoinsBombFlight = null;
+          bomb.style.left = `${endX}px`;
+          bomb.style.top = `${endY}px`;
+          bomb.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+          bomb.classList.remove('moving');
+          bomb.classList.add('following');
+        }, duration + 20);
+        return;
+      }
       void bomb.offsetWidth;
       makeTrail(arc2.x, arc2.y);
       if (typeof bomb.animate === 'function') {
