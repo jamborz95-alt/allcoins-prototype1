@@ -287,8 +287,9 @@ try {
     undefined, { timeout: 8000 }
   );
   assert.equal(friendRoomCreateRequests, 1, "The friend-room button should create a server room.");
-  assert.ok((await page.locator("#onlineStatusText").innerText()).includes("Комната создана"),
-    "The creator should see confirmation and an invite code while waiting.");
+  assert.ok((await page.locator("#onlineStatusText").innerText()).includes("В комнате") &&
+    (await page.locator("#onlineStatusText").innerText()).includes("ABC2345"),
+    "The creator should see room occupancy and the invite code while waiting.");
   await page.locator("#cancelOnlineSearch").click();
   await page.locator("#joinRoomCode").fill(friendInviteCode);
   await page.locator("#joinOnlineRoom").click();
