@@ -652,6 +652,9 @@
     let moveX = 0;
     let moveY = 0;
     let movePointerId = null;
+    // Retain the active gesture across the bomb's flight even if a WebView sends
+    // a spurious pointercancel while the same finger is still held.
+    let preserveJoystickPointerThroughTransfer = false;
     let lastJoystickClientX = null;
     let lastJoystickClientY = null;
     let moveFrame = 0;
@@ -1608,6 +1611,7 @@
     // Pause motion for a transfer without dropping the active pointer. If the
     // player keeps a finger on the joystick, the same gesture resumes afterward.
     function pauseJoystickMotion() {
+      if (movePointerId !== null) preserveJoystickPointerThroughTransfer = true;
       moveX = 0; moveY = 0;
       playerVelocityX = 0; playerVelocityY = 0;
       const knob = $('joystickKnob');
@@ -1629,6 +1633,7 @@
 
     function resetJoystick() {
       movePointerId = null;
+      preserveJoystickPointerThroughTransfer = false;
       lastJoystickClientX = null;
       lastJoystickClientY = null;
       moveX = 0; moveY = 0;
@@ -1749,10 +1754,10 @@
     });
     window.addEventListener('pointercancel', event => {
       if (movePointerId !== event.pointerId) return;
-      // During a bomb flight some mobile WebViews emit pointercancel when capture is
-      // interrupted by the animated layer. Keep the gesture alive until the hand-off
-      // settles; resumeJoystickMotion() will try to capture the still-held pointer again.
-      if (phase === 'passing') return;
+      // A WebView can deliver pointercancel just after changing phase back to playing.
+      // Preserve the gesture from pause through actual pointerup, not only while the
+      // animation flag is active; resumeJoystickMotion() reacquires capture if possible.
+      if (preserveJoystickPointerThroughTransfer) return;
       resetJoystick();
     });
     window.addEventListener('keydown', event => {
