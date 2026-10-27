@@ -422,11 +422,39 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   router.post("/rooms/list", async (req, res) => {
     const user = requireUser(req, res, verifyTelegram);
     if (!user) return;
+    let maintenanceClient;
+    let maintenanceOpen = false;
     try {
-      await pool.query(
-        "DELETE FROM drag_racing_rooms r WHERE r.status = 'waiting' AND r.created_at < NOW() - INTERVAL '2 minutes' " +
-        "AND NOT EXISTS (SELECT 1 FROM drag_racing_room_players p WHERE p.room_id = r.id)"
+      // Clean up abandoned waiting rooms only when no member has sent a heartbeat
+      // for two minutes. Refund each paid stake in the same transaction before deletion.
+      maintenanceClient = await pool.connect();
+      await maintenanceClient.query("BEGIN"); maintenanceOpen = true;
+      const staleRooms = await maintenanceClient.query(
+        "SELECT r.id::TEXT AS id, r.stake::TEXT AS stake FROM drag_racing_rooms r " +
+        "WHERE r.status = 'waiting' AND NOT EXISTS (" +
+          "SELECT 1 FROM drag_racing_room_players p WHERE p.room_id = r.id " +
+          "AND p.last_seen_at >= NOW() - INTERVAL '2 minutes') " +
+        "FOR UPDATE SKIP LOCKED"
       );
+      for (const staleRoom of staleRooms.rows) {
+        const members = await maintenanceClient.query(
+          "SELECT telegram_id::TEXT AS telegram_id FROM drag_racing_room_players WHERE room_id = $1::BIGINT",
+          [String(staleRoom.id)]
+        );
+        for (const member of members.rows) {
+          await maintenanceClient.query(
+            "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
+            [String(staleRoom.stake), String(member.telegram_id)]
+          );
+        }
+        await maintenanceClient.query("DELETE FROM drag_racing_rooms WHERE id = $1::BIGINT AND status = 'waiting'", [String(staleRoom.id)]);
+      }
+      // Finished-room payout was committed already; remove only its old room record and result.
+      await maintenanceClient.query(
+        "DELETE FROM drag_racing_rooms WHERE status = 'finished' AND updated_at < NOW() - INTERVAL '2 minutes'"
+      );
+      await maintenanceClient.query("COMMIT"); maintenanceOpen = false;
+      maintenanceClient.release(); maintenanceClient = null;
       const activeResult = await pool.query(
         "SELECT r.id::TEXT AS id FROM drag_racing_rooms r JOIN drag_racing_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1::BIGINT AND r.status IN ('waiting','racing') ORDER BY r.created_at DESC LIMIT 1",
@@ -451,8 +479,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         createdAt: row.created_at
       })) });
     } catch (error) {
+      if (maintenanceOpen && maintenanceClient) {
+        try { await maintenanceClient.query("ROLLBACK"); } catch (_) {}
+      }
       console.error("List Drag Racing rooms:", error.message || error);
       return res.status(500).json({ ok: false, error: "Не удалось загрузить онлайн-комнаты." });
+    } finally {
+      if (maintenanceClient) maintenanceClient.release();
     }
   });
 
@@ -657,7 +690,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
       }
       const elapsedSinceGreen = Math.max(0, Date.now() - (Number(game.startedAt || Date.now()) + 3000));
-      if (timeMs + 10000 < elapsedSinceGreen) throw new DragRacingError(400, "Время финиша не прошло серверную проверку.");
+      if (timeMs + 2500 < elapsedSinceGreen) throw new DragRacingError(400, "Время финиша не прошло серверную проверку.");
       game.results[user.id] = {
         timeMs: Math.round(timeMs),
         carId: String(player.car_id || "2107"),
