@@ -769,10 +769,13 @@ async function cleanupFinishedGameRooms() {
               AND g.game_state->>'status' = 'finished'
               AND g.updated_at < NOW() - INTERVAL '5 minutes'
               AND (
-                g.game_state->'pot'->>'settled' = 'true'
-                OR (
+                (
                   g.game_state->>'finishedReason' = 'timeout'
                   AND g.game_state->>'timeoutBalanceSettled' = 'true'
+                )
+                OR (
+                  COALESCE(g.game_state->>'finishedReason', '') <> 'timeout'
+                  AND g.game_state->'pot'->>'settled' = 'true'
                 )
               )`
     },
