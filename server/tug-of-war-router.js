@@ -361,10 +361,20 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
     if (!roomId) return res.status(400).json({ ok: false, error: "Номер комнаты указан неверно." });
     try {
       const member = await pool.query(
-        "UPDATE tug_room_players SET last_seen_at = NOW() WHERE room_id = $1 AND telegram_id = $2 RETURNING telegram_id",
+        "SELECT telegram_id, last_seen_at FROM tug_room_players WHERE room_id = $1 AND telegram_id = $2",
         [roomId, user.id]
       );
       if (!member.rows.length) return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате." });
+
+      // Room state is polled frequently for responsive tug feedback, but liveness
+      // only needs a heartbeat every two seconds; avoid writing this row on every poll.
+      const lastSeenAt = member.rows[0].last_seen_at ? new Date(member.rows[0].last_seen_at).getTime() : 0;
+      if (!lastSeenAt || Date.now() - lastSeenAt >= 2000) {
+        await pool.query(
+          "UPDATE tug_room_players SET last_seen_at = NOW() WHERE room_id = $1 AND telegram_id = $2",
+          [roomId, user.id]
+        );
+      }
       return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
     } catch (error) {
       const status = error instanceof TugError ? error.status : 500;
