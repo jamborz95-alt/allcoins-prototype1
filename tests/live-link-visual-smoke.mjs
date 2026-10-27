@@ -57,7 +57,7 @@ try {
     document.getElementById("games") && !document.getElementById("games").classList.contains("hidden")
   );
   for (const id of ["durakEntry", "bombEntry", "towersEntry", "unoEntry", "billiardsEntry",
-                    "lottoEntry", "twentyOneEntry", "sekaEntry", "rpsEntry", "checkersEntry"]) {
+                    "lottoEntry", "twentyOneEntry", "sekaEntry", "rpsEntry", "checkersEntry", "baldaEntry"]) {
     assert.ok(await page.locator("#" + id).count(), "Games menu is missing #" + id + ".");
     assert.ok(await page.locator("#" + id).isVisible(), "Games menu tile #" + id + " is not visible.");
   }
@@ -128,6 +128,16 @@ try {
       fr: "Billard en ligne",
       pt: "Bilhar online",
       zh: "在线台球"
+    }},
+    { file: "balda.html", source: "Балда Онлайн", translations: {
+      en: "Online Balda",
+      nl: "Balda Online",
+      tr: "Çevrimiçi Balda",
+      es: "Balda en línea",
+      de: "Online-Balda",
+      fr: "Balda en ligne",
+      pt: "Balda Online",
+      zh: "在线巴尔达"
     }},
     { file: "bomb.html", source: "Передай бомбу", translations: {
       en: "Pass the Bomb",
@@ -256,6 +266,32 @@ try {
       }
     }
   }
+
+  // Balda must work as a free practice game, and tapping a cell must focus the real text field.
+  // On Android Telegram this user gesture is what requests the native keyboard.
+  await page.goto(new URL("balda.html?balda-keyboard-smoke=20261027a", publicRoot).href,
+    { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.locator("#practiceBotBtn").click();
+  await page.waitForFunction(() => {
+    const view = document.getElementById("gameView");
+    return view && !view.classList.contains("hidden") &&
+      document.querySelectorAll("#baldaBoard .cell.can-pick").length > 0;
+  }, null, { timeout: 20000 });
+  await page.locator("#baldaBoard .cell.can-pick").first().click();
+  await page.waitForFunction(() => {
+    const modal = document.getElementById("letterModal");
+    return modal && !modal.classList.contains("hidden") &&
+      document.activeElement && document.activeElement.id === "letterTypeInput";
+  }, null, { timeout: 5000 });
+  const baldaKeyboardState = await page.evaluate(() => ({
+    gameVisible: !document.getElementById("gameView").classList.contains("hidden"),
+    letterModalVisible: !document.getElementById("letterModal").classList.contains("hidden"),
+    inputFocused: document.activeElement?.id === "letterTypeInput",
+    wordCells: document.querySelectorAll("#baldaBoard .cell.filled").length
+  }));
+  assert.ok(baldaKeyboardState.gameVisible && baldaKeyboardState.letterModalVisible &&
+    baldaKeyboardState.inputFocused && baldaKeyboardState.wordCells === 5,
+    "Balda bot practice / keyboard-focus flow failed: " + JSON.stringify(baldaKeyboardState));
 
   await page.goto(publicUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForSelector('button[data-page="games"]', { timeout: 20000 });
