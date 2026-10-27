@@ -393,6 +393,48 @@ export function createTowersRouter({ pool, verifyTelegram }) {
     let client;
     try {
       client = await pool.connect(); await client.query("BEGIN");
+
+      // Only one poll per room should advance the simulation. Other clients get
+      // a non-locking snapshot rather than queueing behind a shared game-row lock.
+      const pollLock = await client.query(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS acquired",
+        ["allcoins:towers:" + roomId]
+      );
+      if (pollLock.rows[0]?.acquired !== true) {
+        await client.query("ROLLBACK");
+        const room = await readRoom(client, roomId, false);
+        if (!room) return res.status(404).json({ ok: false, error: "Комната не найдена." });
+        if (!(await isMember(client, roomId, user.id))) {
+          return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате." });
+        }
+        const members = await client.query(
+          "SELECT rp.telegram_id, rp.display_name, rp.joined_at FROM towers_room_players rp WHERE rp.room_id = $1 ORDER BY rp.joined_at ASC",
+          [roomId]
+        );
+        const counts = await client.query(
+          "SELECT rp.telegram_id, rp.display_name, rp.joined_at, p.balance FROM towers_room_players rp LEFT JOIN players p ON p.telegram_id = rp.telegram_id WHERE rp.room_id = $1 ORDER BY rp.joined_at ASC",
+          [roomId]
+        );
+        const found = await client.query("SELECT game_state FROM towers_games WHERE room_id = $1", [roomId]);
+        const players = members.rows.map((p, i) => ({
+          telegram_id: String(p.telegram_id), display_name: p.display_name || "Игрок", color: COLORS[i] || "green"
+        }));
+        return res.json({
+          ok: true,
+          room: {
+            id: String(room.id), name: room.name, stake: String(room.stake),
+            maxPlayers: Number(room.max_players), status: room.status,
+            ownerTelegramId: String(room.owner_telegram_id),
+            players: counts.rows.map((p, i) => ({
+              telegramId: String(p.telegram_id), name: p.display_name, color: COLORS[i] || "green",
+              isOwner: String(p.telegram_id) === String(room.owner_telegram_id),
+              balance: p.balance == null ? null : Number(p.balance)
+            }))
+          },
+          game: found.rows[0]?.game_state || null
+        });
+      }
+
       const room = await readRoom(client, roomId, true);
       if (!room) { await client.query("ROLLBACK"); return res.status(404).json({ ok: false, error: "Комната не найдена." }); }
       if (!(await isMember(client, roomId, user.id))) { await client.query("ROLLBACK"); return res.status(403).json({ ok: false, error: "Ты не состоишь в этой комнате." }); }
