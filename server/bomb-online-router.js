@@ -259,6 +259,128 @@ export function createBombOnlineRouter({ pool }) {
     }
   });
 
+  // Open-room browser: waiting rooms are discoverable by every online player.
+  // Stale rooms are pruned here as a safety net when no player is polling them.
+  router.post("/rooms/list", async (_req, res) => {
+    try {
+      await pool.query(
+        "DELETE FROM bomb_rooms WHERE status = 'waiting' AND updated_at < NOW() - INTERVAL '2 minutes'"
+      );
+      const result = await pool.query(`
+        SELECT
+          r.id::text AS id,
+          r.max_players,
+          r.map,
+          r.invite_code,
+          r.created_at,
+          COUNT(p.player_id)::int AS player_count,
+          COALESCE(
+            jsonb_agg(jsonb_build_object('name', p.display_name) ORDER BY p.joined_at)
+              FILTER (WHERE p.player_id IS NOT NULL),
+            '[]'::jsonb
+          ) AS players
+        FROM bomb_rooms r
+        LEFT JOIN bomb_room_players p
+          ON p.room_id = r.id
+          AND p.lives > 0
+          AND p.last_seen_at > NOW() - INTERVAL '90 seconds'
+        WHERE r.status = 'waiting'
+          AND r.updated_at > NOW() - INTERVAL '2 minutes'
+        GROUP BY r.id, r.max_players, r.map, r.invite_code, r.created_at
+        ORDER BY r.created_at ASC
+        LIMIT 30
+      `);
+      return res.json({
+        ok: true,
+        rooms: result.rows.map((row) => ({
+          id: String(row.id),
+          maxPlayers: Number(row.max_players),
+          map: row.map,
+          inviteCode: row.invite_code || null,
+          createdAt: row.created_at,
+          playerCount: Number(row.player_count) || 0,
+          players: Array.isArray(row.players) ? row.players : []
+        }))
+      });
+    } catch (error) {
+      console.error("Bomb open-room list error:", error.message);
+      return res.status(500).json({ ok: false, error: "Не удалось загрузить открытые комнаты." });
+    }
+  });
+
+  // Join a listed public room by its database room ID.
+  router.post("/rooms/join-open", async (req, res) => {
+    let client;
+    try {
+      const roomId = String(req.body?.roomId || "").trim();
+      const playerId = String(req.body?.playerId || "").trim().slice(0, 80);
+      const name = String(req.body?.name || "Игрок").trim().slice(0, 18) || "Игрок";
+      if (!/^\d{1,20}$/.test(roomId) || !validPlayerId(playerId)) {
+        return res.status(400).json({ ok: false, error: "Некорректная открытая комната." });
+      }
+
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const roomResult = await client.query(
+        "SELECT id, status, max_players, updated_at FROM bomb_rooms WHERE id = $1 FOR UPDATE",
+        [roomId]
+      );
+      if (
+        !roomResult.rows.length ||
+        roomResult.rows[0].status !== "waiting" ||
+        new Date(roomResult.rows[0].updated_at).getTime() < Date.now() - 120000
+      ) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ ok: false, error: "Открытая комната уже закрыта. Обнови список." });
+      }
+
+      await client.query(
+        "DELETE FROM bomb_room_players WHERE room_id = $1 AND last_seen_at < NOW() - INTERVAL '90 seconds'",
+        [roomId]
+      );
+      // A player can only occupy one waiting room at a time.
+      await client.query(
+        "DELETE FROM bomb_room_players WHERE player_id = $1 AND room_id <> $2 AND room_id IN (SELECT id FROM bomb_rooms WHERE status = 'waiting')",
+        [playerId, roomId]
+      );
+      const current = await client.query(
+        "SELECT COUNT(*)::int AS count FROM bomb_room_players WHERE room_id = $1 AND lives > 0 AND last_seen_at > NOW() - INTERVAL '90 seconds'",
+        [roomId]
+      );
+      const alreadyJoined = await client.query(
+        "SELECT 1 FROM bomb_room_players WHERE room_id = $1 AND player_id = $2",
+        [roomId, playerId]
+      );
+      if (!alreadyJoined.rows.length && Number(current.rows[0]?.count || 0) >= Number(roomResult.rows[0].max_players)) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ ok: false, error: "Комната уже заполнена. Обнови список открытых комнат." });
+      }
+
+      if (alreadyJoined.rows.length) {
+        await client.query(
+          "UPDATE bomb_room_players SET display_name = $3, last_seen_at = NOW() WHERE room_id = $1 AND player_id = $2",
+          [roomId, playerId, name]
+        );
+      } else {
+        const spawn = spawnPoint(Number(current.rows[0]?.count || 0));
+        await client.query(
+          "INSERT INTO bomb_room_players (room_id, player_id, display_name, lives, x_pct, y_pct, last_seen_at) VALUES ($1, $2, $3, 3, $4, $5, NOW())",
+          [roomId, playerId, name, spawn.xPct, spawn.yPct]
+        );
+      }
+
+      const snapshot = await advanceRoom(client, roomId);
+      await client.query("COMMIT");
+      return res.json({ ok: true, ...snapshot, playerId });
+    } catch (error) {
+      if (client) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Bomb open-room join error:", error.message);
+      return res.status(500).json({ ok: false, error: "Не удалось войти в открытую комнату." });
+    } finally {
+      if (client) client.release();
+    }
+  });
+
   router.post("/rooms/create", async (req, res) => {
     let client;
     try {
