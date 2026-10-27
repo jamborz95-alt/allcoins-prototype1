@@ -3,6 +3,9 @@ import express from "express";
 const VALID_PLAYER_COUNTS = new Set([2, 4, 6]);
 const MAX_STAKE = BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 6));
 const ROOM_PREFIX = "TW-";
+// The centre flag is rendered at 3.35 units per progress point; the goal line is at 2.85.
+// 0.86 therefore places the flag beyond that line before the winner is settled.
+const FLAG_GOAL_PROGRESS = 0.86;
 
 class TugError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -522,8 +525,8 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
         const net = Number(game.teamScores["2"] || 0) - Number(game.teamScores["1"] || 0);
         game.progress = Math.max(-1, Math.min(1, net / Number(game.target || Number(room.max_players) * 12)));
         game.message = "Команда " + Number(member.team) + " тянет канат!";
-        if (game.progress <= -1 || game.progress >= 1) {
-          const winnerTeam = game.progress <= -1 ? 1 : 2;
+        if (game.progress <= -FLAG_GOAL_PROGRESS || game.progress >= FLAG_GOAL_PROGRESS) {
+          const winnerTeam = game.progress <= -FLAG_GOAL_PROGRESS ? 1 : 2;
           const roster = await readPlayers(client, roomId);
           await settleWinner(client, roomId, room, roster, game, winnerTeam, recordGameCommission);
           await client.query("UPDATE tug_rooms SET status = 'finished', game_state = $2::JSONB, updated_at = NOW() WHERE id = $1",
