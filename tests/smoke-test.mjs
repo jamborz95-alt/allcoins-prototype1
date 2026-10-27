@@ -19,7 +19,19 @@ assert.doesNotMatch(durakDropAnimation, /flyerImage\.animate/,
   "The card face must not run an independent scale animation during landing.");
 assert.doesNotMatch(durakDropAnimation, /scale\(targetScaleX/,
   "The hand-to-table flight must not finish with a transform scale jump.");
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
+  const pathname = new URL(req.url || "/", "http://127.0.0.1:4173").pathname;
+  if (pathname === "/i18n-extra.js") {
+    try {
+      const script = await readFile(resolve(root, "i18n-extra.js"));
+      res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
+      res.end(script);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      res.end("Not found");
+    }
+    return;
+  }
   res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
   res.end(html);
 });
