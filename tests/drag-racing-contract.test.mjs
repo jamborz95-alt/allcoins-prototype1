@@ -110,7 +110,7 @@ test("Online race polling does not overlap and 3D race view receives every parti
 
 test("Abandoned waiting rooms refund each reserved stake before cleanup", () => {
   assert.match(router, /async function cleanupDormantRooms\(\)/);
-  assert.match(router, /r\.status='waiting'.*last_seen_at>NOW\(\)-INTERVAL '2 minutes'/);
+  assert.match(router, /r\.status IN \('waiting','playing'\).*updated_at<NOW\(\)-INTERVAL '2 minutes'.*last_seen_at>NOW\(\)-INTERVAL '2 minutes'/);
   assert.match(router, /for\(const player of players\)await credit\(client,player\.id,room\.stake\)/);
   assert.match(router, /await client\.query\("DELETE FROM drag_racing_rooms WHERE id=\$1",\[item\.id\]\)/);
 });
@@ -118,6 +118,12 @@ test("Abandoned waiting rooms refund each reserved stake before cleanup", () => 
 test("A finished racer may close the result screen without refunding or altering the pot", () => {
   assert.match(router, /if\(room\.status==="finished"\)\{const finishedMember=/);
   assert.match(router, /finished:true,refunded:false/);
+});
+
+test("An abandoned running race refunds every stake instead of locking balances forever", () => {
+  assert.match(router, /r\.status IN \('waiting','playing'\)/);
+  assert.match(router, /!\["waiting","playing"\]\.includes\(room\.status\)/);
+  assert.match(router, /for\(const player of players\)await credit\(client,player\.id,room\.stake\)/);
 });
 
 test("Completed Drag Racing rooms disappear after the result grace period without changing balances", () => {
