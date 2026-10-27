@@ -15,6 +15,7 @@ import { createAIRouter } from "./ai-router.js";
 import { createSupportRouter } from "./support-router.js";
 import { registerNeonMigrationRoute } from "./neon-migration.js";
 import { createBlockBlastRouter } from "./blockblast-router.js";
+import { createBombOnlineRouter } from "./bomb-online-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -311,6 +312,8 @@ const supportRouter = createSupportRouter({ pool, verifyTelegram });
 app.use("/api/support", supportRouter);
 const blockBlastRouter = createBlockBlastRouter({ pool, verifyTelegram, recordGameCommission });
 app.use("/api/block-blast", blockBlastRouter);
+const bombOnlineRouter = createBombOnlineRouter({ pool });
+app.use("/api/bomb", bombOnlineRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -3668,6 +3671,9 @@ async function startServer() {
     if (typeof durakRoomCleanupTimer.unref === "function") {
       durakRoomCleanupTimer.unref();
     }
+
+    await bombOnlineRouter.initialize();
+    console.log("Bomb Online room tables are ready");
 
     const port = process.env.PORT || 3000;
     
