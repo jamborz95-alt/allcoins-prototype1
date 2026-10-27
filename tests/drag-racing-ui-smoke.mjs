@@ -1,11 +1,13 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 
 const root = process.cwd();
 const html = await readFile(resolve(root, "drag-racing.html"), "utf8");
+const threeJs = await readFile(resolve(root, "three.min.js"), "utf8");
+await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
@@ -28,6 +30,11 @@ function roomPayload() {
 }
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://127.0.0.1:4174");
+  if (url.pathname === "/three.min.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=3600" });
+    res.end(threeJs);
+    return;
+  }
   if (url.pathname === "/drag-racing.html" || url.pathname === "/") {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     res.end(html);
@@ -118,6 +125,9 @@ try {
   });
 
   await page.goto("http://127.0.0.1:4174/drag-racing.html", { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("#scene")?.classList.contains("three-ready"), null, { timeout: 12000 });
+  assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "A real Three.js canvas should render the racing scene.");
+  await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-mobile.png"), fullPage: true });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
     document.querySelector("#roomStatus")?.textContent.includes("Открытых"));
   assert.equal((await page.locator("#balance").textContent()).replace(/\s/g, ""), "10000");
