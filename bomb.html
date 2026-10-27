@@ -1142,6 +1142,11 @@
       localOnlineTransferTargetId = null;
       lastOnlineTransferTargetId = null;
       lastOnlineTransferKey = null;
+      if (chosenMode === "online") {
+        $("openRoomsPanel").classList.remove("hidden");
+        startOpenRoomsPolling();
+        loadOpenRooms();
+      }
     }
     function normalizeOnlinePlayers(rows) {
       const source = Array.isArray(rows) ? rows : [];
