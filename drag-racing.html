@@ -78,6 +78,8 @@
 }
 @media(prefers-reduced-motion:reduce){.pro-tach-needle{transition:none}}
 
+body.pro-race-open{overflow:hidden!important;touch-action:none}
+@media (orientation:portrait){.pro-race-track{flex-basis:53%;height:53%}.pro-race-dashboard{flex:1}}
 </style>
 </head>
 <body><main class="app">
@@ -254,30 +256,25 @@ function initDragRacing3D(){
 
   const concreteMats=[mat(0x999b98,.98),mat(0xa6a8a4,.96),mat(0x777b7b,.98),mat(0xb7b7b1,.98)];
   for(const z of [-7.65,7.65]){
-    for(let x=-112;x<=112;x+=4){
+    for(let x=-112;x<=112;x+=6.45){
       const group=new T.Group();
-      const concrete=box(group,new T.BoxGeometry(3.85,1.02,0.72),concreteMats[Math.floor(rnd()*concreteMats.length)],0,.49,0);
+      const concrete=box(group,new T.BoxGeometry(6.15,1.02,0.72),concreteMats[Math.floor(rnd()*concreteMats.length)],0,.49,0);
       concrete.receiveShadow=true;
-      box(group,new T.BoxGeometry(3.8,.08,.76),mat(0xd0d0ca,.94),0,1.02,0);
+      box(group,new T.BoxGeometry(6.1,.08,.76),mat(0xd0d0ca,.94),0,1.02,0);
+      box(group,new T.BoxGeometry(.025,.24,.008),mat(0x595e61,.99),-1.35,.53,.367);
       scene.add(group);group.position.set(x,0,z);moving.push({group,baseX:x,period:228,factor:.37});
-      // Fine cracks / grime streaks make the concrete read less like a clean block.
-      for(let k=0;k<3;k++){
-        box(group,new T.BoxGeometry(.025,.23,.008),mat(0x595e61,.99),-1.2+k*.9,.54,.367);
-      }
     }
   }
   const tireRubber=mat(0x0b0d10,.91);
   const tireSide=mat(0x262a2f,.72,.08);
   for(const side of [-1,1]){
-    for(let x=-108;x<=108;x+=2.15){
+    for(let x=-108;x<=108;x+=5.15){
       const group=new T.Group();
       for(let row=0;row<3;row++){
-        for(let col=0;col<2;col++){
-          const tire=new T.Mesh(new T.CylinderGeometry(.38,.38,.24,20,1,false),tireRubber);
-          tire.rotation.x=Math.PI/2;tire.position.set((row%2)*.23+(col?.15:0),.37+row*.64+(col*.12),0);group.add(tire);
-          const ring=new T.Mesh(new T.TorusGeometry(.255,.024,6,20),tireSide);
-          ring.position.copy(tire.position);ring.position.z=.126;group.add(ring);
-        }
+        const tire=new T.Mesh(new T.CylinderGeometry(.38,.38,.24,16,1,false),tireRubber);
+        tire.rotation.x=Math.PI/2;tire.position.set((row%2)*.11,.37+row*.64,0);group.add(tire);
+        const ring=new T.Mesh(new T.TorusGeometry(.255,.022,5,16),tireSide);
+        ring.position.copy(tire.position);ring.position.z=.126;group.add(ring);
       }
       scene.add(group);group.position.set(x,0,side*8.28);
       tireGroups.push({group,baseX:x,side,period:220,factor:.37});
@@ -300,17 +297,21 @@ function initDragRacing3D(){
   }
 
   // City lights and roof lines behind the track; these move more slowly than the road.
-  const buildingMats=[mat(0x66727b,.96),mat(0x8c969b,.93),mat(0x58636b,.96),mat(0xa0a7a8,.96)];
-  for(let i=0;i<50;i++){
-    const width=3.0+rnd()*4.8,height=5+rnd()*13,x=-111+i*4.55+rnd()*1.4,z=-20-rnd()*10;
+  const facadeCanvas=document.createElement('canvas');facadeCanvas.width=256;facadeCanvas.height=512;
+  const facadeCtx=facadeCanvas.getContext('2d');facadeCtx.fillStyle='#46515a';facadeCtx.fillRect(0,0,256,512);
+  for(let wx=12;wx<248;wx+=30){
+    for(let wy=12;wy<500;wy+=28){
+      facadeCtx.fillStyle=rnd()>.33?'#d2b777':'#26313b';
+      facadeCtx.globalAlpha=.45+rnd()*.4;facadeCtx.fillRect(wx,wy,11,15);
+    }
+  }
+  facadeCtx.globalAlpha=1;
+  const facadeTex=new T.CanvasTexture(facadeCanvas);if(T.SRGBColorSpace)facadeTex.colorSpace=T.SRGBColorSpace;
+  const buildingMats=[0x78848b,0x9ca4a6,0x64717a,0xb0b4b2].map(color=>new T.MeshStandardMaterial({map:facadeTex,color,roughness:.97}));
+  for(let i=0;i<48;i++){
+    const width=3.2+rnd()*4.6,height=5+rnd()*13,x=-110+i*4.65+rnd()*1.2,z=-20-rnd()*10;
     const group=new T.Group();
     box(group,new T.BoxGeometry(width,height,1.1),buildingMats[Math.floor(rnd()*buildingMats.length)],0,height/2-.2,0);
-    const windowsMat=new T.MeshStandardMaterial({color:0xf2d79c,emissive:0xc99b42,emissiveIntensity:.38,roughness:.5});
-    for(let wx=-width/2+.35;wx<width/2-.15;wx+=.7){
-      for(let wy=1;wy<height-.4;wy+=1.15){
-        if(rnd()>.28)box(group,new T.BoxGeometry(.22,.34,.018),windowsMat,wx,wy,.565);
-      }
-    }
     scene.add(group);group.position.set(x,-.12,z);buildings.push({group,baseX:x,period:244,factor:.055});
   }
   // Track lights, mast arms, and luminous bulbs.
@@ -470,7 +471,7 @@ function initDragRacing3D(){
     box(group,new T.BoxGeometry(.09,.19,.32),tailMat,-2.10,.72,-.53);
     // Four detailed tires with machined alloy spokes, brake discs and red calipers.
     const wheelMeshes=[];
-    const wheelbase=isSuv?1.35:1.27, wheelRadius=isSuv?.43:.37;
+    const wheelbase=isSuv?1.35:1.27, wheelRadius=isSuv ? .43 : .37;
     for(const zSide of [-1,1]){
       for(const xSide of [-1,1]){
         const wheel=new T.Group();wheel.position.set(xSide*wheelbase,wheelRadius+.015,zSide*.77);group.add(wheel);
@@ -532,18 +533,20 @@ function initDragRacing3D(){
       root.scale.setScalar(scale);
       const scaledBounds=new T.Box3().setFromObject(root);
       root.position.y-=scaledBounds.min.y;
+      const materialCache=new Map();
       root.traverse(obj=>{
         if(!obj.isMesh)return;
         obj.castShadow=true;obj.receiveShadow=true;
         if(obj.material){
           const recolor=(source)=>{
+            if(materialCache.has(source))return materialCache.get(source);
             const material=source.clone();
             if(/spectral blue|clearcoat|primary paint/i.test(material.name||'')){
               material.color.setHex(0xe0e2e4);material.metalness=.8;material.roughness=.22;
             }else if(/midnight blue|shadow panel/i.test(material.name||'')){
               material.color.setHex(0x20272d);material.metalness=.72;material.roughness=.25;
             }
-            return material;
+            materialCache.set(source,material);return material;
           };
           obj.material=Array.isArray(obj.material)?obj.material.map(recolor):recolor(obj.material);
         }
