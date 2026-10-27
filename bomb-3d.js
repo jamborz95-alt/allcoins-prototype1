@@ -777,12 +777,12 @@
       if (anchor) {
         const pos = screenToWorld(anchor.x, anchor.y, 0);
         const data = miner.userData;
-        if (!data.positionReady || miner.position.distanceToSquared(pos) > 25) {
+        if (!data.positionReady || miner.position.distanceToSquared(pos) > 900) {
+          // Snap only for a genuine relocation (new room/reconnect); normal network movement is interpolated.
           miner.position.set(pos.x, 0, pos.z);
           data.positionReady = true;
         } else {
-          // Smooth small screen-space movements instead of visibly stepping between frames.
-          const alpha = 1 - Math.exp(-Math.max(.001, Math.min(.05, dt || .016)) * 34);
+          const alpha = 1 - Math.exp(-Math.max(.001, Math.min(.05, dt || .016)) * 24);
           miner.position.lerp(pos, alpha);
         }
         const deadSeat = arena.querySelector('.seat[data-player="' + index + '"].eliminated');
