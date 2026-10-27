@@ -179,12 +179,21 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       Object.keys(choices).length > 0 &&
       Date.now() - new Date(currentRound.updated_at).getTime() > 90000
     ) {
-      await client.query(
+      const unlocked = await client.query(
         "UPDATE rps_room_rounds SET choices = '{}'::JSONB, updated_at = NOW() " +
-        "WHERE room_id = $1 AND round_number = $2 AND status = 'playing'",
-        [room.id, Number(room.current_round)]
+        "WHERE room_id = $1 AND round_number = $2 AND status = 'playing' AND updated_at = $3",
+        [room.id, Number(room.current_round), currentRound.updated_at]
       );
-      choices = {};
+      if (unlocked.rowCount) {
+        choices = {};
+      } else {
+        // A choice arrived between the read and timeout check; return the fresh state.
+        const latest = await client.query(
+          "SELECT choices FROM rps_room_rounds WHERE room_id = $1 AND round_number = $2",
+          [room.id, Number(room.current_round)]
+        );
+        choices = jsonObject(latest.rows[0]?.choices);
+      }
     }
 
     const members = await currentMembers(client, room.id);
@@ -477,13 +486,14 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       client = await pool.connect();
       await client.query("BEGIN");
       transactionOpen = true;
-      const room = await getRoomOrThrow(client, roomId, true);
+      const room = await getRoomOrThrow(client, roomId, false);
       const member = await client.query(
         "SELECT 1 FROM rps_room_players WHERE room_id = $1 AND telegram_id = $2",
         [roomId, String(user.id)]
       );
       if (!member.rows.length) throw new RpsHttpError(403, "Ты больше не состоишь в этой комнате.");
-      const balance = await ensurePlayer(client, user);
+      const balanceResult = await client.query("SELECT balance FROM players WHERE telegram_id = $1", [String(user.id)]);
+      const balance = Number(balanceResult.rows[0]?.balance || 0);
       const payload = await buildState(client, room, user, balance);
       await client.query("COMMIT");
       transactionOpen = false;
