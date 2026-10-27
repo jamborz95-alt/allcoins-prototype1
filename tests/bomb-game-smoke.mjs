@@ -45,6 +45,12 @@ assert.ok(bombOnlineRouter.includes('router.post("/matchmaking/join"') &&
   "Bomb Online backend should create persistent rooms and support matchmaking, sync, pass and leave.");
 assert.ok(bombOnlineRouter.includes('router.post("/rooms/create"') &&
   bombOnlineRouter.includes('router.post("/rooms/join"') &&
+  bombOnlineRouter.includes('router.post("/rooms/list"') &&
+  bombOnlineRouter.includes('router.post("/rooms/join-open"') &&
+  bombHtml.includes('id="openRoomsPanel"') &&
+  bombHtml.includes('id="refreshOpenRooms"') &&
+  bombHtml.includes('function loadOpenRooms()') &&
+  bombHtml.includes('function joinOpenRoom(roomId)') &&
   bombOnlineRouter.includes("invite_code TEXT") &&
   bombHtml.includes('id="createOnlineRoom"') &&
   bombHtml.includes('id="joinOnlineRoom"') &&
@@ -177,13 +183,13 @@ try {
 
   // Verify the online lobby and authoritative server snapshot in a second-client simulation.
   await page.locator('#playerCountControl button[data-count="2"]').click();
-  await page.locator('#modeControl button[data-mode="online"]').click();
   await page.locator("#playerName").fill("Test Player");
   let onlineJoinRequests = 0;
   let onlineStateRequests = 0;
   let onlineLeaveRequests = 0;
   let friendRoomCreateRequests = 0;
   let friendRoomJoinRequests = 0;
+  let openRoomListRequests = 0;
   const friendInviteCode = "ABC2345";
   let onlinePlayerId = "";
   let onlineRoster = [];
@@ -205,6 +211,20 @@ try {
     }
     const url = new URL(request.url());
     const body = request.postDataJSON() || {};
+    if (url.pathname.endsWith("/rooms/list")) {
+      openRoomListRequests++;
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          rooms: [{
+            id: "801234", maxPlayers: 2, map: "copper", inviteCode: "AB23456",
+            playerCount: 1, players: [{ name: "Public Lobby Host" }]
+          }]
+        })
+      });
+      return;
+    }
     if (url.pathname.endsWith("/rooms/create")) {
       friendRoomCreateRequests++;
       onlinePlayerId = String(body.playerId);
@@ -280,6 +300,16 @@ try {
     if (url.pathname.endsWith("/rooms/leave")) onlineLeaveRequests++;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
   });
+  await page.locator('#modeControl button[data-mode="online"]').click();
+  await page.locator("#refreshOpenRooms").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#openRoomsList")?.innerText.includes("Public Lobby Host"),
+    undefined, { timeout: 8000 }
+  );
+  assert.ok(openRoomListRequests >= 1, "Selecting online mode should load the public room list.");
+  assert.equal(await page.locator("#openRoomsList .open-room-join").count(), 1,
+    "The open rooms list should provide a Join button for an available room.");
+
   await page.locator("#createOnlineRoom").click();
   await page.waitForFunction(() =>
     document.querySelector("#onlineInviteCode")?.textContent === "ABC2345" &&
