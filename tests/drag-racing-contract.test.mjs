@@ -51,6 +51,14 @@ test("Drag Racing uses a realtime 3D scene and vehicle upgrades affect authorita
   assert.match(router, /p\.tuning/);
 });
 
+
+test("Completed Drag Racing rooms disappear after the result grace period without changing balances", () => {
+  assert.match(router, /DELETE FROM drag_racing_rooms WHERE status='finished' AND updated_at < NOW\(\)-INTERVAL '2 minutes'/);
+  assert.match(router, /if\(typeof cleanupTimer\.unref==="function"\)cleanupTimer\.unref\(\)/);
+  assert.match(router, /Object\.hasOwn\(carPrices,car\)/);
+  assert.match(router, /Object\.hasOwn\(partPrices,part\)/);
+});
+
 test("Drag Racing screen is linked from Games and uses real online room APIs", () => {
   assert.match(index, /id="dragRacingEntry"/);
   assert.match(index, /\.\/drag-racing\.html\?v=/);
