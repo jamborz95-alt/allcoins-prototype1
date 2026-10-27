@@ -114,7 +114,7 @@
 
     // Detailed procedural VAZ-inspired sport sedan model, assembled from 3D meshes.
     const car=new THREE.Group();
-    car.position.set(0,0.08,2.6);scene.add(car);
+    car.position.set(0,-0.07,2.6);scene.add(car);
     const addBox=(parent,geometry,material,x,y,z)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);parent.add(mesh);return mesh;};
     addBox(car,new THREE.BoxGeometry(1.78,0.42,3.35),red,0,0.57,0);
     addBox(car,new THREE.BoxGeometry(1.68,0.26,1.23),red,0,0.78,-0.91);
@@ -165,7 +165,7 @@
       for(const mesh of lamps){mesh.position.z=mod(mesh.userData.baseZ+progress+225,276)-225;}
       const factor=Math.min(1,speed/210);
       car.rotation.y=Math.sin(now*0.0013)*0.014*factor;
-      car.position.y=0.08+(running?Math.abs(Math.sin(now*0.024))*0.012*factor:0);
+      car.position.y=-0.07+(running?Math.abs(Math.sin(now*0.024))*0.012*factor:0);
       car.traverse(node=>{
         if(node.userData.rotating){node.children.forEach(child=>{child.rotation.x+=speed*dt*0.0017;});}
       });
