@@ -478,7 +478,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
 <div class="tabs"><button class="tab active" data-tab="race">🏁 Гонки</button><button class="tab" data-tab="garage">🚘 Гараж</button><button class="tab" data-tab="shop">🛒 Магазин</button><button class="tab" data-tab="tuning">🔧 Тюнинг</button></div>
 <section id="race" class="view">
-<div class="panel"><div class="title">Уличный драг — ¼ мили</div><div class="race-scene" id="scene"><div id="race3dCanvas" aria-label="Трёхмерная гоночная трасса"></div><div class="sun"></div><div class="city"></div><div class="road"></div><div class="lane"></div><div class="scene-hud"><span class="hud" id="speedHud">0 км/ч</span><span class="hud" id="distanceHud">402 м</span><span class="hud">3D · МКПП</span></div><div class="lights"><i class="light" id="l1"></i><i class="light" id="l2"></i><i class="light" id="l3"></i></div><div class="car"><img src="./cars/lada-2107-side.png?v=20261028-side1" alt="ВАЗ-2107 строго сбоку" decoding="async" fetchpriority="high"></div></div>
+<div class="panel"><div class="title">Уличный драг — ¼ мили</div><div class="race-scene" id="scene"><div id="race3dCanvas" aria-label="Трёхмерная гоночная трасса"></div><div class="sun"></div><div class="city"></div><div class="road"></div><div class="lane"></div><div class="scene-hud"><span class="hud" id="speedHud">0 км/ч</span><span class="hud" id="distanceHud">402 м</span><span class="hud">3D · МКПП</span></div><div class="lights"><i class="light" id="l1"></i><i class="light" id="l2"></i><i class="light" id="l3"></i></div><div class="car"><img src="./cars/lada-2107-side.png?v=20261028-side2" alt="ВАЗ-2107 строго сбоку" decoding="async" fetchpriority="high" draggable="false"></div></div>
 <div class="dash" style="margin-top:10px"><div class="gauge"><span class="muted">СКОРОСТЬ</span><strong><span id="speed">0</span> <small>км/ч</small></strong><div class="meter"><i id="speedbar"></i></div></div><div class="gauge"><span class="muted">ОБОРОТЫ</span><strong><span id="rpm">900</span> <small>об/мин</small></strong><div class="meter"><i id="rpmbar"></i></div></div></div>
 <div class="row" style="margin-top:10px"><div class="gauge"><span class="muted">ПЕРЕДАЧА</span><strong id="currentGear">N</strong></div><div class="gauge"><span class="muted">ДИСТАНЦИЯ</span><strong><span id="distance">0</span> <small>м</small></strong></div><div class="gauge"><span class="muted">0–100</span><strong id="zero100">—</strong></div></div>
 <div class="pedals single-pedal"><button class="pedal gas" id="gas" type="button"><span class="gas-pedal-art" aria-hidden="true"></span><strong>ПЕДАЛЬ ГАЗА</strong><small>Нажми и удерживай</small></button></div>
@@ -709,13 +709,13 @@ function syncRace2DCarArt(){
     player.classList.toggle('vector-side-car',!useLadaPng);
     player.classList.remove('png-fallback');
     if(useLadaPng){
-      player.innerHTML='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261028-png4" alt="ВАЗ-2107, вид сбоку" draggable="false"><span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
+      player.innerHTML='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261028-side2" alt="ВАЗ-2107, вид сбоку" draggable="false"><span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
       const art=player.querySelector('.race-car-png');
       if(art)art.addEventListener('error',function(){
         if(!this.dataset.fallback){
           this.dataset.fallback='1';
           this.alt='ВАЗ-2107';
-          this.src='./cars/lada-2107.png?v=20261028-png4';
+          this.src='./cars/lada-2107.png?v=20261028-side2';
           player.classList.add('png-fallback');
           return;
         }
