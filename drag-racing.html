@@ -60,12 +60,15 @@
 .pro-race-track .race2d-scene:after{content:"";position:absolute;left:0;right:0;bottom:15%;height:5px;background:repeating-linear-gradient(90deg,#f0ead7 0 52px,transparent 52px 108px);box-shadow:none;opacity:.82}
 .race2d-car{position:absolute;z-index:4;width:clamp(210px,34vw,410px);height:auto;aspect-ratio:600 / 220;filter:drop-shadow(0 12px 7px #0009);transform-origin:center;will-change:left,translate}
 .race2d-car svg{display:block;width:100%;height:100%;overflow:visible}
+.race2d-car svg .race-wheel{transform-box:fill-box;transform-origin:center;will-change:transform}
+.pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation:race2d-wheel-spin var(--race-wheel-duration,.22s) linear infinite}
 .race2d-car.player{left:12%;bottom:10%;transition:left .06s linear}
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .18s ease-in-out infinite alternate}
 @keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
+@keyframes race2d-wheel-spin{to{transform:rotate(360deg)}}
 #proRaceTrack #race3dCanvas{display:none!important}
 .pro-pedal{pointer-events:auto;min-width:90px;max-width:160px;width:15%;height:56px;padding:6px;border-radius:9px;border:1px solid #727c85;background:linear-gradient(145deg,#363e46,#171b20);box-shadow:inset 0 1px #ffffff2a,0 5px 10px #0009;color:#eef4f6;font-size:12px;letter-spacing:1px;touch-action:none}
 .pro-pedal.gas{background:linear-gradient(145deg,#8d252a,#4b1318);border-color:#bd5a5e;color:#fff}
@@ -126,6 +129,7 @@
 @media(prefers-reduced-motion:reduce){.orientation-live-dot{animation:none}}
 
 body.pro-race-open{overflow:hidden!important;touch-action:none}
+#proShiftDown,#proShiftUp,[data-gear]{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important;}
 @media (orientation:portrait){.pro-race-track{flex-basis:53%;height:53%}.pro-race-dashboard{flex:1}}
 /* The accelerator is a hold-to-throttle control, never selectable text. */
 #proGasHold,#proGasHold * ,#gas,#gas *{
@@ -273,7 +277,7 @@ function carSvg(modelId,colorValue){
   const wheel=function(cx){
     const spokes=Array.from({length:10},function(_,n){return '<path d="M0 -25 L0 -10" transform="rotate('+(n*36)+')" stroke="#c5ccd1" stroke-width="3.4" stroke-linecap="round"/>';}).join('');
     const bolts=Array.from({length:5},function(_,n){const a=n*72*Math.PI/180;return '<circle cx="'+(Math.cos(a)*11).toFixed(2)+'" cy="'+(Math.sin(a)*11).toFixed(2)+'" r="1.9" fill="#e1e6e9"/>';}).join('');
-    return '<g transform="translate('+cx+' 163)"><circle r="41" fill="#080a0d" stroke="#59616a" stroke-width="3"/><circle r="35.5" fill="#15191e" stroke="#080a0c" stroke-width="2.5"/><circle r="29" fill="url(#rim)" stroke="#cbd2d7" stroke-width="2"/><circle r="25" fill="#20262c" stroke="#6e777e" stroke-width="2"/><g>'+spokes+'</g><circle r="12" fill="url(#hub)" stroke="#aeb6bc" stroke-width="2"/>'+bolts+'<circle r="5" fill="#3d454b" stroke="#e0e5e8" stroke-width="1.5"/><path d="M-25 -23 A34 34 0 0 1 23 -26" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g>';
+    return '<g class="race-wheel"><g transform="translate('+cx+' 163)"><circle r="41" fill="#080a0d" stroke="#59616a" stroke-width="3"/><circle r="35.5" fill="#15191e" stroke="#080a0c" stroke-width="2.5"/><circle r="29" fill="url(#rim)" stroke="#cbd2d7" stroke-width="2"/><circle r="25" fill="#20262c" stroke="#6e777e" stroke-width="2"/><g>'+spokes+'</g><circle r="12" fill="url(#hub)" stroke="#aeb6bc" stroke-width="2"/>'+bolts+'<circle r="5" fill="#3d454b" stroke="#e0e5e8" stroke-width="1.5"/><path d="M-25 -23 A34 34 0 0 1 23 -26" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g></g>';
   };
   const tires=wheel(151)+wheel(438);
   const bodyDetail=classic2101?'M278 103 L278 158 M350 103 L350 157 M218 103 L218 156 M231 119 L250 119 M303 119 L322 119':modern?'M277 103 L277 160 M383 103 L383 159 M280 130 L304 130 M386 130 L407 130':'M281 103 L281 159 M384 103 L384 159 M285 129 L307 129 M387 129 L410 129';
@@ -312,6 +316,16 @@ function carSvg(modelId,colorValue){
     +'<path d="M178 104 L186 102 M408 102 L416 103" stroke="#dbe5ea" stroke-width="2"/>'
     +'<path d="M195 108 L196 115 L205 115 L205 108 Z M397 108 L398 115 L407 115 L407 108 Z" fill="#d4d9dc" stroke="#182027" stroke-width="1.2"/>'
     +'<path d="M68 159 L91 163 M494 163 L517 160" fill="none" stroke="#737b80" stroke-width="2"/><path d="M247 58 L351 58" stroke="#ffffff" stroke-width="2" opacity=".32"/>'
+    +'<g class="photo-detail" stroke-linecap="round" stroke-linejoin="round">'
+    +'<path d="M195 101 L402 101" fill="none" stroke="#eef4f7" stroke-opacity=".5" stroke-width="1.4"/>'
+    +'<path d="M220 109 L264 109 M286 109 L338 109 M357 109 L394 109" fill="none" stroke="#6d767d" stroke-width="1.4"/>'
+    +'<path d="M198 86 L188 83 Q184 82 184 87 L187 92 L201 92 Z" fill="url(#paint)" stroke="#20272d" stroke-width="2"/><path d="M186 87 L197 88" stroke="#dce4e8" stroke-width="1.2"/>'
+    +'<rect x="295" y="114" width="20" height="4" rx="1.8" fill="url(#chrome)" stroke="#4c555d" stroke-width="1"/><circle cx="299" cy="116" r="1" fill="#283139"/>'
+    +'<rect x="371" y="114" width="20" height="4" rx="1.8" fill="url(#chrome)" stroke="#4c555d" stroke-width="1"/><circle cx="375" cy="116" r="1" fill="#283139"/>'
+    +'<path d="M208 66 L216 63 M278 64 L330 64 M351 66 L364 70" fill="none" stroke="#ffffff" stroke-opacity=".62" stroke-width="1.2"/>'
+    +'<path d="M75 124 L84 122 L86 128 L76 131 Z" fill="#d9e0e4" stroke="#7c8790" stroke-width="1"/><path d="M512 123 L523 126" fill="none" stroke="#ffffff" stroke-opacity=".42" stroke-width="1.4"/>'
+    +'<path d="M105 176 L111 179 M120 177 L126 180 M137 178 L143 180 M402 178 L408 180 M419 177 L425 180 M436 176 L442 179" stroke="#0b0d0f" stroke-width="1.3"/>'
+    +'</g>'
     +classicDetails
     +'</g></svg>';
 }
@@ -742,7 +756,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0,shiftCutUntil=0;let maxDist=402.336;const distanceByMode={quarter:402.336,half:804.672,sprint:1000};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=402.336;const distanceByMode={quarter:402.336,half:804.672,sprint:1000};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -852,6 +866,7 @@ function syncProRaceCockpit(){
   const cockpit=$('proRaceCockpit');
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
   cockpit.style.setProperty('--race-road-duration',Math.max(.09,1.05-(Math.max(0,Number(speed)||0)/330))+'s');
+  cockpit.style.setProperty('--race-wheel-duration',Math.max(.055,.42-(Math.min(275,speedNow)/275)*.36)+'s');
   if(!raceCockpitOpen)return;
   $('proRaceStatus').textContent=finished?'ФИНИШ · '+(lastFinishMs/1000).toFixed(3)+' с':!running?'Готов к старту':performance.now()<greenAt?'УДЕРЖИВАЙ ГАЗ · ЖДИ ЗЕЛЁНЫЙ':rpm>7600?'ПЕРЕКЛЮЧИ ПЕРЕДАЧУ':'Держи обороты в рабочей зоне';
   $('proRaceFinishActions').classList.toggle('visible',finished);
@@ -859,15 +874,19 @@ function syncProRaceCockpit(){
 }
 function setGear(g){
   if(g!=='N')g=Math.max(1,Math.min(5,Number(g)||1));
-  const previousGear=gear;
   gear=g;
   $('currentGear').textContent=g==='N'?'N':g;
   document.querySelectorAll('[data-gear]').forEach(x=>x.classList.toggle('active',x.dataset.gear===String(g)));
-  if(running&&g!=='N'&&Math.abs(rpm)>6800){speed=Math.max(0,speed-4);$('proRaceStatus').textContent='Слишком высокие обороты! Переключай раньше.'}
-  if(running&&g!=='N'&&previousGear!=='N'&&previousGear!==g)shiftCutUntil=performance.now()+135;
+  // Gear selection is independent of the accelerator: changing gear never clears gasHeld or cuts throttle.
   updateHUD();
 }
-document.querySelectorAll('[data-gear]').forEach(b=>b.addEventListener('click',()=>setGear(b.dataset.gear==='N'?'N':Number(b.dataset.gear))));
+function gearFromControl(value){return value==='N'?'N':Number(value)}
+document.querySelectorAll('[data-gear]').forEach(b=>{
+  const change=()=>setGear(gearFromControl(b.dataset.gear));
+  b.addEventListener('pointerdown',e=>{e.preventDefault();change()});
+  b.addEventListener('click',e=>{if(e.detail===0)change();e.preventDefault()});
+  ['contextmenu','selectstart','dragstart'].forEach(type=>b.addEventListener(type,e=>e.preventDefault()));
+});
 function holdButton(id,on,off){
   const el=$(id);if(!el)return;
   const start=e=>{e.preventDefault();on();try{el.setPointerCapture(e.pointerId)}catch(_){}updateHUD()};
@@ -879,14 +898,25 @@ function holdButton(id,on,off){
 }
 holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);
 holdButton('proGasHold',()=>gasHeld=true,()=>gasHeld=false);
-$('proShiftDown').addEventListener('click',()=>setGear(gear==='N'?1:Math.max(1,Number(gear)-1)));
-$('proShiftUp').addEventListener('click',()=>setGear(gear==='N'?1:Math.min(5,Number(gear)+1)));
+function bindShiftPaddle(id,direction){
+  const el=$(id);if(!el)return;
+  const change=()=>setGear(gear==='N'?1:Math.max(1,Math.min(5,Number(gear)+direction)));
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();
+    try{el.setPointerCapture(e.pointerId)}catch(_){}
+    change();
+  });
+  el.addEventListener('click',e=>{if(e.detail===0)change();e.preventDefault()});
+  ['contextmenu','selectstart','dragstart'].forEach(type=>el.addEventListener(type,e=>e.preventDefault()));
+}
+bindShiftPaddle('proShiftDown',-1);
+bindShiftPaddle('proShiftUp',1);
 function setLight(n){
   for(let i=1;i<=3;i++)$('l'+i).className='light'+(i<=n?' on':'');
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;shiftCutUntil=0;zeroAt=null;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
 }
@@ -929,7 +959,7 @@ function start(sharedStartedAt=null){
         const power=effectivePower()/car().weight*13,traction=Number(state.tune.grip)/100;
         const launchPenalty=distance<12&&traction<.35?.45:1;
         const torque=Math.max(.2,1-Math.abs(rpm-ideal)/9000);
-        const shifting=now<shiftCutUntil;const accel=shifting?0:power*throttle*gearRatio(g)*torque*launchPenalty;
+        const accel=power*throttle*gearRatio(g)*torque*launchPenalty;
         speed=Math.max(0,Math.min(gear===1?95:gear===2?145:gear===3?190:gear===4?235:275,speed+accel*dt*8));
         rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+0):Math.max(900,rpm-dt*1900);
         if(rpm>7600)speed=Math.max(0,speed-dt*7);
