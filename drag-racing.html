@@ -161,6 +161,101 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
  .pro-pedal.gas{min-width:105px!important;width:28vw!important;height:64px!important}
 }
 
+
+/* Drag Racing reference-inspired presentation: a moving real-world-style side scene and compact dashboard. */
+.pro-race-track{flex:0 0 68.5%!important;height:68.5%!important;min-height:0!important;background:linear-gradient(180deg,#95a7ac 0%,#d1d0c3 44%,#716e64 45%,#393d3d 100%)!important;border-bottom:3px solid #171b1d!important}
+.pro-race-track:after{height:12%!important;background:linear-gradient(transparent,#202323a8)!important}
+.pro-race-brand{left:12px!important;top:8px!important;font-size:clamp(10px,1.1vw,14px)!important;opacity:.75!important}
+.pro-race-mark{width:22px!important;height:22px!important;font-size:14px!important}
+.pro-race-timer{right:10px!important;top:8px!important;min-width:90px!important;padding:4px 7px!important;border-width:3px!important;font-size:clamp(15px,2vw,24px)!important}
+.pro-race-top-label{display:none!important}
+.pro-race-track .race2d-scene{background:linear-gradient(180deg,#a3b4b8 0%,#c8cfc8 34%,#d4d0c1 44%,#918d7f 46%,#77766e 47%,#77766e 100%)!important}
+.pro-race-track .race2d-scene:before,.pro-race-track .race2d-scene:after{display:none!important}
+.race2d-environment{position:absolute;inset:0;z-index:0;overflow:hidden;background:linear-gradient(180deg,#9eafb3 0%,#d5d6cd 36%,#9d9f8e 43%,#6e706b 51%,#74736d 100%);pointer-events:none}
+.race2d-sky-wash{position:absolute;inset:0;background:linear-gradient(180deg,#a5b7bb 0%,#d0d3cb 34%,#d9d5c7 40%,transparent 47%);z-index:0}
+.race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{position:absolute;left:0;right:0;background-repeat:repeat-x;background-position:0 0;will-change:background-position;pointer-events:none}
+.race2d-city-layer{top:0;height:47%;z-index:1;background-size:300vw 100%;filter:blur(.18px);opacity:.96}
+.race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;filter:blur(.42px);opacity:.96}
+.race2d-green-belt{position:absolute;left:0;right:0;top:39%;height:10%;z-index:2;background:linear-gradient(180deg,#adb69a 0%,#78916c 24%,#53694f 61%,#9a9c84 100%);box-shadow:inset 0 4px 5px #e6dfc766;border-bottom:2px solid #4c544d}
+.race2d-fence-layer{top:37%;height:25%;z-index:3;background-size:300vw 100%;opacity:.9}
+.race2d-road-surface{position:absolute;left:0;right:0;top:44%;bottom:0;z-index:3;overflow:hidden;background:linear-gradient(180deg,#a29e90 0%,#8a877d 12%,#6c6d68 25%,#696a66 60%,#77766e 100%);border-top:2px solid #dad6c7;box-shadow:inset 0 8px 12px #4e514d55}
+.race2d-road-surface:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 10px,#f4f1e61c 10px 11px,transparent 12px 23px),repeating-linear-gradient(90deg,#3f44420a 0 2px,transparent 2px 8px);opacity:.55}
+.race2d-road-markings{position:absolute;left:0;right:0;top:38%;height:4px;background:repeating-linear-gradient(90deg,#eee9d8 0 47px,transparent 47px 96px);background-position:0 0;opacity:.91;filter:drop-shadow(0 1px 1px #3c3c35);will-change:background-position}
+.race2d-road-grain{position:absolute;inset:0;background:linear-gradient(180deg,#f5f0dc12,transparent 27% 76%,#21232320),repeating-linear-gradient(177deg,transparent 0 17px,#dad5c21a 18px,transparent 19px 38px);opacity:.55;pointer-events:none}
+.race2d-scene.race-fast .race2d-city-layer{filter:blur(.8px)}
+.race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
+.race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:left,transform,filter!important}
+.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important}
+.race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:0;transform:scale(.78);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .28s ease,left .25s ease!important}
+.pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
+.pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .23s ease-in-out infinite alternate}
+.pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-timing-function:linear}
+@keyframes race2d-suspension{from{translate:0 0}to{translate:0 -1.5px}}
+.race2d-car.player:after{content:"";position:absolute;left:2%;bottom:20%;width:14px;height:7px;border-radius:50%;background:#e6e2d8;opacity:0;filter:blur(5px);pointer-events:none}
+.pro-race-cockpit.race-moving .race2d-car.player:after{animation:race2d-exhaust .34s ease-out infinite}
+@keyframes race2d-exhaust{0%{opacity:.28;transform:translateX(0) scale(.6)}100%{opacity:0;transform:translateX(-26px) scale(1.8)}}
+.pro-race-dashboard{flex:1 1 31.5%!important;min-height:0!important;overflow:hidden!important;border-top:2px solid #85898b!important;background:linear-gradient(180deg,#171a1c 0%,#050607 100%)!important;box-shadow:inset 0 8px 18px #000b!important}
+.pro-race-dashboard:before{opacity:.2!important;background:repeating-linear-gradient(172deg,transparent 0 7px,#ffffff06 8px 9px),linear-gradient(90deg,#0009,transparent 15% 85%,#0009)!important}
+.pro-dashboard-badge{display:none!important}
+.pro-instrument-cluster{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:clamp(300px,39vw,510px);height:clamp(136px,28vh,218px);display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,1.1vw,15px);z-index:7;filter:drop-shadow(0 4px 5px #000b)}
+.pro-gauge{position:relative;flex:1 1 0;min-width:0;max-width:clamp(135px,19vw,235px);height:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;border:clamp(5px,.72vw,10px) solid #1b2023;background:radial-gradient(circle at 50% 54%,#172027 0%,#080a0c 48%,#2d3337 68%,#050607 100%);box-shadow:0 0 0 2px #8c9193,0 0 0 5px #030405,inset 0 0 13px #000,inset 0 1px #d6dcdd54}
+.pro-gauge:before{content:"";position:absolute;inset:4%;border-radius:50%;border:1px solid #8a959b80;box-shadow:inset 0 0 20px #8ba5b61c}
+.pro-gauge-glass{position:absolute;inset:0;border-radius:50%;z-index:6;background:linear-gradient(137deg,#ffffff12,transparent 27% 62%,#0003);pointer-events:none}
+.pro-tach-scale,.pro-speed-scale{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+.pro-tach-tick,.pro-speed-tick{width:1px!important;height:7px!important;margin:0!important;background:#d4d9d9!important}
+.pro-tach-tick.major,.pro-speed-tick.major{width:2px!important;height:12px!important;background:#f5f5ee!important}
+.pro-tach-tick.hot{background:#fa4b48!important;box-shadow:0 0 4px #ff2725}
+.pro-speed-tick{height:6px!important}
+.pro-speed-tick.major{height:11px!important}
+.pro-tach-number{width:16px!important;height:15px!important;margin:-7px 0 0 -8px!important;font-size:clamp(8px,1.05vw,13px)!important;line-height:15px!important;color:#e9eeee!important}
+.pro-speed-number{position:absolute;z-index:2;width:24px;height:14px;margin:-7px 0 0 -12px;color:#e1e6e6;font:800 clamp(7px,.86vw,11px)/14px Arial,sans-serif;text-align:center;text-shadow:0 1px 2px #000}
+.pro-tach-redline{display:none!important}
+.pro-tach-needle,.pro-speed-needle{position:absolute;left:50%;top:16%;z-index:4;width:3px;height:34%;border-radius:4px 4px 1px 1px;background:linear-gradient(90deg,#7a1118,#f04449 48%,#ffc4c4 55%,#8a0d12);box-shadow:0 0 5px #ff353b99;transform:translateX(-50%) rotate(-125deg);transform-origin:50% 100%;transition:transform .07s linear}
+.pro-speed-needle{height:34%;background:linear-gradient(90deg,#82151d,#ff6b55 48%,#ffe7d5 55%,#8e1920)}
+.pro-gauge-hub{position:absolute;left:50%;top:50%;z-index:5;width:13px;height:13px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #9ea7a9;background:radial-gradient(circle,#eff0eb,#596168 57%,#07090a 61%);box-shadow:0 0 6px #000}
+.pro-gauge-caption{position:absolute;left:50%;top:65%;transform:translateX(-50%);z-index:4;color:#e0e4e5;text-align:center;font:italic 800 clamp(7px,.9vw,11px)/1.1 Arial,sans-serif;white-space:nowrap;text-shadow:0 1px 2px #000}
+.pro-gauge-caption small{display:block;margin-top:2px;color:#8e9ba3;font:700 clamp(5px,.58vw,7px) Arial,sans-serif;letter-spacing:1px}
+.pro-speed-digital{position:absolute;left:50%;top:47%;z-index:8;transform:translate(-50%,-50%);width:29%;padding:2px 3px 3px;border:1px solid #70828d;border-radius:3px;background:linear-gradient(180deg,#27495c,#152a37);box-shadow:inset 0 0 6px #000c,0 0 4px #70b6da33;text-align:center;color:#d6f1ff}
+.pro-speed-digital strong{display:block;font:900 clamp(13px,1.8vw,22px)/1.05 "Courier New",monospace;letter-spacing:-1px;font-variant-numeric:tabular-nums;text-shadow:0 0 6px #43bbff70}
+.pro-speed-digital small{display:block;font:800 clamp(5px,.6vw,7px)/1 Arial,sans-serif;letter-spacing:1px;color:#b9d0da}
+.pro-speed-meter{height:2px;background:#0c1b25;margin:2px 1px 0;overflow:hidden}
+.pro-speed-meter i{display:block;height:100%;width:0;background:#68ccff;box-shadow:0 0 4px #38baff;transition:width .08s linear}
+.pro-speed-gear{position:absolute;left:50%;top:71%;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:4px;color:#9da9af;font:700 clamp(5px,.58vw,7px) Arial,sans-serif;letter-spacing:.5px}
+.pro-speed-gear strong{display:grid;place-items:center;min-width:14px;height:13px;border:1px solid #838b8e;border-radius:2px;background:linear-gradient(#e0e1dd,#aab1b2);color:#161a1d;font:900 10px/1 "Courier New",monospace}
+.pro-micro-gauge{position:absolute;left:50%;top:-3px;transform:translateX(-50%);width:35px;height:22px;border-radius:50% 50% 5px 5px;border:2px solid #080a0b;background:radial-gradient(ellipse at 50% 100%,#151c20,#0a0c0d 65%);box-shadow:0 0 0 1px #667077;z-index:8;pointer-events:none}
+.pro-micro-gauge:before{content:"";position:absolute;left:50%;top:4px;width:2px;height:12px;background:#e5e0d7;transform:translateX(-50%) rotate(24deg);transform-origin:bottom}
+.pro-micro-gauge span{position:absolute;left:50%;bottom:3px;width:5px;height:5px;border-radius:50%;background:#aab3b7;transform:translateX(-50%)}
+.pro-shift-gate{position:absolute;left:3.1%;top:19%;bottom:13%;width:clamp(42px,5vw,66px);z-index:14}
+.pro-shift-rail{position:absolute;left:50%;top:3%;bottom:5%;width:9px;transform:translateX(-50%);border:1px solid #5b6264;border-radius:6px;background:linear-gradient(90deg,#080a0b,#879196 42%,#161b1e 70%,#000)}
+.pro-shift-rail:before{content:"";position:absolute;inset:4px 1px;background:repeating-linear-gradient(180deg,#c5ccca 0 2px,#737d80 2px 5px)}
+.pro-shift-rail span{position:absolute;left:11px;z-index:2;color:#d5d9d9;font:900 12px Arial,sans-serif;text-shadow:0 1px 2px #000}
+.pro-shift-rail span:first-child{top:8%}.pro-shift-rail span:last-child{bottom:8%}
+.pro-shift-paddle{left:50%!important;right:auto!important;top:8%!important;width:clamp(34px,3.7vw,48px)!important;height:clamp(44px,8vh,64px)!important;padding:0!important;transform:translateX(-50%)!important;clip-path:none!important;border-radius:9px!important;border:1px solid #aeb7b9!important;background:linear-gradient(145deg,#d9dedc 0%,#767f84 24%,#32383b 55%,#15191b 100%)!important;box-shadow:inset 0 2px 4px #ffffff65,inset 0 -5px 8px #000b,0 3px 5px #000a!important;color:#f5f3e9!important;text-shadow:0 1px 2px #000!important;font:900 clamp(20px,2.2vw,28px)/1 Arial,sans-serif!important;touch-action:none!important}
+.pro-shift-paddle.up{left:50%!important;top:12%!important}
+.pro-shift-paddle.down{left:50%!important;top:auto!important;bottom:14%!important}
+.pro-shift-paddle:active{filter:brightness(1.28)!important;transform:translateX(-50%) translateY(2px)!important}
+.pro-dash-controls{left:0!important;right:0!important;bottom:max(5px,env(safe-area-inset-bottom))!important;padding:0 2.4% 0 0!important;z-index:14!important;pointer-events:none!important}
+.pro-dash-controls #proExitRace{position:absolute;left:3%;bottom:3px;min-width:0!important;padding:4px 7px!important;font-size:8px!important;opacity:.6}
+.pro-dash-controls #proGasHold{margin:0 0 2px auto!important;width:clamp(76px,10.5vw,145px)!important;min-width:0!important;max-width:none!important;height:clamp(62px,16vh,100px)!important;min-height:0!important;border-radius:6px!important;border:2px solid #929b9d!important;background:linear-gradient(100deg,#262c2f 0%,#6c777b 16%,#d1d6d5 30%,#727c80 48%,#202528 72%,#0b0d0e 100%)!important;box-shadow:inset 0 2px 3px #fff9,inset 0 -7px 10px #000c,0 5px 8px #000b!important;color:#111719!important;text-shadow:0 1px #ffffff77!important;letter-spacing:1px!important;font-size:clamp(9px,1.1vw,13px)!important;pointer-events:auto!important;touch-action:none!important}
+.pro-pedal.gas{border-color:#929b9d!important;background:linear-gradient(100deg,#262c2f,#d1d6d5 30%,#727c80 52%,#202528 76%,#0b0d0e)!important;color:#111719!important}
+.pro-pedal.gas .pro-gas-ridges{inset:13% 12% 35%!important;border:1px solid #131819!important;border-radius:2px!important;background:repeating-linear-gradient(90deg,#161b1d 0 4px,#d6dbd8 4px 7px,#70797c 7px 9px)!important;box-shadow:inset 0 1px 2px #ffffff8a,0 2px 3px #0007!important}
+.pro-dash-controls #proGasHold strong{position:absolute;left:0;right:0;bottom:20%;font-size:clamp(9px,1vw,12px)!important;pointer-events:none}
+.pro-dash-controls #proGasHold small{position:absolute;left:0;right:0;bottom:6%;font-size:clamp(5px,.58vw,7px)!important;letter-spacing:.6px!important;color:#dfe4e1!important;text-shadow:0 1px #000!important}
+.pro-dash-controls #proExitRace,.pro-dash-controls #proGasHold{pointer-events:auto}
+.pro-race-status{left:50%!important;top:4px!important;bottom:auto!important;transform:translateX(-50%)!important;width:auto!important;max-width:42%!important;padding:2px 6px!important;border-radius:4px!important;background:#0009!important;font-size:clamp(7px,.7vw,9px)!important;line-height:1.15!important;white-space:nowrap!important;color:#d6e0e2!important}
+.pro-race-finish-actions{bottom:4px!important;z-index:18!important}
+.pro-race-finish-actions button{padding:5px 8px!important;font-size:9px!important}
+@media(orientation:portrait){
+  .pro-race-track{flex:0 0 68.5%!important;height:68.5%!important}
+  .pro-instrument-cluster{width:clamp(265px,45vw,390px);height:clamp(126px,27vh,170px)}
+  .pro-gauge{max-width:none}
+  .pro-shift-gate{left:1.5%}
+  .pro-dash-controls #proGasHold{width:clamp(75px,13vw,104px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .pro-race-cockpit.race-moving .race2d-car.player,.pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-duration:1s!important}
+}
+
 </style>
 </head>
 <body><main class="app">
@@ -186,25 +281,50 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <div id="proRaceTimer" class="pro-race-timer">00.000</div>
     <div class="pro-race-top-label">PRO DRAG STRIP · LIVE</div>
     <div class="race2d-scene" aria-label="2D drag racing track">
+      <div class="race2d-environment" id="race2dEnvironment" aria-hidden="true">
+        <div class="race2d-sky-wash"></div>
+        <div class="race2d-city-layer" id="race2dCityLayer"></div>
+        <div class="race2d-tree-layer" id="race2dTreeLayer"></div>
+        <div class="race2d-green-belt"></div>
+        <div class="race2d-fence-layer" id="race2dFenceLayer"></div>
+        <div class="race2d-road-surface">
+          <div class="race2d-road-markings" id="race2dRoadMarks"></div>
+          <div class="race2d-road-grain"></div>
+        </div>
+      </div>
       <div class="race2d-car opponent" id="race2dOpponentCar" role="img" aria-label="Машина соперника"></div>
       <div class="race2d-car player" id="race2dPlayerCar" role="img" aria-label="Автомобиль игрока"></div>
     </div>
   </div>
   <section class="pro-race-dashboard" aria-label="Гоночная приборная панель">
     <div class="pro-dashboard-badge">ALLCOINS MOTORSPORT · MANUAL TRANSMISSION</div>
-    <div class="pro-digital-readout left"><strong id="proSpeedDigits">000</strong><small>КМ/Ч · SPEED</small><div class="pro-speed-meter" aria-label="Шкала скорости"><i id="proSpeedMeterBar"></i></div></div>
-    <div class="pro-digital-readout right"><strong id="proGearDigits">1</strong><small>GEAR</small></div>
-    <div id="proTachometer" class="pro-tachometer" aria-label="Тахометр">
-      <div class="pro-tach-glow"></div><div id="proTachScale" class="pro-tach-scale"></div>
-      <div class="pro-tach-redline"></div><div id="proTachNeedle" class="pro-tach-needle"></div><div class="pro-tach-hub"></div>
-      <div class="pro-tach-center">RPM × 1000<small>ALLCOINS ENGINE</small></div>
+    <div id="proTachometer" class="pro-instrument-cluster" aria-label="Приборная панель с тахометром и спидометром">
+      <div class="pro-gauge tach-gauge" aria-label="Тахометр">
+        <div class="pro-gauge-glass"></div>
+        <div id="proTachScale" class="pro-tach-scale"></div>
+        <div id="proTachNeedle" class="pro-tach-needle"></div>
+        <div class="pro-gauge-hub pro-tach-hub"></div>
+        <div class="pro-gauge-caption">RPM × 1000<small>ENGINE</small></div>
+      </div>
+      <div class="pro-gauge speed-gauge" aria-label="Спидометр">
+        <div class="pro-gauge-glass"></div>
+        <div id="proSpeedScale" class="pro-speed-scale"></div>
+        <div id="proSpeedNeedle" class="pro-speed-needle"></div>
+        <div class="pro-gauge-hub pro-speed-hub"></div>
+        <div class="pro-speed-digital"><strong id="proSpeedDigits">000</strong><small>KM/H</small><div class="pro-speed-meter" aria-label="Шкала скорости"><i id="proSpeedMeterBar"></i></div></div>
+        <div class="pro-speed-gear"><span>GEAR</span><strong id="proGearDigits">1</strong></div>
+      </div>
+      <div class="pro-micro-gauge" aria-hidden="true"><span></span></div>
     </div>
-    <button id="proShiftDown" class="pro-shift-paddle down" type="button" aria-label="Понизить передачу">↓</button>
-    <button id="proShiftUp" class="pro-shift-paddle up" type="button" aria-label="Повысить передачу">↑</button>
+    <div class="pro-shift-gate" aria-label="Ручное переключение передач">
+      <div class="pro-shift-rail"><span>+</span><span>−</span></div>
+      <button id="proShiftUp" class="pro-shift-paddle up" type="button" aria-label="Повысить передачу">+</button>
+      <button id="proShiftDown" class="pro-shift-paddle down" type="button" aria-label="Понизить передачу">−</button>
+    </div>
     <div id="proRaceStatus" class="pro-race-status">Удерживай газ во время отсчёта. Переключай передачи по оборотам.</div>
     <div class="pro-dash-controls">
       <button id="proExitRace" class="pro-exit" type="button">← ГАРАЖ</button>
-      <button id="proGasHold" class="pro-pedal gas" type="button" draggable="false" aria-label="Удерживать педаль газа"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>НАЖАТЬ И УДЕРЖИВАТЬ</small></button>
+      <button id="proGasHold" class="pro-pedal gas" type="button" draggable="false" aria-label="Удерживать педаль газа"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>УДЕРЖИВАТЬ</small></button>
     </div>
     <div id="proRaceFinishActions" class="pro-race-finish-actions"><button id="proRaceAgain" class="primary" type="button">ЕЩЁ ЗАЕЗД</button><button id="proRaceReturn" type="button">В ГАРАЖ</button></div>
   </section>
@@ -244,6 +364,7 @@ function carPaintCss(id){
   const palette={'2101':'#b8332d','2107':'#b72531','2105':'#d8d7d1','2104':'#4d8fb7','2106':'#2869ad','2109':'#6d899b','2110':'#415a78',priora:'#2867a1',kalina:'#77838c',granta:'#267f79',niva:'#61745f',vesta:'#a7afb8'};
   return palette[String(id)]||'#b72531';
 }
+let carSvgInstance=0;
 function carSvg(modelId,colorValue){
   const id=String(modelId||'2107');
   let color=typeof colorValue==='number'?'#'+Math.max(0,colorValue).toString(16).padStart(6,'0').slice(-6):String(colorValue||carPaintCss(id));
@@ -289,7 +410,7 @@ function carSvg(modelId,colorValue){
   const classicDetails=classic2101
     ? '<path d="M76 136 L517 136" fill="none" stroke="#e6eaed" stroke-width="3" stroke-opacity=".9"/><path d="M77 140 L516 140" fill="none" stroke="#3b4248" stroke-width="1.4"/><path d="M79 115 L136 110 L167 103 M411 107 L502 114" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity=".32"/><path d="M238 166 L355 166" stroke="#171c20" stroke-width="4"/><path d="M241 165 L352 165" stroke="#9ca5ab" stroke-width="1.5"/><rect x="235" y="113" width="14" height="4.5" rx="1.5" fill="url(#chrome)" stroke="#4a5258" stroke-width="1"/><rect x="307" y="113" width="14" height="4.5" rx="1.5" fill="url(#chrome)" stroke="#4a5258" stroke-width="1"/><path d="M200 61 L205 56 L217 56 M360 61 L371 65" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-opacity=".55"/><path d="M39 143 L57 143 L57 151 L38 151 Z M540 143 L557 143 L557 153 L542 153 Z" fill="url(#chrome)" stroke="#65717a" stroke-width="1.5"/><rect x="520" y="120" width="10" height="5" rx="1" fill="#f3d6a0" stroke="#7b4e34" stroke-width="1"/>'
     : '';
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-label="Детализированный боковой профиль '+(classic2101?'ВАЗ-2101 Копейка':id)+'" preserveAspectRatio="xMidYMid meet">'
+  const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-label="Детализированный боковой профиль '+(classic2101?'ВАЗ-2101 Копейка':id)+'" preserveAspectRatio="xMidYMid meet">'
     +'<defs><linearGradient id="paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".62"/><stop offset=".13" stop-color="'+color+'"/><stop offset=".48" stop-color="'+color+'"/><stop offset=".78" stop-color="#34383c"/><stop offset="1" stop-color="#111417"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#c5e8f5"/><stop offset=".28" stop-color="#567687"/><stop offset=".62" stop-color="#1e2c38"/><stop offset="1" stop-color="#0b131b"/></linearGradient><linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f7f8"/><stop offset=".35" stop-color="#9aa4ab"/><stop offset=".65" stop-color="#353d43"/><stop offset="1" stop-color="#c8d0d4"/></linearGradient><radialGradient id="hub"><stop offset="0" stop-color="#f5f6f7"/><stop offset=".4" stop-color="#9ca7ae"/><stop offset="1" stop-color="#283038"/></radialGradient><linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fbfdff"/><stop offset=".5" stop-color="#68737c"/><stop offset="1" stop-color="#d8e0e4"/></linearGradient><filter id="shadow" x="-20%" y="-40%" width="140%" height="190%"><feGaussianBlur stdDeviation="5"/></filter></defs>'
     +'<g transform="translate(600 0) scale(-1 1)">'
     +'<ellipse cx="300" cy="186" rx="253" ry="13" fill="#000000" opacity=".55" filter="url(#shadow)"/>'
@@ -328,13 +449,151 @@ function carSvg(modelId,colorValue){
     +'</g>'
     +classicDetails
     +'</g></svg>';
+  const uid='car-'+String(id).replace(/[^a-z0-9_-]/gi,'')+'-'+color.slice(1)+'-'+(++carSvgInstance);
+  return svgMarkup
+    .replaceAll('id="paint"','id="paint-'+uid+'"').replaceAll('url(#paint)','url(#paint-'+uid+')')
+    .replaceAll('id="glass"','id="glass-'+uid+'"').replaceAll('url(#glass)','url(#glass-'+uid+')')
+    .replaceAll('id="rim"','id="rim-'+uid+'"').replaceAll('url(#rim)','url(#rim-'+uid+')')
+    .replaceAll('id="hub"','id="hub-'+uid+'"').replaceAll('url(#hub)','url(#hub-'+uid+')')
+    .replaceAll('id="chrome"','id="chrome-'+uid+'"').replaceAll('url(#chrome)','url(#chrome-'+uid+')')
+    .replaceAll('id="shadow"','id="shadow-'+uid+'"').replaceAll('url(#shadow)','url(#shadow-'+uid+')');
 }
 
 function syncRace2DCarArt(){
   const player=$('race2dPlayerCar'),opponent=$('race2dOpponentCar');
   if(player)player.innerHTML=carSvg(String(state.selected||'2107'),carPaintCss(String(state.selected||'2107')));
   if(opponent)opponent.innerHTML=carSvg('2110','#d9dce0');
+  buildRace2DEnvironment();
 }
+
+let raceWorldOffset=0;
+function makeRaceCitySvg(){
+  const tile=(offset)=>{
+    let out='<g transform="translate('+offset+' 0)">';
+    const buildings=[
+      {x:-26,y:78,w:150,h:258,c:'#b9b9b0',side:'#838980'},
+      {x:102,y:28,w:208,h:312,c:'#c8c2b7',side:'#99998f'},
+      {x:287,y:89,w:126,h:250,c:'#d0c8ba',side:'#918b80'},
+      {x:398,y:0,w:184,h:350,c:'#a9b2b3',side:'#737f83'},
+      {x:560,y:54,w:222,h:290,c:'#d6c9b5',side:'#a69b8b'},
+      {x:756,y:108,w:136,h:236,c:'#9eaaa9',side:'#76827f'},
+      {x:874,y:30,w:208,h:318,c:'#d0c9bd',side:'#9a958b'},
+      {x:1061,y:80,w:148,h:264,c:'#b6b8b0',side:'#878c82'},
+      {x:1190,y:12,w:220,h:338,c:'#c9c5b9',side:'#99988d'},
+      {x:1392,y:76,w:178,h:270,c:'#aeb7b4',side:'#838d89'},
+      {x:1550,y:53,w:86,h:285,c:'#d4c9b7',side:'#aaa08d'}
+    ];
+    for(let bi=0;bi<buildings.length;bi++){
+      const b=buildings[bi];
+      out+='<g><rect x="'+(b.x+8)+'" y="'+(b.y+8)+'" width="'+b.w+'" height="'+(b.h-8)+'" fill="#454b4c" opacity=".22"/>';
+      out+='<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" fill="'+b.c+'" stroke="#777d79" stroke-width="2"/>';
+      out+='<path d="M'+(b.x+b.w)+' '+b.y+' l18 9 v'+(b.h-10)+' l-18 1 Z" fill="'+b.side+'" opacity=".86"/>';
+      out+='<rect x="'+(b.x-4)+'" y="'+(b.y-7)+'" width="'+(b.w+8)+'" height="9" fill="#dad8cf" stroke="#8d918b" stroke-width="1.5"/>';
+      for(let row=0;row<Math.floor((b.h-35)/24);row++){
+        const wy=b.y+18+row*24;
+        out+='<path d="M'+(b.x+3)+' '+(wy+17)+' H'+(b.x+b.w-2)+'" stroke="#f0e8da" stroke-opacity=".38" stroke-width="1"/>';
+        for(let col=0;col<Math.floor((b.w-18)/22);col++){
+          const wx=b.x+10+col*22;
+          const warm=((row*3+col+bi)%7===0);
+          out+='<rect x="'+wx+'" y="'+wy+'" width="12" height="15" fill="'+(warm?'#e3d9b4':'#354b55')+'" stroke="#e6e0d4" stroke-opacity=".32" stroke-width="1"/>';
+          out+='<path d="M'+(wx+2)+' '+(wy+2)+' h7" stroke="#ffffff" stroke-opacity=".42" stroke-width="1.2"/>';
+          if((col+row+bi)%3===0)out+='<path d="M'+(wx-2)+' '+(wy+17)+' h16" stroke="#777f7e" stroke-width="2"/>';
+        }
+      }
+      if(bi%3===1){
+        out+='<rect x="'+(b.x+6)+'" y="'+(b.y+28)+'" width="'+(b.w-14)+'" height="8" fill="#f3ede2" opacity=".56"/>';
+        out+='<rect x="'+(b.x+7)+'" y="'+(b.y+b.h-18)+'" width="'+(b.w-15)+'" height="11" fill="#565f60" opacity=".38"/>';
+      }
+      out+='</g>';
+    }
+    out+='<path d="M0 351 H1600 V390 H0Z" fill="#6c756d"/><path d="M0 355 H1600" stroke="#ded7c7" stroke-width="5" opacity=".62"/>';
+    return out+'</g>';
+  };
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 420" preserveAspectRatio="none"><defs><linearGradient id="city-haze" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d5dfe0" stop-opacity=".04"/><stop offset="1" stop-color="#f0e9d7" stop-opacity=".5"/></linearGradient></defs>'+tile(0)+tile(1600)+'</svg>';
+}
+function makeRaceTreeSvg(){
+  const tile=(offset)=>{
+    let out='<g transform="translate('+offset+' 0)">';
+    const trees=[
+      [22,300,42],[115,285,48],[236,308,37],[345,293,52],[505,310,41],[630,288,55],
+      [780,305,39],[912,290,48],[1040,304,44],[1178,285,51],[1310,306,40],[1432,292,49],[1552,307,39]
+    ];
+    for(let i=0;i<trees.length;i++){
+      const [x,y,r]=trees[i], trunk=r*1.32;
+      out+='<g><path d="M'+(x-7)+' '+y+' l5 '+(-trunk)+' h8 l5 '+trunk+' Z" fill="#605344"/>';
+      out+='<path d="M'+x+' '+(y-trunk*.5)+' l'+(-r*.8)+' '+(-r*.68)+' M'+x+' '+(y-trunk*.65)+' l'+(r*.84)+' '+(-r*.72)+'" stroke="#685847" stroke-width="7" stroke-linecap="round"/>';
+      out+='<circle cx="'+(x-r*.36)+'" cy="'+(y-trunk-r*.36)+'" r="'+(r*.7)+'" fill="#496753"/>';
+      out+='<circle cx="'+(x+r*.30)+'" cy="'+(y-trunk-r*.52)+'" r="'+(r*.83)+'" fill="#5c785c"/>';
+      out+='<circle cx="'+x+'" cy="'+(y-trunk-r*.02)+'" r="'+(r*.75)+'" fill="#73906d"/>';
+      out+='<circle cx="'+(x-r*.12)+'" cy="'+(y-trunk-r*.42)+'" r="'+(r*.4)+'" fill="#9ab08a" opacity=".48"/>';
+      out+='</g>';
+    }
+    out+='<path d="M0 355 Q220 332 430 357 T900 354 T1330 351 T1600 355 V420 H0Z" fill="#657d5d"/>';
+    out+='<path d="M0 374 Q250 350 500 378 T1000 372 T1600 376" fill="none" stroke="#90a078" stroke-width="13" opacity=".52"/>';
+    return out+'</g>';
+  };
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 420" preserveAspectRatio="none">'+tile(0)+tile(1600)+'</svg>';
+}
+function makeRaceFenceSvg(){
+  const tile=(offset)=>{
+    let out='<g transform="translate('+offset+' 0)">';
+    out+='<path d="M0 94 H1600" stroke="#4a514f" stroke-width="16" opacity=".85"/><path d="M0 88 H1600 M0 98 H1600" stroke="#e0e0d8" stroke-width="3" opacity=".7"/>';
+    for(let x=12;x<1600;x+=58){
+      out+='<path d="M'+x+' 54 V176" stroke="#6c7473" stroke-width="7"/><path d="M'+(x-2)+' 58 V174" stroke="#d9ded9" stroke-width="2" opacity=".72"/>';
+      out+='<path d="M'+(x-22)+' 112 l42 46 M'+(x+20)+' 112 l-42 46" stroke="#cbd0c7" stroke-opacity=".17" stroke-width="1.6"/>';
+    }
+    out+='<path d="M0 177 H1600" stroke="#23292a" stroke-width="6"/>';
+    return out+'</g>';
+  };
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 220" preserveAspectRatio="none">'+tile(0)+tile(1600)+'</svg>';
+}
+function setSvgBackground(id,svg){
+  const el=$(id);if(!el||el.dataset.loaded)return;
+  el.style.backgroundImage='url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'")';
+  el.dataset.loaded='1';
+}
+function buildRace2DEnvironment(){
+  const env=$('race2dEnvironment');if(!env||env.dataset.ready)return;
+  setSvgBackground('race2dCityLayer',makeRaceCitySvg());
+  setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
+  setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
+  env.dataset.ready='1';
+}
+function updateRace2DEnvironment(dt){
+  const scene=$('race2dPlayerCar')?.parentElement;
+  if(!scene)return;
+  const scale=Math.max(.6,Math.min(1.35,(scene.clientWidth||1280)/1280));
+  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*2.7*scale;
+  const wrap=Math.max(1,(scene.clientWidth||1280)*1.5);
+  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
+  if(city)city.style.backgroundPositionX=(-((raceWorldOffset*.19)%wrap))+'px';
+  if(trees)trees.style.backgroundPositionX=(-((raceWorldOffset*.43)%wrap))+'px';
+  if(fence)fence.style.backgroundPositionX=(-((raceWorldOffset*.78)%wrap))+'px';
+  if(marks)marks.style.backgroundPositionX=(-((raceWorldOffset*1.05)%Math.max(1,scene.clientWidth*1.5)))+'px';
+  scene.classList.toggle('race-fast',speed>130);
+}
+function buildProSpeedScale(){
+  const scale=$('proSpeedScale');if(!scale||scale.dataset.ready)return;
+  scale.dataset.ready='1';
+  const size=scale.clientWidth||180,center=size/2;
+  for(let i=0;i<=28;i++){
+    const angle=-125+(250*i/28),major=i%4===0;
+    const tick=document.createElement('i');tick.className='pro-speed-tick'+(major?' major':'');
+    const rad=angle*Math.PI/180,radius=size*(major?.414:.43);
+    tick.style.left=(center+Math.sin(rad)*radius)+'px';
+    tick.style.top=(center-Math.cos(rad)*radius)+'px';
+    tick.style.transform='translate(-50%,-50%) rotate('+angle+'deg)';
+    scale.appendChild(tick);
+  }
+  for(let i=0;i<=7;i++){
+    const angle=(-125+250*i/7)*Math.PI/180,radius=size*.34;
+    const num=document.createElement('span');num.className='pro-speed-number';num.textContent=String(i*40);
+    num.style.left=(center+Math.sin(angle)*radius)+'px';
+    num.style.top=(center-Math.cos(angle)*radius)+'px';
+    scale.appendChild(num);
+  }
+}
+
 
 const parts=[
 {id:'ecu',name:'Спортивный ECU',desc:'+8% мощности',price:25000,power:8,kind:'engine'},
@@ -762,10 +1021,10 @@ function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
   scale.dataset.ready='1';
   const r=scale.getBoundingClientRect();
-  const size=scale.clientWidth||420,center=size/2;
+  const size=scale.clientWidth||190,center=size/2;
   for(let i=0;i<=45;i++){
     const angle=-125+(250*i/45),major=i%5===0;
-    const tick=document.createElement('i');tick.className='pro-tach-tick'+(major?' major':'');
+    const tick=document.createElement('i');tick.className='pro-tach-tick'+(major?' major':'')+(i>=35?' hot':'');
     const rad=angle*Math.PI/180, radius=size*(major?.414:.427);
     tick.style.left=(center+Math.sin(rad)*radius)+'px';
     tick.style.top=(center-Math.cos(rad)*radius)+'px';
@@ -839,7 +1098,7 @@ function openProRaceCockpit(){
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
   requestRaceLandscape();
   track.appendChild(host);raceCockpitOpen=true;orientationWarningDismissed=false;
-  buildProTachScale();syncProRaceCockpit();updateOrientationPrompt();
+  buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function closeProRaceCockpit(){
@@ -866,7 +1125,10 @@ function syncProRaceCockpit(){
   const cockpit=$('proRaceCockpit');
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
   cockpit.style.setProperty('--race-road-duration',Math.max(.09,1.05-(Math.max(0,Number(speed)||0)/330))+'s');
-  cockpit.style.setProperty('--race-wheel-duration',Math.max(.055,.42-(Math.min(275,speedNow)/275)*.36)+'s');
+  cockpit.style.setProperty('--race-wheel-duration',Math.max(.05,.48/(1+speedNow/18))+'s');
+  cockpit.classList.toggle('race-online',Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'));
+  const speedNeedle=$('proSpeedNeedle');
+  if(speedNeedle)speedNeedle.style.transform='translateX(-50%) rotate('+(-125+Math.max(0,Math.min(280,speedNow))/280*250)+'deg)';
   if(!raceCockpitOpen)return;
   $('proRaceStatus').textContent=finished?'ФИНИШ · '+(lastFinishMs/1000).toFixed(3)+' с':!running?'Готов к старту':performance.now()<greenAt?'УДЕРЖИВАЙ ГАЗ · ЖДИ ЗЕЛЁНЫЙ':rpm>7600?'ПЕРЕКЛЮЧИ ПЕРЕДАЧУ':'Держи обороты в рабочей зоне';
   $('proRaceFinishActions').classList.toggle('visible',finished);
@@ -923,9 +1185,10 @@ function reset(){
 function updateRaceCarPosition(){
   const player=$('race2dPlayerCar');
   if(!player)return;
-  const total=Math.max(1,Number(maxDist)||402.336);
-  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/total));
-  player.style.left=(12+52*progress).toFixed(2)+'%';
+  // Camera follows the car: it moves right slightly on launch while the parallax world carries most of the speed.
+  const approach=Math.max(0,Math.min(1,(Number(speed)||0)/85));
+  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
+  player.style.left=(12+4.2*approach+1.2*progress).toFixed(2)+'%';
 }
 function updateHUD(){
   updateRaceCarPosition();
@@ -961,7 +1224,7 @@ function start(sharedStartedAt=null){
         const torque=Math.max(.2,1-Math.abs(rpm-ideal)/9000);
         const accel=power*throttle*gearRatio(g)*torque*launchPenalty;
         speed=Math.max(0,Math.min(gear===1?95:gear===2?145:gear===3?190:gear===4?235:275,speed+accel*dt*8));
-        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+0):Math.max(900,rpm-dt*1900);
+        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*24)):Math.max(900,rpm-dt*1900);
         if(rpm>7600)speed=Math.max(0,speed-dt*7);
         if(speed>=100&&zeroAt===null)zeroAt=(now-greenAt)/1000;
         distance+=speed/3.6*dt;
@@ -979,6 +1242,7 @@ function start(sharedStartedAt=null){
         }
       }
     }
+    updateRace2DEnvironment(dt);
     updateHUD();
     if(running)raf=requestAnimationFrame(frame);
   }
