@@ -81,7 +81,7 @@ test("concurrent room joins serialize on the shared player balance before checki
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
-  const positionFn = page.match(/function updateRaceCarPosition\(\) \{([\s\S]*?)\n\}/);
+  const positionFn = page.match(/function updateRaceCarPosition\(\)\s*\{([\s\S]*?)\n\}/);
   assert.ok(positionFn, "car position updater exists");
   assert.match(positionFn[1], /player\.style\.transform\s*=\s*'translate3d\('/);
   assert.doesNotMatch(positionFn[1], /player\.style\.left\s*=/, "car position avoids per-frame layout changes");
