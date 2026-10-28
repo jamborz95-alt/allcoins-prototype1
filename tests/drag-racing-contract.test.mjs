@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-speedmotion3"/);
+  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-camerafinish1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -86,9 +86,9 @@ test("car travel and track motion scale up as speed increases", () => {
   assert.ok(updaterStart >= 0 && updaterEnd > updaterStart, "race scenery update function exists");
   const updater = page.slice(updaterStart, updaterEnd);
   assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/);
-  const carPositionStart = page.indexOf("function updateRaceCarPosition(){");
+  const carPositionStart = page.indexOf("function getRaceCarMotion(){");
   const carPositionEnd = page.indexOf("\n}", carPositionStart);
-  assert.ok(carPositionStart >= 0 && carPositionEnd > carPositionStart, "car position update function exists");
+  assert.ok(carPositionStart >= 0 && carPositionEnd > carPositionStart, "car motion calculation exists");
   const carPosition = page.slice(carPositionStart, carPositionEnd);
   assert.match(carPosition, /racePeakSpeed=Math\.max\(racePeakSpeed,currentSpeed\)/);
   assert.match(carPosition, /const shiftPercent=8\*speedLead\+36\*progress/);
