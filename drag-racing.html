@@ -509,8 +509,17 @@ function initDragRacing3D(){
     }
     bodyShape.quadraticCurveTo(1.91,.96,2.12,.81);
     bodyShape.quadraticCurveTo(2.22,.75,2.17,.51);
-    bodyShape.lineTo(2.06,.39);bodyShape.quadraticCurveTo(1.83,.32,1.65,.35);
-    bodyShape.lineTo(-1.75,.35);bodyShape.quadraticCurveTo(-2.03,.33,-2.16,.36);
+    const archWheelbase=isSuv?1.34:1.27;
+    bodyShape.lineTo(2.06,.39);
+    bodyShape.quadraticCurveTo(1.84,.32,archWheelbase+.40,.35);
+    bodyShape.quadraticCurveTo(archWheelbase+.32,.35,archWheelbase+.29,.48);
+    bodyShape.quadraticCurveTo(archWheelbase,.91,archWheelbase-.29,.48);
+    bodyShape.quadraticCurveTo(archWheelbase-.32,.35,archWheelbase-.40,.35);
+    bodyShape.lineTo(-archWheelbase+.40,.35);
+    bodyShape.quadraticCurveTo(-archWheelbase+.32,.35,-archWheelbase+.29,.48);
+    bodyShape.quadraticCurveTo(-archWheelbase,.91,-archWheelbase-.29,.48);
+    bodyShape.quadraticCurveTo(-archWheelbase-.32,.35,-archWheelbase-.40,.35);
+    bodyShape.quadraticCurveTo(-2.03,.33,-2.16,.36);
     const bodyGeo=new T.ExtrudeGeometry(bodyShape,{depth:1.44,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.055,bevelThickness:.055,curveSegments:18});
     bodyGeo.translate(0,0,-.72);
     const shell=new T.Mesh(bodyGeo,bodyMat);group.add(shell);shell.castShadow=true;shell.receiveShadow=true;
