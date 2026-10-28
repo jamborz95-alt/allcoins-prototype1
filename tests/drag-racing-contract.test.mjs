@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-refmatch13"/);
+  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-smoothmotion1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
