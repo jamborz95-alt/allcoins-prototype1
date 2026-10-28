@@ -102,7 +102,7 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
   assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
   assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.08\)/);
-  assert.match(page, /Math\.exp\(-Math\.max\(0,dt\)\*26\)/);
+  assert.match(page, /Math\.exp\(-Math\.max\(0,dt\)\*\(running\?42:24\)\)/);
   assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
   assert.match(page, /id="race2dFinishGate"/);
   assert.match(page, /id="race2dFinishStraight"/);
