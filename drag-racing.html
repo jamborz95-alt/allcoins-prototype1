@@ -79,6 +79,35 @@
 }
 @media(prefers-reduced-motion:reduce){.pro-tach-needle{transition:none}}
 
+/* Clutch-free ALLCOINS racing controls and orientation guidance. */
+.pedals.single-pedal{display:flex;justify-content:center;grid-template-columns:1fr;margin-top:10px}
+.pedals.single-pedal .pedal.gas{position:relative;width:min(100%,420px);height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;touch-action:none;background:linear-gradient(145deg,#93313a 0%,#641c25 48%,#32151b 100%);border:1px solid #df7b80;box-shadow:inset 0 2px #ffffff30,inset 0 -8px 15px #0007,0 5px 12px #0006}
+.pedals.single-pedal .pedal.gas:before{content:"";position:absolute;inset:7px 12px 43px;border-radius:5px;background:repeating-linear-gradient(90deg,#d5d8db 0 4px,#333b43 4px 8px);opacity:.6;pointer-events:none}
+.pedals.single-pedal .pedal.gas strong,.pedals.single-pedal .pedal.gas small{position:relative;z-index:1}
+.pedals.single-pedal .pedal.gas strong{font-size:17px;letter-spacing:2px}
+.pedals.single-pedal .pedal.gas small{font-size:10px;color:#ffe7e8}
+.pro-dash-controls{padding:0 10%!important;align-items:flex-end}
+.pro-pedal.gas{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:clamp(86px,17vh,128px);width:clamp(104px,11vw,170px);min-width:104px;max-width:170px;padding:15px 8px 10px;border-radius:0 0 12px 12px;clip-path:polygon(13% 0,87% 0,100% 100%,0 100%);background:linear-gradient(115deg,#8e2029 0%,#d5444d 28%,#6a111c 62%,#391016 100%);border:2px solid #d77a80;box-shadow:inset 0 2px #ffffff45,inset 0 -12px 18px #0009,0 8px 15px #000b;letter-spacing:1.6px;text-shadow:0 2px 3px #000}
+.pro-gas-ridges{position:absolute;left:14%;right:14%;top:10px;height:42%;border:1px solid #ffffff55;border-radius:4px;background:repeating-linear-gradient(90deg,#d7dadd 0 5px,#565e66 5px 10px);box-shadow:0 3px 5px #0008,inset 0 1px #fff8}
+.pro-pedal.gas strong{position:relative;display:block;font-size:clamp(16px,1.6vw,22px);font-weight:1000}
+.pro-pedal.gas small{position:relative;display:block;font-size:9px;font-weight:900;letter-spacing:1.1px;color:#ffe6e6}
+.pro-pedal.gas.held{filter:brightness(1.35);transform:translateY(3px);box-shadow:0 0 24px #ff334466,inset 0 0 12px #ffffff25}
+.orientation-prompt{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;box-sizing:border-box;padding:22px;background:radial-gradient(ellipse at 50% 35%,#233648f5 0,#10151df5 72%);color:#f4f6f9;font-family:Arial,sans-serif;touch-action:auto}
+.orientation-prompt.hidden,.orientation-hint.hidden{display:none!important}
+.orientation-prompt-card{width:min(100%,410px);box-sizing:border-box;padding:26px 22px 22px;text-align:center;border:1px solid #647789;border-radius:22px;background:linear-gradient(145deg,#222f3d,#0d1219);box-shadow:0 22px 75px #000c,inset 0 1px #ffffff20}
+.orientation-phone-icon{width:106px;height:82px;display:grid;place-items:center;margin:0 auto 6px;color:#eaf2fa;filter:drop-shadow(0 5px 12px #0008)}
+.orientation-phone-icon svg{width:100%;height:100%;overflow:visible}
+.orientation-kicker{font-size:10px;letter-spacing:3px;font-weight:900;color:#e7c77e}
+.orientation-prompt-card h2{margin:13px 0 10px;font-size:clamp(22px,5vw,29px);line-height:1.15;color:#fff}
+.orientation-prompt-card p{margin:0 auto 18px;max-width:330px;color:#c4d0da;font-size:14px;line-height:1.5}
+.orientation-live{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 19px;color:#f6d98e;font-size:12px;font-weight:800}
+.orientation-live-dot{width:8px;height:8px;border-radius:50%;background:#f5c45d;box-shadow:0 0 10px #f5c45d;animation:orientationPulse 1.2s infinite}
+@keyframes orientationPulse{50%{opacity:.35;transform:scale(.75)}}
+#orientationDismiss{width:100%;padding:14px 16px;border:1px solid #f2d99a;border-radius:12px;background:linear-gradient(135deg,#f5d895,#c39443);color:#21190b;font-size:13px;font-weight:1000;letter-spacing:.3px}
+.orientation-hint{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:9000;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:10px 14px;border:1px solid #f0ca71;border-radius:12px;background:#121a22ed;color:#ffdfa0;box-shadow:0 5px 20px #0009;text-align:center;font-size:11px;font-weight:900;letter-spacing:.2px;pointer-events:none}
+@media (orientation:portrait){.orientation-hint{font-size:10px;padding:9px 10px}}
+@media(prefers-reduced-motion:reduce){.orientation-live-dot{animation:none}}
+
 body.pro-race-open{overflow:hidden!important;touch-action:none}
 @media (orientation:portrait){.pro-race-track{flex-basis:53%;height:53%}.pro-race-dashboard{flex:1}}
 </style>
@@ -90,14 +119,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 <div class="panel"><div class="title">Уличный драг — ¼ мили</div><div class="race-scene" id="scene"><div id="race3dCanvas" aria-label="Трёхмерная гоночная трасса"></div><div class="sun"></div><div class="city"></div><div class="road"></div><div class="lane"></div><div class="scene-hud"><span class="hud" id="speedHud">0 км/ч</span><span class="hud" id="distanceHud">402 м</span><span class="hud">3D · МКПП</span></div><div class="lights"><i class="light" id="l1"></i><i class="light" id="l2"></i><i class="light" id="l3"></i></div><div class="car"><svg viewBox="0 0 260 100" aria-label="Красный тюнингованный седан"><path class="car-body" d="M17 68 L27 48 Q36 41 66 38 L91 18 Q104 9 143 15 L181 38 L222 44 Q239 48 245 65 L245 77 L15 77Z"/><path class="car-glass" d="M77 37 L99 20 Q106 16 128 18 L132 37Z M139 18 L176 39 L138 37Z"/><path class="car-body" d="M17 67 L6 67 L8 76 L23 77 M239 65 L253 64 L254 76 L239 77"/><rect x="24" y="53" width="20" height="6" rx="2" fill="#f2e5c2"/><rect x="224" y="53" width="13" height="7" rx="2" fill="#ff374d"/><circle class="wheel" cx="61" cy="75" r="17"/><circle class="wheel" cx="202" cy="75" r="17"/><circle cx="61" cy="75" r="7" fill="#b9c4ce"/><circle cx="202" cy="75" r="7" fill="#b9c4ce"/><path d="M84 45 L213 45" stroke="#f2cc75" stroke-width="2"/></svg></div></div>
 <div class="dash" style="margin-top:10px"><div class="gauge"><span class="muted">СКОРОСТЬ</span><strong><span id="speed">0</span> <small>км/ч</small></strong><div class="meter"><i id="speedbar"></i></div></div><div class="gauge"><span class="muted">ОБОРОТЫ</span><strong><span id="rpm">900</span> <small>об/мин</small></strong><div class="meter"><i id="rpmbar"></i></div></div></div>
 <div class="row" style="margin-top:10px"><div class="gauge"><span class="muted">ПЕРЕДАЧА</span><strong id="currentGear">N</strong></div><div class="gauge"><span class="muted">ДИСТАНЦИЯ</span><strong><span id="distance">0</span> <small>м</small></strong></div><div class="gauge"><span class="muted">0–100</span><strong id="zero100">—</strong></div></div>
-<div class="pedals"><button class="pedal" id="clutch">◉ СЦЕПЛЕНИЕ<br><small>удерживать</small></button><button class="pedal gas" id="gas">⚡ ГАЗ<br><small>удерживать</small></button></div>
+<div class="pedals single-pedal"><button class="pedal gas" id="gas" type="button"><span class="gas-pedal-art" aria-hidden="true"></span><strong>ПЕДАЛЬ ГАЗА</strong><small>Нажми и удерживай</small></button></div>
 <div class="gearrow"><button class="gear" data-gear="N">N</button><button class="gear active" data-gear="1">1</button><button class="gear" data-gear="2">2</button><button class="gear" data-gear="3">3</button><button class="gear" data-gear="4">4</button><button class="gear" data-gear="5">5</button></div>
-<div class="row" style="margin-top:10px"><button id="startRace">🔴 Старт заезда</button><button id="resetRace" class="back">↻ Сброс</button></div><div id="raceStatus" class="status">Нажми «Старт заезда», дождись зелёного сигнала, отпусти сцепление и переключай передачи вручную.</div></div>
+<div class="row" style="margin-top:10px"><button id="startRace">🔴 Старт заезда</button><button id="resetRace" class="back">↻ Сброс</button></div><div id="raceStatus" class="status">Нажми «Старт заезда», удерживай педаль газа и переключай передачи вручную по оборотам.</div></div>
 <div class="panel"><div class="title">Онлайн-заезды на ставку</div><div class="note">Создай комнату на 2–5 игроков. Ставки блокируются сервером, результат и комиссия 5% рассчитываются после финиша всех участников.</div><div class="row"><div><label class="muted">Максимум игроков</label><select id="players"><option>2</option><option>3</option><option>4</option><option>5</option></select></div><div><label class="muted">Ставка, AC</label><input id="stake" type="number" min="100" step="100" value="1000"></div></div><label class="muted">Тип гонки</label><select id="raceMode"><option value="quarter">Драг — ¼ мили</option><option value="half">Драг — ½ мили</option><option value="sprint">Спринт — 1 км</option></select><button class="full" id="createRoom" style="width:100%">＋ Создать онлайн-комнату</button><div class="row" style="margin-top:8px"><button id="refreshRooms" class="back">↻ Обновить комнаты</button><button id="leaveOnline" class="back hidden">Выйти из комнаты</button></div><section id="onlineRoom" class="panel hidden" style="margin-top:10px;padding:12px"><div id="onlineRoomInfo"></div><div class="row" style="margin-top:8px"><button id="startOnline" class="hidden">🏁 Начать онлайн-заезд</button></div><div id="onlineResult" class="status"></div></section><div id="roomStatus" class="status">Загрузка онлайн-профиля…</div><div id="rooms"></div></div>
 </section>
 <section id="garage" class="view hidden"><div class="panel"><div class="title">Мой гараж</div><div id="garageContent"></div></div></section>
 <section id="shop" class="view hidden"><div class="panel"><div class="title">Автосалон LADA / ВАЗ</div><p class="muted">Игровой автосалон: начинай с недорогих ВАЗ-2104/2105, зарабатывай прогрессом и переходи к более мощным LADA. Цены и характеристики условные, только для игрового баланса.</p><div class="cards" id="carShop"></div><p class="muted">ВАЗ-2104, 2105, 2106 и 2109 доступны с самого начала при достаточном балансе.</p></div><div class="panel"><div class="title">Запчасти и улучшения</div><div id="partsShop" class="parts"></div></div></section>
-<section id="tuning" class="view hidden"><div class="panel"><div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div><div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Сцепление с дорогой</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div><div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Сцепление / старт</span><b id="gripValue">70%</b></div><button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div></div></section>
+<section id="tuning" class="view hidden"><div class="panel"><div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div><div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Сцепление с дорогой</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div><div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Зацеп шин / старт</span><b id="gripValue">70%</b></div><button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div></div></section>
 </main>
 
 <div id="proRaceCockpit" class="pro-race-cockpit hidden" aria-hidden="true">
@@ -119,13 +148,23 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <button id="proShiftUp" class="pro-shift-paddle up" type="button" aria-label="Повысить передачу">↑</button>
     <div id="proRaceStatus" class="pro-race-status">Удерживай газ во время отсчёта. Переключай передачи по оборотам.</div>
     <div class="pro-dash-controls">
-      <button id="proClutchHold" class="pro-pedal" type="button">СЦЕПЛЕНИЕ</button>
-      <button id="proExitRace" class="pro-exit" type="button">В ГАРАЖ</button>
-      <button id="proGasHold" class="pro-pedal gas" type="button">УДЕРЖИВАТЬ ГАЗ</button>
+      <button id="proExitRace" class="pro-exit" type="button">← ГАРАЖ</button>
+      <button id="proGasHold" class="pro-pedal gas" type="button"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>УДЕРЖИВАТЬ</small></button>
     </div>
     <div id="proRaceFinishActions" class="pro-race-finish-actions"><button id="proRaceAgain" class="primary" type="button">ЕЩЁ ЗАЕЗД</button><button id="proRaceReturn" type="button">В ГАРАЖ</button></div>
   </section>
 </div>
+<div id="orientationPrompt" class="orientation-prompt hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="orientationTitle">
+  <div class="orientation-prompt-card">
+    <div class="orientation-phone-icon" aria-hidden="true"><svg viewBox="0 0 100 76"><rect x="9" y="18" width="34" height="53" rx="5" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 25h12M24 63h5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M53 24a24 24 0 0 1 32 17" fill="none" stroke="#f5ce77" stroke-width="5" stroke-linecap="round"/><path d="M80 29l7 12 9-9" fill="none" stroke="#f5ce77" stroke-width="5" stroke-linecap="round"/><path d="M84 53A24 24 0 0 1 55 65" fill="none" stroke="#f5ce77" stroke-width="5" stroke-linecap="round"/></svg></div>
+    <div class="orientation-kicker">ALLCOINS DRAG RACING</div>
+    <h2 id="orientationTitle">Поверните телефон горизонтально</h2>
+    <p>Гонки рассчитаны на альбомный режим. Поверните телефон боком, чтобы видеть обе машины, тахометр и переключатели передач.</p>
+    <div class="orientation-live"><span class="orientation-live-dot"></span><span id="orientationStatus">Ожидаю поворот телефона…</span></div>
+    <button id="orientationDismiss" type="button">Понятно, продолжить</button>
+  </div>
+</div>
+<div id="orientationHint" class="orientation-hint hidden" role="status">↻ Поверните телефон горизонтально для удобной игры</div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script src="./three.min.js?v=20261027-drag3d"></script>
 <script>
@@ -149,7 +188,7 @@ const parts=[
 {id:'intake',name:'Холодный впуск',desc:'+5% мощности',price:18000,power:5,kind:'engine'},
 {id:'exhaust',name:'Прямоточный выхлоп',desc:'+7% мощности',price:32000,power:7,kind:'engine'},
 {id:'turbo',name:'Турбокит Stage 1',desc:'+22% мощности, сложнее старт',price:95000,power:22,kind:'engine'},
-{id:'clutch',name:'Усиленное сцепление',desc:'быстрее передача тяги',price:22000,power:2,kind:'shift'},
+{id:'clutch',name:'Быстрый механизм КПП',desc:'меньше потеря тяги при переключении',price:22000,power:2,kind:'shift'},
 {id:'tires',name:'Драг-шины',desc:'лучше сцепление на старте',price:28000,power:3,kind:'grip'},
 {id:'gearbox',name:'Короткая КПП',desc:'быстрее разгон на низких передачах',price:48000,power:6,kind:'gear'},
 {id:'weight',name:'Облегчение кузова',desc:'меньше масса, быстрее разгон',price:65000,power:10,kind:'weight'}
@@ -177,6 +216,8 @@ function initDragRacing3D(){
   const width=Math.max(1,host.clientWidth||360),height=Math.max(1,host.clientHeight||265);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
   renderer.setSize(width,height,false);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=T.PCFSoftShadowMap;
   if('outputColorSpace' in renderer&&T.SRGBColorSpace)renderer.outputColorSpace=T.SRGBColorSpace;
   if(T.ACESFilmicToneMapping!==undefined)renderer.toneMapping=T.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.14;
@@ -200,6 +241,36 @@ function initDragRacing3D(){
   fillLight.position.set(6,9,-14);scene.add(fillLight);
   const rimLight=new T.DirectionalLight(0xffffff,1.0);
   rimLight.position.set(0,5,18);scene.add(rimLight);
+  sunLight.castShadow=true;
+  sunLight.shadow.mapSize.set(1024,1024);
+  sunLight.shadow.camera.left=-15;sunLight.shadow.camera.right=15;
+  sunLight.shadow.camera.top=10;sunLight.shadow.camera.bottom=-8;
+  sunLight.shadow.bias=-0.00015;
+  sunLight.shadow.normalBias=0.025;
+
+  // A locally generated studio/sky cubemap gives the paint real highlights without
+  // loading copyrighted car imagery or depending on an external texture server.
+  const environmentFaces=[];
+  const envPalette=[
+    ['#e2e9ee','#596671'],['#d8e1e8','#222c35'],['#f3f5f6','#77858d'],
+    ['#bfc9d0','#56636c'],['#a6bac9','#eff2f3'],['#7f909c','#d1d8dd']
+  ];
+  for(let face=0;face<6;face++){
+    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+    const ctx=canvas.getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,256);grad.addColorStop(0,envPalette[face][0]);grad.addColorStop(1,envPalette[face][1]);
+    ctx.fillStyle=grad;ctx.fillRect(0,0,256,256);
+    // Long softbox reflections and bright strip lights create the curved metallic paint look.
+    ctx.fillStyle='rgba(255,255,255,.72)';
+    ctx.fillRect(23,38,210,7);ctx.fillRect(45,58,165,3);ctx.fillRect(18,172,220,5);
+    ctx.fillStyle='rgba(255,255,255,.32)';ctx.fillRect(64,26,94,17);ctx.fillRect(101,133,56,6);
+    ctx.fillStyle='rgba(20,30,40,.22)';ctx.fillRect(0,204,256,11);
+    environmentFaces.push(canvas);
+  }
+  const reflectionEnvironment=new T.CubeTexture(environmentFaces);
+  if(T.SRGBColorSpace)reflectionEnvironment.colorSpace=T.SRGBColorSpace;
+  reflectionEnvironment.needsUpdate=true;
+  scene.environment=reflectionEnvironment;
 
   const mat=(color,roughness=0.75,metalness=0)=>new T.MeshStandardMaterial({color,roughness,metalness});
   const box=(parent,geo,material,x,y,z)=>{const mesh=new T.Mesh(geo,material);mesh.position.set(x,y,z);parent.add(mesh);return mesh};
@@ -388,7 +459,7 @@ function initDragRacing3D(){
   function paintFor(id){return colors[id]||0xb72531}
   const tireMat=mat(0x080a0d,.86,.02),rimMat=new T.MeshStandardMaterial({color:0xc5cbd0,metalness:.92,roughness:.22}),rimDark=mat(0x353b41,.6,.58);
   const chrome=mat(0xd2d8db,.24,.82),black=mat(0x12171c,.38,.35);
-  const glass=new T.MeshPhysicalMaterial({color:0x0a1723,metalness:.28,roughness:.16,clearcoat:.95,side:T.DoubleSide});
+  const glass=new T.MeshPhysicalMaterial({color:0x101d27,metalness:.18,roughness:.12,clearcoat:1,clearcoatRoughness:.06,transparent:false,side:T.DoubleSide});
   const linePaint=mat(0xefd48a,.28,.5);
   function shapeFrom(points){
     const shape=new T.Shape();shape.moveTo(points[0][0],points[0][1]);
@@ -411,7 +482,7 @@ function initDragRacing3D(){
     const isWagon=id==='2104';
     const isHatch=['2109','kalina'].includes(id);
     const isSuv=id==='niva';
-    const bodyMat=new T.MeshPhysicalMaterial({color:bodyColor||paintFor(id),metalness:.72,roughness:.23,clearcoat:1,clearcoatRoughness:.12,side:T.DoubleSide});
+    const bodyMat=new T.MeshPhysicalMaterial({color:bodyColor||paintFor(id),metalness:.48,roughness:.19,clearcoat:1,clearcoatRoughness:.075,reflectivity:.9,envMapIntensity:1.45,side:T.DoubleSide});
     const contactShadow=new T.Mesh(new T.CircleGeometry(1,32),new T.MeshBasicMaterial({color:0x05080b,transparent:true,opacity:.40,depthWrite:false}));
     contactShadow.rotation.x=-Math.PI/2;contactShadow.scale.set(2.48,.88,1);contactShadow.position.set(0,.012,0);group.add(contactShadow);
     const bodyShape=new T.Shape();
@@ -440,7 +511,7 @@ function initDragRacing3D(){
     bodyShape.quadraticCurveTo(2.22,.75,2.17,.51);
     bodyShape.lineTo(2.06,.39);bodyShape.quadraticCurveTo(1.83,.32,1.65,.35);
     bodyShape.lineTo(-1.75,.35);bodyShape.quadraticCurveTo(-2.03,.33,-2.16,.36);
-    const bodyGeo=new T.ExtrudeGeometry(bodyShape,{depth:1.44,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.035,bevelThickness:.035,curveSegments:10});
+    const bodyGeo=new T.ExtrudeGeometry(bodyShape,{depth:1.44,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.055,bevelThickness:.055,curveSegments:18});
     bodyGeo.translate(0,0,-.72);
     const shell=new T.Mesh(bodyGeo,bodyMat);group.add(shell);shell.castShadow=true;shell.receiveShadow=true;
     // Body-colored roof, subtle crease lines, metallic trim and detailed glazing.
@@ -449,7 +520,7 @@ function initDragRacing3D(){
     roofShape.quadraticCurveTo(-.82,isSuv?1.64:1.58,-.59,isSuv?1.64:1.58);
     roofShape.lineTo(.24,isSuv?1.64:1.56);roofShape.quadraticCurveTo(.48,isSuv?1.6:1.49,.78,1.10);
     roofShape.lineTo(.92,1.0);roofShape.lineTo(-1.43,1.02);roofShape.closePath();
-    const roofGeo=new T.ExtrudeGeometry(roofShape,{depth:.96,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.018,bevelThickness:.018});
+    const roofGeo=new T.ExtrudeGeometry(roofShape,{depth:.99,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:.032,bevelThickness:.032,curveSegments:18});
     roofGeo.translate(0,0,-.48);group.add(new T.Mesh(roofGeo,bodyMat));
     const glassZ=.734;
     if(isSuv||isWagon||isHatch){
@@ -527,6 +598,7 @@ function initDragRacing3D(){
           bolt.position.set(Math.cos(a)*wheelRadius*.20,Math.sin(a)*wheelRadius*.20,faceZ*1.42);wheel.add(bolt);
         }
         const caliper=box(wheel,new T.BoxGeometry(.11,.2,.07),new T.MeshStandardMaterial({color:0xe13b32,metalness:.5,roughness:.3}),wheelRadius*.39,.02,faceZ*.75);
+        wheel.traverse(part=>{if(part.isMesh){part.castShadow=true;part.receiveShadow=true}});
         wheelMeshes.push(wheel);
       }
     }
@@ -693,7 +765,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,clutchHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=402.336;const distanceByMode={quarter:402.336,half:804.672,sprint:1000};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0,shiftCutUntil=0;let maxDist=402.336;const distanceByMode={quarter:402.336,half:804.672,sprint:1000};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -728,13 +800,37 @@ function restoreRaceOrientation(){
   try{window.screen?.orientation?.unlock?.()}catch(_){}
   try{const p=tg?.exitFullscreen?.();if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
 }
+let orientationWarningDismissed=false;
+function updateOrientationPrompt(){
+  const prompt=$('orientationPrompt'),hint=$('orientationHint'),status=$('orientationStatus');
+  if(!prompt||!hint)return;
+  const portrait=window.matchMedia('(orientation: portrait)').matches;
+  if(!raceCockpitOpen||!portrait){
+    prompt.classList.add('hidden');prompt.setAttribute('aria-hidden','true');
+    hint.classList.add('hidden');
+    if(!portrait)orientationWarningDismissed=false;
+    if(!portrait)requestAnimationFrame(()=>race3d?.resize?.());
+    return;
+  }
+  if(status)status.textContent='Ожидаю поворот телефона…';
+  if(orientationWarningDismissed){
+    prompt.classList.add('hidden');prompt.setAttribute('aria-hidden','true');hint.classList.remove('hidden');
+  }else{
+    hint.classList.add('hidden');prompt.classList.remove('hidden');prompt.setAttribute('aria-hidden','false');
+  }
+}
+$('orientationDismiss').addEventListener('click',()=>{
+  orientationWarningDismissed=true;updateOrientationPrompt();
+});
+window.addEventListener('orientationchange',()=>setTimeout(updateOrientationPrompt,100),{passive:true});
+window.addEventListener('resize',()=>{updateOrientationPrompt();race3d?.resize?.()},{passive:true});
 function openProRaceCockpit(){
   const panel=$('proRaceCockpit'),track=$('proRaceTrack'),host=$('race3dCanvas');
   if(!panel||!track||!host)return;
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
   requestRaceLandscape();
-  track.appendChild(host);raceCockpitOpen=true;
-  buildProTachScale();syncProRaceCockpit();
+  track.appendChild(host);raceCockpitOpen=true;orientationWarningDismissed=false;
+  buildProTachScale();syncProRaceCockpit();updateOrientationPrompt();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function closeProRaceCockpit(){
@@ -742,7 +838,7 @@ function closeProRaceCockpit(){
   if(host&&sceneHost&&host.parentElement!==sceneHost)sceneHost.prepend(host);
   if(panel){panel.classList.add('hidden');panel.setAttribute('aria-hidden','true')}
   document.body.classList.remove('pro-race-open');raceCockpitOpen=false;
-  restoreRaceOrientation();
+  updateOrientationPrompt();restoreRaceOrientation();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function syncProRaceCockpit(){
@@ -754,7 +850,6 @@ function syncProRaceCockpit(){
     return String(Math.floor(ms/1000)).padStart(2,'0')+'.'+String(Math.floor(ms%1000)).padStart(3,'0');
   })();
   $('proTachNeedle').style.transform='translateX(-50%) rotate('+(-125+Math.max(0,Math.min(9000,rpm))/9000*250)+'deg)';
-  $('proClutchHold').classList.toggle('held',clutchHeld);
   $('proGasHold').classList.toggle('held',gasHeld);
   if(!raceCockpitOpen)return;
   $('proRaceStatus').textContent=finished?'ФИНИШ · '+(lastFinishMs/1000).toFixed(3)+' с':!running?'Готов к старту':performance.now()<greenAt?'УДЕРЖИВАЙ ГАЗ · ЖДИ ЗЕЛЁНЫЙ':rpm>7600?'ПЕРЕКЛЮЧИ ПЕРЕДАЧУ':'Держи обороты в рабочей зоне';
@@ -763,10 +858,12 @@ function syncProRaceCockpit(){
 }
 function setGear(g){
   if(g!=='N')g=Math.max(1,Math.min(5,Number(g)||1));
+  const previousGear=gear;
   gear=g;
   $('currentGear').textContent=g==='N'?'N':g;
   document.querySelectorAll('[data-gear]').forEach(x=>x.classList.toggle('active',x.dataset.gear===String(g)));
-  if(running&&!clutchHeld&&g!=='N'&&Math.abs(rpm)>6800){speed=Math.max(0,speed-4);$('proRaceStatus').textContent='Слишком высокие обороты! Переключай раньше.'}
+  if(running&&g!=='N'&&Math.abs(rpm)>6800){speed=Math.max(0,speed-4);$('proRaceStatus').textContent='Слишком высокие обороты! Переключай раньше.'}
+  if(running&&g!=='N'&&previousGear!=='N'&&previousGear!==g)shiftCutUntil=performance.now()+135;
   updateHUD();
 }
 document.querySelectorAll('[data-gear]').forEach(b=>b.addEventListener('click',()=>setGear(b.dataset.gear==='N'?'N':Number(b.dataset.gear))));
@@ -779,9 +876,7 @@ function holdButton(id,on,off){
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);
-holdButton('clutch',()=>clutchHeld=true,()=>clutchHeld=false);
 holdButton('proGasHold',()=>gasHeld=true,()=>gasHeld=false);
-holdButton('proClutchHold',()=>clutchHeld=true,()=>clutchHeld=false);
 $('proShiftDown').addEventListener('click',()=>setGear(gear==='N'?1:Math.max(1,Number(gear)-1)));
 $('proShiftUp').addEventListener('click',()=>setGear(gear==='N'?1:Math.min(5,Number(gear)+1)));
 function setLight(n){
@@ -789,9 +884,9 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;clutchHeld=false;zeroAt=null;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;shiftCutUntil=0;zeroAt=null;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';
-  $('raceStatus').textContent='Нажми «Старт заезда» и стартуй по сигналу.';updateHUD();syncProRaceCockpit();
+  $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
 }
 function updateHUD(){
   $('speed').textContent=Math.round(speed);$('speedHud').textContent=Math.round(speed)+' км/ч';
@@ -804,7 +899,7 @@ function start(sharedStartedAt=null){
   const selectedMode=currentOnlineRoom&&['waiting','racing'].includes(currentOnlineRoom.room.status)?currentOnlineRoom.room.mode:$('raceMode').value;
   maxDist=distanceByMode[selectedMode]||402.336;reset();running=true;finished=false;
   startAt=performance.now()-(sharedStartedAt===null?0:Math.max(0,Date.now()-Number(sharedStartedAt)));greenAt=startAt+3000;
-  $('startRace').disabled=true;$('raceStatus').textContent='Прогрев! Удерживай газ, держи обороты и дождись зелёного.';
+  $('startRace').disabled=true;$('raceStatus').textContent='Прогрев! Удерживай педаль газа и дождись зелёного.';
   $('scene').classList.add('racing');openProRaceCockpit();
   let last=0;
   function frame(now){
@@ -815,20 +910,19 @@ function start(sharedStartedAt=null){
       const on=Math.min(3,Math.floor(elapsed/900));setLight(on);
       if(gasHeld)rpm=Math.min(8500,rpm+dt*5000);else rpm=Math.max(900,rpm-dt*1600);
     }else if(elapsed<3500){
-      setLight(4);$('raceStatus').textContent='🟢 СТАРТ! Переключай передачи вручную.';
+      setLight(4);$('raceStatus').textContent='🟢 СТАРТ! Удерживай газ и переключай передачи вручную.';
     }else{
       setLight(4);
-      if(clutchHeld){if(gasHeld)rpm=Math.min(8500,rpm+dt*4800);else rpm=Math.max(900,rpm-dt*1200)}
-      else if(gear==='N'){speed=Math.max(0,speed-dt*8);rpm=900+(gasHeld?5000:0)}
+      if(gear==='N'){speed=Math.max(0,speed-dt*8);rpm=900+(gasHeld?5000:0)}
       else{
         const g=Number(gear),ideal=1900+g*1250,throttle=gasHeld?1:.08;
         const power=effectivePower()/car().weight*13,traction=Number(state.tune.grip)/100;
         const launchPenalty=distance<12&&traction<.35?.45:1;
         const torque=Math.max(.2,1-Math.abs(rpm-ideal)/9000);
-        const accel=power*throttle*gearRatio(g)*torque*launchPenalty*(clutchHeld?.12:1);
+        const shifting=now<shiftCutUntil;const accel=shifting?0:power*throttle*gearRatio(g)*torque*launchPenalty;
         speed=Math.max(0,Math.min(gear===1?95:gear===2?145:gear===3?190:gear===4?235:275,speed+accel*dt*8));
-        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+(clutchHeld?1800:0)):Math.max(900,rpm-dt*1900);
-        if(rpm>7600&&!clutchHeld)speed=Math.max(0,speed-dt*7);
+        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+(shifting?0:0)):Math.max(900,rpm-dt*1900);
+        if(rpm>7600)speed=Math.max(0,speed-dt*7);
         if(speed>=100&&zeroAt===null)zeroAt=(now-greenAt)/1000;
         distance+=speed/3.6*dt;
         if(distance>=maxDist){
