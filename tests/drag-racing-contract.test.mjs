@@ -86,13 +86,10 @@ test("car travel and track motion scale up as speed increases", () => {
   assert.ok(updaterStart >= 0 && updaterEnd > updaterStart, "race scenery update function exists");
   const updater = page.slice(updaterStart, updaterEnd);
   assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/);
-  assert.ok(updater, "race scenery update function exists");
-  assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/);
   const carPositionStart = page.indexOf("function updateRaceCarPosition(){");
   const carPositionEnd = page.indexOf("\n}", carPositionStart);
   assert.ok(carPositionStart >= 0 && carPositionEnd > carPositionStart, "car position update function exists");
   const carPosition = page.slice(carPositionStart, carPositionEnd);
-  assert.ok(carPosition, "car position update function exists");
   assert.match(carPosition, /racePeakSpeed=Math\.max\(racePeakSpeed,currentSpeed\)/);
   assert.match(carPosition, /const shiftPercent=8\*speedLead\+36\*progress/);
   assert.match(page, /racePeakSpeed=0/ , "a new race resets the speed lead");
