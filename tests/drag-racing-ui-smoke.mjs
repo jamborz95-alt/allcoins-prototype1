@@ -248,7 +248,7 @@ try {
   assert.match(html, /const shiftPercent=8\*speedLead\+36\*progress/, "Car must visibly advance across the strip as speed and traveled distance increase.");
   const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
-  await page.waitForTimeout(9000);
+  await page.waitForTimeout(12000);
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
     const gate = document.querySelector("#race2dFinishGate");
