@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-speedmotion2"/);
+  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-speedmotion3"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -96,6 +96,7 @@ test("car travel and track motion scale up as speed increases", () => {
   assert.match(carPosition[1], /racePeakSpeed=Math\.max\(racePeakSpeed,currentSpeed\)/);
   assert.match(carPosition[1], /const shiftPercent=8\*speedLead\+36\*progress/);
   assert.match(page, /racePeakSpeed=0/ , "a new race resets the speed lead");
+  assert.match(page, /Math\.max\(\.035,\.48\/\(1\+speedNow\/18\)\)/, "wheel spin keeps getting faster at high speed");
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
