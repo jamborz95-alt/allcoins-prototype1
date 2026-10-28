@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-sideview11"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-roadworld12"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -150,6 +150,9 @@ try {
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 1, "The selected detailed side-view car must be rendered in the race scene.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar .race-wheel").count(), 2, "The player car must expose both rotatable wheel groups.");
+  assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
+  assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
+  assert.equal(await page.locator("#proSpeedScale .pro-speed-tick").count() > 0, true, "The second analog speedometer must be built.");
   assert.equal(await page.locator("#proSpeedMeterBar").count(), 1, "The cockpit must contain a live speedometer bar.");
   assert.match(html, /race2d-wheel-spin/, "Wheel rotation animation must be defined.");
   assert.doesNotMatch(html, /shiftCutUntil/, "Gear changes must not trigger a forced throttle cut.");
@@ -218,6 +221,7 @@ try {
   await page.waitForTimeout(500);
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
+  await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
   const wheelAnimation = await page.locator("#race2dPlayerCar .race-wheel").first().evaluate(el => getComputedStyle(el).animationName);
   assert.equal(wheelAnimation, "race2d-wheel-spin", "Wheels must animate while the race is moving.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
@@ -226,6 +230,8 @@ try {
   assert.ok(speedAfterThrottle > speedBeforeThrottle, "The digital speedometer must climb while the gas pedal is held.");
   assert.ok(speedBarPercent > 0, "The speedometer bar must respond to simulated km/h.");
   assert.ok(carLeftAfterThrottle > carLeftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
+  const movingWorldPosition = await page.locator("#race2dRoadMarks").evaluate(el => getComputedStyle(el).backgroundPositionX);
+  assert.notEqual(movingWorldPosition, "0px", "Road markings must visibly scroll with vehicle speed.");
   await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), false,
     "Releasing the gas pedal should release the throttle.");
