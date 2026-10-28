@@ -110,6 +110,19 @@
 
 body.pro-race-open{overflow:hidden!important;touch-action:none}
 @media (orientation:portrait){.pro-race-track{flex-basis:53%;height:53%}.pro-race-dashboard{flex:1}}
+/* The accelerator is a hold-to-throttle control, never selectable text. */
+#proGasHold,#proGasHold * ,#gas,#gas *{
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important;
+  -webkit-user-drag:none!important;
+}
+#proGasHold,#gas{touch-action:none!important;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none}
+#proGasHold:focus-visible,#gas:focus-visible{outline:2px solid #f5ce77;outline-offset:3px}
+#proGasHold::selection,#proGasHold *::selection,#gas::selection,#gas *::selection{background:transparent;color:inherit}
+.pro-pedal.gas:active{filter:brightness(1.25);transform:translateY(3px)}
+.pro-pedal.gas .pro-gas-ridges{pointer-events:none}
+#proGasHold strong,#proGasHold small{pointer-events:none;-webkit-user-select:none;user-select:none}
+
 </style>
 </head>
 <body><main class="app">
@@ -149,7 +162,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <div id="proRaceStatus" class="pro-race-status">Удерживай газ во время отсчёта. Переключай передачи по оборотам.</div>
     <div class="pro-dash-controls">
       <button id="proExitRace" class="pro-exit" type="button">← ГАРАЖ</button>
-      <button id="proGasHold" class="pro-pedal gas" type="button"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>УДЕРЖИВАТЬ</small></button>
+      <button id="proGasHold" class="pro-pedal gas" type="button" draggable="false" aria-label="Удерживать педаль газа"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>НАЖАТЬ И УДЕРЖИВАТЬ</small></button>
     </div>
     <div id="proRaceFinishActions" class="pro-race-finish-actions"><button id="proRaceAgain" class="primary" type="button">ЕЩЁ ЗАЕЗД</button><button id="proRaceReturn" type="button">В ГАРАЖ</button></div>
   </section>
@@ -816,15 +829,33 @@ function buildProTachScale(){
     scale.appendChild(num);
   }
 }
+function hideTelegramRaceChrome(){
+  // Telegram fullscreen removes its header/footer; hide the optional Telegram BackButton too.
+  try{tg?.BackButton?.hide?.()}catch(_){}
+  try{tg?.MainButton?.hide?.()}catch(_){}
+  try{tg?.SecondaryButton?.hide?.()}catch(_){}
+  try{tg?.setHeaderColor?.('#101317')}catch(_){}
+  try{tg?.setBottomBarColor?.('#101317')}catch(_){}
+}
 function requestRaceLandscape(){
-  // Use native landscape/fullscreen when the Telegram WebView or browser supports it;
-  // the CSS-rotated layout remains the fallback for clients that deny orientation locking.
-  try{const p=tg?.requestFullscreen?.();if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
-  try{const p=window.screen?.orientation?.lock?.('landscape');if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
+  // This is invoked directly from the user's Start tap so Telegram receives the fullscreen request
+  // while user activation is still available. A CSS-rotated layout remains the fallback.
+  try{tg?.expand?.()}catch(_){}
+  hideTelegramRaceChrome();
+  try{
+    if(typeof tg?.requestFullscreen==='function'){
+      const result=tg.requestFullscreen();
+      if(result&&typeof result.catch==='function')result.catch(()=>{hideTelegramRaceChrome()});
+    }else if(document.documentElement.requestFullscreen){
+      const result=document.documentElement.requestFullscreen();
+      if(result&&typeof result.catch==='function')result.catch(()=>{});
+    }
+  }catch(_){}
+  try{const result=window.screen?.orientation?.lock?.('landscape');if(result&&typeof result.catch==='function')result.catch(()=>{})}catch(_){}
 }
 function restoreRaceOrientation(){
   try{window.screen?.orientation?.unlock?.()}catch(_){}
-  try{const p=tg?.exitFullscreen?.();if(p&&typeof p.catch==='function')p.catch(()=>{})}catch(_){}
+  try{const result=tg?.exitFullscreen?.();if(result&&typeof result.catch==='function')result.catch(()=>{})}catch(_){}
 }
 let orientationWarningDismissed=false;
 function updateOrientationPrompt(){
@@ -899,7 +930,8 @@ function holdButton(id,on,off){
   const end=e=>{if(e)e.preventDefault();off();updateHUD()};
   el.addEventListener('pointerdown',start);
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
-  el.addEventListener('contextmenu',e=>e.preventDefault());
+  ['contextmenu','selectstart','dragstart'].forEach(type=>el.addEventListener(type,e=>e.preventDefault()));
+  el.addEventListener('copy',e=>e.preventDefault());
 }
 holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);
 holdButton('proGasHold',()=>gasHeld=true,()=>gasHeld=false);
