@@ -190,7 +190,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .23s ease-in-out infinite alternate}
 .pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-timing-function:linear}
-@keyframes race2d-suspension{from{translate:0 0}to{translate:0 -1.5px}}
+@keyframes race2d-suspension{from{translate:0 0}to{translate:0 -.7px}}
 .race2d-car.player:after{content:"";position:absolute;left:2%;bottom:20%;width:14px;height:7px;border-radius:50%;background:#e6e2d8;opacity:0;filter:blur(5px);pointer-events:none}
 .pro-race-cockpit.race-moving .race2d-car.player:after{animation:race2d-exhaust .34s ease-out infinite}
 @keyframes race2d-exhaust{0%{opacity:.28;transform:translateX(0) scale(.6)}100%{opacity:0;transform:translateX(-26px) scale(1.8)}}
@@ -293,7 +293,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translate3d(0,0,0);
 }
 .pro-race-cockpit.race-moving .race2d-car.player{
-  animation:race2d-suspension .34s ease-in-out infinite alternate!important;
+  animation:race2d-suspension .56s cubic-bezier(.45,0,.55,1) infinite alternate!important;
 }
 .pro-race-cockpit.race-moving .race2d-scene .race2d-city-layer,
 .pro-race-cockpit.race-moving .race2d-scene .race2d-tree-layer{
@@ -446,6 +446,13 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   .race2d-finish-road-stripe{background-size:9px 9px}
 }
 
+
+/* Final smoothness and classic LADA detailing pass. */
+.race2d-car{contain:paint;backface-visibility:hidden}
+.race2d-car svg{shape-rendering:geometricPrecision}
+.race2d-car svg .photo-detail{opacity:.98}
+.pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .56s cubic-bezier(.45,0,.55,1) infinite alternate!important}
+@media(prefers-reduced-motion:reduce){.pro-race-cockpit.race-moving .race2d-car.player{animation:none!important}}
 </style>
 </head>
 <body><main class="app">
@@ -572,10 +579,10 @@ function carSvg(modelId,colorValue){
   const rgb=color.match(/[0-9a-f]{2}/ig)||['b7','25','31'];
   const shade=f=>'#'+rgb.map(c=>Math.round(parseInt(c,16)*f).toString(16).padStart(2,'0')).join('');
   const paintMid=shade(.72),paintDeep=shade(.38);
-  const classic2101=id==='2101',wagon=id==='2104',suv=id==='niva';
+  const classic2101=id==='2101',classicBoxy=['2101','2105','2106','2107'].includes(id),wagon=id==='2104',suv=id==='niva';
   const hatch=['2109','kalina','granta'].includes(id);
   const modern=['2110','priora','kalina','granta','vesta'].includes(id);
-  const bodyPath=classic2101
+  const bodyPath=classicBoxy
     ? 'M31 149 L34 126 Q36 120 49 117 L76 113 L137 108 L169 102 L187 70 L207 54 L350 54 L373 60 L397 83 L411 105 L507 113 Q533 117 548 132 L558 146 L558 160 L525 169 L476 172 C468 121 405 121 396 172 L193 172 C185 121 121 121 111 172 L64 168 L42 160 Z'
     : wagon
     ? 'M34 150 L40 124 Q44 117 63 115 L116 109 L155 104 L176 67 L192 48 L414 48 L437 72 L462 105 L515 113 Q537 117 551 134 L562 150 L559 163 L522 171 L476 172 C468 119 405 119 396 172 L193 172 C185 119 121 119 111 172 L65 168 L42 161 Z'
@@ -586,7 +593,7 @@ function carSvg(modelId,colorValue){
     : modern
     ? 'M34 150 L40 124 Q44 117 64 115 L117 109 L171 103 L204 78 Q223 58 251 57 L355 57 Q382 59 405 81 L432 104 L511 114 Q536 118 551 135 L562 151 L558 164 L520 171 L476 172 C468 119 405 119 396 172 L193 172 C185 119 121 119 111 172 L64 168 L42 161 Z'
     : 'M34 150 L40 124 Q44 117 64 115 L116 109 L174 103 L204 78 Q222 59 248 58 L351 58 Q378 60 400 81 L430 105 L511 114 Q536 118 551 135 L562 151 L558 164 L520 171 L476 172 C468 119 405 119 396 172 L193 172 C185 119 121 119 111 172 L64 168 L42 161 Z';
-  const windowPath=classic2101
+  const windowPath=classicBoxy
     ? 'M188 100 L203 65 L216 63 L208 100 Z M221 63 L273 63 L273 100 L211 100 Z M282 63 L333 63 L351 100 L282 100 Z M343 64 L368 72 L391 100 L358 100 Z'
     : wagon
     ? 'M190 98 L201 63 L286 63 L286 99 Z M296 63 L407 63 L426 99 L296 99 Z'
@@ -597,20 +604,22 @@ function carSvg(modelId,colorValue){
     : modern
     ? 'M190 99 L214 78 Q230 63 252 62 L282 62 L282 99 Z M291 62 L352 62 Q374 64 392 84 L404 99 L291 99 Z'
     : 'M190 99 L214 78 Q230 63 251 63 L282 63 L282 99 Z M291 63 L350 63 Q373 65 391 84 L404 99 L291 99 Z';
-  const roofAccent=classic2101?'M207 54 L350 54 L359 60 L202 60 Z':wagon?'M190 48 L414 48 L420 55 L193 55 Z':suv?'M188 46 L404 46 L411 53 L191 53 Z':'M244 57 L355 57 L362 63 L240 63 Z';
+  const roofAccent=classicBoxy?'M207 54 L350 54 L359 60 L202 60 Z':wagon?'M190 48 L414 48 L420 55 L193 55 Z':suv?'M188 46 L404 46 L411 53 L191 53 Z':'M244 57 L355 57 L362 63 L240 63 Z';
   const wheel=function(cx){
     const spokes=Array.from({length:10},function(_,n){return '<path d="M0 -25 L0 -10" transform="rotate('+(n*36)+')" stroke="#c5ccd1" stroke-width="3.4" stroke-linecap="round"/>';}).join('');
     const bolts=Array.from({length:5},function(_,n){const a=n*72*Math.PI/180;return '<circle cx="'+(Math.cos(a)*11).toFixed(2)+'" cy="'+(Math.sin(a)*11).toFixed(2)+'" r="1.9" fill="#e1e6e9"/>';}).join('');
     return '<g class="race-wheel"><g transform="translate('+cx+' 163)"><circle r="41" fill="#080a0d" stroke="#59616a" stroke-width="3"/><circle r="35.5" fill="#15191e" stroke="#080a0c" stroke-width="2.5"/><circle r="29" fill="url(#rim)" stroke="#cbd2d7" stroke-width="2"/><circle r="25" fill="#20262c" stroke="#6e777e" stroke-width="2"/><g>'+spokes+'</g><circle r="12" fill="url(#hub)" stroke="#aeb6bc" stroke-width="2"/>'+bolts+'<circle r="5" fill="#3d454b" stroke="#e0e5e8" stroke-width="1.5"/><path d="M-25 -23 A34 34 0 0 1 23 -26" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g></g>';
   };
   const tires=wheel(151)+wheel(438);
-  const bodyDetail=classic2101?'M278 103 L278 158 M350 103 L350 157 M218 103 L218 156 M231 119 L250 119 M303 119 L322 119':modern?'M277 103 L277 160 M383 103 L383 159 M280 130 L304 130 M386 130 L407 130':'M281 103 L281 159 M384 103 L384 159 M285 129 L307 129 M387 129 L410 129';
+  const bodyDetail=classicBoxy?'M278 103 L278 158 M350 103 L350 157 M218 103 L218 156 M231 119 L250 119 M303 119 L322 119':modern?'M277 103 L277 160 M383 103 L383 159 M280 130 L304 130 M386 130 L407 130':'M281 103 L281 159 M384 103 L384 159 M285 129 L307 129 M387 129 L410 129';
   const frontLamp=classic2101
     ? '<path d="M34 124 L52 120 L60 138 L36 142 Z" fill="#b9c1c6" stroke="#41494f" stroke-width="2"/><circle cx="46" cy="130" r="9.2" fill="#a8b1b6" stroke="#343c42" stroke-width="2.5"/><circle cx="46" cy="130" r="6.2" fill="#f6f2da" stroke="#ffffff" stroke-width="1.4"/><rect x="56" y="121" width="17" height="19" rx="1" fill="#20282e" stroke="#aab2b8" stroke-width="2"/><path d="M59 125 L70 125 M59 130 L70 130 M59 135 L70 135" stroke="#c6cdd1" stroke-width="1.4"/>'
+    : classicBoxy
+    ? '<path d="M34 121 L53 118 L59 139 L36 143 Z" fill="#1c242a" stroke="#a8b1b6" stroke-width="2"/><rect x="39" y="122" width="13" height="14" rx="1" fill="#dce4e7" stroke="#f9ffff" stroke-width="1.5"/><path d="M55 119 L77 119 L79 141 L56 141 Z" fill="#171d21" stroke="#c4ccd0" stroke-width="2"/><path d="M60 121 V139 M65 121 V139 M70 121 V139 M75 121 V139" stroke="#bfc8ce" stroke-width="1.6"/><rect x="43" y="140" width="9" height="4" rx="1" fill="#d68a3d" stroke="#f0c06f" stroke-width=".8"/>'
     : modern
     ? '<path d="M42 127 Q60 118 77 121 L73 132 L46 138 Z" fill="#dceaf0" stroke="#f7fcff" stroke-width="2"/><path d="M47 130 L70 125" stroke="#ffffff" stroke-width="2"/>'
     : '<path d="M42 128 L73 121 L77 130 L46 137 Z" fill="#f2eee0" stroke="#ffffff" stroke-width="2"/><path d="M48 130 L70 125" stroke="#ffffff" stroke-width="2"/>';
-  const classicDetails=classic2101
+  const classicDetails=classicBoxy
     ? '<path d="M76 136 L517 136" fill="none" stroke="#e6eaed" stroke-width="3" stroke-opacity=".9"/><path d="M77 140 L516 140" fill="none" stroke="#3b4248" stroke-width="1.4"/><path d="M79 115 L136 110 L167 103 M411 107 L502 114" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity=".32"/><path d="M238 166 L355 166" stroke="#171c20" stroke-width="4"/><path d="M241 165 L352 165" stroke="#9ca5ab" stroke-width="1.5"/><rect x="235" y="113" width="14" height="4.5" rx="1.5" fill="url(#chrome)" stroke="#4a5258" stroke-width="1"/><rect x="307" y="113" width="14" height="4.5" rx="1.5" fill="url(#chrome)" stroke="#4a5258" stroke-width="1"/><path d="M200 61 L205 56 L217 56 M360 61 L371 65" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-opacity=".55"/><path d="M39 143 L57 143 L57 151 L38 151 Z M540 143 L557 143 L557 153 L542 153 Z" fill="url(#chrome)" stroke="#65717a" stroke-width="1.5"/><rect x="520" y="120" width="10" height="5" rx="1" fill="#f3d6a0" stroke="#7b4e34" stroke-width="1"/>'
     : '';
   const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-label="Детализированный боковой профиль '+(classic2101?'ВАЗ-2101 Копейка':id)+'" preserveAspectRatio="xMidYMid meet">'
@@ -783,9 +792,9 @@ function updateRace2DEnvironment(dt){
   const wrap=Math.max(1,sceneWidth*1.5);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
   // Move distant scenery more slowly than the road for layered parallax.
-  if(city)city.style.transform='translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(2)+'px,0,0)';
-  if(trees)trees.style.transform='translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(2)+'px,0,0)';
-  if(fence)fence.style.transform='translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(2)+'px,0,0)';
+  if(city)city.style.transform='translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(3)+'px,0,0)';
+  if(trees)trees.style.transform='translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(3)+'px,0,0)';
+  if(fence)fence.style.transform='translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(3)+'px,0,0)';
   const markWrap=Math.max(96,Math.ceil((sceneWidth*1.5)/96)*96);
   if(marks)marks.style.backgroundPositionX=(-((raceWorldOffset*1.05)%markWrap))+'px';
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
@@ -1426,9 +1435,9 @@ function updateRaceCarPosition(dt=1/60){
   const motion=getRaceCarMotion();
   if(!motion.player)return;
   // Filter tiny frame-to-frame changes so the car accelerates visually without jitter.
-  const response=1-Math.exp(-Math.max(0,dt)*22);
+  const response=1-Math.exp(-Math.max(0,dt)*(running?34:20));
   raceCarOffset+=(motion.shiftPx-raceCarOffset)*response;
-  motion.player.style.transform='translate3d('+raceCarOffset.toFixed(2)+'px,0,0)';
+  motion.player.style.transform='translate3d('+raceCarOffset.toFixed(3)+'px,0,0)';
 }
 function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
@@ -1437,13 +1446,13 @@ function updateRace2DCamera(dt=1/60){
   // Begin tracking early and keep the car near the left side instead of letting it run ahead.
   const carShift=raceCarOffset;
   const targetX=Math.max(0,carShift-motion.sceneWidth*.08);
-  const follow=1-Math.exp(-Math.max(0,dt)*26);
+  const follow=1-Math.exp(-Math.max(0,dt)*(running?42:24));
   raceCameraOffset+=(targetX-raceCameraOffset)*follow;
-  const targetY=-(motion.currentSpeed/275)*1.35;
+  const targetY=-(motion.currentSpeed/275)*0.75;
   raceCameraY+=(targetY-raceCameraY)*follow;
-  world.style.transform='translate3d('+(-raceCameraOffset).toFixed(2)+'px,'+raceCameraY.toFixed(2)+'px,0)';
+  world.style.transform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,'+raceCameraY.toFixed(3)+'px,0)';
   if(gate){
-    const carWidth=motion.player?.getBoundingClientRect().width||motion.sceneWidth*.275;
+    const carWidth=Math.max(245,Math.min(390,motion.sceneWidth*.275));
     const finishX=motion.sceneWidth*.12+carShift+carWidth*.78+motion.sceneWidth*.64*(1-motion.progress);
     gate.style.left=finishX.toFixed(2)+'px';
     gate.style.setProperty('--race-finish-scale',(0.72+motion.progress*.35).toFixed(3));
