@@ -256,6 +256,27 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   .pro-race-cockpit.race-moving .race2d-car.player,.pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-duration:1s!important}
 }
 
+
+/* Final visual depth pass: landscape foliage and guardrail sit in front of the distant blocks; road uses soft horizontal wear, not a tiled grid. */
+.race2d-city-layer{z-index:0!important;filter:blur(.52px)!important;opacity:.93!important}
+.race2d-tree-layer{z-index:2!important;filter:blur(.35px)!important;opacity:.98!important}
+.race2d-green-belt{z-index:1!important}
+.race2d-fence-layer{z-index:4!important;filter:drop-shadow(0 2px 1px #272b2866);opacity:.84!important}
+.race2d-road-surface{background:linear-gradient(180deg,#a7a18f 0%,#8b877b 12%,#77756c 27%,#6d6d67 58%,#77756c 100%)!important}
+.race2d-road-surface:before{background:repeating-linear-gradient(0deg,transparent 0 16px,#f2eadb0c 17px 18px,transparent 19px 42px),linear-gradient(180deg,#f8f0d71a,transparent 22% 75%,#25272512)!important;opacity:.62!important}
+.race2d-road-grain{background:linear-gradient(90deg,transparent 0 4%,#d8d1be12 4.4% 10%,transparent 21%,#3d3c3614 28% 33%,transparent 46%,#eee8d51a 52% 61%,transparent 73%,#35383115 84% 88%,transparent 100%),repeating-linear-gradient(178deg,transparent 0 23px,#f0e9d410 24px 25px,transparent 26px 59px)!important;opacity:.8!important}
+.race2d-car svg{filter:contrast(1.04) saturate(1.12) brightness(1.015)}
+.race2d-car svg .race-wheel{transform-box:fill-box;transform-origin:center center;backface-visibility:hidden}
+.pro-race-cockpit.race-moving .race2d-car svg .race-wheel{filter:drop-shadow(0 0 1px #ffffff35)}
+.pro-race-cockpit.race-moving .race2d-car.player{will-change:left,translate}
+.pro-race-cockpit.race-moving .race2d-road-markings{filter:drop-shadow(0 1px 1px #3338)}
+.pro-race-cockpit.race-moving .race2d-road-grain{animation:race2d-road-grain-slide var(--race-road-duration,.6s) linear infinite}
+@keyframes race2d-road-grain-slide{to{background-position:-180px 0,180px 0}}
+.pro-speed-number{font-size:clamp(6px,.72vw,9px)!important;width:21px!important;margin-left:-10.5px!important}
+.pro-gauge-caption{top:67%!important}
+.pro-speed-digital{top:48%!important;width:31%!important}
+.pro-speed-gear{top:71.5%!important}
+
 </style>
 </head>
 <body><main class="app">
@@ -436,6 +457,9 @@ function carSvg(modelId,colorValue){
     +'<path d="M47 140 L66 138 L64 144 L46 146 Z" fill="#202a31" stroke="#82909a" stroke-width="1.4"/><path d="M508 136 L529 138 L529 145 L507 143 Z" fill="#1b2227" stroke="#838d95" stroke-width="1.2"/>'
     +'<path d="M118 173 L396 173 M480 173 L517 171" fill="none" stroke="#e2e7e9" stroke-width="2" stroke-opacity=".4"/>'
     +'<path d="M139 114 L150 112 L161 114 M423 111 L435 110 L449 111" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6"/>'
+    +'<path d="M82 121 Q156 115 236 119 L358 119 Q441 119 512 126" fill="none" stroke="#ffffff" stroke-opacity=".2" stroke-width="2.2" stroke-linecap="round"/>'
+    +'<path d="M95 130 Q202 126 313 130 T503 133" fill="none" stroke="#f9dce0" stroke-opacity=".14" stroke-width="5" stroke-linecap="round"/>'
+    +'<path d="M99 146 L186 151 M207 153 L271 154 M287 154 L347 154 M365 153 L420 151 M449 149 L501 146" fill="none" stroke="#0c1317" stroke-opacity=".58" stroke-width="2.2"/>'
     +'<path d="M85 136 L514 136" fill="none" stroke="#f4f4eb" stroke-opacity=".58" stroke-width="1.6"/><path d="M86 141 L512 141" fill="none" stroke="#11171b" stroke-opacity=".75" stroke-width="1.4"/>'
     +'<path d="M218 109 L218 156 M279 104 L279 159 M350 104 L350 157 M386 105 L386 156" stroke="#080e12" stroke-opacity=".75" stroke-width="2.5" fill="none"/>'
     +'<path d="M221 111 L221 149 M282 108 L282 153 M353 108 L353 153 M389 108 L389 150" stroke="#ffffff" stroke-opacity=".22" stroke-width="1.1" fill="none"/>'
