@@ -88,6 +88,8 @@ test("drag race motion is frame-synced and the cockpit has separated shifters an
 
   assert.match(page, /Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette/);
   assert.match(page, /\.race2d-car\.player\s*\{[^}]*transition:none!important/s);
+  assert.match(page, /city\.style\.transform='translate3d\('/, "Scenery should move by transforms rather than per-frame background repaints");
+  assert.match(page, /will-change:transform!important;backface-visibility:hidden/);
   assert.match(page, /function drawFrame\(now\)\s*\{[\s\S]*?const dt=lastVisualFrame\?[\s\S]*?raceVisual\.update\(distance,speed,rpm,gasHeld,dt,now\)/);
   assert.match(page, /\.pro-shift-paddle\.up\s*\{top:2%!important\}/);
   assert.match(page, /\.pro-shift-paddle\.down\s*\{bottom:2%!important\}/);
