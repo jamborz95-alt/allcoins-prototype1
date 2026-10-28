@@ -1266,7 +1266,7 @@ function syncProRaceCockpit(){
   const cockpit=$('proRaceCockpit');
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
   cockpit.style.setProperty('--race-road-duration',Math.max(.09,1.05-(Math.max(0,Number(speed)||0)/330))+'s');
-  cockpit.style.setProperty('--race-wheel-duration',Math.max(.05,.48/(1+speedNow/18))+'s');
+  cockpit.style.setProperty('--race-wheel-duration',Math.max(.035,.48/(1+speedNow/18))+'s');
   cockpit.classList.toggle('race-online',Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'));
   const speedNeedle=$('proSpeedNeedle');
   if(speedNeedle)speedNeedle.style.transform='translateX(-50%) rotate('+(-125+Math.max(0,Math.min(280,speedNow))/280*250)+'deg)';
