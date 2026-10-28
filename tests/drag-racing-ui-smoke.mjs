@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-camerafinish1"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-smoothcamfix2"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -153,7 +153,7 @@ try {
   assert.equal(await page.locator("#race2dPlayerCar .race-wheel").count(), 2, "The player car must expose both rotatable wheel groups.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
-  assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must have dedicated road markings.");
+  assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
   assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
@@ -261,13 +261,15 @@ try {
       cameraX: new DOMMatrixReadOnly(getComputedStyle(world).transform).m41,
       finishX: parseFloat(gate.style.left) || 0,
       approaching: scene.classList.contains("race-finish-approach"),
-      straightOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#race2dFinishStraight")).opacity)
+      straightOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#race2dFinishStraight")).opacity),
+      straightBackground: getComputedStyle(document.querySelector("#race2dFinishStraight")).backgroundImage
     };
   });
   assert.ok(cameraFinishState.cameraX < -8, "The camera must pan smoothly to follow the car as it advances.");
   assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The finish gantry must approach the car as the remaining distance shrinks.");
   assert.equal(cameraFinishState.approaching, true, "The final straight must activate in the last part of the race.");
-  assert.ok(cameraFinishState.straightOpacity > .2, "The finish straight road markings must become visible near the finish.");
+  assert.ok(cameraFinishState.straightOpacity > .2, "The subtle finish-straight surface tint must appear near the finish.");
+  assert.doesNotMatch(cameraFinishState.straightBackground, /repeating-linear-gradient/, "The finish approach must not create distracting line artifacts.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-finish-straight.png"), fullPage: false });
   await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), false,
