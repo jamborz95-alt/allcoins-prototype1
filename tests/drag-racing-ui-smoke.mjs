@@ -8,6 +8,7 @@ const root = process.cwd();
 const html = await readFile(resolve(root, "drag-racing.html"), "utf8");
 const threeJs = await readFile(resolve(root, "three.min.js"), "utf8");
 const ladaPng = await readFile(resolve(root, "cars", "lada-2107.png"));
+const ladaSidePng = await readFile(resolve(root, "cars", "lada-2107-side.png"));
 await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
@@ -31,9 +32,9 @@ function roomPayload() {
 }
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://127.0.0.1:4174");
-  if (url.pathname === "/cars/lada-2107.png") {
+  if (url.pathname === "/cars/lada-2107.png" || url.pathname === "/cars/lada-2107-side.png") {
     res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=3600" });
-    res.end(ladaPng);
+    res.end(url.pathname === "/cars/lada-2107-side.png" ? ladaSidePng : ladaPng);
     return;
   }
   if (url.pathname === "/three.min.js") {
