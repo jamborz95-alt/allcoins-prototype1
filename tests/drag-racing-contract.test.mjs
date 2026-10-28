@@ -130,3 +130,10 @@ test("drag race motion is frame-synced and the cockpit has separated shifters an
   assert.match(page, /repeating-linear-gradient\(0deg,#171c1f 0 5px,#c8cece 5px 7px,#717a7d 7px 9px\)/);
   assert.match(page, /\.pro-dash-controls #proGasHold\.held\s*\{/);
 });
+
+test("VAZ-2107 uses the high-resolution orthographic side-view PNG in the race scene", () => {
+  assert.ok(page.includes('src="./cars/lada-2107.png?v=20261028-png2"'), "The race scene should load the updated VAZ side-view sprite.");
+  assert.match(page, /aspect-ratio:1024 \/ 364!important/, "PNG layout should keep the side-profile aspect ratio.");
+  assert.match(page, /png-wheel-spin\.rear\{left:14\.5%;top:56%;width:16\.5%\}/, "Rear wheel overlay should align with the side-view PNG.");
+  assert.match(page, /png-wheel-spin\.front\{left:73\.6%;top:56%;width:17\.8%\}/, "Front wheel overlay should align with the side-view PNG.");
+});
