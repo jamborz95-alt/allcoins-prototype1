@@ -2,6 +2,8 @@ import express from "express";
 
 const ROOM_PREFIX = "DR-";
 const MAX_STAKE = BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 5));
+const MIN_RACE_FINISH_MS = 7000;
+const MAX_FINISH_TIME_DRIFT_MS = 2500;
 const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const CARS = Object.freeze({
@@ -28,6 +30,16 @@ const PARTS = Object.freeze({
   gearbox: { price: 48000, power: 6 },
   weight: { price: 65000, power: 10 }
 });
+
+function isValidDragRaceFinishTime(timeMs, elapsedSinceGreen) {
+  const reported = Math.round(Number(timeMs));
+  const elapsed = Math.round(Number(elapsedSinceGreen));
+  return Number.isSafeInteger(reported) &&
+    Number.isSafeInteger(elapsed) &&
+    reported >= MIN_RACE_FINISH_MS &&
+    elapsed >= MIN_RACE_FINISH_MS &&
+    Math.abs(reported - elapsed) <= MAX_FINISH_TIME_DRIFT_MS;
+}
 
 class DragRacingError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -691,7 +703,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
       }
       const elapsedSinceGreen = Math.max(0, Date.now() - (Number(game.startedAt || Date.now()) + 3000));
-      if (timeMs + 2500 < elapsedSinceGreen) throw new DragRacingError(400, "Время финиша не прошло серверную проверку.");
+      if (!isValidDragRaceFinishTime(timeMs, elapsedSinceGreen)) throw new DragRacingError(400, "Время финиша не совпало с серверным временем заезда. Заверши дистанцию и отправь результат ещё раз.");
       game.results[user.id] = {
         timeMs: Math.round(timeMs),
         carId: String(player.car_id || "2107"),
