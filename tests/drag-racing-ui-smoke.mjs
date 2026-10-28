@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-cockpit8"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-cockpit9"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -144,6 +144,12 @@ try {
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
   assert.equal(await page.locator("#clutch").count(), 0, "There must be no clutch control on the race page.");
   assert.equal(await page.locator("#proGasHold").count(), 1, "The cockpit must show a dedicated hold-to-accelerate pedal.");
+
+  const art = await page.locator("#carShop .car-thumb svg").count();
+  assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
+  assert.match(html, /new T\.Sprite\(material\)/, "Race-lane vehicles must be 2D sprites, not 3D mesh cars.");
+  assert.doesNotMatch(html, /loadPremiumOpponent/, "A remote 3D opponent must not replace the 2D car artwork.");
+
   const pedalStyles = await page.locator("#proGasHold").evaluate(el => ({
     userSelect: getComputedStyle(el).userSelect,
     webkitUserSelect: getComputedStyle(el).webkitUserSelect,
@@ -178,10 +184,20 @@ try {
   assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientHeight) >= 300,
     "Landscape mode should leave enough room for the race scene.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-landscape.png"), fullPage: false });
+
+  const controlBoxes = await page.evaluate(() => {
+    const box = id => { const r=document.querySelector(id).getBoundingClientRect(); return {left:r.left,right:r.right}; };
+    return {up:box("#proShiftUp"),down:box("#proShiftDown"),gas:box("#proGasHold")};
+  });
+  assert.ok(controlBoxes.up.left < window.innerWidth * .2 && controlBoxes.down.left < window.innerWidth * .2,
+    "Both gear-shift controls must sit on the left side of the cockpit.");
+  assert.ok(controlBoxes.gas.left > window.innerWidth * .65,
+    "The accelerator must sit on the right side of the cockpit.");
+
   await page.locator("#proShiftUp").click();
-  assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The right paddle should upshift in the cockpit.");
+  assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The left-side upshift paddle should work in the cockpit.");
   await page.locator("#proShiftDown").click();
-  assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left paddle should downshift in the cockpit.");
+  assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
     "Holding the dedicated gas pedal should engage the throttle.");
