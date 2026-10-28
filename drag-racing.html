@@ -464,7 +464,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Transparent PNG wheels keep their own smooth rotation while the car body remains crisp. */
 .race2d-car.png-car{overflow:visible}
 .race2d-car.png-car .race-car-png{position:absolute;inset:0;z-index:1}
-.race2d-car.png-car .png-wheel-spin{position:absolute;z-index:2;display:block;aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.64;border:1px solid #171c21;background:radial-gradient(circle,#20262a 0 14%,#e1e5e7 15% 19%,#68737a 20% 25%,transparent 27%),repeating-conic-gradient(#d9dfe2 0deg 5deg,#3b444b 5deg 10deg,#aab3b9 10deg 12deg,transparent 12deg 18deg);mask:radial-gradient(circle,transparent 0 13%,#000 17% 78%,transparent 82%);animation:race2d-wheel-spin var(--race-wheel-duration,.22s) linear infinite;filter:drop-shadow(0 0 1px #0009)}
+.race2d-car.png-car .png-wheel-spin{position:absolute;z-index:2;display:block;aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.64;border:1px solid #171c21;background:radial-gradient(circle,#20262a 0 14%,#e1e5e7 15% 19%,#68737a 20% 25%,transparent 27%),repeating-conic-gradient(#d9dfe2 0deg 5deg,#3b444b 5deg 10deg,#aab3b9 10deg 12deg,transparent 12deg 18deg);mask:radial-gradient(circle,transparent 0 13%,#000 17% 78%,transparent 82%);animation:none;filter:drop-shadow(0 0 1px #0009)}
+.pro-race-cockpit.race-moving .race2d-car.png-car .png-wheel-spin{animation:race2d-wheel-spin var(--race-wheel-duration,.22s) linear infinite}
 .race2d-car.png-car .png-wheel-spin.rear{left:14.5%;top:56%;width:16.5%}
 .race2d-car.png-car .png-wheel-spin.front{left:73.6%;top:56%;width:17.8%}
 </style>
@@ -700,9 +701,14 @@ function syncRace2DCarArt(){
   const player=$('race2dPlayerCar'),opponent=$('race2dOpponentCar');
   const selectedId=String(state.selected||'2107');
   if(player){
-    player.classList.remove('png-car');
-    player.classList.add('vector-side-car');
-    player.innerHTML=carSvg(selectedId,carPaintCss(selectedId));
+    const useLadaPng=selectedId==='2107';
+    player.classList.toggle('png-car',useLadaPng);
+    player.classList.toggle('vector-side-car',!useLadaPng);
+    if(useLadaPng){
+      player.innerHTML='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261028-png3" alt="ВАЗ-2107, вид сбоку" draggable="false"><span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
+    }else{
+      player.innerHTML=carSvg(selectedId,carPaintCss(selectedId));
+    }
   }
   if(opponent)opponent.innerHTML=carSvg('2110','#d9dce0');
   buildRace2DEnvironment();
