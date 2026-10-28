@@ -277,6 +277,99 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-speed-digital{top:48%!important;width:31%!important}
 .pro-speed-gear{top:71.5%!important}
 
+
+/* Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette. */
+.race2d-car.player{
+  left:12%!important;
+  transition:none!important;
+  will-change:transform,filter!important;
+  backface-visibility:hidden;
+  transform:translate3d(0,0,0);
+}
+.pro-race-cockpit.race-moving .race2d-car.player{
+  animation:race2d-suspension .34s ease-in-out infinite alternate!important;
+}
+.pro-race-cockpit.race-moving .race2d-scene .race2d-city-layer,
+.pro-race-cockpit.race-moving .race2d-scene .race2d-tree-layer{
+  transition:filter .24s linear;
+}
+.pro-shift-gate{
+  top:10%!important;
+  bottom:3%!important;
+  width:clamp(52px,5.2vw,74px)!important;
+}
+.pro-shift-rail{top:1%!important;bottom:1%!important}
+.pro-shift-paddle{
+  width:clamp(42px,4.2vw,56px)!important;
+  height:clamp(48px,9vh,68px)!important;
+}
+.pro-shift-paddle.up{top:2%!important}
+.pro-shift-paddle.down{bottom:2%!important}
+.pro-dash-controls #proGasHold{
+  width:clamp(78px,9.2vw,116px)!important;
+  min-width:78px!important;
+  height:clamp(72px,12vh,92px)!important;
+  min-height:72px!important;
+  padding:0!important;
+  border-radius:5px 5px 8px 8px!important;
+  clip-path:polygon(17% 0,83% 0,100% 100%,0 100%)!important;
+  border:2px solid #8f999c!important;
+  background:
+    linear-gradient(100deg,#101417 0%,#6f797c 17%,#d5d9d8 31%,#747d80 51%,#252b2e 78%,#090c0e 100%)!important;
+  box-shadow:inset 0 2px 3px #fff7,inset 0 -8px 12px #000d,0 5px 8px #000b!important;
+  overflow:hidden!important;
+  letter-spacing:.5px!important;
+  touch-action:none!important;
+  transform:translateZ(0);
+  transition:filter .08s linear,transform .08s linear!important;
+}
+.pro-dash-controls #proGasHold .pro-gas-ridges{
+  left:16%!important;right:16%!important;top:9%!important;bottom:37%!important;
+  height:auto!important;
+  border:1px solid #151a1c!important;
+  border-radius:2px!important;
+  background:
+    repeating-linear-gradient(0deg,#171c1f 0 5px,#c8cece 5px 7px,#717a7d 7px 9px)!important;
+  box-shadow:inset 0 1px 2px #ffffff90,0 2px 3px #0009!important;
+}
+.pro-dash-controls #proGasHold strong{
+  bottom:20%!important;
+  font-size:clamp(10px,1vw,13px)!important;
+  color:#101517!important;
+  text-shadow:0 1px 1px #ffffff8a!important;
+}
+.pro-dash-controls #proGasHold small{
+  bottom:7%!important;
+  font-size:clamp(5px,.56vw,7px)!important;
+  letter-spacing:.35px!important;
+  color:#202729!important;
+  text-shadow:0 1px #ffffff80!important;
+}
+.pro-dash-controls #proGasHold.held{
+  filter:brightness(1.16)!important;
+  transform:perspective(420px) rotateX(5deg) translateY(3px)!important;
+  box-shadow:inset 0 4px 6px #0008,inset 0 -2px 4px #ffffff32,0 2px 3px #000b!important;
+}
+@media(orientation:portrait){
+  .pro-shift-gate{
+    left:1.6%!important;
+    top:8%!important;
+    bottom:2%!important;
+    width:clamp(48px,5vw,62px)!important;
+  }
+  .pro-shift-paddle{
+    width:clamp(40px,5.8vw,52px)!important;
+    height:clamp(48px,10vh,66px)!important;
+  }
+  .pro-shift-paddle.up{top:2%!important}
+  .pro-shift-paddle.down{bottom:2%!important}
+  .pro-dash-controls #proGasHold{
+    width:clamp(78px,10.2vw,108px)!important;
+    min-width:78px!important;
+    height:clamp(72px,12vh,90px)!important;
+  }
+}
+
 </style>
 </head>
 <body><main class="app">
@@ -991,7 +1084,7 @@ function initDragRacing3D(){
   }
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(resize).observe(host);
   else window.addEventListener('resize',resize,{passive:true});
-  const raceVisual={renderer,scene,camera,host,playerGroup,opponentGroup,dashes,moving,tireGroups,streetLights,buildings,asphaltTex,syncCar,setTreeLight,resize,lastDraw:0,update(distanceMeters,currentSpeed,currentRpm,isGasHeld){
+  const raceVisual={renderer,scene,camera,host,playerGroup,opponentGroup,dashes,moving,tireGroups,streetLights,buildings,asphaltTex,syncCar,setTreeLight,resize,lastDraw:0,update(distanceMeters,currentSpeed,currentRpm,isGasHeld,dt=1/60,nowMs=performance.now()){
     const scroll=Math.max(0,distanceMeters);
     const roadOffset=scroll*.39;
     for(const item of dashes)item.mesh.position.x=wrapX(item.baseX,roadOffset,235);
@@ -1003,22 +1096,22 @@ function initDragRacing3D(){
     for(const item of tireGroups)item.group.position.x=wrapX(item.baseX,scroll*item.factor,item.period);
     for(const item of buildings)item.group.position.x=wrapX(item.baseX,scroll*item.factor,item.period);
     for(const item of streetLights)item.group.position.x=wrapX(item.baseX,scroll*item.factor,item.period);
-    playerGroup.position.x=-1.3+Math.sin(performance.now()*.003)*.025*(isGasHeld?1:0);
-    playerGroup.position.y=-.12+(running?Math.sin(performance.now()*.026)*.018:0);
-    playerGroup.rotation.z=running&&isGasHeld?Math.sin(performance.now()*.008)*.004:0;
-    opponentGroup.position.x=-1.55+Math.sin(performance.now()*.00075)*.5+(currentSpeed>110?.22:0);
-    opponentGroup.position.z=-2.75;opponentGroup.position.y=-.12+(running?Math.sin(performance.now()*.023+1.2)*.012:0);
+    playerGroup.position.x=-1.3+Math.sin(nowMs*.003)*.025*(isGasHeld?1:0);
+    playerGroup.position.y=-.12+(running?Math.sin(nowMs*.026)*.018:0);
+    playerGroup.rotation.z=running&&isGasHeld?Math.sin(nowMs*.008)*.004:0;
+    opponentGroup.position.x=-1.55+Math.sin(nowMs*.00075)*.5+(currentSpeed>110?.22:0);
+    opponentGroup.position.z=-2.75;opponentGroup.position.y=-.12+(running?Math.sin(nowMs*.023+1.2)*.012:0);
     playerWheels.forEach(w=>w.rotation.z=scroll*.72);
     opponentWheels.forEach(w=>w.rotation.z=scroll*.65);
     if(opponentUsesPremium&&premiumOpponent){
       premiumOpponent.rotation.y=0;
     }
-    emitSmoke(.032,performance.now());
+    emitSmoke(dt,nowMs);
     for(const p of smokeParticles){
       if(!p.mesh.visible)continue;
-      p.life-=.032;
-      p.mesh.position.x-=.045;
-      p.mesh.position.y+=.007;
+      p.life-=dt;
+      p.mesh.position.x-=1.65*dt;
+      p.mesh.position.y+=.26*dt;
       const k=Math.max(0,p.life/1.1);
       p.mesh.scale.setScalar(p.base+(1-k)*.5);
       p.mesh.material.opacity=.23*k;
@@ -1027,13 +1120,18 @@ function initDragRacing3D(){
     // The asphalt texture crawls under the car; the divider/edge markings remain continuous.
     asphaltTex.offset.x=(scroll*.006)%1;
   }};
-  race3d={renderer,scene,camera,host,syncCar,resize,setLight:setTreeLight,update:(d,s,r,g)=>raceVisual.update(d,s,r,g),lastDraw:0};
+  race3d={renderer,scene,camera,host,syncCar,resize,setLight:setTreeLight,update:(d,s,r,g,dt,now)=>raceVisual.update(d,s,r,g,dt,now),lastDraw:0};
   $('scene').classList.add('three-ready');
+  let lastVisualFrame=0;
   function drawFrame(now){
     requestAnimationFrame(drawFrame);
-    if(document.hidden||now-(race3d.lastDraw||0)<27)return;
+    if(document.hidden){lastVisualFrame=0;return}
+    const dt=lastVisualFrame?Math.min(.05,Math.max(0,(now-lastVisualFrame)/1000)):1/60;
+    lastVisualFrame=now;
     race3d.lastDraw=now;
-    raceVisual.update(distance,speed,rpm,gasHeld);
+    // Render every animation frame instead of throttling to ~37 FPS. Passing
+    // real frame time keeps smoke and track motion consistent on mobile devices.
+    raceVisual.update(distance,speed,rpm,gasHeld,dt,now);
     renderer.render(scene,camera);
   }
   requestAnimationFrame(drawFrame);
@@ -1219,10 +1317,14 @@ function reset(){
 function updateRaceCarPosition(){
   const player=$('race2dPlayerCar');
   if(!player)return;
-  // Camera follows the car: it moves right slightly on launch while the parallax world carries most of the speed.
+  // Keep the car on a GPU-composited transform: animating "left" with a CSS
+  // transition retargeted every frame caused the car to lag and judder.
+  const scene=player.parentElement;
+  const sceneWidth=Math.max(1,scene?.clientWidth||0);
   const approach=Math.max(0,Math.min(1,(Number(speed)||0)/85));
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
-  player.style.left=(12+4.2*approach+1.2*progress).toFixed(2)+'%';
+  const shiftPx=sceneWidth*(4.2*approach+1.2*progress)/100;
+  player.style.transform='translate3d('+shiftPx.toFixed(2)+'px,0,0)';
 }
 function updateHUD(){
   updateRaceCarPosition();
