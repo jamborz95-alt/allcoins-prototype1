@@ -148,6 +148,7 @@ try {
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 1, "The selected detailed side-view car must be rendered in the race scene.");
+  assert.equal(await page.locator("#race2dPlayerCar svg linearGradient[id^='paint-car-2107']").count(), 1, "The player car must use its own paint gradient rather than another SVG car's color.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar .race-wheel").count(), 2, "The player car must expose both rotatable wheel groups.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
