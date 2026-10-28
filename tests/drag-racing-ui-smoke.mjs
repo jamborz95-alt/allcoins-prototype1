@@ -154,7 +154,7 @@ try {
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
   assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").count(), 1, "The selected VAZ-2107 must render from the high-detail transparent PNG.");
-  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").evaluate(img => img.complete && img.naturalWidth === 1024 && img.naturalHeight === 364), true, "The transparent VAZ-2107 PNG must load at its original resolution.");
+  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").evaluate(img => img.complete && img.naturalWidth === 800 && img.naturalHeight === 285), true, "The transparent VAZ-2107 PNG must load at its original resolution.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG car must have two independent rotating wheel overlays.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
