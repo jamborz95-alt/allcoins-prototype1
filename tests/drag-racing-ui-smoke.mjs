@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261027-cockpit5"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-cockpit6"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -141,11 +141,18 @@ try {
   }, null, { timeout: 5000 });
   assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "The same live 3D canvas should render inside the full-screen drag cockpit.");
   assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
+  assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
+  assert.equal(await page.locator("#clutch").count(), 0, "There must be no clutch control on the race page.");
+  assert.equal(await page.locator("#proGasHold").count(), 1, "The cockpit must show a dedicated hold-to-accelerate pedal.");
+  await page.waitForFunction(() => {
+    const prompt = document.querySelector("#orientationPrompt");
+    return prompt && !prompt.classList.contains("hidden");
+  }, null, { timeout: 3000 });
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-mobile.png"), fullPage: true });
 
-  // The reference game is landscape-first. Verify the cockpit also fits a wide phone/tablet screen.
+  // The player is warned in portrait mode, then the warning clears as soon as they rotate to landscape.
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.waitForTimeout(150);
+  await page.waitForFunction(() => document.querySelector("#orientationPrompt")?.classList.contains("hidden"), null, { timeout: 3000 });
   assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientWidth) >= 1200,
     "Landscape mode should fill the full width of the device.");
   assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientHeight) >= 300,
@@ -155,6 +162,12 @@ try {
   assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The right paddle should upshift in the cockpit.");
   await page.locator("#proShiftDown").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left paddle should downshift in the cockpit.");
+  await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
+  assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
+    "Holding the dedicated gas pedal should engage the throttle.");
+  await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
+  assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), false,
+    "Releasing the gas pedal should release the throttle.");
   await page.locator("#proExitRace").click();
   await page.waitForFunction(() => document.querySelector("#proRaceCockpit")?.classList.contains("hidden"));
   assert.equal(await page.locator("#race3dCanvas").evaluate(el => el.parentElement.id), "scene",
