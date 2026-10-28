@@ -166,8 +166,8 @@ try {
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
   assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be a separate road-surface layer, not part of the gantry.");
-  assert.match(html, /\\.race2d-environment\\{width:320%!important;right:auto!important\\}/, "The asphalt and scenery world should extend several screen widths.");
-  assert.match(html, /\\.race2d-finish-road-stripe\\{[\\s\\S]*top:76%/, "The finish marking should be placed on the asphalt in the lower track area.");
+  assert.match(html, /\.race2d-environment\{width:320%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
+  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:76%/, "The finish marking should be placed on the asphalt in the lower track area.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
   assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
