@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-sideview10"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-sideview11"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -149,7 +149,10 @@ try {
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 1, "The selected detailed side-view car must be rendered in the race scene.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
+  assert.equal(await page.locator("#race2dPlayerCar .race-wheel").count(), 2, "The player car must expose both rotatable wheel groups.");
   assert.equal(await page.locator("#proSpeedMeterBar").count(), 1, "The cockpit must contain a live speedometer bar.");
+  assert.match(html, /race2d-wheel-spin/, "Wheel rotation animation must be defined.");
+  assert.doesNotMatch(html, /shiftCutUntil/, "Gear changes must not trigger a forced throttle cut.");
   assert.match(html, /new T\.Sprite\(material\)/, "Race-lane vehicles must be 2D sprites, not 3D mesh cars.");
   assert.doesNotMatch(html, /loadPremiumOpponent/, "A remote 3D opponent must not replace the 2D car artwork.");
 
@@ -207,6 +210,16 @@ try {
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
     "Holding the dedicated gas pedal should engage the throttle.");
   await page.waitForTimeout(3900);
+  const speedBeforeShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
+  await page.locator("#proShiftUp").dispatchEvent("pointerdown", { pointerId: 10, pointerType: "touch", isPrimary: false, button: 0, buttons: 1 });
+  assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The player must be able to shift up while still holding gas.");
+  assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
+    "Changing gears must not release the gas pedal.");
+  await page.waitForTimeout(500);
+  const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
+  assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
+  const wheelAnimation = await page.locator("#race2dPlayerCar .race-wheel").first().evaluate(el => getComputedStyle(el).animationName);
+  assert.equal(wheelAnimation, "race2d-wheel-spin", "Wheels must animate while the race is moving.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carLeftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => parseFloat(el.style.left) || 0);
