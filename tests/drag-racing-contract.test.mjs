@@ -48,5 +48,24 @@ test("abandoned waiting rooms refund stakes before cleanup and finished rooms ex
   assert.match(router, /last_seen_at >= NOW\(\) - INTERVAL '2 minutes'/);
   assert.match(router, /UPDATE players SET balance = balance \+ \$1::BIGINT/);
   assert.match(router, /DELETE FROM drag_racing_rooms WHERE status = 'finished' AND updated_at < NOW\(\) - INTERVAL '2 minutes'/);
-  assert.match(router, /timeMs \+ 2500 < elapsedSinceGreen/);
+  assert.match(router, /isValidDragRaceFinishTime\(timeMs, elapsedSinceGreen\)/);
+});
+
+test("finish-time validation rejects instant and forged results but tolerates small network drift", () => {
+  assert.match(router, /const MIN_RACE_FINISH_MS = 7000/);
+  assert.match(router, /const MAX_FINISH_TIME_DRIFT_MS = 2500/);
+  const match = router.match(/function isValidDragRaceFinishTime\(timeMs, elapsedSinceGreen\) \{([\s\S]*?)\n\}/);
+  assert.ok(match, "production finish validator exists");
+  const validator = new Function(
+    "MIN_RACE_FINISH_MS",
+    "MAX_FINISH_TIME_DRIFT_MS",
+    "return function isValidDragRaceFinishTime(timeMs, elapsedSinceGreen) {" + match[1] + "\n}"
+  )(7000, 2500);
+  assert.equal(validator(1000, 1000), false, "instant result is rejected");
+  assert.equal(validator(6900, 6900), false, "sub-minimum result is rejected");
+  assert.equal(validator(9000, 5000), false, "impossibly early reported time is rejected");
+  assert.equal(validator(5000, 9000), false, "inconsistent server elapsed time is rejected");
+  assert.equal(validator(12000, 13000), true, "small transport delay is accepted");
+  assert.equal(validator(12000, 12000), true, "matching client/server result is accepted");
+  assert.equal(validator(12000, Number.NaN), false, "invalid elapsed time is rejected");
 });
