@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-cockpit7"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-cockpit8"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -54,7 +54,7 @@ try {
   await page.route("https://telegram.org/**", route => route.fulfill({
     status: 200,
     contentType: "application/javascript",
-    body: "window.Telegram={WebApp:{initData:'mock-init-data',initDataUnsafe:{user:{id:12345,first_name:'Test Driver'}},ready(){},expand(){},colorScheme:'dark'}};"
+    body: "window.__tgCalls=[];window.Telegram={WebApp:{initData:'mock-init-data',initDataUnsafe:{user:{id:12345,first_name:'Test Driver'}},ready(){},expand(){window.__tgCalls.push('expand')},requestFullscreen(){window.__tgCalls.push('fullscreen')},exitFullscreen(){window.__tgCalls.push('exit-fullscreen')},setHeaderColor(v){window.__tgCalls.push('header:'+v)},setBottomBarColor(v){window.__tgCalls.push('bottom:'+v)},BackButton:{isVisible:true,hide(){this.isVisible=false;window.__tgCalls.push('back-hide')}},MainButton:{hide(){window.__tgCalls.push('main-hide')}},SecondaryButton:{hide(){window.__tgCalls.push('secondary-hide')}},colorScheme:'dark'}};"
   }));
   await page.route("https://allcoins-server.onrender.com/**", async route => {
     const request = route.request();
@@ -144,6 +144,24 @@ try {
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
   assert.equal(await page.locator("#clutch").count(), 0, "There must be no clutch control on the race page.");
   assert.equal(await page.locator("#proGasHold").count(), 1, "The cockpit must show a dedicated hold-to-accelerate pedal.");
+  const pedalStyles = await page.locator("#proGasHold").evaluate(el => ({
+    userSelect: getComputedStyle(el).userSelect,
+    webkitUserSelect: getComputedStyle(el).webkitUserSelect,
+    touchCallout: getComputedStyle(el).webkitTouchCallout,
+    touchAction: getComputedStyle(el).touchAction,
+    draggable: el.draggable
+  }));
+  assert.equal(pedalStyles.userSelect, "none", "Gas text must not be selectable on Android.");
+  assert.equal(pedalStyles.webkitUserSelect, "none", "WebKit must not allow long-press text selection on the gas pedal.");
+  assert.equal(pedalStyles.touchCallout, "none", "The native Copy/Share popup must be suppressed on long press.");
+  assert.equal(pedalStyles.touchAction, "none", "The gas pedal needs exclusive touch handling.");
+  assert.equal(pedalStyles.draggable, false, "The gas pedal must not start a native drag operation.");
+  const nativeCopyMenuPrevented = await page.locator("#proGasHold").evaluate(el => {
+    const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    el.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  assert.equal(nativeCopyMenuPrevented, true, "Long-press context menu must be cancelled on the accelerator.");
   await page.waitForFunction(() => {
     const prompt = document.querySelector("#orientationPrompt");
     return prompt && !prompt.classList.contains("hidden");
@@ -153,6 +171,9 @@ try {
   // The player is warned in portrait mode, then the warning clears as soon as they rotate to landscape.
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.waitForFunction(() => document.querySelector("#orientationPrompt")?.classList.contains("hidden"), null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__tgCalls?.includes("fullscreen") && window.__tgCalls?.includes("back-hide"), null, { timeout: 3000 });
+  assert.equal(await page.evaluate(() => window.Telegram.WebApp.BackButton.isVisible), false,
+    "Telegram's own BackButton must be hidden while racing.");
   assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientWidth) >= 1200,
     "Landscape mode should fill the full width of the device.");
   assert.ok(await page.locator("#proRaceTrack").evaluate(el => el.clientHeight) >= 300,
