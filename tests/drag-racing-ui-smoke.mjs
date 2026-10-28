@@ -158,7 +158,7 @@ try {
   await page.waitForFunction(() => { const image=document.querySelector("#race2dPlayerCar .race-car-png"); return image && image.complete && image.naturalWidth > 0; }, null, { timeout: 5000 });
   assert.ok(await page.locator("#race2dPlayerCar .race-car-png").evaluate(el => el.naturalWidth) > 0, "A real PNG (or its built-in fallback) must load before driving.");
   const carArtBox = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {width:r.width,height:r.height,opacity:getComputedStyle(el).opacity,visibility:getComputedStyle(el).visibility}; });
-  assert.ok(carArtBox.width >= 240 && carArtBox.height >= 80 && carArtBox.opacity !== "0" && carArtBox.visibility !== "hidden", "The car sprite must have visible, non-zero dimensions on mobile.");
+  assert.ok(Math.max(carArtBox.width, carArtBox.height) >= 240 && Math.min(carArtBox.width, carArtBox.height) >= 80 && carArtBox.opacity !== "0" && carArtBox.visibility !== "hidden", `The car sprite must have visible, non-zero dimensions on mobile (actual ${carArtBox.width}×${carArtBox.height}; landscape cockpit may be rotated on portrait screens).`);
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile must have two independent wheel animation overlays.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
