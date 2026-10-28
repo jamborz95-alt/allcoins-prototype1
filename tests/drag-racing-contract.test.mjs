@@ -96,6 +96,18 @@ test("car travel and track motion scale up as speed increases", () => {
   assert.match(page, /Math\.max\(\.035,\.48\/\(1\+speedNow\/18\)\)/, "wheel spin keeps getting faster at high speed");
 });
 
+test("smooth follow camera and visible finish straight track with race progress", () => {
+  assert.match(page, /id="race2dCameraWorld" class="race2d-camera-world"/);
+  assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
+  assert.match(page, /const targetX=Math\.max\(0,motion\.shiftPx-motion\.sceneWidth\*\.22\)/);
+  assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
+  assert.match(page, /id="race2dFinishGate"/);
+  assert.match(page, /id="race2dFinishStraight"/);
+  assert.match(page, /scene\.classList\.toggle\('race-finish-approach',progress>=\.58\)/);
+  assert.match(page, /scene\.classList\.toggle\('race-near-finish',progress>=\.82\)/);
+  assert.match(page, /updateRace2DEnvironment\(0\);/);
+});
+
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
   const positionFn = page.match(/function updateRaceCarPosition\(\)\s*\{([\s\S]*?)\n\}/);
   assert.ok(positionFn, "car position updater exists");
