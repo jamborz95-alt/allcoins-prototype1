@@ -96,20 +96,26 @@ test("car travel and track motion scale up as speed increases", () => {
   assert.match(page, /Math\.max\(\.035,\.48\/\(1\+speedNow\/18\)\)/, "wheel spin keeps getting faster at high speed");
 });
 
-test("smooth follow camera and visible finish straight track with race progress", () => {
+test("smooth car and camera tracking with a clean finish straight and clear finish gate", () => {
   assert.match(page, /id="race2dCameraWorld" class="race2d-camera-world"/);
+  assert.match(page, /function updateRaceCarPosition\(dt=1\/60\)/);
+  assert.match(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
   assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
-  assert.match(page, /const targetX=Math\.max\(0,motion\.shiftPx-motion\.sceneWidth\*\.22\)/);
+  assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.08\)/);
+  assert.match(page, /Math\.exp\(-Math\.max\(0,dt\)\*26\)/);
   assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
   assert.match(page, /id="race2dFinishGate"/);
   assert.match(page, /id="race2dFinishStraight"/);
+  const finishSurfaceCss = page.match(/\.race2d-finish-straight\s*\{([^}]*)\}/s);
+  assert.ok(finishSurfaceCss, "the finish-straight surface should be present");
+  assert.doesNotMatch(finishSurfaceCss[1], /repeating-linear-gradient/, "the finish approach must not add artificial stripes");
   assert.match(page, /scene\.classList\.toggle\('race-finish-approach',progress>=\.58\)/);
   assert.match(page, /scene\.classList\.toggle\('race-near-finish',progress>=\.82\)/);
   assert.match(page, /updateRace2DEnvironment\(0\);/);
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
-  const positionFn = page.match(/function updateRaceCarPosition\(\)\s*\{([\s\S]*?)\n\}/);
+  const positionFn = page.match(/function updateRaceCarPosition\(dt=1\/60\)\s*\{([\s\S]*?)\n\}/);
   assert.ok(positionFn, "car position updater exists");
   assert.match(positionFn[1], /player\.style\.transform\s*=\s*'translate3d\('/);
   assert.doesNotMatch(positionFn[1], /player\.style\.left\s*=/, "car position avoids per-frame layout changes");
