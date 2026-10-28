@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png3"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png4"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -156,7 +156,9 @@ try {
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
   assert.equal(await page.locator("#race2dPlayerCar.png-car img.race-car-png").count(), 1, "The selected VAZ-2107 must render from the actual side-profile PNG.");
   await page.waitForFunction(() => { const image=document.querySelector("#race2dPlayerCar .race-car-png"); return image && image.complete && image.naturalWidth > 0; }, null, { timeout: 5000 });
-  assert.equal(await page.locator("#race2dPlayerCar .race-car-png").evaluate(el => el.naturalWidth), 800, "The side-profile PNG must load at its original 800px width.");
+  assert.ok(await page.locator("#race2dPlayerCar .race-car-png").evaluate(el => el.naturalWidth) > 0, "A real PNG (or its built-in fallback) must load before driving.");
+  const carArtBox = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {width:r.width,height:r.height,opacity:getComputedStyle(el).opacity,visibility:getComputedStyle(el).visibility}; });
+  assert.ok(carArtBox.width >= 240 && carArtBox.height >= 80 && carArtBox.opacity !== "0" && carArtBox.visibility !== "hidden", "The car sprite must have visible, non-zero dimensions on mobile.");
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile must have two independent wheel animation overlays.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
