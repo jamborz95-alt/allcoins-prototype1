@@ -278,6 +278,12 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-speed-gear{top:71.5%!important}
 
 
+/* Large scenery strips slide on the GPU without repainting the SVG art each frame. */
+.race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{
+  left:0!important;right:auto!important;width:300%!important;
+  background-repeat:no-repeat!important;background-size:100% 100%!important;
+  will-change:transform!important;backface-visibility:hidden;
+}
 /* Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette. */
 .race2d-car.player{
   left:12%!important;
@@ -693,10 +699,13 @@ function updateRace2DEnvironment(dt){
   if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*2.7*scale;
   const wrap=Math.max(1,(scene.clientWidth||1280)*1.5);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
-  if(city)city.style.backgroundPositionX=(-((raceWorldOffset*.19)%wrap))+'px';
-  if(trees)trees.style.backgroundPositionX=(-((raceWorldOffset*.43)%wrap))+'px';
-  if(fence)fence.style.backgroundPositionX=(-((raceWorldOffset*.78)%wrap))+'px';
-  if(marks)marks.style.backgroundPositionX=(-((raceWorldOffset*1.05)%Math.max(1,scene.clientWidth*1.5)))+'px';
+  // Move the large SVG scenery on the compositor instead of repainting its
+  // background image every frame; all three art strips contain two matching tiles.
+  if(city)city.style.transform='translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(2)+'px,0,0)';
+  if(trees)trees.style.transform='translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(2)+'px,0,0)';
+  if(fence)fence.style.transform='translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(2)+'px,0,0)';
+  const markWrap=Math.max(96,Math.ceil(((scene.clientWidth||1280)*1.5)/96)*96);
+  if(marks)marks.style.backgroundPositionX=(-((raceWorldOffset*1.05)%markWrap))+'px';
   scene.classList.toggle('race-fast',speed>130);
 }
 function buildProSpeedScale(){
