@@ -383,7 +383,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translate3d(0,0,0);transform-origin:left center;
   will-change:transform;backface-visibility:hidden;
 }
-.race2d-environment{width:145%!important;right:auto!important}
+.race2d-environment{width:320%!important;right:auto!important}
 .race2d-car.player,.race2d-car.opponent,.race2d-finish-gate{
   backface-visibility:hidden;will-change:transform,left,opacity;
 }
@@ -430,12 +430,15 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   background:repeating-conic-gradient(#111416 0 25%,#fffbed 0 50%) 50%/10px 10px;
   border:1px solid #171b1d;box-shadow:0 0 6px #0009;
 }
+/* The checkered finish paint sits on the asphalt, independent from the overhead gantry. */
 .race2d-finish-road-stripe{
-  position:absolute;left:50%;bottom:5%;width:58%;height:13%;
-  transform:translateX(-50%);
-  clip-path:polygon(39% 0,61% 0,100% 100%,0 100%);
-  background:repeating-conic-gradient(#111416 0 25%,#fffbed 0 50%) 50%/12px 12px;
-  filter:drop-shadow(0 1px 2px #0009);
+  position:absolute;left:97%;top:76%;width:100%;height:clamp(8px,1.6vh,14px);
+  z-index:4;pointer-events:none;opacity:.18;
+  transform:translate3d(-50%,0,0) scaleX(var(--race-stripe-scale,.12));
+  transform-origin:center center;backface-visibility:hidden;will-change:left,transform,opacity;
+  background:repeating-linear-gradient(90deg,#111416 0 14px,#fffbed 14px 28px);
+  border-top:1px solid #f5efd9;border-bottom:1px solid #121619;
+  box-shadow:0 2px 4px #0009;filter:drop-shadow(0 1px 2px #0009);
 }
 .race2d-scene.race-finished .race2d-finish-gate{filter:drop-shadow(0 0 8px #f8d98c99)}
 @media(orientation:portrait){
@@ -512,8 +515,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
           <div class="race2d-finish-post left"></div>
           <div class="race2d-finish-post right"></div>
           <div class="race2d-finish-checker"></div>
-          <div class="race2d-finish-road-stripe"></div>
         </div>
+        <div class="race2d-finish-road-stripe" id="race2dFinishStripe" aria-hidden="true"></div>
         <div class="race2d-car opponent" id="race2dOpponentCar" role="img" aria-label="Машина соперника"></div>
         <div class="race2d-car player" id="race2dPlayerCar" role="img" aria-label="Автомобиль игрока"></div>
       </div>
@@ -1482,7 +1485,7 @@ function updateRaceCarPosition(dt=1/60){
 }
 function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
-  const world=$('race2dCameraWorld'),gate=$('race2dFinishGate');
+  const world=$('race2dCameraWorld'),gate=$('race2dFinishGate'),stripe=$('race2dFinishStripe');
   if(!world||!motion.scene)return;
   // Begin tracking early and keep the car near the left side instead of letting it run ahead.
   const carShift=raceCarOffset;
@@ -1496,6 +1499,11 @@ function updateRace2DCamera(dt=1/60){
     const carWidth=Math.max(245,Math.min(390,motion.sceneWidth*.275));
     const finishX=motion.sceneWidth*.12+carShift+carWidth*.78+motion.sceneWidth*.64*(1-motion.progress);
     gate.style.left=finishX.toFixed(2)+'px';
+    if(stripe){
+      stripe.style.left=finishX.toFixed(2)+'px';
+      stripe.style.setProperty('--race-stripe-scale',(0.12+motion.progress*0.88).toFixed(3));
+      stripe.style.opacity=String(0.18+motion.progress*0.82);
+    }
     gate.style.setProperty('--race-finish-scale',(0.72+motion.progress*.35).toFixed(3));
     gate.style.opacity=String(0.72+motion.progress*.28);
   }
