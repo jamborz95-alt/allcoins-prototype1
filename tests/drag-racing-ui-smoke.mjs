@@ -247,8 +247,8 @@ try {
   assert.match(html, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/, "Track scenery speed must rise proportionally as the speedometer climbs.");
   assert.match(html, /const shiftPercent=8\*speedLead\+36\*progress/, "Car must visibly advance across the strip as speed and traveled distance increase.");
   const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
-  await page.evaluate(() => window.eval("speed=230; distance=maxDist*.68; updateRace2DEnvironment(0); updateHUD(.08);"));
-  await page.waitForTimeout(240);
+  // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
+  await page.waitForTimeout(9000);
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
     const gate = document.querySelector("#race2dFinishGate");
