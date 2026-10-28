@@ -599,7 +599,7 @@ function syncRace2DCarArt(){
   buildRace2DEnvironment();
 }
 
-let raceWorldOffset=0;
+let raceWorldOffset=0,racePeakSpeed=0;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -696,7 +696,7 @@ function updateRace2DEnvironment(dt){
   const scene=$('race2dPlayerCar')?.parentElement;
   if(!scene)return;
   const scale=Math.max(.6,Math.min(1.35,(scene.clientWidth||1280)/1280));
-  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*2.7*scale;
+  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*4.8*scale;
   const wrap=Math.max(1,(scene.clientWidth||1280)*1.5);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
   // Move the large SVG scenery on the compositor instead of repainting its
@@ -1319,7 +1319,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
 }
@@ -1330,9 +1330,15 @@ function updateRaceCarPosition(){
   // transition retargeted every frame caused the car to lag and judder.
   const scene=player.parentElement;
   const sceneWidth=Math.max(1,scene?.clientWidth||0);
-  const approach=Math.max(0,Math.min(1,(Number(speed)||0)/85));
+  const currentSpeed=Math.max(0,Number(speed)||0);
+  // Keep the speed lead monotonic during the run: a gear change cannot make the
+  // visible car jump backwards. Distance progress then carries it farther across
+  // the strip faster when real speed is higher.
+  racePeakSpeed=Math.max(racePeakSpeed,currentSpeed);
+  const speedLead=Math.max(0,Math.min(1,racePeakSpeed/275));
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
-  const shiftPx=sceneWidth*(4.2*approach+1.2*progress)/100;
+  const shiftPercent=8*speedLead+36*progress;
+  const shiftPx=sceneWidth*shiftPercent/100;
   player.style.transform='translate3d('+shiftPx.toFixed(2)+'px,0,0)';
 }
 function updateHUD(){
