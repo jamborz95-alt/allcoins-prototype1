@@ -249,6 +249,10 @@ try {
   const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
   await page.waitForTimeout(12000);
+  await page.waitForFunction(() => {
+    const road = document.querySelector("#race2dFinishStraight");
+    return road && Number.parseFloat(getComputedStyle(road).opacity) > .2;
+  }, null, { timeout: 2500 });
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
     const gate = document.querySelector("#race2dFinishGate");
