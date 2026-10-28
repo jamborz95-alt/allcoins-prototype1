@@ -131,9 +131,9 @@ test("drag race motion is frame-synced and the cockpit has separated shifters an
   assert.match(page, /\.pro-dash-controls #proGasHold\.held\s*\{/);
 });
 
-test("VAZ-2107 uses the high-resolution orthographic side-view PNG in the race scene", () => {
-  assert.ok(page.includes('src="./cars/lada-2107.png?v=20261028-png2"'), "The race scene should load the updated VAZ side-view sprite.");
-  assert.match(page, /aspect-ratio:800 \/ 285!important/, "PNG layout should keep the side-profile aspect ratio.");
-  assert.match(page, /png-wheel-spin\.rear\{left:14\.5%;top:56%;width:16\.5%\}/, "Rear wheel overlay should align with the side-view PNG.");
-  assert.match(page, /png-wheel-spin\.front\{left:73\.6%;top:56%;width:17\.8%\}/, "Front wheel overlay should align with the side-view PNG.");
+test("VAZ-2107 uses a crisp scalable orthographic side profile", () => {
+  assert.match(page, /player\.classList\.add\('vector-side-car'\)/, "The selected VAZ-2107 should use the side-profile art class.");
+  assert.match(page, /player\.innerHTML=carSvg\(selectedId,carPaintCss\(selectedId\)\)/, "The race scene should render the car as a scalable vector.");
+  assert.match(page, /\.race2d-car\.vector-side-car\{width:clamp\(260px,42vw,500px\)!important;height:auto!important;aspect-ratio:600 \/ 220!important/, "The side-view vector should keep a consistent wide car silhouette.");
+  assert.match(page, /class="race-wheel"/, "The car illustration should keep separate wheel groups for rotation.");
 });
