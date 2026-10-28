@@ -79,3 +79,18 @@ test("concurrent room joins serialize on the shared player balance before checki
   const activeRoomCheck = joinRoute.indexOf("const active = await client.query(");
   assert.ok(balanceLock >= 0 && activeRoomCheck > balanceLock, "the player row is locked before checking active-room membership");
 });
+
+test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
+  const positionFn = page.match(/function updateRaceCarPosition\(\) \{([\s\S]*?)\n\}/);
+  assert.ok(positionFn, "car position updater exists");
+  assert.match(positionFn[1], /player\.style\.transform\s*=\s*'translate3d\('/);
+  assert.doesNotMatch(positionFn[1], /player\.style\.left\s*=/, "car position avoids per-frame layout changes");
+
+  assert.match(page, /Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette/);
+  assert.match(page, /\.race2d-car\.player\s*\{[^}]*transition:none!important/s);
+  assert.match(page, /function drawFrame\(now\)\s*\{[\s\S]*?const dt=lastVisualFrame\?[\s\S]*?raceVisual\.update\(distance,speed,rpm,gasHeld,dt,now\)/);
+  assert.match(page, /\.pro-shift-paddle\.up\s*\{top:2%!important\}/);
+  assert.match(page, /\.pro-shift-paddle\.down\s*\{bottom:2%!important\}/);
+  assert.match(page, /repeating-linear-gradient\(0deg,#171c1f 0 5px,#c8cece 5px 7px,#717a7d 7px 9px\)/);
+  assert.match(page, /\.pro-dash-controls #proGasHold\.held\s*\{/);
+});
