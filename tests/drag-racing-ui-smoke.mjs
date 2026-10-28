@@ -214,6 +214,7 @@ try {
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
   const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
+  const sceneryBeforeThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
     "Holding the dedicated gas pedal should engage the throttle.");
@@ -237,6 +238,8 @@ try {
   assert.ok(carShiftAfterThrottle > carShiftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
   const movingWorldPosition = await page.locator("#race2dRoadMarks").evaluate(el => getComputedStyle(el).backgroundPositionX);
   assert.notEqual(movingWorldPosition, "0px", "Road markings must visibly scroll with vehicle speed.");
+  const sceneryAfterThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+  assert.notEqual(sceneryAfterThrottle, sceneryBeforeThrottle, "Distant scenery must scroll smoothly using a composited transform.");
   await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), false,
     "Releasing the gas pedal should release the throttle.");
