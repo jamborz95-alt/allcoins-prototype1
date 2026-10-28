@@ -69,3 +69,13 @@ test("finish-time validation rejects instant and forged results but tolerates sm
   assert.equal(validator(12000, 12000), true, "matching client/server result is accepted");
   assert.equal(validator(12000, Number.NaN), false, "invalid elapsed time is rejected");
 });
+
+test("concurrent room joins serialize on the shared player balance before checking memberships", () => {
+  const start = router.indexOf('router.post("/rooms/join"');
+  const end = router.indexOf('router.post("/rooms/start"', start);
+  assert.ok(start >= 0 && end > start, "join route exists");
+  const joinRoute = router.slice(start, end);
+  const balanceLock = joinRoute.indexOf("const balance = await lockPlayerBalance(client, user)");
+  const activeRoomCheck = joinRoute.indexOf("const active = await client.query(");
+  assert.ok(balanceLock >= 0 && activeRoomCheck > balanceLock, "the player row is locked before checking active-room membership");
+});
