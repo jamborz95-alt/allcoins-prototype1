@@ -147,6 +147,9 @@ try {
 
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
+  assert.equal(await page.locator("#race2dPlayerCar svg").count(), 1, "The selected detailed side-view car must be rendered in the race scene.");
+  assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
+  assert.equal(await page.locator("#proSpeedMeterBar").count(), 1, "The cockpit must contain a live speedometer bar.");
   assert.match(html, /new T\.Sprite\(material\)/, "Race-lane vehicles must be 2D sprites, not 3D mesh cars.");
   assert.doesNotMatch(html, /loadPremiumOpponent/, "A remote 3D opponent must not replace the 2D car artwork.");
 
@@ -198,9 +201,18 @@ try {
   assert.equal(await page.locator("#proGearDigits").textContent(), "2", "The left-side upshift paddle should work in the cockpit.");
   await page.locator("#proShiftDown").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
+  const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
+  const carLeftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => parseFloat(el.style.left) || 0);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
     "Holding the dedicated gas pedal should engage the throttle.");
+  await page.waitForTimeout(3900);
+  const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
+  const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
+  const carLeftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => parseFloat(el.style.left) || 0);
+  assert.ok(speedAfterThrottle > speedBeforeThrottle, "The digital speedometer must climb while the gas pedal is held.");
+  assert.ok(speedBarPercent > 0, "The speedometer bar must respond to simulated km/h.");
+  assert.ok(carLeftAfterThrottle > carLeftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
   await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), false,
     "Releasing the gas pedal should release the throttle.");
