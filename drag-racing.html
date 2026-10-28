@@ -457,6 +457,13 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* High-detail transparent PNG for the owned classic VAZ-2107 race car. */
 .race2d-car.png-car{width:clamp(260px,29vw,370px)!important;height:auto!important;aspect-ratio:360 / 174!important;bottom:12%!important;filter:drop-shadow(0 11px 7px #0009)!important;}
 .race2d-car .race-car-png{display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+
+/* Transparent PNG wheels keep their own smooth rotation while the car body remains crisp. */
+.race2d-car.png-car{overflow:visible}
+.race2d-car.png-car .race-car-png{position:absolute;inset:0;z-index:1}
+.race2d-car.png-car .png-wheel-spin{position:absolute;z-index:2;display:block;aspect-ratio:1;border-radius:50%;pointer-events:none;opacity:.64;border:1px solid #171c21;background:radial-gradient(circle,#20262a 0 14%,#e1e5e7 15% 19%,#68737a 20% 25%,transparent 27%),repeating-conic-gradient(#d9dfe2 0deg 5deg,#3b444b 5deg 10deg,#aab3b9 10deg 12deg,transparent 12deg 18deg);mask:radial-gradient(circle,transparent 0 13%,#000 17% 78%,transparent 82%);animation:race2d-wheel-spin var(--race-wheel-duration,.22s) linear infinite;filter:drop-shadow(0 0 1px #0009)}
+.race2d-car.png-car .png-wheel-spin.rear{left:6%;top:59%;width:22%}
+.race2d-car.png-car .png-wheel-spin.front{left:34%;top:61%;width:27%}
 </style>
 <link rel="preload" as="image" href="./cars/lada-2107.png?v=20261028-png1">
 </head>
@@ -692,7 +699,7 @@ function syncRace2DCarArt(){
   if(player){
     if(selectedId==='2107'){
       player.classList.add('png-car');
-      player.innerHTML='<img class="race-car-png" src="./cars/lada-2107.png?v=20261028-png1" alt="ВАЗ-2107" draggable="false" decoding="async">';
+      player.innerHTML='<img class="race-car-png" src="./cars/lada-2107.png?v=20261028-png1" alt="ВАЗ-2107" draggable="false" decoding="async"><span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
       const art=player.querySelector('.race-car-png');
       if(art)art.addEventListener('error',()=>{
         player.classList.remove('png-car');
