@@ -6,6 +6,7 @@ const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const CARS = Object.freeze({
   "2107": { price: 0, power: 72 },
+  "2101": { price: 2500, power: 58 },
   "2105": { price: 3500, power: 64 },
   "2104": { price: 4500, power: 75 },
   "2106": { price: 6000, power: 75 },
