@@ -187,11 +187,11 @@ try {
 
   const controlBoxes = await page.evaluate(() => {
     const box = id => { const r=document.querySelector(id).getBoundingClientRect(); return {left:r.left,right:r.right}; };
-    return {up:box("#proShiftUp"),down:box("#proShiftDown"),gas:box("#proGasHold")};
+    return {width:window.innerWidth,up:box("#proShiftUp"),down:box("#proShiftDown"),gas:box("#proGasHold")};
   });
-  assert.ok(controlBoxes.up.left < window.innerWidth * .2 && controlBoxes.down.left < window.innerWidth * .2,
+  assert.ok(controlBoxes.up.left < controlBoxes.width * .2 && controlBoxes.down.left < controlBoxes.width * .2,
     "Both gear-shift controls must sit on the left side of the cockpit.");
-  assert.ok(controlBoxes.gas.left > window.innerWidth * .65,
+  assert.ok(controlBoxes.gas.left > controlBoxes.width * .65,
     "The accelerator must sit on the right side of the cockpit.");
 
   await page.locator("#proShiftUp").click();
