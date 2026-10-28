@@ -11,7 +11,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-refmatch13"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-smoothmotion1"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -196,11 +196,15 @@ try {
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-landscape.png"), fullPage: false });
 
   const controlBoxes = await page.evaluate(() => {
-    const box = id => { const r=document.querySelector(id).getBoundingClientRect(); return {left:r.left,right:r.right}; };
+    const box = id => { const r=document.querySelector(id).getBoundingClientRect(); return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}; };
     return {width:window.innerWidth,up:box("#proShiftUp"),down:box("#proShiftDown"),gas:box("#proGasHold")};
   });
   assert.ok(controlBoxes.up.left < controlBoxes.width * .2 && controlBoxes.down.left < controlBoxes.width * .2,
     "Both gear-shift controls must sit on the left side of the cockpit.");
+  assert.ok(controlBoxes.down.top - controlBoxes.up.bottom >= 16,
+    "The upshift and downshift controls must have a clear, comfortable gap between them.");
+  assert.match(html, /clip-path:polygon\(17% 0,83% 0,100% 100%,0 100%\)!important/,
+    "The accelerator should have a real pedal-like tapered face.");
   assert.ok(controlBoxes.gas.left > controlBoxes.width * .65,
     "The accelerator must sit on the right side of the cockpit.");
 
@@ -209,7 +213,7 @@ try {
   await page.locator("#proShiftDown").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
   const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
-  const carLeftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => parseFloat(el.style.left) || 0);
+  const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
     "Holding the dedicated gas pedal should engage the throttle.");
@@ -227,10 +231,10 @@ try {
   assert.equal(wheelAnimation, "race2d-wheel-spin", "Wheels must animate while the race is moving.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
-  const carLeftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => parseFloat(el.style.left) || 0);
+  const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
   assert.ok(speedAfterThrottle > speedBeforeThrottle, "The digital speedometer must climb while the gas pedal is held.");
   assert.ok(speedBarPercent > 0, "The speedometer bar must respond to simulated km/h.");
-  assert.ok(carLeftAfterThrottle > carLeftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
+  assert.ok(carShiftAfterThrottle > carShiftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
   const movingWorldPosition = await page.locator("#race2dRoadMarks").evaluate(el => getComputedStyle(el).backgroundPositionX);
   assert.notEqual(movingWorldPosition, "0px", "Road markings must visibly scroll with vehicle speed.");
   await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
