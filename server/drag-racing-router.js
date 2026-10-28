@@ -577,13 +577,15 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
       }
       if (room.status !== "waiting") throw new DragRacingError(409, "Заезд уже начался. Найди другую комнату.");
+      // Lock the shared player balance before checking active rooms. Concurrent joins
+      // then serialize on this row and the second transaction sees the first room membership.
+      const balance = await lockPlayerBalance(client, user);
       const active = await client.query(
         "SELECT r.id FROM drag_racing_rooms r JOIN drag_racing_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1::BIGINT AND r.status IN ('waiting','racing') LIMIT 1",
         [user.id]
       );
       if (active.rows.length) throw new DragRacingError(409, "Сначала выйди из своей текущей комнаты.");
-      const balance = await lockPlayerBalance(client, user);
       if (balance < BigInt(String(room.stake))) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой ставки.");
       await ensureProfile(client, user.id);
       const profile = await readProfile(client, user.id);
