@@ -29,10 +29,11 @@ test("payouts are settled once and include the shared 5 percent ALLCOINS commiss
 });
 
 test("cheap VAZ garage and menu link are present", () => {
-  for (const model of ["ВАЗ-2104", "ВАЗ-2105", "ВАЗ-2106", "ВАЗ-2109"]) assert.ok(page.includes(model), model);
+  for (const model of ["ВАЗ-2101 «Копейка»", "ВАЗ-2104", "ВАЗ-2105", "ВАЗ-2106", "ВАЗ-2109"]) assert.ok(page.includes(model), model);
+  assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-cockpit9"/);
+  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-sideview10"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
