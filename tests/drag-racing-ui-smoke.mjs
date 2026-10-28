@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 const root = process.cwd();
 const html = await readFile(resolve(root, "drag-racing.html"), "utf8");
 const threeJs = await readFile(resolve(root, "three.min.js"), "utf8");
+const ladaPng = await readFile(resolve(root, "cars", "lada-2107.png"));
 await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
@@ -30,6 +31,11 @@ function roomPayload() {
 }
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://127.0.0.1:4174");
+  if (url.pathname === "/cars/lada-2107.png") {
+    res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=3600" });
+    res.end(ladaPng);
+    return;
+  }
   if (url.pathname === "/three.min.js") {
     res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=3600" });
     res.end(threeJs);
@@ -147,10 +153,10 @@ try {
 
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
-  assert.equal(await page.locator("#race2dPlayerCar svg").count(), 1, "The selected detailed side-view car must be rendered in the race scene.");
-  assert.equal(await page.locator("#race2dPlayerCar svg linearGradient[id^='paint-car-2107']").count(), 1, "The player car must use its own paint gradient rather than another SVG car's color.");
+  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").count(), 1, "The selected VAZ-2107 must render from the high-detail transparent PNG.");
+  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").evaluate(img => img.complete && img.naturalWidth === 360 && img.naturalHeight === 174), true, "The transparent VAZ-2107 PNG must load at its original resolution.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
-  assert.equal(await page.locator("#race2dPlayerCar .race-wheel").count(), 2, "The player car must expose both rotatable wheel groups.");
+  assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG car must have two independent rotating wheel overlays.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
@@ -232,8 +238,8 @@ try {
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
-  const wheelAnimation = await page.locator("#race2dPlayerCar .race-wheel").first().evaluate(el => getComputedStyle(el).animationName);
-  assert.equal(wheelAnimation, "race2d-wheel-spin", "Wheels must animate while the race is moving.");
+  const wheelAnimation = await page.locator("#race2dPlayerCar .png-wheel-spin").first().evaluate(el => getComputedStyle(el).animationName);
+  assert.equal(wheelAnimation, "race2d-wheel-spin", "PNG wheel overlays must animate while the race is moving.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
