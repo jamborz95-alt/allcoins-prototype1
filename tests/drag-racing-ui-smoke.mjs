@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png2"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-sideview1"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -154,10 +154,10 @@ try {
 
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
-  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").count(), 1, "The selected VAZ-2107 must render from the high-detail transparent PNG.");
-  assert.equal(await page.locator("#race2dPlayerCar img.race-car-png").evaluate(img => img.complete && img.naturalWidth === 800 && img.naturalHeight === 285), true, "The transparent VAZ-2107 PNG must load at its original resolution.");
+  assert.equal(await page.locator("#race2dPlayerCar.vector-side-car svg").count(), 1, "The selected VAZ-2107 must render as a crisp scalable side-profile vector.");
+  assert.equal(await page.locator("#race2dPlayerCar svg .race-wheel").count(), 2, "The VAZ-2107 side profile must contain two detailed wheel groups.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
-  assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG car must have two independent rotating wheel overlays.");
+  assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 0, "The side-profile vector must not place PNG wheel overlays over the rims.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
@@ -239,8 +239,8 @@ try {
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
-  const wheelAnimation = await page.locator("#race2dPlayerCar .png-wheel-spin").first().evaluate(el => getComputedStyle(el).animationName);
-  assert.equal(wheelAnimation, "race2d-wheel-spin", "PNG wheel overlays must animate while the race is moving.");
+  const wheelAnimation = await page.locator("#race2dPlayerCar svg .race-wheel").first().evaluate(el => getComputedStyle(el).animationName);
+  assert.equal(wheelAnimation, "race2d-wheel-spin", "The side-profile vector wheels must animate while the race is moving.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
