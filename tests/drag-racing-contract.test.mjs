@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-smoothmotion1"/);
+  assert.match(index, /href="\.\/drag-racing\.html\?v=20261028-speedmotion2"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -78,6 +78,17 @@ test("concurrent room joins serialize on the shared player balance before checki
   const balanceLock = joinRoute.indexOf("const balance = await lockPlayerBalance(client, user)");
   const activeRoomCheck = joinRoute.indexOf("const active = await client.query(");
   assert.ok(balanceLock >= 0 && activeRoomCheck > balanceLock, "the player row is locked before checking active-room membership");
+});
+
+test("car travel and track motion scale up as speed increases", () => {
+  const updater = page.match(/function updateRace2DEnvironment\(dt\)\s*\{([\\s\\S]*?)\\n\}/);
+  assert.ok(updater, "race scenery update function exists");
+  assert.match(updater[1], /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/);
+  const carPosition = page.match(/function updateRaceCarPosition\(\)\s*\{([\\s\\S]*?)\\n\}/);
+  assert.ok(carPosition, "car position update function exists");
+  assert.match(carPosition[1], /racePeakSpeed=Math\.max\(racePeakSpeed,currentSpeed\)/);
+  assert.match(carPosition[1], /const shiftPercent=8\*speedLead\+36\*progress/);
+  assert.match(page, /racePeakSpeed=0/ , "a new race resets the speed lead");
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
