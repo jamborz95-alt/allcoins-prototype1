@@ -147,13 +147,12 @@ try {
   const pedalStyles = await page.locator("#proGasHold").evaluate(el => ({
     userSelect: getComputedStyle(el).userSelect,
     webkitUserSelect: getComputedStyle(el).webkitUserSelect,
-    touchCallout: getComputedStyle(el).webkitTouchCallout,
     touchAction: getComputedStyle(el).touchAction,
     draggable: el.draggable
   }));
   assert.equal(pedalStyles.userSelect, "none", "Gas text must not be selectable on Android.");
   assert.equal(pedalStyles.webkitUserSelect, "none", "WebKit must not allow long-press text selection on the gas pedal.");
-  assert.equal(pedalStyles.touchCallout, "none", "The native Copy/Share popup must be suppressed on long press.");
+  assert.match(html, /-webkit-touch-callout:none!important/, "WebKit long-press Copy/Share callout must be disabled in CSS.");
   assert.equal(pedalStyles.touchAction, "none", "The gas pedal needs exclusive touch handling.");
   assert.equal(pedalStyles.draggable, false, "The gas pedal must not start a native drag operation.");
   const nativeCopyMenuPrevented = await page.locator("#proGasHold").evaluate(el => {
