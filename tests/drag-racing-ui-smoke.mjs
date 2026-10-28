@@ -12,7 +12,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png1"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png2"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
