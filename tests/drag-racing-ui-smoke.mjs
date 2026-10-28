@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-png4"'), "The game tile should link to the cache-busted Drag Racing page.");
+assert.ok(indexHtml.includes('href="./drag-racing.html?v=20261028-road1"'), "The game tile should link to the cache-busted Drag Racing page.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -165,6 +165,9 @@ try {
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
+  assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be a separate road-surface layer, not part of the gantry.");
+  assert.match(html, /\\.race2d-environment\\{width:320%!important;right:auto!important\\}/, "The asphalt and scenery world should extend several screen widths.");
+  assert.match(html, /\\.race2d-finish-road-stripe\\{[\\s\\S]*top:76%/, "The finish marking should be placed on the asphalt in the lower track area.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
   assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
@@ -271,6 +274,13 @@ try {
     return {
       cameraX: new DOMMatrixReadOnly(getComputedStyle(world).transform).m41,
       finishX: parseFloat(gate.style.left) || 0,
+      stripeX: parseFloat(document.querySelector("#race2dFinishStripe")?.style.left) || 0,
+      stripeY: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().top || 0,
+      sceneTop: scene.getBoundingClientRect().top,
+      sceneHeight: scene.getBoundingClientRect().height,
+      roadWidth: document.querySelector("#race2dEnvironment")?.getBoundingClientRect().width || 0,
+      sceneWidth: scene.getBoundingClientRect().width,
+      stripeOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#race2dFinishStripe")).opacity),
       approaching: scene.classList.contains("race-finish-approach"),
       straightOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#race2dFinishStraight")).opacity),
       straightBackground: getComputedStyle(document.querySelector("#race2dFinishStraight")).backgroundImage
@@ -278,6 +288,10 @@ try {
   });
   assert.ok(cameraFinishState.cameraX < -8, "The camera must pan smoothly to follow the car as it advances.");
   assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The finish gantry must approach the car as the remaining distance shrinks.");
+  assert.ok(Math.abs(cameraFinishState.stripeX-cameraFinishState.finishX)<1, "The finish paint must stay aligned with the gantry position.");
+  assert.ok(cameraFinishState.stripeY > cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.65, "The checkered finish line must lie on the asphalt, not in the sky.");
+  assert.ok(cameraFinishState.roadWidth > cameraFinishState.sceneWidth*2, "The asphalt world must extend to a longer straight.");
+  assert.ok(cameraFinishState.stripeOpacity > .7, "The finish paint must be clearly visible near the finish.");
   assert.equal(cameraFinishState.approaching, true, "The final straight must activate in the last part of the race.");
   assert.ok(cameraFinishState.straightOpacity > .2, "The subtle finish-straight surface tint must appear near the finish.");
   assert.doesNotMatch(cameraFinishState.straightBackground, /repeating-linear-gradient/, "The finish approach must not create distracting line artifacts.");
