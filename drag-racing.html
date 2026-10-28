@@ -65,7 +65,7 @@
 .race2d-car.player{left:12%;bottom:10%;transition:left .06s linear}
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
-.pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .18s ease-in-out infinite alternate}
+.pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .34s cubic-bezier(.36,0,.64,1) infinite alternate}
 @keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
 @keyframes race2d-wheel-spin{to{transform:rotate(360deg)}}
@@ -390,15 +390,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-finish-straight{
   position:absolute;left:4%;right:5%;top:0;bottom:0;z-index:1;opacity:0;
   clip-path:polygon(5% 0,95% 0,100% 100%,0 100%);
-  background:
-    linear-gradient(90deg,transparent 0 7%,#f8f5e2d9 7% 7.45%,transparent 7.45% 92.55%,#f8f5e2d9 92.55% 93%,transparent 93%),
-    repeating-linear-gradient(90deg,transparent 0 24%,#f6f0d7b5 24% 24.45%,transparent 24.45% 48%);
-  filter:drop-shadow(0 0 4px #ffffff45);
-  transition:opacity .32s ease,filter .32s ease;
+  /* A soft surface tint only: no extra lane stripes are painted over the road. */
+  background:linear-gradient(180deg,#f8f5e20a 0%,#f8f5e206 24%,transparent 58%,#171a1710 100%);
+  filter:none;
+  transition:opacity .4s ease;
   pointer-events:none;
 }
-.race2d-scene.race-finish-approach .race2d-finish-straight{opacity:.55}
-.race2d-scene.race-near-finish .race2d-finish-straight{opacity:.96;filter:drop-shadow(0 0 7px #fff8)}
+.race2d-scene.race-finish-approach .race2d-finish-straight{opacity:.22}
+.race2d-scene.race-near-finish .race2d-finish-straight{opacity:.32}
 .race2d-finish-gate{
   position:absolute;left:97%;top:5%;bottom:0;width:clamp(70px,8vw,112px);
   z-index:4;pointer-events:none;opacity:.78;
@@ -680,7 +679,7 @@ function syncRace2DCarArt(){
   buildRace2DEnvironment();
 }
 
-let raceWorldOffset=0,racePeakSpeed=0,raceCameraOffset=0,raceCameraY=0;
+let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1406,7 +1405,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;raceWorldOffset=0;raceCameraOffset=0;raceCameraY=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -1423,32 +1422,36 @@ function getRaceCarMotion(){
   const shiftPx=sceneWidth*shiftPercent/100;
   return {player,scene,sceneWidth,currentSpeed,speedLead,progress,shiftPercent,shiftPx};
 }
-function updateRaceCarPosition(){
+function updateRaceCarPosition(dt=1/60){
   const motion=getRaceCarMotion();
   if(!motion.player)return;
-  // The car remains smoothly connected to the road while the camera follows behind.
-  motion.player.style.transform='translate3d('+motion.shiftPx.toFixed(2)+'px,0,0)';
+  // Filter tiny frame-to-frame changes so the car accelerates visually without jitter.
+  const response=1-Math.exp(-Math.max(0,dt)*22);
+  raceCarOffset+=(motion.shiftPx-raceCarOffset)*response;
+  motion.player.style.transform='translate3d('+raceCarOffset.toFixed(2)+'px,0,0)';
 }
 function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
   const world=$('race2dCameraWorld'),gate=$('race2dFinishGate');
   if(!world||!motion.scene)return;
-  const targetX=Math.max(0,motion.shiftPx-motion.sceneWidth*.22);
-  const follow=1-Math.exp(-Math.max(0,dt)*8);
+  // Begin tracking early and keep the car near the left side instead of letting it run ahead.
+  const carShift=raceCarOffset;
+  const targetX=Math.max(0,carShift-motion.sceneWidth*.08);
+  const follow=1-Math.exp(-Math.max(0,dt)*26);
   raceCameraOffset+=(targetX-raceCameraOffset)*follow;
   const targetY=-(motion.currentSpeed/275)*1.35;
   raceCameraY+=(targetY-raceCameraY)*follow;
   world.style.transform='translate3d('+(-raceCameraOffset).toFixed(2)+'px,'+raceCameraY.toFixed(2)+'px,0)';
   if(gate){
     const carWidth=motion.player?.getBoundingClientRect().width||motion.sceneWidth*.275;
-    const finishX=motion.sceneWidth*.12+motion.shiftPx+carWidth*.78+motion.sceneWidth*.64*(1-motion.progress);
+    const finishX=motion.sceneWidth*.12+carShift+carWidth*.78+motion.sceneWidth*.64*(1-motion.progress);
     gate.style.left=finishX.toFixed(2)+'px';
     gate.style.setProperty('--race-finish-scale',(0.72+motion.progress*.35).toFixed(3));
     gate.style.opacity=String(0.72+motion.progress*.28);
   }
 }
 function updateHUD(dt=1/60){
-  updateRaceCarPosition();
+  updateRaceCarPosition(dt);
   updateRace2DCamera(dt);
   $('speed').textContent=Math.round(speed);$('speedHud').textContent=Math.round(speed)+' км/ч';
   $('distance').textContent=Math.min(maxDist,Math.round(distance));$('distanceHud').textContent=Math.max(0,Math.round(maxDist-distance))+' м';
