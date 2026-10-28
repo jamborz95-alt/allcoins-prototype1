@@ -126,7 +126,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </section>
 <section id="garage" class="view hidden"><div class="panel"><div class="title">Мой гараж</div><div id="garageContent"></div></div></section>
 <section id="shop" class="view hidden"><div class="panel"><div class="title">Автосалон LADA / ВАЗ</div><p class="muted">Игровой автосалон: начинай с недорогих ВАЗ-2104/2105, зарабатывай прогрессом и переходи к более мощным LADA. Цены и характеристики условные, только для игрового баланса.</p><div class="cards" id="carShop"></div><p class="muted">ВАЗ-2104, 2105, 2106 и 2109 доступны с самого начала при достаточном балансе.</p></div><div class="panel"><div class="title">Запчасти и улучшения</div><div id="partsShop" class="parts"></div></div></section>
-<section id="tuning" class="view hidden"><div class="panel"><div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div><div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Сцепление с дорогой</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div><div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Зацеп шин / старт</span><b id="gripValue">70%</b></div><button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div></div></section>
+<section id="tuning" class="view hidden"><div class="panel"><div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div><div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Зацеп шин</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div><div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Зацеп шин / старт</span><b id="gripValue">70%</b></div><button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div></div></section>
 </main>
 
 <div id="proRaceCockpit" class="pro-race-cockpit hidden" aria-hidden="true">
@@ -189,7 +189,7 @@ const parts=[
 {id:'exhaust',name:'Прямоточный выхлоп',desc:'+7% мощности',price:32000,power:7,kind:'engine'},
 {id:'turbo',name:'Турбокит Stage 1',desc:'+22% мощности, сложнее старт',price:95000,power:22,kind:'engine'},
 {id:'clutch',name:'Быстрый механизм КПП',desc:'меньше потеря тяги при переключении',price:22000,power:2,kind:'shift'},
-{id:'tires',name:'Драг-шины',desc:'лучше сцепление на старте',price:28000,power:3,kind:'grip'},
+{id:'tires',name:'Драг-шины',desc:'больше зацепа шин на старте',price:28000,power:3,kind:'grip'},
 {id:'gearbox',name:'Короткая КПП',desc:'быстрее разгон на низких передачах',price:48000,power:6,kind:'gear'},
 {id:'weight',name:'Облегчение кузова',desc:'меньше масса, быстрее разгон',price:65000,power:10,kind:'weight'}
 ];
@@ -459,8 +459,8 @@ function initDragRacing3D(){
   function paintFor(id){return colors[id]||0xb72531}
   const tireMat=mat(0x080a0d,.86,.02),rimMat=new T.MeshStandardMaterial({color:0xc5cbd0,metalness:.92,roughness:.22}),rimDark=mat(0x353b41,.6,.58);
   const chrome=mat(0xd2d8db,.24,.82),black=mat(0x12171c,.38,.35);
-  const glass=new T.MeshPhysicalMaterial({color:0x101d27,metalness:.18,roughness:.12,clearcoat:1,clearcoatRoughness:.06,transparent:false,side:T.DoubleSide});
-  const linePaint=mat(0xefd48a,.28,.5);
+  const glass=new T.MeshPhysicalMaterial({color:0x526a78,metalness:.22,roughness:.105,clearcoat:1,clearcoatRoughness:.045,transparent:true,opacity:.64,depthWrite:false,side:T.DoubleSide});
+  const linePaint=mat(0x69757d,.32,.7);
   function shapeFrom(points){
     const shape=new T.Shape();shape.moveTo(points[0][0],points[0][1]);
     for(let i=1;i<points.length;i++)shape.lineTo(points[i][0],points[i][1]);
@@ -521,7 +521,21 @@ function initDragRacing3D(){
     roofShape.lineTo(.24,isSuv?1.64:1.56);roofShape.quadraticCurveTo(.48,isSuv?1.6:1.49,.78,1.10);
     roofShape.lineTo(.92,1.0);roofShape.lineTo(-1.43,1.02);roofShape.closePath();
     const roofGeo=new T.ExtrudeGeometry(roofShape,{depth:.99,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:.032,bevelThickness:.032,curveSegments:18});
-    roofGeo.translate(0,0,-.48);group.add(new T.Mesh(roofGeo,bodyMat));
+    roofGeo.translate(0,0,-.495);group.add(new T.Mesh(roofGeo,bodyMat));
+    // Interior visible through the windshield and side glass: seats, headrests, console and dashboard.
+    const cabinBlack=mat(0x101519,.72,.08),seatFabric=mat(0x20282e,.88),seatPiping=mat(0x4c555c,.72,.15);
+    box(group,new T.BoxGeometry(.27,.19,1.03),cabinBlack,.72,.83,0);
+    box(group,new T.BoxGeometry(.34,.11,.28),cabinBlack,.35,.68,0);
+    for(const seatX of [-.42,.24]){
+      box(group,new T.BoxGeometry(.36,.38,.22),seatFabric,seatX,.89,.27);
+      box(group,new T.BoxGeometry(.31,.12,.24),seatFabric,seatX-.03,.67,.27);
+      box(group,new T.BoxGeometry(.22,.15,.20),seatFabric,seatX,1.15,.27);
+      box(group,new T.BoxGeometry(.025,.23,.012),seatPiping,seatX-.145,.88,.386);
+    }
+    const steeringWheel=new T.Mesh(new T.TorusGeometry(.13,.018,8,24),black);
+    steeringWheel.rotation.y=Math.PI/2;steeringWheel.position.set(.49,.94,.36);group.add(steeringWheel);
+    const steeringColumn=box(group,new T.CylinderGeometry(.025,.025,.22,10),chrome,.49,.83,.27);
+    steeringColumn.rotation.z=.35;
     const glassZ=.734;
     if(isSuv||isWagon||isHatch){
       planeShape(group,[[-1.57,1.05],[-1.42,1.38],[-1.18,1.39],[-1.14,1.06]],glass,glassZ);
@@ -546,7 +560,7 @@ function initDragRacing3D(){
     line(group,[[-.53,.56],[-.53,.99]],panelSeam,.752);
     line(group,[[.86,.56],[.86,.96]],panelSeam,.752);
     line(group,[[-.52,.56],[.14,.535],[.85,.56]],panelSeam,.752);
-    const seamWheelbase=isSuv?1.35:1.27;
+    const seamWheelbase=isSuv?1.34:1.27;
     for(const wheelCenter of [-seamWheelbase,seamWheelbase]){
       const outer=[],inner=[];
       for(let step=0;step<=20;step++){
@@ -562,7 +576,10 @@ function initDragRacing3D(){
     box(group,new T.BoxGeometry(.11,.13,.13),bodyMat,-.58,1.17,.79);
     box(group,new T.BoxGeometry(.12,.045,.08),glass,-.54,1.17,.86);
     box(group,new T.BoxGeometry(.09,.055,.02),new T.MeshStandardMaterial({color:0xffb735,emissive:0xff7608,emissiveIntensity:.7}),.94,.86,.744);
+    // Separate handles and lower rocker trim keep the side panels legible at racing speed.
+    box(group,new T.BoxGeometry(.17,.034,.025),chrome,-1.04,.98,.758);
     line(group,[[-1.78,.51],[1.60,.51]],linePaint,.746);
+    line(group,[[-1.58,.77],[-.83,.735],[.05,.75],[1.35,.79]],chrome,.748);
     // Front and rear bumper, grille, bright projector lamps and tail lights.
     box(group,new T.BoxGeometry(.15,.13,1.5),chrome,2.09,.43,0);
     box(group,new T.BoxGeometry(.17,.15,1.5),chrome,-2.12,.45,0);
@@ -576,7 +593,7 @@ function initDragRacing3D(){
     box(group,new T.BoxGeometry(.09,.19,.32),tailMat,-2.10,.72,-.53);
     // Four detailed tires with machined alloy spokes, brake discs and red calipers.
     const wheelMeshes=[];
-    const wheelbase=isSuv?1.35:1.27, wheelRadius=isSuv ? .43 : .37;
+    const wheelbase=isSuv?1.34:1.27, wheelRadius=isSuv ? .45 : .405;
     for(const zSide of [-1,1]){
       for(const xSide of [-1,1]){
         const wheel=new T.Group();wheel.position.set(xSide*wheelbase,wheelRadius+.015,zSide*.77);group.add(wheel);
@@ -921,7 +938,7 @@ function start(sharedStartedAt=null){
         const torque=Math.max(.2,1-Math.abs(rpm-ideal)/9000);
         const shifting=now<shiftCutUntil;const accel=shifting?0:power*throttle*gearRatio(g)*torque*launchPenalty;
         speed=Math.max(0,Math.min(gear===1?95:gear===2?145:gear===3?190:gear===4?235:275,speed+accel*dt*8));
-        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+(shifting?0:0)):Math.max(900,rpm-dt*1900);
+        rpm=gasHeld?Math.min(8500,900+(speed*gearRatio(g)*48)+0):Math.max(900,rpm-dt*1900);
         if(rpm>7600)speed=Math.max(0,speed-dt*7);
         if(speed>=100&&zeroAt===null)zeroAt=(now-greenAt)/1000;
         distance+=speed/3.6*dt;
