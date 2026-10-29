@@ -173,21 +173,23 @@ try {
   });
 
   await page.goto("http://127.0.0.1:4174/drag-racing.html", { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelector("#scene")?.classList.contains("three-ready"), null, { timeout: 12000 });
-  assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "A real Three.js canvas should render the racing scene.");
+  await page.waitForFunction(() => document.querySelector("#race2dEnvironment")?.dataset.ready === "1" && document.querySelector("#race2dPlayerCar .race-car-png")?.complete, null, { timeout: 12000 });
+  assert.equal(await page.locator("#race2dPlayerCar").count(), 1, "The selected car must be present in the live 2D race scene.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-mobile.png"), fullPage: true });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
     document.querySelector("#roomStatus")?.textContent.includes("Открытых"));
 
-  // Race mode should open the landscape cockpit, move the actual 3D canvas into the track,
-  // and keep the touchscreen shifter responsive on a portrait Android-sized viewport.
+  // Race mode opens the landscape cockpit; the 2D race world is the visible driving layer.
+  // Keep the touchscreen shifter responsive on a portrait Android-sized viewport.
   await page.locator("#startRace").click();
   await page.waitForFunction(() => {
     const cockpit = document.querySelector("#proRaceCockpit");
     return cockpit && !cockpit.classList.contains("hidden") &&
-      document.querySelector("#race3dCanvas")?.parentElement?.id === "proRaceTrack";
+      document.querySelector("#race2dCameraWorld")?.parentElement?.classList.contains("race2d-scene");
   }, null, { timeout: 5000 });
-  assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "The same live 3D canvas should render inside the full-screen drag cockpit.");
+  assert.equal(await page.locator("#race2dPlayerCar").count(), 1, "The selected car must remain mounted in the full-screen track.");
+  assert.equal(await page.locator("#race2dPlayerCar .race-car-headlight-glow").count(), 1, "The cockpit should contain the headlight effect.");
+  assert.equal(await page.locator("#race2dPlayerCar .race-car-exhaust-puff").count(), 3, "The running vehicle should have animated exhaust particles.");
   assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
   assert.equal((await page.locator("#proRaceDistanceLabel").textContent()).trim(), "DRAG STRIP · 1 MILE", "The quarter-mile mode should display its new four-times-longer one-mile distance.");
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
