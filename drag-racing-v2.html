@@ -1951,7 +1951,15 @@ function startRoomPolling(){
       const payload={roomId:currentOnlineRoom.room.roomId};
       if(liveMode==='racing')payload.telemetry=raceTelemetryPayload();
       const data=await api('/rooms/state',payload);
-      renderOnlineRoom(data);
+      // On active race snapshots only refresh the remote motion state. Rebuilding
+      // the room panel 6-7 times per second was causing avoidable mobile layout work.
+      if(liveMode==='racing'&&data?.room?.status==='racing'){
+        if(Number.isFinite(Number(data.serverNow)))onlineServerClockOffsetMs=Number(data.serverNow)-Date.now();
+        currentOnlineRoom=data;
+        syncOnlineOpponentCar();
+      }else{
+        renderOnlineRoom(data);
+      }
     }catch(err){$('roomStatus').textContent=err.message||'Связь с комнатой временно потеряна.'}
     finally{onlinePollBusy=false}
   },mode==='racing'?150:1800)
