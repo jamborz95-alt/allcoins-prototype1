@@ -185,7 +185,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-scene.race-fast .race2d-city-layer{filter:blur(.8px)}
 .race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
 .race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:left,transform,filter!important}
-.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important;transform:translate3d(0,var(--road-bump-y,0px),0)!important}
+.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
 .race2d-scene.road-bump-active .race2d-road-surface{filter:brightness(1.035)}
 .race2d-scene.road-bump-active .race2d-road-grain{opacity:.78}
 .race2d-scene.road-bump-active .race2d-road-markings{filter:drop-shadow(0 1px 1px #3c3c35) brightness(1.08)}
@@ -1817,6 +1817,7 @@ function updateUnevenRoad(dt){
   }
   const active=now<roadBumpUntil?roadBumpStrength:0;
   scene.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
+  const player=$('race2dPlayerCar');if(player)player.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
   scene.style.setProperty('--road-bump-tilt',(active*(Math.random()-.5)*.35).toFixed(3)+'deg');
   scene.classList.toggle('road-bump-active',active>0);
 }
@@ -1889,7 +1890,7 @@ function updateRaceCarPosition(dt=1/60){
   // Filter tiny frame-to-frame changes so the car accelerates visually without jitter.
   const response=1-Math.exp(-Math.max(0,dt)*(running?34:20));
   raceCarOffset+=(motion.shiftPx-raceCarOffset)*response;
-  motion.player.style.transform='translate3d('+raceCarOffset.toFixed(3)+'px,0,0)';
+  motion.player.style.setProperty('--race-car-x',raceCarOffset.toFixed(3)+'px');
 }
 function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
