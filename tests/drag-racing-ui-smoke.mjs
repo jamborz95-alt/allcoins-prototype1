@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-raceperf2"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-racecam1"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
 assert.match(html, /mode==='racing'\?250:1800/, "Online race snapshots should not overload the room endpoint.");
@@ -204,7 +204,7 @@ try {
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0, "Solo mode must not render a hardcoded SVG rival; online opponents are rendered from their selected PNG model.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
   assert.match(await page.locator("#scene").evaluate(el => getComputedStyle(el).backgroundImage), /garage-showroom\.svg/, "The selected car preview must use the new garage showroom environment.");
-  assert.match(html, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.16\)/, "The camera should hold the vehicle at a steady screen position during the run.");
+  assert.match(html, /raceCameraOffset=targetX\*\.38/, "The camera should ease its follow so the player car visibly moves across the track.");
   assert.match(html, /raceCameraY=0/, "The chase camera should not bob vertically at high speed.");
   assert.match(html, /hostStyle\.display===\'none\'.*Number\(hostStyle\.opacity\)<=\.05/, "An invisible 3D preview should pause to keep mobile rendering smooth.");
   assert.match((await page.locator("#startRace").textContent()).toUpperCase(), /НАЧАТЬ ЗАЕЗД/, "The showroom must have a clear start-race action.");
