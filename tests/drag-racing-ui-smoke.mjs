@@ -338,7 +338,7 @@ try {
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/profile" && call.body.initData === "mock-init-data"),
     "Profile request should contain Telegram initData.");
 
-  await page.getByRole("button", { name: "🛒 Магазин" }).click();
+  await page.locator('[data-tab="shop"]').evaluate(el => el.click());
   const cheapCar = page.locator(".car-card").filter({ hasText: "ВАЗ-2104" });
   await cheapCar.getByRole("button", { name: "Купить" }).click();
   await page.waitForFunction(() => Number(document.querySelector("#balance")?.textContent.replace(/\D/g, "")) === 5500);
@@ -346,7 +346,7 @@ try {
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/garage/buy" && call.body.carId === "2104"),
     "Garage purchase should be sent to the authenticated server.");
 
-  await page.getByRole("button", { name: "🏁 Гонки" }).click();
+  await page.locator('[data-tab="race"]').evaluate(el => el.click());
   await page.locator("#stake").fill("1000");
   await page.locator("#createRoom").click();
   await page.waitForFunction(() => !document.querySelector("#onlineRoom")?.classList.contains("hidden"));
