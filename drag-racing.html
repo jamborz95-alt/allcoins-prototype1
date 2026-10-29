@@ -66,6 +66,10 @@
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .34s cubic-bezier(.36,0,.64,1) infinite alternate}
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-road-surface{animation:race2d-road-bump .46s cubic-bezier(.2,.75,.35,1)}
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player{animation:race2d-suspension-bump .46s cubic-bezier(.2,.75,.35,1)}
+@keyframes race2d-road-bump{0%{filter:none}18%{filter:brightness(1.14)}38%{filter:brightness(.92)}64%{filter:brightness(1.04)}100%{filter:none}}
+@keyframes race2d-suspension-bump{0%{translate:0 0}18%{translate:0 -7px}40%{translate:0 3px}65%{translate:0 -2px}100%{translate:0 0}}
 @keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
 @keyframes race2d-wheel-spin{to{transform:rotate(360deg)}}
@@ -185,7 +189,10 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-scene.race-fast .race2d-city-layer{filter:blur(.8px)}
 .race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
 .race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:left,transform,filter!important}
-.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important}
+.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
+.race2d-scene.road-bump-active .race2d-road-surface{filter:brightness(1.035)}
+.race2d-scene.road-bump-active .race2d-road-grain{opacity:.78}
+.race2d-scene.road-bump-active .race2d-road-markings{filter:drop-shadow(0 1px 1px #3c3c35) brightness(1.08)}
 .race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:1;transform:scale(1);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .18s ease,left .12s linear,top .12s linear!important}
 .pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .23s ease-in-out infinite alternate}
@@ -1154,11 +1161,14 @@ function updateRace2DEnvironment(dt){
   const markShift=(raceWorldOffset*1.05)%96;
   if(marks)marks.style.transform='translate3d('+(-markShift).toFixed(3)+'px,0,0)';
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
+  if(running&&speed>28&&distance>=nextRoadBumpAt&&performance.now()-lastRoadBumpAt>1800){lastRoadBumpAt=performance.now();nextRoadBumpAt=distance+18+Math.random()*48;scene.classList.remove('race-road-bump');void scene.offsetWidth;scene.classList.add('race-road-bump');window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);playRoadBumpSound()}
   scene.classList.toggle('race-fast',speed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
   scene.classList.toggle('race-finished',Boolean(finished));
   updateOnlineOpponentMotion(dt);
+  updateUnevenRoad(dt);
+  updateRaceEngineAudio();
 }
 function buildProSpeedScale(){
   const scale=$('proSpeedScale');if(!scale||scale.dataset.ready)return;
@@ -1630,7 +1640,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineGain=null,raceEngineFilter=null,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1759,9 +1769,68 @@ function syncProRaceCockpit(){
   $('proRaceFinishActions').classList.toggle('visible',finished);
   $('proExitRace').disabled=Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'&&!finished);
 }
+// Lightweight synthesized engine audio: starts only after a player gesture, so it works on mobile without external files.
+function initRaceAudio(){
+  if(raceAudioReady)return;
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  try{
+    raceAudio=new AC();
+    raceEngineOsc=raceAudio.createOscillator();raceEngineOsc.type='sawtooth';
+    raceEngineFilter=raceAudio.createBiquadFilter();raceEngineFilter.type='lowpass';raceEngineFilter.frequency.value=520;
+    raceEngineGain=raceAudio.createGain();raceEngineGain.gain.value=.0001;
+    raceEngineOsc.connect(raceEngineFilter);raceEngineFilter.connect(raceEngineGain);raceEngineGain.connect(raceAudio.destination);
+    raceEngineOsc.start();raceAudioReady=true;
+  }catch(_){}
+}
+function updateRaceEngineAudio(){
+  if(!raceAudioReady||!raceAudio||!raceEngineOsc||!raceEngineGain)return;
+  const t=raceAudio.currentTime,throttle=gasHeld&&running?1:0;
+  const g=gear==='N'?0:Number(gear)||1;
+  const base=running?42+Math.max(0,rpm)*.105:35;
+  const targetHz=Math.max(38,Math.min(920,base+(throttle?rpm*.025:0)+(g*3)));
+  raceEngineOsc.frequency.setTargetAtTime(targetHz,t,.045);
+  raceEngineFilter.frequency.setTargetAtTime(Math.max(180,Math.min(2400,380+rpm*.19)),t,.06);
+  const volume=running?(throttle?.052:.018):.0001;
+  raceEngineGain.gain.setTargetAtTime(volume,t,.075);
+}
+function playRaceShiftSound(direction=1){
+  initRaceAudio();if(!raceAudio||raceAudio.state==='closed')return;
+  const now=performance.now();if(now-lastGearSoundAt<85)return;lastGearSoundAt=now;
+  const play=()=>{
+    if(!raceAudio)return;
+    const t=raceAudio.currentTime,osc=raceAudio.createOscillator(),gain=raceAudio.createGain();
+    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?520:360,t);osc.frequency.exponentialRampToValueAtTime(direction>0?190:150,t+.11);
+    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.09,t+.012);gain.gain.exponentialRampToValueAtTime(.0001,t+.14);
+    osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.15);
+  };
+  if(raceAudio.state==='suspended')raceAudio.resume().then(play).catch(()=>{});else play();
+}
+function playRoadBumpSound(strength){
+  if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
+  const now=performance.now(),amp=Math.max(.015,Math.min(.07,strength*.065));
+  const osc=raceAudio.createOscillator(),gain=raceAudio.createGain(),t=raceAudio.currentTime;
+  osc.type='sine';osc.frequency.setValueAtTime(95+strength*42,t);osc.frequency.exponentialRampToValueAtTime(48,t+.09);
+  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(amp,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.12);
+  osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.13);
+}
+function updateUnevenRoad(dt){
+  const scene=$('race2dPlayerCar')?.closest('.race2d-scene');if(!scene)return;
+  const now=performance.now(),moving=running&&speed>24;
+  if(moving&&now-lastRoadBumpAt>1250+Math.random()*2300){
+    lastRoadBumpAt=now;roadBumpUntil=now+150+Math.random()*120;roadBumpStrength=.35+Math.random()*.65;
+    if(speed>55&&raceAudioReady)playRoadBumpSound(roadBumpStrength);
+  }
+  const active=now<roadBumpUntil?roadBumpStrength:0;
+  scene.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
+  const player=$('race2dPlayerCar');if(player)player.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
+  scene.style.setProperty('--road-bump-tilt',(active*(Math.random()-.5)*.35).toFixed(3)+'deg');
+  scene.classList.toggle('road-bump-active',active>0);
+}
 function setGear(g){
   if(g!=='N')g=Math.max(1,Math.min(5,Number(g)||1));
+  const previousGear=gear;
   gear=g;
+  if(previousGear!==g)playRaceShiftSound(Number(g||0)>=Number(previousGear||0)?1:-1);
   $('currentGear').textContent=g==='N'?'N':g;
   document.querySelectorAll('[data-gear]').forEach(x=>x.classList.toggle('active',x.dataset.gear===String(g)));
   // Gear selection is independent of the accelerator: changing gear never clears gasHeld or cuts throttle.
@@ -1769,14 +1838,14 @@ function setGear(g){
 }
 function gearFromControl(value){return value==='N'?'N':Number(value)}
 document.querySelectorAll('[data-gear]').forEach(b=>{
-  const change=()=>setGear(gearFromControl(b.dataset.gear));
+  const change=()=>{initRaceAudio();setGear(gearFromControl(b.dataset.gear))};
   b.addEventListener('pointerdown',e=>{e.preventDefault();change()});
   b.addEventListener('click',e=>{if(e.detail===0)change();e.preventDefault()});
   ['contextmenu','selectstart','dragstart'].forEach(type=>b.addEventListener(type,e=>e.preventDefault()));
 });
 function holdButton(id,on,off){
   const el=$(id);if(!el)return;
-  const start=e=>{e.preventDefault();on();try{el.setPointerCapture(e.pointerId)}catch(_){}updateHUD()};
+  const start=e=>{initRaceAudio();e.preventDefault();on();try{el.setPointerCapture(e.pointerId)}catch(_){}updateHUD()};
   const end=e=>{if(e)e.preventDefault();off();updateHUD()};
   el.addEventListener('pointerdown',start);
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
@@ -1789,7 +1858,7 @@ function bindShiftPaddle(id,direction){
   const el=$(id);if(!el)return;
   const change=()=>setGear(gear==='N'?1:Math.max(1,Math.min(5,Number(gear)+direction)));
   el.addEventListener('pointerdown',e=>{
-    e.preventDefault();e.stopPropagation();
+    initRaceAudio();e.preventDefault();e.stopPropagation();
     try{el.setPointerCapture(e.pointerId)}catch(_){}
     change();
   });
@@ -1826,7 +1895,7 @@ function updateRaceCarPosition(dt=1/60){
   // Filter tiny frame-to-frame changes so the car accelerates visually without jitter.
   const response=1-Math.exp(-Math.max(0,dt)*(running?34:20));
   raceCarOffset+=(motion.shiftPx-raceCarOffset)*response;
-  motion.player.style.transform='translate3d('+raceCarOffset.toFixed(3)+'px,0,0)';
+  motion.player.style.setProperty('--race-car-x',raceCarOffset.toFixed(3)+'px');
 }
 function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
@@ -1862,6 +1931,7 @@ function updateHUD(dt=1/60,motionAlreadyUpdated=false){
 }
 function start(sharedStartedAt=null){
   if(running)return;
+  initRaceAudio();if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
   const selectedMode=currentOnlineRoom&&['waiting','racing'].includes(currentOnlineRoom.room.status)?currentOnlineRoom.room.mode:$('raceMode').value;
   maxDist=distanceByMode[selectedMode]||1609.344;const distanceLabel=$('proRaceDistanceLabel');if(distanceLabel)distanceLabel.textContent=raceDistanceLabels[selectedMode]||raceDistanceLabels.quarter;reset();running=true;finished=false;
   startAt=performance.now()-(sharedStartedAt===null?0:Math.max(0,Date.now()-Number(sharedStartedAt)));greenAt=startAt+3000;
@@ -1918,7 +1988,7 @@ function start(sharedStartedAt=null){
   }
   last=0;raf=requestAnimationFrame(frame);
 }
-$('startRace').onclick=()=>{if(finished)reset();start()};$('resetRace').onclick=reset;
+$('startRace').onclick=()=>{initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
 $('resetRace').onclick=()=>{reset();closeProRaceCockpit()};
 $('proExitRace').onclick=()=>{
   if(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'&&!finished){$('proRaceStatus').textContent='Онлайн-заезд уже начался. Заверши дистанцию.';return}
