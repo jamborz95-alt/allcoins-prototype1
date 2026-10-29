@@ -7,6 +7,17 @@ const router = readFileSync(new URL("../server/drag-racing-router.js", import.me
 const page = readFileSync(new URL("../drag-racing.html", import.meta.url), "utf8");
 const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
+
+test("drag racing uses engine and gear-change audio samples with RPM-linked pitch", () => {
+  assert.match(page, /const RACE_ENGINE_SAMPLE_URL='https:\/\/sfxmint\.com\/dl\/car-revving-08\.mp3'/);
+  assert.match(page, /const RACE_SHIFT_SAMPLE_URL='https:\/\/sfxmint\.com\/dl\/race-car-10\.mp3'/);
+  assert.match(page, /async function loadRaceAudioSamples\(\)/);
+  assert.match(page, /function startRaceEngineSample\(\)/);
+  assert.match(page, /raceEngineSampleSource\.playbackRate\.setTargetAtTime\(playbackRate/);
+  assert.match(page, /source\.start\(t,0,clipDuration\)/, "Gear changes should play a sampled audio clip.");
+  assert.match(page, /Last-resort fallback if the sample host is offline or blocked/);
+});
+
 test("Drag Racing API is mounted and initialized with the same server wallet", () => {
   assert.match(server, /createDragRacingRouter\(\{\s*pool,\s*verifyTelegram,\s*recordGameCommission\s*\}\)/);
   assert.match(server, /app\.use\("\/api\/drag-racing",\s*dragRacingRouter\)/);
@@ -51,7 +62,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-smoothmotion1"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-engineaudio1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
