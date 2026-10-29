@@ -1776,7 +1776,7 @@ function setLight(n){
 }
 function reset(){
   running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;
-  setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🔴 Старт заезда';
+  setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
 }
