@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-raceperf1"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-raceperf2"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
 assert.match(html, /mode==='racing'\?250:1800/, "Online race snapshots should not overload the room endpoint.");
@@ -219,6 +219,7 @@ try {
   assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The finish stripe should stay inset within the asphalt.");
   assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish mark should have small, neat checkered squares.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
+  assert.doesNotMatch(html, /gate\.style\.left\s*=|stripe\.style\.left\s*=/, "Finish graphics should use compositor transforms rather than per-frame layout changes.");
   assert.match(html, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/, "All race modes should be four times longer.");
   assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish checkers must run vertically.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
@@ -328,7 +329,7 @@ try {
   await page.locator("#proShiftUp").click();
   await page.locator("#proShiftUp").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "5", "The test driver should shift up to fifth gear before the long finish run.");
-  const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
+  const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => el.dataset.worldX || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
   await page.waitForFunction(() => {
     const scene = document.querySelector(".race2d-scene");
@@ -342,8 +343,8 @@ try {
     const scene = document.querySelector(".race2d-scene");
     return {
       cameraX: new DOMMatrixReadOnly(getComputedStyle(world).transform).m41,
-      finishX: parseFloat(gate.style.left) || 0,
-      stripeX: parseFloat(document.querySelector("#race2dFinishStripe")?.style.left) || 0,
+      finishX: Number(gate.dataset.worldX || 0),
+      stripeX: Number(document.querySelector("#race2dFinishStripe")?.dataset.worldX || 0),
       stripeY: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().top || 0,
       stripeHeight: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().height || 0,
       stripeBottom: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().bottom || 0,
