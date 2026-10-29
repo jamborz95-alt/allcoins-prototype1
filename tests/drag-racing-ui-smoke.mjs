@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-racefix3"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-racefix4"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.match(html, /nextRoadBumpAt=40/, "The first uneven-road threshold must be initialized and restored on reset.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
@@ -286,7 +286,7 @@ try {
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
   const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const fuelBeforeThrottle = Number(await page.locator("#proFuelLiters").textContent());
-  const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
+  const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number.parseFloat(el.style.getPropertyValue('--race-car-x')) || 0);
   const carScreenBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
   const sceneryBeforeThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
@@ -332,7 +332,7 @@ try {
   assert.ok(fuelAfterThrottle < fuelBeforeThrottle, `Fuel must decrease while holding gas (before ${fuelBeforeThrottle}, after ${fuelAfterThrottle}).`);
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
-  const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
+  const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number.parseFloat(el.style.getPropertyValue('--race-car-x')) || 0);
   const carScreenAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
   const visibleCarTravel = Math.hypot(carScreenAfterThrottle.x-carScreenBeforeThrottle.x, carScreenAfterThrottle.y-carScreenBeforeThrottle.y);
   assert.ok(visibleCarTravel > 3, `The car must visibly advance on screen instead of being pinned by the chase camera (moved ${visibleCarTravel.toFixed(1)} px).`);
