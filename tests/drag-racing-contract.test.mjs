@@ -51,7 +51,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam3"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-smoothmotion1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -122,14 +122,13 @@ test("online opponent position follows relative progress and can leave and re-en
   assert.doesNotMatch(page, /onlineOpponentMotion\.left\+=\(targetLeft-onlineOpponentMotion\.left\)\*positionAlpha/);
   assert.match(page, /transition:none!important;will-change:transform!important;transform:translate3d\(var\(--opponent-translate-x,0px\),var\(--opponent-translate-y,0px\),0\) scale\(var\(--opponent-perspective-scale,1\)\)!important/);
   assert.doesNotMatch(page, /const targetLeft=Math\.max\(14,Math\.min\(72/);
-  assert.match(page, /mode==='racing'\?150:1800\)/, "online race telemetry should refresh often enough for smooth rival updates");
+  assert.match(page, /mode==='racing'\?250:1800\)/, "online race telemetry should refresh often enough for smooth rival updates");
 });
 
 test("car travel and track motion scale up as speed increases", () => {
-  const updaterStart = page.indexOf("function updateRace2DEnvironment(dt){");
-  const updaterEnd = page.indexOf("\n}", updaterStart);
-  assert.ok(updaterStart >= 0 && updaterEnd > updaterStart, "race scenery update function exists");
-  const updater = page.slice(updaterStart, updaterEnd);
+  const updaterMatch = page.match(/function updateRace2DEnvironment\(dt(?:,frameNow=performance\.now\(\))?\)\{([\s\S]*?)\n\}/);
+  assert.ok(updaterMatch, "race scenery update function exists");
+  const updater = updaterMatch[1];
   assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*9\.6\*scale/);
   const carPositionStart = page.indexOf("function getRaceCarMotion(){");
   const carPositionEnd = page.indexOf("\n}", carPositionStart);
@@ -155,14 +154,15 @@ test("drag strip is four times longer and uses a vertical checkered finish line"
 
 test("smooth car and camera tracking with a clean finish straight and clear finish gate", () => {
   assert.match(page, /id="race2dCameraWorld" class="race2d-camera-world"/);
-  assert.match(page, /function updateRaceCarPosition\(dt=1\/60\)/);
-  assert.match(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
-  assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
+  assert.match(page, /function updateRaceCarPosition\(dt=1\/60(?:,motion=null)?\)/);
+  assert.match(page, /raceCarOffset=frameMotion\.shiftPx/, "car position is rendered directly without a second easing filter");
+  assert.doesNotMatch(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
+  assert.match(page, /function updateRace2DCamera\(dt=1\/60(?:,motion=null)?\)/);
   assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.16\)/, "camera framing keeps the car at a steady screen position");
-  assert.match(page, /raceCameraOffset=targetX/);
+  assert.match(page, /raceCameraOffset=targetX\*\.38/);
   assert.match(page, /raceCameraY=0/);
-  assert.match(page, /if\(now-lastHUDUpdateAt>=80\)\{updateHUD\(0,true\);lastHUDUpdateAt=now\}/);
-  assert.match(page, /marks\.style\.transform='translate3d\('/);
+  assert.match(page, /if\(now-lastHUDUpdateAt>=33\)\{raceFrameStep\('hud',updateHUD,0,true\);lastHUDUpdateAt=now\}/);
+  assert.match(page, /setTransform\(marks,'translate3d\('/);
   assert.match(page, /hostStyle\.display===\'none\'/);
   assert.doesNotMatch(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/, "the chase camera should not lag behind the car");
   assert.match(page, /id="race2dFinishGate"/);
@@ -176,14 +176,15 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
-  const positionFn = page.match(/function updateRaceCarPosition\(dt=1\/60\)\s*\{([\s\S]*?)\n\}/);
+  const positionFn = page.match(/function updateRaceCarPosition\(dt=1\/60(?:,motion=null)?\)\s*\{([\s\S]*?)\n\}/);
   assert.ok(positionFn, "car position updater exists");
-  assert.match(positionFn[1], /player\.style\.transform\s*=\s*'translate3d\('/);
+  assert.match(positionFn[1], /raceCarOffset=frameMotion\.shiftPx/);
+  assert.match(positionFn[1], /frameMotion\.player\.style\.setProperty\('--race-car-x',x\)/);
   assert.doesNotMatch(positionFn[1], /player\.style\.left\s*=/, "car position avoids per-frame layout changes");
 
   assert.match(page, /Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette/);
   assert.match(page, /\.race2d-car\.player\s*\{[^}]*transition:none!important/s);
-  assert.match(page, /city\.style\.transform='translate3d\('/, "Scenery should move by transforms rather than per-frame background repaints");
+  assert.match(page, /setTransform\(city,'translate3d\('/, "Scenery should move by transforms rather than per-frame background repaints");
   assert.match(page, /will-change:transform!important;backface-visibility:hidden/);
   assert.match(page, /function drawFrame\(now\)\s*\{[\s\S]*?const dt=lastVisualFrame\?[\s\S]*?raceVisual\.update\(distance,speed,rpm,gasHeld,dt,now\)/);
   assert.match(page, /\.pro-shift-paddle\.up\s*\{top:2%!important\}/);
