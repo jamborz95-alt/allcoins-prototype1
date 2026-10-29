@@ -281,7 +281,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Large scenery strips slide on the GPU without repainting the SVG art each frame. */
 .race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{
   left:0!important;right:auto!important;width:300%!important;
-  background-repeat:no-repeat!important;background-size:100% 100%!important;
+  background-repeat:repeat-x!important;background-size:300vw 100%!important;
   will-change:transform!important;backface-visibility:hidden;
 }
 /* Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette. */
@@ -383,7 +383,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translate3d(0,0,0);transform-origin:left center;
   will-change:transform;backface-visibility:hidden;
 }
-.race2d-environment{width:320%!important;right:auto!important}
+.race2d-environment{width:1280%!important;right:auto!important}
 .race2d-car.player,.race2d-car.opponent,.race2d-finish-gate{
   backface-visibility:hidden;will-change:transform,left,opacity;
 }
@@ -432,12 +432,12 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 /* The checkered finish paint sits on the asphalt, independent from the overhead gantry. */
 .race2d-finish-road-stripe{
-  position:absolute;left:97%;top:76%;width:100%;height:clamp(8px,1.6vh,14px);
+  position:absolute;left:97%;top:44%;bottom:0;width:clamp(8px,1.2vw,16px);
   z-index:4;pointer-events:none;opacity:.18;
-  transform:translate3d(-50%,0,0) scaleX(var(--race-stripe-scale,.12));
-  transform-origin:center center;backface-visibility:hidden;will-change:left,transform,opacity;
-  background:repeating-linear-gradient(90deg,#111416 0 14px,#fffbed 14px 28px);
-  border-top:1px solid #f5efd9;border-bottom:1px solid #121619;
+  transform:translate3d(-50%,0,0);
+  transform-origin:center center;backface-visibility:hidden;will-change:left,opacity;
+  background:repeating-linear-gradient(0deg,#111416 0 14px,#fffbed 14px 28px);
+  border-left:1px solid #f5efd9;border-right:1px solid #121619;
   box-shadow:0 2px 4px #0009;filter:drop-shadow(0 1px 2px #0009);
 }
 .race2d-scene.race-finished .race2d-finish-gate{filter:drop-shadow(0 0 8px #f8d98c99)}
@@ -525,7 +525,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 <div class="pedals single-pedal"><button class="pedal gas" id="gas" type="button"><span class="gas-pedal-art" aria-hidden="true"></span><strong>ПЕДАЛЬ ГАЗА</strong><small>Нажми и удерживай</small></button></div>
 <div class="gearrow"><button class="gear" data-gear="N">N</button><button class="gear active" data-gear="1">1</button><button class="gear" data-gear="2">2</button><button class="gear" data-gear="3">3</button><button class="gear" data-gear="4">4</button><button class="gear" data-gear="5">5</button></div>
 <div class="row" style="margin-top:10px"><button id="startRace">🔴 Старт заезда</button><button id="resetRace" class="back">↻ Сброс</button></div><div id="raceStatus" class="status">Нажми «Старт заезда», удерживай педаль газа и переключай передачи вручную по оборотам.</div></div>
-<div class="panel"><div class="title">Онлайн-заезды на ставку</div><div class="note">Создай комнату на 2–5 игроков. Ставки блокируются сервером, результат и комиссия 5% рассчитываются после финиша всех участников.</div><div class="row"><div><label class="muted">Максимум игроков</label><select id="players"><option>2</option><option>3</option><option>4</option><option>5</option></select></div><div><label class="muted">Ставка, AC</label><input id="stake" type="number" min="100" step="100" value="1000"></div></div><label class="muted">Тип гонки</label><select id="raceMode"><option value="quarter">Драг — ¼ мили</option><option value="half">Драг — ½ мили</option><option value="sprint">Спринт — 1 км</option></select><button class="full" id="createRoom" style="width:100%">＋ Создать онлайн-комнату</button><div class="row" style="margin-top:8px"><button id="refreshRooms" class="back">↻ Обновить комнаты</button><button id="leaveOnline" class="back hidden">Выйти из комнаты</button></div><section id="onlineRoom" class="panel hidden" style="margin-top:10px;padding:12px"><div id="onlineRoomInfo"></div><div class="row" style="margin-top:8px"><button id="startOnline" class="hidden">🏁 Начать онлайн-заезд</button></div><div id="onlineResult" class="status"></div></section><div id="roomStatus" class="status">Загрузка онлайн-профиля…</div><div id="rooms"></div></div>
+<div class="panel"><div class="title">Онлайн-заезды на ставку</div><div class="note">Создай комнату на 2–5 игроков. Ставки блокируются сервером, результат и комиссия 5% рассчитываются после финиша всех участников.</div><div class="row"><div><label class="muted">Максимум игроков</label><select id="players"><option>2</option><option>3</option><option>4</option><option>5</option></select></div><div><label class="muted">Ставка, AC</label><input id="stake" type="number" min="100" step="100" value="1000"></div></div><label class="muted">Тип гонки</label><select id="raceMode"><option value="quarter">Драг — 1 миля</option><option value="half">Драг — 2 мили</option><option value="sprint">Спринт — 4 км</option></select><button class="full" id="createRoom" style="width:100%">＋ Создать онлайн-комнату</button><div class="row" style="margin-top:8px"><button id="refreshRooms" class="back">↻ Обновить комнаты</button><button id="leaveOnline" class="back hidden">Выйти из комнаты</button></div><section id="onlineRoom" class="panel hidden" style="margin-top:10px;padding:12px"><div id="onlineRoomInfo"></div><div class="row" style="margin-top:8px"><button id="startOnline" class="hidden">🏁 Начать онлайн-заезд</button></div><div id="onlineResult" class="status"></div></section><div id="roomStatus" class="status">Загрузка онлайн-профиля…</div><div id="rooms"></div></div>
 </section>
 <section id="garage" class="view hidden"><div class="panel"><div class="title">Мой гараж</div><div id="garageContent"></div></div></section>
 <section id="shop" class="view hidden"><div class="panel"><div class="title">Автосалон LADA / ВАЗ</div><p class="muted">Игровой автосалон: начинай с недорогих ВАЗ-2104/2105, зарабатывай прогрессом и переходи к более мощным LADA. Цены и характеристики условные, только для игрового баланса.</p><div class="cards" id="carShop"></div><p class="muted">ВАЗ-2104, 2105, 2106 и 2109 доступны с самого начала при достаточном балансе.</p></div><div class="panel"><div class="title">Запчасти и улучшения</div><div id="partsShop" class="parts"></div></div></section>
@@ -534,7 +534,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 
 <div id="proRaceCockpit" class="pro-race-cockpit hidden" aria-hidden="true">
   <div id="proRaceTrack" class="pro-race-track">
-    <div class="pro-race-brand"><span class="pro-race-mark">A</span><span>ALLCOINS <b>RACING</b><span class="pro-race-subbrand">DRAG STRIP · 1/4 MILE</span></span></div>
+    <div class="pro-race-brand"><span class="pro-race-mark">A</span><span>ALLCOINS <b>RACING</b><span id="proRaceDistanceLabel" class="pro-race-subbrand">DRAG STRIP · 1 MILE</span></span></div>
     <div id="proRaceTimer" class="pro-race-timer">00.000</div>
     <div class="pro-race-top-label">PRO DRAG STRIP · LIVE</div>
     <div class="race2d-scene" aria-label="2D drag racing track">
@@ -860,8 +860,8 @@ function updateRace2DEnvironment(dt){
   if(!scene||!world)return;
   const sceneWidth=Math.max(1,scene.clientWidth||1280);
   const scale=Math.max(.6,Math.min(1.35,sceneWidth/1280));
-  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*4.8*scale;
-  const wrap=Math.max(1,sceneWidth*1.5);
+  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*9.6*scale;
+  const wrap=Math.max(1,sceneWidth*38.4);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
   // Move distant scenery more slowly than the road for layered parallax.
   if(city)city.style.transform='translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(3)+'px,0,0)';
@@ -869,7 +869,7 @@ function updateRace2DEnvironment(dt){
   if(fence)fence.style.transform='translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(3)+'px,0,0)';
   const markWrap=Math.max(96,Math.ceil((sceneWidth*1.5)/96)*96);
   if(marks)marks.style.backgroundPositionX=(-((raceWorldOffset*1.05)%markWrap))+'px';
-  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
+  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
   scene.classList.toggle('race-fast',speed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
@@ -1323,7 +1323,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=402.336;const distanceByMode={quarter:402.336,half:804.672,sprint:1000};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1505,8 +1505,8 @@ function getRaceCarMotion(){
   const currentSpeed=Math.max(0,Number(speed)||0);
   racePeakSpeed=Math.max(racePeakSpeed,currentSpeed);
   const speedLead=Math.max(0,Math.min(1,racePeakSpeed/275));
-  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||402.336)));
-  const shiftPercent=8*speedLead+36*progress;
+  const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
+  const shiftPercent=18*speedLead+52*progress;
   const shiftPx=sceneWidth*shiftPercent/100;
   return {player,scene,sceneWidth,currentSpeed,speedLead,progress,shiftPercent,shiftPx};
 }
@@ -1524,19 +1524,19 @@ function updateRace2DCamera(dt=1/60){
   if(!world||!motion.scene)return;
   // Begin tracking early and keep the car near the left side instead of letting it run ahead.
   const carShift=raceCarOffset;
-  const targetX=Math.max(0,carShift-motion.sceneWidth*.08);
+  const targetX=Math.max(0,carShift-motion.sceneWidth*.32);
   const follow=1-Math.exp(-Math.max(0,dt)*(running?42:24));
   raceCameraOffset+=(targetX-raceCameraOffset)*follow;
   const targetY=-(motion.currentSpeed/275)*0.75;
   raceCameraY+=(targetY-raceCameraY)*follow;
   world.style.transform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,'+raceCameraY.toFixed(3)+'px,0)';
   if(gate){
-    const carWidth=Math.max(245,Math.min(390,motion.sceneWidth*.275));
-    const finishX=motion.sceneWidth*.12+carShift+carWidth*.78+motion.sceneWidth*.64*(1-motion.progress);
+    const carWidth=Math.max(320,Math.min(600,motion.sceneWidth*.40));
+    const finishX=motion.sceneWidth*.12+carShift+carWidth*.96+motion.sceneWidth*2.56*(1-motion.progress);
     gate.style.left=finishX.toFixed(2)+'px';
     if(stripe){
       stripe.style.left=finishX.toFixed(2)+'px';
-      stripe.style.setProperty('--race-stripe-scale',(0.12+motion.progress*0.88).toFixed(3));
+
       stripe.style.opacity=String(0.18+motion.progress*0.82);
     }
     gate.style.setProperty('--race-finish-scale',(0.72+motion.progress*.35).toFixed(3));
@@ -1554,7 +1554,7 @@ function updateHUD(dt=1/60){
 function start(sharedStartedAt=null){
   if(running)return;
   const selectedMode=currentOnlineRoom&&['waiting','racing'].includes(currentOnlineRoom.room.status)?currentOnlineRoom.room.mode:$('raceMode').value;
-  maxDist=distanceByMode[selectedMode]||402.336;reset();running=true;finished=false;
+  maxDist=distanceByMode[selectedMode]||1609.344;const distanceLabel=$('proRaceDistanceLabel');if(distanceLabel)distanceLabel.textContent=raceDistanceLabels[selectedMode]||raceDistanceLabels.quarter;reset();running=true;finished=false;
   startAt=performance.now()-(sharedStartedAt===null?0:Math.max(0,Date.now()-Number(sharedStartedAt)));greenAt=startAt+3000;
   $('startRace').disabled=true;$('raceStatus').textContent='Прогрев! Удерживай педаль газа и дождись зелёного.';
   $('scene').classList.add('racing');openProRaceCockpit();

@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-wheel2"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-track4x"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -85,15 +85,24 @@ test("car travel and track motion scale up as speed increases", () => {
   const updaterEnd = page.indexOf("\n}", updaterStart);
   assert.ok(updaterStart >= 0 && updaterEnd > updaterStart, "race scenery update function exists");
   const updater = page.slice(updaterStart, updaterEnd);
-  assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/);
+  assert.match(updater, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*9\.6\*scale/);
   const carPositionStart = page.indexOf("function getRaceCarMotion(){");
   const carPositionEnd = page.indexOf("\n}", carPositionStart);
   assert.ok(carPositionStart >= 0 && carPositionEnd > carPositionStart, "car motion calculation exists");
   const carPosition = page.slice(carPositionStart, carPositionEnd);
   assert.match(carPosition, /racePeakSpeed=Math\.max\(racePeakSpeed,currentSpeed\)/);
-  assert.match(carPosition, /const shiftPercent=8\*speedLead\+36\*progress/);
+  assert.match(carPosition, /const shiftPercent=18\*speedLead\+52\*progress/);
   assert.match(page, /racePeakSpeed=0/ , "a new race resets the speed lead");
   assert.match(page, /Math\.max\(\.035,\.48\/\(1\+speedNow\/18\)\)/, "wheel spin keeps getting faster at high speed");
+});
+
+
+test("drag strip is four times longer and uses a vertical checkered finish line", () => {
+  assert.match(page, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/);
+  assert.match(page, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The race environment should be four times wider than before.");
+  assert.match(page, /\.race2d-finish-road-stripe\{[\s\S]*top:44%;bottom:0;width:clamp\(8px,1\.2vw,16px\)/, "The checkered finish stripe should run vertically across the road.");
+  assert.match(page, /background:repeating-linear-gradient\(0deg,#111416 0 14px,#fffbed 14px 28px\)/, "The checkers should repeat along the vertical axis.");
+  assert.match(page, /raceDistanceLabels=\{quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'\}/);
 });
 
 test("smooth car and camera tracking with a clean finish straight and clear finish gate", () => {
@@ -101,7 +110,7 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /function updateRaceCarPosition\(dt=1\/60\)/);
   assert.match(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
   assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
-  assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.08\)/);
+  assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.32\)/);
   assert.match(page, /Math\.exp\(-Math\.max\(0,dt\)\*\(running\?42:24\)\)/);
   assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
   assert.match(page, /id="race2dFinishGate"/);

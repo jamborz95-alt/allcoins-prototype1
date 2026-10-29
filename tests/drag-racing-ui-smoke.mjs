@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-wheel2"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-track4x"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -148,6 +148,7 @@ try {
   }, null, { timeout: 5000 });
   assert.equal(await page.locator("#race3dCanvas canvas").count(), 1, "The same live 3D canvas should render inside the full-screen drag cockpit.");
   assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
+  assert.equal((await page.locator("#proRaceDistanceLabel").textContent()).trim(), "DRAG STRIP · 1 MILE", "The quarter-mile mode should display its new four-times-longer one-mile distance.");
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
   assert.equal(await page.locator("#clutch").count(), 0, "There must be no clutch control on the race page.");
   assert.equal(await page.locator("#proGasHold").count(), 1, "The cockpit must show a dedicated hold-to-accelerate pedal.");
@@ -166,9 +167,11 @@ try {
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
   assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be a separate road-surface layer, not part of the gantry.");
-  assert.match(html, /\.race2d-environment\{width:320%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
-  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:76%/, "The finish marking should be placed on the asphalt in the lower track area.");
+  assert.match(html, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
+  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:44%;bottom:0;width:clamp\(8px,1\.2vw,16px\)/, "The finish marking should be placed on the asphalt in the lower track area.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
+  assert.match(html, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/, "All race modes should be four times longer.");
+  assert.match(html, /background:repeating-linear-gradient\(0deg,#111416 0 14px,#fffbed 14px 28px\)/, "The finish checkers must run vertically.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
   assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
   assert.equal(await page.locator("#proSpeedScale .pro-speed-tick").count() > 0, true, "The second analog speedometer must be built.");
@@ -266,15 +269,16 @@ try {
   assert.notEqual(movingWorldPosition, "0px", "Road markings must visibly scroll with vehicle speed.");
   const sceneryAfterThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   assert.notEqual(sceneryAfterThrottle, sceneryBeforeThrottle, "Distant scenery must scroll smoothly using a composited transform.");
-  assert.match(html, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*4\.8\*scale/, "Track scenery speed must rise proportionally as the speedometer climbs.");
-  assert.match(html, /const shiftPercent=8\*speedLead\+36\*progress/, "Car must visibly advance across the strip as speed and traveled distance increase.");
+  assert.match(html, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*9\.6\*scale/, "Track scenery speed must rise proportionally as the speedometer climbs.");
+  assert.match(html, /const shiftPercent=18\*speedLead\+52\*progress/, "Car must visibly advance across the strip as speed and traveled distance increase.");
   const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
-  await page.waitForTimeout(12000);
   await page.waitForFunction(() => {
+    const scene = document.querySelector(".race2d-scene");
     const road = document.querySelector("#race2dFinishStraight");
-    return road && Number.parseFloat(getComputedStyle(road).opacity) > .2;
-  }, null, { timeout: 2500 });
+    return scene?.classList.contains("race-near-finish") &&
+      road && Number.parseFloat(getComputedStyle(road).opacity) > .2;
+  }, null, { timeout: 55000 });
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
     const gate = document.querySelector("#race2dFinishGate");
@@ -284,6 +288,8 @@ try {
       finishX: parseFloat(gate.style.left) || 0,
       stripeX: parseFloat(document.querySelector("#race2dFinishStripe")?.style.left) || 0,
       stripeY: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().top || 0,
+      stripeHeight: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().height || 0,
+      stripeBottom: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().bottom || 0,
       sceneTop: scene.getBoundingClientRect().top,
       sceneHeight: scene.getBoundingClientRect().height,
       roadWidth: document.querySelector("#race2dEnvironment")?.getBoundingClientRect().width || 0,
@@ -297,7 +303,8 @@ try {
   assert.ok(cameraFinishState.cameraX < -8, "The camera must pan smoothly to follow the car as it advances.");
   assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The finish gantry must approach the car as the remaining distance shrinks.");
   assert.ok(Math.abs(cameraFinishState.stripeX-cameraFinishState.finishX)<1, "The finish paint must stay aligned with the gantry position.");
-  assert.ok(cameraFinishState.stripeY > cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.65, "The checkered finish line must lie on the asphalt, not in the sky.");
+  assert.ok(cameraFinishState.stripeY <= cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.48, "The vertical finish stripe must start at the road surface.");
+  assert.ok(cameraFinishState.stripeHeight > cameraFinishState.sceneHeight*.5 && cameraFinishState.stripeBottom >= cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.96, "The finish stripe must be vertical and extend down the asphalt instead of forming a horizontal bar.");
   assert.ok(cameraFinishState.roadWidth > cameraFinishState.sceneWidth*2, "The asphalt world must extend to a longer straight.");
   assert.ok(cameraFinishState.stripeOpacity > .7, "The finish paint must be clearly visible near the finish.");
   assert.equal(cameraFinishState.approaching, true, "The final straight must activate in the last part of the race.");
