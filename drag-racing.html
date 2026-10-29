@@ -1994,7 +1994,10 @@ function updateRace2DCamera(dt=1/60){
   if(!world||!motion.scene)return;
   const carShift=raceCarOffset;
   const targetX=Math.max(0,carShift-motion.sceneWidth*.16);
-  raceCameraOffset=targetX;
+  // Do not perfectly cancel the car's own movement: a 100% follow offset makes
+  // the vehicle look glued to one point on the screen. Follow only part of the
+  // travelled offset so the car visibly advances while the road scrolls behind it.
+  raceCameraOffset=targetX*.38;
   raceCameraY=0;
   const cameraTransform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,0,0)';
   if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
