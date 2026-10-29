@@ -1051,7 +1051,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0;
+let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,nextRoadBumpAt=40;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1963,7 +1963,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
