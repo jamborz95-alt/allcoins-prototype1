@@ -48,7 +48,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-garage4"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -140,8 +140,12 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /function updateRaceCarPosition\(dt=1\/60\)/);
   assert.match(page, /raceCarOffset\+=\(motion\.shiftPx-raceCarOffset\)\*response/);
   assert.match(page, /function updateRace2DCamera\(dt=1\/60\)/);
-  assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.32\)/);
-  assert.match(page, /Math\.exp\(-Math\.max\(0,dt\)\*\(running\?42:24\)\)/);
+  assert.match(page, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.16\)/, "camera framing keeps the car at a steady screen position");
+  assert.match(page, /raceCameraOffset=targetX/);
+  assert.match(page, /raceCameraY=0/);
+  assert.match(page, /if\(now-lastHUDUpdateAt>=80\)\{updateHUD\(0,true\);lastHUDUpdateAt=now\}/);
+  assert.match(page, /marks\.style\.transform='translate3d\('/);
+  assert.match(page, /hostStyle\.display===\'none\'/);
   assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
   assert.match(page, /id="race2dFinishGate"/);
   assert.match(page, /id="race2dFinishStraight"/);
