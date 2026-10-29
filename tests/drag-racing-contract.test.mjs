@@ -48,7 +48,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam1"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam2"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -103,8 +103,19 @@ test("online opponent renders the actual selected model as PNG, not the hardcode
   assert.match(page, /lada-2107-side\.png\?v=20261029-opponent-entry1/, "The VAZ-2107 rival must use the authored side-view PNG.");
   assert.match(page, /function carSvgToPngDataUrl\(modelId,paint\)/, "Other selected models must be delivered as PNG raster images.");
   assert.match(page, /image\.className='opponent-car-png'/, "The opponent slot must render an image element.");
-  assert.match(page, /\.race2d-car\.png-opponent-car\{[\s\S]*opacity:1!important;visibility:visible!important;transform:scale\(1\)!important/, "The opponent PNG must be visible immediately instead of being hidden until a race-state toggle.");
+  assert.match(page, /\.race2d-car\.png-opponent-car\{[\s\S]*opacity:1!important;visibility:visible!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important/, "The opponent PNG must stay visible while its scale follows relative distance.");
   assert.doesNotMatch(page, /opponent\.innerHTML=carSvg\('2110'/, "The fixed old VAZ-2110 SVG must not be used for the opponent.");
+});
+
+
+test("online opponent position follows relative progress and can leave and re-enter the fixed camera view", () => {
+  assert.match(page, /const playerWorldLeft=12\+\(raceCarOffset\/sceneWidth\)\*100/);
+  assert.match(page, /const targetLeft=Math\.max\(-500,Math\.min\(500,playerWorldLeft\+delta\*256\)\)/);
+  assert.match(page, /const predictionSeconds=Math\.min\(\.65,ageSeconds\)/);
+  assert.match(page, /const positionAlpha=1-Math\.exp\(-frameDt\*10\)/);
+  assert.match(page, /transition:none!important;will-change:left,top,transform!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important/);
+  assert.doesNotMatch(page, /const targetLeft=Math\.max\(14,Math\.min\(72/);
+  assert.match(page, /mode==='racing'\?350:1800\)/, "online race telemetry should refresh often enough for smooth rival updates");
 });
 
 test("car travel and track motion scale up as speed increases", () => {
