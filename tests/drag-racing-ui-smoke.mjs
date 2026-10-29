@@ -219,7 +219,7 @@ try {
   assert.match(html, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
   assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The finish stripe should stay inset within the asphalt.");
   assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish mark should have small, neat checkered squares.");
-  assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
+  assert.match(html, /function updateRace2DCamera\(dt=1\/60(?:,motion=null)?\)/, "The camera should follow the moving car with the shared frame state.");
   assert.doesNotMatch(html, /gate\.style\.left\s*=|stripe\.style\.left\s*=/, "Finish graphics should use compositor transforms rather than per-frame layout changes.");
   assert.match(html, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/, "All race modes should be four times longer.");
   assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish checkers must run vertically.");
