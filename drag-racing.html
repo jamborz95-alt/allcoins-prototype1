@@ -636,6 +636,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 
 
 /* Engine-on effects: subtle idle vibration, warm headlamps and layered exhaust smoke. */
+.race2d-car.player:after{display:none!important}
 .race-car-headlight-glow,.race-car-exhaust-puff{position:absolute;pointer-events:none}
 .race-car-headlight-glow{left:83%;top:40%;width:47%;height:30%;z-index:4;opacity:0;transform-origin:left center;clip-path:polygon(0 34%,100% 0,100% 100%,0 66%);background:linear-gradient(90deg,#fff8c8d9 0%,#fff1a86b 20%,#ffe7a51c 67%,transparent 100%);filter:blur(3px);transition:opacity .18s ease}
 .race-car-headlight-glow:after{content:"";position:absolute;left:0;top:33%;width:12%;height:34%;border-radius:50%;background:#fff6c8;box-shadow:0 0 5px 3px #fff3a8,0 0 13px 7px #ffd66a99,0 0 24px 12px #ffce4b48}
@@ -1952,7 +1953,6 @@ function updateUnevenRoad(dt,frameNow=performance.now()){
 function setGear(g){
   if(g!=='N')g=Math.max(1,Math.min(5,Number(g)||1));
   const previousGear=gear;
-  if(previousGear===g)return true;
   const now=performance.now();
   if(running&&g!=='N'&&previousGear!=='N'&&Number(g)<Number(previousGear)&&speed>6){
     const requestedWheelRpm=speed*42*gearRatio(g);
