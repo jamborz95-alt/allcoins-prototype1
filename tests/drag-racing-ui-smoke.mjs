@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-fixedcam2"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-fixedcam3"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -447,11 +447,11 @@ try {
     return opponent?.classList.contains("opponent-moving") &&
       Number(opponent.dataset.opponentSpeedKmh || 0) > 10;
   }, null, { timeout: 5000 });
-  const rivalPositionBefore = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.left)) || 0;
+  const rivalPositionBefore = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.getPropertyValue('--opponent-translate-x'))) || 0;
   const rivalWheelDurationBefore = await page.locator("#race2dOpponentCar").evaluate(el => getComputedStyle(el.querySelector(".opponent-wheel-spin")).animationDuration);
   const rivalWheelTransformBefore = await page.locator("#race2dOpponentCar .opponent-wheel-spin").first().evaluate(el => getComputedStyle(el).transform);
   await page.waitForTimeout(720);
-  const rivalPositionAfter = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.left)) || 0;
+  const rivalPositionAfter = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.getPropertyValue('--opponent-translate-x'))) || 0;
   const rivalWheelDurationAfter = await page.locator("#race2dOpponentCar").evaluate(el => getComputedStyle(el.querySelector(".opponent-wheel-spin")).animationDuration);
   const rivalWheelTransformAfter = await page.locator("#race2dOpponentCar .opponent-wheel-spin").first().evaluate(el => getComputedStyle(el).transform);
   assert.ok(rivalPositionAfter > rivalPositionBefore + 1,
@@ -469,7 +469,7 @@ try {
   forcedOpponentProgress = 1;
   await page.waitForFunction(() => {
     const rival = document.querySelector("#race2dOpponentCar");
-    return rival && Number.parseFloat(rival.style.left) > 110;
+    return rival && Number.parseFloat(rival.style.getPropertyValue('--opponent-translate-x')) > (document.querySelector('.race2d-scene')?.clientWidth || 390);
   }, null, { timeout: 5000 });
   const localCameraWhileRivalIsFarAhead = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
   assert.equal(localCameraWhileRivalIsFarAhead, localCameraBeforeRivalLeaves,
@@ -478,8 +478,8 @@ try {
   forcedOpponentProgress = "match";
   await page.waitForFunction(() => {
     const rival = document.querySelector("#race2dOpponentCar");
-    const left = Number.parseFloat(rival?.style.left);
-    return Number.isFinite(left) && left >= 0 && left < 100;
+    const left = Number.parseFloat(rival?.style.getPropertyValue('--opponent-translate-x'));
+    return Number.isFinite(left) && left >= 0 && left < (document.querySelector('.race2d-scene')?.clientWidth || 390);
   }, null, { timeout: 7000 });
   const localCameraAfterCatch = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
   assert.equal(localCameraAfterCatch, localCameraBeforeRivalLeaves,
