@@ -9,8 +9,8 @@ const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 
 test("drag racing uses engine and gear-change audio samples with RPM-linked pitch", () => {
-  assert.match(page, /const RACE_ENGINE_SAMPLE_URL='https:\/\/sfxmint\.com\/dl\/car-revving-08\.mp3'/);
-  assert.match(page, /const RACE_SHIFT_SAMPLE_URL='https:\/\/sfxmint\.com\/dl\/race-car-10\.mp3'/);
+  assert.match(page, /const RACE_ENGINE_SAMPLE_URLS=\['https:\/\/sfxmint\.com\/dl\/car-revving-08\.mp3'/);
+  assert.match(page, /const RACE_SHIFT_SAMPLE_URLS=\['https:\/\/sfxmint\.com\/dl\/race-car-10\.mp3'/);
   assert.match(page, /async function loadRaceAudioSamples\(\)/);
   assert.match(page, /function startRaceEngineSample\(\)/);
   assert.match(page, /raceEngineSampleSource\.playbackRate\.setTargetAtTime\(playbackRate/);
@@ -62,7 +62,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-engineaudio1"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-physicsfinishlights2"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -152,7 +152,7 @@ test("car travel and track motion scale up as speed increases", () => {
 });
 
 
-test("drag strip is four times longer and uses a vertical checkered finish line", () => {
+test("drag strip is four times longer and uses a painted checkered finish line", () => {
   assert.match(page, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/);
   assert.match(page, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The race environment should be four times wider than before.");
   assert.match(page, /\.race2d-road-surface\{[^}]*overflow:hidden[^}]*\}/, "The asphalt surface must clip the finish marking to the road edges.");
@@ -163,7 +163,7 @@ test("drag strip is four times longer and uses a vertical checkered finish line"
   assert.match(page, /raceDistanceLabels=\{quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'\}/);
 });
 
-test("smooth car and camera tracking with a clean finish straight and clear finish gate", () => {
+test("smooth car tracking, engine effects, realistic gear protection, and painted finish", () => {
   assert.match(page, /id="race2dCameraWorld" class="race2d-camera-world"/);
   assert.match(page, /function updateRaceCarPosition\(dt=1\/60(?:,motion=null)?\)/);
   assert.match(page, /raceCarOffset=frameMotion\.shiftPx/, "car position is rendered directly without a second easing filter");
@@ -176,7 +176,7 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /setTransform\(marks,'translate3d\('/);
   assert.match(page, /hostStyle\.display===\'none\'/);
   assert.doesNotMatch(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/, "the chase camera should not lag behind the car");
-  assert.match(page, /id="race2dFinishGate"/);
+  assert.doesNotMatch(page, /id="race2dFinishGate"/, "The old overhead finish structure must not be rendered.");
   assert.match(page, /id="race2dFinishStraight"/);
   const finishSurfaceCss = page.match(/\.race2d-finish-straight\s*\{([^}]*)\}/s);
   assert.ok(finishSurfaceCss, "the finish-straight surface should be present");
@@ -184,6 +184,10 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /scene\.classList\.toggle\('race-finish-approach',progress>=\.58\)/);
   assert.match(page, /scene\.classList\.toggle\('race-near-finish',progress>=\.82\)/);
   assert.match(page, /updateRace2DEnvironment\(0\);/);
+  assert.match(page, /requestedWheelRpm>6250/, "A downshift must be blocked if it would over-rev the engine.");
+  assert.match(page, /shiftTorqueUntil=now\+145/, "Gear changes should briefly interrupt drive torque.");
+  assert.match(page, /race-car-headlight-glow/, "Headlights should be visible when the cockpit is active.");
+  assert.match(page, /race-car-exhaust-puff/, "Exhaust smoke should animate from the running vehicle.");
 });
 
 test("drag race motion is frame-synced and the cockpit has separated shifters and a physical-style gas pedal", () => {
