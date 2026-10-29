@@ -406,7 +406,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-scene.race-finish-approach .race2d-finish-straight{opacity:.22}
 .race2d-scene.race-near-finish .race2d-finish-straight{opacity:.32}
 .race2d-finish-gate{
-  position:absolute;left:97%;top:5%;bottom:0;width:clamp(70px,8vw,112px);
+  position:absolute;left:0;top:5%;bottom:0;width:clamp(70px,8vw,112px);
   z-index:4;pointer-events:none;opacity:.78;
   transform:translate3d(-50%,0,0) scale(var(--race-finish-scale,.72));
   transform-origin:bottom center;
@@ -442,7 +442,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   position:absolute;left:0;top:0;bottom:clamp(10px,2%,20px);width:clamp(14px,1.45vw,20px);
   box-sizing:border-box;z-index:5;pointer-events:none;opacity:.18;
   transform:translate3d(-50%,0,0);
-  transform-origin:center center;backface-visibility:hidden;will-change:left,opacity;
+  transform-origin:center center;backface-visibility:hidden;will-change:transform,opacity;
   background:repeating-conic-gradient(#111416 0 25%,#fffbed 0 50%) 50%/8px 8px;
   border:1px solid #f5efd9;
   border-radius:1px;
@@ -1992,25 +1992,29 @@ function updateRace2DCamera(dt=1/60){
   const motion=getRaceCarMotion();
   const world=$('race2dCameraWorld'),gate=$('race2dFinishGate'),stripe=$('race2dFinishStripe');
   if(!world||!motion.scene)return;
-  // Begin tracking early and keep the car near the left side instead of letting it run ahead.
   const carShift=raceCarOffset;
-  // Lock the camera to the car after the short launch movement: the car stays
-  // at a steady screen position while the track and finish line pass behind it.
   const targetX=Math.max(0,carShift-motion.sceneWidth*.16);
   raceCameraOffset=targetX;
   raceCameraY=0;
-  world.style.transform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,0,0)';
+  const cameraTransform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,0,0)';
+  if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
   if(gate){
     const carWidth=Math.max(320,Math.min(600,motion.sceneWidth*.40));
     const finishX=motion.sceneWidth*.12+carShift+carWidth*.96+motion.sceneWidth*2.56*(1-motion.progress);
-    gate.style.left=finishX.toFixed(2)+'px';
+    const finishScale=(0.72+motion.progress*.35).toFixed(3);
+    // Move the gantry with compositor transforms rather than layout-affecting left updates.
+    const gateTransform='translate3d('+finishX.toFixed(2)+'px,0,0) translate3d(-50%,0,0) scale('+finishScale+')';
+    if(gate.style.transform!==gateTransform)gate.style.transform=gateTransform;
+    if(gate.dataset.worldX!==finishX.toFixed(2))gate.dataset.worldX=finishX.toFixed(2);
+    const gateOpacity=String(0.72+motion.progress*0.28);
+    if(gate.style.opacity!==gateOpacity)gate.style.opacity=gateOpacity;
     if(stripe){
-      stripe.style.left=finishX.toFixed(2)+'px';
-
-      stripe.style.opacity=String(0.18+motion.progress*0.82);
+      const stripeTransform='translate3d('+finishX.toFixed(2)+'px,0,0) translate3d(-50%,0,0)';
+      if(stripe.style.transform!==stripeTransform)stripe.style.transform=stripeTransform;
+      if(stripe.dataset.worldX!==finishX.toFixed(2))stripe.dataset.worldX=finishX.toFixed(2);
+      const stripeOpacity=String(0.18+motion.progress*0.82);
+      if(stripe.style.opacity!==stripeOpacity)stripe.style.opacity=stripeOpacity;
     }
-    gate.style.setProperty('--race-finish-scale',(0.72+motion.progress*.35).toFixed(3));
-    gate.style.opacity=String(0.72+motion.progress*.28);
   }
 }
 function updateHUD(dt=1/60,motionAlreadyUpdated=false){
