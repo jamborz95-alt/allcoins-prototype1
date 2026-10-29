@@ -5,6 +5,7 @@ const MAX_STAKE = BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 5));
 const MIN_RACE_FINISH_MS = 7000;
 const MAX_FINISH_TIME_DRIFT_MS = 2500;
 const VALID_MODES = new Set(["quarter", "half", "sprint"]);
+const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, sprint: 4000 });
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const CARS = Object.freeze({
   "2107": { price: 0, power: 72 },
@@ -162,23 +163,37 @@ async function roomPayload(client, roomId, userId) {
   if (!row) throw new DragRacingError(404, "Комната не найдена или уже закрыта.");
   const gameState = objectValue(row.game_state);
   const results = objectValue(gameState.results);
+  const motionByPlayer = objectValue(gameState.motion);
   const playerRows = await client.query(
     "SELECT telegram_id::TEXT AS telegram_id, display_name, car_id, joined_at, last_seen_at " +
     "FROM drag_racing_room_players WHERE room_id = $1::BIGINT ORDER BY joined_at ASC, telegram_id ASC",
     [String(roomId)]
   );
   const players = playerRows.rows.map(player => {
-    const result = objectValue(results[String(player.telegram_id)]);
+    const playerId = String(player.telegram_id);
+    const result = objectValue(results[playerId]);
+    const motion = objectValue(motionByPlayer[playerId]);
+    const motionUpdatedAt = Number(motion.updatedAt) || 0;
+    const motionAgeMs = motionUpdatedAt ? Math.max(0, Date.now() - motionUpdatedAt) : Number.POSITIVE_INFINITY;
+    const safeProgress = Math.max(0, Math.min(1, Number(motion.progress) || 0));
     return {
-      id: String(player.telegram_id),
+      id: playerId,
       name: String(player.display_name || "Игрок").slice(0, 40),
       carId: String(player.car_id || "2107"),
-      isYou: String(player.telegram_id) === String(userId),
-      isOwner: String(player.telegram_id) === String(row.owner_telegram_id),
+      isYou: playerId === String(userId),
+      isOwner: playerId === String(row.owner_telegram_id),
       connected: player.last_seen_at ? Date.now() - new Date(player.last_seen_at).getTime() < 15000 : false,
       joinedAt: player.joined_at,
       finishTimeMs: Number.isFinite(Number(result.timeMs)) ? Number(result.timeMs) : null,
-      forfeit: Boolean(result.forfeit)
+      forfeit: Boolean(result.forfeit),
+      motion: motionUpdatedAt ? {
+        speedKmh: Math.max(0, Math.min(400, Number(motion.speedKmh) || 0)),
+        distanceM: Math.max(0, Number(motion.distanceM) || 0),
+        progress: safeProgress,
+        gear: Math.max(0, Math.min(5, Number(motion.gear) || 0)),
+        updatedAt: motionUpdatedAt,
+        fresh: motionAgeMs <= 1900
+      } : null
     };
   });
   return {
@@ -739,7 +754,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     try {
       await client.query("BEGIN"); open = true;
       const roomResult = await client.query(
-        "SELECT id::TEXT AS id, stake::TEXT AS stake, status, game_state FROM drag_racing_rooms WHERE id = $1::BIGINT FOR UPDATE",
+        "SELECT id::TEXT AS id, stake::TEXT AS stake, mode, status, game_state FROM drag_racing_rooms WHERE id = $1::BIGINT FOR UPDATE",
         [roomId]
       );
       const room = roomResult.rows[0];
@@ -749,8 +764,8 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         [roomId, user.id]
       );
       if (!member.rows.length) throw new DragRacingError(403, "Ты не состоишь в этой комнате.");
+      const game = objectValue(room.game_state);
       if (room.status === "racing") {
-        const game = objectValue(room.game_state);
         if (Date.now() - Number(game.startedAt || Date.now()) > 120000) {
           const players = await client.query(
             "SELECT telegram_id::TEXT AS telegram_id, display_name, car_id FROM drag_racing_room_players WHERE room_id = $1::BIGINT ORDER BY joined_at ASC",
@@ -794,6 +809,36 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
                 [roomId, JSON.stringify(game)]
               );
             }
+          }
+        }
+      }
+
+      const telemetry = req.body?.telemetry;
+      if (room.status === "racing" && game.phase !== "finished" && telemetry && typeof telemetry === "object") {
+        const speedKmh = Number(telemetry.speedKmh);
+        const distanceM = Number(telemetry.distanceM);
+        const gear = Number(telemetry.gear);
+        const maxDistance = RACE_DISTANCE_METERS[String(room.mode)] || RACE_DISTANCE_METERS.quarter;
+        if (Number.isFinite(speedKmh) && speedKmh >= 0 && speedKmh <= 400 &&
+            Number.isFinite(distanceM) && distanceM >= 0 && distanceM <= maxDistance + 50 &&
+            Number.isInteger(gear) && gear >= 0 && gear <= 5) {
+          const motionByPlayer = objectValue(game.motion);
+          const previousMotion = objectValue(motionByPlayer[user.id]);
+          const now = Date.now();
+          if (now - (Number(previousMotion.updatedAt) || 0) >= 250) {
+            const safeDistance = Math.min(maxDistance, distanceM);
+            motionByPlayer[user.id] = {
+              speedKmh: Math.round(speedKmh * 10) / 10,
+              distanceM: Math.round(safeDistance * 10) / 10,
+              progress: Math.max(0, Math.min(1, safeDistance / maxDistance)),
+              gear,
+              updatedAt: now
+            };
+            game.motion = motionByPlayer;
+            await client.query(
+              "UPDATE drag_racing_rooms SET game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
+              [roomId, JSON.stringify(game)]
+            );
           }
         }
       }

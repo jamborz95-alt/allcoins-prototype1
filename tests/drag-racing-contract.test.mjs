@@ -13,6 +13,21 @@ test("Drag Racing API is mounted and initialized with the same server wallet", (
   assert.match(server, /await dragRacingRouter\.initialize\(\)/);
 });
 
+test("online racing shares bounded per-player speed and progress telemetry", () => {
+  assert.match(router, /const RACE_DISTANCE_METERS = Object\.freeze\(\{ quarter: 1609\.344, half: 3218\.688, sprint: 4000 \}\)/);
+  assert.match(router, /const telemetry = req\.body\?\.telemetry/);
+  assert.match(router, /speedKmh >= 0 && speedKmh <= 400/);
+  assert.match(router, /distanceM <= maxDistance \+ 50/);
+  assert.match(router, /motionByPlayer\[user\.id\] = \{/);
+  assert.match(router, /fresh: motionAgeMs <= 1900/);
+  assert.match(page, /function raceTelemetryPayload\(\)/);
+  assert.match(page, /payload\.telemetry=raceTelemetryPayload\(\)/);
+  assert.match(page, /function updateOnlineOpponentMotion\(dt\)/);
+  assert.match(page, /opponent\.style\.left=onlineOpponentMotion\.left\.toFixed\(2\)/);
+  assert.match(page, /opponent-wheel-spin/);
+  assert.match(page, /--opponent-wheel-duration/);
+});
+
 test("online rooms enforce Telegram identity, room size, valid modes and server-side stakes", () => {
   assert.match(router, /verifyTelegram\(req\.body\?\.initData\)/);
   assert.match(router, /max_players INTEGER NOT NULL CHECK \(max_players BETWEEN 2 AND 5\)/);
@@ -33,7 +48,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-opponent1"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-opponent2"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {

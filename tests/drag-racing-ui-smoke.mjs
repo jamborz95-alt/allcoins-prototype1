@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent2"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -21,6 +21,7 @@ let selectedCarId = "2107";
 let upgrades = { "2107": {} };
 let tune = { ecu: 50, boost: 25, grip: 70, shift: 45 };
 let activeRoom = null;
+let opponentTelemetryTick = 0;
 const apiCalls = [];
 const carPrices = { "2101": 2500, "2105": 3500, "2104": 4500, "2106": 6000, "2109": 7500, "2110": 11000, priora: 18000, kalina: 25000, granta: 35000, niva: 50000, vesta: 85000 };
 
@@ -119,6 +120,33 @@ try {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(roomPayload()) });
     }
     if (url.pathname === "/api/drag-racing/rooms/state") {
+      if (activeRoom?.room.status === "racing") {
+        const ownPlayer = activeRoom.players.find(player => player.isYou);
+        if (body.telemetry && ownPlayer) {
+          const distanceM = Math.max(0, Number(body.telemetry.distanceM) || 0);
+          ownPlayer.motion = {
+            speedKmh: Number(body.telemetry.speedKmh) || 0,
+            distanceM,
+            progress: Math.min(1, distanceM / 1609.344),
+            gear: Number(body.telemetry.gear) || 0,
+            updatedAt: Date.now(),
+            fresh: true
+          };
+        }
+        const rival = activeRoom.players.find(player => !player.isYou);
+        if (rival) {
+          opponentTelemetryTick += 1;
+          const distanceM = Math.min(1500, 25 + opponentTelemetryTick * 70);
+          rival.motion = {
+            speedKmh: Math.min(280, 75 + opponentTelemetryTick * 22),
+            distanceM,
+            progress: Math.min(1, distanceM / 1609.344),
+            gear: Math.min(5, 1 + Math.floor(opponentTelemetryTick / 3)),
+            updatedAt: Date.now(),
+            fresh: true
+          };
+        }
+      }
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(roomPayload()) });
     }
     if (url.pathname === "/api/drag-racing/rooms/leave") {
@@ -368,10 +396,33 @@ try {
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0,
     "The network opponent must not use the old inline SVG.");
   assert.equal(await page.locator("#race2dOpponentCar .opponent-car-png").getAttribute("src"),
-    "./cars/lada-2107-side.png?v=20261029-opponent1",
+    "./cars/lada-2107-side.png?v=20261029-opponent2",
     "A rival driving a VAZ-2107 must display the actual side-view PNG asset.");
   assert.match(await page.locator("#race2dOpponentCar").getAttribute("aria-label"), /ВАЗ-2107/,
     "The visible opponent model should match the rival's selected carId.");
+  assert.equal(await page.locator("#race2dOpponentCar .opponent-wheel-spin").count(), 2,
+    "The rival PNG must have two visible wheel overlays.");
+  await page.waitForFunction(() => {
+    const opponent = document.querySelector("#race2dOpponentCar");
+    return opponent?.classList.contains("opponent-moving") &&
+      Number(opponent.dataset.opponentSpeedKmh || 0) > 10;
+  }, null, { timeout: 5000 });
+  const rivalPositionBefore = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.left)) || 0;
+  const rivalWheelDurationBefore = await page.locator("#race2dOpponentCar").evaluate(el => getComputedStyle(el.querySelector(".opponent-wheel-spin")).animationDuration);
+  const rivalWheelTransformBefore = await page.locator("#race2dOpponentCar .opponent-wheel-spin").first().evaluate(el => getComputedStyle(el).transform);
+  await page.waitForTimeout(720);
+  const rivalPositionAfter = Number.parseFloat(await page.locator("#race2dOpponentCar").evaluate(el => el.style.left)) || 0;
+  const rivalWheelDurationAfter = await page.locator("#race2dOpponentCar").evaluate(el => getComputedStyle(el.querySelector(".opponent-wheel-spin")).animationDuration);
+  const rivalWheelTransformAfter = await page.locator("#race2dOpponentCar .opponent-wheel-spin").first().evaluate(el => getComputedStyle(el).transform);
+  assert.ok(rivalPositionAfter > rivalPositionBefore + 1,
+    "The opponent car must change its position when the online progress is updated.");
+  assert.notEqual(rivalWheelDurationAfter, rivalWheelDurationBefore,
+    "The opponent wheel animation speed must change as the rival's online speed changes.");
+  assert.notEqual(rivalWheelTransformAfter, rivalWheelTransformBefore,
+    "The opponent wheels must visibly rotate between browser frames.");
+  assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/rooms/state" && call.body.telemetry &&
+    typeof call.body.telemetry.speedKmh === "number" && typeof call.body.telemetry.distanceM === "number"),
+    "The client must send its live race telemetry to the room so all players can see its motion.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-online-opponent-png.png"), fullPage: false });
 
   assert.ok(pageErrors.length === 0, "Browser console errors: " + pageErrors.join("; "));
