@@ -22,6 +22,7 @@ let upgrades = { "2107": {} };
 let tune = { ecu: 50, boost: 25, grip: 70, shift: 45 };
 let activeRoom = null;
 let opponentTelemetryTick = 0;
+let forcedOpponentProgress = null;
 const apiCalls = [];
 const carPrices = { "2101": 2500, "2105": 3500, "2104": 4500, "2106": 6000, "2109": 7500, "2110": 11000, priora: 18000, kalina: 25000, granta: 35000, niva: 50000, vesta: 85000 };
 
@@ -136,9 +137,14 @@ try {
         const rival = activeRoom.players.find(player => !player.isYou);
         if (rival) {
           opponentTelemetryTick += 1;
-          const distanceM = Math.min(1500, 25 + opponentTelemetryTick * 70);
+          const localDistance = Math.max(0, Number(ownPlayer?.motion?.distanceM) || 0);
+          const distanceM = forcedOpponentProgress === "match"
+            ? localDistance
+            : typeof forcedOpponentProgress === "number"
+              ? Math.max(0, Math.min(1609.344, forcedOpponentProgress * 1609.344))
+              : Math.min(1500, 25 + opponentTelemetryTick * 70);
           rival.motion = {
-            speedKmh: Math.min(280, 75 + opponentTelemetryTick * 22),
+            speedKmh: forcedOpponentProgress === "match" ? Math.min(280, Number(ownPlayer?.motion?.speedKmh) || 0) : Math.min(280, 75 + opponentTelemetryTick * 22),
             distanceM,
             progress: Math.min(1, distanceM / 1609.344),
             gear: Math.min(5, 1 + Math.floor(opponentTelemetryTick / 3)),
@@ -459,60 +465,27 @@ try {
     "The client must send its live race telemetry to the room so all players can see its motion.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-online-opponent-png.png"), fullPage: false });
 
-  const relativeOpponentTest = await page.evaluate(() => {
-    const scene = document.querySelector(".race2d-scene");
-    const world = document.querySelector("#race2dCameraWorld");
-    const opponent = document.querySelector("#race2dOpponentCar");
-    const rival = currentOnlineRoom.players.find(player => !player.isYou);
-    const max = Number(maxDist) || 1609.344;
-    speed = 0;
-    distance = 0;
-    racePeakSpeed = 0;
-    raceCarOffset = 0;
-    raceCameraOffset = 0;
-    raceCameraY = 0;
-    updateRaceCarPosition(1 / 60);
-    updateRace2DCamera(1 / 60);
-    const cameraBefore = getComputedStyle(world).transform;
-    rival.motion = { speedKmh: 0, distanceM: max, progress: 1, gear: 4, updatedAt: Date.now(), fresh: true };
-    onlineOpponentMotion.targetProgress = 1;
-    onlineOpponentMotion.progress = 1;
-    onlineOpponentMotion.targetSpeedKmh = 0;
-    onlineOpponentMotion.speedKmh = 0;
-    onlineOpponentMotion.left = 12;
-    onlineOpponentMotion.top = 38;
-    for (let i = 0; i < 120; i++) updateOnlineOpponentMotion(1 / 60);
-    const sceneRect = scene.getBoundingClientRect();
-    const farRect = opponent.getBoundingClientRect();
-    const cameraAfterRemoteMotion = getComputedStyle(world).transform;
-    distance = max;
-    racePeakSpeed = 0;
-    for (let i = 0; i < 120; i++) {
-      updateRaceCarPosition(1 / 60);
-      updateRace2DCamera(1 / 60);
-      updateOnlineOpponentMotion(1 / 60);
-    }
-    const caughtRect = opponent.getBoundingClientRect();
-    return {
-      cameraBefore,
-      cameraAfterRemoteMotion,
-      sceneLeft: sceneRect.left,
-      sceneRight: sceneRect.right,
-      farLeft: farRect.left,
-      farRight: farRect.right,
-      caughtLeft: caughtRect.left,
-      caughtRight: caughtRect.right,
-      relativeProgress: Number(opponent.dataset.relativeProgress),
-      farOffscreen: farRect.left >= sceneRect.right || farRect.right <= sceneRect.left,
-      visibleAfterCatch: caughtRect.right > sceneRect.left && caughtRect.left < sceneRect.right
-    };
-  });
-  assert.equal(relativeOpponentTest.cameraAfterRemoteMotion, relativeOpponentTest.cameraBefore,
-    "The local chase camera must not move when only the opponent's position changes.");
-  assert.equal(relativeOpponentTest.farOffscreen, true,
-    "An opponent well ahead must be allowed to drive beyond the edge of the local screen.");
-  assert.equal(relativeOpponentTest.visibleAfterCatch, true,
-    "The opponent must return into view when the local driver catches up to the same progress.");
+  const localCameraBeforeRivalLeaves = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
+  forcedOpponentProgress = 1;
+  await page.waitForFunction(() => {
+    const scene = document.querySelector(".race2d-scene")?.getBoundingClientRect();
+    const rival = document.querySelector("#race2dOpponentCar")?.getBoundingClientRect();
+    return scene && rival && (rival.left >= scene.right || rival.right <= scene.left);
+  }, null, { timeout: 5000 });
+  const localCameraWhileRivalIsFarAhead = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
+  assert.equal(localCameraWhileRivalIsFarAhead, localCameraBeforeRivalLeaves,
+    "The local camera must not follow or move because the rival drives far ahead.");
+
+  forcedOpponentProgress = "match";
+  await page.waitForFunction(() => {
+    const scene = document.querySelector(".race2d-scene")?.getBoundingClientRect();
+    const rival = document.querySelector("#race2dOpponentCar")?.getBoundingClientRect();
+    return scene && rival && rival.right > scene.left && rival.left < scene.right;
+  }, null, { timeout: 7000 });
+  const localCameraAfterCatch = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
+  assert.equal(localCameraAfterCatch, localCameraBeforeRivalLeaves,
+    "Opponent motion and re-entry must not move the local camera.");
+
 
 
   assert.ok(pageErrors.length === 0, "Browser console errors: " + pageErrors.join("; "));
