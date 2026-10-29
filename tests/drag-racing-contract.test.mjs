@@ -146,7 +146,7 @@ test("smooth car and camera tracking with a clean finish straight and clear fini
   assert.match(page, /if\(now-lastHUDUpdateAt>=80\)\{updateHUD\(0,true\);lastHUDUpdateAt=now\}/);
   assert.match(page, /marks\.style\.transform='translate3d\('/);
   assert.match(page, /hostStyle\.display===\'none\'/);
-  assert.match(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/);
+  assert.doesNotMatch(page, /raceCameraOffset\+=\(targetX-raceCameraOffset\)\*follow/, "the chase camera should not lag behind the car");
   assert.match(page, /id="race2dFinishGate"/);
   assert.match(page, /id="race2dFinishStraight"/);
   const finishSurfaceCss = page.match(/\.race2d-finish-straight\s*\{([^}]*)\}/s);
