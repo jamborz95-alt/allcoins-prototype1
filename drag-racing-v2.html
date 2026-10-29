@@ -1649,7 +1649,7 @@ function buildProTachScale(){
   const size=scale.clientWidth||190,center=size/2;
   for(let i=0;i<=45;i++){
     const angle=-125+(250*i/45),major=i%5===0;
-    const tick=document.createElement('i');tick.className='pro-tach-tick'+(major?' major':'')+(i>=35?' hot':'');
+    const tick=document.createElement('i');tick.className='pro-tach-tick'+(major?' major':'')+(i>=32?' hot':'');
     const rad=angle*Math.PI/180, radius=size*(major?.414:.427);
     tick.style.left=(center+Math.sin(rad)*radius)+'px';
     tick.style.top=(center-Math.cos(rad)*radius)+'px';
@@ -1765,7 +1765,7 @@ function syncProRaceCockpit(){
   const speedNeedle=$('proSpeedNeedle');
   if(speedNeedle)speedNeedle.style.transform='translateX(-50%) rotate('+(-125+Math.max(0,Math.min(280,speedNow))/280*250)+'deg)';
   if(!raceCockpitOpen)return;
-  $('proRaceStatus').textContent=finished?'ФИНИШ · '+(lastFinishMs/1000).toFixed(3)+' с':!running?'Готов к старту':performance.now()<greenAt?'УДЕРЖИВАЙ ГАЗ · ЖДИ ЗЕЛЁНЫЙ':rpm>7600?'ПЕРЕКЛЮЧИ ПЕРЕДАЧУ':'Держи обороты в рабочей зоне';
+  $('proRaceStatus').textContent=finished?'ФИНИШ · '+(lastFinishMs/1000).toFixed(3)+' с':!running?'Готов к старту':performance.now()<greenAt?'УДЕРЖИВАЙ ГАЗ · ЖДИ ЗЕЛЁНЫЙ':(gear!=='N'&&rpm>=5700)?'ПЕРЕКЛЮЧИ ПЕРЕДАЧУ':'Держи обороты в рабочей зоне';
   $('proRaceFinishActions').classList.toggle('visible',finished);
   $('proExitRace').disabled=Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'&&!finished);
 }
