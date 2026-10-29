@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-engineaudio1"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-physicsfinishlights2"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.match(html, /nextRoadBumpAt=40/, "The first uneven-road threshold must be initialized and restored on reset.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
@@ -213,11 +213,11 @@ try {
   assert.equal((await page.locator("#fuelCapacity").textContent()).trim(), "42", "The selected VAZ-2107 must show its 42-liter tank.");
   assert.equal((await page.locator("#proFuelCap").textContent()).trim(), "42", "The full-screen cockpit must also show fuel capacity.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
-  assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
+  assert.equal(await page.locator("#race2dFinishGate").count(), 0, "The overhead finish gantry must be removed; only track paint remains.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
   assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be inside the clipped asphalt surface, not part of the gantry.");
   assert.match(html, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
-  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The finish stripe should stay inset within the asphalt.");
+  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The painted finish line should stay inset within the asphalt.");
   assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish mark should have small, neat checkered squares.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60(?:,motion=null)?\)/, "The camera should follow the moving car with the shared frame state.");
   assert.doesNotMatch(html, /gate\.style\.left\s*=|stripe\.style\.left\s*=/, "Finish graphics should use compositor transforms rather than per-frame layout changes.");
@@ -228,6 +228,9 @@ try {
   assert.equal(await page.locator("#proSpeedScale .pro-speed-tick").count() > 0, true, "The second analog speedometer must be built.");
   assert.equal(await page.locator("#proSpeedMeterBar").count(), 1, "The cockpit must contain a live speedometer bar.");
   assert.match(html, /race2d-wheel-spin/, "Wheel rotation animation must be defined.");
+  assert.match(html, /race-car-headlight-glow/, "The running car should show headlight glow.");
+  assert.match(html, /race-car-exhaust-puff/, "The running car should animate exhaust smoke.");
+  assert.match(html, /requestedWheelRpm>6250/, "The gearbox should reject an unsafe high-speed downshift.");
   assert.doesNotMatch(html, /shiftCutUntil/, "Gear changes must not trigger a forced throttle cut.");
   assert.match(html, /new T\.Sprite\(material\)/, "Race-lane vehicles must be 2D sprites, not 3D mesh cars.");
   assert.doesNotMatch(html, /loadPremiumOpponent/, "A remote 3D opponent must not replace the 2D car artwork.");
@@ -358,7 +361,7 @@ try {
   await page.locator("#proShiftUp").click();
   await page.locator("#proShiftUp").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "5", "The test driver should shift up to fifth gear before the long finish run.");
-  const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => el.dataset.worldX || 0));
+  const finishBeforeApproach = Number(await page.locator("#race2dFinishStripe").evaluate(el => el.dataset.worldX || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
   await page.waitForFunction(() => {
     const scene = document.querySelector(".race2d-scene");
@@ -368,12 +371,12 @@ try {
   }, null, { timeout: 65000 });
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
-    const gate = document.querySelector("#race2dFinishGate");
+    const finishStripe = document.querySelector("#race2dFinishStripe");
     const scene = document.querySelector(".race2d-scene");
     return {
       cameraX: new DOMMatrixReadOnly(getComputedStyle(world).transform).m41,
-      finishX: Number(gate.dataset.worldX || 0),
-      stripeX: Number(document.querySelector("#race2dFinishStripe")?.dataset.worldX || 0),
+      finishX: Number(finishStripe?.dataset.worldX || 0),
+      stripeX: Number(finishStripe?.dataset.worldX || 0),
       stripeY: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().top || 0,
       stripeHeight: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().height || 0,
       stripeBottom: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().bottom || 0,
@@ -392,8 +395,8 @@ try {
     };
   });
   assert.ok(cameraFinishState.cameraX < -8, "The camera must pan smoothly to follow the car as it advances.");
-  assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The finish gantry must approach the car as the remaining distance shrinks.");
-  assert.ok(Math.abs(cameraFinishState.stripeX-cameraFinishState.finishX)<1, "The finish paint must stay aligned with the gantry position.");
+  assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The painted finish line must approach the car as the remaining distance shrinks.");
+  assert.ok(Math.abs(cameraFinishState.stripeX-cameraFinishState.finishX)<1, "The finish paint position is derived directly from its own world coordinate.");
   assert.equal(cameraFinishState.stripeParentIsRoad, true, "The finish stripe must be nested inside the asphalt itself.");
   assert.equal(cameraFinishState.roadOverflow, "hidden", "The road must clip the stripe so it cannot extend past its edges.");
   assert.ok(cameraFinishState.stripeY >= cameraFinishState.roadTop - 1 && cameraFinishState.stripeY <= cameraFinishState.roadTop + 2, "The finish stripe must start exactly at the visible asphalt edge.");
