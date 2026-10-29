@@ -1640,7 +1640,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineGain=null,raceEngineFilter=null,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1771,37 +1771,71 @@ function syncProRaceCockpit(){
 }
 // Lightweight synthesized engine audio: starts only after a player gesture, so it works on mobile without external files.
 function initRaceAudio(){
-  if(raceAudioReady)return;
+  if(raceAudioReady){
+    if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
+    return;
+  }
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
   try{
     raceAudio=new AC();
     raceEngineOsc=raceAudio.createOscillator();raceEngineOsc.type='sawtooth';
-    raceEngineFilter=raceAudio.createBiquadFilter();raceEngineFilter.type='lowpass';raceEngineFilter.frequency.value=520;
+    raceEngineSubOsc=raceAudio.createOscillator();raceEngineSubOsc.type='triangle';
+    raceEngineHarmonicOsc=raceAudio.createOscillator();raceEngineHarmonicOsc.type='square';
+    raceEngineFilter=raceAudio.createBiquadFilter();raceEngineFilter.type='lowpass';raceEngineFilter.frequency.value=850;raceEngineFilter.Q.value=.65;
+    raceEnginePulseGain=raceAudio.createGain();raceEnginePulseGain.gain.value=.36;
+    raceEngineSubGain=raceAudio.createGain();raceEngineSubGain.gain.value=.48;
+    raceEngineHarmonicGain=raceAudio.createGain();raceEngineHarmonicGain.gain.value=.055;
     raceEngineGain=raceAudio.createGain();raceEngineGain.gain.value=.0001;
-    raceEngineOsc.connect(raceEngineFilter);raceEngineFilter.connect(raceEngineGain);raceEngineGain.connect(raceAudio.destination);
-    raceEngineOsc.start();raceAudioReady=true;
+    raceEngineOsc.connect(raceEnginePulseGain);raceEngineSubOsc.connect(raceEngineSubGain);raceEngineHarmonicOsc.connect(raceEngineHarmonicGain);
+    raceEnginePulseGain.connect(raceEngineFilter);raceEngineSubGain.connect(raceEngineFilter);raceEngineHarmonicGain.connect(raceEngineFilter);
+    raceEngineFilter.connect(raceEngineGain);raceEngineGain.connect(raceAudio.destination);
+
+    // Low, filtered exhaust texture makes the sound less like a single electronic beep.
+    const buffer=raceAudio.createBuffer(1,Math.max(1,Math.floor(AC.sampleRate*.45)),AC.sampleRate);
+    const noise=buffer.getChannelData(0);
+    for(let i=0;i<noise.length;i++)noise[i]=(Math.random()*2-1)*.34;
+    raceExhaustNoise=raceAudio.createBufferSource();raceExhaustNoise.buffer=buffer;raceExhaustNoise.loop=true;
+    raceExhaustFilter=raceAudio.createBiquadFilter();raceExhaustFilter.type='bandpass';raceExhaustFilter.frequency.value=190;raceExhaustFilter.Q.value=.55;
+    raceExhaustGain=raceAudio.createGain();raceExhaustGain.gain.value=.0001;
+    raceExhaustNoise.connect(raceExhaustFilter);raceExhaustFilter.connect(raceExhaustGain);raceExhaustGain.connect(raceAudio.destination);
+
+    raceEngineOsc.start();raceEngineSubOsc.start();raceEngineHarmonicOsc.start();raceExhaustNoise.start();
+    raceAudioReady=true;
+    if(raceAudio.state==='suspended')raceAudio.resume().catch(()=>{});
   }catch(_){}
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||!raceEngineOsc||!raceEngineGain)return;
-  const t=raceAudio.currentTime,throttle=gasHeld&&running?1:0;
-  const g=gear==='N'?0:Number(gear)||1;
-  const base=running?42+Math.max(0,rpm)*.105:35;
-  const targetHz=Math.max(38,Math.min(920,base+(throttle?rpm*.025:0)+(g*3)));
-  raceEngineOsc.frequency.setTargetAtTime(targetHz,t,.045);
-  raceEngineFilter.frequency.setTargetAtTime(Math.max(180,Math.min(2400,380+rpm*.19)),t,.06);
-  const volume=running?(throttle?.052:.018):.0001;
-  raceEngineGain.gain.setTargetAtTime(volume,t,.075);
+  const t=raceAudio.currentTime;
+  const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
+  const throttle=Boolean(gasHeld&&running);
+  const inNeutral=gear==='N';
+  // A four-cylinder four-stroke engine produces two firing events per crank revolution.
+  const firingHz=Math.max(24,Math.min(225,rpmNow/30));
+  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.035);
+  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.045);
+  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.04);
+  const load=throttle?(inNeutral?.42:1):(speed>1&&!inNeutral?.24:.08);
+  raceEngineFilter.frequency.setTargetAtTime(Math.max(420,Math.min(2450,520+rpmNow*.25+load*330)),t,.06);
+  raceEnginePulseGain.gain.setTargetAtTime(.31+load*.15,t,.075);
+  raceEngineSubGain.gain.setTargetAtTime(.38+load*.12,t,.08);
+  raceEngineHarmonicGain.gain.setTargetAtTime(.035+load*.055,t,.07);
+  const limiterPulse=throttle&&rpmNow>6000?(0.73+0.27*Math.sin(t*43)):1;
+  const masterVolume=running?(throttle?.105:.033):.0001;
+  raceEngineGain.gain.setTargetAtTime(masterVolume*limiterPulse,t,.055);
+  raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:145,t,.08);
+  raceExhaustGain.gain.setTargetAtTime(running?(throttle?.013:.0025):.0001,t,.07);
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();if(!raceAudio||raceAudio.state==='closed')return;
   const now=performance.now();if(now-lastGearSoundAt<85)return;lastGearSoundAt=now;
   const play=()=>{
-    if(!raceAudio)return;
+    if(!raceAudio||raceAudio.state==='closed')return;
     const t=raceAudio.currentTime,osc=raceAudio.createOscillator(),gain=raceAudio.createGain();
-    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?520:360,t);osc.frequency.exponentialRampToValueAtTime(direction>0?190:150,t+.11);
-    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.09,t+.012);gain.gain.exponentialRampToValueAtTime(.0001,t+.14);
-    osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.15);
+    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?135:110,t);
+    osc.frequency.exponentialRampToValueAtTime(direction>0?72:58,t+.075);
+    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.055,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.095);
+    osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.10);
   };
   if(raceAudio.state==='suspended')raceAudio.resume().then(play).catch(()=>{});else play();
 }
@@ -1845,10 +1879,45 @@ document.querySelectorAll('[data-gear]').forEach(b=>{
 });
 function holdButton(id,on,off){
   const el=$(id);if(!el)return;
-  const start=e=>{initRaceAudio();e.preventDefault();on();try{el.setPointerCapture(e.pointerId)}catch(_){}updateHUD()};
-  const end=e=>{if(e)e.preventDefault();off();updateHUD()};
-  el.addEventListener('pointerdown',start);
-  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
+  const activePointers=new Set();
+  const begin=e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    if(e.cancelable)e.preventDefault();
+    if(e.pointerId!==undefined){
+      if(activePointers.has(e.pointerId))return;
+      activePointers.add(e.pointerId);
+    }else if(activePointers.size)return;
+    else activePointers.add('fallback');
+    if(activePointers.size===1){
+      initRaceAudio();
+      if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
+      on();
+      el.classList.add('held');
+      updateHUD();
+    }
+  };
+  const end=e=>{
+    if(e&&e.cancelable)e.preventDefault();
+    if(e&&e.pointerId!==undefined)activePointers.delete(e.pointerId);
+    else activePointers.clear();
+    if(activePointers.size===0){
+      off();
+      el.classList.remove('held');
+      updateHUD();
+    }
+  };
+  el.addEventListener('pointerdown',begin,{passive:false});
+  window.addEventListener('pointerup',end,{passive:false});
+  window.addEventListener('pointercancel',end,{passive:false});
+  el.addEventListener('lostpointercapture',end);
+  if(!window.PointerEvent){
+    el.addEventListener('touchstart',begin,{passive:false});
+    window.addEventListener('touchend',end,{passive:false});
+    window.addEventListener('touchcancel',end,{passive:false});
+    el.addEventListener('mousedown',begin);
+    window.addEventListener('mouseup',end);
+  }
+  window.addEventListener('blur',()=>{activePointers.clear();off();el.classList.remove('held');updateHUD()});
   ['contextmenu','selectstart','dragstart'].forEach(type=>el.addEventListener(type,e=>e.preventDefault()));
   el.addEventListener('copy',e=>e.preventDefault());
 }
@@ -1946,29 +2015,43 @@ function start(sharedStartedAt=null){
     const fuelAvailable=getCarFuel(car())>0;
     if(elapsed<3000){
       const on=Math.min(3,Math.floor(elapsed/900));setLight(on);
-      if(fuelAvailable){if(gasHeld)rpm=Math.min(6200,rpm+dt*5000);else rpm=Math.max(850,rpm-dt*1600);launchRpm=rpm}else{rpm=Math.max(0,rpm-dt*5000);launchRpm=rpm;if(gasHeld)$('raceStatus').textContent='⛽ Бензин закончился — остановись и заправь автомобиль.'}
-    }else if(elapsed<3500){
-      setLight(4);$('raceStatus').textContent='🟢 СТАРТ! Удерживай газ и переключай передачи вручную.';
+      if(fuelAvailable){
+        $('raceStatus').textContent=gasHeld?'Прогрев двигателя — обороты растут…':'Удерживай газ и дождись зелёного.';
+        const targetRpm=gasHeld?6000:850;
+        const response=1-Math.exp(-dt*(gasHeld?3.4:8));
+        rpm+=((targetRpm-rpm)*response);
+        if(gasHeld&&rpm>5920)rpm=5920+Math.sin(now*.045)*55;
+        rpm=Math.max(850,Math.min(6200,rpm));
+        launchRpm=rpm;
+      }else{
+        rpm=Math.max(0,rpm-dt*5000);launchRpm=rpm;
+        if(gasHeld)$('raceStatus').textContent='⛽ Бензин закончился — остановись и заправь автомобиль.';
+      }
     }else{
       setLight(4);
-      if(gear==='N'){
-        // В нейтрали двигатель не передаёт тягу на колёса: обороты регулируются газом,
-        // а машина продолжает катиться и замедляется только от сопротивления.
-        const c=car(),v=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
-        const dragForce=dragCoeff*v*v,rollingForce=c.weight*9.81*.014;
+      $('raceStatus').textContent='🟢 СТАРТ! Удерживай газ и переключай передачи вручную.';
+      const c=car();
+      if(!fuelAvailable){
+        rpm=Math.max(0,rpm-dt*5000);
+        const velocity=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
+        speed=Math.max(0,speed-((dragCoeff*velocity*velocity+c.weight*9.81*.014)/c.weight)*dt*3.6);
+        $('raceStatus').textContent='⛽ Бензин закончился — заправь автомобиль.';
+      }else if(gear==='N'){
+        const velocity=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
+        const dragForce=dragCoeff*velocity*velocity,rollingForce=c.weight*9.81*.014;
         speed=Math.max(0,speed-((dragForce+rollingForce)/c.weight)*dt*3.6);
-        rpm=fuelAvailable?(gasHeld?Math.min(6200,rpm+dt*3600):Math.max(850,rpm-dt*1500)):Math.max(0,rpm-dt*5000);
+        const targetRpm=gasHeld?6000:Math.max(850,Math.min(6600,speed*5));
+        rpm+=(targetRpm-rpm)*(1-Math.exp(-dt*(gasHeld?3.2:7.5)));
       }else{
-        const c=car(),g=Number(gear),ratio=gearRatio(g),throttle=gasHeld&&fuelAvailable;
+        const g=Number(gear),ratio=gearRatio(g),throttle=gasHeld;
         const wheelRpm=speed*42*ratio;
-        const clutchRpm=850+(throttle?2200*Math.exp(-speed/12):0);
-        const coupledRpm=Math.max(850,wheelRpm,clutchRpm);
-        // На старте обороты плавно переходят с прогазовки на обороты, заданные скоростью
-        // колёс и выбранной передачей. После переключения RPM падает в соответствии с передаточным отношением.
-        const launchBlend=Math.max(0,Math.min(1,(elapsed-3500)/700));
-        rpm=fuelAvailable?Math.max(850,Math.min(6500,launchRpm*(1-launchBlend)+coupledRpm*launchBlend)):Math.max(0,rpm-dt*5000);
-        const torqueFactor=.82+.18*Math.exp(-Math.pow((rpm-3900)/2300,2));
-        const revLimiter=Math.max(0,Math.min(1,(6300-wheelRpm)/300));
+        const clutchSlip=Math.max(0,1-speed/24);
+        const clutchRpm=throttle?1450+1850*clutchSlip:850;
+        const targetRpm=throttle?Math.max(850,wheelRpm,clutchRpm):Math.max(850,wheelRpm);
+        const rpmResponse=1-Math.exp(-dt*(throttle?5.2:8.5));
+        rpm=Math.max(850,Math.min(6600,rpm+(targetRpm-rpm)*rpmResponse));
+        const torqueFactor=.76+.24*Math.exp(-Math.pow((rpm-3900)/2450,2));
+        const revLimiter=wheelRpm<5800?1:Math.max(.10,Math.min(1,(6500-wheelRpm)/700));
         const requestedForce=throttle?effectivePower(c)*15.2*ratio*torqueFactor*revLimiter:0;
         const grip=Math.max(.15,Math.min(.65,(Number(state.tune.grip)/100)*.42));
         const tractionLimit=c.weight*9.81*grip;
@@ -1977,10 +2060,11 @@ function start(sharedStartedAt=null){
         const dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
         const dragForce=dragCoeff*velocity*velocity;
         const rollingForce=c.weight*9.81*.014;
-        const engineBrake=throttle?0:c.weight*.11;
+        const engineBrake=throttle?0:(speed>.5?c.weight*.11:0);
         const acceleration=(driveForce-dragForce-rollingForce-engineBrake)/c.weight;
         speed=Math.max(0,Math.min(400,speed+acceleration*dt*3.6));
       }
+    }
       if(speed>=100&&zeroAt===null)zeroAt=(now-greenAt)/1000;
       distance+=speed/3.6*dt;
       if(distance>=maxDist){
