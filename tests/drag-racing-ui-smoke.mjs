@@ -468,9 +468,8 @@ try {
   const localCameraBeforeRivalLeaves = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
   forcedOpponentProgress = 1;
   await page.waitForFunction(() => {
-    const scene = document.querySelector(".race2d-scene")?.getBoundingClientRect();
-    const rival = document.querySelector("#race2dOpponentCar")?.getBoundingClientRect();
-    return scene && rival && (rival.left >= scene.right || rival.right <= scene.left);
+    const rival = document.querySelector("#race2dOpponentCar");
+    return rival && Number.parseFloat(rival.style.left) > 110;
   }, null, { timeout: 5000 });
   const localCameraWhileRivalIsFarAhead = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
   assert.equal(localCameraWhileRivalIsFarAhead, localCameraBeforeRivalLeaves,
@@ -478,9 +477,9 @@ try {
 
   forcedOpponentProgress = "match";
   await page.waitForFunction(() => {
-    const scene = document.querySelector(".race2d-scene")?.getBoundingClientRect();
-    const rival = document.querySelector("#race2dOpponentCar")?.getBoundingClientRect();
-    return scene && rival && rival.right > scene.left && rival.left < scene.right;
+    const rival = document.querySelector("#race2dOpponentCar");
+    const left = Number.parseFloat(rival?.style.left);
+    return Number.isFinite(left) && left >= 0 && left < 100;
   }, null, { timeout: 7000 });
   const localCameraAfterCatch = await page.locator("#race2dCameraWorld").evaluate(el => getComputedStyle(el).transform);
   assert.equal(localCameraAfterCatch, localCameraBeforeRivalLeaves,
