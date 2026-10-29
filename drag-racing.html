@@ -1653,7 +1653,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URL='https://sfxmint.com/dl/car-revving-08.mp3';const RACE_SHIFT_SAMPLE_URL='https://sfxmint.com/dl/race-car-10.mp3';const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1821,20 +1821,7 @@ function initRaceAudio(){
 async function loadRaceAudioSamples(){
   if(raceAudioSamplesLoading||!raceAudio||raceAudio.state==='closed')return;
   raceAudioSamplesLoading=true;
-  const load=async url=>{
-    const response=await fetch(url,{mode:'cors',cache:'force-cache'});
-    if(!response.ok)throw new Error('Audio sample unavailable: '+response.status);
-    return raceAudio.decodeAudioData(await response.arrayBuffer());
-  };
-  try{
-    const [engine,shift]=await Promise.all([
-      load(RACE_ENGINE_SAMPLE_URL).catch(()=>null),
-      load(RACE_SHIFT_SAMPLE_URL).catch(()=>null)
-    ]);
-    if(engine){raceEngineBuffer=engine;startRaceEngineSample();}
-    if(shift)raceShiftBuffer=shift;
-  }catch(_){}
-  finally{raceAudioSamplesLoading=false;}
+  const load=async urls=>{\n    for(const url of urls){\n      try{const response=await fetch(url,{mode:'cors',cache:'force-cache'});if(!response.ok)continue;const decoded=await raceAudio.decodeAudioData(await response.arrayBuffer());if(decoded?.duration>.15)return decoded;}catch(_){}\n    }\n    return null;\n  };\n  try{\n    const [engine,shift]=await Promise.all([load(RACE_ENGINE_SAMPLE_URLS),load(RACE_SHIFT_SAMPLE_URLS)]);\n    if(engine){raceEngineBuffer=engine;startRaceEngineSample();}\n    if(shift)raceShiftBuffer=shift;\n  }catch(_){}\n  finally{raceAudioSamplesLoading=false;}
 }
 function startRaceEngineSample(){
   if(!raceEngineBuffer||!raceAudio||!raceEngineSampleGain||raceEngineSampleSource)return;
@@ -1862,7 +1849,7 @@ function updateRaceEngineAudio(){
   if(raceEngineSampleSource&&raceEngineSampleGain){
     const playbackRate=Math.max(.76,Math.min(1.62,.69+rpmNow/6600*.91));
     raceEngineSampleSource.playbackRate.setTargetAtTime(playbackRate,t,.09);
-    const sampleVolume=running?(throttle?.31+load*.08:.13+load*.035):(raceCockpitOpen?.035:.0001);
+    const sampleVolume=running?(throttle?.42+load*.09:.17+load*.04):(raceCockpitOpen?.045:.0001);
     raceEngineSampleGain.gain.setTargetAtTime(sampleVolume*limiterPulse,t,.08);
     raceEngineGain?.gain.setTargetAtTime(.0001,t,.08);
     raceExhaustGain?.gain.setTargetAtTime(.0001,t,.08);
@@ -1894,7 +1881,7 @@ function playRaceShiftSound(direction=1){
         const rate=direction>0?1.04:.94,clipDuration=Math.min(.82,raceShiftBuffer.duration);
         source.playbackRate.value=rate;
         gain.gain.setValueAtTime(.0001,t);
-        gain.gain.exponentialRampToValueAtTime(.19,t+.014);
+        gain.gain.exponentialRampToValueAtTime(.26,t+.014);
         gain.gain.exponentialRampToValueAtTime(.0001,t+Math.min(.58,clipDuration/rate));
         source.connect(gain);gain.connect(raceAudio.destination);
         source.start(t,0,clipDuration);return;
@@ -1903,7 +1890,7 @@ function playRaceShiftSound(direction=1){
     const t=raceAudio.currentTime,osc=raceAudio.createOscillator(),gain=raceAudio.createGain();
     osc.type='triangle';osc.frequency.setValueAtTime(direction>0?135:110,t);
     osc.frequency.exponentialRampToValueAtTime(direction>0?72:58,t+.075);
-    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.055,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.095);
+    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.075,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.095);
     osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.10);
   };
   if(raceAudio.state==='suspended')raceAudio.resume().then(play).catch(()=>{});else play();
