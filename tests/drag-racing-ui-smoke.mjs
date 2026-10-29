@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent-entry1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-fuelpng1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -194,6 +194,9 @@ try {
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile should have two independently rotating wheel faces.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0, "Solo mode must not render a hardcoded SVG rival; online opponents are rendered from their selected PNG model.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
+  assert.equal((await page.locator("#vehicleName").textContent()).trim(), "ВАЗ-2107", "The selected car name and specifications must be visible on the race page.");
+  assert.equal((await page.locator("#fuelCapacity").textContent()).trim(), "42", "The selected VAZ-2107 must show its 42-liter tank.");
+  assert.equal((await page.locator("#proFuelCap").textContent()).trim(), "42", "The full-screen cockpit must also show fuel capacity.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
@@ -266,6 +269,7 @@ try {
   await page.locator("#proShiftDown").click();
   assert.equal(await page.locator("#proGearDigits").textContent(), "1", "The left-side downshift paddle should work in the cockpit.");
   const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
+  const fuelBeforeThrottle = Number(await page.locator("#proFuelLiters").textContent());
   const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
   const sceneryBeforeThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
@@ -291,6 +295,8 @@ try {
   assert.notEqual(wheelTransformAfter, wheelTransformBefore, "A moving VAZ-2107 wheel must visibly rotate between browser frames.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
   assert.match(await page.locator("#race2dPlayerCar .race-car-png").getAttribute("src"), /lada-2107-side\.png\?v=20261029-wheel2$/, "The race cockpit must use the PNG with independently rotating wheel faces.");
+  const fuelAfterThrottle = Number(await page.locator("#proFuelLiters").textContent());
+  assert.ok(fuelAfterThrottle < fuelBeforeThrottle, `Fuel must decrease while holding gas (before ${fuelBeforeThrottle}, after ${fuelAfterThrottle}).`);
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
