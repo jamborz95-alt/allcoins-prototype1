@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-garage4"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-fixedcam1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -195,6 +195,9 @@ try {
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0, "Solo mode must not render a hardcoded SVG rival; online opponents are rendered from their selected PNG model.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
   assert.match(await page.locator("#scene").evaluate(el => getComputedStyle(el).backgroundImage), /garage-showroom\.svg/, "The selected car preview must use the new garage showroom environment.");
+  assert.match(html, /const targetX=Math\.max\(0,carShift-motion\.sceneWidth\*\.16\)/, "The camera should hold the vehicle at a steady screen position during the run.");
+  assert.match(html, /raceCameraY=0/, "The chase camera should not bob vertically at high speed.");
+  assert.match(html, /hostStyle\.display===\'none\'.*Number\(hostStyle\.opacity\)<=\.05/, "An invisible 3D preview should pause to keep mobile rendering smooth.");
   assert.match((await page.locator("#startRace").textContent()).toUpperCase(), /НАЧАТЬ ЗАЕЗД/, "The showroom must have a clear start-race action.");
   assert.equal((await page.locator("#vehicleName").textContent()).trim(), "ВАЗ-2107", "The selected car name and specifications must be visible on the race page.");
   assert.equal((await page.locator("#fuelCapacity").textContent()).trim(), "42", "The selected VAZ-2107 must show its 42-liter tank.");
@@ -305,8 +308,8 @@ try {
   assert.ok(speedAfterThrottle > speedBeforeThrottle, "The digital speedometer must climb while the gas pedal is held.");
   assert.ok(speedBarPercent > 0, "The speedometer bar must respond to simulated km/h.");
   assert.ok(carShiftAfterThrottle > carShiftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
-  const movingWorldPosition = await page.locator("#race2dRoadMarks").evaluate(el => getComputedStyle(el).backgroundPositionX);
-  assert.notEqual(movingWorldPosition, "0px", "Road markings must visibly scroll with vehicle speed.");
+  const movingWorldPosition = await page.locator("#race2dRoadMarks").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+  assert.ok(movingWorldPosition < -1, "Road markings must visibly scroll using a compositor transform as speed increases.");
   const sceneryAfterThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   assert.notEqual(sceneryAfterThrottle, sceneryBeforeThrottle, "Distant scenery must scroll smoothly using a composited transform.");
   assert.match(html, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*9\.6\*scale/, "Track scenery speed must rise proportionally as the speedometer climbs.");
