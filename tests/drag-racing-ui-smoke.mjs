@@ -288,6 +288,14 @@ try {
   const fuelBeforeThrottle = Number(await page.locator("#proFuelLiters").textContent());
   const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number.parseFloat(el.style.getPropertyValue('--race-car-x')) || 0);
   const carScreenBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
+  const playerMotionStyle = await page.locator("#race2dPlayerCar").evaluate(el => ({
+    transitionProperty: getComputedStyle(el).transitionProperty,
+    willChange: getComputedStyle(el).willChange
+  }));
+  assert.equal(playerMotionStyle.transitionProperty, "none",
+    "Player car position should not add a CSS transition on top of the frame-by-frame physics.");
+  assert.match(playerMotionStyle.willChange, /transform/,
+    "The player car position should use a compositor-friendly transform.");
   const sceneryBeforeThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
