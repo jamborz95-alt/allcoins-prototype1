@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-garage2"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-garage3"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -194,6 +194,8 @@ try {
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile should have two independently rotating wheel faces.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0, "Solo mode must not render a hardcoded SVG rival; online opponents are rendered from their selected PNG model.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
+  assert.match(await page.locator("#scene").evaluate(el => getComputedStyle(el).backgroundImage), /garage-showroom\.svg/, "The selected car preview must use the new garage showroom environment.");
+  assert.match((await page.locator("#startRace").textContent()).toUpperCase(), /НАЧАТЬ ЗАЕЗД/, "The showroom must have a clear start-race action.");
   assert.equal((await page.locator("#vehicleName").textContent()).trim(), "ВАЗ-2107", "The selected car name and specifications must be visible on the race page.");
   assert.equal((await page.locator("#fuelCapacity").textContent()).trim(), "42", "The selected VAZ-2107 must show its 42-liter tank.");
   assert.equal((await page.locator("#proFuelCap").textContent()).trim(), "42", "The full-screen cockpit must also show fuel capacity.");
@@ -414,14 +416,21 @@ try {
     "A rival driving a VAZ-2107 must display the actual side-view PNG asset.");
   assert.match(await page.locator("#race2dOpponentCar").getAttribute("aria-label"), /ВАЗ-2107/,
     "The visible opponent model should match the rival's selected carId.");
-  const rivalDisplay = await page.locator("#race2dOpponentCar").evaluate(el => ({
-    opacity: Number(getComputedStyle(el).opacity),
-    visibility: getComputedStyle(el).visibility,
-    width: el.getBoundingClientRect().width,
-    height: el.getBoundingClientRect().height
-  }));
-  assert.ok(rivalDisplay.opacity >= 0.9 && rivalDisplay.visibility === "visible" && rivalDisplay.width >= 220 && rivalDisplay.height >= 70,
-    "The opponent's PNG vehicle must be visibly rendered as soon as the online race opens.");
+  const rivalDisplay = await page.locator("#race2dOpponentCar").evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    return {
+      opacity: Number(getComputedStyle(el).opacity),
+      visibility: getComputedStyle(el).visibility,
+      width: el.offsetWidth,
+      height: el.offsetHeight,
+      visibleWidth: rect.width,
+      visibleHeight: rect.height
+    };
+  });
+  assert.ok(rivalDisplay.opacity >= 0.9 && rivalDisplay.visibility === "visible" &&
+    rivalDisplay.width >= 220 && rivalDisplay.height >= 70 &&
+    rivalDisplay.visibleWidth > 0 && rivalDisplay.visibleHeight > 0,
+    "The opponent's PNG vehicle must be visibly rendered with a full-size image box when the online race opens.");
   assert.equal(await page.locator("#race2dOpponentCar .opponent-wheel-spin").count(), 2,
     "The rival PNG must have two visible wheel overlays.");
   await page.waitForFunction(() => {
