@@ -192,11 +192,12 @@ async function roomPayload(client, roomId, userId) {
         progress: safeProgress,
         gear: Math.max(0, Math.min(5, Number(motion.gear) || 0)),
         updatedAt: motionUpdatedAt,
-        fresh: motionAgeMs <= 1900
+        fresh: motionAgeMs <= 2500
       } : null
     };
   });
   return {
+    serverNow: Date.now(),
     room: {
       id: ROOM_PREFIX + String(row.id),
       roomId: String(row.id),
@@ -825,7 +826,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
           const motionByPlayer = objectValue(game.motion);
           const previousMotion = objectValue(motionByPlayer[user.id]);
           const now = Date.now();
-          if (now - (Number(previousMotion.updatedAt) || 0) >= 250) {
+          if (now - (Number(previousMotion.updatedAt) || 0) >= 100) {
             const safeDistance = Math.min(maxDistance, distanceM);
             motionByPlayer[user.id] = {
               speedKmh: Math.round(speedKmh * 10) / 10,
