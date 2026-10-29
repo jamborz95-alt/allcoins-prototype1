@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-finishbound1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent-entry1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -404,10 +404,18 @@ try {
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0,
     "The network opponent must not use the old inline SVG.");
   assert.equal(await page.locator("#race2dOpponentCar .opponent-car-png").getAttribute("src"),
-    "./cars/lada-2107-side.png?v=20261029-opponent2",
+    "./cars/lada-2107-side.png?v=20261029-opponent-entry1",
     "A rival driving a VAZ-2107 must display the actual side-view PNG asset.");
   assert.match(await page.locator("#race2dOpponentCar").getAttribute("aria-label"), /ВАЗ-2107/,
     "The visible opponent model should match the rival's selected carId.");
+  const rivalDisplay = await page.locator("#race2dOpponentCar").evaluate(el => ({
+    opacity: Number(getComputedStyle(el).opacity),
+    visibility: getComputedStyle(el).visibility,
+    width: el.getBoundingClientRect().width,
+    height: el.getBoundingClientRect().height
+  }));
+  assert.ok(rivalDisplay.opacity >= 0.9 && rivalDisplay.visibility === "visible" && rivalDisplay.width >= 220 && rivalDisplay.height >= 70,
+    "The opponent's PNG vehicle must be visibly rendered as soon as the online race opens.");
   assert.equal(await page.locator("#race2dOpponentCar .opponent-wheel-spin").count(), 2,
     "The rival PNG must have two visible wheel overlays.");
   await page.waitForFunction(() => {

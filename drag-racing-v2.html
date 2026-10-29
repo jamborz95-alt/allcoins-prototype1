@@ -186,7 +186,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
 .race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:left,transform,filter!important}
 .race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important}
-.race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:0;transform:scale(.78);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .28s ease,left .25s ease!important}
+.race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:1;transform:scale(1);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .18s ease,left .12s linear,top .12s linear!important}
 .pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .23s ease-in-out infinite alternate}
 .pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-timing-function:linear}
@@ -516,9 +516,11 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 
 /* Online opponent: display the actual selected garage model as a transparent PNG. */
 .race2d-car.png-opponent-car{
+  display:block!important;
   width:clamp(245px,32vw,440px)!important;
   height:clamp(88px,12vw,164px)!important;
   overflow:visible!important;
+  opacity:1!important;visibility:visible!important;transform:scale(1)!important;
 }
 .race2d-car.png-opponent-car .opponent-car-png{
   position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;
@@ -861,7 +863,7 @@ async function syncOnlineOpponentCar(){
   const token=++onlineOpponentRenderToken;
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
-    ?'./cars/lada-2107-side.png?v=20261029-opponent2'
+    ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
@@ -1584,8 +1586,10 @@ window.addEventListener('resize',()=>{updateOrientationPrompt();race3d?.resize?.
 function openProRaceCockpit(){
   const panel=$('proRaceCockpit'),track=$('proRaceTrack'),host=$('race3dCanvas');
   if(!panel||!track||!host)return;
-  // Always rebuild the visible vehicle before the cockpit is shown.
+  // Build both cars before showing the cockpit so the rival is already present on entry.
   syncRace2DCarArt();
+  if(currentOnlineRoom)void syncOnlineOpponentCar();
+  if(currentOnlineRoom?.room?.status==='racing')updateOnlineOpponentMotion(1/60);
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
   requestRaceLandscape();
   track.appendChild(host);
