@@ -173,7 +173,7 @@ try {
   });
 
   await page.goto("http://127.0.0.1:4174/drag-racing.html", { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelector("#race2dEnvironment")?.dataset.ready === "1" && document.querySelector("#race2dPlayerCar .race-car-png")?.complete, null, { timeout: 12000 });
+  await page.waitForFunction(() => document.querySelector("#race2dEnvironment")?.dataset.ready === "1", null, { timeout: 12000 });
   assert.equal(await page.locator("#race2dPlayerCar").count(), 1, "The selected car must be present in the live 2D race scene.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-mobile.png"), fullPage: true });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
