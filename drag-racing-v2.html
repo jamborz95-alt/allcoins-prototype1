@@ -1848,7 +1848,15 @@ async function loadRaceAudioSamples(){
     }
     return null;
   };
-  try{\n    const [engine,shift]=await Promise.all([load(RACE_ENGINE_SAMPLE_URLS),load(RACE_SHIFT_SAMPLE_URLS)]);\n    if(engine){raceEngineBuffer=engine;startRaceEngineSample();}\n    if(shift)raceShiftBuffer=shift;\n  }catch(_){}\n  finally{raceAudioSamplesLoading=false;}
+  try{
+    const [engine,shift]=await Promise.all([
+      load(RACE_ENGINE_SAMPLE_URLS),
+      load(RACE_SHIFT_SAMPLE_URLS)
+    ]);
+    if(engine){raceEngineBuffer=engine;startRaceEngineSample();}
+    if(shift)raceShiftBuffer=shift;
+  }catch(_){}
+  finally{raceAudioSamplesLoading=false;}
 }
 function startRaceEngineSample(){
   if(!raceEngineBuffer||!raceAudio||!raceEngineSampleGain||raceEngineSampleSource)return;
