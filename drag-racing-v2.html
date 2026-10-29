@@ -512,6 +512,18 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-race-cockpit.race-moving .race2d-car.png-car .png-wheel-spin{
   animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;
 }
+
+/* Online opponent: display the actual selected garage model as a transparent PNG. */
+.race2d-car.png-opponent-car{
+  width:clamp(245px,32vw,440px)!important;
+  height:clamp(88px,12vw,164px)!important;
+  overflow:visible!important;
+}
+.race2d-car.png-opponent-car .opponent-car-png{
+  position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;
+  object-fit:contain;object-position:center center;max-width:none;max-height:none;
+  opacity:1;visibility:visible;pointer-events:none;user-select:none;-webkit-user-drag:none;
+}
 </style>
 
 </head>
@@ -756,8 +768,88 @@ function syncRace2DCarArt(){
     // Keep the PNG body crisp and rotate only the two wheel faces positioned over its rims.
     player.innerHTML=useLadaPng?ladaPreview+ladaWheels:carSvg(selectedId,paint);
   }
-  if(opponent)opponent.innerHTML=carSvg('2110','#d9dce0');
+  if(opponent&&!currentOnlineRoom){
+    opponent.innerHTML='';
+    opponent.classList.remove('png-opponent-car');
+    delete opponent.dataset.carArtKey;
+    delete opponent.dataset.pendingCarArtKey;
+    opponent.setAttribute('aria-label','Машина соперника');
+  }
   buildRace2DEnvironment();
+  syncOnlineOpponentCar();
+}
+
+// Render the opponent using their actual selected garage model as a PNG.
+// The VAZ-2107 uses the authored transparent side-view asset; other car models
+// are rasterized at high resolution and cached as PNGs rather than inline SVGs.
+const onlineOpponentPngCache=new Map();
+let onlineOpponentRenderToken=0;
+function carSvgToPngDataUrl(modelId,paint){
+  const id=String(modelId||'2107'),color=String(paint||carPaintCss(id)),key=id+'|'+color;
+  if(onlineOpponentPngCache.has(key))return onlineOpponentPngCache.get(key);
+  const result=new Promise(resolve=>{
+    try{
+      const svg=carSvg(id,color).replace('<svg xmlns="http://www.w3.org/2000/svg"','<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440"');
+      const image=new Image();
+      image.onload=()=>{
+        try{
+          const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=440;
+          const context=canvas.getContext('2d');
+          if(!context){resolve('');return}
+          context.clearRect(0,0,canvas.width,canvas.height);
+          context.drawImage(image,0,0,canvas.width,canvas.height);
+          resolve(canvas.toDataURL('image/png'));
+        }catch(_){resolve('')}
+      };
+      image.onerror=()=>resolve('');
+      image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    }catch(_){resolve('')}
+  });
+  onlineOpponentPngCache.set(key,result);
+  return result;
+}
+async function syncOnlineOpponentCar(){
+  const opponent=$('race2dOpponentCar');if(!opponent)return;
+  const players=Array.isArray(currentOnlineRoom?.players)?currentOnlineRoom.players:[];
+  const rival=players.find(player=>!player.isYou);
+  if(!currentOnlineRoom||!rival){
+    onlineOpponentRenderToken++;
+    delete opponent.dataset.pendingCarArtKey;
+    opponent.dataset.carArtKey='';
+    opponent.innerHTML='';
+    opponent.classList.remove('png-opponent-car');
+    opponent.setAttribute('aria-label','Машина соперника');
+    return;
+  }
+  const requestedId=String(rival.carId||'2107');
+  const modelId=cars.some(model=>model.id===requestedId)?requestedId:'2107';
+  const model=cars.find(item=>item.id===modelId)||cars[0];
+  const key=String(rival.id||rival.name||'rival')+'|'+modelId;
+  if(opponent.dataset.carArtKey===key&&opponent.querySelector('.opponent-car-png'))return;
+  if(opponent.dataset.pendingCarArtKey===key)return;
+  const token=++onlineOpponentRenderToken;
+  opponent.dataset.pendingCarArtKey=key;
+  const source=modelId==='2107'
+    ?'./cars/lada-2107-side.png?v=20261029-opponent1'
+    :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
+  if(token!==onlineOpponentRenderToken)return;
+  delete opponent.dataset.pendingCarArtKey;
+  if(!source){
+    opponent.innerHTML='';
+    opponent.dataset.carArtKey='';
+    opponent.classList.remove('png-opponent-car');
+    return;
+  }
+  const image=document.createElement('img');
+  image.className='opponent-car-png';
+  image.src=source;
+  image.alt='Машина соперника — '+model.name;
+  image.decoding='async';
+  image.draggable=false;
+  opponent.replaceChildren(image);
+  opponent.dataset.carArtKey=key;
+  opponent.classList.add('png-opponent-car');
+  opponent.setAttribute('aria-label','Машина соперника: '+model.name);
 }
 
 let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0;
@@ -1611,7 +1703,7 @@ $('proExitRace').onclick=()=>{
 $('proRaceReturn').onclick=()=>{reset();closeProRaceCockpit()};
 $('proRaceAgain').onclick=()=>{reset();start()};
 
-function stopRoomPolling(){if(onlinePollTimer!==null){clearInterval(onlinePollTimer);onlinePollTimer=null}}function startRoomPolling(){stopRoomPolling();if(!currentOnlineRoom||!['waiting','racing'].includes(currentOnlineRoom.room?.status)||!tg?.initData)return;onlinePollTimer=setInterval(async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/state',{roomId:currentOnlineRoom.room.roomId});renderOnlineRoom(data)}catch(err){$('roomStatus').textContent=err.message||'Связь с комнатой временно потеряна.'}},2200)}function renderOnlineRoom(data){if(!data||!data.room)return;currentOnlineRoom=data;const room=data.room,players=Array.isArray(data.players)?data.players:[],game=data.game||{};setWalletBalance(data.balance);$('onlineRoom').classList.remove('hidden');$('leaveOnline').classList.remove('hidden');$('onlineRoomInfo').innerHTML='<div class="title">'+escapeHtml(room.id)+' · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[room.mode]||room.mode))+'</div><div class="statline"><span>Ставка</span><b>'+money(room.stake)+' AC с игрока</b></div><div class="statline"><span>Игроки</span><b>'+players.length+' / '+room.maxPlayers+'</b></div><div class="muted">'+(room.status==='waiting'?'Ожидаем участников. Старт доступен создателю от двух игроков.':room.status==='racing'?'Заезд идёт: удерживай газ и вручную переключай передачи.':'Результат зафиксирован на сервере.')+'</div>'+players.map(p=>'<div class="room"><div><b>'+escapeHtml(p.name)+(p.isYou?' (ты)':'')+(p.isOwner?' · создатель':'')+'</b><div class="muted">'+escapeHtml(p.carId)+' · '+(p.finishTimeMs===null?'на старте':(Number(p.finishTimeMs)/1000).toFixed(2)+' с')+(p.forfeit?' · не финишировал':'')+'</div></div><span class="pill">'+(p.connected?'в сети':'нет сигнала')+'</span></div>').join('');const canStart=room.status==='waiting'&&room.isOwner&&players.length>=2;$('startOnline').classList.toggle('hidden',!(room.status==='waiting'&&room.isOwner));$('startOnline').disabled=!canStart;$('startOnline').textContent=canStart?'🏁 Начать онлайн-заезд':'Ожидаем второго игрока…';if(room.status==='racing'&&game.startedAt&&onlineRaceStartedFor!==room.id){onlineRaceStartedFor=room.id;finishSentFor=null;start(Number(game.startedAt));$('startRace').textContent='🏁 Онлайн-заезд';$('raceStatus').textContent='Сигнал сервера принят. Удерживай газ и переключай передачи вручную.'}if(room.status==='racing'){$('onlineResult').textContent='Заезд в процессе. Финиш отправляется серверу автоматически.';$('startRace').disabled=true}else if(room.status==='finished'){stopRoomPolling();$('startOnline').classList.add('hidden');$('onlineResult').textContent=game.message||'Заезд завершён.';if(Array.isArray(game.winners)&&game.winners.length){$('onlineResult').textContent+=' Победители: '+game.winners.map(w=>w.name+' — '+money(w.amount)+' AC').join('; ')}if(game.commission>0)$('onlineResult').textContent+=' Комиссия 5%: '+money(game.commission)+' AC.';$('startRace').disabled=false;$('startRace').textContent='↻ Новый заезд'}else{$('onlineResult').textContent=''}if(room.status!=='racing'&&room.status!=='waiting')stopRoomPolling()}async function refreshRooms(){if(!tg?.initData){$('roomStatus').textContent='Для онлайн-комнат и ставок открой ALLCOINS через Telegram.';$('rooms').innerHTML='';return}try{const data=await api('/rooms/list');if(data.currentRoom){renderOnlineRoom(data.currentRoom);startRoomPolling()}else if(!currentOnlineRoom||currentOnlineRoom.room.status!=='finished'){$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');currentOnlineRoom=null;stopRoomPolling()}const rooms=Array.isArray(data.rooms)?data.rooms:[];$('rooms').innerHTML=rooms.filter(r=>!currentOnlineRoom||r.roomId!==currentOnlineRoom.room.roomId).map(r=>'<div class="room"><div><b>'+escapeHtml(r.id)+' · '+escapeHtml(r.ownerName)+'</b><div class="muted">'+money(r.stake)+' AC · '+r.playersCount+'/'+r.maxPlayers+' игроков · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[r.mode]||r.mode))+'</div></div><button data-joinroom="'+escapeHtml(r.roomId)+'">Войти</button></div>').join('')||'<div class="muted">Открытых комнат пока нет. Создай свою или обнови список.</div>'}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить комнаты.'}}async function joinRoom(roomId){$('roomStatus').textContent='Подключаюсь к комнате…';const data=await api('/rooms/join',{roomId,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Ты вошёл в комнату. Ставка списана сервером и будет учтена при расчёте результата.'}async function initOnline(){if(!tg?.initData){$('roomStatus').textContent='Демо-режим: одиночный заезд доступен. Для онлайн-ставок открой мини-приложение через Telegram.';return}try{const profile=await api('/profile');applyRemoteProfile(profile);$('roomStatus').textContent='Баланс и гараж загружены из ALLCOINS.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить профиль ALLCOINS.'}}$('refreshRooms').onclick=refreshRooms;$('leaveOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/leave',{roomId:currentOnlineRoom.room.roomId});setWalletBalance(data.balance);currentOnlineRoom=null;onlineRaceStartedFor=null;finishSentFor=null;stopRoomPolling();$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');$('roomStatus').textContent=data.message||'Ты вышел из комнаты.';reset();await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось выйти из комнаты.'}};$('startOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/start',{roomId:currentOnlineRoom.room.roomId});renderOnlineRoom(data);startRoomPolling()}catch(err){$('onlineResult').textContent=err.message||'Не удалось начать заезд.'}};$('createRoom').onclick=async()=>{const count=Number($('players').value),stake=Number($('stake').value);if(!Number.isSafeInteger(stake)||stake<100){$('roomStatus').textContent='Минимальная ставка — 100 AC.';return}try{$('roomStatus').textContent='Создаю комнату и блокирую ставку через сервер…';const data=await api('/rooms/create',{maxPlayers:count,stake,mode:$('raceMode').value,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Комната создана. Ставка списана сервером; жди других игроков.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось создать онлайн-комнату.'}};
+function stopRoomPolling(){if(onlinePollTimer!==null){clearInterval(onlinePollTimer);onlinePollTimer=null}}function startRoomPolling(){stopRoomPolling();if(!currentOnlineRoom||!['waiting','racing'].includes(currentOnlineRoom.room?.status)||!tg?.initData)return;onlinePollTimer=setInterval(async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/state',{roomId:currentOnlineRoom.room.roomId});renderOnlineRoom(data)}catch(err){$('roomStatus').textContent=err.message||'Связь с комнатой временно потеряна.'}},2200)}function renderOnlineRoom(data){if(!data||!data.room)return;currentOnlineRoom=data;syncOnlineOpponentCar();const room=data.room,players=Array.isArray(data.players)?data.players:[],game=data.game||{};setWalletBalance(data.balance);$('onlineRoom').classList.remove('hidden');$('leaveOnline').classList.remove('hidden');$('onlineRoomInfo').innerHTML='<div class="title">'+escapeHtml(room.id)+' · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[room.mode]||room.mode))+'</div><div class="statline"><span>Ставка</span><b>'+money(room.stake)+' AC с игрока</b></div><div class="statline"><span>Игроки</span><b>'+players.length+' / '+room.maxPlayers+'</b></div><div class="muted">'+(room.status==='waiting'?'Ожидаем участников. Старт доступен создателю от двух игроков.':room.status==='racing'?'Заезд идёт: удерживай газ и вручную переключай передачи.':'Результат зафиксирован на сервере.')+'</div>'+players.map(p=>'<div class="room"><div><b>'+escapeHtml(p.name)+(p.isYou?' (ты)':'')+(p.isOwner?' · создатель':'')+'</b><div class="muted">'+escapeHtml(p.carId)+' · '+(p.finishTimeMs===null?'на старте':(Number(p.finishTimeMs)/1000).toFixed(2)+' с')+(p.forfeit?' · не финишировал':'')+'</div></div><span class="pill">'+(p.connected?'в сети':'нет сигнала')+'</span></div>').join('');const canStart=room.status==='waiting'&&room.isOwner&&players.length>=2;$('startOnline').classList.toggle('hidden',!(room.status==='waiting'&&room.isOwner));$('startOnline').disabled=!canStart;$('startOnline').textContent=canStart?'🏁 Начать онлайн-заезд':'Ожидаем второго игрока…';if(room.status==='racing'&&game.startedAt&&onlineRaceStartedFor!==room.id){onlineRaceStartedFor=room.id;finishSentFor=null;start(Number(game.startedAt));$('startRace').textContent='🏁 Онлайн-заезд';$('raceStatus').textContent='Сигнал сервера принят. Удерживай газ и переключай передачи вручную.'}if(room.status==='racing'){$('onlineResult').textContent='Заезд в процессе. Финиш отправляется серверу автоматически.';$('startRace').disabled=true}else if(room.status==='finished'){stopRoomPolling();$('startOnline').classList.add('hidden');$('onlineResult').textContent=game.message||'Заезд завершён.';if(Array.isArray(game.winners)&&game.winners.length){$('onlineResult').textContent+=' Победители: '+game.winners.map(w=>w.name+' — '+money(w.amount)+' AC').join('; ')}if(game.commission>0)$('onlineResult').textContent+=' Комиссия 5%: '+money(game.commission)+' AC.';$('startRace').disabled=false;$('startRace').textContent='↻ Новый заезд'}else{$('onlineResult').textContent=''}if(room.status!=='racing'&&room.status!=='waiting')stopRoomPolling()}async function refreshRooms(){if(!tg?.initData){$('roomStatus').textContent='Для онлайн-комнат и ставок открой ALLCOINS через Telegram.';$('rooms').innerHTML='';return}try{const data=await api('/rooms/list');if(data.currentRoom){renderOnlineRoom(data.currentRoom);startRoomPolling()}else if(!currentOnlineRoom||currentOnlineRoom.room.status!=='finished'){$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');currentOnlineRoom=null;stopRoomPolling()}const rooms=Array.isArray(data.rooms)?data.rooms:[];$('rooms').innerHTML=rooms.filter(r=>!currentOnlineRoom||r.roomId!==currentOnlineRoom.room.roomId).map(r=>'<div class="room"><div><b>'+escapeHtml(r.id)+' · '+escapeHtml(r.ownerName)+'</b><div class="muted">'+money(r.stake)+' AC · '+r.playersCount+'/'+r.maxPlayers+' игроков · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[r.mode]||r.mode))+'</div></div><button data-joinroom="'+escapeHtml(r.roomId)+'">Войти</button></div>').join('')||'<div class="muted">Открытых комнат пока нет. Создай свою или обнови список.</div>'}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить комнаты.'}}async function joinRoom(roomId){$('roomStatus').textContent='Подключаюсь к комнате…';const data=await api('/rooms/join',{roomId,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Ты вошёл в комнату. Ставка списана сервером и будет учтена при расчёте результата.'}async function initOnline(){if(!tg?.initData){$('roomStatus').textContent='Демо-режим: одиночный заезд доступен. Для онлайн-ставок открой мини-приложение через Telegram.';return}try{const profile=await api('/profile');applyRemoteProfile(profile);$('roomStatus').textContent='Баланс и гараж загружены из ALLCOINS.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить профиль ALLCOINS.'}}$('refreshRooms').onclick=refreshRooms;$('leaveOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/leave',{roomId:currentOnlineRoom.room.roomId});setWalletBalance(data.balance);currentOnlineRoom=null;onlineRaceStartedFor=null;finishSentFor=null;stopRoomPolling();$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');$('roomStatus').textContent=data.message||'Ты вышел из комнаты.';reset();await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось выйти из комнаты.'}};$('startOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/start',{roomId:currentOnlineRoom.room.roomId});renderOnlineRoom(data);startRoomPolling()}catch(err){$('onlineResult').textContent=err.message||'Не удалось начать заезд.'}};$('createRoom').onclick=async()=>{const count=Number($('players').value),stake=Number($('stake').value);if(!Number.isSafeInteger(stake)||stake<100){$('roomStatus').textContent='Минимальная ставка — 100 AC.';return}try{$('roomStatus').textContent='Создаю комнату и блокирую ставку через сервер…';const data=await api('/rooms/create',{maxPlayers:count,stake,mode:$('raceMode').value,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Комната создана. Ставка списана сервером; жди других игроков.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось создать онлайн-комнату.'}};
 render();syncRace2DCarArt();reset();initDragRacing3D();initOnline();
 })();
 </script></body></html>

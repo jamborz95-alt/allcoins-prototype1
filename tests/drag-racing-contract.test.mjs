@@ -33,7 +33,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-track4x"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-opponent1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -78,6 +78,17 @@ test("concurrent room joins serialize on the shared player balance before checki
   const balanceLock = joinRoute.indexOf("const balance = await lockPlayerBalance(client, user)");
   const activeRoomCheck = joinRoute.indexOf("const active = await client.query(");
   assert.ok(balanceLock >= 0 && activeRoomCheck > balanceLock, "the player row is locked before checking active-room membership");
+});
+
+
+test("online opponent renders the actual selected model as PNG, not the hardcoded SVG", () => {
+  assert.match(page, /function syncOnlineOpponentCar\(\)/);
+  assert.match(page, /players\.find\(player=>!player\.isYou\)/, "Opponent art must use the other player's room record.");
+  assert.match(page, /const requestedId=String\(rival\.carId\|\|'2107'\)/, "Opponent model must come from the rival's selected carId.");
+  assert.match(page, /lada-2107-side\.png\?v=20261029-opponent1/, "The VAZ-2107 rival must use the authored side-view PNG.");
+  assert.match(page, /function carSvgToPngDataUrl\(modelId,paint\)/, "Other selected models must be delivered as PNG raster images.");
+  assert.match(page, /image\.className='opponent-car-png'/, "The opponent slot must render an image element.");
+  assert.doesNotMatch(page, /opponent\.innerHTML=carSvg\('2110'/, "The fixed old VAZ-2110 SVG must not be used for the opponent.");
 });
 
 test("car travel and track motion scale up as speed increases", () => {

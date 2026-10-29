@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-track4x"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -108,9 +108,12 @@ try {
       balance -= stake;
       activeRoom = {
         room: { id: "DR-71", roomId: "71", ownerId: "12345", ownerName: "Test Driver",
-          stake, maxPlayers: Number(body.maxPlayers), playersCount: 1, mode: body.mode,
+          stake, maxPlayers: Number(body.maxPlayers), playersCount: 2, mode: body.mode,
           status: "waiting", isOwner: true },
-        players: [{ id: "12345", name: "Test Driver", carId: selectedCarId, isYou: true, isOwner: true, connected: true, finishTimeMs: null }],
+        players: [
+          { id: "12345", name: "Test Driver", carId: selectedCarId, isYou: true, isOwner: true, connected: true, finishTimeMs: null },
+          { id: "67890", name: "Online Rival", carId: "2107", isYou: false, isOwner: false, connected: true, finishTimeMs: null }
+        ],
         game: { phase: "waiting", startedAt: null, results: {}, winners: [], payout: 0, commission: 0, message: "" }
       };
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(roomPayload()) });
@@ -342,6 +345,24 @@ try {
   assert.ok(apiCalls.some(call => call.path === "/api/drag-racing/rooms/create" &&
     call.body.initData === "mock-init-data" && call.body.stake === 1000),
     "Creating a room should send Telegram identity and the requested stake.");
+  assert.equal(activeRoom.players.length, 2, "The online room fixture should contain an actual rival with its own selected car.");
+  await page.locator("#startOnline").click();
+  await page.waitForFunction(() => {
+    const cockpit = document.querySelector("#proRaceCockpit");
+    const image = document.querySelector("#race2dOpponentCar .opponent-car-png");
+    return cockpit && !cockpit.classList.contains("hidden") && image && image.complete && image.naturalWidth > 0;
+  }, null, { timeout: 7000 });
+  assert.equal(await page.locator("#race2dOpponentCar .opponent-car-png").count(), 1,
+    "The network opponent should be rendered from a PNG image element.");
+  assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0,
+    "The network opponent must not use the old inline SVG.");
+  assert.equal(await page.locator("#race2dOpponentCar .opponent-car-png").getAttribute("src"),
+    "./cars/lada-2107-side.png?v=20261029-opponent1",
+    "A rival driving a VAZ-2107 must display the actual side-view PNG asset.");
+  assert.match(await page.locator("#race2dOpponentCar").getAttribute("aria-label"), /ВАЗ-2107/,
+    "The visible opponent model should match the rival's selected carId.");
+  await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-online-opponent-png.png"), fullPage: false });
+
   assert.ok(pageErrors.length === 0, "Browser console errors: " + pageErrors.join("; "));
 
   console.log("Drag Racing UI smoke test passed: mobile page, server garage purchase and online room creation.");
