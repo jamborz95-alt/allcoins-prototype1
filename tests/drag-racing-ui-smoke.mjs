@@ -274,6 +274,11 @@ try {
   assert.notEqual(sceneryAfterThrottle, sceneryBeforeThrottle, "Distant scenery must scroll smoothly using a composited transform.");
   assert.match(html, /raceWorldOffset\+=Math\.max\(0,speed\)\/3\.6\*dt\*9\.6\*scale/, "Track scenery speed must rise proportionally as the speedometer climbs.");
   assert.match(html, /const shiftPercent=18\*speedLead\+52\*progress/, "Car must visibly advance across the strip as speed and traveled distance increase.");
+  // Shift through the remaining gears so the longer one-mile smoke race reaches its finish at realistic top speed.
+  await page.locator("#proShiftUp").click();
+  await page.locator("#proShiftUp").click();
+  await page.locator("#proShiftUp").click();
+  assert.equal(await page.locator("#proGearDigits").textContent(), "5", "The test driver should shift up to fifth gear before the long finish run.");
   const finishBeforeApproach = Number(await page.locator("#race2dFinishGate").evaluate(el => parseFloat(el.style.left) || 0));
   // Let the normal race physics carry the car into the final stretch; don't mutate gameplay state from the test.
   await page.waitForFunction(() => {
@@ -281,7 +286,7 @@ try {
     const road = document.querySelector("#race2dFinishStraight");
     return scene?.classList.contains("race-near-finish") &&
       road && Number.parseFloat(getComputedStyle(road).opacity) > .2;
-  }, null, { timeout: 55000 });
+  }, null, { timeout: 65000 });
   const cameraFinishState = await page.evaluate(() => {
     const world = document.querySelector("#race2dCameraWorld");
     const gate = document.querySelector("#race2dFinishGate");
