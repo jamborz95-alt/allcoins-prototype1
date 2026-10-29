@@ -66,6 +66,10 @@
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .34s cubic-bezier(.36,0,.64,1) infinite alternate}
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-road-surface{animation:race2d-road-bump .46s cubic-bezier(.2,.75,.35,1)}
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player{animation:race2d-suspension-bump .46s cubic-bezier(.2,.75,.35,1)}
+@keyframes race2d-road-bump{0%{filter:none}18%{filter:brightness(1.14)}38%{filter:brightness(.92)}64%{filter:brightness(1.04)}100%{filter:none}}
+@keyframes race2d-suspension-bump{0%{translate:0 0}18%{translate:0 -7px}40%{translate:0 3px}65%{translate:0 -2px}100%{translate:0 0}}
 @keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
 @keyframes race2d-wheel-spin{to{transform:rotate(360deg)}}
@@ -1157,6 +1161,7 @@ function updateRace2DEnvironment(dt){
   const markShift=(raceWorldOffset*1.05)%96;
   if(marks)marks.style.transform='translate3d('+(-markShift).toFixed(3)+'px,0,0)';
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
+  if(running&&speed>28&&distance>=nextRoadBumpAt&&performance.now()-lastRoadBumpAt>1800){lastRoadBumpAt=performance.now();nextRoadBumpAt=distance+18+Math.random()*48;scene.classList.remove('race-road-bump');void scene.offsetWidth;scene.classList.add('race-road-bump');window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);playRoadBumpSound()}
   scene.classList.toggle('race-fast',speed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
