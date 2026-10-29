@@ -178,22 +178,22 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-environment{position:absolute;inset:0;z-index:0;overflow:hidden;background:linear-gradient(180deg,#9eafb3 0%,#d5d6cd 36%,#9d9f8e 43%,#6e706b 51%,#74736d 100%);pointer-events:none}
 .race2d-sky-wash{position:absolute;inset:0;background:linear-gradient(180deg,#a5b7bb 0%,#d0d3cb 34%,#d9d5c7 40%,transparent 47%);z-index:0}
 .race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{position:absolute;left:0;right:0;background-repeat:repeat-x;background-position:0 0;will-change:background-position;pointer-events:none}
-.race2d-city-layer{top:0;height:47%;z-index:1;background-size:300vw 100%;filter:blur(.18px);opacity:.96}
-.race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;filter:blur(.42px);opacity:.96}
+.race2d-city-layer{top:0;height:47%;z-index:1;background-size:300vw 100%;filter:blur(.18px);opacity:.96;will-change:transform;backface-visibility:hidden}
+.race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;filter:blur(.42px);opacity:.96;will-change:transform;backface-visibility:hidden}
 .race2d-green-belt{position:absolute;left:0;right:0;top:39%;height:10%;z-index:2;background:linear-gradient(180deg,#adb69a 0%,#78916c 24%,#53694f 61%,#9a9c84 100%);box-shadow:inset 0 4px 5px #e6dfc766;border-bottom:2px solid #4c544d}
-.race2d-fence-layer{top:37%;height:25%;z-index:3;background-size:300vw 100%;opacity:.9}
+.race2d-fence-layer{top:37%;height:25%;z-index:3;background-size:300vw 100%;opacity:.9;will-change:transform;backface-visibility:hidden}
 .race2d-road-surface{position:absolute;left:0;right:0;top:44%;bottom:0;z-index:3;overflow:hidden;background:linear-gradient(180deg,#a29e90 0%,#8a877d 12%,#6c6d68 25%,#696a66 60%,#77766e 100%);border-top:2px solid #dad6c7;box-shadow:inset 0 8px 12px #4e514d55}
 .race2d-road-surface:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 10px,#f4f1e61c 10px 11px,transparent 12px 23px),repeating-linear-gradient(90deg,#3f44420a 0 2px,transparent 2px 8px);opacity:.55}
-.race2d-road-markings{position:absolute;left:0;right:0;top:38%;height:4px;background:repeating-linear-gradient(90deg,#eee9d8 0 47px,transparent 47px 96px);background-position:0 0;opacity:.91;filter:drop-shadow(0 1px 1px #3c3c35);will-change:background-position}
+.race2d-road-markings{position:absolute;left:0;right:0;top:38%;height:4px;background:repeating-linear-gradient(90deg,#eee9d8 0 47px,transparent 47px 96px);background-position:0 0;opacity:.91;filter:drop-shadow(0 1px 1px #3c3c35);will-change:transform;backface-visibility:hidden}
 .race2d-road-grain{position:absolute;inset:0;background:linear-gradient(180deg,#f5f0dc12,transparent 27% 76%,#21232320),repeating-linear-gradient(177deg,transparent 0 17px,#dad5c21a 18px,transparent 19px 38px);opacity:.55;pointer-events:none}
 .race2d-scene.race-fast .race2d-city-layer{filter:blur(.8px)}
 .race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
-.race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:left,transform,filter!important}
-.race2d-car.player{left:12%;transition:left .14s cubic-bezier(.2,.75,.25,1)!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
+.race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:transform!important;backface-visibility:hidden}
+.race2d-car.player{left:12%;transition:none!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
 .race2d-scene.road-bump-active .race2d-road-surface{filter:brightness(1.035)}
 .race2d-scene.road-bump-active .race2d-road-grain{opacity:.78}
 .race2d-scene.road-bump-active .race2d-road-markings{filter:drop-shadow(0 1px 1px #3c3c35) brightness(1.08)}
-.race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:1;transform:scale(1);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .18s ease,left .12s linear,top .12s linear!important}
+.race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:1;transform:scale(1);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .18s ease!important;will-change:transform,opacity!important;backface-visibility:hidden}
 .pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-suspension .23s ease-in-out infinite alternate}
 .pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation-timing-function:linear}
@@ -1980,16 +1980,17 @@ function getRaceCarMotion(){
   const shiftPx=sceneWidth*shiftPercent/100;
   return {player,scene,sceneWidth,currentSpeed,speedLead,progress,shiftPercent,shiftPx};
 }
-function updateRaceCarPosition(dt=1/60){
-  const motion=getRaceCarMotion();
-  if(!motion.player)return;
-  // Filter tiny frame-to-frame changes so the car accelerates visually without jitter.
-  const response=1-Math.exp(-Math.max(0,dt)*(running?34:20));
-  raceCarOffset+=(motion.shiftPx-raceCarOffset)*response;
-  motion.player.style.setProperty('--race-car-x',raceCarOffset.toFixed(3)+'px');
+function updateRaceCarPosition(dt=1/60,motion=null){
+  const frameMotion=motion||getRaceCarMotion();
+  if(!frameMotion.player)return frameMotion;
+  // Physics already follows elapsed time; avoid a second interpolation that makes steering visibly lag.
+  raceCarOffset=frameMotion.shiftPx;
+  const x=raceCarOffset.toFixed(3)+'px';
+  if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
+  return frameMotion;
 }
-function updateRace2DCamera(dt=1/60){
-  const motion=getRaceCarMotion();
+function updateRace2DCamera(dt=1/60,motion=null){
+  motion=motion||getRaceCarMotion();
   const world=$('race2dCameraWorld'),gate=$('race2dFinishGate'),stripe=$('race2dFinishStripe');
   if(!world||!motion.scene)return;
   const carShift=raceCarOffset;
@@ -2036,8 +2037,8 @@ function recoverRaceFrameError(stage,error){
     console.error('[ALLCOINS drag racing] Recovered after '+stage+' error:',error);
   }
 }
-function raceFrameStep(stage,callback){
-  try{callback();return true}catch(error){recoverRaceFrameError(stage,error);return false}
+function raceFrameStep(stage,callback,arg1,arg2){
+  try{callback(arg1,arg2);return true}catch(error){recoverRaceFrameError(stage,error);return false}
 }
 function start(sharedStartedAt=null){
   if(running)return;
@@ -2124,15 +2125,16 @@ function start(sharedStartedAt=null){
       }
     // Isolate visual, HUD and audio-adjacent work. A rejected mobile WebView call
     // must never terminate the simulation loop or leave the car frozen on screen.
-    raceFrameStep('environment',()=>updateRace2DEnvironment(dt,now));
-    raceFrameStep('car-position',()=>updateRaceCarPosition(dt));
-    raceFrameStep('camera',()=>updateRace2DCamera(dt));
-    if(now-lastHUDUpdateAt>=80){raceFrameStep('hud',()=>updateHUD(0,true));lastHUDUpdateAt=now}
+    const visualMotion=getRaceCarMotion();
+    raceFrameStep('car-position',updateRaceCarPosition,dt,visualMotion);
+    raceFrameStep('environment',updateRace2DEnvironment,dt,now);
+    raceFrameStep('camera',updateRace2DCamera,dt,visualMotion);
+    if(now-lastHUDUpdateAt>=33){raceFrameStep('hud',updateHUD,0,true);lastHUDUpdateAt=now}
     }catch(error){
       recoverRaceFrameError('simulation',error);
-      raceFrameStep('recovery-car-position',()=>updateRaceCarPosition(frameDt));
-      raceFrameStep('recovery-camera',()=>updateRace2DCamera(frameDt));
-      raceFrameStep('recovery-hud',()=>updateHUD(0,true));
+      raceFrameStep('recovery-car-position',updateRaceCarPosition,frameDt);
+      raceFrameStep('recovery-camera',updateRace2DCamera,frameDt);
+      raceFrameStep('recovery-hud',updateHUD,0,true);
     }finally{
       // Always queue the next frame, even after one mobile-only runtime failure.
       if(running)raf=requestAnimationFrame(frame);
