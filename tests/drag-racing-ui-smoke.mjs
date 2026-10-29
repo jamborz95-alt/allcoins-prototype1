@@ -164,7 +164,7 @@ try {
   const carArtBox = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {width:r.width,height:r.height,opacity:getComputedStyle(el).opacity,visibility:getComputedStyle(el).visibility}; });
   assert.ok(Math.max(carArtBox.width, carArtBox.height) >= 240 && Math.min(carArtBox.width, carArtBox.height) >= 80 && carArtBox.opacity !== "0" && carArtBox.visibility !== "hidden", `The car sprite must have visible, non-zero dimensions on mobile (actual ${carArtBox.width}×${carArtBox.height}; landscape cockpit may be rotated on portrait screens).`);
   assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile should have two independently rotating wheel faces.");
-  assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
+  assert.equal(await page.locator("#race2dOpponentCar svg").count(), 0, "Solo mode must not render a hardcoded SVG rival; online opponents are rendered from their selected PNG model.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
@@ -319,8 +319,14 @@ try {
     "Releasing the gas pedal should release the throttle.");
   await page.locator("#proExitRace").click();
   await page.waitForFunction(() => document.querySelector("#proRaceCockpit")?.classList.contains("hidden"));
-  assert.equal(await page.locator("#race3dCanvas").evaluate(el => el.parentElement.id), "scene",
-    "Exiting single-player should return the 3D canvas to the game page.");
+  const restoredRaceView = await page.evaluate(() => ({
+    playerCarCount: document.querySelectorAll("#race2dPlayerCar").length,
+    canvasParent: document.querySelector("#race3dCanvas")?.parentElement?.id || null
+  }));
+  assert.equal(restoredRaceView.playerCarCount, 1, "The 2D race view should remain available after exiting the cockpit.");
+  if (restoredRaceView.canvasParent !== null) {
+    assert.equal(restoredRaceView.canvasParent, "scene", "If the optional 3D preview remains available, it should return to the game page.");
+  }
 
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal((await page.locator("#balance").textContent()).replace(/\s/g, ""), "10000");
