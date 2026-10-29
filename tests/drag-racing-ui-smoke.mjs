@@ -286,6 +286,7 @@ try {
   const speedBeforeThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const fuelBeforeThrottle = Number(await page.locator("#proFuelLiters").textContent());
   const carShiftBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
+  const carScreenBeforeThrottle = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
   const sceneryBeforeThrottle = await page.locator("#race2dCityLayer").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await page.locator("#proGasHold").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
   assert.equal(await page.locator("#proGasHold").evaluate(el => el.classList.contains("held")), true,
@@ -315,6 +316,9 @@ try {
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
+  const carScreenAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; });
+  const visibleCarTravel = Math.hypot(carScreenAfterThrottle.x-carScreenBeforeThrottle.x, carScreenAfterThrottle.y-carScreenBeforeThrottle.y);
+  assert.ok(visibleCarTravel > 3, `The car must visibly advance on screen instead of being pinned by the chase camera (moved ${visibleCarTravel.toFixed(1)} px).`);
   assert.ok(speedAfterThrottle > speedBeforeThrottle, "The digital speedometer must climb while the gas pedal is held.");
   assert.ok(speedBarPercent > 0, "The speedometer bar must respond to simulated km/h.");
   assert.ok(carShiftAfterThrottle > carShiftBeforeThrottle, "The selected car must visibly travel from left to right on the track.");
