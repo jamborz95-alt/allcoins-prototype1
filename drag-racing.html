@@ -1144,31 +1144,44 @@ function buildRace2DEnvironment(){
   setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
   env.dataset.ready='1';
 }
-function updateRace2DEnvironment(dt){
+function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const player=$('race2dPlayerCar');
   const world=player?.parentElement;
   const scene=world?.parentElement;
   if(!scene||!world)return;
+  const now=Number.isFinite(frameNow)?frameNow:performance.now();
   const sceneWidth=Math.max(1,scene.clientWidth||1280);
   const scale=Math.max(.6,Math.min(1.35,sceneWidth/1280));
   if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*9.6*scale;
   const wrap=Math.max(1,sceneWidth*38.4);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
-  // Move distant scenery more slowly than the road for layered parallax.
-  if(city)city.style.transform='translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(3)+'px,0,0)';
-  if(trees)trees.style.transform='translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(3)+'px,0,0)';
-  if(fence)fence.style.transform='translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(3)+'px,0,0)';
+  // Only write compositor transforms when they have actually changed.
+  const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
+  setTransform(city,'translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(3)+'px,0,0)');
+  setTransform(trees,'translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(3)+'px,0,0)');
+  setTransform(fence,'translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(3)+'px,0,0)');
   const markShift=(raceWorldOffset*1.05)%96;
-  if(marks)marks.style.transform='translate3d('+(-markShift).toFixed(3)+'px,0,0)';
+  setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
-  if(running&&speed>28&&distance>=nextRoadBumpAt&&performance.now()-lastRoadBumpAt>1800){lastRoadBumpAt=performance.now();nextRoadBumpAt=distance+18+Math.random()*48;scene.classList.remove('race-road-bump');void scene.offsetWidth;scene.classList.add('race-road-bump');window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);playRoadBumpSound()}
+  if(running&&speed>28&&distance>=nextRoadBumpAt&&now-lastSceneBumpAt>1800){
+    lastSceneBumpAt=now;
+    nextRoadBumpAt=distance+18+Math.random()*48;
+    // Restart the bump on the next frame instead of forcing a synchronous layout.
+    scene.classList.remove('race-road-bump');
+    requestAnimationFrame(()=>{if(scene.isConnected)scene.classList.add('race-road-bump')});
+    window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);
+    playRoadBumpSound(.5);
+  }
   scene.classList.toggle('race-fast',speed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
   scene.classList.toggle('race-finished',Boolean(finished));
+  // Keep the rival position on every display frame; it is extrapolated locally for smooth motion.
   updateOnlineOpponentMotion(dt);
-  updateUnevenRoad(dt);
-  updateRaceEngineAudio();
+  updateUnevenRoad(dt,now);
+  // Audio controls are smoothed over tens of milliseconds; a 20 Hz update avoids
+  // endlessly enqueueing nearly identical AudioParam ramps on mobile browsers.
+  if(now-lastEngineAudioUpdateAt>=50){lastEngineAudioUpdateAt=now;updateRaceEngineAudio()}
 }
 function buildProSpeedScale(){
   const scale=$('proSpeedScale');if(!scale||scale.dataset.ready)return;
@@ -1615,10 +1628,10 @@ function initDragRacing3D(){
   let lastVisualFrame=0;
   function drawFrame(now){
     requestAnimationFrame(drawFrame);
+    // Avoid computed-style work entirely while the legacy preview is detached or hidden.
+    if(document.hidden||host.hidden||!host.isConnected){lastVisualFrame=0;return}
     const hostStyle=window.getComputedStyle(host);
-    // This legacy Three.js preview is intentionally hidden by the garage/2D
-    // cockpit. Do not keep rendering an invisible shadow-heavy scene on phones.
-    if(document.hidden||host.hidden||!host.isConnected||hostStyle.display==='none'||hostStyle.visibility==='hidden'||Number(hostStyle.opacity)<=.05){lastVisualFrame=0;return}
+    if(hostStyle.display==='none'||hostStyle.visibility==='hidden'||Number(hostStyle.opacity)<=.05){lastVisualFrame=0;return}
     const dt=lastVisualFrame?Math.min(.05,Math.max(0,(now-lastVisualFrame)/1000)):1/60;
     lastVisualFrame=now;
     race3d.lastDraw=now;
@@ -1640,7 +1653,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceAudioReady=false,lastGearSoundAt=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1847,17 +1860,24 @@ function playRoadBumpSound(strength){
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(amp,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.12);
   osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.13);
 }
-function updateUnevenRoad(dt){
+function updateUnevenRoad(dt,frameNow=performance.now()){
+  const now=Number.isFinite(frameNow)?frameNow:performance.now();
+  // Suspension motion does not need 60 DOM writes per second; CSS handles the in-between frames.
+  if(now-lastUnevenRoadUpdateAt<33)return;
+  lastUnevenRoadUpdateAt=now;
   const scene=$('race2dPlayerCar')?.closest('.race2d-scene');if(!scene)return;
-  const now=performance.now(),moving=running&&speed>24;
+  const moving=running&&speed>24;
   if(moving&&now-lastRoadBumpAt>1250+Math.random()*2300){
     lastRoadBumpAt=now;roadBumpUntil=now+150+Math.random()*120;roadBumpStrength=.35+Math.random()*.65;
     if(speed>55&&raceAudioReady)playRoadBumpSound(roadBumpStrength);
   }
   const active=now<roadBumpUntil?roadBumpStrength:0;
-  scene.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
-  const player=$('race2dPlayerCar');if(player)player.style.setProperty('--road-bump-y',(active*2.2).toFixed(2)+'px');
-  scene.style.setProperty('--road-bump-tilt',(active*(Math.random()-.5)*.35).toFixed(3)+'deg');
+  const bumpY=(active*2.2).toFixed(2)+'px';
+  if(scene.style.getPropertyValue('--road-bump-y')!==bumpY)scene.style.setProperty('--road-bump-y',bumpY);
+  const player=$('race2dPlayerCar');
+  if(player&&player.style.getPropertyValue('--road-bump-y')!==bumpY)player.style.setProperty('--road-bump-y',bumpY);
+  const tilt=(active*Math.sin(now*.012)*.12).toFixed(3)+'deg';
+  if(scene.style.getPropertyValue('--road-bump-tilt')!==tilt)scene.style.setProperty('--road-bump-tilt',tilt);
   scene.classList.toggle('road-bump-active',active>0);
 }
 function setGear(g){
@@ -2083,13 +2103,13 @@ function start(sharedStartedAt=null){
       }
     // Keep movement and camera on every animation frame. Refresh text, fuel,
     // and gauges at 12.5 Hz to avoid mobile layout/paint spikes at high speed.
-    updateRace2DEnvironment(dt);
+    updateRace2DEnvironment(dt,now);
     updateRaceCarPosition(dt);
     updateRace2DCamera(dt);
     if(now-lastHUDUpdateAt>=80){updateHUD(0,true);lastHUDUpdateAt=now}
     if(running)raf=requestAnimationFrame(frame);
   }
-  last=0;raf=requestAnimationFrame(frame);
+  last=0;lastEngineAudioUpdateAt=0;lastUnevenRoadUpdateAt=0;lastSceneBumpAt=0;raf=requestAnimationFrame(frame);
 }
 $('startRace').onclick=()=>{initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
 $('resetRace').onclick=()=>{reset();closeProRaceCockpit()};
@@ -2135,7 +2155,7 @@ function startRoomPolling(){
       }
     }catch(err){$('roomStatus').textContent=err.message||'Связь с комнатой временно потеряна.'}
     finally{onlinePollBusy=false}
-  },mode==='racing'?150:1800)
+  },mode==='racing'?250:1800)
 }function renderOnlineRoom(data){if(!data||!data.room)return;if(Number.isFinite(Number(data.serverNow)))onlineServerClockOffsetMs=Number(data.serverNow)-Date.now();currentOnlineRoom=data;syncOnlineOpponentCar();const room=data.room,players=Array.isArray(data.players)?data.players:[],game=data.game||{};setWalletBalance(data.balance);$('onlineRoom').classList.remove('hidden');$('leaveOnline').classList.remove('hidden');$('onlineRoomInfo').innerHTML='<div class="title">'+escapeHtml(room.id)+' · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[room.mode]||room.mode))+'</div><div class="statline"><span>Ставка</span><b>'+money(room.stake)+' AC с игрока</b></div><div class="statline"><span>Игроки</span><b>'+players.length+' / '+room.maxPlayers+'</b></div><div class="muted">'+(room.status==='waiting'?'Ожидаем участников. Старт доступен создателю от двух игроков.':room.status==='racing'?'Заезд идёт: удерживай газ и вручную переключай передачи.':'Результат зафиксирован на сервере.')+'</div>'+players.map(p=>'<div class="room"><div><b>'+escapeHtml(p.name)+(p.isYou?' (ты)':'')+(p.isOwner?' · создатель':'')+'</b><div class="muted">'+escapeHtml(p.carId)+' · '+(p.finishTimeMs===null?'на старте':(Number(p.finishTimeMs)/1000).toFixed(2)+' с')+(p.forfeit?' · не финишировал':'')+'</div></div><span class="pill">'+(p.connected?'в сети':'нет сигнала')+'</span></div>').join('');const canStart=room.status==='waiting'&&room.isOwner&&players.length>=2;$('startOnline').classList.toggle('hidden',!(room.status==='waiting'&&room.isOwner));$('startOnline').disabled=!canStart;$('startOnline').textContent=canStart?'🏁 Начать онлайн-заезд':'Ожидаем второго игрока…';if(room.status==='racing'&&game.startedAt&&onlineRaceStartedFor!==room.id){onlineRaceStartedFor=room.id;finishSentFor=null;start(Number(game.startedAt));$('startRace').textContent='🏁 Онлайн-заезд';$('raceStatus').textContent='Сигнал сервера принят. Удерживай газ и переключай передачи вручную.'}if(room.status==='racing'){$('onlineResult').textContent='Заезд в процессе. Финиш отправляется серверу автоматически.';$('startRace').disabled=true}else if(room.status==='finished'){stopRoomPolling();$('startOnline').classList.add('hidden');$('onlineResult').textContent=game.message||'Заезд завершён.';if(Array.isArray(game.winners)&&game.winners.length){$('onlineResult').textContent+=' Победители: '+game.winners.map(w=>w.name+' — '+money(w.amount)+' AC').join('; ')}if(game.commission>0)$('onlineResult').textContent+=' Комиссия 5%: '+money(game.commission)+' AC.';$('startRace').disabled=false;$('startRace').textContent='↻ Новый заезд'}else{$('onlineResult').textContent=''}if(room.status!=='racing'&&room.status!=='waiting')stopRoomPolling();startRoomPolling()}async function refreshRooms(){if(!tg?.initData){$('roomStatus').textContent='Для онлайн-комнат и ставок открой ALLCOINS через Telegram.';$('rooms').innerHTML='';return}try{const data=await api('/rooms/list');if(data.currentRoom){renderOnlineRoom(data.currentRoom);startRoomPolling()}else if(!currentOnlineRoom||currentOnlineRoom.room.status!=='finished'){$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');currentOnlineRoom=null;stopRoomPolling()}const rooms=Array.isArray(data.rooms)?data.rooms:[];$('rooms').innerHTML=rooms.filter(r=>!currentOnlineRoom||r.roomId!==currentOnlineRoom.room.roomId).map(r=>'<div class="room"><div><b>'+escapeHtml(r.id)+' · '+escapeHtml(r.ownerName)+'</b><div class="muted">'+money(r.stake)+' AC · '+r.playersCount+'/'+r.maxPlayers+' игроков · '+escapeHtml(({quarter:'¼ мили',half:'½ мили',sprint:'1 км'}[r.mode]||r.mode))+'</div></div><button data-joinroom="'+escapeHtml(r.roomId)+'">Войти</button></div>').join('')||'<div class="muted">Открытых комнат пока нет. Создай свою или обнови список.</div>'}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить комнаты.'}}async function joinRoom(roomId){$('roomStatus').textContent='Подключаюсь к комнате…';const data=await api('/rooms/join',{roomId,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Ты вошёл в комнату. Ставка списана сервером и будет учтена при расчёте результата.'}async function initOnline(){if(!tg?.initData){$('roomStatus').textContent='Демо-режим: одиночный заезд доступен. Для онлайн-ставок открой мини-приложение через Telegram.';return}try{const profile=await api('/profile');applyRemoteProfile(profile);$('roomStatus').textContent='Баланс и гараж загружены из ALLCOINS.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось загрузить профиль ALLCOINS.'}}$('refreshRooms').onclick=refreshRooms;$('leaveOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/leave',{roomId:currentOnlineRoom.room.roomId});setWalletBalance(data.balance);currentOnlineRoom=null;onlineRaceStartedFor=null;finishSentFor=null;stopRoomPolling();$('onlineRoom').classList.add('hidden');$('leaveOnline').classList.add('hidden');$('roomStatus').textContent=data.message||'Ты вышел из комнаты.';reset();await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось выйти из комнаты.'}};$('startOnline').onclick=async()=>{if(!currentOnlineRoom)return;try{const data=await api('/rooms/start',{roomId:currentOnlineRoom.room.roomId});renderOnlineRoom(data);startRoomPolling()}catch(err){$('onlineResult').textContent=err.message||'Не удалось начать заезд.'}};$('createRoom').onclick=async()=>{const count=Number($('players').value),stake=Number($('stake').value);if(!Number.isSafeInteger(stake)||stake<100){$('roomStatus').textContent='Минимальная ставка — 100 AC.';return}try{$('roomStatus').textContent='Создаю комнату и блокирую ставку через сервер…';const data=await api('/rooms/create',{maxPlayers:count,stake,mode:$('raceMode').value,carId:state.selected});renderOnlineRoom(data);startRoomPolling();$('roomStatus').textContent='Комната создана. Ставка списана сервером; жди других игроков.';await refreshRooms()}catch(err){$('roomStatus').textContent=err.message||'Не удалось создать онлайн-комнату.'}};
 render();syncRace2DCarArt();reset();initDragRacing3D();initOnline();
 })();
