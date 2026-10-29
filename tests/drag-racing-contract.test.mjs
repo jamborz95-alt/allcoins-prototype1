@@ -212,7 +212,7 @@ test("VAZ-2107 uses the real side-profile PNG and rotating wheel faces", () => {
   assert.match(page, /const ladaPreview='<img class="race-car-png" src="\.\/cars\/lada-2107-side\.png\?v=20261029-wheel2"/, "The selected VAZ-2107 should use the transparent side-profile PNG.");
   assert.match(page, /const ladaWheels='<span class="png-wheel-spin rear"/, "The VAZ-2107 should have a separate rear wheel rotor.");
   assert.match(page, /<span class="png-wheel-spin front"/, "The VAZ-2107 should have a separate front wheel rotor.");
-  assert.match(page, /player\.innerHTML=useLadaPng\?ladaPreview\+ladaWheels:carSvg\(selectedId,paint\)/, "The rotors should be layered over the real PNG for the VAZ-2107.");
+  assert.match(page, /player\.innerHTML=\(useLadaPng\?ladaPreview\+ladaWheels:carSvg\(selectedId,paint\)\)\+engineEffects/, "The PNG wheels and engine effects should be layered over the selected car.");
   assert.match(page, /\.race2d-car\.png-car \.png-wheel-spin\.rear\{left:18\.2%!important\}/, "The rear wheel rotor should align with the PNG rim.");
   assert.match(page, /\.race2d-car\.png-car \.png-wheel-spin\.front\{left:76\.3%!important\}/, "The front wheel rotor should align with the PNG rim.");
   assert.match(page, /\.pro-race-cockpit\.race-moving \.race2d-car\.png-car \.png-wheel-spin\{[\s\S]*?animation:race2d-wheel-spin var\(--race-wheel-duration,\.24s\) linear infinite!important/, "Both PNG wheel rotors should spin during a race.");
