@@ -19,11 +19,14 @@ test("online racing shares bounded per-player speed and progress telemetry", () 
   assert.match(router, /speedKmh >= 0 && speedKmh <= 400/);
   assert.match(router, /distanceM <= maxDistance \+ 50/);
   assert.match(router, /motionByPlayer\[user\.id\] = \{/);
-  assert.match(router, /fresh: motionAgeMs <= 1900/);
+  assert.match(router, /fresh: motionAgeMs <= 2500/);
+  assert.match(router, /serverNow: Date\.now\(\)/);
+  assert.match(router, /now - \(Number\(previousMotion\.updatedAt\) \|\| 0\) >= 100/);
   assert.match(page, /function raceTelemetryPayload\(\)/);
   assert.match(page, /payload\.telemetry=raceTelemetryPayload\(\)/);
   assert.match(page, /function updateOnlineOpponentMotion\(dt\)/);
-  assert.match(page, /opponent\.style\.left=onlineOpponentMotion\.left\.toFixed\(2\)/);
+  assert.match(page, /opponent\.style\.setProperty\('--opponent-translate-x'/);
+  assert.match(page, /opponent\.style\.setProperty\('--opponent-translate-y'/);
   assert.match(page, /opponent-wheel-spin/);
   assert.match(page, /--opponent-wheel-duration/);
 });
@@ -48,7 +51,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam2"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-fixedcam3"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -104,7 +107,7 @@ test("online opponent renders the actual selected model as PNG, not the hardcode
   assert.match(page, /function carSvgToPngDataUrl\(modelId,paint\)/, "Other selected models must be delivered as PNG raster images.");
   assert.match(page, /image\.className='opponent-car-png'/, "The opponent slot must render an image element.");
   assert.match(page, /\.race2d-car\.png-opponent-car\{[\s\S]*opacity:1!important;visibility:visible!important;transform:scale\(1\)!important/, "The opponent PNG must be visible immediately instead of being hidden until a race-state toggle.");
-  assert.match(page, /\.race2d-car\.opponent\.png-opponent-car\{transition:none!important;will-change:left,top,transform!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important\}/, "Online opponent motion must not wait on CSS transitions and should scale according to relative distance.");
+  assert.match(page, /\.race2d-car\.opponent\.png-opponent-car\{left:12%!important;right:auto!important;top:38%!important;bottom:auto!important;transition:none!important;will-change:transform!important;transform:translate3d\(var\(--opponent-translate-x,0px\),var\(--opponent-translate-y,0px\),0\) scale\(var\(--opponent-perspective-scale,1\)\)!important\}/, "Online opponent motion must use compositor transforms without layout transitions.");
   assert.doesNotMatch(page, /opponent\.innerHTML=carSvg\('2110'/, "The fixed old VAZ-2110 SVG must not be used for the opponent.");
 });
 
@@ -112,11 +115,14 @@ test("online opponent renders the actual selected model as PNG, not the hardcode
 test("online opponent position follows relative progress and can leave and re-enter the fixed camera view", () => {
   assert.match(page, /const playerWorldLeft=12\+\(raceCarOffset\/sceneWidth\)\*100/);
   assert.match(page, /const targetLeft=Math\.max\(-500,Math\.min\(500,playerWorldLeft\+delta\*256\)\)/);
-  assert.match(page, /const predictionSeconds=Math\.min\(\.65,ageSeconds\)/);
-  assert.match(page, /const positionAlpha=1-Math\.exp\(-frameDt\*10\)/);
-  assert.match(page, /transition:none!important;will-change:left,top,transform!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important/);
+  assert.match(page, /const predictionSeconds=ageSeconds/);
+  assert.match(page, /onlineOpponentMotion\.progress=Math\.max\(0,Math\.min\(1,sampleProgress\+sampleSpeed\/3\.6\*predictionSeconds\/raceDistance\)\)/);
+  assert.match(page, /onlineServerClockOffsetMs=Number\(data\.serverNow\)-Date\.now\(\)/);
+  assert.doesNotMatch(page, /onlineOpponentMotion\.progress\+=\(onlineOpponentMotion\.targetProgress-onlineOpponentMotion\.progress\)\*alpha/);
+  assert.doesNotMatch(page, /onlineOpponentMotion\.left\+=\(targetLeft-onlineOpponentMotion\.left\)\*positionAlpha/);
+  assert.match(page, /transition:none!important;will-change:transform!important;transform:translate3d\(var\(--opponent-translate-x,0px\),var\(--opponent-translate-y,0px\),0\) scale\(var\(--opponent-perspective-scale,1\)\)!important/);
   assert.doesNotMatch(page, /const targetLeft=Math\.max\(14,Math\.min\(72/);
-  assert.match(page, /mode==='racing'\?350:1800\)/, "online race telemetry should refresh often enough for smooth rival updates");
+  assert.match(page, /mode==='racing'\?150:1800\)/, "online race telemetry should refresh often enough for smooth rival updates");
 });
 
 test("car travel and track motion scale up as speed increases", () => {
