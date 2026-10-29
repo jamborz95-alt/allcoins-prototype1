@@ -103,7 +103,8 @@ test("online opponent renders the actual selected model as PNG, not the hardcode
   assert.match(page, /lada-2107-side\.png\?v=20261029-opponent-entry1/, "The VAZ-2107 rival must use the authored side-view PNG.");
   assert.match(page, /function carSvgToPngDataUrl\(modelId,paint\)/, "Other selected models must be delivered as PNG raster images.");
   assert.match(page, /image\.className='opponent-car-png'/, "The opponent slot must render an image element.");
-  assert.match(page, /\.race2d-car\.png-opponent-car\{[\s\S]*opacity:1!important;visibility:visible!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important/, "The opponent PNG must stay visible while its scale follows relative distance.");
+  assert.match(page, /\.race2d-car\.png-opponent-car\{[\s\S]*opacity:1!important;visibility:visible!important;transform:scale\(1\)!important/, "The opponent PNG must be visible immediately instead of being hidden until a race-state toggle.");
+  assert.match(page, /\.race2d-car\.opponent\.png-opponent-car\{transition:none!important;will-change:left,top,transform!important;transform:scale\(var\(--opponent-perspective-scale,1\)\)!important\}/, "Online opponent motion must not wait on CSS transitions and should scale according to relative distance.");
   assert.doesNotMatch(page, /opponent\.innerHTML=carSvg\('2110'/, "The fixed old VAZ-2110 SVG must not be used for the opponent.");
 });
 
