@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-physicsfinishlights2"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-physicsfinishlights3"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.match(html, /nextRoadBumpAt=40/, "The first uneven-road threshold must be initialized and restored on reset.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
