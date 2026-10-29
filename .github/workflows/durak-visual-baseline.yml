@@ -33,6 +33,8 @@ jobs:
           done
       - name: Run public-link localization visual test
         run: node tests/live-link-visual-smoke.mjs
+      - name: Run drag-racing long-run mobile regression test
+        run: node tests/drag-racing-ui-smoke.mjs
       - name: Run game visual regression tests
         run: node tests/durak-visual-check.cjs && node tests/billiards-3d-smoke.mjs && node tests/bomb-game-smoke.mjs
       - name: Upload screenshots and diagnostics

@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-racecam1"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-raceruntime2"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
 assert.match(html, /mode==='racing'\?250:1800/, "Online race snapshots should not overload the room endpoint.");
@@ -300,6 +300,22 @@ try {
   await page.waitForTimeout(500);
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
+
+  // The earlier check ended before the Android freeze seen around 4.5 s of race time.
+  // Hold gas beyond that point and verify that the live clock and speed keep updating.
+  const readRaceClock = async () => Number((await page.locator("#proRaceTimer").textContent()).replace(".", "")) / 1000;
+  const longRunClockBefore = await readRaceClock();
+  const longRunSpeedBefore = Number(await page.locator("#proSpeedDigits").textContent());
+  await page.waitForTimeout(5500);
+  const longRunClockAfter = await readRaceClock();
+  const longRunSpeedAfter = Number(await page.locator("#proSpeedDigits").textContent());
+  const recoveredFrameError = await page.evaluate(() => window.__dragRaceLastFrameError || null);
+  assert.ok(longRunClockAfter - longRunClockBefore >= 5,
+    `The race loop must stay active beyond the freeze seen on Android (clock advanced ${(longRunClockAfter-longRunClockBefore).toFixed(3)} s).`);
+  assert.ok(longRunSpeedAfter > longRunSpeedBefore,
+    `The car must keep accelerating during an extended throttle hold (speed ${longRunSpeedBefore} → ${longRunSpeedAfter} km/h).`);
+  assert.equal(recoveredFrameError, null,
+    `No runtime recovery should be required during normal driving: ${JSON.stringify(recoveredFrameError)}`);
   const spinningWheels = await page.locator("#race2dPlayerCar .png-wheel-spin").evaluateAll(els => els.map(el => ({ animation: getComputedStyle(el).animationName, duration: getComputedStyle(el).animationDuration })));
   assert.deepEqual(spinningWheels.map(wheel => wheel.animation), ["race2d-wheel-spin", "race2d-wheel-spin"], "Both VAZ-2107 wheel faces must have the active spin animation while the car is moving.");
   assert.ok(spinningWheels.every(wheel => wheel.duration !== "0s"), "Wheel rotation must have a non-zero animation duration.");

@@ -2027,6 +2027,18 @@ function updateHUD(dt=1/60,motionAlreadyUpdated=false){
   $('rpm').textContent=Math.round(rpm);$('speedbar').style.width=Math.min(100,speed/2.8)+'%';$('rpmbar').style.width=Math.min(100,rpm/80)+'%';
   $('zero100').textContent=zeroAt===null?'—':zeroAt.toFixed(2)+' с';updateFuelHUD();syncProRaceCockpit();
 }
+const raceFrameRecoveredStages=new Set();
+function recoverRaceFrameError(stage,error){
+  const message=String(error?.message||error||'Unknown runtime error');
+  window.__dragRaceLastFrameError={stage,message,at:Date.now()};
+  if(!raceFrameRecoveredStages.has(stage)){
+    raceFrameRecoveredStages.add(stage);
+    console.error('[ALLCOINS drag racing] Recovered after '+stage+' error:',error);
+  }
+}
+function raceFrameStep(stage,callback){
+  try{callback();return true}catch(error){recoverRaceFrameError(stage,error);return false}
+}
 function start(sharedStartedAt=null){
   if(running)return;
   initRaceAudio();if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
@@ -2038,7 +2050,9 @@ function start(sharedStartedAt=null){
   let last=0;
   function frame(now){
     if(!running)return;
-    const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
+    let frameDt=1/60;
+    try{
+    const dt=frameDt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
     const elapsed=now-startAt;
     burnFuel(dt);
     const fuelAvailable=getCarFuel(car())>0;
@@ -2108,13 +2122,21 @@ function start(sharedStartedAt=null){
           api('/rooms/finish',{roomId:currentOnlineRoom.room.roomId,timeMs:lastFinishMs}).then(data=>{renderOnlineRoom(data);startRoomPolling()}).catch(err=>{$('raceStatus').innerHTML+='<div class="muted">'+escapeHtml(err.message||'Не удалось отправить результат.')+'</div>'});
         }
       }
-    // Keep movement and camera on every animation frame. Refresh text, fuel,
-    // and gauges at 12.5 Hz to avoid mobile layout/paint spikes at high speed.
-    updateRace2DEnvironment(dt,now);
-    updateRaceCarPosition(dt);
-    updateRace2DCamera(dt);
-    if(now-lastHUDUpdateAt>=80){updateHUD(0,true);lastHUDUpdateAt=now}
-    if(running)raf=requestAnimationFrame(frame);
+    // Isolate visual, HUD and audio-adjacent work. A rejected mobile WebView call
+    // must never terminate the simulation loop or leave the car frozen on screen.
+    raceFrameStep('environment',()=>updateRace2DEnvironment(dt,now));
+    raceFrameStep('car-position',()=>updateRaceCarPosition(dt));
+    raceFrameStep('camera',()=>updateRace2DCamera(dt));
+    if(now-lastHUDUpdateAt>=80){raceFrameStep('hud',()=>updateHUD(0,true));lastHUDUpdateAt=now}
+    }catch(error){
+      recoverRaceFrameError('simulation',error);
+      raceFrameStep('recovery-car-position',()=>updateRaceCarPosition(frameDt));
+      raceFrameStep('recovery-camera',()=>updateRace2DCamera(frameDt));
+      raceFrameStep('recovery-hud',()=>updateHUD(0,true));
+    }finally{
+      // Always queue the next frame, even after one mobile-only runtime failure.
+      if(running)raf=requestAnimationFrame(frame);
+    }
   }
   last=0;lastEngineAudioUpdateAt=0;lastUnevenRoadUpdateAt=0;lastSceneBumpAt=0;raf=requestAnimationFrame(frame);
 }
