@@ -1898,8 +1898,10 @@ function holdButton(id,on,off){
   };
   const end=e=>{
     if(e&&e.cancelable)e.preventDefault();
-    if(e&&e.pointerId!==undefined)activePointers.delete(e.pointerId);
-    else activePointers.clear();
+    let released=false;
+    if(e&&e.pointerId!==undefined)released=activePointers.delete(e.pointerId);
+    else if(activePointers.size){activePointers.clear();released=true}
+    if(!released)return;
     if(activePointers.size===0){
       off();
       el.classList.remove('held');
