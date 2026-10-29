@@ -494,21 +494,21 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 #previewCar.car .preview-car-png{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
 
-/* VAZ-2107: wheel-face rotors aligned to the real side-profile PNG. */
+/* VAZ-2107: oversized, high-contrast rotating wheel faces aligned over the actual PNG rims. */
 .race2d-car.png-car .png-wheel-spin{
   position:absolute!important;z-index:3!important;display:block!important;
-  top:65.7%!important;width:7.4%!important;height:auto!important;aspect-ratio:1/1!important;
+  top:60%!important;width:13.4%!important;height:auto!important;aspect-ratio:1/1!important;
   border-radius:50%;pointer-events:none;opacity:1!important;visibility:visible!important;
-  border:1px solid #252d33;
+  border:2px solid #161d22!important;
   background:
-    radial-gradient(circle,#dce3e7 0 7%,#56626a 8% 12%,#f0f3f5 13% 16%,#3c464d 17% 24%,transparent 25%),
-    repeating-conic-gradient(from 0deg,#dfe5e9 0deg 5deg,#65717a 5deg 9deg,#222a30 9deg 13deg,#b9c3c9 13deg 17deg,#455159 17deg 21deg);
-  box-shadow:inset 0 0 0 2px #d0d8dd,inset 0 0 0 4px #323b42,0 0 1px #0b1014;
+    radial-gradient(circle,#172027 0 7%,#e9eef1 8% 11%,#48545d 12% 16%,#f5f7f8 17% 20%,#48545d 21% 26%,transparent 27%),
+    repeating-conic-gradient(from 0deg,#f2f5f6 0deg 3deg,#73818b 3deg 7deg,#20292f 7deg 11deg,#d4dde2 11deg 14deg,#52616a 14deg 18deg,#aebac1 18deg 21deg,#2b363d 21deg 30deg);
+  box-shadow:inset 0 0 0 3px #dce4e9,inset 0 0 0 6px #39444b,0 0 0 1px #05090c,0 0 4px #000e;
   mask:none!important;-webkit-mask:none!important;
-  transform-origin:50% 50%;will-change:transform;
+  transform-origin:50% 50%!important;will-change:transform;
 }
-.race2d-car.png-car .png-wheel-spin.rear{left:21.7%!important}
-.race2d-car.png-car .png-wheel-spin.front{left:79.1%!important}
+.race2d-car.png-car .png-wheel-spin.rear{left:18.2%!important}
+.race2d-car.png-car .png-wheel-spin.front{left:76.3%!important}
 .pro-race-cockpit.race-moving .race2d-car.png-car .png-wheel-spin{
   animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;
 }
@@ -746,7 +746,7 @@ function syncRace2DCarArt(){
   const selectedId=String(state.selected||'2107');
   const useLadaPng=selectedId==='2107';
   const paint=useLadaPng?'#dfe3e6':carPaintCss(selectedId);
-  const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261029-wheel1" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
+  const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261029-wheel2" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
   const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint);
   if(player){
