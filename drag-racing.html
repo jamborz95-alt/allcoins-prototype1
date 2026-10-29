@@ -493,6 +493,25 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   height:clamp(92px,14vw,200px)!important;
 }
 #previewCar.car .preview-car-png{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+
+/* VAZ-2107: wheel-face rotors aligned to the real side-profile PNG. */
+.race2d-car.png-car .png-wheel-spin{
+  position:absolute!important;z-index:3!important;display:block!important;
+  top:65.7%!important;width:7.4%!important;height:auto!important;aspect-ratio:1/1!important;
+  border-radius:50%;pointer-events:none;opacity:1!important;visibility:visible!important;
+  border:1px solid #252d33;
+  background:
+    radial-gradient(circle,#dce3e7 0 7%,#56626a 8% 12%,#f0f3f5 13% 16%,#3c464d 17% 24%,transparent 25%),
+    repeating-conic-gradient(from 0deg,#dfe5e9 0deg 5deg,#65717a 5deg 9deg,#222a30 9deg 13deg,#b9c3c9 13deg 17deg,#455159 17deg 21deg);
+  box-shadow:inset 0 0 0 2px #d0d8dd,inset 0 0 0 4px #323b42,0 0 1px #0b1014;
+  mask:none!important;-webkit-mask:none!important;
+  transform-origin:50% 50%;will-change:transform;
+}
+.race2d-car.png-car .png-wheel-spin.rear{left:21.7%!important}
+.race2d-car.png-car .png-wheel-spin.front{left:79.1%!important}
+.pro-race-cockpit.race-moving .race2d-car.png-car .png-wheel-spin{
+  animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;
+}
 </style>
 
 </head>
@@ -727,15 +746,15 @@ function syncRace2DCarArt(){
   const selectedId=String(state.selected||'2107');
   const useLadaPng=selectedId==='2107';
   const paint=useLadaPng?'#dfe3e6':carPaintCss(selectedId);
-  const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261028-side6" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
+  const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261029-wheel1" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
+  const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint);
   if(player){
     player.classList.toggle('png-car',useLadaPng);
     player.classList.toggle('vector-side-car',!useLadaPng);
     player.classList.remove('png-fallback');
-    // The selected VAZ-2107 now uses the real transparent side-profile PNG.
-    // Do not draw synthetic wheel overlays on top of the actual wheels.
-    player.innerHTML=useLadaPng?ladaPreview:carSvg(selectedId,paint);
+    // Keep the PNG body crisp and rotate only the two wheel faces positioned over its rims.
+    player.innerHTML=useLadaPng?ladaPreview+ladaWheels:carSvg(selectedId,paint);
   }
   if(opponent)opponent.innerHTML=carSvg('2110','#d9dce0');
   buildRace2DEnvironment();

@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261028-side6"'), "The game tile should link to the cache-busted Drag Racing page with the corrected VAZ-2107 artwork.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-wheel1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -159,7 +159,7 @@ try {
   assert.ok(await page.locator("#race2dPlayerCar .race-car-png").evaluate(el => el.naturalWidth) > 0, "A real PNG (or its built-in fallback) must load before driving.");
   const carArtBox = await page.locator("#race2dPlayerCar").evaluate(el => { const r=el.getBoundingClientRect(); return {width:r.width,height:r.height,opacity:getComputedStyle(el).opacity,visibility:getComputedStyle(el).visibility}; });
   assert.ok(Math.max(carArtBox.width, carArtBox.height) >= 240 && Math.min(carArtBox.width, carArtBox.height) >= 80 && carArtBox.opacity !== "0" && carArtBox.visibility !== "hidden", `The car sprite must have visible, non-zero dimensions on mobile (actual ${carArtBox.width}×${carArtBox.height}; landscape cockpit may be rotated on portrait screens).`);
-  assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 0, "The real PNG wheels must not be covered by synthetic wheel overlays.");
+  assert.equal(await page.locator("#race2dPlayerCar .png-wheel-spin").count(), 2, "The PNG side-profile should have two independently rotating wheel faces.");
   assert.equal(await page.locator("#race2dOpponentCar svg").count(), 1, "The opponent must have side-view car artwork too.");
   assert.equal(await page.locator("#race2dPlayerCar svg").count(), 0, "The selected VAZ-2107 must use the PNG rather than the old vector drawing.");
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
@@ -246,7 +246,7 @@ try {
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
-  assert.match(await page.locator("#race2dPlayerCar .race-car-png").getAttribute("src"), /lada-2107-side\.png\?v=20261028-side6$/, "The race cockpit must use the new cache-busted side-profile PNG.");
+  assert.match(await page.locator("#race2dPlayerCar .race-car-png").getAttribute("src"), /lada-2107-side\\.png\\?v=20261029-wheel1$/, "The race cockpit must use the PNG with independently rotating wheel faces.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
   const speedBarPercent = await page.locator("#proSpeedMeterBar").evaluate(el => parseFloat(el.style.width) || 0);
   const carShiftAfterThrottle = await page.locator("#race2dPlayerCar").evaluate(el => Number(el.style.transform.match(/translate3d\(([-\d.]+)px/)?.[1] || 0));
