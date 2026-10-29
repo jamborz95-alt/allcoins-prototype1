@@ -126,7 +126,10 @@ test("car travel and track motion scale up as speed increases", () => {
 test("drag strip is four times longer and uses a vertical checkered finish line", () => {
   assert.match(page, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/);
   assert.match(page, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The race environment should be four times wider than before.");
-  assert.match(page, /\.race2d-finish-road-stripe\{[\s\S]*top:44%;bottom:0;width:clamp\(8px,1\.2vw,16px\)/, "The checkered finish stripe should run vertically across the road.");
+  assert.match(page, /\.race2d-road-surface\{[^}]*overflow:hidden[^}]*\}/, "The asphalt surface must clip the finish marking to the road edges.");
+  assert.match(page, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The vertical finish stripe must stay inset from the road edges.");
+  assert.match(page, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish stripe should use a crisp checkered pattern.");
+  assert.match(page, /<div class="race2d-finish-straight" id="race2dFinishStraight" aria-hidden="true"><\/div>\s*<div class="race2d-finish-road-stripe" id="race2dFinishStripe" aria-hidden="true"><\/div>\s*<\/div>/, "The finish stripe must be a child of the asphalt surface.");
   assert.match(page, /background:repeating-linear-gradient\(0deg,#111416 0 14px,#fffbed 14px 28px\)/, "The checkers should repeat along the vertical axis.");
   assert.match(page, /raceDistanceLabels=\{quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'\}/);
 });

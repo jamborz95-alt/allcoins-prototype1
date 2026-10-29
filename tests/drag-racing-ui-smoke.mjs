@@ -13,7 +13,7 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-opponent2"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-finishbound1"'), "The game tile should link to the drag racing page with rotating VAZ-2107 wheels.");
 
 let balance = 10000;
 let ownedCars = ["2107"];
@@ -197,12 +197,13 @@ try {
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The complete race world must be inside the smooth follow-camera layer.");
   assert.equal(await page.locator("#race2dFinishGate").count(), 1, "The track must render an approaching FINISH gantry.");
   assert.equal(await page.locator("#race2dFinishStraight").count(), 1, "The last stretch must render a clean road-surface tint without extra stripes.");
-  assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be a separate road-surface layer, not part of the gantry.");
+  assert.equal(await page.locator("#race2dFinishStripe").count(), 1, "The checkered finish line must be inside the clipped asphalt surface, not part of the gantry.");
   assert.match(html, /\.race2d-environment\{width:1280%!important;right:auto!important\}/, "The asphalt and scenery world should extend several screen widths.");
-  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:44%;bottom:0;width:clamp\(8px,1\.2vw,16px\)/, "The finish marking should be placed on the asphalt in the lower track area.");
+  assert.match(html, /\.race2d-finish-road-stripe\{[\s\S]*top:0;bottom:clamp\(10px,2%,20px\);width:clamp\(14px,1\.45vw,20px\)/, "The finish stripe should stay inset within the asphalt.");
+  assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish mark should have small, neat checkered squares.");
   assert.match(html, /function updateRace2DCamera\(dt=1\/60\)/, "The camera should follow the moving car with frame-time smoothing.");
   assert.match(html, /const distanceByMode=\{quarter:1609\.344,half:3218\.688,sprint:4000\}/, "All race modes should be four times longer.");
-  assert.match(html, /background:repeating-linear-gradient\(0deg,#111416 0 14px,#fffbed 14px 28px\)/, "The finish checkers must run vertically.");
+  assert.match(html, /background:repeating-conic-gradient\(#111416 0 25%,#fffbed 0 50%\) 50%\/8px 8px/, "The finish checkers must run vertically.");
   assert.equal(await page.locator("#race2dEnvironment").count(), 1, "The race view must contain its scrolling landscape and road layers.");
   assert.equal(await page.locator("#race2dCityLayer").evaluate(el => getComputedStyle(el).backgroundImage.startsWith("url(")), true, "The distant city artwork must be loaded before driving.");
   assert.equal(await page.locator("#proSpeedScale .pro-speed-tick").count() > 0, true, "The second analog speedometer must be built.");
@@ -326,6 +327,10 @@ try {
       stripeY: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().top || 0,
       stripeHeight: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().height || 0,
       stripeBottom: document.querySelector("#race2dFinishStripe")?.getBoundingClientRect().bottom || 0,
+      stripeParentIsRoad: document.querySelector("#race2dFinishStripe")?.parentElement === document.querySelector(".race2d-road-surface"),
+      roadTop: document.querySelector(".race2d-road-surface")?.getBoundingClientRect().top || 0,
+      roadBottom: document.querySelector(".race2d-road-surface")?.getBoundingClientRect().bottom || 0,
+      roadOverflow: getComputedStyle(document.querySelector(".race2d-road-surface")).overflow,
       sceneTop: scene.getBoundingClientRect().top,
       sceneHeight: scene.getBoundingClientRect().height,
       roadWidth: document.querySelector("#race2dEnvironment")?.getBoundingClientRect().width || 0,
@@ -339,8 +344,11 @@ try {
   assert.ok(cameraFinishState.cameraX < -8, "The camera must pan smoothly to follow the car as it advances.");
   assert.ok(cameraFinishState.finishX < finishBeforeApproach, "The finish gantry must approach the car as the remaining distance shrinks.");
   assert.ok(Math.abs(cameraFinishState.stripeX-cameraFinishState.finishX)<1, "The finish paint must stay aligned with the gantry position.");
-  assert.ok(cameraFinishState.stripeY <= cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.48, "The vertical finish stripe must start at the road surface.");
+  assert.equal(cameraFinishState.stripeParentIsRoad, true, "The finish stripe must be nested inside the asphalt itself.");
+  assert.equal(cameraFinishState.roadOverflow, "hidden", "The road must clip the stripe so it cannot extend past its edges.");
+  assert.ok(cameraFinishState.stripeY >= cameraFinishState.roadTop - 1 && cameraFinishState.stripeY <= cameraFinishState.roadTop + 2, "The finish stripe must start exactly at the visible asphalt edge.");
   assert.ok(cameraFinishState.stripeHeight > cameraFinishState.sceneHeight*.5 && cameraFinishState.stripeBottom >= cameraFinishState.sceneTop + cameraFinishState.sceneHeight*.96, "The finish stripe must be vertical and extend down the asphalt instead of forming a horizontal bar.");
+  assert.ok(cameraFinishState.stripeBottom < cameraFinishState.roadBottom - 2, "The stripe must stop before the lower edge of the asphalt and never overrun the track.");
   assert.ok(cameraFinishState.roadWidth > cameraFinishState.sceneWidth*2, "The asphalt world must extend to a longer straight.");
   assert.ok(cameraFinishState.stripeOpacity > .7, "The finish paint must be clearly visible near the finish.");
   assert.equal(cameraFinishState.approaching, true, "The final straight must activate in the last part of the race.");
