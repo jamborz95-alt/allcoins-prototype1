@@ -173,7 +173,19 @@ try {
   });
 
   await page.goto("http://127.0.0.1:4174/drag-racing.html", { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelector("#race2dEnvironment")?.dataset.ready === "1", null, { timeout: 12000 });
+  try {
+    await page.waitForFunction(() => document.querySelector("#race2dEnvironment")?.dataset.ready === "1", null, { timeout: 12000 });
+  } catch (error) {
+    const diagnosticState = await page.evaluate(() => ({
+      readyState: document.readyState,
+      envExists: Boolean(document.querySelector("#race2dEnvironment")),
+      envReady: document.querySelector("#race2dEnvironment")?.dataset.ready || null,
+      playerExists: Boolean(document.querySelector("#race2dPlayerCar")),
+      playerHtml: document.querySelector("#race2dPlayerCar")?.innerHTML.slice(0,220) || null,
+      scripts: [...document.scripts].map(script => ({ src: script.src || "inline", ready: !script.src || script.readyState || "loaded" }))
+    }));
+    throw new Error("Race scene bootstrap timed out: " + JSON.stringify({ diagnosticState, pageErrors }) + "; " + error.message);
+  }
   assert.equal(await page.locator("#race2dPlayerCar").count(), 1, "The selected car must be present in the live 2D race scene.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-mobile.png"), fullPage: true });
   await page.waitForFunction(() => document.querySelector("#roomStatus")?.textContent.includes("Баланс") ||
