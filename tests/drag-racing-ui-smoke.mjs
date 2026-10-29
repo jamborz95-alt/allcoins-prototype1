@@ -245,6 +245,9 @@ try {
   await page.waitForTimeout(500);
   const speedAfterShiftWhileHeld = Number(await page.locator("#proSpeedDigits").textContent());
   assert.ok(speedAfterShiftWhileHeld >= speedBeforeShiftWhileHeld, "Throttle must keep driving the car through a gear shift.");
+  const spinningWheels = await page.locator("#race2dPlayerCar .png-wheel-spin").evaluateAll(els => els.map(el => ({ animation: getComputedStyle(el).animationName, duration: getComputedStyle(el).animationDuration })));
+  assert.deepEqual(spinningWheels.map(wheel => wheel.animation), ["race2d-wheel-spin", "race2d-wheel-spin"], "Both VAZ-2107 wheel faces must have the active spin animation while the car is moving.");
+  assert.ok(spinningWheels.every(wheel => wheel.duration !== "0s"), "Wheel rotation must have a non-zero animation duration.");
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-cockpit-moving.png"), fullPage: false });
   assert.match(await page.locator("#race2dPlayerCar .race-car-png").getAttribute("src"), /lada-2107-side\\.png\\?v=20261029-wheel1$/, "The race cockpit must use the PNG with independently rotating wheel faces.");
   const speedAfterThrottle = Number(await page.locator("#proSpeedDigits").textContent());
