@@ -2111,7 +2111,7 @@ function startVaz2107Media(){
     raceEngineMedia.playbackRate=Math.max(.55,Math.min(2.25,.60+currentRpm/4100));
     if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
   }else{
-    void preloadRaceMediaAudio().then(()=>{if(raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media()});
+    void preloadRaceMediaAudio().then(ok=>{if(ok&&raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media()});
   }
   updateRaceEngineAudio();
 }
@@ -2126,7 +2126,7 @@ function updateVaz2107Media(){
   raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.13;
   const targetVolume=gasHeld?.94:(running?.78:.67);
   raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.15;
-  if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
+  // Playback is started from an actual pointer gesture; the frame loop only adjusts pitch and volume.
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
@@ -2225,8 +2225,8 @@ function startRaceMusic(){
     raceMusicMedia.loop=true;raceMusicMedia.playbackRate=1;raceMusicMedia.volume=.66;
     if(raceMusicMedia.paused)playRaceMedia(raceMusicMedia);
   }else{
-    void preloadRaceMediaAudio().then(()=>{
-      if(raceMusicEnabled&&(raceCockpitOpen||running))startRaceMusic();
+    void preloadRaceMediaAudio().then(ok=>{
+      if(ok&&raceMusicEnabled&&(raceCockpitOpen||running))startRaceMusic();
     });
   }
 }
