@@ -1339,9 +1339,30 @@ function setPngBackground(id,svg){
     image.src=objectUrl;
   }catch(_){fallback();}
 }
+function setPngAssetBackground(id,src,fallbackSvg){
+  const el=$(id);if(!el||el.dataset.loaded||el.dataset.loading)return;
+  el.dataset.loading='1';
+  const image=new Image();
+  image.decoding='async';
+  image.onload=()=>{
+    if(!el.isConnected)return;
+    el.style.backgroundImage='url("'+src+'")';
+    el.style.backgroundSize='300vw 100%';
+    el.style.backgroundPosition='0 100%';
+    el.style.backgroundRepeat='repeat-x';
+    el.dataset.format='png';
+    el.dataset.loaded='1';
+    delete el.dataset.loading;
+  };
+  image.onerror=()=>{
+    delete el.dataset.loading;
+    setPngBackground(id,fallbackSvg);
+  };
+  image.src=src;
+}
 function buildRace2DEnvironment(){
   const env=$('race2dEnvironment');if(!env||env.dataset.ready)return;
-  setPngBackground('race2dCityLayer',makeRaceCitySvg());
+  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citypng4',makeRaceCitySvg());
   setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
   setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
   env.dataset.ready='1';
