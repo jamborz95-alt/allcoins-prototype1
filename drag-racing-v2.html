@@ -1839,7 +1839,7 @@ function openProRaceCockpit(){
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
-  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
+  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;if(String(state.selected||'2107')==='2107')playVazStarterSound();
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
@@ -1991,42 +1991,85 @@ function startRaceEngineSample(){
     raceExhaustGain?.gain.setTargetAtTime(.0001,t,.06);
   }catch(_){}
 }
+function playVazStarterSound(){
+  const context=raceAudio;
+  if(!raceAudioReady||!context||context.state==='closed')return;
+  const play=()=>{
+    if(context!==raceAudio||context.state!=='running')return;
+    const t=context.currentTime;
+    try{
+      // Short starter-motor churn before the 1.5-litre four-cylinder settles to idle.
+      const starter=context.createOscillator(),starterFilter=context.createBiquadFilter(),starterGain=context.createGain();
+      starter.type='sawtooth';
+      starter.frequency.setValueAtTime(72,t);
+      starter.frequency.exponentialRampToValueAtTime(49,t+.43);
+      starterFilter.type='lowpass';starterFilter.frequency.setValueAtTime(290,t);starterFilter.Q.value=.7;
+      starterGain.gain.setValueAtTime(.0001,t);
+      starterGain.gain.linearRampToValueAtTime(.052,t+.025);
+      starterGain.gain.setValueAtTime(.052,t+.19);
+      starterGain.gain.exponentialRampToValueAtTime(.0001,t+.47);
+      starter.connect(starterFilter);starterFilter.connect(starterGain);starterGain.connect(raceAudioMaster||context.destination);
+      starter.start(t);starter.stop(t+.48);
+
+      const length=Math.max(1,Math.floor(context.sampleRate*.16));
+      const buffer=context.createBuffer(1,length,context.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length);
+      const relay=context.createBufferSource(),relayFilter=context.createBiquadFilter(),relayGain=context.createGain();
+      relay.buffer=buffer;relayFilter.type='bandpass';relayFilter.frequency.value=980;relayFilter.Q.value=.8;
+      relayGain.gain.setValueAtTime(.0001,t+.31);
+      relayGain.gain.linearRampToValueAtTime(.025,t+.325);
+      relayGain.gain.exponentialRampToValueAtTime(.0001,t+.45);
+      relay.connect(relayFilter);relayFilter.connect(relayGain);relayGain.connect(raceAudioMaster||context.destination);
+      relay.start(t+.31);relay.stop(t+.47);
+    }catch(_){}
+  };
+  if(context.state==='running')play();
+  else{
+    try{const resumed=context.resume();if(resumed&&typeof resumed.then==='function')resumed.then(play).catch(()=>{});}catch(_){}
+  }
+}
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
+  const isVaz2107=String(state.selected||'2107')==='2107';
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
-  const throttle=Boolean(gasHeld&&running),inNeutral=gear==='N';
-  const load=throttle?(inNeutral?.42:1):(speed>1&&!inNeutral?.24:.08);
+  const throttle=Boolean(gasHeld&&raceCockpitOpen),inNeutral=gear==='N';
+  const load=throttle?(inNeutral?.48:1):(speed>1&&!inNeutral?.27:.11);
+  // A small, slow idle fluctuation gives the carbureted four-cylinder a less synthetic tone.
+  const idleWobble=isVaz2107&&!throttle&&speed<2
+    ?1+Math.sin(t*4.35)*.012+Math.sin(t*8.7)*.004
+    :1;
+  const firingHz=Math.max(24,Math.min(225,(rpmNow/30)*idleWobble));
   const limiterPulse=throttle&&rpmNow>6000?(0.88+0.12*Math.sin(t*43)):1;
-  if(raceEngineSampleSource&&raceEngineSampleGain){
+  if(raceEngineSampleSource&&raceEngineSampleGain&&!isVaz2107){
     const playbackRate=Math.max(.76,Math.min(1.62,.69+rpmNow/6600*.91));
     raceEngineSampleSource.playbackRate.setTargetAtTime(playbackRate,t,.09);
     const sampleVolume=running?(throttle?.58+load*.08:.27+load*.05):(raceCockpitOpen?.055:.0001);
     const fallbackVolume=running?(throttle?.13:(speed>1?.07:.05)):(raceCockpitOpen?.025:.0001);
     raceEngineSampleGain.gain.setTargetAtTime(sampleVolume*limiterPulse,t,.08);
-    // Keep a little local RPM-linked engine tone underneath the sample. It stays audible
-    // when a remote MP3 is quiet or partially silent, and also works offline.
     raceEngineGain?.gain.setTargetAtTime(fallbackVolume,t,.08);
     raceExhaustGain?.gain.setTargetAtTime(running?(throttle?.024:.007):.0001,t,.08);
     raceIntakeFilter?.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.08);
     raceIntakeGain?.gain.setTargetAtTime(running?(throttle?.025:.0035):.0001,t,.08);
     return;
   }
-  // Self-contained engine fallback; it does not depend on a third-party audio host.
+  // Local VAZ-2107 engine model: four-cylinder firing rhythm, exhaust pulse and intake hiss.
   if(!raceEngineOsc||!raceEngineGain)return;
-  const firingHz=Math.max(24,Math.min(225,rpmNow/30));
-  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.035);
-  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.045);
-  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.04);
-  raceEngineFilter.frequency.setTargetAtTime(Math.max(420,Math.min(2450,520+rpmNow*.25+load*330)),t,.06);
-  raceEnginePulseGain.gain.setTargetAtTime(.34+load*.18,t,.075);
-  raceEngineSubGain.gain.setTargetAtTime(.42+load*.16,t,.08);
-  raceEngineHarmonicGain.gain.setTargetAtTime(.045+load*.05,t,.07);
-  raceEngineGain.gain.setTargetAtTime(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001),t,.055);
-  raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:145,t,.08);
-  raceExhaustGain.setTargetAtTime(running?(throttle?.034:.009):.0001,t,.07);
-  raceIntakeFilter.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.08);
-  raceIntakeGain.gain.setTargetAtTime(running?(throttle?.03:.0035):.0001,t,.08);
+  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.045);
+  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.055);
+  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.045);
+  raceEngineFilter.frequency.setTargetAtTime(Math.max(430,Math.min(2050,560+rpmNow*.23+load*390)),t,.07);
+  raceEnginePulseGain.gain.setTargetAtTime(isVaz2107?.46:(.34+load*.18),t,.08);
+  raceEngineSubGain.gain.setTargetAtTime(isVaz2107?.30:(.42+load*.16),t,.08);
+  raceEngineHarmonicGain.gain.setTargetAtTime(isVaz2107?.105:(.045+load*.05),t,.08);
+  const engineVolume=isVaz2107
+    ?(raceCockpitOpen?(throttle?.145:(running?(speed>1?.105:.095):.095)):.0001)
+    :(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001));
+  raceEngineGain.gain.setTargetAtTime(engineVolume*limiterPulse,t,.075);
+  raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:(isVaz2107?172:145),t,.09);
+  raceExhaustGain.setTargetAtTime(raceCockpitOpen?(throttle?.048:(isVaz2107?.022:(running?.009:.0001))):.0001,t,.09);
+  raceIntakeFilter.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.09);
+  raceIntakeGain.gain.setTargetAtTime(raceCockpitOpen?(throttle?.042:(isVaz2107?.009:.0035)):.0001,t,.09);
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();
