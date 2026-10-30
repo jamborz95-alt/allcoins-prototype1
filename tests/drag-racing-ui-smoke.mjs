@@ -13,10 +13,13 @@ await mkdir(resolve(root, "artifacts"), { recursive: true });
 const indexHtml = await readFile(resolve(root, "index.html"), "utf8");
 await readFile(resolve(root, "server/drag-racing-router.js"), "utf8");
 assert.ok(indexHtml.includes('id="dragRacingEntry"'), "The game tile should be present in ALLCOINS.");
-assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261029-physicsfinishlights3"'), "The game tile should link to the current drag racing page with performance fixes.");
+assert.ok(indexHtml.includes('href="./drag-racing-v2.html?v=20261030-headlight-audio-flicker1"'), "The game tile should link to the current drag racing page with performance fixes.");
 assert.match(html, /nextRoadBumpAt=40/, "The first uneven-road threshold must be initialized and restored on reset.");
 assert.doesNotMatch(html, /void scene\.offsetWidth/, "Road bump animations must not force synchronous layout on every trigger.");
 assert.match(html, /now-lastEngineAudioUpdateAt>=50/, "Engine audio updates must be throttled to keep mobile rendering smooth.");
+assert.match(html, /\.race-car-headlight-glow\{left:92%/, "The headlight beam should originate at the front lamp, not the front wheel.");
+assert.match(html, /Self-contained engine fallback; it does not depend on a third-party audio host/, "Engine audio must remain available when remote samples cannot load.");
+assert.match(html, /race-road-bump \.race2d-road-surface\{animation:none!important;filter:none!important\}/, "Road bumps must not flash the visible scene.");
 assert.match(html, /mode==='racing'\?250:1800/, "Online race snapshots should not overload the room endpoint.");
 
 let balance = 10000;
