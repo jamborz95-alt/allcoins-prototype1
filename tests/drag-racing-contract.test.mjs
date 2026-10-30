@@ -15,7 +15,10 @@ test("drag racing uses engine and gear-change audio samples with RPM-linked pitc
   assert.match(page, /function startRaceEngineSample\(\)/);
   assert.match(page, /raceEngineSampleSource\.playbackRate\.setTargetAtTime\(playbackRate/);
   assert.match(page, /source\.start\(t,0,clipDuration\)/, "Gear changes should play a sampled audio clip.");
-  assert.match(page, /Last-resort fallback if the sample host is offline or blocked/);
+  assert.match(page, /Self-contained engine fallback; it does not depend on a third-party audio host/);
+  assert.match(page, /raceAudio\.state!=='running'/, "Mobile WebView audio must be resumed from a user gesture.");
+  assert.match(page, /raceEngineGain\?\.gain\.setTargetAtTime\(fallbackVolume,t,\.08\)/, "A local RPM-linked sound remains mixed under remote samples.");
+  assert.match(page, /gain\.gain\.exponentialRampToValueAtTime\(\.14,t\+\.01\)/, "Gear changes must have an audible local fallback.");
 });
 
 test("Drag Racing API is mounted and initialized with the same server wallet", () => {
@@ -62,7 +65,7 @@ test("cheap VAZ garage and menu link are present", () => {
   assert.match(router, /"2101": \{ price: 2500, power: 58 \}/);
   assert.match(router, /"2104": \{ price: 4500/);
   assert.match(index, /id="dragRacingEntry"/);
-  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261029-physicsfinishlights3"/);
+  assert.match(index, /href="\.\/drag-racing-v2\.html\?v=20261030-headlight-audio-flicker1"/);
 });
 
 test("car purchases, upgrades and tuning are verified and persisted server-side", () => {
@@ -216,4 +219,17 @@ test("VAZ-2107 uses the real side-profile PNG and rotating wheel faces", () => {
   assert.match(page, /\.race2d-car\.png-car \.png-wheel-spin\.rear\{left:18\.2%!important\}/, "The rear wheel rotor should align with the PNG rim.");
   assert.match(page, /\.race2d-car\.png-car \.png-wheel-spin\.front\{left:76\.3%!important\}/, "The front wheel rotor should align with the PNG rim.");
   assert.match(page, /\.pro-race-cockpit\.race-moving \.race2d-car\.png-car \.png-wheel-spin\{[\s\S]*?animation:race2d-wheel-spin var\(--race-wheel-duration,\.24s\) linear infinite!important/, "Both PNG wheel rotors should spin during a race.");
+});
+
+test("headlight beam originates at the front bumper and road bumps do not flash the screen", () => {
+  const beam = page.match(/\.race-car-headlight-glow\s*\{([^}]*)\}/);
+  assert.ok(beam, "a dedicated headlight beam layer exists");
+  assert.match(beam[1], /left:92%/, "the beam must start by the front headlamp, ahead of the front wheel");
+  assert.match(page, /\.race-car-headlight-glow:before\{[^}]*clip-path:polygon\(/, "the lamp projects a forward light cone");
+  assert.match(page, /\.pro-race-cockpit\.race-engine-on \.race-car-headlight-glow\{opacity:\.9;animation:none\}/, "headlights remain steady rather than pulsing");
+  assert.match(page, /race-road-bump \.race2d-road-surface\{animation:none!important;filter:none!important\}/, "road bumps must not flash the road surface");
+  const bump = page.match(/@keyframes race2d-road-bump\{([^}]*)\}/);
+  assert.ok(bump, "road bump animation remains defined for compatibility");
+  assert.doesNotMatch(bump[1], /brightness|filter/, "road bump keyframes must not flash the scene");
+  assert.match(page, /road-bump-active \.race2d-road-surface\{filter:none!important\}/, "the uneven-road state must not change screen brightness");
 });
