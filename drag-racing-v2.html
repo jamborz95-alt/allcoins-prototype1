@@ -2036,24 +2036,27 @@ function playVazStarterSound(){
 // HTMLAudio fallback for mobile Telegram WebViews: the WAV is same-origin and does not depend on AudioContext.
 let vaz2107Media=null,vaz2107MediaPlayPending=false,vaz2107MediaRate=.78;
 function startVaz2107Media(){
-  if(String(state.selected||'2107')!=='2107')return;
-  // Use one clean, recorded car-acceleration sound instead of the old synthetic/beeping loop layers.
+  // Local same-origin WAV: no external sound host, CORS or streaming dependency.
   if(!vaz2107Media){
     try{
-      vaz2107Media=new Audio('https://sfxjar.com/audio/0291.mp3');
+      vaz2107Media=new Audio('./cars/vaz-2107-engine-loop.wav?v=20261030f');
       vaz2107Media.loop=true;
       vaz2107Media.preload='auto';
-      vaz2107Media.volume=.24;
-      vaz2107Media.addEventListener('playing',()=>{window.__raceVazAudioStatus='recorded-engine-playing'});
-      vaz2107Media.addEventListener('error',()=>{window.__raceVazAudioStatus='recorded-engine-load-error'});
-    }catch(error){window.__raceVazAudioStatus='audio-init-error';return}
+      vaz2107Media.playsInline=true;
+      vaz2107Media.volume=.88;
+      vaz2107Media.addEventListener('canplay',()=>{window.__raceVazAudioStatus='local-engine-ready'});
+      vaz2107Media.addEventListener('playing',()=>{window.__raceVazAudioStatus='local-engine-playing'});
+      vaz2107Media.addEventListener('error',()=>{window.__raceVazAudioStatus='local-engine-error';window.__raceVazAudioError=String(vaz2107Media.error?.code||'unknown')});
+      vaz2107Media.load();
+    }catch(error){window.__raceVazAudioStatus='audio-init-error';window.__raceVazAudioError=String(error&&error.message||error);return}
   }
   if(!vaz2107Media.paused||vaz2107MediaPlayPending)return;
   try{
     vaz2107MediaPlayPending=true;
+    vaz2107Media.volume=.88;
     const started=vaz2107Media.play();
     if(started&&typeof started.then==='function'){
-      started.then(()=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='playing'})
+      started.then(()=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='local-engine-playing'})
         .catch(error=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-blocked';window.__raceVazAudioError=String(error&&error.message||error)});
     }else{
       vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-requested';
@@ -2062,28 +2065,29 @@ function startVaz2107Media(){
 }
 function updateVaz2107Media(){
   if(!vaz2107Media)return;
-  if(String(state.selected||'2107')!=='2107'||(!raceCockpitOpen&&!running)){
+  if(!raceCockpitOpen&&!running){
     vaz2107Media.pause();vaz2107MediaPlayPending=false;return;
   }
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
   const rpmRatio=(currentRpm-850)/(6600-850);
-  const targetRate=.78+rpmRatio*.45+(gasHeld?.035:0);
-  vaz2107MediaRate+=(targetRate-vaz2107MediaRate)*.12;
-  vaz2107Media.playbackRate=Math.max(.78,Math.min(1.27,vaz2107MediaRate));
-  const targetVolume=gasHeld?.82:(running?.34:.25);
-  vaz2107Media.volume+=(targetVolume-vaz2107Media.volume)*.18;
+  const targetRate=.76+rpmRatio*.62+(gasHeld?.04:0);
+  vaz2107MediaRate+=(targetRate-vaz2107MediaRate)*.10;
+  vaz2107Media.playbackRate=Math.max(.76,Math.min(1.42,vaz2107MediaRate));
+  const targetVolume=gasHeld?.96:(running?.72:.62);
+  vaz2107Media.volume+=(targetVolume-vaz2107Media.volume)*.16;
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const isVaz2107=String(state.selected||'2107')==='2107';
+  const hasRecordedEngine=Boolean(vaz2107Media&&!vaz2107Media.paused&&!vaz2107Media.ended);
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
   const throttle=Boolean(gasHeld&&raceCockpitOpen),inNeutral=gear==='N';
   const load=throttle?(inNeutral?.48:1):(speed>1&&!inNeutral?.27:.11);
   // A small, slow idle fluctuation gives the carbureted four-cylinder a less synthetic tone.
   const limiterPulse=throttle&&rpmNow>6000?.94:1;
   // VAZ-2107 is driven only by its recorded HTMLAudio engine track; mute all synthesized layers.
-  if(isVaz2107){
+  if(isVaz2107||hasRecordedEngine){
     raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.06);
     raceEngineGain?.gain.setTargetAtTime(.0001,t,.06);
     raceExhaustGain?.gain.setTargetAtTime(.0001,t,.06);
