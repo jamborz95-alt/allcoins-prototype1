@@ -1181,7 +1181,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
 
   const setBackgroundScroll=(el,ratio,fallbackCycle)=>{
     if(!el)return;
-    const sizeToken=(window.getComputedStyle(el).backgroundSize||'').trim().split(/\\s+/)[0]||'';
+    const sizeToken=(window.getComputedStyle(el).backgroundSize||'').trim().split(/\s+/)[0]||'';
     let cycle=fallbackCycle;
     if(sizeToken.endsWith('vw')){
       const vw=Number.parseFloat(sizeToken);
