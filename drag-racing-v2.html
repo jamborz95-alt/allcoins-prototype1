@@ -701,23 +701,23 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Visible uneven asphalt: shallow raised humps, darker troughs and worn highlights. */
 .race2d-road-bumps{
   position:absolute;
-  z-index:2;
+  z-index:4;
   left:0;
-  top:34%;
+  top:0;
   width:300%;
-  height:66%;
+  height:100%;
   pointer-events:none;
-  opacity:.9;
+  opacity:1;
   background-image:
-    radial-gradient(ellipse 76px 19px at 50% 72%,rgba(205,197,174,.65) 0 15%,rgba(126,121,105,.82) 32%,rgba(49,51,47,.78) 58%,transparent 77%),
-    radial-gradient(ellipse 56px 7px at 50% 62%,rgba(239,230,204,.72) 0 24%,rgba(190,181,155,.38) 43%,transparent 76%),
-    radial-gradient(ellipse 96px 8px at 50% 84%,rgba(28,31,30,.5) 0 35%,transparent 78%);
-  background-repeat:repeat-x;
-  background-size:280px 100%,280px 100%,280px 100%;
-  background-position:0 0,0 0,0 0;
+    radial-gradient(ellipse 118px 27px at 50% 42%,rgba(224,216,193,.92) 0 12%,rgba(153,147,128,.94) 31%,rgba(57,59,55,.88) 56%,transparent 76%),
+    radial-gradient(ellipse 92px 12px at 50% 34%,rgba(248,240,214,.95) 0 18%,rgba(196,187,161,.72) 43%,transparent 78%),
+    radial-gradient(ellipse 132px 13px at 50% 57%,rgba(25,28,27,.8) 0 30%,transparent 76%),
+    repeating-linear-gradient(177deg,transparent 0 64px,rgba(226,218,194,.26) 65px 68px,rgba(31,34,32,.28) 69px 73px,transparent 74px 128px);
+  background-repeat:repeat-x,repeat-x,repeat-x,repeat;
+  background-size:280px 100%,280px 100%,280px 100%,100% 100%;
+  background-position:0 0,0 0,0 0,0 0;
   will-change:transform;
   backface-visibility:hidden;
-  mix-blend-mode:multiply;
 }
 .race2d-scene.road-bump-active .race2d-road-bumps,
 .race2d-scene.race-road-bump .race2d-road-bumps{
