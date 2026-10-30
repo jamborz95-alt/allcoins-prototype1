@@ -2129,7 +2129,15 @@ function initRaceAudio(){
     raceAudioReady=true;
     const audioContext=raceAudio;
     audioContext.addEventListener?.('statechange',()=>{
-      if(audioContext===raceAudio&&audioContext.state==='running')updateRaceEngineAudio();
+      if(audioContext!==raceAudio)return;
+      if(audioContext.state==='running'){
+        if(!currentOnlineRoom&&window.__raceLocalEngineBufferReady&&raceEngineBuffer&&!raceEngineSampleSource)startRaceEngineSample();
+        updateRaceEngineAudio();
+        if(raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media();
+      }else if((audioContext.state==='suspended'||audioContext.state==='interrupted')&&raceEngineSoundEnabled&&(raceCockpitOpen||running)&&raceEngineMedia){
+        // Keep a local HTMLAudio fallback audible while mobile WebViews suspend WebAudio.
+        if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
+      }
     });
     if(audioContext.state!=='running'){
       try{
@@ -2160,26 +2168,50 @@ async function loadRaceAudioSamples(){
       load(RACE_ENGINE_SAMPLE_URLS),
       load(RACE_SHIFT_SAMPLE_URLS)
     ]);
-    if(engine&&!window.__raceLocalEngineBufferReady){raceEngineBuffer=engine;startRaceEngineSample();}
+    if(engine&&!window.__raceLocalEngineBufferReady){raceEngineBuffer=makeRaceEngineLoopBuffer(engine);startRaceEngineSample();}
     if(shift)raceShiftBuffer=shift;
   }catch(_){}
   finally{raceAudioSamplesLoading=false;}
 }
-function startRaceEngineSample(){
-  if(!raceEngineBuffer||!raceAudio||!raceEngineSampleGain||raceEngineSampleSource)return;
+function makeRaceEngineLoopBuffer(input){
+  if(!input||!raceAudio||input.length<1024)return input;
   try{
-    const source=raceAudio.createBufferSource(),duration=raceEngineBuffer.duration;
+    const overlap=Math.min(Math.floor(input.sampleRate*.10),Math.floor(input.length*.12));
+    if(overlap<64||overlap*3>=input.length)return input;
+    const output=raceAudio.createBuffer(input.numberOfChannels,input.length-overlap,input.sampleRate);
+    for(let channel=0;channel<input.numberOfChannels;channel++){
+      const source=input.getChannelData(channel),target=output.getChannelData(channel);
+      const middleLength=input.length-overlap*2;
+      target.set(source.subarray(overlap,input.length-overlap),0);
+      for(let i=0;i<overlap;i++){
+        const t=(i+1)/overlap;
+        const tailWeight=Math.cos(t*Math.PI*.5),headWeight=Math.sin(t*Math.PI*.5);
+        target[middleLength+i]=source[input.length-overlap+i]*tailWeight+source[i]*headWeight;
+      }
+    }
+    return output;
+  }catch(_){return input;}
+}
+function startRaceEngineSample(){
+  if(!raceEngineBuffer||!raceAudio||raceAudio.state!=='running'||!raceEngineSampleGain||raceEngineSampleSource)return;
+  try{
+    const context=raceAudio,source=context.createBufferSource();
     source.buffer=raceEngineBuffer;source.loop=true;
-    // Keep the loop safely inside the decoded sample so short mobile audio files work too.
-    source.loopStart=Math.min(.24,Math.max(0,duration*.08));
-    source.loopEnd=Math.min(duration,Math.max(source.loopStart+.05,duration*.92));
-    source.playbackRate.value=1;
+    source.loopStart=0;source.loopEnd=raceEngineBuffer.duration;
+    source.playbackRate.value=vazEnginePlaybackRate(Math.max(850,Number(rpm)||850));
     source.connect(raceEngineSampleGain);
-    source.start(0,source.loopStart);
+    source.onended=()=>{
+      if(raceEngineSampleSource!==source)return;
+      raceEngineSampleSource=null;
+      if(context===raceAudio&&context.state==='running'&&raceEngineBuffer)startRaceEngineSample();
+    };
+    source.start();
     raceEngineSampleSource=source;
-    const t=raceAudio.currentTime;
+    const t=context.currentTime;
     raceEngineGain?.gain.setTargetAtTime(.0001,t,.06);
     raceExhaustGain?.gain.setTargetAtTime(.0001,t,.06);
+    raceIntakeGain?.gain.setTargetAtTime(.0001,t,.06);
+    if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
   }catch(_){}
 }
 function playVazStarterSound(){
@@ -2261,7 +2293,7 @@ async function preloadRaceMediaAudio(){
         const decoded=await raceAudio.decodeAudioData(bytes.buffer.slice(0));
         if(decoded&&decoded.duration>.12){
           if(raceEngineSampleSource){try{raceEngineSampleSource.stop()}catch(_){}raceEngineSampleSource=null;}
-          raceEngineBuffer=decoded;window.__raceLocalEngineBufferReady=true;startRaceEngineSample();
+          raceEngineBuffer=makeRaceEngineLoopBuffer(decoded);window.__raceLocalEngineBufferReady=true;startRaceEngineSample();
         }
       }catch(_){}
     }
@@ -2299,8 +2331,10 @@ function playRaceMedia(audio){
 function startVaz2107Media(){
   initRaceAudio();
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running))return;
-  if(window.__raceLocalEngineBufferReady&&raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
-    if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
+  if(window.__raceLocalEngineBufferReady&&raceEngineBuffer&&raceAudio&&raceAudio.state==='running'){
+    if(!raceEngineSampleSource)startRaceEngineSample();
+    if(raceEngineSampleSource&&raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
+    else if(!raceEngineSampleSource&&raceEngineMedia){raceEngineMedia.loop=true;raceEngineMedia.volume=gasHeld?.96:(running?.82:.74);if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);}
   }else if(raceEngineMedia){
     raceEngineMedia.loop=true;
     raceEngineMedia.volume=gasHeld?.96:(running?.82:.74);
@@ -2313,7 +2347,7 @@ function startVaz2107Media(){
   updateRaceEngineAudio();
 }
 function updateVaz2107Media(){
-  if(raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
+  if(raceEngineSampleSource&&raceAudio&&raceAudio.state==='running'){
     if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
     return;
   }
@@ -2333,7 +2367,7 @@ function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const engineMediaPlaying=Boolean(raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended);
-  const samplePlaying=Boolean(window.__raceLocalEngineBufferReady&&raceEngineSampleSource&&raceEngineSampleGain);
+  const samplePlaying=Boolean(window.__raceLocalEngineBufferReady&&raceEngineSampleSource&&raceEngineSampleGain&&raceAudio.state==='running');
   if(samplePlaying){
     const active=Boolean((raceCockpitOpen||running)&&raceEngineSoundEnabled);
     const rate=vazEnginePlaybackRate(Math.max(850,Math.min(6600,Number(rpm)||850)))+(gasHeld?.025:0);
