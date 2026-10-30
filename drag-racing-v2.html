@@ -726,6 +726,20 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   filter:contrast(1.34) brightness(1.12);
 }
 
+
+/* ALLCOINS long fixed-time panorama: one continuous city + asphalt PNG, no day/night cycle and no tiled reset. */
+.race2d-city-layer{
+  top:0!important;height:100%!important;width:300%!important;left:0!important;right:auto!important;
+  background-size:100% 100%!important;background-repeat:no-repeat!important;background-position:left center!important;
+  filter:none!important;opacity:1!important;z-index:0!important;
+}
+.race2d-sky-wash,.race2d-tree-layer,.race2d-green-belt,.race2d-fence-layer{display:none!important}
+.race2d-road-surface{
+  top:44%!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:hidden!important;
+}
+.race2d-road-surface:before,.race2d-road-markings,.race2d-road-grain{display:none!important}
+.pro-race-cockpit.race-moving .race2d-scene:before{animation:none!important}
+
 </style>
 
 <style id="allcoins-original-race-audio-ui">
@@ -1312,7 +1326,7 @@ function setPngBackground(id,svg){
           if(!blob){fallback();return;}
           const pngUrl=URL.createObjectURL(blob);
           el.style.backgroundImage='url("'+pngUrl+'")';
-          el.style.backgroundSize='300vw 100%';
+          el.style.backgroundSize='100% 100%';
           el.style.backgroundPosition='0 100%';
           el.style.backgroundRepeat='repeat-x';
           el.dataset.cityPngUrl=pngUrl;el.dataset.format='png';el.dataset.loaded='1';
@@ -1362,7 +1376,7 @@ function setPngAssetBackground(id,src,fallbackSvg){
 }
 function buildRace2DEnvironment(){
   const env=$('race2dEnvironment');if(!env||env.dataset.ready)return;
-  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citylong2',makeRaceCitySvg());
+  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citylong3',makeRaceCitySvg());
   setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
   setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
   env.dataset.ready='1';
@@ -1384,7 +1398,8 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks'),bumps=$('race2dRoadBumps');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
   // Parallax: distant buildings move slowest, trees and fence faster, road markings fastest.
-  setTransform(city,'translate3d('+(-((raceWorldOffset*.30)%wrap)).toFixed(3)+'px,0,0)');
+  const cityTravel=Math.min(sceneWidth*2,Math.max(0,raceWorldOffset*.30));
+   setTransform(city,'translate3d('+(-cityTravel).toFixed(3)+'px,0,0)');
   setTransform(trees,'translate3d('+(-((raceWorldOffset*.62)%wrap)).toFixed(3)+'px,0,0)');
   setTransform(fence,'translate3d('+(-((raceWorldOffset*.92)%wrap)).toFixed(3)+'px,0,0)');
   const markShift=(raceWorldOffset*2.15)%96;
