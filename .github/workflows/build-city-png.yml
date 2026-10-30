@@ -1,0 +1,28 @@
+name: Build ALLCOINS city PNG
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cars/ALLCOINS-City.svg'
+permissions:
+  contents: write
+jobs:
+  render-city:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Install SVG converter
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
+      - name: Render high-resolution PNG
+        run: rsvg-convert --width 4800 --height 630 cars/ALLCOINS-City.svg --output cars/ALLCOINS-City.png
+      - name: Commit PNG asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cars/ALLCOINS-City.png
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Build ALLCOINS city PNG"
+          git push origin HEAD:main
