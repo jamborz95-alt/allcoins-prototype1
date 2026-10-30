@@ -1166,16 +1166,47 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const now=Number.isFinite(frameNow)?frameNow:performance.now();
   const sceneWidth=Math.max(1,scene.clientWidth||1280);
   const scale=Math.max(.6,Math.min(1.35,sceneWidth/1280));
-  if(running&&speed>0)raceWorldOffset+=Math.max(0,speed)/3.6*dt*9.6*scale;
-  const wrap=Math.max(1,sceneWidth*38.4);
-  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
-  // Only write compositor transforms when they have actually changed.
-  const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
-  setTransform(city,'translate3d('+(-((raceWorldOffset*.19)%wrap)).toFixed(3)+'px,0,0)');
-  setTransform(trees,'translate3d('+(-((raceWorldOffset*.43)%wrap)).toFixed(3)+'px,0,0)');
-  setTransform(fence,'translate3d('+(-((raceWorldOffset*.78)%wrap)).toFixed(3)+'px,0,0)');
-  const markShift=(raceWorldOffset*1.05)%96;
-  setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
+  const velocityMps=Math.max(0,Number(speed)||0)/3.6;
+
+  // One shared world-distance accumulator drives every parallax layer.
+  // At 0 km/h the scenery stands still; when speed rises, every layer
+  // accelerates proportionally instead of running on unrelated CSS timers.
+  if(running&&velocityMps>0)raceWorldOffset+=velocityMps*dt*9.6*scale;
+
+  const city=$('race2dCityLayer');
+  const trees=$('race2dTreeLayer');
+  const fence=$('race2dFenceLayer');
+  const marks=$('race2dRoadMarks');
+  const roadGrain=scene.querySelector('.race2d-road-grain');
+
+  const setBackgroundScroll=(el,ratio,fallbackCycle)=>{
+    if(!el)return;
+    const sizeToken=(window.getComputedStyle(el).backgroundSize||'').trim().split(/\\s+/)[0]||'';
+    let cycle=fallbackCycle;
+    if(sizeToken.endsWith('vw')){
+      const vw=Number.parseFloat(sizeToken);
+      if(Number.isFinite(vw)&&vw>0)cycle=vw*(window.innerWidth||sceneWidth)/100;
+    }else if(sizeToken.endsWith('px')){
+      const px=Number.parseFloat(sizeToken);
+      if(Number.isFinite(px)&&px>0)cycle=px;
+    }else if(sizeToken.endsWith('%')){
+      const pct=Number.parseFloat(sizeToken);
+      if(Number.isFinite(pct)&&pct>0)cycle=el.clientWidth*pct/100;
+    }
+    cycle=Math.max(1,cycle||fallbackCycle||sceneWidth*3);
+    const x=-((raceWorldOffset*ratio)%cycle);
+    const position=x.toFixed(2)+'px 0px';
+    if(el.style.backgroundPosition!==position)el.style.backgroundPosition=position;
+  };
+
+  // Distant buildings have the smallest parallax; trees are mid-distance;
+  // the fence is close to the road; road markings and grain move at road speed.
+  setBackgroundScroll(city,.14,sceneWidth*3);
+  setBackgroundScroll(trees,.38,sceneWidth*3);
+  setBackgroundScroll(fence,.72,sceneWidth*3);
+  setBackgroundScroll(marks,1,96);
+  setBackgroundScroll(roadGrain,.96,256);
+
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
   if(running&&speed>28&&distance>=nextRoadBumpAt&&now-lastSceneBumpAt>1800){
     lastSceneBumpAt=now;
