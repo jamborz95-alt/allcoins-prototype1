@@ -1224,7 +1224,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
     for(const layer of [city,trees,fence]){
       if(!layer)continue;
       layer.style.backgroundRepeat='repeat-x';
-      layer.style.backgroundSize=tileWidth.toFixed(1)+'px 100%';
+      layer.style.setProperty('background-size',tileWidth.toFixed(1)+'px 100%','important');
     }
     raceSceneryLayoutWidth=sceneWidth;
   }
