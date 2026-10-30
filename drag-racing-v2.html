@@ -663,6 +663,24 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translate3d(var(--race-car-x,0px),0,0)!important;
 }
 .pro-race-cockpit .race2d-car.player{--road-bump-y:0px}
+
+/* Final motion polish: consistent compositor transforms and smooth instruments. */
+.pro-tach-needle,.pro-speed-needle{
+  transition:transform .09s linear!important;
+  will-change:transform;
+}
+.race2d-car.opponent.png-opponent-car{
+  will-change:transform;
+}
+.race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer,
+.race2d-road-markings,.race2d-camera-world{
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+.pro-race-cockpit .race2d-car.player .race-wheel{
+  backface-visibility:hidden;
+  will-change:transform;
+}
 </style>
 
 </head>
@@ -964,6 +982,7 @@ async function syncOnlineOpponentCar(){
     onlineOpponentMotion.rivalId=null;
     onlineOpponentMotion.targetProgress=0;
     onlineOpponentMotion.progress=0;
+    onlineOpponentMotion.initialized=false;
     onlineOpponentMotion.targetSpeedKmh=0;
     onlineOpponentMotion.speedKmh=0;
     onlineOpponentMotion.left=54;
@@ -1008,7 +1027,7 @@ async function syncOnlineOpponentCar(){
   opponent.classList.add('png-opponent-car');
   opponent.setAttribute('aria-label','Машина соперника: '+model.name);
 }
-const onlineOpponentMotion={roomId:null,rivalId:null,targetProgress:0,progress:0,targetSpeedKmh:0,speedKmh:0,lastUpdatedAt:0,left:12,top:38};
+const onlineOpponentMotion={roomId:null,rivalId:null,targetProgress:0,progress:0,targetSpeedKmh:0,speedKmh:0,lastUpdatedAt:0,initialized:false,left:12,top:38};
 function updateOnlineOpponentMotion(dt){
   const opponent=$('race2dOpponentCar');if(!opponent)return;
   const players=Array.isArray(currentOnlineRoom?.players)?currentOnlineRoom.players:[];
@@ -1030,7 +1049,7 @@ function updateOnlineOpponentMotion(dt){
   const sceneWidth=Math.max(1,scene?.clientWidth||390);
   const sceneHeight=Math.max(1,scene?.clientHeight||320);
   if(onlineOpponentMotion.rivalId!==rivalId||onlineOpponentMotion.roomId!==roomId){
-    Object.assign(onlineOpponentMotion,{roomId,rivalId,targetProgress:0,progress:0,targetSpeedKmh:0,speedKmh:0,lastUpdatedAt:0,left:12,top:38});
+    Object.assign(onlineOpponentMotion,{roomId,rivalId,targetProgress:0,progress:0,targetSpeedKmh:0,speedKmh:0,lastUpdatedAt:0,initialized:false,left:12,top:38});
     opponent.style.setProperty('--opponent-translate-x','0px');
     opponent.style.setProperty('--opponent-translate-y','0px');
   }
@@ -1042,32 +1061,40 @@ function updateOnlineOpponentMotion(dt){
   const raceDistance=Math.max(1,Number(maxDist)||1609.344);
   if(fresh){
     const sampleSpeed=Math.max(0,Math.min(400,Number(motion.speedKmh)||0));
-    // Extrapolate from the server timestamp on every display frame. No easing
-    // or capped prediction: the car never waits for the next polling response.
-    const predictionSeconds=ageSeconds;
     const sampleProgress=Math.max(0,Math.min(1,Number(motion.progress)||0));
-    onlineOpponentMotion.progress=Math.max(0,Math.min(1,sampleProgress+sampleSpeed/3.6*predictionSeconds/raceDistance));
-    onlineOpponentMotion.targetProgress=onlineOpponentMotion.progress;
-    onlineOpponentMotion.speedKmh=sampleSpeed;
+    onlineOpponentMotion.targetProgress=Math.max(0,Math.min(1,sampleProgress+sampleSpeed/3.6*ageSeconds/raceDistance));
     onlineOpponentMotion.targetSpeedKmh=sampleSpeed;
     onlineOpponentMotion.lastUpdatedAt=updatedAt;
   }else{
     onlineOpponentMotion.targetSpeedKmh=0;
-    onlineOpponentMotion.speedKmh=0;
+    onlineOpponentMotion.targetProgress=onlineOpponentMotion.progress;
   }
+
+  const frameDt=Math.max(0,Math.min(.05,Number(dt)||0));
+  if(!onlineOpponentMotion.initialized){
+    onlineOpponentMotion.progress=onlineOpponentMotion.targetProgress;
+    onlineOpponentMotion.speedKmh=onlineOpponentMotion.targetSpeedKmh;
+    onlineOpponentMotion.initialized=true;
+  }else{
+    const progressBlend=1-Math.exp(-frameDt*18);
+    const speedBlend=1-Math.exp(-frameDt*10);
+    onlineOpponentMotion.progress+=(onlineOpponentMotion.targetProgress-onlineOpponentMotion.progress)*progressBlend;
+    onlineOpponentMotion.speedKmh+=(onlineOpponentMotion.targetSpeedKmh-onlineOpponentMotion.speedKmh)*speedBlend;
+  }
+
   const localProgress=Math.max(0,Math.min(1,(Number(distance)||0)/raceDistance));
   const delta=onlineOpponentMotion.progress-localProgress;
-  // The camera belongs exclusively to the local driver. Put the rival at its
-  // true relative world position using compositor transforms (no layout reflow).
   const playerWorldLeft=12+(raceCarOffset/sceneWidth)*100;
   const targetLeft=Math.max(-500,Math.min(500,playerWorldLeft+delta*256));
   const targetTop=Math.max(28,Math.min(48,38-delta*14));
   onlineOpponentMotion.left=targetLeft;
   onlineOpponentMotion.top=targetTop;
   const perspectiveScale=Math.max(.62,Math.min(1.12,1-delta*.42));
-  opponent.style.setProperty('--opponent-translate-x',((targetLeft-12)*sceneWidth/100).toFixed(2)+'px');
-  opponent.style.setProperty('--opponent-translate-y',((targetTop-38)*sceneHeight/100).toFixed(2)+'px');
-  opponent.style.setProperty('--opponent-perspective-scale',perspectiveScale.toFixed(3));
+  const translateX=((targetLeft-12)*sceneWidth/100).toFixed(3)+'px';
+  const translateY=((targetTop-38)*sceneHeight/100).toFixed(3)+'px';
+  opponent.style.setProperty('--opponent-translate-x',translateX);
+  opponent.style.setProperty('--opponent-translate-y',translateY);
+  opponent.style.setProperty('--opponent-perspective-scale',perspectiveScale.toFixed(4));
   opponent.style.setProperty('--opponent-wheel-duration',Math.max(.045,.52/(1+onlineOpponentMotion.speedKmh/18)).toFixed(3)+'s');
   opponent.dataset.opponentSpeedKmh=String(Math.round(onlineOpponentMotion.speedKmh));
   opponent.dataset.relativeProgress=delta.toFixed(4);
@@ -1075,7 +1102,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,nextRoadBumpAt=40;
+let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,raceSceneryLayoutWidth=0,lastHUDUpdateAt=0,nextRoadBumpAt=40;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1176,41 +1203,50 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const now=Number.isFinite(frameNow)?frameNow:performance.now();
   const sceneWidth=Math.max(1,scene.clientWidth||1280);
   const scale=Math.max(.65,Math.min(1.5,sceneWidth/1280));
+  const frameDt=Math.max(0,Math.min(.05,Number(dt)||0));
   const velocityMps=Math.max(0,Number(speed)||0)/3.6;
 
-  // 16 visual pixels per metre: the road speed is tied directly to vehicle speed.
-  // Parallax ratios then make far buildings slower than nearby trackside objects.
-  if(running&&velocityMps>0)raceWorldOffset+=velocityMps*dt*16*scale;
+  // Accumulate travelled distance once per frame, then render all scenery from
+  // this shared world coordinate. Far objects use smaller parallax ratios.
+  if(running&&velocityMps>0)raceWorldOffset+=velocityMps*frameDt*16*scale;
 
-  const cycle=Math.max(1,sceneWidth*3);
   const city=$('race2dCityLayer');
   const trees=$('race2dTreeLayer');
   const fence=$('race2dFenceLayer');
   const marks=$('race2dRoadMarks');
   const roadGrain=scene.querySelector('.race2d-road-grain');
 
-  const scrollLayer=(el,ratio)=>{
-    if(!el)return;
-    // The 300vw artwork was based on the portrait viewport in Telegram.
-    // Set its actual pixel width from the rotated race scene instead.
-    el.style.backgroundRepeat='repeat-x';
-    el.style.backgroundSize=cycle.toFixed(1)+'px 100%';
-    const x=-((raceWorldOffset*ratio)%cycle);
-    const position=x.toFixed(2)+'px 0px';
-    if(el.style.backgroundPosition!==position)el.style.backgroundPosition=position;
-  };
-
-  scrollLayer(city,.16);
-  scrollLayer(trees,.48);
-  scrollLayer(fence,.82);
-
-  // The road markings are a 96px repeating stripe, while the road grain
-  // has two independent layers moving in opposite directions for texture.
-  if(marks){
-    const markX=-((raceWorldOffset*1.04)%96);
-    const markPosition=markX.toFixed(2)+'px 0px';
-    if(marks.style.backgroundPosition!==markPosition)marks.style.backgroundPosition=markPosition;
+  // The environment is 12.8 scene-widths and scenery strips are 3x that size.
+  // Twelve exact background tiles make the GPU transform wrap visually seamless.
+  const sceneryWrap=Math.max(1,sceneWidth*38.4);
+  const tileWidth=Math.max(1,sceneWidth*3.2);
+  if(Math.abs(sceneWidth-raceSceneryLayoutWidth)>1){
+    for(const layer of [city,trees,fence]){
+      if(!layer)continue;
+      layer.style.backgroundRepeat='repeat-x';
+      layer.style.backgroundSize=tileWidth.toFixed(1)+'px 100%';
+    }
+    raceSceneryLayoutWidth=sceneWidth;
   }
+  const setTransform=(el,value)=>{
+    if(el&&el.style.transform!==value)el.style.transform=value;
+  };
+  const slide=(el,ratio)=>{
+    const x=-((raceWorldOffset*ratio)%sceneryWrap);
+    setTransform(el,'translate3d('+x.toFixed(3)+'px,0,0)');
+  };
+  slide(city,.16);
+  slide(trees,.48);
+  slide(fence,.82);
+
+  // Road markings repeat every 96px. Wrap on an exact multiple of that pattern.
+  if(marks){
+    const roadWrap=Math.max(96,Math.round((sceneWidth*12.8)/96)*96);
+    const markX=-((raceWorldOffset*1.04)%roadWrap);
+    setTransform(marks,'translate3d('+markX.toFixed(3)+'px,0,0)');
+  }
+  // Road grain is a lightweight repeating texture; only its background offset
+  // changes, never its dimensions or layout.
   if(roadGrain){
     const grainX=-(raceWorldOffset*.98);
     const grainPosition=grainX.toFixed(2)+'px 0px, '+(-grainX*.82).toFixed(2)+'px 0px';
@@ -1230,8 +1266,8 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
   scene.classList.toggle('race-finished',Boolean(finished));
-  updateOnlineOpponentMotion(dt);
-  updateUnevenRoad(dt,now);
+  updateOnlineOpponentMotion(frameDt);
+  updateUnevenRoad(frameDt,now);
   if(now-lastEngineAudioUpdateAt>=50){lastEngineAudioUpdateAt=now;updateRaceEngineAudio()}
 }
 function buildProSpeedScale(){
@@ -2176,7 +2212,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;raceSceneryLayoutWidth=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -2197,31 +2233,35 @@ function getRaceCarMotion(){
 function updateRaceCarPosition(dt=1/60,motion=null){
   const frameMotion=motion||getRaceCarMotion();
   if(!frameMotion.player)return frameMotion;
-  // Physics already follows elapsed time; avoid a second interpolation that makes steering visibly lag.
-  raceCarOffset=frameMotion.shiftPx;
+  const frameDt=Math.max(0,Math.min(.05,Number(dt)||0));
+  const targetX=frameMotion.shiftPx;
+  const blend=1-Math.exp(-frameDt*20);
+  raceCarOffset+=(targetX-raceCarOffset)*blend;
+  if(Math.abs(targetX-raceCarOffset)<.035)raceCarOffset=targetX;
   const x=raceCarOffset.toFixed(3)+'px';
   if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
   return frameMotion;
 }
 function updateRace2DCamera(dt=1/60,motion=null){
   motion=motion||getRaceCarMotion();
-  const world=$('race2dCameraWorld'),gate=$('race2dFinishGate'),stripe=$('race2dFinishStripe');
+  const world=$('race2dCameraWorld'),stripe=$('race2dFinishStripe');
   if(!world||!motion.scene)return;
   const carShift=raceCarOffset;
-  const targetX=Math.max(0,carShift-motion.sceneWidth*.16);
-  // Do not perfectly cancel the car's own movement: a 100% follow offset makes
-  // the vehicle look glued to one point on the screen. Follow only part of the
-  // travelled offset so the car visibly advances while the road scrolls behind it.
-  raceCameraOffset=targetX*.38;
+  const targetX=Math.max(0,carShift-motion.sceneWidth*.16)*.38;
+  const frameDt=Math.max(0,Math.min(.05,Number(dt)||0));
+  const cameraBlend=1-Math.exp(-frameDt*9);
+  raceCameraOffset+=(targetX-raceCameraOffset)*cameraBlend;
+  if(Math.abs(targetX-raceCameraOffset)<.04)raceCameraOffset=targetX;
   raceCameraY=0;
   const cameraTransform='translate3d('+(-raceCameraOffset).toFixed(3)+'px,0,0)';
   if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
+
   const carWidth=Math.max(320,Math.min(600,motion.sceneWidth*.40));
   const finishX=motion.sceneWidth*.12+carShift+carWidth*.96+motion.sceneWidth*2.56*(1-motion.progress);
   if(stripe){
-    const stripeTransform='translate3d('+finishX.toFixed(2)+'px,0,0) translate3d(-50%,0,0)';
+    const stripeTransform='translate3d('+finishX.toFixed(3)+'px,0,0) translate3d(-50%,0,0)';
     if(stripe.style.transform!==stripeTransform)stripe.style.transform=stripeTransform;
-    if(stripe.dataset.worldX!==finishX.toFixed(2))stripe.dataset.worldX=finishX.toFixed(2);
+    if(stripe.dataset.worldX!==finishX.toFixed(3))stripe.dataset.worldX=finishX.toFixed(3);
     const stripeOpacity=String(motion.progress>=.82?.96:motion.progress>=.58?.72:.42);
     if(stripe.style.opacity!==stripeOpacity)stripe.style.opacity=stripeOpacity;
   }
