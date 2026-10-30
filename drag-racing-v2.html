@@ -1667,7 +1667,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,shiftTorqueUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,shiftTorqueUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1768,6 +1768,7 @@ function closeProRaceCockpit(){
   if(host)host.hidden=false;
   if(panel){panel.classList.add('hidden');panel.setAttribute('aria-hidden','true')}
   document.body.classList.remove('pro-race-open');panel?.classList.remove('race-engine-on','race-headlights-on');raceCockpitOpen=false;
+  updateRaceEngineAudio();
   updateOrientationPrompt();restoreRaceOrientation();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
@@ -1821,6 +1822,13 @@ function initRaceAudio(){
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
   try{
     raceAudio=new AC();
+    raceAudioMaster=raceAudio.createDynamicsCompressor();
+    raceAudioMaster.threshold.value=-20;
+    raceAudioMaster.knee.value=20;
+    raceAudioMaster.ratio.value=3.2;
+    raceAudioMaster.attack.value=.006;
+    raceAudioMaster.release.value=.16;
+    raceAudioMaster.connect(raceAudio.destination);
     raceEngineOsc=raceAudio.createOscillator();raceEngineOsc.type='sawtooth';
     raceEngineSubOsc=raceAudio.createOscillator();raceEngineSubOsc.type='triangle';
     raceEngineHarmonicOsc=raceAudio.createOscillator();raceEngineHarmonicOsc.type='square';
@@ -1831,16 +1839,20 @@ function initRaceAudio(){
     raceEngineGain=raceAudio.createGain();raceEngineGain.gain.value=.0001;
     raceEngineOsc.connect(raceEnginePulseGain);raceEngineSubOsc.connect(raceEngineSubGain);raceEngineHarmonicOsc.connect(raceEngineHarmonicGain);
     raceEnginePulseGain.connect(raceEngineFilter);raceEngineSubGain.connect(raceEngineFilter);raceEngineHarmonicGain.connect(raceEngineFilter);
-    raceEngineFilter.connect(raceEngineGain);raceEngineGain.connect(raceAudio.destination);
+    raceEngineFilter.connect(raceEngineGain);raceEngineGain.connect(raceAudioMaster);
     const buffer=raceAudio.createBuffer(1,Math.max(1,Math.floor(AC.sampleRate*.45)),AC.sampleRate);
     const noise=buffer.getChannelData(0);
     for(let i=0;i<noise.length;i++)noise[i]=(Math.random()*2-1)*.34;
     raceExhaustNoise=raceAudio.createBufferSource();raceExhaustNoise.buffer=buffer;raceExhaustNoise.loop=true;
     raceExhaustFilter=raceAudio.createBiquadFilter();raceExhaustFilter.type='bandpass';raceExhaustFilter.frequency.value=190;raceExhaustFilter.Q.value=.55;
     raceExhaustGain=raceAudio.createGain();raceExhaustGain.gain.value=.0001;
-    raceExhaustNoise.connect(raceExhaustFilter);raceExhaustFilter.connect(raceExhaustGain);raceExhaustGain.connect(raceAudio.destination);
-    raceEngineSampleGain=raceAudio.createGain();raceEngineSampleGain.gain.value=.0001;raceEngineSampleGain.connect(raceAudio.destination);
-    raceEngineOsc.start();raceEngineSubOsc.start();raceEngineHarmonicOsc.start();raceExhaustNoise.start();
+    raceExhaustNoise.connect(raceExhaustFilter);raceExhaustFilter.connect(raceExhaustGain);raceExhaustGain.connect(raceAudioMaster);
+    raceIntakeNoise=raceAudio.createBufferSource();raceIntakeNoise.buffer=buffer;raceIntakeNoise.loop=true;
+    raceIntakeFilter=raceAudio.createBiquadFilter();raceIntakeFilter.type='bandpass';raceIntakeFilter.frequency.value=1150;raceIntakeFilter.Q.value=.7;
+    raceIntakeGain=raceAudio.createGain();raceIntakeGain.gain.value=.0001;
+    raceIntakeNoise.connect(raceIntakeFilter);raceIntakeFilter.connect(raceIntakeGain);raceIntakeGain.connect(raceAudioMaster);
+    raceEngineSampleGain=raceAudio.createGain();raceEngineSampleGain.gain.value=.0001;raceEngineSampleGain.connect(raceAudioMaster);
+    raceEngineOsc.start();raceEngineSubOsc.start();raceEngineHarmonicOsc.start();raceExhaustNoise.start();raceIntakeNoise.start();
     raceAudioReady=true;
     const audioContext=raceAudio;
     audioContext.addEventListener?.('statechange',()=>{
@@ -1914,7 +1926,9 @@ function updateRaceEngineAudio(){
     // Keep a little local RPM-linked engine tone underneath the sample. It stays audible
     // when a remote MP3 is quiet or partially silent, and also works offline.
     raceEngineGain?.gain.setTargetAtTime(fallbackVolume,t,.08);
-    raceExhaustGain?.gain.setTargetAtTime(running?(throttle?.022:.006):.0001,t,.08);
+    raceExhaustGain?.gain.setTargetAtTime(running?(throttle?.024:.007):.0001,t,.08);
+    raceIntakeFilter?.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.08);
+    raceIntakeGain?.gain.setTargetAtTime(running?(throttle?.025:.0035):.0001,t,.08);
     return;
   }
   // Self-contained engine fallback; it does not depend on a third-party audio host.
@@ -1929,7 +1943,9 @@ function updateRaceEngineAudio(){
   raceEngineHarmonicGain.gain.setTargetAtTime(.045+load*.05,t,.07);
   raceEngineGain.gain.setTargetAtTime(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001),t,.055);
   raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:145,t,.08);
-  raceExhaustGain.setTargetAtTime(running?(throttle?.032:.009):.0001,t,.07);
+  raceExhaustGain.setTargetAtTime(running?(throttle?.034:.009):.0001,t,.07);
+  raceIntakeFilter.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.08);
+  raceIntakeGain.gain.setTargetAtTime(running?(throttle?.03:.0035):.0001,t,.08);
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();
@@ -1950,13 +1966,24 @@ function playRaceShiftSound(direction=1){
         source.start(t,0,clipDuration);return;
       }catch(_){}
     }
-    const t=context.currentTime,osc=context.createOscillator(),gain=context.createGain();
-    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?145:118,t);
-    osc.frequency.exponentialRampToValueAtTime(direction>0?68:54,t+.105);
-    gain.gain.setValueAtTime(.0001,t);
-    gain.gain.exponentialRampToValueAtTime(.14,t+.01);
-    gain.gain.exponentialRampToValueAtTime(.0001,t+.17);
-    osc.connect(gain);gain.connect(context.destination);osc.start(t);osc.stop(t+.18);
+    const t=context.currentTime;
+    // A short gearbox engagement thump plus a directional pitch transient.
+    const clunk=context.createOscillator(),clunkGain=context.createGain();
+    clunk.type='triangle';
+    clunk.frequency.setValueAtTime(direction>0?158:112,t);
+    clunk.frequency.exponentialRampToValueAtTime(direction>0?54:185,t+.105);
+    clunkGain.gain.setValueAtTime(.0001,t);
+    clunkGain.gain.exponentialRampToValueAtTime(direction>0?.16:.13,t+.008);
+    clunkGain.gain.exponentialRampToValueAtTime(.0001,t+.19);
+    clunk.connect(clunkGain);clunkGain.connect(raceAudioMaster||context.destination);
+    clunk.start(t);clunk.stop(t+.2);
+    const clickBuffer=context.createBuffer(1,Math.max(1,Math.floor(context.sampleRate*.045)),context.sampleRate);
+    const clickData=clickBuffer.getChannelData(0);
+    for(let i=0;i<clickData.length;i++)clickData[i]=(Math.random()*2-1)*(1-i/clickData.length);
+    const click=context.createBufferSource(),clickFilter=context.createBiquadFilter(),clickGain=context.createGain();
+    click.buffer=clickBuffer;clickFilter.type='bandpass';clickFilter.frequency.value=direction>0?1250:1850;clickFilter.Q.value=.85;
+    clickGain.gain.setValueAtTime(.0001,t);clickGain.gain.exponentialRampToValueAtTime(direction>0?.075:.095,t+.004);clickGain.gain.exponentialRampToValueAtTime(.0001,t+.065);
+    click.connect(clickFilter);clickFilter.connect(clickGain);clickGain.connect(raceAudioMaster||context.destination);click.start(t);click.stop(t+.07);
   };
   if(context.state!=='running'){
     try{
@@ -1966,13 +1993,19 @@ function playRaceShiftSound(direction=1){
     }catch(_){}
   }else play();
 }
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden||!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
+  if((running||raceCockpitOpen)&&raceAudio.state==='suspended'){
+    try{const resumed=raceAudio.resume();if(resumed&&typeof resumed.then==='function')resumed.then(()=>updateRaceEngineAudio()).catch(()=>{});}catch(_){}
+  }
+});
 function playRoadBumpSound(strength){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const now=performance.now(),amp=Math.max(.015,Math.min(.07,strength*.065));
   const osc=raceAudio.createOscillator(),gain=raceAudio.createGain(),t=raceAudio.currentTime;
   osc.type='sine';osc.frequency.setValueAtTime(95+strength*42,t);osc.frequency.exponentialRampToValueAtTime(48,t+.09);
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(amp,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.12);
-  osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.13);
+  osc.connect(gain);gain.connect(raceAudioMaster||raceAudio.destination);osc.start(t);osc.stop(t+.13);
 }
 function updateUnevenRoad(dt,frameNow=performance.now()){
   const now=Number.isFinite(frameNow)?frameNow:performance.now();
@@ -2100,6 +2133,7 @@ function reset(){
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
+  updateRaceEngineAudio();
 }
 function getRaceCarMotion(){
   const player=$('race2dPlayerCar');
