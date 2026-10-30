@@ -697,6 +697,34 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   100%{translate:0 0}
 }
 
+
+/* Visible uneven asphalt: shallow raised humps, darker troughs and worn highlights. */
+.race2d-road-bumps{
+  position:absolute;
+  z-index:2;
+  left:0;
+  top:34%;
+  width:300%;
+  height:66%;
+  pointer-events:none;
+  opacity:.9;
+  background-image:
+    radial-gradient(ellipse 76px 19px at 50% 72%,rgba(205,197,174,.65) 0 15%,rgba(126,121,105,.82) 32%,rgba(49,51,47,.78) 58%,transparent 77%),
+    radial-gradient(ellipse 56px 7px at 50% 62%,rgba(239,230,204,.72) 0 24%,rgba(190,181,155,.38) 43%,transparent 76%),
+    radial-gradient(ellipse 96px 8px at 50% 84%,rgba(28,31,30,.5) 0 35%,transparent 78%);
+  background-repeat:repeat-x;
+  background-size:280px 100%,280px 100%,280px 100%;
+  background-position:0 0,0 0,0 0;
+  will-change:transform;
+  backface-visibility:hidden;
+  mix-blend-mode:multiply;
+}
+.race2d-scene.road-bump-active .race2d-road-bumps,
+.race2d-scene.race-road-bump .race2d-road-bumps{
+  opacity:1;
+  filter:contrast(1.24) brightness(1.08);
+}
+
 </style>
 
 </head>
@@ -736,6 +764,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
           <div class="race2d-road-surface">
             <div class="race2d-road-markings" id="race2dRoadMarks"></div>
             <div class="race2d-road-grain"></div>
+            <div class="race2d-road-bumps" id="race2dRoadBumps" aria-hidden="true"></div>
             <div class="race2d-finish-straight" id="race2dFinishStraight" aria-hidden="true"></div>
             <div class="race2d-finish-road-stripe" id="race2dFinishStripe" aria-hidden="true"></div>
           </div>
@@ -1215,7 +1244,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const currentSpeed=Math.max(0,Number(speed)||0);
   if(running&&currentSpeed>0)raceWorldOffset+=(currentSpeed/3.6)*dt*9.6*scale;
   const wrap=Math.max(1,sceneWidth*3);
-  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
+  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks'),bumps=$('race2dRoadBumps');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
   // Parallax: distant buildings move slowest, trees and fence faster, road markings fastest.
   setTransform(city,'translate3d('+(-((raceWorldOffset*.30)%wrap)).toFixed(3)+'px,0,0)');
@@ -1223,6 +1252,9 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   setTransform(fence,'translate3d('+(-((raceWorldOffset*.92)%wrap)).toFixed(3)+'px,0,0)');
   const markShift=(raceWorldOffset*2.15)%96;
   setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
+  // Raised asphalt ripples scroll beneath the car, making the uneven road visible.
+  const bumpShift=(raceWorldOffset*1.55)%wrap;
+  setTransform(bumps,'translate3d('+(-bumpShift).toFixed(3)+'px,0,0)');
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
   if(running&&currentSpeed>28&&distance>=nextRoadBumpAt&&now-lastSceneBumpAt>1800){
     lastSceneBumpAt=now;
