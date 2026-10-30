@@ -740,6 +740,12 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-road-surface:before,.race2d-road-markings,.race2d-road-grain{display:none!important}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:none!important}
 
+
+/* October 30 solo-mode clarity, responsive camera follow, and continuous local engine loop. */
+.race2d-city-layer{filter:none!important;opacity:1!important;image-rendering:auto!important;background-repeat:no-repeat!important;background-position:left bottom!important}
+.race2d-car.player{will-change:transform!important;transition:none!important}
+.race2d-camera-world,.race2d-environment{will-change:transform!important;backface-visibility:hidden}
+
 </style>
 
 <style id="allcoins-original-race-audio-ui">
@@ -1361,9 +1367,19 @@ function setPngAssetBackground(id,src,fallbackSvg){
   image.onload=()=>{
     if(!el.isConnected)return;
     el.style.backgroundImage='url("'+src+'")';
-    el.style.backgroundSize='300vw 100%';
-    el.style.backgroundPosition='0 100%';
-    el.style.backgroundRepeat='no-repeat';
+    const scene=el.closest('.race2d-scene');
+    const fitPanorama=()=>{
+      const h=Math.max(1,scene?.clientHeight||el.clientHeight||image.naturalHeight);
+      const w=h*(image.naturalWidth/Math.max(1,image.naturalHeight));
+      el.style.setProperty('height',h+'px','important');
+      el.style.setProperty('width',w+'px','important');
+      el.style.backgroundSize='100% 100%';
+      el.style.backgroundPosition='left bottom';
+      el.style.backgroundRepeat='no-repeat';
+      el.dataset.panoramaWidth=String(w);
+    };
+    fitPanorama();
+    if(!el.dataset.resizeBound){window.addEventListener('resize',fitPanorama,{passive:true});el.dataset.resizeBound='1';}
     el.dataset.format='png';
     el.dataset.loaded='1';
     delete el.dataset.loading;
@@ -1398,8 +1414,9 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks'),bumps=$('race2dRoadBumps');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
   // Parallax: distant buildings move slowest, trees and fence faster, road markings fastest.
-  const cityTravel=Math.min(sceneWidth*2,Math.max(0,raceWorldOffset*.30));
-   setTransform(city,'translate3d('+(-cityTravel).toFixed(3)+'px,0,0)');
+  const cityMaxTravel=Math.max(0,(city?.offsetWidth||sceneWidth)-sceneWidth);
+  const cityTravel=Math.min(cityMaxTravel,Math.max(0,raceWorldOffset*.30));
+  setTransform(city,'translate3d('+(-cityTravel).toFixed(3)+'px,0,0)');
   setTransform(trees,'translate3d('+(-((raceWorldOffset*.62)%wrap)).toFixed(3)+'px,0,0)');
   setTransform(fence,'translate3d('+(-((raceWorldOffset*.92)%wrap)).toFixed(3)+'px,0,0)');
   const markShift=(raceWorldOffset*2.15)%96;
@@ -2219,10 +2236,19 @@ async function preloadRaceMediaAudio(){
     };
     const [music,engine]=await Promise.all([
       load('./cars/race-music-original.wav.b64?v=20261030-audio3'),
-      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb1')
+      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb2')
     ]);
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
+    if(raceAudio&&raceAudio.state!=='closed'){
+      try{
+        const response=await fetch('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb2',{cache:'force-cache'});
+        const encoded=(await response.text()).trim(),binary=atob(encoded),bytes=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+        const decoded=await raceAudio.decodeAudioData(bytes.buffer.slice(0));
+        if(decoded&&decoded.duration>.12){raceEngineBuffer=decoded;startRaceEngineSample();}
+      }catch(_){}
+    }
     window.__raceAudioStatus='original audio assets ready';
     if(raceCockpitOpen||running){
       if(raceMusicEnabled)startRaceMusic();
@@ -2257,7 +2283,9 @@ function playRaceMedia(audio){
 function startVaz2107Media(){
   initRaceAudio();
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running))return;
-  if(raceEngineMedia){
+  if(raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
+    if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
+  }else if(raceEngineMedia){
     raceEngineMedia.loop=true;
     raceEngineMedia.volume=gasHeld?.96:(running?.82:.74);
     const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
@@ -2269,6 +2297,10 @@ function startVaz2107Media(){
   updateRaceEngineAudio();
 }
 function updateVaz2107Media(){
+  if(raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
+    if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
+    return;
+  }
   if(!raceEngineMedia)return;
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running)){
     if(!raceEngineMedia.paused)raceEngineMedia.pause();
@@ -2285,6 +2317,17 @@ function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const engineMediaPlaying=Boolean(raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended);
+  const samplePlaying=Boolean(raceEngineSampleSource&&raceEngineSampleGain);
+  if(samplePlaying){
+    const active=Boolean((raceCockpitOpen||running)&&raceEngineSoundEnabled);
+    const rate=vazEnginePlaybackRate(Math.max(850,Math.min(6600,Number(rpm)||850)))+(gasHeld?.025:0);
+    try{raceEngineSampleSource.playbackRate.setTargetAtTime(rate,t,.045)}catch(_){raceEngineSampleSource.playbackRate.value=rate}
+    raceEngineSampleGain.gain.setTargetAtTime(active?(gasHeld?.66:(running?.54:.46)):.0001,t,.07);
+    raceEngineGain?.gain.setTargetAtTime(.0001,t,.05);
+    raceExhaustGain?.gain.setTargetAtTime(.0001,t,.05);
+    raceIntakeGain?.gain.setTargetAtTime(.0001,t,.05);
+    return;
+  }
   if(engineMediaPlaying){
     raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.05);
     raceEngineGain?.gain.setTargetAtTime(.0001,t,.05);
@@ -2631,21 +2674,41 @@ function getRaceCarMotion(){
 function updateRaceCarPosition(dt=1/60,motion=null){
   const frameMotion=motion||getRaceCarMotion();
   if(!frameMotion.player)return frameMotion;
-  // Keep the vehicle in a stable screen position like the reference video.
-  raceCarOffset=0;
-  const x='0px';
-  if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
+  if(!currentOnlineRoom){
+    const targetCarX=Math.min(frameMotion.sceneWidth*.72,Math.max(0,raceWorldOffset*.46));
+    const blend=1-Math.exp(-Math.max(0,dt)*22);
+    raceCarOffset+=(targetCarX-raceCarOffset)*blend;
+    const x=raceCarOffset.toFixed(2)+'px';
+    if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
+  }else{
+    raceCarOffset=0;
+    const x='0px';
+    if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
+  }
   return frameMotion;
 }
 function updateRace2DCamera(dt=1/60,motion=null){
   motion=motion||getRaceCarMotion();
   const world=$('race2dCameraWorld'),stripe=$('race2dFinishStripe');
   if(!world||!motion.scene)return;
-  // Fixed side camera: no tracking/panning. Road and scenery carry the motion.
-  raceCameraOffset=0;
+  if(!currentOnlineRoom){
+    const anchorX=motion.sceneWidth*.22;
+    const targetCamera=Math.max(0,raceCarOffset-anchorX);
+    const followBlend=1-Math.exp(-Math.max(0,dt)*26);
+    raceCameraOffset+=(targetCamera-raceCameraOffset)*followBlend;
+    const cameraTransform='translate3d('+(-raceCameraOffset).toFixed(2)+'px,0,0)';
+    if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
+    const env=$('race2dEnvironment');
+    if(env){
+      const envTransform='translate3d('+raceCameraOffset.toFixed(2)+'px,0,0)';
+      if(env.style.transform!==envTransform)env.style.transform=envTransform;
+    }
+  }else{
+    raceCameraOffset=0;raceCameraY=0;
+    if(world.style.transform!=='translate3d(0px,0px,0px)')world.style.transform='translate3d(0px,0px,0px)';
+    const env=$('race2dEnvironment');if(env)env.style.transform='';
+  }
   raceCameraY=0;
-  const cameraTransform='translate3d(0px,0px,0px)';
-  if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
   const carWidth=Math.max(320,Math.min(600,motion.sceneWidth*.40));
   const finishX=motion.sceneWidth*.12+carWidth*.96+motion.sceneWidth*2.56*(1-motion.progress);
   if(stripe){
