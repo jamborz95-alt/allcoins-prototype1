@@ -1903,7 +1903,7 @@ function initRaceAudio(){
     return;
   }
   if(raceAudio?.state==='closed'){
-    raceAudio=null;raceAudioReady=false;raceEngineSampleSource=null;raceEngineBuffer=null;raceShiftBuffer=null;
+    raceAudio=null;raceAudioReady=false;raceEngineSampleSource=null;raceEngineBuffer=null;raceVazEngineBuffers=[];raceVazEngineSources=[];raceVazEngineGains=[];raceVazEngineSampleLoading=false;raceShiftBuffer=null;
   }
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
   try{
@@ -1952,7 +1952,7 @@ function initRaceAudio(){
         }
       }catch(_){}
     }
-    void loadRaceAudioSamples();
+    void loadRaceAudioSamples();void loadVazEngineSamples();
   }catch(_){}
 }
 async function loadRaceAudioSamples(){
@@ -1976,7 +1976,6 @@ async function loadRaceAudioSamples(){
     ]);
     if(engine){raceEngineBuffer=engine;startRaceEngineSample();}
     if(shift)raceShiftBuffer=shift;
-    await loadVazEngineSamples();
   }catch(_){}
   finally{raceAudioSamplesLoading=false;}
 }
@@ -2016,7 +2015,7 @@ function startVazEngineSamples(){
       source.playbackRate.value=.95;
       gain.gain.value=index===0?.36:0;
       source.connect(gain);
-      gain.connect(raceEngineSampleGain);
+      gain.connect(raceAudioMaster||raceAudio.destination);
       source.start(0);
       raceVazEngineSources.push(source);
       raceVazEngineGains.push(gain);
@@ -2148,7 +2147,7 @@ function updateRaceEngineAudio(){
       raceVazEngineGains[i].gain.setTargetAtTime(level*limiterPulse,t,.085);
       raceVazEngineSources[i].playbackRate.setTargetAtTime(pitch,t,.1);
     }
-    raceEngineSampleGain.gain.setTargetAtTime(1,t,.07);
+    raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.07);
     raceEngineGain?.gain.setTargetAtTime(.0001,t,.07);
     raceExhaustGain?.gain.setTargetAtTime(.0001,t,.07);
     raceIntakeGain?.gain.setTargetAtTime(.0001,t,.07);
