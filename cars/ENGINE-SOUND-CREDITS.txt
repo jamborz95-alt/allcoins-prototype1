@@ -1,10 +1,7 @@
-ALLCOINS Drag Racing — engine sound credits
+ALLCOINS Drag Racing — audio credits
 
-Engine loop asset:
-"racing car engine sound loops" by domasx2
-OpenGameArt: https://opengameart.org/content/racing-car-engine-sound-loops
-License: CC0 1.0 (public-domain dedication).
+The current background racing music is an original procedural composition generated in the game with Web Audio.
+The engine sound is an original procedural four-cylinder-style engine model whose pitch and tone follow the simulated RPM and throttle.
 
-The asset is a generic racing-game engine loop. It is not an original recording of a VAZ-2107.
-File used by the game:
-cars/vaz-2107-engine-loop.wav
+No music or sound recording from the user's reference video is included.
+No third-party soundtrack is bundled.
