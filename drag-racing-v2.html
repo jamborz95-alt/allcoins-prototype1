@@ -1910,7 +1910,6 @@ function initRaceAudio(){
         }
       }catch(_){}
     }
-    if(!raceAudioSamplesLoading&&!raceEngineBuffer)void loadRaceAudioSamples();
     return;
   }
   if(raceAudio?.state==='closed'){
@@ -1963,7 +1962,6 @@ function initRaceAudio(){
         }
       }catch(_){}
     }
-    void loadRaceAudioSamples();
   }catch(_){}
 }
 async function loadRaceAudioSamples(){
