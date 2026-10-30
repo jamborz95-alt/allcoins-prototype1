@@ -1253,7 +1253,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const markShift=(raceWorldOffset*2.15)%96;
   setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
   // Raised asphalt ripples scroll beneath the car, making the uneven road visible.
-  const bumpShift=(raceWorldOffset*1.55)%wrap;
+  const bumpShift=(raceWorldOffset*1.55)%280;
   setTransform(bumps,'translate3d('+(-bumpShift).toFixed(3)+'px,0,0)');
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
   if(running&&currentSpeed>28&&distance>=nextRoadBumpAt&&now-lastSceneBumpAt>1800){
