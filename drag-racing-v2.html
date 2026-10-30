@@ -1308,13 +1308,29 @@ function setPngBackground(id,svg){
         if(!context)throw new Error('PNG canvas unavailable');
         context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
         context.drawImage(image,0,0,canvas.width,canvas.height);
-        const png=canvas.toDataURL('image/png');
-        if(!png.startsWith('data:image/png'))throw new Error('PNG encoding failed');
-        el.style.backgroundImage='url("'+png+'")';
-        el.style.backgroundSize='300vw 100%';
-        el.style.backgroundPosition='0 100%';
-        el.style.backgroundRepeat='repeat-x';
-        el.dataset.format='png';el.dataset.loaded='1';
+        const applyPng=blob=>{
+          if(!blob){fallback();return;}
+          const pngUrl=URL.createObjectURL(blob);
+          el.style.backgroundImage='url("'+pngUrl+'")';
+          el.style.backgroundSize='300vw 100%';
+          el.style.backgroundPosition='0 100%';
+          el.style.backgroundRepeat='repeat-x';
+          el.dataset.cityPngUrl=pngUrl;el.dataset.format='png';el.dataset.loaded='1';
+          if(objectUrl)URL.revokeObjectURL(objectUrl);
+          delete el.dataset.loading;
+        };
+        if(typeof canvas.toBlob==='function')canvas.toBlob(applyPng,'image/png');
+        else{
+          const png=canvas.toDataURL('image/png');
+          if(!png.startsWith('data:image/png'))throw new Error('PNG encoding failed');
+          el.style.backgroundImage='url("'+png+'")';
+          el.style.backgroundSize='300vw 100%';
+          el.style.backgroundPosition='0 100%';
+          el.style.backgroundRepeat='repeat-x';
+          el.dataset.format='png';el.dataset.loaded='1';
+          if(objectUrl)URL.revokeObjectURL(objectUrl);
+          delete el.dataset.loading;
+        }
       }catch(_){fallback();return;}
       if(objectUrl)URL.revokeObjectURL(objectUrl);
       delete el.dataset.loading;
