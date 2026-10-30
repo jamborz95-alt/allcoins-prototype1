@@ -1276,7 +1276,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   scene.classList.toggle('race-finished',Boolean(finished));
   updateOnlineOpponentMotion(dt);
   updateUnevenRoad(dt,now);
-  if(now-lastEngineAudioUpdateAt>=50){lastEngineAudioUpdateAt=now;updateRaceEngineAudio()}
+  updateVaz2107Media();if(now-lastEngineAudioUpdateAt>=50){lastEngineAudioUpdateAt=now;updateRaceEngineAudio()}
 }
 function buildProSpeedScale(){
   const scale=$('proSpeedScale');if(!scale||scale.dataset.ready)return;
@@ -1840,11 +1840,11 @@ function openProRaceCockpit(){
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
   raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
-  // Re-unlock after the cockpit is marked active, then push a full idle update immediately.
+  // Start the local media track independently of Web Audio (reliable on Telegram Android WebView).
+  startVaz2107Media();
   initRaceAudio();
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   updateRaceEngineAudio();
-  if(String(state.selected||'2107')==='2107')playVazStarterSound();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function closeProRaceCockpit(){
@@ -1854,6 +1854,7 @@ function closeProRaceCockpit(){
   if(panel){panel.classList.add('hidden');panel.setAttribute('aria-hidden','true')}
   document.body.classList.remove('pro-race-open');panel?.classList.remove('race-engine-on','race-headlights-on');raceCockpitOpen=false;
   updateRaceEngineAudio();
+  if(!running&&vaz2107Media){vaz2107Media.pause();vaz2107MediaPlayPending=false;}
   updateOrientationPrompt();restoreRaceOrientation();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
@@ -2031,6 +2032,41 @@ function playVazStarterSound(){
   else{
     try{const resumed=context.resume();if(resumed&&typeof resumed.then==='function')resumed.then(play).catch(()=>{});}catch(_){}
   }
+}
+// HTMLAudio fallback for mobile Telegram WebViews: the WAV is same-origin and does not depend on AudioContext.
+let vaz2107Media=null,vaz2107MediaPlayPending=false;
+function startVaz2107Media(){
+  if(String(state.selected||'2107')!=='2107')return;
+  if(!vaz2107Media){
+    try{
+      vaz2107Media=new Audio('./cars/vaz-2107-engine-idle.wav?v=20261030b');
+      vaz2107Media.loop=true;
+      vaz2107Media.preload='auto';
+      vaz2107Media.volume=.72;
+      vaz2107Media.addEventListener('playing',()=>{window.__raceVazAudioStatus='playing'});
+      vaz2107Media.addEventListener('error',()=>{window.__raceVazAudioStatus='asset-error'});
+    }catch(error){window.__raceVazAudioStatus='audio-init-error';return}
+  }
+  if(!vaz2107Media.paused||vaz2107MediaPlayPending)return;
+  try{
+    vaz2107MediaPlayPending=true;
+    const started=vaz2107Media.play();
+    if(started&&typeof started.then==='function'){
+      started.then(()=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='playing'})
+        .catch(error=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-blocked';window.__raceVazAudioError=String(error&&error.message||error)});
+    }else{
+      vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-requested';
+    }
+  }catch(error){vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-error';window.__raceVazAudioError=String(error&&error.message||error)}
+}
+function updateVaz2107Media(){
+  if(!vaz2107Media)return;
+  if(String(state.selected||'2107')!=='2107'||(!raceCockpitOpen&&!running)){
+    vaz2107Media.pause();vaz2107MediaPlayPending=false;return;
+  }
+  const currentRpm=Math.max(800,Number(rpm)||900);
+  vaz2107Media.playbackRate=Math.max(.82,Math.min(2.25,currentRpm/950));
+  vaz2107Media.volume=gasHeld?.88:.72;
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
@@ -2210,10 +2246,12 @@ function holdButton(id,on,off){
     }else if(activePointers.size)return;
     else activePointers.add('fallback');
     if(activePointers.size===1){
+      startVaz2107Media();
       initRaceAudio();
       if(raceAudio?.state==='suspended')raceAudio.resume().then(()=>updateRaceEngineAudio()).catch(()=>{});
       on();
       el.classList.add('held');
+      updateVaz2107Media();
       updateRaceEngineAudio();
       updateHUD();
     }
@@ -2444,7 +2482,7 @@ function start(sharedStartedAt=null){
   }
   last=0;lastEngineAudioUpdateAt=0;lastUnevenRoadUpdateAt=0;lastSceneBumpAt=0;raf=requestAnimationFrame(frame);
 }
-$('startRace').onclick=()=>{initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
+$('startRace').onclick=()=>{startVaz2107Media();initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
 $('resetRace').onclick=()=>{reset();closeProRaceCockpit()};
 $('proExitRace').onclick=()=>{
   if(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'&&!finished){$('proRaceStatus').textContent='Онлайн-заезд уже начался. Заверши дистанцию.';return}
