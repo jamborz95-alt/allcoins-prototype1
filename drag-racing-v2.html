@@ -178,7 +178,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-environment{position:absolute;inset:0;z-index:0;overflow:hidden;background:linear-gradient(180deg,#9eafb3 0%,#d5d6cd 36%,#9d9f8e 43%,#6e706b 51%,#74736d 100%);pointer-events:none}
 .race2d-sky-wash{position:absolute;inset:0;background:linear-gradient(180deg,#a5b7bb 0%,#d0d3cb 34%,#d9d5c7 40%,transparent 47%);z-index:0}
 .race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{position:absolute;left:0;right:0;background-repeat:repeat-x;background-position:0 0;will-change:background-position;pointer-events:none}
-.race2d-city-layer{top:0;height:62%;z-index:1;background-size:300vw 100%;background-position:0 100%;background-repeat:repeat-x;filter:blur(.12px);opacity:.99;will-change:transform;backface-visibility:hidden}
+.race2d-city-layer{top:0;height:44%;z-index:1;background-size:300vw 100%;background-position:0 100%;background-repeat:repeat-x;filter:blur(.12px);opacity:.99;will-change:transform;backface-visibility:hidden}
 .race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;filter:blur(.42px);opacity:.96;will-change:transform;backface-visibility:hidden}
 .race2d-green-belt{position:absolute;left:0;right:0;top:39%;height:10%;z-index:2;background:linear-gradient(180deg,#adb69a 0%,#78916c 24%,#53694f 61%,#9a9c84 100%);box-shadow:inset 0 4px 5px #e6dfc766;border-bottom:2px solid #4c544d}
 .race2d-fence-layer{top:37%;height:25%;z-index:3;background-size:300vw 100%;opacity:.9;will-change:transform;backface-visibility:hidden}
@@ -1349,7 +1349,7 @@ function setPngAssetBackground(id,src,fallbackSvg){
     el.style.backgroundImage='url("'+src+'")';
     el.style.backgroundSize='300vw 100%';
     el.style.backgroundPosition='0 100%';
-    el.style.backgroundRepeat='repeat-x';
+    el.style.backgroundRepeat='no-repeat';
     el.dataset.format='png';
     el.dataset.loaded='1';
     delete el.dataset.loading;
@@ -1362,7 +1362,7 @@ function setPngAssetBackground(id,src,fallbackSvg){
 }
 function buildRace2DEnvironment(){
   const env=$('race2dEnvironment');if(!env||env.dataset.ready)return;
-  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citypng4',makeRaceCitySvg());
+  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citylong1',makeRaceCitySvg());
   setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
   setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
   env.dataset.ready='1';
