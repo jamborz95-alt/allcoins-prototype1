@@ -2065,8 +2065,8 @@ async function preloadRaceMediaAudio(){
       return {audio,url};
     };
     const [music,engine]=await Promise.all([
-      load('./cars/race-music-original.wav.b64?v=20261030-audio2'),
-      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-audio2')
+      load('./cars/race-music-original.wav.b64?v=20261030-audio3'),
+      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-audio3')
     ]);
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
