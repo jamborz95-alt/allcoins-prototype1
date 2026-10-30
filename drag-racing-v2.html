@@ -2147,7 +2147,7 @@ async function loadRaceAudioSamples(){
       load(RACE_ENGINE_SAMPLE_URLS),
       load(RACE_SHIFT_SAMPLE_URLS)
     ]);
-    if(engine){raceEngineBuffer=engine;startRaceEngineSample();}
+    if(engine&&!window.__raceLocalEngineBufferReady){raceEngineBuffer=engine;startRaceEngineSample();}
     if(shift)raceShiftBuffer=shift;
   }catch(_){}
   finally{raceAudioSamplesLoading=false;}
@@ -2246,7 +2246,10 @@ async function preloadRaceMediaAudio(){
         const encoded=(await response.text()).trim(),binary=atob(encoded),bytes=new Uint8Array(binary.length);
         for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
         const decoded=await raceAudio.decodeAudioData(bytes.buffer.slice(0));
-        if(decoded&&decoded.duration>.12){raceEngineBuffer=decoded;startRaceEngineSample();}
+        if(decoded&&decoded.duration>.12){
+          if(raceEngineSampleSource){try{raceEngineSampleSource.stop()}catch(_){}raceEngineSampleSource=null;}
+          raceEngineBuffer=decoded;window.__raceLocalEngineBufferReady=true;startRaceEngineSample();
+        }
       }catch(_){}
     }
     window.__raceAudioStatus='original audio assets ready';
