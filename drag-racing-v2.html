@@ -390,7 +390,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translate3d(0,0,0);transform-origin:left center;
   will-change:transform;backface-visibility:hidden;
 }
-.race2d-environment{width:1280%!important;right:auto!important}
+.race2d-environment{width:100%!important;height:100%!important;left:0!important;right:0!important;top:0!important;bottom:0!important;overflow:hidden!important}
+.race2d-city-layer{display:block!important;visibility:visible!important;left:0!important;right:auto!important;top:0!important;z-index:1!important;min-width:100%!important;min-height:100%!important;background-color:#8b9ca4!important}
 .race2d-car.player,.race2d-car.opponent,.race2d-finish-gate{
   backface-visibility:hidden;will-change:transform,left,opacity;
 }
@@ -1369,13 +1370,25 @@ function setPngAssetBackground(id,src,fallbackSvg){
     el.style.backgroundImage='url("'+src+'")';
     const scene=el.closest('.race2d-scene');
     const fitPanorama=()=>{
-      const h=Math.max(1,scene?.clientHeight||el.clientHeight||image.naturalHeight);
-      const w=h*(image.naturalWidth/Math.max(1,image.naturalHeight));
+      const sceneW=Math.max(1,scene?.clientWidth||window.innerWidth||1280);
+      const sceneH=Math.max(1,scene?.clientHeight||window.innerHeight||600);
+      const naturalW=Math.max(1,image.naturalWidth),naturalH=Math.max(1,image.naturalHeight);
+      const coverScale=Math.max(sceneW/naturalW,sceneH/naturalH);
+      const w=Math.ceil(naturalW*coverScale),h=Math.ceil(naturalH*coverScale);
+      el.style.setProperty('display','block','important');
+      el.style.setProperty('visibility','visible','important');
+      el.style.setProperty('position','absolute','important');
+      el.style.setProperty('left','0px','important');
+      el.style.setProperty('right','auto','important');
+      el.style.setProperty('top','0px','important');
       el.style.setProperty('height',h+'px','important');
       el.style.setProperty('width',w+'px','important');
-      el.style.backgroundSize='100% 100%';
-      el.style.backgroundPosition='left bottom';
-      el.style.backgroundRepeat='no-repeat';
+      el.style.setProperty('min-width',sceneW+'px','important');
+      el.style.setProperty('min-height',sceneH+'px','important');
+      el.style.setProperty('background-size','100% 100%','important');
+      el.style.setProperty('background-position','left top','important');
+      el.style.setProperty('background-repeat','no-repeat','important');
+      el.style.setProperty('z-index','1','important');
       el.dataset.panoramaWidth=String(w);
     };
     fitPanorama();
@@ -1392,7 +1405,7 @@ function setPngAssetBackground(id,src,fallbackSvg){
 }
 function buildRace2DEnvironment(){
   const env=$('race2dEnvironment');if(!env||env.dataset.ready)return;
-  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-citylong3',makeRaceCitySvg());
+  setPngAssetBackground('race2dCityLayer','./cars/ALLCOINS-City.png?v=20261030-cityvisible4',makeRaceCitySvg());
   setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
   setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
   env.dataset.ready='1';
