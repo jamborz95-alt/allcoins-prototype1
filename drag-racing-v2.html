@@ -2240,7 +2240,7 @@ async function preloadRaceMediaAudio(){
     ]);
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
-    if(raceAudio&&raceAudio.state!=='closed'){
+    if(!currentOnlineRoom&&raceAudio&&raceAudio.state!=='closed'){
       try{
         const response=await fetch('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb2',{cache:'force-cache'});
         const encoded=(await response.text()).trim(),binary=atob(encoded),bytes=new Uint8Array(binary.length);
@@ -2286,7 +2286,7 @@ function playRaceMedia(audio){
 function startVaz2107Media(){
   initRaceAudio();
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running))return;
-  if(raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
+  if(window.__raceLocalEngineBufferReady&&raceEngineSampleSource&&raceAudio&&raceAudio.state!=='closed'){
     if(raceEngineMedia&&!raceEngineMedia.paused)raceEngineMedia.pause();
   }else if(raceEngineMedia){
     raceEngineMedia.loop=true;
@@ -2320,7 +2320,7 @@ function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const engineMediaPlaying=Boolean(raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended);
-  const samplePlaying=Boolean(raceEngineSampleSource&&raceEngineSampleGain);
+  const samplePlaying=Boolean(window.__raceLocalEngineBufferReady&&raceEngineSampleSource&&raceEngineSampleGain);
   if(samplePlaying){
     const active=Boolean((raceCockpitOpen||running)&&raceEngineSoundEnabled);
     const rate=vazEnginePlaybackRate(Math.max(850,Math.min(6600,Number(rpm)||850)))+(gasHeld?.025:0);
