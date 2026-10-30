@@ -655,6 +655,48 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 
 
 
+
+/* ALLCOINS suspension: chassis/body travel independently while wheel centers stay planted. */
+.pro-race-cockpit .race2d-scene .race2d-car.player{
+  transform:translate3d(var(--race-car-x,0px),0px,0)!important;
+  translate:0 0!important;
+  animation:none!important;
+}
+.pro-race-cockpit.race-moving .race2d-scene .race2d-car.player{
+  animation:none!important;
+  translate:0 0!important;
+}
+.race2d-car.player .race-sprung-body,
+.race2d-car.player .race-car-png{
+  transform-box:fill-box;
+  transform-origin:center bottom;
+  transform:translate3d(0,var(--road-bump-y,0px),0);
+  transition:transform .11s cubic-bezier(.22,.61,.36,1);
+  will-change:transform;
+}
+.pro-race-cockpit.race-moving .race2d-car.player .race-sprung-body,
+.pro-race-cockpit.race-moving .race2d-car.player .race-car-png{
+  animation:race2d-body-road-follow .34s ease-in-out infinite alternate;
+}
+.pro-race-cockpit .race2d-scene.road-bump-active .race2d-car.player .race-sprung-body,
+.pro-race-cockpit .race2d-scene.road-bump-active .race2d-car.player .race-car-png,
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player .race-sprung-body,
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player .race-car-png{
+  animation:race2d-body-impact .42s cubic-bezier(.18,.72,.28,1) both!important;
+}
+@keyframes race2d-body-road-follow{
+  from{translate:0 0}
+  to{translate:0 .8px}
+}
+@keyframes race2d-body-impact{
+  0%{translate:0 0}
+  20%{translate:0 2.1px}
+  43%{translate:0 -1.4px}
+  66%{translate:0 .9px}
+  84%{translate:0 -.35px}
+  100%{translate:0 0}
+}
+
 </style>
 
 </head>
@@ -827,6 +869,7 @@ function carSvg(modelId,colorValue){
     +'<g transform="translate(600 0) scale(-1 1)">'
     +'<ellipse cx="300" cy="186" rx="253" ry="13" fill="#000000" opacity=".55" filter="url(#shadow)"/>'
     +tires
+    +'<g class="race-sprung-body">'
     +'<path d="'+bodyPath+'" fill="url(#paint)" stroke="#101419" stroke-width="4" stroke-linejoin="round"/>'
     +'<path d="'+windowPath+'" fill="url(#glass)" stroke="#151b21" stroke-width="5" stroke-linejoin="round"/>'
     +'<path d="'+roofAccent+'" fill="#ffffff" opacity=".25"/>'
@@ -870,6 +913,7 @@ function carSvg(modelId,colorValue){
     +'<path d="M105 176 L111 179 M120 177 L126 180 M137 178 L143 180 M402 178 L408 180 M419 177 L425 180 M436 176 L442 179" stroke="#0b0d0f" stroke-width="1.3"/>'
     +'</g>'
     +classicDetails
+    +'</g>'
     +'</g></svg>';
   const uid='car-'+String(id).replace(/[^a-z0-9_-]/gi,'')+'-'+color.slice(1)+'-'+(++carSvgInstance);
   return svgMarkup
