@@ -1839,8 +1839,12 @@ function openProRaceCockpit(){
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
-  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;if(String(state.selected||'2107')==='2107')playVazStarterSound();
+  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
+  // Re-unlock after the cockpit is marked active, then push a full idle update immediately.
+  initRaceAudio();
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
+  updateRaceEngineAudio();
+  if(String(state.selected||'2107')==='2107')playVazStarterSound();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function closeProRaceCockpit(){
@@ -2063,13 +2067,13 @@ function updateRaceEngineAudio(){
   raceEngineSubGain.gain.setTargetAtTime(isVaz2107?.30:(.42+load*.16),t,.08);
   raceEngineHarmonicGain.gain.setTargetAtTime(isVaz2107?.105:(.045+load*.05),t,.08);
   const engineVolume=isVaz2107
-    ?(raceCockpitOpen?(throttle?.145:(running?(speed>1?.105:.095):.095)):.0001)
+    ?(raceCockpitOpen?(throttle?.23:(running?(speed>1?.19:.17):.17)):.0001)
     :(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001));
   raceEngineGain.gain.setTargetAtTime(engineVolume*limiterPulse,t,.075);
   raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:(isVaz2107?172:145),t,.09);
-  raceExhaustGain.setTargetAtTime(raceCockpitOpen?(throttle?.048:(isVaz2107?.022:(running?.009:.0001))):.0001,t,.09);
+  raceExhaustGain.setTargetAtTime(raceCockpitOpen?(throttle?.075:(isVaz2107?.038:(running?.009:.0001))):.0001,t,.09);
   raceIntakeFilter.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.09);
-  raceIntakeGain.gain.setTargetAtTime(raceCockpitOpen?(throttle?.042:(isVaz2107?.009:.0035)):.0001,t,.09);
+  raceIntakeGain.gain.setTargetAtTime(raceCockpitOpen?(throttle?.06:(isVaz2107?.016:.0035)):.0001,t,.09);
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();
@@ -2207,9 +2211,10 @@ function holdButton(id,on,off){
     else activePointers.add('fallback');
     if(activePointers.size===1){
       initRaceAudio();
-      if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
+      if(raceAudio?.state==='suspended')raceAudio.resume().then(()=>updateRaceEngineAudio()).catch(()=>{});
       on();
       el.classList.add('held');
+      updateRaceEngineAudio();
       updateHUD();
     }
   };
@@ -2222,6 +2227,7 @@ function holdButton(id,on,off){
     if(activePointers.size===0){
       off();
       el.classList.remove('held');
+      updateRaceEngineAudio();
       updateHUD();
     }
   };
