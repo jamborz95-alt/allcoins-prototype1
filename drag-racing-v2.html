@@ -676,7 +676,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 .pro-race-cockpit.race-moving .race2d-car.player .race-sprung-body,
 .pro-race-cockpit.race-moving .race2d-car.player .race-car-png{
-  animation:race2d-body-road-follow .34s ease-in-out infinite alternate;
+  animation:race2d-body-road-follow .58s cubic-bezier(.45,0,.55,1) infinite alternate;
 }
 .pro-race-cockpit .race2d-scene.road-bump-active .race2d-car.player .race-sprung-body,
 .pro-race-cockpit .race2d-scene.road-bump-active .race2d-car.player .race-car-png,
@@ -686,7 +686,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 @keyframes race2d-body-road-follow{
   from{translate:0 0}
-  to{translate:0 .8px}
+  to{translate:0 .42px}
 }
 @keyframes race2d-body-impact{
   0%{translate:0 0}
@@ -708,14 +708,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   width:300%;
   height:100%;
   pointer-events:none;
-  opacity:.98;
+  opacity:.86;
   background-image:
-    radial-gradient(ellipse 112px 25px at 50% 75%,rgba(239,229,202,.98) 0 9%,rgba(175,164,137,.97) 24%,rgba(65,67,60,.94) 49%,transparent 77%),
-    radial-gradient(ellipse 136px 15px at 50% 84%,rgba(19,22,20,.94) 0 26%,rgba(39,42,38,.65) 49%,transparent 76%),
-    radial-gradient(ellipse 82px 9px at 50% 69%,rgba(250,244,222,.92) 0 19%,rgba(202,193,166,.65) 45%,transparent 76%),
-    repeating-linear-gradient(177deg,transparent 0 64px,rgba(226,218,194,.22) 65px 68px,rgba(31,34,32,.32) 69px 74px,transparent 75px 128px);
-  background-repeat:repeat-x,repeat-x,repeat-x,repeat;
-  background-size:280px 100%,280px 100%,280px 100%,100% 100%;
+    radial-gradient(ellipse 104px 20px at 50% 75%,rgba(226,216,191,.88) 0 8%,rgba(153,144,122,.82) 26%,rgba(65,67,60,.78) 49%,transparent 77%),
+    radial-gradient(ellipse 118px 12px at 50% 84%,rgba(19,22,20,.78) 0 25%,rgba(39,42,38,.48) 49%,transparent 76%),
+    radial-gradient(ellipse 72px 8px at 50% 69%,rgba(246,239,217,.78) 0 19%,rgba(202,193,166,.48) 45%,transparent 76%);
+
+  background-repeat:repeat-x,repeat-x,repeat-x;
+  background-size:1200px 100%,1200px 100%,1200px 100%;
   background-position:0 0,0 0,0 0,0 0;
   will-change:transform;
   backface-visibility:hidden;
@@ -1141,7 +1141,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,nextRoadBumpAt=40;
+let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,nextRoadBumpAt=150;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1243,7 +1243,10 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const sceneWidth=Math.max(1,scene.clientWidth||1280);
   const scale=Math.max(.6,Math.min(1.35,sceneWidth/1280));
   const currentSpeed=Math.max(0,Number(speed)||0);
-  if(running&&currentSpeed>0)raceWorldOffset+=(currentSpeed/3.6)*dt*9.6*scale;
+  const targetWorldSpeed=running?currentSpeed:0;
+  const worldSpeedBlend=1-Math.exp(-Math.max(0,dt)/.11);
+  raceWorldSpeed+=(targetWorldSpeed-raceWorldSpeed)*worldSpeedBlend;
+  raceWorldOffset+=(raceWorldSpeed/3.6)*dt*9.6*scale;
   const wrap=Math.max(1,sceneWidth*3);
   const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks'),bumps=$('race2dRoadBumps');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
@@ -1254,16 +1257,18 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const markShift=(raceWorldOffset*2.15)%96;
   setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
   // Raised asphalt ripples scroll beneath the car, making the uneven road visible.
-  const bumpShift=(raceWorldOffset*1.55)%280;
+  const bumpShift=(raceWorldOffset*1.55)%1200;
   setTransform(bumps,'translate3d('+(-bumpShift).toFixed(3)+'px,0,0)');
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
-  if(running&&currentSpeed>28&&distance>=nextRoadBumpAt&&now-lastSceneBumpAt>1800){
+  if(running&&currentSpeed>45&&distance>=nextRoadBumpAt){
     lastSceneBumpAt=now;
-    nextRoadBumpAt=distance+18+Math.random()*48;
+    nextRoadBumpAt=distance+135+Math.random()*125;
+    roadBumpUntil=now+430;
+    roadBumpStrength=.45+Math.random()*.32;
     scene.classList.remove('race-road-bump');
     requestAnimationFrame(()=>{if(scene.isConnected)scene.classList.add('race-road-bump')});
     window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);
-    playRoadBumpSound(.5);
+    if(currentSpeed>75&&raceAudioReady)playRoadBumpSound(roadBumpStrength);
   }
   scene.classList.toggle('race-fast',currentSpeed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
@@ -2090,10 +2095,7 @@ function updateUnevenRoad(dt,frameNow=performance.now()){
   lastUnevenRoadUpdateAt=now;
   const scene=$('race2dPlayerCar')?.closest('.race2d-scene');if(!scene)return;
   const moving=running&&speed>24;
-  if(moving&&now-lastRoadBumpAt>1250+Math.random()*2300){
-    lastRoadBumpAt=now;roadBumpUntil=now+150+Math.random()*120;roadBumpStrength=.35+Math.random()*.65;
-    if(speed>55&&raceAudioReady)playRoadBumpSound(roadBumpStrength);
-  }
+  // Road bumps are triggered only by the distance-based event above.
   const active=now<roadBumpUntil?roadBumpStrength:0;
   const bumpY=(active*4.2).toFixed(2)+'px';
   if(scene.style.getPropertyValue('--road-bump-y')!==bumpY)scene.style.setProperty('--road-bump-y',bumpY);
@@ -2215,7 +2217,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
