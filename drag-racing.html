@@ -66,9 +66,9 @@
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
 .pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .34s cubic-bezier(.36,0,.64,1) infinite alternate}
-.pro-race-cockpit .race2d-scene.race-road-bump .race2d-road-surface{animation:race2d-road-bump .46s cubic-bezier(.2,.75,.35,1)}
+.pro-race-cockpit .race2d-scene.race-road-bump .race2d-road-surface{animation:none!important;filter:none!important}
 .pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player{animation:race2d-suspension-bump .46s cubic-bezier(.2,.75,.35,1)}
-@keyframes race2d-road-bump{0%{filter:none}18%{filter:brightness(1.14)}38%{filter:brightness(.92)}64%{filter:brightness(1.04)}100%{filter:none}}
+@keyframes race2d-road-bump{0%,100%{transform:translate3d(0,0,0)}35%{transform:translate3d(0,1px,0)}70%{transform:translate3d(0,-.5px,0)}}
 @keyframes race2d-suspension-bump{0%{translate:0 0}18%{translate:0 -7px}40%{translate:0 3px}65%{translate:0 -2px}100%{translate:0 0}}
 @keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
@@ -190,8 +190,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
 .race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:transform!important;backface-visibility:hidden}
 .race2d-car.player{left:12%;transition:none!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
-.race2d-scene.road-bump-active .race2d-road-surface{filter:brightness(1.035)}
-.race2d-scene.road-bump-active .race2d-road-grain{opacity:.78}
+.race2d-scene.road-bump-active .race2d-road-surface{filter:none!important}
+.race2d-scene.road-bump-active .race2d-road-grain{opacity:.55}
 .race2d-scene.road-bump-active .race2d-road-markings{filter:drop-shadow(0 1px 1px #3c3c35) brightness(1.08)}
 .race2d-car.opponent{left:54%;right:auto!important;top:38%!important;bottom:auto!important;width:clamp(195px,22vw,310px)!important;opacity:1;transform:scale(1);filter:drop-shadow(0 7px 5px #161a1866)!important;transition:opacity .18s ease!important;will-change:transform,opacity!important;backface-visibility:hidden}
 .pro-race-cockpit.race-online .race2d-car.opponent{opacity:.96}
@@ -638,19 +638,19 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Engine-on effects: subtle idle vibration, warm headlamps and layered exhaust smoke. */
 .race2d-car.player:after{display:none!important}
 .race-car-headlight-glow,.race-car-exhaust-puff{position:absolute;pointer-events:none}
-.race-car-headlight-glow{left:83%;top:40%;width:47%;height:30%;z-index:4;opacity:0;transform-origin:left center;clip-path:polygon(0 34%,100% 0,100% 100%,0 66%);background:linear-gradient(90deg,#fff8c8d9 0%,#fff1a86b 20%,#ffe7a51c 67%,transparent 100%);filter:blur(3px);transition:opacity .18s ease}
-.race-car-headlight-glow:after{content:"";position:absolute;left:0;top:33%;width:12%;height:34%;border-radius:50%;background:#fff6c8;box-shadow:0 0 5px 3px #fff3a8,0 0 13px 7px #ffd66a99,0 0 24px 12px #ffce4b48}
+.race-car-headlight-glow{left:92%;top:29%;width:68%;height:50%;z-index:8;opacity:0;transform-origin:left center;overflow:visible;clip-path:none;background:transparent;filter:none;transition:opacity .2s ease}.race-car-headlight-glow:before{content:'';position:absolute;left:0;top:0;width:100%;height:100%;clip-path:polygon(0 36%,100% 4%,100% 100%,0 66%);background:linear-gradient(90deg,#fff9d9d9 0%,#fff0b47a 25%,#ffe5a53b 66%,transparent 100%);filter:blur(3px)}
+.race-car-headlight-glow:after{content:'';position:absolute;left:0;top:34%;width:7%;height:24%;border-radius:50%;background:#fff9d9;box-shadow:0 0 5px 3px #fff3a8,0 0 13px 7px #ffd66a99,0 0 24px 12px #ffce4b66}
 .race-car-exhaust-puff{left:10.5%;bottom:24%;z-index:0;width:12px;height:8px;border-radius:50%;opacity:0;filter:blur(1.5px);background:radial-gradient(ellipse at center,#eef3f5d9 0%,#b9c4cad9 32%,#87939b48 67%,transparent 100%);animation:race-exhaust-idle 1.55s ease-out infinite}
 .race-car-exhaust-puff.puff-two{animation-delay:.52s;transform:scale(.72)}
 .race-car-exhaust-puff.puff-three{animation-delay:1.04s;transform:scale(.58)}
-.pro-race-cockpit.race-engine-on .race-car-headlight-glow{opacity:.84;animation:race-headlight-breathe 3.1s ease-in-out infinite}
+.pro-race-cockpit.race-engine-on .race-car-headlight-glow{opacity:.9;animation:none}
 .pro-race-cockpit.race-engine-on:not(.race-moving) .race2d-car.player{translate:0 0;animation:race-engine-idle .19s ease-in-out infinite alternate}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff{opacity:.42}
 .pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff{animation-duration:.78s;opacity:.7;filter:blur(2px)}
 .pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-two{animation-delay:.26s}
 .pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-three{animation-delay:.52s}
 @keyframes race-engine-idle{from{translate:0 0}to{translate:0 -1.1px}}
-@keyframes race-headlight-breathe{0%,100%{filter:blur(3px);opacity:.72}50%{filter:blur(4px);opacity:.94}}
+
 @keyframes race-exhaust-idle{0%{opacity:0;transform:translate3d(0,0,0) scale(.35)}12%{opacity:.42}100%{opacity:0;transform:translate3d(-29px,-17px,0) scale(2.2)}}
 
 </style>
@@ -1747,7 +1747,8 @@ window.addEventListener('resize',()=>{updateOrientationPrompt();race3d?.resize?.
 function openProRaceCockpit(){
   const panel=$('proRaceCockpit'),track=$('proRaceTrack'),host=$('race3dCanvas');
   if(!panel||!track||!host)return;
-  // Build both cars before showing the cockpit so the rival is already present on entry.
+  // Opening the cockpit is a direct user gesture: unlock mobile audio here as well.
+  initRaceAudio();
   syncRace2DCarArt();
   if(currentOnlineRoom)void syncOnlineOpponentCar();
   if(currentOnlineRoom?.room?.status==='racing')updateOnlineOpponentMotion(1/60);
@@ -1755,7 +1756,7 @@ function openProRaceCockpit(){
   requestRaceLandscape();
   track.appendChild(host);
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
-  // in this 2D side-profile cockpit so it cannot cover the corrected vehicle.
+  // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
   raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
@@ -1800,15 +1801,26 @@ function syncProRaceCockpit(){
 }
 // Audio starts on the first explicit player gesture to respect mobile autoplay rules.
 function initRaceAudio(){
-  if(raceAudioReady){
-    if(raceAudio?.state==='suspended')raceAudio.resume().catch(()=>{});
+  // Mobile WebViews may suspend or interrupt the audio context when focus changes.
+  // Always try to resume it directly from the player's touch/click gesture.
+  if(raceAudioReady&&raceAudio&&raceAudio.state!=='closed'){
+    if(raceAudio.state!=='running'){
+      try{
+        const resumePromise=raceAudio.resume();
+        if(resumePromise&&typeof resumePromise.then==='function'){
+          resumePromise.then(()=>{if(raceAudioReady)updateRaceEngineAudio()}).catch(()=>{});
+        }
+      }catch(_){}
+    }
     if(!raceAudioSamplesLoading&&!raceEngineBuffer)void loadRaceAudioSamples();
     return;
+  }
+  if(raceAudio?.state==='closed'){
+    raceAudio=null;raceAudioReady=false;raceEngineSampleSource=null;raceEngineBuffer=null;raceShiftBuffer=null;
   }
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
   try{
     raceAudio=new AC();
-    // Procedural audio remains a fallback for offline mode or a blocked remote host.
     raceEngineOsc=raceAudio.createOscillator();raceEngineOsc.type='sawtooth';
     raceEngineSubOsc=raceAudio.createOscillator();raceEngineSubOsc.type='triangle';
     raceEngineHarmonicOsc=raceAudio.createOscillator();raceEngineHarmonicOsc.type='square';
@@ -1830,7 +1842,18 @@ function initRaceAudio(){
     raceEngineSampleGain=raceAudio.createGain();raceEngineSampleGain.gain.value=.0001;raceEngineSampleGain.connect(raceAudio.destination);
     raceEngineOsc.start();raceEngineSubOsc.start();raceEngineHarmonicOsc.start();raceExhaustNoise.start();
     raceAudioReady=true;
-    if(raceAudio.state==='suspended')raceAudio.resume().catch(()=>{});
+    const audioContext=raceAudio;
+    audioContext.addEventListener?.('statechange',()=>{
+      if(audioContext===raceAudio&&audioContext.state==='running')updateRaceEngineAudio();
+    });
+    if(audioContext.state!=='running'){
+      try{
+        const resumePromise=audioContext.resume();
+        if(resumePromise&&typeof resumePromise.then==='function'){
+          resumePromise.then(()=>{if(audioContext===raceAudio)updateRaceEngineAudio()}).catch(()=>{});
+        }
+      }catch(_){}
+    }
     void loadRaceAudioSamples();
   }catch(_){}
 }
@@ -1863,8 +1886,9 @@ function startRaceEngineSample(){
   try{
     const source=raceAudio.createBufferSource(),duration=raceEngineBuffer.duration;
     source.buffer=raceEngineBuffer;source.loop=true;
-    source.loopStart=Math.min(1.7,Math.max(0,duration*.18));
-    source.loopEnd=Math.max(source.loopStart+.5,duration-.16);
+    // Keep the loop safely inside the decoded sample so short mobile audio files work too.
+    source.loopStart=Math.min(.24,Math.max(0,duration*.08));
+    source.loopEnd=Math.min(duration,Math.max(source.loopStart+.05,duration*.92));
     source.playbackRate.value=1;
     source.connect(raceEngineSampleGain);
     source.start(0,source.loopStart);
@@ -1875,7 +1899,7 @@ function startRaceEngineSample(){
   }catch(_){}
 }
 function updateRaceEngineAudio(){
-  if(!raceAudioReady||!raceAudio)return;
+  if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
   const throttle=Boolean(gasHeld&&running),inNeutral=gear==='N';
@@ -1884,51 +1908,63 @@ function updateRaceEngineAudio(){
   if(raceEngineSampleSource&&raceEngineSampleGain){
     const playbackRate=Math.max(.76,Math.min(1.62,.69+rpmNow/6600*.91));
     raceEngineSampleSource.playbackRate.setTargetAtTime(playbackRate,t,.09);
-    const sampleVolume=running?(throttle?.42+load*.09:.17+load*.04):(raceCockpitOpen?.045:.0001);
+    const sampleVolume=running?(throttle?.58+load*.08:.27+load*.05):(raceCockpitOpen?.055:.0001);
+    const fallbackVolume=running?(throttle?.13:(speed>1?.07:.05)):(raceCockpitOpen?.025:.0001);
     raceEngineSampleGain.gain.setTargetAtTime(sampleVolume*limiterPulse,t,.08);
-    raceEngineGain?.gain.setTargetAtTime(.0001,t,.08);
-    raceExhaustGain?.gain.setTargetAtTime(.0001,t,.08);
+    // Keep a little local RPM-linked engine tone underneath the sample. It stays audible
+    // when a remote MP3 is quiet or partially silent, and also works offline.
+    raceEngineGain?.gain.setTargetAtTime(fallbackVolume,t,.08);
+    raceExhaustGain?.gain.setTargetAtTime(running?(throttle?.022:.006):.0001,t,.08);
     return;
   }
-  // Last-resort fallback if the sample host is offline or blocked.
+  // Self-contained engine fallback; it does not depend on a third-party audio host.
   if(!raceEngineOsc||!raceEngineGain)return;
   const firingHz=Math.max(24,Math.min(225,rpmNow/30));
   raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.035);
   raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.045);
   raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.04);
   raceEngineFilter.frequency.setTargetAtTime(Math.max(420,Math.min(2450,520+rpmNow*.25+load*330)),t,.06);
-  raceEnginePulseGain.gain.setTargetAtTime(.31+load*.15,t,.075);
-  raceEngineSubGain.gain.setTargetAtTime(.38+load*.12,t,.08);
-  raceEngineHarmonicGain.gain.setTargetAtTime(.035+load*.055,t,.07);
-  raceEngineGain.gain.setTargetAtTime(running?(throttle?.105:.033):.0001,t,.055);
+  raceEnginePulseGain.gain.setTargetAtTime(.34+load*.18,t,.075);
+  raceEngineSubGain.gain.setTargetAtTime(.42+load*.16,t,.08);
+  raceEngineHarmonicGain.gain.setTargetAtTime(.045+load*.05,t,.07);
+  raceEngineGain.gain.setTargetAtTime(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001),t,.055);
   raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:145,t,.08);
-  raceExhaustGain.setTargetAtTime(running?(throttle?.013:.0025):.0001,t,.07);
+  raceExhaustGain.setTargetAtTime(running?(throttle?.032:.009):.0001,t,.07);
 }
 function playRaceShiftSound(direction=1){
-  initRaceAudio();if(!raceAudio||raceAudio.state==='closed')return;
+  initRaceAudio();
+  const context=raceAudio;if(!context||context.state==='closed')return;
   const now=performance.now();if(now-lastGearSoundAt<85)return;lastGearSoundAt=now;
   const play=()=>{
-    if(!raceAudio||raceAudio.state==='closed')return;
+    if(context!==raceAudio||context.state==='closed')return;
     if(raceShiftBuffer){
       try{
-        const t=raceAudio.currentTime,source=raceAudio.createBufferSource(),gain=raceAudio.createGain();
+        const t=context.currentTime,source=context.createBufferSource(),gain=context.createGain();
         source.buffer=raceShiftBuffer;
         const rate=direction>0?1.04:.94,clipDuration=Math.min(.82,raceShiftBuffer.duration);
         source.playbackRate.value=rate;
         gain.gain.setValueAtTime(.0001,t);
-        gain.gain.exponentialRampToValueAtTime(.26,t+.014);
-        gain.gain.exponentialRampToValueAtTime(.0001,t+Math.min(.58,clipDuration/rate));
-        source.connect(gain);gain.connect(raceAudio.destination);
+        gain.gain.exponentialRampToValueAtTime(.38,t+.014);
+        gain.gain.exponentialRampToValueAtTime(.0001,t+Math.min(.62,clipDuration/rate));
+        source.connect(gain);gain.connect(context.destination);
         source.start(t,0,clipDuration);return;
       }catch(_){}
     }
-    const t=raceAudio.currentTime,osc=raceAudio.createOscillator(),gain=raceAudio.createGain();
-    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?135:110,t);
-    osc.frequency.exponentialRampToValueAtTime(direction>0?72:58,t+.075);
-    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.075,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+.095);
-    osc.connect(gain);gain.connect(raceAudio.destination);osc.start(t);osc.stop(t+.10);
+    const t=context.currentTime,osc=context.createOscillator(),gain=context.createGain();
+    osc.type='triangle';osc.frequency.setValueAtTime(direction>0?145:118,t);
+    osc.frequency.exponentialRampToValueAtTime(direction>0?68:54,t+.105);
+    gain.gain.setValueAtTime(.0001,t);
+    gain.gain.exponentialRampToValueAtTime(.14,t+.01);
+    gain.gain.exponentialRampToValueAtTime(.0001,t+.17);
+    osc.connect(gain);gain.connect(context.destination);osc.start(t);osc.stop(t+.18);
   };
-  if(raceAudio.state==='suspended')raceAudio.resume().then(play).catch(()=>{});else play();
+  if(context.state!=='running'){
+    try{
+      const resumePromise=context.resume();
+      if(resumePromise&&typeof resumePromise.then==='function')resumePromise.then(play).catch(()=>{});
+      else play();
+    }catch(_){}
+  }else play();
 }
 function playRoadBumpSound(strength){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
