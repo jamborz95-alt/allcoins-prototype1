@@ -728,7 +728,12 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 
 </style>
 
-</head>
+<style id="allcoins-original-race-audio-ui">
+.pro-race-audio-controls{position:absolute;right:12px;top:60px;z-index:15;display:flex;flex-direction:column;gap:5px;align-items:flex-end;pointer-events:auto}
+.pro-race-audio-controls button{min-width:118px;padding:6px 9px;border:1px solid #aeb7bd;border-radius:7px;background:#18232dcc;color:#eef2f5;font-size:10px;line-height:1.15;box-shadow:0 2px 8px #0008}
+.pro-race-audio-controls button.active{border-color:#e9ca7f;color:#ffe2a1;background:#1b2630ee}
+@media(max-width:700px){.pro-race-audio-controls{top:58px;right:8px}.pro-race-audio-controls button{min-width:104px;font-size:9px;padding:5px 7px}}
+</style></head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
 <div class="tabs"><button class="tab active" data-tab="race">🏁 Гонки</button><button class="tab" data-tab="garage">🚘 Гараж</button><button class="tab" data-tab="shop">🛒 Магазин</button><button class="tab" data-tab="tuning">🔧 Тюнинг</button></div>
@@ -754,6 +759,10 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <div class="pro-fuel-readout" aria-label="Топливо"><div class="pro-fuel-head"><span>⛽ БЕНЗИН</span><strong><span id="proFuelLiters">42.00</span>/<span id="proFuelCap">42</span> л</strong></div><div class="pro-fuel-meter"><i id="proFuelMeterBar"></i></div><div id="proFuelStatus" class="pro-fuel-status">ПОЛНЫЙ БАК</div><button id="proRefuelFuel" type="button">ЗАПРАВИТЬ</button></div>
     <div id="proRaceTimer" class="pro-race-timer">00.000</div>
     <div class="pro-race-top-label">PRO DRAG STRIP · LIVE</div>
+    <div class="pro-race-audio-controls" aria-label="Настройки звука">
+      <button id="proMusicToggle" class="active" type="button" aria-pressed="true">♫ МУЗЫКА ВКЛ</button>
+      <button id="proEngineToggle" class="active" type="button" aria-pressed="true">🔊 МОТОР ВКЛ</button>
+    </div>
     <div class="race2d-scene" aria-label="2D drag racing track">
       <div id="race2dCameraWorld" class="race2d-camera-world">
         <div class="race2d-environment" id="race2dEnvironment" aria-hidden="true">
@@ -1748,7 +1757,7 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,raceMusicGain=null,raceMusicTimer=null,raceMusicNextAt=0,raceMusicStep=0,raceMusicEnabled=true,raceEngineSoundEnabled=true,lastGearSoundAt=0,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -1845,6 +1854,8 @@ function openProRaceCockpit(){
   initRaceAudio();
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   updateRaceEngineAudio();
+  startRaceMusic();
+  syncRaceAudioButtons();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
 function closeProRaceCockpit(){
@@ -1854,7 +1865,7 @@ function closeProRaceCockpit(){
   if(panel){panel.classList.add('hidden');panel.setAttribute('aria-hidden','true')}
   document.body.classList.remove('pro-race-open');panel?.classList.remove('race-engine-on','race-headlights-on');raceCockpitOpen=false;
   updateRaceEngineAudio();
-  if(!running&&vaz2107Media){vaz2107Media.pause();vaz2107MediaPlayPending=false;}
+  stopRaceMusic();
   updateOrientationPrompt();restoreRaceOrientation();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
@@ -2034,95 +2045,144 @@ function playVazStarterSound(){
   }
 }
 // HTMLAudio fallback for mobile Telegram WebViews: the WAV is same-origin and does not depend on AudioContext.
-let vaz2107Media=null,vaz2107MediaPlayPending=false,vaz2107MediaRate=.78;
+// All game audio is generated/processed locally by Web Audio. No copyrighted soundtrack is copied.
 function startVaz2107Media(){
-  // Local same-origin WAV: no external sound host, CORS or streaming dependency.
-  if(!vaz2107Media){
-    try{
-      vaz2107Media=new Audio('./cars/vaz-2107-engine-loop.wav?v=20261030f');
-      vaz2107Media.loop=true;
-      vaz2107Media.preload='auto';
-      vaz2107Media.playsInline=true;
-      vaz2107Media.volume=.88;
-      vaz2107Media.addEventListener('canplay',()=>{window.__raceVazAudioStatus='local-engine-ready'});
-      vaz2107Media.addEventListener('playing',()=>{window.__raceVazAudioStatus='local-engine-playing'});
-      vaz2107Media.addEventListener('error',()=>{window.__raceVazAudioStatus='local-engine-error';window.__raceVazAudioError=String(vaz2107Media.error?.code||'unknown')});
-      vaz2107Media.load();
-    }catch(error){window.__raceVazAudioStatus='audio-init-error';window.__raceVazAudioError=String(error&&error.message||error);return}
+  initRaceAudio();
+  if(raceAudio&&raceAudio.state==='suspended'){
+    raceAudio.resume().then(()=>{
+      if(raceCockpitOpen||running){startRaceMusic();updateRaceEngineAudio();}
+    }).catch(()=>{});
   }
-  if(!vaz2107Media.paused||vaz2107MediaPlayPending)return;
-  try{
-    vaz2107MediaPlayPending=true;
-    vaz2107Media.volume=.88;
-    const started=vaz2107Media.play();
-    if(started&&typeof started.then==='function'){
-      started.then(()=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='local-engine-playing'})
-        .catch(error=>{vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-blocked';window.__raceVazAudioError=String(error&&error.message||error)});
-    }else{
-      vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-requested';
-    }
-  }catch(error){vaz2107MediaPlayPending=false;window.__raceVazAudioStatus='play-error';window.__raceVazAudioError=String(error&&error.message||error)}
+  if(raceCockpitOpen||running)startRaceMusic();
+  updateRaceEngineAudio();
 }
 function updateVaz2107Media(){
-  if(!vaz2107Media)return;
-  if(!raceCockpitOpen&&!running){
-    vaz2107Media.pause();vaz2107MediaPlayPending=false;return;
-  }
-  const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
-  const rpmRatio=(currentRpm-850)/(6600-850);
-  const targetRate=.76+rpmRatio*.62+(gasHeld?.04:0);
-  vaz2107MediaRate+=(targetRate-vaz2107MediaRate)*.10;
-  vaz2107Media.playbackRate=Math.max(.76,Math.min(1.42,vaz2107MediaRate));
-  const targetVolume=gasHeld?.96:(running?.72:.62);
-  vaz2107Media.volume+=(targetVolume-vaz2107Media.volume)*.16;
+  updateRaceEngineAudio();
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
-  const isVaz2107=String(state.selected||'2107')==='2107';
-  const hasRecordedEngine=Boolean(vaz2107Media&&!vaz2107Media.paused&&!vaz2107Media.ended);
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
-  const throttle=Boolean(gasHeld&&raceCockpitOpen),inNeutral=gear==='N';
-  const load=throttle?(inNeutral?.48:1):(speed>1&&!inNeutral?.27:.11);
-  // A small, slow idle fluctuation gives the carbureted four-cylinder a less synthetic tone.
-  const limiterPulse=throttle&&rpmNow>6000?.94:1;
-  // VAZ-2107 is driven only by its recorded HTMLAudio engine track; mute all synthesized layers.
-  if(isVaz2107||hasRecordedEngine){
-    raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.06);
-    raceEngineGain?.gain.setTargetAtTime(.0001,t,.06);
-    raceExhaustGain?.gain.setTargetAtTime(.0001,t,.06);
-    raceIntakeGain?.gain.setTargetAtTime(.0001,t,.06);
-    return;
-  }
-  if(raceEngineSampleSource&&raceEngineSampleGain&&!isVaz2107){
-    const playbackRate=Math.max(.76,Math.min(1.62,.69+rpmNow/6600*.91));
-    raceEngineSampleSource.playbackRate.setTargetAtTime(playbackRate,t,.09);
-    const sampleVolume=running?(throttle?.58+load*.08:.27+load*.05):(raceCockpitOpen?.055:.0001);
-    const fallbackVolume=running?(throttle?.13:(speed>1?.07:.05)):(raceCockpitOpen?.025:.0001);
-    raceEngineSampleGain.gain.setTargetAtTime(sampleVolume*limiterPulse,t,.08);
-    raceEngineGain?.gain.setTargetAtTime(fallbackVolume,t,.08);
-    raceExhaustGain?.gain.setTargetAtTime(running?(throttle?.024:.007):.0001,t,.08);
-    raceIntakeFilter?.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.08);
-    raceIntakeGain?.gain.setTargetAtTime(running?(throttle?.025:.0035):.0001,t,.08);
-    return;
-  }
-  // Local VAZ-2107 engine model: four-cylinder firing rhythm, exhaust pulse and intake hiss.
+  const rpmRatio=Math.max(0,Math.min(1,(rpmNow-850)/5750));
+  const throttle=Boolean(gasHeld&&raceCockpitOpen);
+  const moving=Boolean(running&&speed>1);
+  const inNeutral=gear==='N';
+  const load=throttle?(inNeutral?.58:1):(moving?.30:.12);
+  const firingHz=Math.max(24,Math.min(220,rpmNow/30));
+  const active=Boolean(raceCockpitOpen||running);
+  const enabled=active&&raceEngineSoundEnabled;
   if(!raceEngineOsc||!raceEngineGain)return;
-  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.045);
-  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.055);
-  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.045);
-  raceEngineFilter.frequency.setTargetAtTime(Math.max(430,Math.min(2050,560+rpmNow*.23+load*390)),t,.07);
-  raceEnginePulseGain.gain.setTargetAtTime(isVaz2107?.46:(.34+load*.18),t,.08);
-  raceEngineSubGain.gain.setTargetAtTime(isVaz2107?.30:(.42+load*.16),t,.08);
-  raceEngineHarmonicGain.gain.setTargetAtTime(isVaz2107?.105:(.045+load*.05),t,.08);
-  const engineVolume=isVaz2107
-    ?(raceCockpitOpen?(throttle?.23:(running?(speed>1?.19:.17):.17)):.0001)
-    :(running?(throttle?.23:(speed>1?.09:.07)):(raceCockpitOpen?.035:.0001));
-  raceEngineGain.gain.setTargetAtTime(engineVolume*limiterPulse,t,.075);
-  raceExhaustFilter.frequency.setTargetAtTime(throttle?220+rpmNow*.055:(isVaz2107?172:145),t,.09);
-  raceExhaustGain.setTargetAtTime(raceCockpitOpen?(throttle?.075:(isVaz2107?.038:(running?.009:.0001))):.0001,t,.09);
-  raceIntakeFilter.frequency.setTargetAtTime(Math.max(700,Math.min(3300,900+rpmNow*.25+(throttle?950:0))),t,.09);
-  raceIntakeGain.gain.setTargetAtTime(raceCockpitOpen?(throttle?.06:(isVaz2107?.016:.0035)):.0001,t,.09);
+  // Smooth four-cylinder firing harmonics: no random stutter or artificial misfire pulses.
+  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.12);
+  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.14);
+  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.12);
+  raceEngineFilter.frequency.setTargetAtTime(520+rpmRatio*820+load*180,t,.14);
+  raceEnginePulseGain.gain.setTargetAtTime(.22+load*.09,t,.16);
+  raceEngineSubGain.gain.setTargetAtTime(.22+load*.08,t,.16);
+  raceEngineHarmonicGain.gain.setTargetAtTime(.035+load*.025,t,.16);
+  const engineVolume=!enabled?.0001:(throttle?.29:(moving?.22:.16));
+  raceEngineGain.gain.setTargetAtTime(engineVolume,t,.12);
+  if(raceExhaustFilter)raceExhaustFilter.frequency.setTargetAtTime(150+rpmRatio*160+(throttle?100:0),t,.16);
+  if(raceExhaustGain)raceExhaustGain.gain.setTargetAtTime(enabled?(throttle?.045:(moving?.022:.016)):.0001,t,.15);
+  if(raceIntakeFilter)raceIntakeFilter.frequency.setTargetAtTime(850+rpmRatio*900+(throttle?350:0),t,.16);
+  if(raceIntakeGain)raceIntakeGain.gain.setTargetAtTime(enabled?(throttle?.024:.006):.0001,t,.15);
+  // Old remote sample loops are intentionally silenced; all sound comes from the local audio graph.
+  raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.08);
+}
+function raceMusicTone(freq,when,duration,volume,wave='triangle',cutoff=2200){
+  if(!raceAudio||!raceMusicGain||!raceMusicEnabled)return;
+  const ctx=raceAudio,osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+  osc.type=wave;osc.frequency.setValueAtTime(freq,when);
+  filter.type='lowpass';filter.frequency.setValueAtTime(cutoff,when);filter.Q.value=.7;
+  gain.gain.setValueAtTime(.0001,when);
+  gain.gain.linearRampToValueAtTime(volume,when+.018);
+  gain.gain.setValueAtTime(volume*.72,when+Math.max(.025,duration*.58));
+  gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+  osc.connect(filter);filter.connect(gain);gain.connect(raceMusicGain);
+  osc.start(when);osc.stop(when+duration+.015);
+}
+function raceMusicKick(when){
+  if(!raceAudio||!raceMusicGain||!raceMusicEnabled)return;
+  const ctx=raceAudio,osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type='sine';osc.frequency.setValueAtTime(125,when);osc.frequency.exponentialRampToValueAtTime(43,when+.16);
+  gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(.22,when+.008);gain.gain.exponentialRampToValueAtTime(.0001,when+.19);
+  osc.connect(gain);gain.connect(raceMusicGain);osc.start(when);osc.stop(when+.2);
+}
+function raceMusicNoise(when,kind){
+  if(!raceAudio||!raceMusicGain||!raceMusicEnabled)return;
+  const ctx=raceAudio,duration=kind==='snare'?.13:.045;
+  const buffer=ctx.createBuffer(1,Math.max(1,Math.floor(ctx.sampleRate*duration)),ctx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
+  const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+  src.buffer=buffer;
+  filter.type='highpass';filter.frequency.value=kind==='snare'?1250:7200;
+  gain.gain.setValueAtTime(kind==='snare'?.0001:.0001,when);
+  gain.gain.exponentialRampToValueAtTime(kind==='snare'?.075:.025,when+.004);
+  gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+  src.connect(filter);filter.connect(gain);gain.connect(raceMusicGain);src.start(when);src.stop(when+duration+.01);
+}
+function scheduleRaceMusicStep(step,when){
+  if(!raceAudio||!raceMusicGain||!raceMusicEnabled)return;
+  const stepInBar=step%8,bar=Math.floor(step/8)%4;
+  const roots=[73.42,58.27,87.31,65.41]; // Dm — Bb — F — C: original racing-game backing.
+  const root=roots[bar],beat=60/144,eighth=beat/2;
+  if(stepInBar%2===0)raceMusicKick(when);
+  if(stepInBar===2||stepInBar===6)raceMusicNoise(when,'snare');
+  raceMusicNoise(when,'hat');
+  if(stepInBar%2===0){
+    const bassNotes=[root,root*1.5,root*2,root*1.5];
+    const bass=bassNotes[(stepInBar/2)%4];
+    raceMusicTone(bass,when,eighth*.88,.105,'triangle',520);
+  }
+  const melody=[
+    587.33,0,440,523.25,698.46,0,587.33,493.88,
+    523.25,0,392,440,587.33,0,523.25,440,
+    698.46,0,587.33,523.25,783.99,0,698.46,587.33,
+    523.25,0,440,493.88,587.33,0,523.25,440
+  ];
+  const note=melody[step];
+  if(note)raceMusicTone(note,when,eighth*.72,.035,'sawtooth',1550);
+  if(stepInBar===0){
+    const chords=[[146.83,174.61,220],[116.54,146.83,174.61],[174.61,220,261.63],[130.81,164.81,196]];
+    chords[bar].forEach((freq,i)=>raceMusicTone(freq,when,beat*3.65,.018,'triangle',760+i*140));
+  }
+}
+function startRaceMusic(){
+  if(!raceAudio||raceAudio.state==='closed'||!raceMusicEnabled||raceMusicTimer!==null)return;
+  if(!raceMusicGain){
+    raceMusicGain=raceAudio.createGain();
+    raceMusicGain.gain.value=.0001;
+    raceMusicGain.connect(raceAudioMaster||raceAudio.destination);
+  }
+  if(raceAudio.state!=='running'){
+    raceAudio.resume().then(()=>startRaceMusic()).catch(()=>{});
+    return;
+  }
+  raceMusicGain.gain.setTargetAtTime(.42,raceAudio.currentTime,.45);
+  raceMusicStep=0;raceMusicNextAt=raceAudio.currentTime+.06;
+  const stepSeconds=60/144/2;
+  raceMusicTimer=window.setInterval(()=>{
+    if(!raceAudio||raceAudio.state!=='running'||!raceMusicEnabled)return;
+    const horizon=raceAudio.currentTime+.16;
+    let guard=0;
+    while(raceMusicNextAt<horizon&&guard++<12){
+      scheduleRaceMusicStep(raceMusicStep,raceMusicNextAt);
+      raceMusicNextAt+=stepSeconds;
+      raceMusicStep=(raceMusicStep+1)%32;
+    }
+  },25);
+}
+function stopRaceMusic(){
+  if(raceMusicTimer!==null){clearInterval(raceMusicTimer);raceMusicTimer=null;}
+  if(raceMusicGain&&raceAudio&&raceAudio.state!=='closed'){
+    raceMusicGain.gain.setTargetAtTime(.0001,raceAudio.currentTime,.18);
+  }
+}
+function syncRaceAudioButtons(){
+  const music=$('proMusicToggle'),engine=$('proEngineToggle');
+  if(music){music.textContent=raceMusicEnabled?'♫ МУЗЫКА ВКЛ':'♫ МУЗЫКА ВЫКЛ';music.classList.toggle('active',raceMusicEnabled);music.setAttribute('aria-pressed',String(raceMusicEnabled));}
+  if(engine){engine.textContent=raceEngineSoundEnabled?'🔊 МОТОР ВКЛ':'🔇 МОТОР ВЫКЛ';engine.classList.toggle('active',raceEngineSoundEnabled);engine.setAttribute('aria-pressed',String(raceEngineSoundEnabled));}
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();
@@ -2299,6 +2359,16 @@ function holdButton(id,on,off){
 }
 holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);
 holdButton('proGasHold',()=>gasHeld=true,()=>gasHeld=false);
+$('proMusicToggle')?.addEventListener('click',()=>{
+  raceMusicEnabled=!raceMusicEnabled;
+  if(raceMusicEnabled){initRaceAudio();startRaceMusic();}
+  else stopRaceMusic();
+  syncRaceAudioButtons();
+});
+$('proEngineToggle')?.addEventListener('click',()=>{
+  raceEngineSoundEnabled=!raceEngineSoundEnabled;
+  initRaceAudio();updateRaceEngineAudio();syncRaceAudioButtons();
+});
 function bindShiftPaddle(id,direction){
   const el=$(id);if(!el)return;
   const change=()=>setGear(gear==='N'?1:Math.max(1,Math.min(5,Number(gear)+direction)));
@@ -2495,7 +2565,7 @@ function start(sharedStartedAt=null){
   }
   last=0;lastEngineAudioUpdateAt=0;lastUnevenRoadUpdateAt=0;lastSceneBumpAt=0;raf=requestAnimationFrame(frame);
 }
-$('startRace').onclick=()=>{startVaz2107Media();initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
+$('startRace').onclick=()=>{initRaceAudio();if(finished)reset();start()};$('resetRace').onclick=reset;
 $('resetRace').onclick=()=>{reset();closeProRaceCockpit()};
 $('proExitRace').onclick=()=>{
   if(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'&&!finished){$('proRaceStatus').textContent='Онлайн-заезд уже начался. Заверши дистанцию.';return}
