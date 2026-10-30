@@ -1926,7 +1926,14 @@ function initRaceAudio(){
     raceAudioMaster.attack.value=.006;
     raceAudioMaster.release.value=.16;
     raceAudioMaster.connect(raceAudio.destination);
-    raceEngineOsc=raceAudio.createOscillator();raceEngineOsc.type='sawtooth';
+    raceEngineOsc=raceAudio.createOscillator();
+    try{
+      // Rich, rounded exhaust-like harmonic tone for the mobile fallback engine.
+      const engineReal=new Float32Array(10),engineImag=new Float32Array(10);
+      engineImag[1]=1;engineImag[2]=.58;engineImag[3]=.34;engineImag[4]=.22;engineImag[5]=.15;
+      engineImag[6]=.105;engineImag[7]=.075;engineImag[8]=.052;engineImag[9]=.036;
+      raceEngineOsc.setPeriodicWave(raceAudio.createPeriodicWave(engineReal,engineImag));
+    }catch(_){raceEngineOsc.type='sawtooth'}
     raceEngineSubOsc=raceAudio.createOscillator();raceEngineSubOsc.type='triangle';
     raceEngineHarmonicOsc=raceAudio.createOscillator();raceEngineHarmonicOsc.type='square';
     raceEngineFilter=raceAudio.createBiquadFilter();raceEngineFilter.type='lowpass';raceEngineFilter.frequency.value=850;raceEngineFilter.Q.value=.65;
@@ -2046,6 +2053,11 @@ function playVazStarterSound(){
 // HTMLAudio fallback for mobile Telegram WebViews: the WAV is same-origin and does not depend on AudioContext.
 // Original WAV audio is loaded locally and played with HTMLAudio, which is more reliable
 // on Android Telegram WebView than relying on a suspended WebAudio graph.
+function vazEnginePlaybackRate(value){
+  const current=Math.max(850,Math.min(6600,Number(value)||850));
+  const normalized=Math.max(0,Math.min(1,(current-850)/5750));
+  return .78+1.42*Math.pow(normalized,.72);
+}
 async function preloadRaceMediaAudio(){
   if(raceMediaLoadPromise)return raceMediaLoadPromise;
   raceMediaLoadPromise=(async()=>{
@@ -2059,6 +2071,8 @@ async function preloadRaceMediaAudio(){
       const url=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));
       const audio=new Audio();
       audio.src=url;audio.preload='auto';audio.loop=true;audio.playsInline=true;
+      // Let engine pitch rise naturally with RPM instead of browser pitch correction.
+      audio.preservesPitch=false;audio.mozPreservesPitch=false;audio.webkitPreservesPitch=false;
       audio.addEventListener('playing',()=>{window.__raceAudioStatus=path+' playing'});
       audio.addEventListener('error',()=>{window.__raceAudioStatus=path+' media error';window.__raceAudioError=String(audio.error?.code||'unknown')});
       audio.load();
@@ -2066,7 +2080,7 @@ async function preloadRaceMediaAudio(){
     };
     const [music,engine]=await Promise.all([
       load('./cars/race-music-original.wav.b64?v=20261030-audio3'),
-      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-audio3')
+      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb1')
     ]);
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
@@ -2106,9 +2120,9 @@ function startVaz2107Media(){
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running))return;
   if(raceEngineMedia){
     raceEngineMedia.loop=true;
-    raceEngineMedia.volume=gasHeld?.92:(running?.76:.66);
+    raceEngineMedia.volume=gasHeld?.96:(running?.82:.74);
     const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
-    raceEngineMedia.playbackRate=Math.max(.55,Math.min(2.25,.60+currentRpm/4100));
+    raceEngineMedia.playbackRate=vazEnginePlaybackRate(currentRpm);
     if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
   }else{
     void preloadRaceMediaAudio().then(ok=>{if(ok&&raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media()});
@@ -2122,9 +2136,9 @@ function updateVaz2107Media(){
     return;
   }
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
-  const targetRate=Math.max(.55,Math.min(2.25,.60+currentRpm/4100+(gasHeld?.035:0)));
-  raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.13;
-  const targetVolume=gasHeld?.94:(running?.78:.67);
+  const targetRate=vazEnginePlaybackRate(currentRpm)+(gasHeld?.025:0);
+  raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.09;
+  const targetVolume=gasHeld?.96:(running?.82:.74);
   raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.15;
   // Playback is started from an actual pointer gesture; the frame loop only adjusts pitch and volume.
 }
@@ -2144,11 +2158,12 @@ function updateRaceEngineAudio(){
   const rpmRatio=Math.max(0,Math.min(1,(rpmNow-850)/5750));
   const throttle=Boolean(gasHeld&&raceCockpitOpen),moving=Boolean(running&&speed>1);
   const load=throttle?(gear==='N'?.58:1):(moving?.30:.12);
-  const firingHz=Math.max(24,Math.min(220,rpmNow/30));
+  // Keep the low, rhythmic putter at idle and let it climb smoothly as revs build.
+  const firingHz=40*vazEnginePlaybackRate(rpmNow);
   const active=Boolean(raceCockpitOpen||running),enabled=active&&raceEngineSoundEnabled;
   if(!raceEngineOsc||!raceEngineGain)return;
   raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.12);
-  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,rpmNow/60),t,.14);
+  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,firingHz*.5),t,.14);
   raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.12);
   raceEngineFilter.frequency.setTargetAtTime(520+rpmRatio*820+load*180,t,.14);
   raceEnginePulseGain.gain.setTargetAtTime(.22+load*.09,t,.16);
