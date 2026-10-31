@@ -2031,9 +2031,11 @@ function openProRaceCockpit(){
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
   raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
-  // Start the local media track independently of Web Audio (reliable on Telegram Android WebView).
-  startVaz2107Media();
+  // Play a short original starter effect, then bring in the running engine loop.
+  // Both are triggered by the player's Start gesture to work in mobile WebViews.
   initRaceAudio();
+  playVazStarterSound();
+  setTimeout(()=>{if(raceCockpitOpen&&raceEngineSoundEnabled)startVaz2107Media()},260);
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   updateRaceEngineAudio();
   startRaceMusic();
@@ -2238,7 +2240,8 @@ function playVazStarterSound(){
 function vazEnginePlaybackRate(value){
   const current=Math.max(850,Math.min(6600,Number(value)||850));
   const normalized=Math.max(0,Math.min(1,(current-850)/5750));
-  return .78+1.42*Math.pow(normalized,.72);
+  // A wider, smooth rev range gives the engine a clear arcade-racing rise in pitch.
+  return .76+1.24*Math.pow(normalized,.82);
 }
 async function preloadRaceMediaAudio(){
   if(raceMediaLoadPromise)return raceMediaLoadPromise;
@@ -2255,8 +2258,15 @@ async function preloadRaceMediaAudio(){
       audio.src=url;audio.preload='auto';audio.loop=true;audio.playsInline=true;
       // Let engine pitch rise naturally with RPM instead of browser pitch correction.
       audio.preservesPitch=false;audio.mozPreservesPitch=false;audio.webkitPreservesPitch=false;
-      audio.addEventListener('playing',()=>{window.__raceAudioStatus=path+' playing'});
-      audio.addEventListener('error',()=>{window.__raceAudioStatus=path+' media error';window.__raceAudioError=String(audio.error?.code||'unknown')});
+      audio.addEventListener('playing',()=>{
+        window.__raceAudioStatus=path+' playing';
+        if(path.includes('vaz2107-engine'))window.__raceEngineAudioStatus='playing';
+      });
+      audio.addEventListener('error',()=>{
+        window.__raceAudioStatus=path+' media error';
+        window.__raceAudioError=String(audio.error?.code||'unknown');
+        if(path.includes('vaz2107-engine'))window.__raceEngineAudioStatus='media-error';
+      });
       audio.load();
       return {audio,url};
     };
@@ -2267,6 +2277,7 @@ async function preloadRaceMediaAudio(){
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
     window.__raceAudioStatus='original audio assets ready';
+    window.__raceEngineAudioStatus='ready';
     if(raceCockpitOpen||running){
       if(raceMusicEnabled)startRaceMusic();
       if(raceEngineSoundEnabled)startVaz2107Media();
@@ -2274,6 +2285,7 @@ async function preloadRaceMediaAudio(){
     return true;
   })().catch(error=>{
     window.__raceAudioStatus='audio asset load failed';
+    window.__raceEngineAudioStatus='procedural-fallback';
     window.__raceAudioError=String(error&&error.message||error);
     raceMediaLoadPromise=null;
     return false;
@@ -2285,8 +2297,12 @@ function playRaceMedia(audio){
   try{
     const promise=audio.play();
     if(promise&&typeof promise.then==='function'){
-      promise.then(()=>{window.__raceAudioStatus='playing'}).catch(error=>{
+      promise.then(()=>{
+        window.__raceAudioStatus='playing';
+        if(audio===raceEngineMedia)window.__raceEngineAudioStatus='playing';
+      }).catch(error=>{
         window.__raceAudioStatus='playback blocked';
+        if(audio===raceEngineMedia)window.__raceEngineAudioStatus='procedural-fallback';
         window.__raceAudioError=String(error&&error.message||error);
       });
     }
@@ -2302,8 +2318,11 @@ function startVaz2107Media(){
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running))return;
   if(raceEngineMedia){
     raceEngineMedia.loop=true;
-    raceEngineMedia.volume=gasHeld?.96:(running?.82:.74);
     const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
+    const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
+    // Keep the sample below the synthesized layers so the combined sound has depth
+    // without clipping on phone speakers.
+    raceEngineMedia.volume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
     raceEngineMedia.playbackRate=vazEnginePlaybackRate(currentRpm);
     if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
   }else{
@@ -2318,44 +2337,54 @@ function updateVaz2107Media(){
     return;
   }
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
+  const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
   const targetRate=vazEnginePlaybackRate(currentRpm)+(gasHeld?.025:0);
-  raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.09;
-  const targetVolume=gasHeld?.96:(running?.82:.74);
-  raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.15;
+  raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.13;
+  const targetVolume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
+  raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.12;
   // Playback is started from an actual pointer gesture; the frame loop only adjusts pitch and volume.
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
   const engineMediaPlaying=Boolean(raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended);
-  if(engineMediaPlaying){
-    raceEngineSampleGain?.gain.setTargetAtTime(.0001,t,.05);
-    raceEngineGain?.gain.setTargetAtTime(.0001,t,.05);
-    raceExhaustGain?.gain.setTargetAtTime(.0001,t,.05);
-    raceIntakeGain?.gain.setTargetAtTime(.0001,t,.05);
-    return;
-  }
-  // Procedural fallback if the audio file has not loaded or media playback is blocked.
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
   const rpmRatio=Math.max(0,Math.min(1,(rpmNow-850)/5750));
   const throttle=Boolean(gasHeld&&raceCockpitOpen),moving=Boolean(running&&speed>1);
-  const load=throttle?(gear==='N'?.58:1):(moving?.30:.12);
-  // Keep the low, rhythmic putter at idle and let it climb smoothly as revs build.
-  const firingHz=40*vazEnginePlaybackRate(rpmNow);
+  const speedRatio=Math.max(0,Math.min(1,(Number(speed)||0)/220));
+  const shifting=performance.now()<shiftTorqueUntil;
+  const inGear=gear!=='N';
+  const rawLoad=throttle?(inGear?.96:.56):(moving?.28:.10);
+  const load=shifting?rawLoad*.58:rawLoad;
   const active=Boolean(raceCockpitOpen||running),enabled=active&&raceEngineSoundEnabled;
   if(!raceEngineOsc||!raceEngineGain)return;
-  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.12);
-  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,firingHz*.5),t,.14);
-  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.12);
-  raceEngineFilter.frequency.setTargetAtTime(520+rpmRatio*820+load*180,t,.14);
-  raceEnginePulseGain.gain.setTargetAtTime(.22+load*.09,t,.16);
-  raceEngineSubGain.gain.setTargetAtTime(.22+load*.08,t,.16);
-  raceEngineHarmonicGain.gain.setTargetAtTime(.035+load*.025,t,.16);
-  raceEngineGain.gain.setTargetAtTime(!enabled?.0001:(throttle?.29:(moving?.22:.16)),t,.12);
-  if(raceExhaustFilter)raceExhaustFilter.frequency.setTargetAtTime(150+rpmRatio*160+(throttle?100:0),t,.16);
-  if(raceExhaustGain)raceExhaustGain.gain.setTargetAtTime(enabled?(throttle?.045:(moving?.022:.016)):.0001,t,.15);
-  if(raceIntakeFilter)raceIntakeFilter.frequency.setTargetAtTime(850+rpmRatio*900+(throttle?350:0),t,.16);
-  if(raceIntakeGain)raceIntakeGain.gain.setTargetAtTime(enabled?(throttle?.024:.006):.0001,t,.15);
+
+  // Four-cylinder firing rhythm: four evenly spaced combustion pulses per two crankshaft turns.
+  // This procedural layer continues under the original loop to add body and detail on mobile.
+  const firingHz=Math.max(26,rpmNow/30);
+  raceEngineOsc.frequency.setTargetAtTime(firingHz,t,.075);
+  raceEngineSubOsc.frequency.setTargetAtTime(Math.max(14,firingHz*.5),t,.095);
+  raceEngineHarmonicOsc.frequency.setTargetAtTime(firingHz*2,t,.075);
+  raceEngineFilter.frequency.setTargetAtTime(620+rpmRatio*1680+load*420,t,.10);
+  raceEnginePulseGain.gain.setTargetAtTime(.27+load*.12,t,.12);
+  raceEngineSubGain.gain.setTargetAtTime(.24+load*.10,t,.13);
+  raceEngineHarmonicGain.gain.setTargetAtTime(.045+load*.035,t,.12);
+
+  // The original loop provides the character; the synthesized layer fills its low/mid range.
+  // When the file cannot play, the procedural engine becomes louder automatically.
+  const proceduralLevel=engineMediaPlaying?.15+load*.035:(throttle?.34:(moving?.26:.21));
+  raceEngineGain.gain.setTargetAtTime(enabled?proceduralLevel:.0001,t,.09);
+  if(raceExhaustFilter)raceExhaustFilter.frequency.setTargetAtTime(135+rpmRatio*310+(throttle?150:0),t,.11);
+  if(raceExhaustGain)raceExhaustGain.gain.setTargetAtTime(enabled?(throttle?.052:(moving?.027:.018)):.0001,t,.11);
+  if(raceIntakeFilter)raceIntakeFilter.frequency.setTargetAtTime(900+rpmRatio*1180+(throttle?460:0),t,.11);
+  if(raceIntakeGain){
+    const intakeLevel=throttle?.030:(moving?.009+speedRatio*.018:.004);
+    raceIntakeGain.gain.setTargetAtTime(enabled?intakeLevel:.0001,t,.13);
+  }
+  window.__raceEngineAudioDebug={
+    enabled,throttle,moving,shifting,rpm:rpmNow,firingHz,
+    mediaPlaying:engineMediaPlaying,proceduralLevel,load,speed:Number(speed)||0
+  };
 }
 function raceMusicTone(freq,when,duration,volume,wave='triangle',cutoff=2200){
   if(!raceAudio||!raceMusicGain||!raceMusicEnabled)return;
@@ -2419,7 +2448,7 @@ function scheduleRaceMusicStep(step,when){
 function startRaceMusic(){
   if(!raceMusicEnabled||(!raceCockpitOpen&&!running))return;
   if(raceMusicMedia){
-    raceMusicMedia.loop=true;raceMusicMedia.playbackRate=1;raceMusicMedia.volume=.66;
+    raceMusicMedia.loop=true;raceMusicMedia.playbackRate=1;raceMusicMedia.volume=.38;
     if(raceMusicMedia.paused)playRaceMedia(raceMusicMedia);
   }else{
     void preloadRaceMediaAudio().then(ok=>{
