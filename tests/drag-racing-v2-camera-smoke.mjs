@@ -114,10 +114,29 @@ try {
         display: style.display, visibility: style.visibility,
         opacity: style.opacity, zIndex: style.zIndex,
         animationName: style.animationName,
-        animationPlayState: style.animationPlayState
+        animationPlayState: style.animationPlayState,
+        transform: style.transform
       };
     };
+    const player = document.querySelector("#race2dPlayerCar");
+    const bodyLayer = player?.querySelector(".race-car-body-layer");
+    let bodyBumpDelta = null;
+    if (bodyLayer && player) {
+      const oldTransition = bodyLayer.style.transition;
+      bodyLayer.style.transition = "none";
+      const before = new DOMMatrixReadOnly(getComputedStyle(bodyLayer).transform).m42;
+      player.style.setProperty("--road-bump-y", "12px");
+      const after = new DOMMatrixReadOnly(getComputedStyle(bodyLayer).transform).m42;
+      bodyBumpDelta = after - before;
+      player.style.removeProperty("--road-bump-y");
+      bodyLayer.style.transition = oldTransition;
+    }
     return {
+      bodyLayer: read("#race2dPlayerCar .race-car-body-layer"),
+      bodyLayerContainsPng: Boolean(bodyLayer?.querySelector(".race-car-png")),
+      bodyLayerContainsMuffler: Boolean(bodyLayer?.querySelector(".race-car-muffler")),
+      bodyLayerContainsSmoke: Boolean(bodyLayer?.querySelector(".race-car-exhaust-puff")),
+      bodyBumpDelta,
       mufflerWrap: read("#race2dPlayerCar .race-car-muffler"),
       mufflerBody: read("#race2dPlayerCar .race-car-muffler-body"),
       tailpipe: read("#race2dPlayerCar .race-car-muffler-tailpipe"),
@@ -126,8 +145,16 @@ try {
       smoke: read("#race2dPlayerCar .race-car-exhaust-puff")
     };
   });
+  assert.equal(exhaustVisual.bodyLayer?.zIndex, "1",
+    "The car body and muffler must share one sprung visual layer.");
+  assert.ok(exhaustVisual.bodyLayerContainsPng &&
+    exhaustVisual.bodyLayerContainsMuffler &&
+    exhaustVisual.bodyLayerContainsSmoke,
+    "The PNG, muffler and smoke must all be nested inside the same body layer.");
+  assert.ok(exhaustVisual.bodyBumpDelta >= 11.5 && exhaustVisual.bodyBumpDelta <= 12.5,
+    "The muffler assembly must follow the body when the chassis suspension moves: " + JSON.stringify(exhaustVisual));
   assert.equal(exhaustVisual.mufflerWrap?.zIndex, "auto",
-    "The muffler assembly must not create a stacking context above the car body.");
+    "The muffler assembly must not create a foreground stacking context above the car body.");
   assert.equal(exhaustVisual.mufflerBody?.zIndex, "0",
     "The muffler body must sit behind the VAZ-2107 PNG.");
   assert.equal(exhaustVisual.tailpipe?.zIndex, "0",
