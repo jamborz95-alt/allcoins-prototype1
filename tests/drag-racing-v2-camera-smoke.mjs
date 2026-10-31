@@ -256,6 +256,33 @@ try {
   assert.equal(pageErrors.length, 0, "No JavaScript runtime errors are allowed: " + pageErrors.join(" | "));
 
   await page.screenshot({ path: resolve(root, "artifacts", "drag-racing-v2-camera-follow.png"), fullPage: false });
+
+  await page.evaluate(() => {
+    // Shorten only this automated test run so the real finish transition is exercised.
+    maxDist = distance + 0.25;
+  });
+  await page.locator("#proGasHold").dispatchEvent("pointerdown", {
+    pointerId: 10, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
+  });
+  await page.waitForFunction(() => finished === true, null, { timeout: 5000 });
+  const finishAudio = await page.evaluate(() => ({
+    finished,
+    running,
+    gasHeld,
+    rpm,
+    audio: window.__raceEngineAudioDebug || null
+  }));
+  assert.equal(finishAudio.finished, true, "The automated short race must reach its finish line.");
+  assert.equal(finishAudio.running, false, "The race simulation must stop at the finish line.");
+  assert.equal(finishAudio.gasHeld, false, "The accelerator must be released at the finish line.");
+  assert.equal(finishAudio.rpm, 900, "The engine RPM must settle to idle at the finish line.");
+  assert.equal(finishAudio.audio?.throttle, false, "The engine audio must no longer sound under throttle.");
+  assert.equal(finishAudio.audio?.moving, false, "The engine audio state must switch from driving to idle.");
+  assert.equal(finishAudio.audio?.proceduralLevel, .25, "The procedural engine layer must use its idle level.");
+  assert.equal(finishAudio.audio?.rpm, 900, "The audio engine must report idle RPM after the finish.");
+  await page.locator("#proGasHold").dispatchEvent("pointerup", {
+    pointerId: 10, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
+  });
   await page.locator("#proGasHold").dispatchEvent("pointerup", {
     pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
   });
