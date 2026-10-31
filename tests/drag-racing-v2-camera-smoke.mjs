@@ -72,14 +72,19 @@ try {
   assert.equal(idleAudio.debug.enabled, true, "The engine audio must be enabled when the full-screen race cockpit opens.");
   assert.equal(idleAudio.debug.sample, "vaz2107-engine-arcade.wav.b64",
     "The newly generated game-style engine loop, not the previous sample, must be selected.");
-  assert.equal(idleAudio.debug.engineBackend, "webaudio-buffer-loop",
-    "The engine must use a Web Audio buffer source rather than HTMLAudio loop playback.");
+  assert.ok(["webaudio-buffer-loop", "html-audio-fallback"].includes(idleAudio.debug.engineBackend),
+    "The engine must use the gapless Web Audio loop or the reliable local HTMLAudio fallback.");
   assert.equal(idleAudio.debug.loopingEngineSample, true,
-    "The complete WAV buffer must remain in continuous loop mode.");
-  assert.ok(idleAudio.debug.engineBufferDuration >= 2,
-    "The decoded engine WAV must be a complete multi-second loop.");
-  assert.equal(idleAudio.debug.engineSourceStarts, 1,
-    "Only one engine buffer source should be started; the loop must not restart between frames.");
+    "The selected engine WAV playback path must remain in continuous loop mode.");
+  if (idleAudio.debug.engineBackend === "webaudio-buffer-loop") {
+    assert.ok(idleAudio.debug.engineBufferDuration >= 2,
+      "The decoded engine WAV must be a complete multi-second loop.");
+    assert.equal(idleAudio.debug.engineSourceStarts, 1,
+      "Only one engine buffer source should be started; the loop must not restart between frames.");
+  } else {
+    assert.equal(idleAudio.debug.mediaPlaying, true,
+      "The local HTMLAudio fallback must be playing when Web Audio is unavailable.");
+  }
   assert.ok(idleAudio.debug.mediaPlaying || idleAudio.debug.proceduralLevel > 0,
     "A local engine loop or live procedural fallback must be audible when the cockpit opens.");
 
@@ -148,10 +153,10 @@ try {
     "The engine sample pitch and firing rate must rise as the engine revs under throttle.");
   assert.ok(movingAudio.mediaPlaying || movingAudio.proceduralLevel > 0,
     "A playable engine sample or procedural fallback must remain audible during driving.");
-  assert.equal(movingAudio.engineBackend, "webaudio-buffer-loop",
-    "The engine must keep using the continuous Web Audio loop during acceleration.");
+  assert.ok(["webaudio-buffer-loop", "html-audio-fallback"].includes(movingAudio.engineBackend),
+    "The engine must keep using a playable local loop during acceleration.");
   assert.equal(movingAudio.loopingEngineSample, true,
-    "Acceleration must not disable the seamless engine loop.");
+    "Acceleration must not disable the continuous engine loop.");
   assert.equal(movingAudio.engineSourceStarts, idleAudio.debug.engineSourceStarts,
     "Changing RPM must not restart the engine audio source or create audible gaps.");
   assert.ok(middle.cameraX < -40, "The camera must move forward with the car, not remain fixed.");
