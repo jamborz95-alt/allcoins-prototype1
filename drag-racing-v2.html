@@ -1573,8 +1573,48 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   cockpit.classList.toggle('race-burnout',burnout);
   const rearSmoke=player.querySelector('.race-wheel-smoke.rear');
   const frontSmoke=player.querySelector('.race-wheel-smoke.front');
-  if(rearSmoke)rearSmoke.classList.toggle('burnout-active',Boolean(burnout&&rearDriven));
-  if(frontSmoke)frontSmoke.classList.toggle('burnout-active',Boolean(burnout&&frontDriven));
+  const syncBurnoutSmoke=(node,active)=>{
+    if(!node)return;
+    if(active){
+      if(node.classList.contains('burnout-fading')){
+        if(node._burnoutFadeTimer)clearTimeout(node._burnoutFadeTimer);
+        node._burnoutFadeTimer=0;
+        node.classList.remove('burnout-fading');
+        node.style.removeProperty('--burnout-fade-from-opacity');
+        node.style.removeProperty('--burnout-fade-from-transform');
+        node.style.removeProperty('--burnout-before-from-opacity');
+        node.style.removeProperty('--burnout-before-from-transform');
+        node.style.removeProperty('--burnout-after-from-opacity');
+        node.style.removeProperty('--burnout-after-from-transform');
+      }
+      node.classList.add('burnout-active');
+    }else if(node.classList.contains('burnout-active')){
+      const parentStyle=window.getComputedStyle(node);
+      node.style.setProperty('--burnout-fade-from-opacity',parentStyle.opacity||'.96');
+      node.style.setProperty('--burnout-fade-from-transform',parentStyle.transform==='none'?'scale(1.14,1.18)':parentStyle.transform);
+      const beforeStyle=window.getComputedStyle(node,'::before');
+      node.style.setProperty('--burnout-before-from-opacity',beforeStyle.opacity||'.7');
+      node.style.setProperty('--burnout-before-from-transform',beforeStyle.transform==='none'?'translate3d(0,2px,0) scale(.42,.48)':beforeStyle.transform);
+      const afterStyle=window.getComputedStyle(node,'::after');
+      node.style.setProperty('--burnout-after-from-opacity',afterStyle.opacity||'.7');
+      node.style.setProperty('--burnout-after-from-transform',afterStyle.transform==='none'?'translate3d(0,2px,0) scale(.42,.48)':afterStyle.transform);
+      node.classList.remove('burnout-active');
+      node.classList.add('burnout-fading');
+      if(node._burnoutFadeTimer)clearTimeout(node._burnoutFadeTimer);
+      node._burnoutFadeTimer=setTimeout(()=>{
+        node.classList.remove('burnout-fading');
+        node._burnoutFadeTimer=0;
+        node.style.removeProperty('--burnout-fade-from-opacity');
+        node.style.removeProperty('--burnout-fade-from-transform');
+        node.style.removeProperty('--burnout-before-from-opacity');
+        node.style.removeProperty('--burnout-before-from-transform');
+        node.style.removeProperty('--burnout-after-from-opacity');
+        node.style.removeProperty('--burnout-after-from-transform');
+      },1700);
+    }
+  };
+  syncBurnoutSmoke(rearSmoke,Boolean(burnout&&rearDriven));
+  syncBurnoutSmoke(frontSmoke,Boolean(burnout&&frontDriven));
   setDuration('--race-rear-wheel-duration',rearDuration);
   setDuration('--race-front-wheel-duration',frontDuration);
 }
@@ -3587,5 +3627,54 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   42%{opacity:.9;transform:translate3d(17px,-25px,0) scale(1.02,1.2)}
   72%{opacity:.74;transform:translate3d(30px,-42px,0) scale(1.28,1.52)}
   100%{opacity:.58;transform:translate3d(41px,-55px,0) scale(1.48,1.78)}
+}
+/* Burnout smoke v4: one continuous plume from the tyre, with a slow natural fade after burnout. */
+#proRaceCockpit .race-wheel-smoke.burnout-active{
+  animation:race-burnout-wheel-cover-connected .72s ease-out forwards!important;
+  opacity:.96!important;
+  filter:blur(3.2px)!important;
+  background:radial-gradient(ellipse at 50% 86%,
+    rgba(2,3,4,.99) 0%,
+    rgba(6,7,9,.96) 28%,
+    rgba(13,15,18,.82) 52%,
+    rgba(26,28,31,.52) 73%,
+    rgba(39,41,44,.2) 88%,
+    transparent 100%)!important;
+}
+@keyframes race-burnout-wheel-cover-connected{
+  0%{opacity:.72;transform:scale(.82,.84)}
+  38%{opacity:.9;transform:scale(1.02,1.06)}
+  100%{opacity:.96;transform:scale(1.14,1.18)}
+}
+#proRaceCockpit .race-wheel-smoke.burnout-active::before{
+  animation:race-burnout-smoke-connected-left 1.55s linear infinite!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-active::after{
+  animation:race-burnout-smoke-connected-right 1.55s linear infinite!important;
+  animation-delay:-.775s!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-fading{
+  animation:race-burnout-smoke-parent-fade 1.6s ease-out forwards!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-fading::before{
+  animation:race-burnout-smoke-before-fade 1.6s ease-out forwards!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-fading::after{
+  animation:race-burnout-smoke-after-fade 1.6s ease-out forwards!important;
+}
+@keyframes race-burnout-smoke-parent-fade{
+  0%{opacity:var(--burnout-fade-from-opacity,.96);transform:var(--burnout-fade-from-transform,scale(1.14,1.18));filter:blur(3.2px)}
+  55%{opacity:.42;filter:blur(5.5px)}
+  100%{opacity:0;transform:scale(1.22,1.28);filter:blur(8px)}
+}
+@keyframes race-burnout-smoke-before-fade{
+  0%{opacity:var(--burnout-before-from-opacity,.7);transform:var(--burnout-before-from-transform,translate3d(0,2px,0) scale(.42,.48))}
+  58%{opacity:.34}
+  100%{opacity:0;transform:translate3d(-48px,-66px,0) scale(1.52,1.82)}
+}
+@keyframes race-burnout-smoke-after-fade{
+  0%{opacity:var(--burnout-after-from-opacity,.7);transform:var(--burnout-after-from-transform,translate3d(0,2px,0) scale(.42,.48))}
+  58%{opacity:.34}
+  100%{opacity:0;transform:translate3d(48px,-66px,0) scale(1.52,1.82)}
 }
 </style>
