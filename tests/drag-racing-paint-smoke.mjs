@@ -40,16 +40,27 @@ try {
       const context = canvas.getContext("2d", { willReadFrequently: true });
       context.drawImage(image, 0, 0);
       const px = (x, y) => Array.from(context.getImageData(x, y, 1, 1).data);
-      return { body: px(400, 150), glass: px(420, 75), wheel: px(180, 194) };
+      return {
+        body: {
+          roof: px(340, 14),
+          rearQuarter: px(120, 125),
+          door: px(400, 150),
+          hood: px(620, 125)
+        },
+        glass: px(420, 75),
+        wheel: px(180, 194)
+      };
     };
     return { paintedUrl, original: sample(original), painted: sample(painted) };
   });
 
-  const [bodyBefore, bodyAfter] = [inspection.original.body, inspection.painted.body];
-  assert.ok(bodyAfter[0] > bodyAfter[1] + 25 && bodyAfter[0] > bodyAfter[2] + 45,
-    "The door body panel must receive the selected orange paint: " + JSON.stringify(inspection));
-  assert.ok(bodyAfter[0] - bodyBefore[0] > 10,
-    "The body panel must change from the factory PNG: " + JSON.stringify(inspection));
+  for (const [part, after] of Object.entries(inspection.painted.body)) {
+    const before = inspection.original.body[part];
+    assert.ok(after[0] > after[1] + 25 && after[0] > after[2] + 45,
+      "The " + part + " must receive the selected orange paint: " + JSON.stringify({ before, after }));
+    assert.ok(after[0] - before[0] > 10,
+      "The " + part + " must visibly change from the factory PNG: " + JSON.stringify({ before, after }));
+  }
 
   for (const part of ["glass", "wheel"]) {
     const before = inspection.original[part];
@@ -60,7 +71,7 @@ try {
 
   const pngBytes = Buffer.from(inspection.paintedUrl.split(",")[1], "base64");
   await writeFile(resolve(root, "artifacts/lada-2107-orange-paint-check.png"), pngBytes);
-  console.log("VAZ-2107 PNG paint regression passed: full-body colour applied; sampled glass and wheel pixels unchanged.");
+  console.log("VAZ-2107 PNG paint regression passed: roof, rear quarter, doors and hood recoloured; sampled glass and wheel pixels unchanged.");
 } finally {
   await browser.close();
 }
