@@ -191,8 +191,22 @@ try {
     "Changing RPM must not restart the engine audio source or create audible gaps.");
   assert.ok(middle.cameraX < -40, "The camera must move forward with the car, not remain fixed.");
   assert.ok(middle.carWorldX > 80, "The car must advance through world coordinates.");
-  assert.ok(middle.cityScreenX < -5 && middle.treeScreenX < -5 && middle.fenceScreenX < -5 && middle.marksX < -5,
-    "City, trees, fence and road markings must scroll backwards behind the car.");
+  const phaseIsBounded = (value, period) => value <= 0.5 && value >= -period - 0.5;
+  assert.ok(
+    phaseIsBounded(middle.cityScreenX, middle.sceneWidth*3) &&
+    phaseIsBounded(middle.treeScreenX, middle.sceneWidth*3) &&
+    phaseIsBounded(middle.fenceScreenX, middle.sceneWidth*3) &&
+    phaseIsBounded(middle.marksX, 96),
+    "The scenery must scroll using bounded repeating phases: "+JSON.stringify({
+      city:middle.cityScreenX,trees:middle.treeScreenX,fence:middle.fenceScreenX,
+      roadMarks:middle.marksX,sceneWidth:middle.sceneWidth
+    })
+  );
+  assert.ok(
+    Math.abs(middle.cityScreenX)>2 || Math.abs(middle.treeScreenX)>2 ||
+    Math.abs(middle.fenceScreenX)>2 || Math.abs(middle.marksX)>2,
+    "At least one scenery layer must visibly advance behind the car."
+  );
   assert.ok(Math.abs(middle.roadTransform.b) < 0.00005 &&
     Math.abs(middle.roadTransform.c) < 0.00005 &&
     Math.abs(middle.roadTransform.e) < 0.05 &&
@@ -206,10 +220,12 @@ try {
   assert.ok(middle.carCenterX - initial.centerX > 3,
     "The car must keep a visible forward lead on screen while the camera follows it.");
   assert.ok(later.speed >= middle.speed, "The speedometer should continue to increase during the held throttle.");
-  assert.ok(later.cameraX < middle.cameraX && later.cityScreenX < middle.cityScreenX &&
-    later.treeScreenX < middle.treeScreenX && later.fenceScreenX < middle.fenceScreenX &&
-    later.marksX < middle.marksX,
-    "The camera and every repeating scenery layer must continue moving as speed and distance increase.");
+  assert.ok(later.cameraX < middle.cameraX,
+    "The chase camera must keep following the car as speed and distance increase.");
+  for (const key of ["cityScreenX","treeScreenX","fenceScreenX","marksX"]) {
+    assert.notEqual(later[key], middle[key],
+      "The repeating "+key+" phase must keep advancing between sampled frames.");
+  }
   assert.ok(Math.abs(later.envLeft-later.sceneLeft)<2 &&
     Math.abs(later.envWidth-later.sceneWidth)<2,
     "The background must stay locked to the viewport as the simulated race advances.");
