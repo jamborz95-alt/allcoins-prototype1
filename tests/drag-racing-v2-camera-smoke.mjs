@@ -102,6 +102,46 @@ try {
   assert.ok(idleAudio.debug.mediaPlaying || idleAudio.debug.proceduralLevel > 0,
     "A local engine loop or live procedural fallback must be audible when the cockpit opens.");
 
+  const exhaustVisual = await page.evaluate(() => {
+    const read = selector => {
+      const el = document.querySelector(selector);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return {
+        left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+        width: r.width, height: r.height,
+        display: style.display, visibility: style.visibility,
+        opacity: style.opacity, zIndex: style.zIndex,
+        animationName: style.animationName,
+        animationPlayState: style.animationPlayState
+      };
+    };
+    return {
+      mufflerBody: read("#race2dPlayerCar .race-car-muffler-body"),
+      tailpipe: read("#race2dPlayerCar .race-car-muffler-tailpipe"),
+      outlet: read("#race2dPlayerCar .race-car-muffler-outlet"),
+      smoke: read("#race2dPlayerCar .race-car-exhaust-puff")
+    };
+  });
+  assert.ok(exhaustVisual.mufflerBody?.width >= 20 && exhaustVisual.mufflerBody?.height >= 8,
+    "The VAZ-2107 needs a clearly visible metal muffler under the rear of the car: " + JSON.stringify(exhaustVisual));
+  assert.ok(exhaustVisual.tailpipe?.width >= 20 && exhaustVisual.tailpipe?.height >= 5,
+    "The exhaust pipe must remain visible at mobile and desktop sizes.");
+  assert.ok(exhaustVisual.outlet?.width >= 7 && exhaustVisual.outlet?.height >= 10,
+    "The pipe outlet must be visible at the rear bumper.");
+  assert.ok(Number(exhaustVisual.mufflerBody.zIndex) >= 8 &&
+    Number(exhaustVisual.smoke.zIndex) >= 7,
+    "The muffler and exhaust particles must render above the car PNG, not underneath it.");
+  assert.equal(exhaustVisual.smoke?.animationName, "race-exhaust-idle",
+    "Smoke must already be emitted on engine idle.");
+  assert.equal(exhaustVisual.smoke?.animationPlayState, "running",
+    "The smoke animation must be running when the engine starts.");
+  await page.screenshot({
+    path: resolve(root, "artifacts", "drag-racing-v2-exhaust-smoke.png"),
+    fullPage: false
+  });
+
   const initial = await page.locator("#race2dPlayerCar").evaluate(el => {
     const r = el.getBoundingClientRect();
     return { centerX: r.left + r.width / 2, cameraX: new DOMMatrixReadOnly(getComputedStyle(document.querySelector("#race2dCameraWorld")).transform).m41 };
