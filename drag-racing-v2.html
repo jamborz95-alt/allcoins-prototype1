@@ -2289,7 +2289,7 @@ async function preloadRaceMediaAudio(){
     const loadEngine=async()=>{
       // Always prepare an HTMLAudio fallback as well. Some Android Telegram
       // WebViews temporarily suspend or do not expose AudioContext.
-      const path='./cars/vaz2107-engine-continuous.wav.b64?v=20261031-engine-continuous1';
+      const path='./cars/vaz2107-engine-continuous.wav.b64?v=20261031-engine-continuous2';
       const response=await fetch(path,{cache:'force-cache',credentials:'same-origin'});
       if(!response.ok)throw new Error('HTTP '+response.status+' loading engine loop');
       const encoded=(await response.text()).trim();
