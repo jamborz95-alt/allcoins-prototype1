@@ -131,7 +131,7 @@ test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tail
   assert.ok(game.includes('useLadaPng?ladaPreview+ladaWheels+ladaExhaust:'),
     "The physical exhaust assembly must be attached only to the VAZ-2107 PNG.");
   assert.match(game, /\.race-car-muffler-body\{[^}]*background:linear-gradient/);
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:82\.1%/);
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:83\.5%/);
   assert.match(game, /\.race-car-muffler-outlet\{[^}]*radial-gradient/);
   assert.match(game, /\.race-car-exhaust-puff\{left:\.1%;top:80\.5%/,
     "Smoke must originate at the rear underside of the car, beside the tailpipe.");
