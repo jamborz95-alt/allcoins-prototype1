@@ -126,6 +126,23 @@ test("crossing the finish line releases the throttle and smoothly settles the en
     "Resetting a race must cancel any leftover finish audio ramp.");
 });
 
+test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tailpipe", () => {
+  assert.ok(game.includes('const ladaExhaust='));
+  assert.ok(game.includes('useLadaPng?ladaPreview+ladaWheels+ladaExhaust:'),
+    "The physical exhaust assembly must be attached only to the VAZ-2107 PNG.");
+  assert.match(game, /\.race-car-muffler-body\{[^}]*background:linear-gradient/);
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:82\.1%/);
+  assert.match(game, /\.race-car-muffler-outlet\{[^}]*radial-gradient/);
+  assert.match(game, /\.race-car-exhaust-puff\{left:\.1%;top:80\.5%/,
+    "Smoke must originate at the rear underside of the car, beside the tailpipe.");
+  assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
+    "The exhaust should emit light wisps while the engine idles.");
+  assert.match(game, /\.pro-race-cockpit\.race-moving \.race2d-car\.player \.race-car-exhaust-puff\{animation-duration:\.78s/,
+    "The exhaust should emit more frequent smoke while the car is moving.");
+  assert.match(game, /@keyframes race-exhaust-idle\{[^}]*translate3d\(-43px,-17px,0\)/,
+    "Smoke should drift backward from the exhaust rather than appearing beside the car.");
+});
+
 test("the active v2 racing script parses", () => {
   const scripts = [...game.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   const inline = scripts.find(match => !/\bsrc\s*=|\btype\s*=\s*["']importmap/i.test(match[1]));
