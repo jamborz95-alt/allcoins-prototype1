@@ -964,7 +964,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Enlarge the pointed near-headlamp section while keeping beam placement and overall size fixed. */
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
   position:absolute!important;
-  left:90%!important;top:40%!important;
+  left:92%!important;top:40%!important;
   width:60%!important;height:40%!important;
   z-index:12!important;opacity:0!important;
   display:block!important;overflow:visible!important;
@@ -3361,5 +3361,33 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   0%{opacity:0;transform:translate3d(-7px,2px,0) scale(.42)}
   22%{opacity:.78}
   100%{opacity:0;transform:translate3d(28px,-9px,0) scale(1.34)}
+}
+
+/* Final alignment: move the headlight beam to 92% and place burnout smoke at the tyre contact patches. */
+#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{left:92%!important}
+#proRaceCockpit .race-wheel-smoke{
+  z-index:2!important;
+  filter:blur(5.5px)!important;
+  background:radial-gradient(ellipse at 50% 50%,
+    rgba(245,248,249,.9) 0%,
+    rgba(220,228,232,.68) 34%,
+    rgba(190,201,207,.3) 65%,
+    transparent 100%)!important;
+}
+#proRaceCockpit .race-wheel-smoke.rear{
+  left:11%!important;top:70%!important;width:28%!important;height:20%!important;
+}
+#proRaceCockpit .race-wheel-smoke.front{
+  left:69%!important;top:70%!important;width:28%!important;height:20%!important;
+}
+@keyframes race-wheel-burnout-smoke-rear{
+  0%{opacity:0;transform:translate3d(5px,1px,0) scale(.42)}
+  20%{opacity:.94}
+  100%{opacity:0;transform:translate3d(-28px,-9px,0) scale(1.42)}
+}
+@keyframes race-wheel-burnout-smoke-front{
+  0%{opacity:0;transform:translate3d(-5px,1px,0) scale(.42)}
+  20%{opacity:.94}
+  100%{opacity:0;transform:translate3d(28px,-9px,0) scale(1.42)}
 }
 </style>
