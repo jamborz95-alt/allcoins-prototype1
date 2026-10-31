@@ -110,6 +110,24 @@ try {
     pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
   });
   await page.waitForTimeout(6500);
+
+  const trackRendering = await page.evaluate(() => {
+    const scene = document.querySelector(".race2d-scene");
+    return {
+      roadPseudoAnimation: getComputedStyle(scene, "::before").animationName,
+      cityFilter: getComputedStyle(document.querySelector("#race2dCityLayer")).filter,
+      treeFilter: getComputedStyle(document.querySelector("#race2dTreeLayer")).filter,
+      cityWillChange: getComputedStyle(document.querySelector("#race2dCityLayer")).willChange,
+      markingsWillChange: getComputedStyle(document.querySelector("#race2dRoadMarks")).willChange
+    };
+  });
+  assert.equal(trackRendering.roadPseudoAnimation, "none",
+    "The track should not repaint its full-width background on every animation frame.");
+  assert.equal(trackRendering.cityFilter, "none", "City scenery should stay sharp without a full-layer blur filter.");
+  assert.equal(trackRendering.treeFilter, "none", "Tree scenery should stay sharp without a full-layer blur filter.");
+  assert.ok(trackRendering.cityWillChange.includes("transform") &&
+    trackRendering.markingsWillChange.includes("transform"),
+    "Moving scenery and road markings should stay on compositor transform layers.");
   const middle = await page.evaluate(() => {
     const matrixX = el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41;
     const cameraX = matrixX(document.querySelector("#race2dCameraWorld"));
