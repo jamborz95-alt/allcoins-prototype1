@@ -68,7 +68,7 @@ try {
       carCenterX: carBox.left + carBox.width / 2,
       carLeft: carBox.left,
       carRight: carBox.right,
-      roadLeft: document.querySelector("#race2dRoadSurface").getBoundingClientRect().left
+      roadLeft: document.querySelector(".race2d-road-surface").getBoundingClientRect().left
     };
   });
   await page.waitForTimeout(2200);
