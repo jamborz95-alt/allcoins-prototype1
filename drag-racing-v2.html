@@ -964,7 +964,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Enlarge the pointed near-headlamp section while keeping beam placement and overall size fixed. */
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
   position:absolute!important;
-  left:95%!important;top:40%!important;
+  left:90%!important;top:40%!important;
   width:60%!important;height:40%!important;
   z-index:12!important;opacity:0!important;
   display:block!important;overflow:visible!important;
@@ -1094,18 +1094,18 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 (function(){
 const tg=window.Telegram?.WebApp;try{tg?.ready();tg?.expand()}catch(e){}
 const cars=[
-{id:'2107',name:'ВАЗ-2107',sub:'Классика • задний привод',price:8500,power:72,weight:1030,tank:42,consumption:9.5,emoji:'🚘',owned:true},
-{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',price:2500,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
-{id:'2105',name:'ВАЗ-2105',sub:'Дешёвая классика • задний привод',price:3500,power:64,weight:995,tank:39,consumption:8.9,emoji:'🚗'},
-{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',price:4500,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
-{id:'2106',name:'ВАЗ-2106',sub:'Классика • задний привод',price:6000,power:75,weight:1045,tank:39,consumption:9.3,emoji:'🚘'},
-{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',price:7500,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
-{id:'2110',name:'ВАЗ-2110',sub:'Седан • передний привод',price:11000,power:78,weight:1020,tank:43,consumption:8.2,emoji:'🚘'},
-{id:'priora',name:'LADA Priora',sub:'Лёгкий седан • передний привод',price:18000,power:98,weight:1185,tank:43,consumption:7.4,emoji:'🚗'},
-{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',price:25000,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
-{id:'granta',name:'LADA Granta',sub:'Современный седан',price:35000,power:90,weight:1090,tank:50,consumption:6.9,emoji:'🚙'},
-{id:'niva',name:'LADA Niva Legend',sub:'Полный привод • повышенная масса',price:50000,power:83,weight:1285,tank:58,consumption:10.8,emoji:'🚙'},
-{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',price:85000,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
+{id:'2107',name:'ВАЗ-2107',sub:'Классика • задний привод',drive:'rwd',price:8500,power:72,weight:1030,tank:42,consumption:9.5,emoji:'🚘',owned:true},
+{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',drive:'rwd',price:2500,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
+{id:'2105',name:'ВАЗ-2105',sub:'Дешёвая классика • задний привод',drive:'rwd',price:3500,power:64,weight:995,tank:39,consumption:8.9,emoji:'🚗'},
+{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',drive:'rwd',price:4500,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
+{id:'2106',name:'ВАЗ-2106',sub:'Классика • задний привод',drive:'rwd',price:6000,power:75,weight:1045,tank:39,consumption:9.3,emoji:'🚘'},
+{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:7500,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
+{id:'2110',name:'ВАЗ-2110',sub:'Седан • передний привод',drive:'fwd',price:11000,power:78,weight:1020,tank:43,consumption:8.2,emoji:'🚘'},
+{id:'priora',name:'LADA Priora',sub:'Лёгкий седан • передний привод',drive:'fwd',price:18000,power:98,weight:1185,tank:43,consumption:7.4,emoji:'🚗'},
+{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:25000,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
+{id:'granta',name:'LADA Granta',sub:'Современный седан',drive:'fwd',price:35000,power:90,weight:1090,tank:50,consumption:6.9,emoji:'🚙'},
+{id:'niva',name:'LADA Niva Legend',sub:'Полный привод • повышенная масса',drive:'awd',price:50000,power:83,weight:1285,tank:58,consumption:10.8,emoji:'🚙'},
+{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:85000,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
 function carPaintCss(id){
@@ -1146,12 +1146,12 @@ function carSvg(modelId,colorValue){
     ? 'M190 99 L214 78 Q230 63 252 62 L282 62 L282 99 Z M291 62 L352 62 Q374 64 392 84 L404 99 L291 99 Z'
     : 'M190 99 L214 78 Q230 63 251 63 L282 63 L282 99 Z M291 63 L350 63 Q373 65 391 84 L404 99 L291 99 Z';
   const roofAccent=classicBoxy?'M207 54 L350 54 L359 60 L202 60 Z':wagon?'M190 48 L414 48 L420 55 L193 55 Z':suv?'M188 46 L404 46 L411 53 L191 53 Z':'M244 57 L355 57 L362 63 L240 63 Z';
-  const wheel=function(cx){
+  const wheel=function(cx,axle){
     const spokes=Array.from({length:10},function(_,n){return '<path d="M0 -25 L0 -10" transform="rotate('+(n*36)+')" stroke="#c5ccd1" stroke-width="3.4" stroke-linecap="round"/>';}).join('');
     const bolts=Array.from({length:5},function(_,n){const a=n*72*Math.PI/180;return '<circle cx="'+(Math.cos(a)*11).toFixed(2)+'" cy="'+(Math.sin(a)*11).toFixed(2)+'" r="1.9" fill="#e1e6e9"/>';}).join('');
-    return '<g class="race-wheel"><g transform="translate('+cx+' 163)"><circle r="41" fill="#080a0d" stroke="#59616a" stroke-width="3"/><circle r="35.5" fill="#15191e" stroke="#080a0c" stroke-width="2.5"/><circle r="29" fill="url(#rim)" stroke="#cbd2d7" stroke-width="2"/><circle r="25" fill="#20262c" stroke="#6e777e" stroke-width="2"/><g>'+spokes+'</g><circle r="12" fill="url(#hub)" stroke="#aeb6bc" stroke-width="2"/>'+bolts+'<circle r="5" fill="#3d454b" stroke="#e0e5e8" stroke-width="1.5"/><path d="M-25 -23 A34 34 0 0 1 23 -26" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g></g>';
+    return '<g class="race-wheel '+axle+'"><g transform="translate('+cx+' 163)"><circle r="41" fill="#080a0d" stroke="#59616a" stroke-width="3"/><circle r="35.5" fill="#15191e" stroke="#080a0c" stroke-width="2.5"/><circle r="29" fill="url(#rim)" stroke="#cbd2d7" stroke-width="2"/><circle r="25" fill="#20262c" stroke="#6e777e" stroke-width="2"/><g>'+spokes+'</g><circle r="12" fill="url(#hub)" stroke="#aeb6bc" stroke-width="2"/>'+bolts+'<circle r="5" fill="#3d454b" stroke="#e0e5e8" stroke-width="1.5"/><path d="M-25 -23 A34 34 0 0 1 23 -26" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g></g>';
   };
-  const tires=wheel(151)+wheel(438);
+  const tires=wheel(151,'rear')+wheel(438,'front');
   const bodyDetail=classicBoxy?'M278 103 L278 158 M350 103 L350 157 M218 103 L218 156 M231 119 L250 119 M303 119 L322 119':modern?'M277 103 L277 160 M383 103 L383 159 M280 130 L304 130 M386 130 L407 130':'M281 103 L281 159 M384 103 L384 159 M285 129 L307 129 M387 129 L410 129';
   const frontLamp=classic2101
     ? '<path d="M34 124 L52 120 L60 138 L36 142 Z" fill="#b9c1c6" stroke="#41494f" stroke-width="2"/><circle cx="46" cy="130" r="9.2" fill="#a8b1b6" stroke="#343c42" stroke-width="2.5"/><circle cx="46" cy="130" r="6.2" fill="#f6f2da" stroke="#ffffff" stroke-width="1.4"/><rect x="56" y="121" width="17" height="19" rx="1" fill="#20282e" stroke="#aab2b8" stroke-width="2"/><path d="M59 125 L70 125 M59 130 L70 130 M59 135 L70 135" stroke="#c6cdd1" stroke-width="1.4"/>'
@@ -1233,7 +1233,7 @@ function syncRace2DCarArt(){
   const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"></i></span>';
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
-  const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
+  const engineEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span><span class="race-car-headlight-glow" aria-hidden="true"></span>';
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+'</div>';
   if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint);
   if(player){
@@ -1539,6 +1539,39 @@ function buildRace2DEnvironment(){
     race2dSceneHeightCache=Math.max(1,scene?.clientHeight||320);
   }
 }
+function updateRaceWheelDriveVisuals(now=performance.now()){
+  const cockpit=$('proRaceCockpit'),player=$('race2dPlayerCar');
+  if(!cockpit||!player)return;
+  const currentCar=car();
+  const driveType=currentCar?.drive||'fwd';
+  const rearDriven=driveType==='rwd'||driveType==='awd';
+  const frontDriven=driveType==='fwd'||driveType==='awd';
+  const engineDriving=Boolean(running&&!finished&&gasHeld&&gear!=='N'&&now>=greenAt);
+  const currentSpeed=Math.max(0,Number(speed)||0);
+  const rolling=Boolean(running&&!finished&&currentSpeed>.45);
+  const rearActive=rolling||(engineDriving&&rearDriven);
+  const frontActive=rolling||(engineDriving&&frontDriven);
+  const burnout=Boolean(engineDriving&&brakeHeld&&currentSpeed<9&&Number(rpm)>1100);
+  const rpmRatio=Math.max(0,Math.min(1,(Number(rpm)-850)/5750));
+  const rollingDuration=Math.max(.035,Math.min(.48,.48/(1+currentSpeed/18)));
+  const drivenDuration=burnout
+    ? Math.max(.055,.165-rpmRatio*.085)
+    : Math.max(.075,Math.min(rollingDuration,.245-rpmRatio*.115));
+  const rearDuration=engineDriving&&rearDriven?drivenDuration:rollingDuration;
+  const frontDuration=engineDriving&&frontDriven?drivenDuration:rollingDuration;
+  const setDuration=(name,value)=>{
+    const next=value.toFixed(3)+'s';
+    if(cockpit.style.getPropertyValue(name)!==next)cockpit.style.setProperty(name,next);
+  };
+  cockpit.classList.toggle('drive-rwd',driveType==='rwd');
+  cockpit.classList.toggle('drive-fwd',driveType==='fwd');
+  cockpit.classList.toggle('drive-awd',driveType==='awd');
+  cockpit.classList.toggle('race-rear-wheel-active',rearActive);
+  cockpit.classList.toggle('race-front-wheel-active',frontActive);
+  cockpit.classList.toggle('race-burnout',burnout);
+  setDuration('--race-rear-wheel-duration',rearDuration);
+  setDuration('--race-front-wheel-duration',frontDuration);
+}
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const refs=race2dRefs;
   const player=refs?.player||$('race2dPlayerCar');
@@ -1580,6 +1613,7 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   setSceneClass('race-finish-approach',progress>=.58);
   setSceneClass('race-near-finish',progress>=.82);
   setSceneClass('race-finished',Boolean(finished));
+  updateRaceWheelDriveVisuals(now);
   updateOnlineOpponentMotion(dt);
   updateUnevenRoad(dt,now);
   // Audio control and AudioParam automation do not need to run at 60 Hz.
@@ -2589,7 +2623,7 @@ function updateRaceEngineAudio(){
   const engineMediaPlaying=Boolean((raceEngineSampleSource&&raceAudio.state==='running'||raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended)&&(raceCockpitOpen||running)&&raceEngineSoundEnabled);
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
   const rpmRatio=Math.max(0,Math.min(1,(rpmNow-850)/5750));
-  const throttle=Boolean(gasHeld&&!brakeHeld&&raceCockpitOpen),moving=Boolean(running&&speed>1);
+  const throttle=Boolean(gasHeld&&raceCockpitOpen),moving=Boolean(running&&speed>1);
   const speedRatio=Math.max(0,Math.min(1,(Number(speed)||0)/220));
   const shifting=performance.now()<shiftTorqueUntil;
   const inGear=gear!=='N';
@@ -3148,11 +3182,11 @@ function start(sharedStartedAt=null){
         const targetRpm=gasHeld?6000:Math.max(850,Math.min(6600,speed*5));
         rpm+=(targetRpm-rpm)*(1-Math.exp(-dt*(gasHeld?3.2:7.5)));
       }else{
-        const g=Number(gear),ratio=gearRatio(g),throttle=gasHeld&&!brakeHeld;
+        const g=Number(gear),ratio=gearRatio(g),engineThrottle=gasHeld,throttle=engineThrottle&&!brakeHeld;
         const wheelRpm=speed*42*ratio;
         const clutchSlip=Math.max(0,1-speed/24);
-        const clutchRpm=throttle?1450+1850*clutchSlip:850;
-        const targetRpm=throttle?Math.max(850,wheelRpm,clutchRpm):Math.max(850,wheelRpm);
+        const clutchRpm=engineThrottle?1450+1850*clutchSlip:850;
+        const targetRpm=engineThrottle?Math.max(850,wheelRpm,clutchRpm):Math.max(850,wheelRpm);
         const rpmResponse=1-Math.exp(-dt*(throttle?5.2:8.5));
         rpm=Math.max(850,Math.min(6600,rpm+(targetRpm-rpm)*rpmResponse));
         if(now<shiftRpmTransitionUntil){
@@ -3288,4 +3322,44 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 #proRaceCockpit .pro-dash-controls #proBrakeHold.held{filter:brightness(1.35)!important;transform:translateY(3px)!important;box-shadow:0 0 18px #e7e9eb66,inset 0 0 10px #ffffff55!important}
 #proRaceCockpit .pro-dash-controls #proGasHold{order:2!important;margin:0!important}
 @media(max-width:700px){#proRaceCockpit .pro-dash-controls #proBrakeHold{width:clamp(75px,13vw,104px)!important}}
+/* Independent axle rotation: powered axle follows engine RPM; the free axle follows road speed. */
+.race2d-car svg .race-wheel.rear,
+.race2d-car svg .race-wheel.front{animation:none!important}
+.pro-race-cockpit.race-rear-wheel-active .race2d-car svg .race-wheel.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
+}
+.pro-race-cockpit.race-front-wheel-active .race2d-car svg .race-wheel.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
+}
+.pro-race-cockpit.race-rear-wheel-active .race2d-car.png-car .png-wheel-spin.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
+}
+.pro-race-cockpit.race-front-wheel-active .race2d-car.png-car .png-wheel-spin.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
+}
+#proRaceCockpit .race-wheel-smoke{
+  position:absolute;z-index:2;display:block;pointer-events:none;opacity:0;
+  border-radius:50%;filter:blur(7px);
+  background:radial-gradient(ellipse at 50% 50%,rgba(235,240,242,.74) 0%,rgba(205,214,220,.48) 36%,rgba(180,192,199,.16) 66%,transparent 100%);
+}
+#proRaceCockpit .race-wheel-smoke.rear{left:5%;top:65%;width:34%;height:22%;transform-origin:right center}
+#proRaceCockpit .race-wheel-smoke.front{left:62%;top:65%;width:34%;height:22%;transform-origin:left center}
+#proRaceCockpit.race-burnout.drive-rwd #race2dPlayerCar .race-wheel-smoke.rear,
+#proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.rear{
+  animation:race-wheel-burnout-smoke-rear .58s ease-out infinite;
+}
+#proRaceCockpit.race-burnout.drive-fwd #race2dPlayerCar .race-wheel-smoke.front,
+#proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.front{
+  animation:race-wheel-burnout-smoke-front .58s ease-out infinite;
+}
+@keyframes race-wheel-burnout-smoke-rear{
+  0%{opacity:0;transform:translate3d(7px,2px,0) scale(.42)}
+  22%{opacity:.78}
+  100%{opacity:0;transform:translate3d(-28px,-9px,0) scale(1.34)}
+}
+@keyframes race-wheel-burnout-smoke-front{
+  0%{opacity:0;transform:translate3d(-7px,2px,0) scale(.42)}
+  22%{opacity:.78}
+  100%{opacity:0;transform:translate3d(28px,-9px,0) scale(1.34)}
+}
 </style>
