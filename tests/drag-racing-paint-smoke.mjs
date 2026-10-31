@@ -19,10 +19,10 @@ try {
     timeout: 30000
   });
   assert.ok(response && response.status() === 200, "Drag Racing v2 page must load.");
-  await page.waitForFunction(() => typeof window.ladaPaintedPng === "function", null, { timeout: 15000 });
+  await page.waitForFunction(() => typeof window.__allcoinsPaintPreview === "function", null, { timeout: 15000 });
 
   const inspection = await page.evaluate(async () => {
-    const paintedUrl = await window.ladaPaintedPng("#d65b2b");
+    const paintedUrl = await window.__allcoinsPaintPreview("#d65b2b");
     const load = url => new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
