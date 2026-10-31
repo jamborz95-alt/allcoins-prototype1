@@ -160,16 +160,22 @@ test("the active v2 racing script parses", () => {
   assert.doesNotThrow(() => new Function(inline[2]), "Racing-game script must be syntactically valid.");
 });
 
-test("headlights use a wide beam and can be switched on and off independently", () => {
-  assert.match(game, /id="proHeadlightToggle"/);
+test("headlights use a compact beam and the switch is on the instrument panel", () => {
+  assert.match(game, /id="proHeadlightToggle"[^>]*class="pro-headlight-dash-toggle/);
   assert.match(game, /let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true/);
-  assert.ok(game.includes("clip-path:polygon(0 14%,100% 0%,100% 100%,0 86%)") && game.includes("height:70%;position:absolute!important"));
-  assert.ok(game.includes(".pro-race-cockpit.race-headlights-on .race-car-headlight-glow{opacity:.9;animation:none}"));
-  assert.ok(game.includes(".race-car-headlight-glow{left:96%!important;top:16%!important;width:42%;height:40%;"));
-  assert.ok(game.includes("background:linear-gradient(90deg,#fff9d99c 0%,#fff0b45c 25%,#ffe5a52e 66%,transparent 100%)"));
+  assert.ok(game.includes("#proRaceCockpit .race-car-headlight-glow{"));
+  assert.ok(game.includes("width:24%!important;height:22%!important;"));
+  assert.ok(game.includes("opacity:.48!important"));
+  assert.ok(game.includes("background:linear-gradient(90deg,#fff9d978 0%,#fff0b43f 30%,#ffe5a51a 70%,transparent 100%)"));
+  assert.ok(game.includes(".pro-headlight-dash-toggle{"));
+  assert.ok(game.includes("left:calc(50% + 148px)!important"));
   assert.ok(game.includes("raceHeadlightsEnabled=!raceHeadlightsEnabled;"));
   assert.ok(game.includes("cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen&&raceHeadlightsEnabled))"));
   assert.ok(game.includes("raceHeadlightsEnabled?'☀ ФАРЫ ВКЛ':'☼ ФАРЫ ВЫКЛ'"));
   assert.ok(game.includes(".race-car-headlight-glow:after{display:none!important;content:none!important}"),
     "The round hotspot must remain disabled.");
-});
+  const controlsStart=game.indexOf('<div class="pro-race-audio-controls"');
+  const controlsEnd=game.indexOf('</div>',controlsStart);
+  assert.ok(controlsStart>=0 && controlsEnd>controlsStart && !game.slice(controlsStart,controlsEnd).includes('proHeadlightToggle'),
+    "The headlight switch must be removed from the top audio controls.");
+});;
