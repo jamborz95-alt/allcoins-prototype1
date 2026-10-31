@@ -479,30 +479,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     let open = false;
     try {
       await client.query("BEGIN"); open = true;
-      const balance = await lockPlayerBalance(client, user);
       const carResult = await client.query(
         "SELECT customization FROM drag_racing_player_cars WHERE telegram_id = $1::BIGINT AND car_id = $2 FOR UPDATE",
         [user.id, carId]
       );
       if (!carResult.rows.length) throw new DragRacingError(400, "Сначала купи этот автомобиль.");
 
-      const current = normalizeCustomization(carResult.rows[0].customization);
       const next = { paintId, vinylId };
-      const paintPrice = paintId !== current.paintId && paintId !== "factory"
-        ? PAINT_OPTIONS[paintId].price : 0;
-      const vinylPrice = vinylId !== current.vinylId && vinylId !== "none"
-        ? VINYL_OPTIONS[vinylId].price : 0;
-      const totalPrice = BigInt(paintPrice + vinylPrice);
-      if (balance < totalPrice) {
-        throw new DragRacingError(400, "Недостаточно AC для выбранной покраски и плёнки. Стоимость: " +
-          (paintPrice + vinylPrice).toLocaleString("ru-RU") + " AC.");
-      }
-      if (totalPrice > 0n) {
-        await client.query(
-          "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-          [totalPrice.toString(), user.id]
-        );
-      }
       await client.query(
         "UPDATE drag_racing_player_cars SET customization = $3::jsonb WHERE telegram_id = $1::BIGINT AND car_id = $2",
         [user.id, carId, JSON.stringify(next)]
