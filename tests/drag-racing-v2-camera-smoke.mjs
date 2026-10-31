@@ -260,7 +260,9 @@ try {
     const sceneRect = scene.getBoundingClientRect();
     const width = scene.clientWidth;
     const period = width * 1.5;
-    const originalWorldOffset = raceWorldOffset;
+    const hooks = window.__raceV2SmokeHooks;
+    if (!hooks) throw new Error("Drag Racing camera smoke hooks were not installed.");
+    const originalWorldOffset = hooks.getWorldOffset();
     const layers = [
       { id: "race2dCityLayer", rate: .36 },
       { id: "race2dTreeLayer", rate: .70 },
@@ -271,8 +273,8 @@ try {
       // Check each parallax strip just before and just after its repeat boundary,
       // including a long accumulated world distance like a near-finish drive.
       for (const edge of [-.25, .25]) {
-        raceWorldOffset = (period * 101 + edge) / layer.rate;
-        updateRace2DEnvironment(0, performance.now());
+        hooks.setWorldOffset((period * 101 + edge) / layer.rate);
+        hooks.updateEnvironment();
         const measurements = layers.map(item => {
           const element = document.getElementById(item.id);
           const rect = element.getBoundingClientRect();
@@ -290,10 +292,10 @@ try {
     }
     // Restore the real simulation position before the remainder of the
     // camera-follow test continues.
-    raceWorldOffset = originalWorldOffset;
-    updateRace2DEnvironment(0, performance.now());
-    updateRaceCarPosition(0);
-    updateRace2DCamera(0);
+    hooks.setWorldOffset(originalWorldOffset);
+    hooks.updateEnvironment();
+    hooks.updateCarPosition();
+    hooks.updateCamera();
     return {
       sceneLeft: sceneRect.left,
       sceneRight: sceneRect.right,
@@ -443,17 +445,14 @@ try {
 
   await page.evaluate(() => {
     // Shorten only this automated test run so the real finish transition is exercised.
-    maxDist = distance + 0.25;
+    window.__raceV2SmokeHooks.shortenRaceToFinish();
   });
   await page.locator("#proGasHold").dispatchEvent("pointerdown", {
     pointerId: 10, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
   });
-  await page.waitForFunction(() => finished === true, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__raceV2SmokeHooks?.getRaceState().finished === true, null, { timeout: 5000 });
   const finishAudio = await page.evaluate(() => ({
-    finished,
-    running,
-    gasHeld,
-    rpm,
+    ...window.__raceV2SmokeHooks.getRaceState(),
     audio: window.__raceEngineAudioDebug || null
   }));
   assert.equal(finishAudio.finished, true, "The automated short race must reach its finish line.");
