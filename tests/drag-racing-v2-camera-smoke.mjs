@@ -130,7 +130,8 @@ try {
       width: box.width,
       height: box.height,
       opacity: Number(getComputedStyle(el).opacity),
-      hotspotDisplay: getComputedStyle(el, "::after").display
+      hotspotDisplay: getComputedStyle(el, "::after").display,
+      leftRatio: Number.parseFloat(getComputedStyle(el).left) / el.offsetParent.clientWidth
     };
   });
   assert.match(beam.clipPath, /0(?:px|%) 50%.*100% 5%.*100% 95%/,
@@ -139,6 +140,8 @@ try {
     "The updated triangular beam must be visibly larger than the previous narrow beam: " + JSON.stringify(beam));
   assert.ok(beam.opacity > 0.7,
     "The beam must be visible while the headlights are on: " + JSON.stringify(beam));
+  assert.ok(Math.abs(beam.leftRatio - .90) < .01,
+    "The headlight beam must begin at 90% of the car body width: " + JSON.stringify(beam));
   assert.equal(beam.hotspotDisplay, "none",
     "The old round hotspot must remain disabled.");
 
@@ -230,8 +233,56 @@ try {
     const r = el.getBoundingClientRect();
     return { centerX: r.left + r.width / 2, cameraX: new DOMMatrixReadOnly(getComputedStyle(document.querySelector("#race2dCameraWorld")).transform).m41 };
   });
+  await page.locator("#proBrakeHold").dispatchEvent("pointerdown", {
+    pointerId: 11, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
+  });
   await page.locator("#proGasHold").dispatchEvent("pointerdown", {
-    pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
+    pointerId: 12, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
+  });
+  await page.waitForFunction(() =>
+    document.querySelector("#proRaceCockpit")?.classList.contains("race-burnout"),
+    null, { timeout: 5000 }
+  );
+  const burnoutVisual = await page.evaluate(() => {
+    const cockpit = document.querySelector("#proRaceCockpit");
+    const rear = document.querySelector("#race2dPlayerCar .png-wheel-spin.rear");
+    const front = document.querySelector("#race2dPlayerCar .png-wheel-spin.front");
+    const smoke = document.querySelector("#race2dPlayerCar .race-wheel-smoke.rear");
+    return {
+      rearDrive: cockpit.classList.contains("drive-rwd"),
+      burnout: cockpit.classList.contains("race-burnout"),
+      rearActive: cockpit.classList.contains("race-rear-wheel-active"),
+      frontActive: cockpit.classList.contains("race-front-wheel-active"),
+      rearAnimation: getComputedStyle(rear).animationName,
+      frontAnimation: getComputedStyle(front).animationName,
+      rearDuration: getComputedStyle(rear).animationDuration,
+      smokeAnimation: getComputedStyle(smoke).animationName,
+      smokeState: getComputedStyle(smoke).animationPlayState,
+      speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
+      rpm: window.__raceV2SmokeHooks.getRaceState().rpm,
+      audioThrottle: window.__raceEngineAudioDebug?.throttle
+    };
+  });
+  assert.equal(burnoutVisual.rearDrive, true,
+    "The VAZ-2107 must be configured as a rear-wheel-drive car.");
+  assert.equal(burnoutVisual.burnout, true,
+    "Holding gas and brake together must enter the burnout state.");
+  assert.equal(burnoutVisual.rearActive, true,
+    "The driven rear axle must spin during a burnout.");
+  assert.equal(burnoutVisual.frontActive, false,
+    "The free-rolling front axle must remain still while the car is held stationary.");
+  assert.equal(burnoutVisual.rearAnimation, "race2d-wheel-spin");
+  assert.equal(burnoutVisual.frontAnimation, "none");
+  assert.ok(Number.parseFloat(burnoutVisual.rearDuration) < .14,
+    "The rear wheels must spin quickly during a burnout: " + JSON.stringify(burnoutVisual));
+  assert.notEqual(burnoutVisual.smokeAnimation, "none",
+    "Burnout smoke must appear at the driven rear wheels.");
+  assert.equal(burnoutVisual.smokeState, "running");
+  assert.ok(burnoutVisual.speed <= 3 && burnoutVisual.rpm > 1100 && burnoutVisual.audioThrottle === true,
+    "The engine must rev while the brake holds the car nearly stationary: " + JSON.stringify(burnoutVisual));
+
+  await page.locator("#proBrakeHold").dispatchEvent("pointerup", {
+    pointerId: 11, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
   });
   await page.waitForTimeout(6500);
 
@@ -467,7 +518,7 @@ try {
     pointerId: 10, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
   });
   await page.locator("#proGasHold").dispatchEvent("pointerup", {
-    pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
+    pointerId: 12, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
   });
   const report = {
     page: "drag-racing-v2.html",
