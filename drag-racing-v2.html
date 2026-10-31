@@ -751,15 +751,15 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 .pro-instrument-cluster{
   position:absolute!important;left:50%!important;top:50%!important;
-  width:min(286px,calc(100% - 145px),calc((100% - 12px)*2.04))!important;
+  width:min(286px,calc(100% - 145px))!important;
   height:min(140px,calc(100% - 12px))!important;
   max-height:none!important;gap:6px!important;align-items:stretch!important;
   justify-content:center!important;transform:translate(-50%,-50%)!important;
   filter:drop-shadow(0 4px 5px #000c)!important;z-index:5!important;
 }
 .pro-gauge{
-  position:relative!important;flex:0 0 calc((100% - 6px)/2)!important;
-  width:calc((100% - 6px)/2)!important;height:100%!important;
+  position:relative!important;flex:0 0 auto!important;
+  width:auto!important;height:100%!important;
   min-width:0!important;max-width:none!important;aspect-ratio:1/1!important;
   box-sizing:border-box!important;overflow:hidden!important;border-radius:50%!important;
   border:5px solid #20272b!important;
@@ -855,7 +855,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   .pro-race-track{min-height:0!important}
   .pro-race-dashboard{min-height:0!important}
   .pro-instrument-cluster{
-    width:min(286px,calc(100% - 145px),calc((100% - 12px)*2.04))!important;
+    width:min(286px,calc(100% - 145px))!important;
     height:min(140px,calc(100% - 12px))!important;
   }
 }
