@@ -1562,7 +1562,7 @@ function ladaPngMarkup(imgClass,vinylId){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261031-png-paint2';
+  const original='./cars/lada-2107-side.png?v=20261031-png-paint3';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1586,17 +1586,18 @@ function ladaPaintedPng(color){
         const wheels=[[.257*w,.76*h,.079*w],[.796*w,.76*h,.079*w]];
         for(let i=0;i<data.length;i+=4){
           if(data[i+3]<24)continue;
-          const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);
-          // Limit tint to the painted side panels: glass, bumpers and the wheels are outside this mask.
-          if(y<.385*h||y>.715*h||x<.035*w||x>.965*w)continue;
+          const pixel=i/4,x=pixel%w;
+          // Recolor the whole pearl-white body, including roof, doors, fenders, hood and trunk.
+          // Only the extreme image edges (bumpers) and original wheel assemblies stay untouched.
+          if(x<.025*w||x>.975*w)continue;
           let inWheel=false;
-          for(const [cx,cy,r] of wheels){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy<r*r){inWheel=true;break;}}
+          for(const [cx,cy,r] of wheels){const dx=x-cx,dy=Math.floor(pixel/w)-cy;if(dx*dx+dy*dy<r*r){inWheel=true;break;}}
           if(inWheel)continue;
           const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
           const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo,l=(hi+lo)/2;
           const saturation=hi?d/hi:0;
-          // The supplied PNG is pearl-white, not red. Select its low-saturation painted panels.
-          if(l<.28||saturation>.38)continue;
+          // Glass is dark and the lamps are colored; neutral, bright pixels belong to the painted body.
+          if(l<.48||saturation>.42)continue;
           const newL=Math.max(.07,Math.min(.94,.12+targetL*.68+(l-.5)*.36));
           const c=(1-Math.abs(2*newL-1))*targetS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
           let rr=0,gg=0,bb=0;
