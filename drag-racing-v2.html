@@ -2325,6 +2325,12 @@ function startVaz2107Media(){
     raceEngineMedia.volume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
     raceEngineMedia.playbackRate=vazEnginePlaybackRate(currentRpm);
     if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
+    window.__raceEngineAudioDebug={
+      ...(window.__raceEngineAudioDebug||{}),
+      enabled:true,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
+      mediaPlaying:!raceEngineMedia.paused&&!raceEngineMedia.ended,
+      mediaPlaybackRate:raceEngineMedia.playbackRate,mediaVolume:raceEngineMedia.volume
+    };
   }else{
     void preloadRaceMediaAudio().then(ok=>{if(ok&&raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media()});
   }
@@ -2334,6 +2340,10 @@ function updateVaz2107Media(){
   if(!raceEngineMedia)return;
   if(!raceEngineSoundEnabled||(!raceCockpitOpen&&!running)){
     if(!raceEngineMedia.paused)raceEngineMedia.pause();
+    window.__raceEngineAudioDebug={
+      ...(window.__raceEngineAudioDebug||{}),
+      enabled:false,mediaPlaying:false,mediaPlaybackRate:raceEngineMedia.playbackRate
+    };
     return;
   }
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
@@ -2342,6 +2352,12 @@ function updateVaz2107Media(){
   raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.13;
   const targetVolume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
   raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.12;
+  window.__raceEngineAudioDebug={
+    ...(window.__raceEngineAudioDebug||{}),
+    enabled:true,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
+    mediaPlaying:!raceEngineMedia.paused&&!raceEngineMedia.ended,
+    mediaPlaybackRate:raceEngineMedia.playbackRate,mediaVolume:raceEngineMedia.volume
+  };
   // Playback is started from an actual pointer gesture; the frame loop only adjusts pitch and volume.
 }
 function updateRaceEngineAudio(){
@@ -2382,6 +2398,7 @@ function updateRaceEngineAudio(){
     raceIntakeGain.gain.setTargetAtTime(enabled?intakeLevel:.0001,t,.13);
   }
   window.__raceEngineAudioDebug={
+    ...(window.__raceEngineAudioDebug||{}),
     enabled,throttle,moving,shifting,rpm:rpmNow,firingHz,
     mediaPlaying:engineMediaPlaying,proceduralLevel,load,speed:Number(speed)||0
   };
