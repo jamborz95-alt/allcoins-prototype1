@@ -1326,7 +1326,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 #proRaceCockpit #race2dFinishStripe{
   position:absolute!important;
-  left:calc(26% + clamp(245px,27.5vw,390px) - 7px);
+  left:0!important;
   right:auto!important;top:25%!important;bottom:0!important;
   width:24px!important;height:auto!important;min-height:0!important;
   display:block!important;visibility:visible!important;opacity:1!important;
@@ -1779,7 +1779,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
+let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,raceCameraLockActive=false,raceCameraLockOffset=0,raceCameraLockWorldOffset=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1994,10 +1994,12 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   // scene-widths wide, so its visible image repeats every 1.5 scene widths.
   // Wrap every parallax layer at that exact visual period; using a 3x phase
   // made the skyline jump back to its first tile shortly before the finish.
-  const cityShift=(raceWorldOffset*.36)%wrap;
-  const treeShift=(raceWorldOffset*.70)%wrap;
-  const fenceShift=raceWorldOffset%wrap;
-  const markShift=(raceWorldOffset*2.35)%96;
+  /* Once the finish enters the view, freeze the scenery with the camera. */
+  const sceneryTravelPx=raceCameraLockActive?raceCameraLockWorldOffset:raceWorldOffset;
+  const cityShift=(sceneryTravelPx*.36)%wrap;
+  const treeShift=(sceneryTravelPx*.70)%wrap;
+  const fenceShift=sceneryTravelPx%wrap;
+  const markShift=(sceneryTravelPx*2.35)%96;
   setTransform(city,'translate3d('+(-cityShift).toFixed(3)+'px,0,0)');
   setTransform(trees,'translate3d('+(-treeShift).toFixed(3)+'px,0,0)');
   setTransform(fence,'translate3d('+(-fenceShift).toFixed(3)+'px,0,0)');
@@ -3437,7 +3439,7 @@ function setLight(n){
 }
 function reset(){
   if(raceFinishIdleRampTimer!==null){clearInterval(raceFinishIdleRampTimer);raceFinishIdleRampTimer=null;}
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;raceCameraLockActive=false;raceCameraLockOffset=0;raceCameraLockWorldOffset=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -3475,9 +3477,24 @@ function updateRace2DCamera(dt=1/60,motion=null){
   const stripe=race2dRefs?.stripe||$('race2dFinishStripe');
   if(!world||!motion.scene)return;
   const worldTravelPx=Math.max(0,raceWorldOffset);
-  const screenLeadPx=Math.min(motion.sceneWidth*.14,worldTravelPx*.015);
+  const sceneWidth=Math.max(1,motion.sceneWidth);
+  const screenLeadPx=Math.min(sceneWidth*.14,worldTravelPx*.015);
+  const followingCameraOffset=Math.max(0,worldTravelPx-screenLeadPx);
+  const carWidthPx=Math.max(245,Math.min(390,sceneWidth*.275));
+  const pxPerMeter=9.6*Math.max(.6,Math.min(1.35,sceneWidth/1280));
+  const remainingDistance=Math.max(0,(Number(maxDist)||1609.344)-(Number(distance)||0));
+
+  /* The finish line approaches from off-screen while the camera follows the car.
+     Lock the camera as soon as the line enters the right side of the view. */
+  const projectedFinishLeft=sceneWidth*.12+worldTravelPx-followingCameraOffset+carWidthPx+remainingDistance*pxPerMeter-7;
+  if(running&&!finished&&!raceCameraLockActive&&projectedFinishLeft<=sceneWidth-30){
+    raceCameraLockActive=true;
+    raceCameraLockOffset=followingCameraOffset;
+    raceCameraLockWorldOffset=worldTravelPx;
+  }
+
+  raceCameraOffset=raceCameraLockActive?raceCameraLockOffset:followingCameraOffset;
   raceCarOffset=screenLeadPx;
-  raceCameraOffset=Math.max(0,worldTravelPx-screenLeadPx);
   raceCameraY=0;
   const cameraTransform='translate3d('+(-raceCameraOffset).toFixed(2)+'px,0px,0px)';
   if(world.style.transform!==cameraTransform)world.style.transform=cameraTransform;
@@ -3491,16 +3508,15 @@ function updateRace2DCamera(dt=1/60,motion=null){
     else
       opponent.style.transform='translate3d('+raceCameraOffset.toFixed(2)+'px,0px,0) scale(1)';
   }
-  /* The finish stripe is painted onto the road at the player's terminal car position.
-     Its position is calculated from the selected race distance, then left fixed:
-     it is never animated or translated independently of the asphalt. */
+
+  /* Keep the finish painted on the asphalt. After camera lock its screen position
+     stays steady while the player car advances across the final stretch. */
   if(stripe){
-    const terminalWorldTravelPx=Math.max(0,Number(maxDist)||1609.344)*9.6*(motion.sceneWidth/1280);
-    const terminalScreenLeadPx=Math.min(motion.sceneWidth*.14,terminalWorldTravelPx*.015);
-    const carWidthPx=Math.max(245,Math.min(390,motion.sceneWidth*.275));
-    const finishLeftPx=motion.sceneWidth*.12+terminalScreenLeadPx+carWidthPx-7;
+    const playerScreenLeft=sceneWidth*.12+worldTravelPx-raceCameraOffset;
+    const finishLeftPx=playerScreenLeft+carWidthPx+remainingDistance*pxPerMeter-7;
     const finishLeft=finishLeftPx.toFixed(2)+'px';
-    if(stripe.style.left!==finishLeft)stripe.style.setProperty('left',finishLeft,'important');
+    if(stripe.style.left!==finishLeft)
+      stripe.style.setProperty('left',finishLeft,'important');
   }
 }
 function updateHUD(dt=1/60,motionAlreadyUpdated=false){
