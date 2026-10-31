@@ -512,7 +512,10 @@ try {
   assert.equal(finishAudio.rpm, 900, "The engine RPM must settle to idle at the finish line.");
   assert.equal(finishAudio.audio?.throttle, false, "The engine audio must no longer sound under throttle.");
   assert.equal(finishAudio.audio?.moving, false, "The engine audio state must switch from driving to idle.");
-  assert.equal(finishAudio.audio?.proceduralLevel, .25, "The procedural engine layer must use its idle level.");
+  if (finishAudio.audio?.engineBackend === "procedural-fallback") {
+    assert.equal(finishAudio.audio?.proceduralLevel, .25,
+      "The procedural engine layer must use its idle level when no media loop is available.");
+  }
   assert.equal(finishAudio.audio?.rpm, 900, "The audio engine must report idle RPM after the finish.");
   await page.locator("#proGasHold").dispatchEvent("pointerup", {
     pointerId: 10, pointerType: "touch", isPrimary: true, button: 0, buttons: 0
