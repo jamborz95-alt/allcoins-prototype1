@@ -1343,6 +1343,28 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   box-shadow:0 0 0 1px #171b1ccc,0 1px 5px #000a,inset 0 0 0 1px #0008!important;
 }
 </style>
+<style id="allcoins-car-paint-vinyl">
+.style-workshop{border-color:#78613b;background:linear-gradient(145deg,#172235,#0d1521 70%)}
+.style-preview{display:grid;place-items:center;min-height:116px;margin:8px 0 14px;padding:8px;border:1px solid #33465d;border-radius:13px;background:radial-gradient(ellipse at 50% 80%,#34485b 0,#172332 58%,#0b111a 100%);overflow:hidden}
+.style-preview svg{display:block;width:100%;max-width:560px;height:110px}
+.style-section-title{margin:13px 0 8px;color:#f2d28b;font-size:13px;font-weight:900;letter-spacing:.3px}
+.paint-picker{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.paint-swatch{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:7px 3px;background:#111b29;border:1px solid #36475a;border-radius:10px;color:#eaf0f6;font-size:10px}
+.paint-swatch span{display:block;width:29px;height:29px;border-radius:50%;background:var(--swatch);border:2px solid #dce3e9;box-shadow:inset 0 2px 5px #ffffff65,0 2px 5px #0008}
+.paint-swatch.selected{border-color:#f2cc75;background:#3a301d;box-shadow:0 0 0 1px #f2cc7545}
+.paint-swatch small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+.vinyl-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vinyl-choice{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px;background:#101a28;border:1px solid #34475d;border-radius:10px;color:#f0f4f8;text-align:left}
+.vinyl-choice b{font-size:12px}
+.vinyl-choice small{font-size:10px;line-height:1.35;color:#aebdd0;font-weight:500}
+.vinyl-choice em{font-size:10px;color:#f2d28b;font-style:normal;font-weight:900}
+.vinyl-choice.selected{border-color:#f2cc75;background:#382f1e;box-shadow:0 0 0 1px #f2cc7545}
+.style-price-row{display:flex;justify-content:space-between;gap:8px;margin:13px 0 9px;padding:10px;border-radius:9px;background:#080f19;color:#c7d3e2;font-size:12px}
+.style-price-row b{color:#f2d28b;white-space:nowrap}
+.style-apply-button{width:100%;background:linear-gradient(135deg,#f1d28a,#c49a4e);color:#1a160e}
+.style-apply-button:disabled{background:#273343;color:#91a0b3;opacity:.9}
+@media(max-width:370px){.paint-picker{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.paint-swatch span{width:25px;height:25px}.paint-swatch{font-size:9px}.vinyl-choice{padding:8px}}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1360,7 +1382,24 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </section>
 <section id="garage" class="view hidden"><div class="panel"><div class="title">Мой гараж</div><div id="garageContent"></div></div></section>
 <section id="shop" class="view hidden"><div class="panel"><div class="title">Автосалон LADA / ВАЗ</div><p class="muted">Игровой автосалон: начинай с недорогих ВАЗ-2104/2105, зарабатывай прогрессом и переходи к более мощным LADA. Цены и характеристики условные, только для игрового баланса.</p><div class="cards" id="carShop"></div><p class="muted">ВАЗ-2104, 2105, 2106 и 2109 доступны с самого начала при достаточном балансе.</p></div><div class="panel"><div class="title">Запчасти и улучшения</div><div id="partsShop" class="parts"></div></div></section>
-<section id="tuning" class="view hidden"><div class="panel"><div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div><div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Зацеп шин</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div><div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Зацеп шин / старт</span><b id="gripValue">70%</b></div><button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div></div></section>
+<section id="tuning" class="view hidden">
+<div class="panel">
+<div class="title">Тюнинг выбранного авто</div><div id="tuningCar"></div>
+<div class="tunegrid"><div><label for="ecu">Настройка ECU</label><input id="ecu" type="range" min="0" max="100" value="50"></div><div><label for="boost">Давление наддува</label><input id="boost" type="range" min="0" max="100" value="25"></div><div><label for="grip">Зацеп шин</label><input id="grip" type="range" min="0" max="100" value="70"></div><div><label for="shift">Быстрота переключения</label><input id="shift" type="range" min="0" max="100" value="45"></div></div>
+<div class="statline"><span>Расчётная мощность</span><b id="powerValue">90 л.с.</b></div><div class="statline"><span>Зацеп шин / старт</span><b id="gripValue">70%</b></div>
+<button id="saveTune" style="width:100%;margin-top:8px">Сохранить настройку</button><div id="tuneStatus" class="status"></div>
+</div>
+<div class="panel style-workshop">
+<div class="title">🎨 Внешний вид автомобиля</div>
+<p class="muted">Выбери цвет кузова и виниловую плёнку. Перед покупкой можно посмотреть, как будет выглядеть машина.</p>
+<div id="stylePreview" class="style-preview" aria-label="Предпросмотр покраски и винила"></div>
+<div class="style-section-title">Покраска кузова</div><div id="paintPicker" class="paint-picker"></div>
+<div class="style-section-title">Виниловые плёнки</div><div id="vinylPicker" class="vinyl-picker"></div>
+<div class="style-price-row"><span>Стоимость выбранных изменений</span><b id="styleCost">0 AC</b></div>
+<button id="applyStyle" class="style-apply-button" type="button">Применить внешний вид</button>
+<div id="styleStatus" class="status" aria-live="polite"></div>
+</div>
+</section>
 </main>
 
 <div id="proRaceCockpit" class="pro-race-cockpit hidden" aria-hidden="true">
@@ -1458,13 +1497,59 @@ const cars=[
 {id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:85000,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
+const CAR_PAINTS = [
+  {id:'factory',name:'Заводской',color:'#cf2637',price:0},
+  {id:'pearl',name:'Жемчужный',color:'#f1efe8',price:2500},
+  {id:'black',name:'Чёрный металлик',color:'#171c23',price:2500},
+  {id:'silver',name:'Серебристый',color:'#aebbc5',price:2500},
+  {id:'blue',name:'Синий',color:'#1769a8',price:2500},
+  {id:'cyan',name:'Бирюзовый',color:'#169ab4',price:2500},
+  {id:'green',name:'Зелёный',color:'#237b59',price:2500},
+  {id:'yellow',name:'Жёлтый',color:'#e4b82c',price:2500},
+  {id:'orange',name:'Оранжевый',color:'#d65b2b',price:2500},
+  {id:'purple',name:'Фиолетовый',color:'#704a9e',price:2500}
+];
+const CAR_VINYLS = [
+  {id:'none',name:'Без плёнки',desc:'Чистый кузов без наклеек.',price:0},
+  {id:'rally',name:'Ралли-полосы',desc:'Две контрастные полосы вдоль кузова.',price:5500},
+  {id:'checker',name:'Шахматная',desc:'Шахматный гоночный рисунок на двери.',price:7500},
+  {id:'sport',name:'Спорт',desc:'Динамичная диагональная графика.',price:8500},
+  {id:'number',name:'Стартовый номер',desc:'Номер 07 и спортивная боковая полоса.',price:4500}
+];
+function getCarCustomization(id){
+  const saved=state.customization?.[String(id)]||{};
+  return {
+    paintId:CAR_PAINTS.some(item=>item.id===saved.paintId)?saved.paintId:'factory',
+    vinylId:CAR_VINYLS.some(item=>item.id===saved.vinylId)?saved.vinylId:'none'
+  };
+}
+function getCustomizationCost(current,next){
+  const paint=next.paintId!==current.paintId&&next.paintId!=='factory'
+    ?(CAR_PAINTS.find(item=>item.id===next.paintId)?.price||0):0;
+  const vinyl=next.vinylId!==current.vinylId&&next.vinylId!=='none'
+    ?(CAR_VINYLS.find(item=>item.id===next.vinylId)?.price||0):0;
+  return paint+vinyl;
+}
+function carVinylMarkup(vinylId){
+  if(vinylId==='rally')return '<g opacity=".94"><path d="M78 126 L520 131" fill="none" stroke="#f7f3e7" stroke-width="6"/><path d="M78 135 L520 140" fill="none" stroke="#20262d" stroke-width="3.2"/><path d="M194 126 L395 128" fill="none" stroke="#e1b84f" stroke-width="2"/></g>';
+  if(vinylId==='checker'){
+    let cells='';for(let row=0;row<2;row++)for(let col=0;col<8;col++)if((row+col)%2===0)cells+='<rect x="'+(255+col*10)+'" y="'+(120+row*8)+'" width="10" height="8" fill="#f2f3f0"/>';
+    return '<g opacity=".94"><rect x="253" y="119" width="82" height="18" rx="2" fill="#151a20" stroke="#f5f5ef" stroke-width="1.4"/>'+cells+'</g>';
+  }
+  if(vinylId==='sport')return '<g opacity=".96"><path d="M78 119 L164 115 L210 130 L164 145 L78 140 Z" fill="#f4f2e9"/><path d="M78 128 L163 124 L190 130 L163 136 L78 133 Z" fill="#18212b"/><path d="M195 120 L394 124 L394 129 L195 125 Z" fill="#f0c65f"/></g>';
+  if(vinylId==='number')return '<g opacity=".97"><path d="M78 131 L520 136" stroke="#f5f2e8" stroke-width="5" fill="none"/><circle cx="328" cy="130" r="15" fill="#f5f2e8" stroke="#20262d" stroke-width="2.5"/><text x="328" y="136" text-anchor="middle" font-size="16" font-weight="900" font-family="Arial,sans-serif" fill="#20262d">07</text></g>';
+  return '';
+}
 function carPaintCss(id){
   const palette={'2101':'#c54438','2107':'#cf2637','2105':'#dddcd7','2104':'#4e96c5','2106':'#2d74c7','2109':'#c8323a','2110':'#435f80',priora:'#347bc1',kalina:'#788d9b',granta:'#238e82',niva:'#6b8064',vesta:'#b6c3ca'};
+  const style=getCarCustomization(id);
+  if(style.paintId!=='factory')return CAR_PAINTS.find(item=>item.id===style.paintId)?.color||'#b72531';
   return palette[String(id)]||'#b72531';
 }
 let carSvgInstance=0;
-function carSvg(modelId,colorValue){
+function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
+  const selectedVinyl=vinylValue||getCarCustomization(id).vinylId;
   let color=typeof colorValue==='number'?'#'+Math.max(0,colorValue).toString(16).padStart(6,'0').slice(-6):String(colorValue||carPaintCss(id));
   if(!/^#[0-9a-f]{6}$/i.test(color))color=carPaintCss(id);
   const rgb=color.match(/[0-9a-f]{2}/ig)||['b7','25','31'];
@@ -1520,6 +1605,7 @@ function carSvg(modelId,colorValue){
     +tires
     +'<g class="race-sprung-body">'
     +'<path d="'+bodyPath+'" fill="url(#paint)" stroke="#101419" stroke-width="4" stroke-linejoin="round"/>'
+    +carVinylMarkup(selectedVinyl)
     +'<path d="'+windowPath+'" fill="url(#glass)" stroke="#151b21" stroke-width="5" stroke-linejoin="round"/>'
     +'<path d="'+roofAccent+'" fill="#ffffff" opacity=".25"/>'
     +'<path d="M203 73 L217 65 L221 67 L207 80 Z" fill="#ffffff" opacity=".55"/>'
@@ -1577,8 +1663,9 @@ function carSvg(modelId,colorValue){
 function syncRace2DCarArt(){
   const player=$('race2dPlayerCar'),opponent=$('race2dOpponentCar'),preview=$('previewCar');
   const selectedId=String(state.selected||'2107');
-  const useLadaPng=selectedId==='2107';
-  const paint=useLadaPng?'#dfe3e6':carPaintCss(selectedId);
+  const selectedStyle=getCarCustomization(selectedId);
+  const useLadaPng=selectedId==='2107'&&selectedStyle.paintId==='factory'&&selectedStyle.vinylId==='none';
+  const paint=carPaintCss(selectedId);
   const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261029-wheel2" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
   const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"></i></span>';
@@ -1586,14 +1673,14 @@ function syncRace2DCarArt(){
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+'</div>';
-  if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint);
+  if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint,selectedStyle.vinylId);
   if(player){
     player.classList.toggle('png-car',useLadaPng);
     player.classList.toggle('vector-side-car',!useLadaPng);
     player.classList.remove('png-fallback');
     // Keep the PNG body crisp and rotate only the two wheel faces positioned over its rims.
     // Smoke is placed after the wheel faces so it can visibly build up over the spinning tyres.
-    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint)+engineEffects+wheelSmokeEffects;
+    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+(selectedId==='2107'?ladaExhaust+ladaSmoke:'')+engineEffects+wheelSmokeEffects;
   }
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -2056,10 +2143,10 @@ const parts=[
 {id:'gearbox',name:'Короткая КПП',desc:'Спортивная коробка передач.',details:'Компонент трансмиссии для гоночной сборки. Его бонус учитывается в общей расчётной мощности.',effect:'+6% к расчётной мощности',price:48000,power:6,kind:'gear'},
 {id:'weight',name:'Облегчение кузова',desc:'Комплект облегчённых кузовных элементов.',details:'Деталь для облегчённой гоночной сборки. В текущем игровом расчёте бонус учитывается через мощность автомобиля.',effect:'+10% к расчётной мощности',price:65000,power:10,kind:'weight'}
 ];
-const defaultState={balance:10000,owned:['2107'],selected:'2107',upgrades:{},fuelByCar:{},tune:{ecu:50,boost:25,grip:70,shift:45}};
+const defaultState={balance:10000,owned:['2107'],selected:'2107',upgrades:{},customization:{},fuelByCar:{},tune:{ecu:50,boost:25,grip:70,shift:45}};
 let state;try{state=Object.assign({},defaultState,JSON.parse(localStorage.getItem('allcoinsDragRacingV1')||'{}'));}catch(e){state=JSON.parse(JSON.stringify(defaultState))}
-state.upgrades=state.upgrades||{};state.tune=Object.assign({},defaultState.tune,state.tune||{});state.owned=Array.isArray(state.owned)?state.owned:['2107'];state.fuelByCar=Object.assign({},state.fuelByCar||{});for(const c of cars){const storedFuel=Number(state.fuelByCar[c.id]);state.fuelByCar[c.id]=Number.isFinite(storedFuel)?Math.max(0,Math.min(c.tank,storedFuel)):c.tank;}
-const $=id=>document.getElementById(id);const money=n=>Math.round(n).toLocaleString('ru-RU');const car=()=>cars.find(c=>c.id===state.selected)||cars[0];const upg=()=>state.upgrades[state.selected]||(state.upgrades[state.selected]={});const DRAG_API='https://allcoins-server.onrender.com/api/drag-racing';let currentOnlineRoom=null,onlinePollTimer=null,onlinePollMode=null,onlinePollBusy=false,onlineRaceStartedFor=null,finishSentFor=null,onlineServerClockOffsetMs=0;function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}function setWalletBalance(value){if(value===undefined||value===null||!Number.isFinite(Number(value)))return;state.balance=Number(value);$('balance').textContent=money(state.balance);const small=document.querySelector('.balance small');if(small)small.textContent='баланс ALLCOINS';try{localStorage.setItem('allcoinsDragRacingV1',JSON.stringify(state))}catch(_){}}async function api(path,payload={}){if(!tg?.initData)throw new Error('Открой игру через Telegram, чтобы использовать онлайн-комнаты и реальные ставки.');const response=await fetch(DRAG_API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData:tg.initData,...payload})});const data=await response.json().catch(()=>({ok:false,error:'Сервер вернул неверный ответ.'}));if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось связаться с сервером.');return data}function applyRemoteProfile(data){if(data&&data.balance!==undefined)setWalletBalance(data.balance);const p=data?.profile;if(p){if(Array.isArray(p.ownedCars))state.owned=p.ownedCars;if(p.selectedCarId)state.selected=p.selectedCarId;if(p.upgrades&&typeof p.upgrades==='object')state.upgrades=p.upgrades;if(p.tune&&typeof p.tune==='object')state.tune=Object.assign({},defaultState.tune,p.tune);save()}else render() }function save(){localStorage.setItem('allcoinsDragRacingV1',JSON.stringify(state));render()}
+state.upgrades=state.upgrades||{};state.customization=Object.assign({},state.customization||{});state.tune=Object.assign({},defaultState.tune,state.tune||{});state.owned=Array.isArray(state.owned)?state.owned:['2107'];state.fuelByCar=Object.assign({},state.fuelByCar||{});for(const c of cars){const storedFuel=Number(state.fuelByCar[c.id]);state.fuelByCar[c.id]=Number.isFinite(storedFuel)?Math.max(0,Math.min(c.tank,storedFuel)):c.tank;}
+const $=id=>document.getElementById(id);const money=n=>Math.round(n).toLocaleString('ru-RU');const car=()=>cars.find(c=>c.id===state.selected)||cars[0];const upg=()=>state.upgrades[state.selected]||(state.upgrades[state.selected]={});const DRAG_API='https://allcoins-server.onrender.com/api/drag-racing';let currentOnlineRoom=null,onlinePollTimer=null,onlinePollMode=null,onlinePollBusy=false,onlineRaceStartedFor=null,finishSentFor=null,onlineServerClockOffsetMs=0;function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}function setWalletBalance(value){if(value===undefined||value===null||!Number.isFinite(Number(value)))return;state.balance=Number(value);$('balance').textContent=money(state.balance);const small=document.querySelector('.balance small');if(small)small.textContent='баланс ALLCOINS';try{localStorage.setItem('allcoinsDragRacingV1',JSON.stringify(state))}catch(_){}}async function api(path,payload={}){if(!tg?.initData)throw new Error('Открой игру через Telegram, чтобы использовать онлайн-комнаты и реальные ставки.');const response=await fetch(DRAG_API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData:tg.initData,...payload})});const data=await response.json().catch(()=>({ok:false,error:'Сервер вернул неверный ответ.'}));if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось связаться с сервером.');return data}function applyRemoteProfile(data){if(data&&data.balance!==undefined)setWalletBalance(data.balance);const p=data?.profile;if(p){if(Array.isArray(p.ownedCars))state.owned=p.ownedCars;if(p.selectedCarId)state.selected=p.selectedCarId;if(p.upgrades&&typeof p.upgrades==='object')state.upgrades=p.upgrades;if(p.customization&&typeof p.customization==='object')state.customization=p.customization;if(p.tune&&typeof p.tune==='object')state.tune=Object.assign({},defaultState.tune,p.tune);save()}else render() }function save(){localStorage.setItem('allcoinsDragRacingV1',JSON.stringify(state));render()}
 function effectivePower(c=car()){const upgrades=state.upgrades[c.id]||{};const extra=Object.keys(upgrades).reduce((s,id)=>s+(parts.find(p=>p.id===id)?.power||0),0);return Math.round(c.power*(1+extra/100)*(0.9+Number(state.tune.ecu)/500+Number(state.tune.boost)/600))}
 function getCarFuel(c=car()){const tank=Math.max(0,Number(c?.tank)||0),value=Number(state.fuelByCar?.[c.id]);return Number.isFinite(value)?Math.max(0,Math.min(tank,value)):tank}
 let lastFuelPersistAt=0,lastFuelPersistValue=null;
@@ -2356,8 +2443,7 @@ function initDragRacing3D(){
     });
   }
 
-  const colors={'2101':0xb8332d,'2107':0xb72531,'2105':0xd8d7d1,'2104':0x4d8fb7,'2106':0x2869ad,'2109':0x6d899b,'2110':0x415a78,priora:0x2867a1,kalina:0x77838c,granta:0x267f79,niva:0x61745f,vesta:0xa7afb8};
-  function paintFor(id){return colors[id]||0xb72531}
+  function paintFor(id){return Number.parseInt(carPaintCss(id).slice(1),16)||0xb72531}
   const tireMat=mat(0x080a0d,.86,.02),rimMat=new T.MeshStandardMaterial({color:0xc5cbd0,metalness:.92,roughness:.22}),rimDark=mat(0x353b41,.6,.58);
   const chrome=mat(0xd2d8db,.24,.82),black=mat(0x12171c,.38,.35);
   const glass=new T.MeshPhysicalMaterial({color:0x526a78,metalness:.22,roughness:.105,clearcoat:1,clearcoatRoughness:.045,transparent:true,opacity:.64,depthWrite:false,side:T.DoubleSide});
@@ -2375,12 +2461,12 @@ function initDragRacing3D(){
     const geo=new T.BufferGeometry().setFromPoints(points.map(p=>new T.Vector3(p[0],p[1],z)));
     const mesh=new T.Line(geo,material);parent.add(mesh);return mesh;
   }
-  function createCar(modelId,bodyColor,group){
+  function createCar(modelId,bodyColor,group,vinylId){
     while(group.children.length)group.remove(group.children[0]);
     group.position.y=.04;
     const id=String(modelId||'2107');
     const bodyColorCss=typeof bodyColor==='number'?'#'+Math.max(0,bodyColor).toString(16).padStart(6,'0').slice(-6):String(bodyColor||carPaintCss(id));
-    const svg=carSvg(id,bodyColorCss);
+    const svg=carSvg(id,bodyColorCss,vinylId||'none');
     const texture=new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));
     if('colorSpace' in texture&&T.SRGBColorSpace)texture.colorSpace=T.SRGBColorSpace;
     texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
@@ -2397,9 +2483,11 @@ function initDragRacing3D(){
   let playerCarId=null,playerWheels=[],opponentWheels=[],premiumOpponent=null,opponentUsesPremium=false;
   function syncCar(){
     const id=String(state.selected||'2107');
-    if(playerCarId!==id){
-      playerWheels=createCar(id,paintFor(id),playerGroup);
-      playerCarId=id;
+    const style=getCarCustomization(id);
+    const styleKey=id+'|'+style.paintId+'|'+style.vinylId;
+    if(playerCarId!==styleKey){
+      playerWheels=createCar(id,paintFor(id),playerGroup,style.vinylId);
+      playerCarId=styleKey;
     }
     playerGroup.position.z=2.75;
   }
@@ -2502,13 +2590,66 @@ function initDragRacing3D(){
   requestAnimationFrame(drawFrame);
   window.addEventListener('pagehide',()=>{try{renderer.dispose()}catch(_){}},{once:true});
 }
-function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id))+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
+let styleDraft=null;
+function resetStyleDraft(){
+  const c=getCarCustomization(state.selected);
+  styleDraft={carId:String(state.selected),paintId:c.paintId,vinylId:c.vinylId};
+}
+function renderStyleControls(){
+  if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();
+  const current=getCarCustomization(state.selected);
+  const draft={paintId:styleDraft.paintId,vinylId:styleDraft.vinylId};
+  const paint=CAR_PAINTS.find(item=>item.id===draft.paintId)||CAR_PAINTS[0];
+  const vinyl=CAR_VINYLS.find(item=>item.id===draft.vinylId)||CAR_VINYLS[0];
+  const cost=getCustomizationCost(current,draft);
+  const preview=$('stylePreview');
+  if(preview)preview.innerHTML=carSvg(state.selected,paint.color,draft.vinylId);
+  const picker=$('paintPicker');
+  if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
+  const vinylPicker=$('vinylPicker');
+  if(vinylPicker)vinylPicker.innerHTML=CAR_VINYLS.map(item=>'<button type="button" class="vinyl-choice '+(item.id===draft.vinylId?'selected':'')+'" data-vinyl="'+item.id+'"><b>'+item.name+'</b><small>'+item.desc+'</small><em>'+(item.price?money(item.price)+' AC':'Бесплатно')+'</em></button>').join('');
+  const price=$('styleCost');if(price)price.textContent=money(cost)+' AC';
+  const button=$('applyStyle');
+  if(button){button.disabled=cost===0;button.textContent=cost===0?'Уже установлено':'Применить · '+money(cost)+' AC';}
+}
+function refreshCustomizedCar(){
+  syncRace2DCarArt();
+  if(race3d)race3d.syncCar();
+}
+async function applyVehicleStyle(){
+  const carId=String(state.selected);
+  const current=getCarCustomization(carId);
+  const next={paintId:styleDraft?.paintId||current.paintId,vinylId:styleDraft?.vinylId||current.vinylId};
+  const cost=getCustomizationCost(current,next);
+  if(!cost){$('styleStatus').textContent='Этот внешний вид уже установлен.';return;}
+  try{
+    $('applyStyle').disabled=true;
+    $('styleStatus').textContent='Сохраняю внешний вид автомобиля…';
+    if(tg?.initData){
+      const data=await api('/garage/customize',{carId,paintId:next.paintId,vinylId:next.vinylId});
+      applyRemoteProfile(data);
+    }else{
+      if(state.balance<cost)throw new Error('Недостаточно AC. Требуется '+money(cost)+' AC.');
+      state.balance-=cost;
+      state.customization[carId]=next;
+      save();
+    }
+    resetStyleDraft();
+    renderStyleControls();
+    refreshCustomizedCar();
+    $('styleStatus').textContent='Внешний вид сохранён для '+car().name+'.';
+  }catch(err){
+    $('styleStatus').textContent=err.message||'Не удалось сохранить внешний вид.';
+    renderStyleControls();
+  }
+}
+function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id),getCarCustomization(c.id).vinylId)+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
 $('partsShop').innerHTML=parts.map(p=>{let has=!!upg()[p.id];return '<div class="part"><div class="part-icon">'+({ecu:'🧠',intake:'🌬️',exhaust:'🔊',turbo:'🌀',clutch:'⚙️',tires:'🏁',gearbox:'🔩',weight:'🪶'}[p.id])+'</div><div class="part-info"><b>'+p.name+'</b><div class="muted">'+p.desc+'</div><div class="part-details"><span>Что даст:</span> '+p.details+'</div><div class="part-benefit">'+p.effect+'</div><strong class="gold" style="display:block;margin-top:6px">'+money(p.price)+' AC</strong></div><button data-part="'+p.id+'" '+(has?'disabled':'')+'>'+(has?'Установлено':'Купить')+'</button></div>'}).join('');
-$('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id))+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
+$('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id),getCarCustomization(c.id).vinylId)+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
 $('tuningCar').innerHTML='<b>'+car().name+'</b> <span class="pill">'+effectivePower()+' л.с.</span><p class="muted">Изменяй настройки аккуратно: максимум наддува без сцепления ухудшает старт.</p>';
-$('ecu').value=state.tune.ecu;$('boost').value=state.tune.boost;$('grip').value=state.tune.grip;$('shift').value=state.tune.shift;updateTuneReadout();syncRace2DCarArt();updateFuelHUD();if(race3d)race3d.syncCar()}
+$('ecu').value=state.tune.ecu;$('boost').value=state.tune.boost;$('grip').value=state.tune.grip;$('shift').value=state.tune.shift;updateTuneReadout();renderStyleControls();syncRace2DCarArt();updateFuelHUD();if(race3d)race3d.syncCar()}
 function updateTuneReadout(){$('powerValue').textContent=effectivePower()+' л.с.';$('gripValue').textContent=state.tune.grip+'%'}
-document.addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;try{if(b.dataset.joinroom){await joinRoom(b.dataset.joinroom);return}if(b.dataset.buycar){let c=cars.find(x=>x.id===b.dataset.buycar);if(!c||state.owned.includes(c.id))return;if(tg?.initData){const data=await api('/garage/buy',{carId:c.id});applyRemoteProfile(data);$('roomStatus').textContent='Автомобиль куплен и сохранён в серверном гараже.';return}if(state.balance<c.price){alert('Не хватает AC. Нужный баланс: '+money(c.price)+' AC.');return}state.balance-=c.price;state.owned.push(c.id);state.selected=c.id;save()}if(b.dataset.part){let p=parts.find(x=>x.id===b.dataset.part);if(!p||upg()[p.id])return;if(tg?.initData){const data=await api('/garage/upgrade',{carId:state.selected,partId:p.id});applyRemoteProfile(data);$('tuneStatus').textContent='Запчасть куплена и сохранена на сервере.';return}if(state.balance<p.price){alert('Не хватает AC для покупки запчасти.');return}state.balance-=p.price;upg()[p.id]=true;save()}if(b.dataset.selectcar){if(tg?.initData){const data=await api('/garage/select',{carId:b.dataset.selectcar});applyRemoteProfile(data);return}state.selected=b.dataset.selectcar;save()}}catch(err){$('roomStatus').textContent=err.message||'Не удалось выполнить действие.'}});
+document.addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;try{if(b.dataset.paint){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.paintId=b.dataset.paint;renderStyleControls();refreshCustomizedCar();return}if(b.dataset.vinyl){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.vinylId=b.dataset.vinyl;renderStyleControls();refreshCustomizedCar();return}if(b.id==='applyStyle'){await applyVehicleStyle();return}if(b.dataset.joinroom){await joinRoom(b.dataset.joinroom);return}if(b.dataset.buycar){let c=cars.find(x=>x.id===b.dataset.buycar);if(!c||state.owned.includes(c.id))return;if(tg?.initData){const data=await api('/garage/buy',{carId:c.id});applyRemoteProfile(data);$('roomStatus').textContent='Автомобиль куплен и сохранён в серверном гараже.';return}if(state.balance<c.price){alert('Не хватает AC. Нужный баланс: '+money(c.price)+' AC.');return}state.balance-=c.price;state.owned.push(c.id);state.selected=c.id;save()}if(b.dataset.part){let p=parts.find(x=>x.id===b.dataset.part);if(!p||upg()[p.id])return;if(tg?.initData){const data=await api('/garage/upgrade',{carId:state.selected,partId:p.id});applyRemoteProfile(data);$('tuneStatus').textContent='Запчасть куплена и сохранена на сервере.';return}if(state.balance<p.price){alert('Не хватает AC для покупки запчасти.');return}state.balance-=p.price;upg()[p.id]=true;save()}if(b.dataset.selectcar){if(tg?.initData){const data=await api('/garage/select',{carId:b.dataset.selectcar});applyRemoteProfile(data);return}state.selected=b.dataset.selectcar;save()}}catch(err){$('roomStatus').textContent=err.message||'Не удалось выполнить действие.'}});
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
