@@ -106,10 +106,13 @@ try {
     "The roadside fence must stay locked to the road world and must not drift away from the asphalt.");
   for (const key of ["a", "b", "c", "d", "e", "f"]) {
     assert.ok(Math.abs(middle.roadTransform[key] - middle.fenceTransform[key]) < 0.0005,
-      "The fence and asphalt must share the same live road-grade transform (" + key + ").");
+      "The fence and asphalt must share the same transform (" + key + ").");
   }
-  assert.ok(Math.abs(middle.roadTransform.b) > 0.00005 || Math.abs(middle.roadTransform.f) > 0.2,
-    "The regression test must exercise a non-flat road section while checking fence alignment.");
+  assert.ok(Math.abs(middle.roadTransform.b) < 0.00005 &&
+    Math.abs(middle.roadTransform.c) < 0.00005 &&
+    Math.abs(middle.roadTransform.e) < 0.05 &&
+    Math.abs(middle.roadTransform.f) < 0.05,
+    "The asphalt must remain level and must not climb, descend, or tilt during the drive.");
   assert.ok(middle.roadLeft < -30, "The asphalt world must pass backwards under the chase camera.");
   assert.ok(middle.carCenterX - initial.centerX > 3,
     "The car must keep a visible forward lead on screen while the camera follows it.");
