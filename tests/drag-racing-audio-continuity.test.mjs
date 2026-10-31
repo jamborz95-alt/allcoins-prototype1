@@ -128,9 +128,9 @@ test("crossing the finish line releases the throttle and smoothly settles the en
 
 test("the VAZ-2107 exhaust is attached to the sprung car body", () => {
   assert.ok(game.includes('const ladaExhaust='));
-  assert.ok(game.includes('const ladaBodyLayer=\'<div class="race-car-body-layer">\'+ladaPreview+ladaExhaust+ladaSmoke+\'</div>\';'),
+  assert.ok(game.includes('const ladaBodyLayer=\'<div class="race-car-body-layer">\'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+\'</div>\';'),
     "The PNG, muffler and exhaust smoke must share one moving body layer.");
-  assert.ok(game.includes('player.innerHTML=(useLadaPng?ladaBodyLayer+ladaWheels:'),
+  assert.ok(game.includes('player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:'),
     "The VAZ body layer must be mounted as a single assembly.");
   assert.match(game, /\.race-car-body-layer\{[^}]*transform:translate3d\(0,var\(--road-bump-y,0px\),0\) rotate\(var\(--road-bump-tilt,0deg\)\)/,
     "The muffler assembly must inherit the chassis suspension and tilt movement.");
@@ -139,17 +139,17 @@ test("the VAZ-2107 exhaust is attached to the sprung car body", () => {
   assert.match(game, /\.race-car-muffler\{inset:0;z-index:auto/);
   assert.match(game, /\.race-car-muffler-body\{[^}]*z-index:0;[^}]*background:linear-gradient/,
     "The main muffler body must stay tucked behind the car body.");
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:2\.7%;top:73\.2%;width:7\.8%;[^}]*z-index:0/,
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:5\.3%;top:70\.9%;width:7\.8%;[^}]*z-index:0/,
     "The pipe should remain attached under the rear of the car.");
-  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:2%;top:72\.6%;width:5px;height:8px;z-index:4/,
+  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:4\.6%;top:70\.3%;width:4px;height:7px;z-index:4/,
     "Only the raised, slightly right-shifted narrow outlet should peek out.");
-  assert.match(game, /\.race-car-exhaust-puff\{left:1\.4%;top:72\.9%;z-index:5/,
+  assert.match(game, /\.race-car-exhaust-puff\{left:calc\(4\.6% - 9\.5px\);top:calc\(70\.3% - 5\.5px\);z-index:5/,
     "Smoke must emerge just behind the rear-facing exhaust tip.");
   assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
     "The exhaust should emit light wisps while the engine idles.");
   assert.match(game, /\.pro-race-cockpit\.race-moving \.race2d-car\.player \.race-car-exhaust-puff\{animation-duration:\.72s/,
     "The exhaust should emit more frequent smoke while the car is moving.");
-  assert.ok(game.includes("translate3d(-43px,-17px,0)"),
+  assert.ok(game.includes("translate3d(-50px,-22px,0)"),
     "Smoke should drift backward from the exhaust rather than appearing beside the car.");
 });
 
