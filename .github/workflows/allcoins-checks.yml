@@ -29,6 +29,18 @@ jobs:
         run: node tests/drag-racing-ui-smoke.mjs
       - name: Test the app in a browser
         run: node tests/checkers-ui-smoke.mjs && node tests/blockblast-interaction-smoke.mjs && node tests/bomb-game-smoke.mjs && node tests/towers-game-smoke.mjs && node tests/seka-fullscreen-smoke.mjs && node tests/smoke-test.mjs && node tests/support-ui-smoke.mjs && node tests/rps-ui-smoke.mjs && node tests/shared-card-assets-smoke.mjs
+
+      - name: Test drag racing v2 camera and smooth track rendering
+        if: always()
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/allcoins-race-v2-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/drag-racing-v2.html >/dev/null; then break; fi
+            sleep 0.5
+          done
+          node tests/drag-racing-v2-camera-smoke.mjs
       - name: Upload mobile visual test screenshots
         if: always()
         uses: actions/upload-artifact@v4
