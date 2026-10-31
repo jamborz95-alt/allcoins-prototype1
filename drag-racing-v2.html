@@ -868,22 +868,21 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 <style id="allcoins-smooth-hills-motion-v1">
-/* Keep the roadside fence on the exact same changing road grade and slope.
-   Otherwise the road tilts under a stationary fence and appears to run outside it. */
+/* Keep the track level: no uphill/downhill grade or road tilt while driving. */
 #race2dFenceLayer{
-  transform:translate3d(0,var(--race-road-grade-y,0px),0) skewY(var(--race-road-slope,0deg))!important;
+  transform:none!important;
   transform-origin:left top!important;
-  will-change:transform!important;
-  transition:transform .08s linear!important;
+  will-change:auto!important;
+  transition:none!important;
   backface-visibility:hidden;
 }
-/* Smooth asphalt: remove all raised-rut textures and random bump effects. */
+/* Smooth, flat asphalt without hills, ruts or random bump effects. */
 #race2dRoadBumps{display:none!important;opacity:0!important;filter:none!important}
 .race2d-road-surface{
-  transform:translate3d(0,var(--race-road-grade-y,0px),0) skewY(var(--race-road-slope,0deg))!important;
+  transform:none!important;
   transform-origin:left top!important;
-  will-change:transform!important;
-  transition:transform .08s linear!important;
+  will-change:auto!important;
+  transition:none!important;
   background:linear-gradient(180deg,#96948a 0%,#85847b 18%,#74736c 46%,#6e6e68 72%,#77766f 100%)!important;
   border-top:2px solid #d0cbbb!important;
   box-shadow:inset 0 7px 12px #44463f33!important;
@@ -2506,12 +2505,10 @@ function updateUnevenRoad(dt,frameNow=performance.now()){
   const active=Boolean(running&&!finished&&speed>3);
   const metres=Math.max(0,Number(distance)||0);
 
-  // Long, shallow rises and descents: no potholes or short sharp bumps.
-  const phase=metres/245*Math.PI*2;
-  const longGrade=Math.sin(phase);
-  const gentleGrade=Math.sin(phase*.48+1.05);
-  const roadY=active?(longGrade*5.0+gentleGrade*1.8):0;
-  const roadSlope=active?(Math.cos(phase)*.48+Math.cos(phase*.48+1.05)*.16):0;
+  // The road stays level. Keep only subtle body movement from the suspension;
+  // it must not translate, climb, descend or tilt the asphalt itself.
+  const roadY=0;
+  const roadSlope=0;
 
   // The chassis has a visible, soft suspension response while the wheel line stays stable.
   const speedBlend=Math.min(1,Math.max(0,speed/95));
