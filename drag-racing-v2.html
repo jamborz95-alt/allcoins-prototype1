@@ -1558,11 +1558,11 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint1" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint4" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261031-png-paint3';
+  const original='./cars/lada-2107-side.png?v=20261031-png-paint4';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1596,9 +1596,10 @@ function ladaPaintedPng(color){
           const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
           const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo,l=(hi+lo)/2;
           const saturation=hi?d/hi:0;
-          // Glass is dark and the lamps are colored; neutral, bright pixels belong to the painted body.
-          if(l<.48||saturation>.42)continue;
-          const newL=Math.max(.07,Math.min(.94,.12+targetL*.68+(l-.5)*.36));
+          // Tint pearl-white body paint at every shade, including dark lower panels and body shadows.
+          // Deep glass stays dark; colored lamps and strongly chromatic details remain unchanged.
+          if(l<.22||saturation>.34)continue;
+          const newL=Math.max(.055,Math.min(.96,l*(.62+targetL*.78)));
           const c=(1-Math.abs(2*newL-1))*targetS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
           let rr=0,gg=0,bb=0;
           if(targetH<60){rr=c;gg=xh;}else if(targetH<120){rr=xh;gg=c;}else if(targetH<180){gg=c;bb=xh;}else if(targetH<240){gg=xh;bb=c;}else if(targetH<300){rr=xh;bb=c;}else{rr=c;bb=xh;}
