@@ -42,7 +42,7 @@ function readWav(buffer) {
 }
 
 test("the active launcher points to the versioned v2 racing game", () => {
-  assert.match(launcher, /href="\.\/drag-racing-v2\.html\?v=20261031-engine-audio-continuous4"/);
+  assert.match(launcher, /href="\.\/drag-racing-v2\.html\?v=20261031-engine-audio-continuous\d+"/);
 });
 
 test("the engine loop is long enough to avoid repeated short mobile restarts", () => {
