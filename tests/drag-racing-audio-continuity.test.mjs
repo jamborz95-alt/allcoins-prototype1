@@ -71,7 +71,7 @@ test("the engine loop has no silent 50ms windows and a smooth circular boundary"
 });
 
 test("both WebAudio and HTMLAudio use the long engine asset, with a procedural safety layer", () => {
-  assert.ok(game.includes("./cars/vaz2107-engine-continuous.wav.b64?v=20261031-engine-continuous1"));
+  assert.ok(game.includes("./cars/vaz2107-engine-continuous.wav.b64?v=20261031-engine-continuous2"));
   assert.ok(game.includes("return {audio,url,buffer:decoded};"));
   assert.ok(game.includes("raceEngineMedia.loop=true;"));
   assert.ok(game.includes("engineMediaPlaying?.20+load*.05"));
