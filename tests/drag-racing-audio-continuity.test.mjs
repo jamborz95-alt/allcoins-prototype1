@@ -133,11 +133,11 @@ test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tail
   assert.match(game, /\.race-car-muffler-body\{[^}]*background:linear-gradient/);
   assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:83\.5%/);
   assert.match(game, /\.race-car-muffler-outlet\{[^}]*radial-gradient/);
-  assert.match(game, /\.race-car-exhaust-puff\{left:\.1%;top:80\.5%/,
+  assert.match(game, /\.race-car-exhaust-puff\{left:-1\.7%;top:79\.5%/,
     "Smoke must originate at the rear underside of the car, beside the tailpipe.");
   assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
     "The exhaust should emit light wisps while the engine idles.");
-  assert.match(game, /\.pro-race-cockpit\.race-moving \.race2d-car\.player \.race-car-exhaust-puff\{animation-duration:\.78s/,
+  assert.match(game, /\.pro-race-cockpit\.race-moving \.race2d-car\.player \.race-car-exhaust-puff\{animation-duration:\.72s/,
     "The exhaust should emit more frequent smoke while the car is moving.");
   assert.ok(game.includes("translate3d(-43px,-17px,0)"),
     "Smoke should drift backward from the exhaust rather than appearing beside the car.");
