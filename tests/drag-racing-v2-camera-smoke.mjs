@@ -16,7 +16,7 @@ const pageErrors = [];
 let engineAssetResponseStatus = null;
 page.on("pageerror", error => pageErrors.push(error.message));
 page.on("response", response => {
-  if (response.url().includes("/cars/vaz2107-engine-original.wav.b64")) {
+  if (response.url().includes("/cars/vaz2107-engine-arcade.wav.b64")) {
     engineAssetResponseStatus = response.status();
   }
 });
@@ -44,7 +44,16 @@ try {
     window.__raceEngineAudioStatus === "playing" ||
     window.__raceEngineAudioStatus === "procedural-fallback", null, { timeout: 8000 });
   assert.equal(engineAssetResponseStatus, 200,
-    "The locally bundled VAZ-2107 engine loop must load successfully without an external audio host.");
+    "The new locally bundled arcade VAZ-2107 engine loop must load successfully.");
+  const audioAsset = await page.evaluate(async () => {
+    const response = await fetch("./cars/vaz2107-engine-arcade.wav.b64");
+    const encoded = (await response.text()).trim();
+    const decoded = atob(encoded.slice(0, 16));
+    return { ok: response.ok, encodedLength: encoded.length, riffHeader: decoded.slice(0, 4) };
+  });
+  assert.equal(audioAsset.ok, true, "The replacement engine audio asset must be reachable.");
+  assert.ok(audioAsset.encodedLength > 100000 && audioAsset.riffHeader === "RIFF",
+    "The replacement must be a complete, non-empty WAV loop, not the previous audio file.");
 
   await page.locator("#startRace").click();
   await page.waitForFunction(() => {
@@ -61,6 +70,8 @@ try {
     contextState: window.__raceAudioState || null
   }));
   assert.equal(idleAudio.debug.enabled, true, "The engine audio must be enabled when the full-screen race cockpit opens.");
+  assert.equal(idleAudio.debug.sample, "vaz2107-engine-arcade.wav.b64",
+    "The newly generated game-style engine loop, not the previous sample, must be selected.");
   assert.ok(idleAudio.debug.mediaPlaying || idleAudio.debug.proceduralLevel > 0,
     "A local engine loop or live procedural fallback must be audible when the cockpit opens.");
 
