@@ -134,12 +134,12 @@ test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tail
     "The muffler wrapper must not create a foreground stacking context.");
   assert.match(game, /\.race-car-muffler-body\{[^}]*z-index:0;[^}]*background:linear-gradient/,
     "The muffler body must be tucked behind the car body.");
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:78%;[^}]*z-index:0/,
-    "Most of the tailpipe must remain hidden behind the car.");
-  assert.match(game, /\.race-car-muffler-outlet\{[^}]*top:82\.6%;width:10px;height:5px;z-index:4/,
-    "Only the small metal tip should peek out under the car.");
-  assert.match(game, /\.race-car-exhaust-puff\{left:-1\.7%;top:81%;z-index:5/,
-    "Smoke must come from just behind the small visible tip.");
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:-\.5%;top:77\.8%;width:7\.8%;[^}]*z-index:0/,
+    "The pipe should run horizontally from beneath the rear of the car.");
+  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:-1\.2%;top:77\.2%;width:5px;height:8px;z-index:4/,
+    "The narrow oval outlet should face toward the rear, not toward the viewer.");
+  assert.match(game, /\.race-car-exhaust-puff\{left:-1\.8%;top:77\.5%;z-index:5/,
+    "Smoke must emerge just behind the rear-facing exhaust tip.");
   assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
     "The exhaust should emit light wisps while the engine idles.");
   assert.match(game, /\.pro-race-cockpit\.race-moving \.race2d-car\.player \.race-car-exhaust-puff\{animation-duration:\.72s/,
