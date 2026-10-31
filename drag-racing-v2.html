@@ -2337,22 +2337,51 @@ async function preloadRaceMediaAudio(){
 }
 function playRaceMedia(audio){
   if(!audio)return false;
+  const now=performance.now();
+  // HTMLMediaElement.play() remains pending while Android WebView starts a local
+  // audio stream. Calling it again every animation frame resets/interrupts startup.
+  if(audio.__allcoinsPlayPending)return true;
+  if(!audio.paused&&!audio.ended)return true;
+  if(now<(audio.__allcoinsNextPlayAt||0))return false;
+
+  audio.__allcoinsPlayPending=true;
+  const token=(Number(audio.__allcoinsPlayToken)||0)+1;
+  audio.__allcoinsPlayToken=token;
+  let settled=false;
+  const settle=(success,error)=>{
+    if(settled||audio.__allcoinsPlayToken!==token)return;
+    settled=true;
+    audio.__allcoinsPlayPending=false;
+    if(success){
+      audio.__allcoinsNextPlayAt=0;
+      window.__raceAudioStatus='playing';
+      if(audio===raceEngineMedia)window.__raceEngineAudioStatus='playing';
+    }else{
+      // Back off briefly instead of issuing dozens of rejected play() calls.
+      audio.__allcoinsNextPlayAt=performance.now()+650;
+      window.__raceAudioStatus='playback blocked';
+      if(audio===raceEngineMedia)window.__raceEngineAudioStatus='retrying-html-fallback';
+      window.__raceAudioError=String(error&&error.message||error||'Audio playback did not start');
+    }
+  };
+  audio.addEventListener('playing',()=>settle(true),{once:true});
   try{
     const promise=audio.play();
     if(promise&&typeof promise.then==='function'){
-      promise.then(()=>{
-        window.__raceAudioStatus='playing';
-        if(audio===raceEngineMedia)window.__raceEngineAudioStatus='playing';
-      }).catch(error=>{
-        window.__raceAudioStatus='playback blocked';
-        if(audio===raceEngineMedia)window.__raceEngineAudioStatus='procedural-fallback';
-        window.__raceAudioError=String(error&&error.message||error);
-      });
+      promise.then(()=>settle(true)).catch(error=>settle(false,error));
+    }else{
+      settle(true);
     }
+    // Some mobile WebViews leave the play promise unresolved during a stall.
+    // Release the guard only when the element has not actually begun playing.
+    setTimeout(()=>{
+      if(audio.__allcoinsPlayToken!==token||!audio.__allcoinsPlayPending)return;
+      if(!audio.paused&&!audio.ended)settle(true);
+      else settle(false,new Error('Audio playback startup timed out'));
+    },1200);
     return true;
   }catch(error){
-    window.__raceAudioStatus='media play error';
-    window.__raceAudioError=String(error&&error.message||error);
+    settle(false,error);
     return false;
   }
 }
@@ -2374,8 +2403,14 @@ function startVaz2107Media(){
   updateRaceEngineAudio();
 }
 function updateVaz2107Media(){
-  const context=raceAudio,source=raceEngineSampleSource;
+  const context=raceAudio;
   const active=Boolean(raceEngineSoundEnabled&&(raceCockpitOpen||running));
+  // Recover the gapless WebAudio loop if a mobile WebView unexpectedly drops
+  // its BufferSource while the audio context is still running.
+  if(active&&context?.state==='running'&&raceEngineBuffer&&!raceEngineSampleSource){
+    startRaceEngineSample();
+  }
+  const source=raceEngineSampleSource;
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
   const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
   const targetRate=vazEnginePlaybackRate(currentRpm)+(gasHeld?.025:0);
