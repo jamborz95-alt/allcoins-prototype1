@@ -1326,8 +1326,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 #proRaceCockpit #race2dFinishStripe{
   position:absolute!important;
-  left:calc(26% + clamp(245px,27.5vw,390px) - 7px)!important;
-  right:auto!important;top:0!important;bottom:0!important;
+  left:calc(26% + clamp(245px,27.5vw,390px) - 7px);
+  right:auto!important;top:25%!important;bottom:0!important;
   width:24px!important;height:auto!important;min-height:0!important;
   display:block!important;visibility:visible!important;opacity:1!important;
   z-index:8!important;box-sizing:border-box!important;
@@ -3500,7 +3500,7 @@ function updateRace2DCamera(dt=1/60,motion=null){
     const carWidthPx=Math.max(245,Math.min(390,motion.sceneWidth*.275));
     const finishLeftPx=motion.sceneWidth*.12+terminalScreenLeadPx+carWidthPx-7;
     const finishLeft=finishLeftPx.toFixed(2)+'px';
-    if(stripe.style.left!==finishLeft)stripe.style.left=finishLeft;
+    if(stripe.style.left!==finishLeft)stripe.style.setProperty('left',finishLeft,'important');
   }
 }
 function updateHUD(dt=1/60,motionAlreadyUpdated=false){
