@@ -1981,7 +1981,10 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const currentSpeed=Math.max(0,Number(speed)||0);
   const targetWorldSpeed=running?currentSpeed:0;
   const worldSpeedBlend=1-Math.exp(-Math.max(0,dt)/.11);
-  raceWorldSpeed+=(targetWorldSpeed-raceWorldSpeed)*worldSpeedBlend;
+  /* Camera lock is visual only: do not ease down the car's screen travel.
+     While locked, use the live game speed directly; physics and speed stay untouched. */
+  if(raceCameraLockActive)raceWorldSpeed=targetWorldSpeed;
+  else raceWorldSpeed+=(targetWorldSpeed-raceWorldSpeed)*worldSpeedBlend;
   raceWorldOffset+=(raceWorldSpeed/3.6)*dt*9.6*Math.max(.6,Math.min(1.35,sceneWidth/1280));
 
   const wrap=Math.max(1,sceneWidth*1.5);
