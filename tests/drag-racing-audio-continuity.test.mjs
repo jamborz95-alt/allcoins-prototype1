@@ -79,8 +79,8 @@ test("both WebAudio and HTMLAudio use the long engine asset, with a procedural s
 });
 
 test("the active v2 racing script parses", () => {
-  const scripts = [...game.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
-  const inline = scripts.find(match => !/\\bsrc\\s*=|\\btype\\s*=\\s*["']importmap/i.test(match[1]));
+  const scripts = [...game.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+  const inline = scripts.find(match => !/\bsrc\s*=|\btype\s*=\s*["']importmap/i.test(match[1]));
   assert.ok(inline, "Expected an inline racing-game script.");
   assert.doesNotThrow(() => new Function(inline[2]), "Racing-game script must be syntactically valid.");
 });
