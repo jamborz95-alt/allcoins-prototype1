@@ -118,6 +118,10 @@ try {
   assert.equal(await headlightButton.getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true);
 
+  await page.waitForFunction(() => {
+    const beam = document.querySelector("#race2dPlayerCar .race-car-headlight-glow");
+    return beam && Number.parseFloat(getComputedStyle(beam).opacity) > 0.7;
+  }, null, { timeout: 1500 });
   const beam = await page.locator("#race2dPlayerCar .race-car-headlight-glow").evaluate(el => {
     const s = getComputedStyle(el, "::before");
     const box = el.getBoundingClientRect();
