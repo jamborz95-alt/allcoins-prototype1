@@ -122,7 +122,7 @@ try {
     const s = getComputedStyle(el, "::before");
     return { clipPath: s.clipPath, height: el.getBoundingClientRect().height };
   });
-  assert.match(beam.clipPath, /0 14%.*100% 86%/,
+  assert.match(beam.clipPath, /0% 14%.*0% 86%/,
     "The headlight beam should use the wider fan shape while keeping the round hotspot hidden.");
 
   const exhaustVisual = await page.evaluate(() => {
