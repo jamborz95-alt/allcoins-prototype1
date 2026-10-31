@@ -260,6 +260,10 @@ try {
       smokeState: getComputedStyle(smoke).animationPlayState,
       smokeRiseLeft: getComputedStyle(smoke, "::before").animationName,
       smokeRiseRight: getComputedStyle(smoke, "::after").animationName,
+      smokeRiseLeftOpacity: getComputedStyle(smoke, "::before").opacity,
+      smokeRiseRightOpacity: getComputedStyle(smoke, "::after").opacity,
+      smokeWrapperOpacity: getComputedStyle(smoke).opacity,
+      smokeBounds: (() => { const r=smoke.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; })(),
       smokeDarkGradient: getComputedStyle(smoke, "::before").backgroundImage,
       speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
       rpm: window.__raceV2SmokeHooks.getRaceState().rpm,
@@ -287,6 +291,14 @@ try {
     "Burnout tyre smoke must rise from the contact patch toward the right.");
   assert.match(burnoutVisual.smokeDarkGradient, /radial-gradient/,
     "Burnout tyre smoke must use a dense dark plume.");
+  assert.equal(burnoutVisual.smokeWrapperOpacity, "1",
+    "The driven tyre smoke layer must remain visible during burnout.");
+  await page.waitForTimeout(180);
+  await page.screenshot({
+    path: resolve(root, "artifacts", "drag-racing-v2-burnout-smoke.png"),
+    fullPage: false
+  });
+  console.log("DRAG RACING V2 BURNOUT SMOKE VISUAL", JSON.stringify(burnoutVisual));
   assert.ok(burnoutVisual.speed <= 3 && burnoutVisual.rpm > 1100 && burnoutVisual.audioThrottle === true,
     "The engine must rev while the brake holds the car nearly stationary: " + JSON.stringify(burnoutVisual));
 
