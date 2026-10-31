@@ -102,6 +102,29 @@ try {
   assert.ok(idleAudio.debug.mediaPlaying || idleAudio.debug.proceduralLevel > 0,
     "A local engine loop or live procedural fallback must be audible when the cockpit opens.");
 
+  const headlightButton = page.locator("#proHeadlightToggle");
+  assert.equal(await headlightButton.count(), 1, "The v2 cockpit should expose a headlight switch.");
+  assert.equal(await headlightButton.textContent(), "☀ ФАРЫ ВКЛ");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true);
+  await headlightButton.click();
+  assert.equal(await headlightButton.textContent(), "☼ ФАРЫ ВЫКЛ");
+  assert.equal(await headlightButton.getAttribute("aria-pressed"), "false");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), false,
+    "Turning off the headlights must hide the beam.");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-engine-on")), true,
+    "The headlight switch must not stop the engine.");
+  await headlightButton.click();
+  assert.equal(await headlightButton.textContent(), "☀ ФАРЫ ВКЛ");
+  assert.equal(await headlightButton.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true);
+
+  const beam = await page.locator("#race2dPlayerCar .race-car-headlight-glow").evaluate(el => {
+    const s = getComputedStyle(el, "::before");
+    return { clipPath: s.clipPath, height: el.getBoundingClientRect().height };
+  });
+  assert.match(beam.clipPath, /0 14%.*100% 86%/,
+    "The headlight beam should use the wider fan shape while keeping the round hotspot hidden.");
+
   const exhaustVisual = await page.evaluate(() => {
     const read = selector => {
       const el = document.querySelector(selector);
