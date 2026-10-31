@@ -868,6 +868,15 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 <style id="allcoins-smooth-hills-motion-v1">
+/* Keep the roadside fence on the exact same changing road grade and slope.
+   Otherwise the road tilts under a stationary fence and appears to run outside it. */
+#race2dFenceLayer{
+  transform:translate3d(0,var(--race-road-grade-y,0px),0) skewY(var(--race-road-slope,0deg))!important;
+  transform-origin:left top!important;
+  will-change:transform!important;
+  transition:transform .08s linear!important;
+  backface-visibility:hidden;
+}
 /* Smooth asphalt: remove all raised-rut textures and random bump effects. */
 #race2dRoadBumps{display:none!important;opacity:0!important;filter:none!important}
 .race2d-road-surface{
