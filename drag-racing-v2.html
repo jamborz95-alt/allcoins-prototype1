@@ -1483,38 +1483,38 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 (function(){
 const tg=window.Telegram?.WebApp;try{tg?.ready();tg?.expand()}catch(e){}
 const cars=[
-{id:'2107',name:'ВАЗ-2107',sub:'Классика • задний привод',drive:'rwd',price:8500,power:72,weight:1030,tank:42,consumption:9.5,emoji:'🚘',owned:true},
-{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',drive:'rwd',price:2500,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
+{id:'2107',name:'ВАЗ-2107',sub:'Классика • задний привод',drive:'rwd',price:0,power:72,weight:1030,tank:42,consumption:9.5,emoji:'🚘',owned:true},
+{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',drive:'rwd',price:0,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
 {id:'2105',name:'ВАЗ-2105',sub:'Дешёвая классика • задний привод',drive:'rwd',price:3500,power:64,weight:995,tank:39,consumption:8.9,emoji:'🚗'},
-{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',drive:'rwd',price:4500,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
+{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',drive:'rwd',price:0,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
 {id:'2106',name:'ВАЗ-2106',sub:'Классика • задний привод',drive:'rwd',price:6000,power:75,weight:1045,tank:39,consumption:9.3,emoji:'🚘'},
-{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:7500,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
+{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:0,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
 {id:'2110',name:'ВАЗ-2110',sub:'Седан • передний привод',drive:'fwd',price:11000,power:78,weight:1020,tank:43,consumption:8.2,emoji:'🚘'},
 {id:'priora',name:'LADA Priora',sub:'Лёгкий седан • передний привод',drive:'fwd',price:18000,power:98,weight:1185,tank:43,consumption:7.4,emoji:'🚗'},
-{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:25000,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
+{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:00,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
 {id:'granta',name:'LADA Granta',sub:'Современный седан',drive:'fwd',price:35000,power:90,weight:1090,tank:50,consumption:6.9,emoji:'🚙'},
 {id:'niva',name:'LADA Niva Legend',sub:'Полный привод • повышенная масса',drive:'awd',price:50000,power:83,weight:1285,tank:58,consumption:10.8,emoji:'🚙'},
-{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:85000,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
+{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:00,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
 const CAR_PAINTS = [
   {id:'factory',name:'Заводской',color:'#cf2637',price:0},
-  {id:'pearl',name:'Жемчужный',color:'#f1efe8',price:2500},
-  {id:'black',name:'Чёрный металлик',color:'#171c23',price:2500},
-  {id:'silver',name:'Серебристый',color:'#aebbc5',price:2500},
-  {id:'blue',name:'Синий',color:'#1769a8',price:2500},
-  {id:'cyan',name:'Бирюзовый',color:'#169ab4',price:2500},
-  {id:'green',name:'Зелёный',color:'#237b59',price:2500},
-  {id:'yellow',name:'Жёлтый',color:'#e4b82c',price:2500},
-  {id:'orange',name:'Оранжевый',color:'#d65b2b',price:2500},
-  {id:'purple',name:'Фиолетовый',color:'#704a9e',price:2500}
+  {id:'pearl',name:'Жемчужный',color:'#f1efe8',price:0},
+  {id:'black',name:'Чёрный металлик',color:'#171c23',price:0},
+  {id:'silver',name:'Серебристый',color:'#aebbc5',price:0},
+  {id:'blue',name:'Синий',color:'#1769a8',price:0},
+  {id:'cyan',name:'Бирюзовый',color:'#169ab4',price:0},
+  {id:'green',name:'Зелёный',color:'#237b59',price:0},
+  {id:'yellow',name:'Жёлтый',color:'#e4b82c',price:0},
+  {id:'orange',name:'Оранжевый',color:'#d65b2b',price:0},
+  {id:'purple',name:'Фиолетовый',color:'#704a9e',price:0}
 ];
 const CAR_VINYLS = [
   {id:'none',name:'Без плёнки',desc:'Чистый кузов без наклеек.',price:0},
-  {id:'rally',name:'Ралли-полосы',desc:'Две контрастные полосы вдоль кузова.',price:5500},
-  {id:'checker',name:'Шахматная',desc:'Шахматный гоночный рисунок на двери.',price:7500},
-  {id:'sport',name:'Спорт',desc:'Динамичная диагональная графика.',price:8500},
-  {id:'number',name:'Стартовый номер',desc:'Номер 07 и спортивная боковая полоса.',price:4500}
+  {id:'rally',name:'Ралли-полосы',desc:'Две контрастные полосы вдоль кузова.',price:0},
+  {id:'checker',name:'Шахматная',desc:'Шахматный гоночный рисунок на двери.',price:0},
+  {id:'sport',name:'Спорт',desc:'Динамичная диагональная графика.',price:0},
+  {id:'number',name:'Стартовый номер',desc:'Номер 07 и спортивная боковая полоса.',price:0}
 ];
 function getCarCustomization(id){
   const saved=state.customization?.[String(id)]||{};
@@ -2134,7 +2134,7 @@ function buildProSpeedScale(){
 
 
 const parts=[
-{id:'ecu',name:'Спортивный ECU',desc:'Перенастройка электронного блока управления.',details:'Повышает отдачу двигателя и помогает получить больше тяги при разгоне.',effect:'+8% к расчётной мощности',price:25000,power:8,kind:'engine'},
+{id:'ecu',name:'Спортивный ECU',desc:'Перенастройка электронного блока управления.',details:'Повышает отдачу двигателя и помогает получить больше тяги при разгоне.',effect:'+8% к расчётной мощности',price:00,power:8,kind:'engine'},
 {id:'intake',name:'Холодный впуск',desc:'Улучшенная подача воздуха в двигатель.',details:'Обновлённый впуск помогает мотору эффективнее получать воздух.',effect:'+5% к расчётной мощности',price:18000,power:5,kind:'engine'},
 {id:'exhaust',name:'Прямоточный выхлоп',desc:'Улучшенный отвод выхлопных газов.',details:'Спортивная выпускная система снижает сопротивление потоку выхлопа.',effect:'+7% к расчётной мощности',price:32000,power:7,kind:'engine'},
 {id:'turbo',name:'Турбокит Stage 1',desc:'Турбонаддув для заметного прироста отдачи.',details:'Самый большой прирост мощности среди доступных запчастей.',effect:'+22% к расчётной мощности',price:95000,power:22,kind:'engine'},
