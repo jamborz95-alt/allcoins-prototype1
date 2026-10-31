@@ -282,7 +282,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Large scenery strips slide on the GPU without repainting the SVG art each frame. */
 .race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{
   left:0!important;right:auto!important;width:300%!important;
-  background-repeat:repeat-x!important;background-size:300vw 100%!important;
+  background-repeat:repeat-x!important;background-size:100% 100%!important;
   will-change:transform!important;backface-visibility:hidden;
 }
 /* Final handling pass: smooth car tracking, widely spaced shifters and a real pedal silhouette. */
@@ -1476,15 +1476,16 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   raceWorldSpeed+=(targetWorldSpeed-raceWorldSpeed)*worldSpeedBlend;
   raceWorldOffset+=(raceWorldSpeed/3.6)*dt*9.6*Math.max(.6,Math.min(1.35,sceneWidth/1280));
 
-  const wrap=Math.max(1,sceneWidth*3);
+  const wrap=Math.max(1,sceneWidth*1.5);
   const city=refs?.city||$('race2dCityLayer');
   const trees=refs?.trees||$('race2dTreeLayer');
   const fence=refs?.fence||$('race2dFenceLayer');
   const marks=refs?.marks||$('race2dRoadMarks');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value;};
-  // The scenery now stays in the viewport instead of being carried away on the
-  // ever-growing car-world transform. Each repeated layer scrolls by a bounded
-  // phase, so 1-mile, 2-mile and 4-km races cannot run out of road or scenery.
+  // Each SVG contains two identical 1600px scenery tiles. The strip is three
+  // scene-widths wide, so its visible image repeats every 1.5 scene widths.
+  // Wrap every parallax layer at that exact visual period; using a 3x phase
+  // made the skyline jump back to its first tile shortly before the finish.
   const cityShift=(raceWorldOffset*.36)%wrap;
   const treeShift=(raceWorldOffset*.70)%wrap;
   const fenceShift=raceWorldOffset%wrap;
