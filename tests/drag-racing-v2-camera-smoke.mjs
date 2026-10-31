@@ -61,7 +61,8 @@ try {
     contextState: window.__raceAudioState || null
   }));
   assert.equal(idleAudio.debug.enabled, true, "The engine audio must be enabled when the full-screen race cockpit opens.");
-  assert.ok(idleAudio.debug.proceduralLevel > 0, "The engine sound must have a live procedural fallback layer.");
+  assert.ok(idleAudio.debug.mediaPlaying || idleAudio.debug.proceduralLevel > 0,
+    "A local engine loop or live procedural fallback must be audible when the cockpit opens.");
 
   const initial = await page.locator("#race2dPlayerCar").evaluate(el => {
     const r = el.getBoundingClientRect();
@@ -123,8 +124,9 @@ try {
   assert.ok(movingAudio?.enabled && movingAudio?.throttle,
     "The engine audio must remain enabled and respond while the accelerator is held.");
   assert.ok(movingAudio.rpm > idleAudio.debug.rpm &&
-    movingAudio.firingHz > idleAudio.debug.firingHz,
-    "The engine firing rate must rise as the engine revs under throttle.");
+    movingAudio.firingHz > idleAudio.debug.firingHz &&
+    movingAudio.mediaPlaybackRate > idleAudio.debug.mediaPlaybackRate,
+    "The engine sample pitch and firing rate must rise as the engine revs under throttle.");
   assert.ok(movingAudio.mediaPlaying || movingAudio.proceduralLevel > 0,
     "A playable engine sample or procedural fallback must remain audible during driving.");
   assert.ok(middle.cameraX < -40, "The camera must move forward with the car, not remain fixed.");
