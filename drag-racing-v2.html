@@ -632,8 +632,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* VAZ-2107 exhaust is anchored inside the sprung body layer, so it follows every chassis movement. */
 .race2d-car.player:after{display:none!important}
 .race-car-headlight-glow,.race-car-exhaust-puff,.race-car-muffler{position:absolute;pointer-events:none}
-.race-car-headlight-glow{left:96%!important;top:26%!important;width:68%;height:50%;position:absolute!important;z-index:8;opacity:0;transform-origin:left center;overflow:visible;clip-path:none;background:transparent;filter:none;transition:opacity .2s ease}
-.race-car-headlight-glow:before{content:'';position:absolute;left:0;top:0;width:100%;height:100%;clip-path:polygon(0 28%,100% 5%,100% 95%,0 72%);background:linear-gradient(90deg,#fff9d9c9 0%,#fff0b48a 25%,#ffe5a54a 66%,transparent 100%);filter:blur(2px)}
+.race-car-headlight-glow{left:96%!important;top:16%!important;width:68%;height:70%;position:absolute!important;z-index:8;opacity:0;transform-origin:left center;overflow:visible;clip-path:none;background:transparent;filter:none;transition:opacity .2s ease}
+.race-car-headlight-glow:before{content:'';position:absolute;left:0;top:0;width:100%;height:100%;clip-path:polygon(0 14%,100% 0%,100% 100%,0 86%);background:linear-gradient(90deg,#fff9d9c9 0%,#fff0b48a 25%,#ffe5a54a 66%,transparent 100%);filter:blur(2px)}
 .race-car-headlight-glow:after{display:none!important;content:none!important}
 .race-car-body-layer{position:absolute;inset:0;z-index:1;overflow:visible;transform:translate3d(0,var(--road-bump-y,0px),0) rotate(var(--road-bump-tilt,0deg));transform-origin:center bottom;transition:transform .10s cubic-bezier(.22,.61,.36,1);will-change:transform}
 .race2d-car.png-car .race-car-body-layer .race-car-png{transform:none!important}
@@ -645,7 +645,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race-car-exhaust-puff.puff-two{left:calc(4.6% - 11px);top:calc(70.3% - 6.5px);width:26px;height:19px}
 .race-car-exhaust-puff.puff-three{left:calc(4.6% - 12.5px);top:calc(70.3% - 7.5px);width:29px;height:21px}
 .race-car-muffler{inset:0;z-index:auto;overflow:visible}
-.pro-race-cockpit.race-engine-on .race-car-headlight-glow{opacity:.9;animation:none}
+.pro-race-cockpit.race-headlights-on .race-car-headlight-glow{opacity:.9;animation:none}
 .pro-race-cockpit.race-engine-on:not(.race-moving) .race2d-car.player{translate:0 0;animation:race-engine-idle .19s ease-in-out infinite alternate}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff{animation:race-exhaust-idle 1.8s ease-out infinite;opacity:.62}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-muffler-outlet::after{animation:race-exhaust-jet 1.8s ease-out infinite}
@@ -955,9 +955,10 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <div class="pro-fuel-readout" aria-label="Топливо"><div class="pro-fuel-head"><span>⛽ БЕНЗИН</span><strong><span id="proFuelLiters">42.00</span>/<span id="proFuelCap">42</span> л</strong></div><div class="pro-fuel-meter"><i id="proFuelMeterBar"></i></div><div id="proFuelStatus" class="pro-fuel-status">ПОЛНЫЙ БАК</div><button id="proRefuelFuel" type="button">ЗАПРАВИТЬ</button></div>
     <div id="proRaceTimer" class="pro-race-timer">00.000</div>
     <div class="pro-race-top-label">PRO DRAG STRIP · LIVE</div>
-    <div class="pro-race-audio-controls" aria-label="Настройки звука">
+    <div class="pro-race-audio-controls" aria-label="Настройки звука и света">
       <button id="proMusicToggle" class="active" type="button" aria-pressed="true">♫ МУЗЫКА ВКЛ</button>
       <button id="proEngineToggle" class="active" type="button" aria-pressed="true">🔊 МОТОР ВКЛ</button>
+      <button id="proHeadlightToggle" class="active" type="button" aria-label="Переключить фары" aria-pressed="true">☀ ФАРЫ ВКЛ</button>
     </div>
     <div class="race2d-scene" aria-label="2D drag racing track">
       <div class="race2d-environment" id="race2dEnvironment" aria-hidden="true">
@@ -1997,7 +1998,7 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
 let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,raceMusicGain=null,raceMusicTimer=null,raceMusicNextAt=0,raceMusicStep=0,raceMusicEnabled=true,raceEngineSoundEnabled=true,raceMusicMedia=null,raceEngineMedia=null,raceMusicObjectUrl=null,raceEngineObjectUrl=null,raceMediaLoadPromise=null,lastGearSoundAt=0,raceFinishIdleRampTimer=null,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
-function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
+function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true;
 let raceEngineSampleStartCount=0,raceAudioWatchdogTimer=null;
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
@@ -2088,7 +2089,7 @@ function openProRaceCockpit(){
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
-  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
+  raceCockpitOpen=true;panel.classList.add('race-engine-on');panel.classList.toggle('race-headlights-on',raceHeadlightsEnabled);orientationWarningDismissed=false;
   // Start all engine audio directly within the user's tap so mobile WebViews
   // keep the audio permission. The starter briefly overlaps the rising idle loop.
   initRaceAudio();
@@ -2131,7 +2132,7 @@ function syncProRaceCockpit(){
   $('proGasHold').classList.toggle('held',gasHeld);
   const cockpit=$('proRaceCockpit');
   cockpit.classList.toggle('race-engine-on',Boolean(raceCockpitOpen));
-  cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen));
+  cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen&&raceHeadlightsEnabled));
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
   cockpit.style.setProperty('--race-wheel-duration',Math.max(.035,.48/(1+speedNow/18))+'s');
   cockpit.classList.toggle('race-online',Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'));
@@ -2676,9 +2677,10 @@ function stopRaceAudioWatchdog(){
   }
 }
 function syncRaceAudioButtons(){
-  const music=$('proMusicToggle'),engine=$('proEngineToggle');
+  const music=$('proMusicToggle'),engine=$('proEngineToggle'),headlights=$('proHeadlightToggle');
   if(music){music.textContent=raceMusicEnabled?'♫ МУЗЫКА ВКЛ':'♫ МУЗЫКА ВЫКЛ';music.classList.toggle('active',raceMusicEnabled);music.setAttribute('aria-pressed',String(raceMusicEnabled));}
   if(engine){engine.textContent=raceEngineSoundEnabled?'🔊 МОТОР ВКЛ':'🔇 МОТОР ВЫКЛ';engine.classList.toggle('active',raceEngineSoundEnabled);engine.setAttribute('aria-pressed',String(raceEngineSoundEnabled));}
+  if(headlights){headlights.textContent=raceHeadlightsEnabled?'☀ ФАРЫ ВКЛ':'☼ ФАРЫ ВЫКЛ';headlights.classList.toggle('active',raceHeadlightsEnabled);headlights.setAttribute('aria-pressed',String(raceHeadlightsEnabled));}
 }
 function playRaceShiftSound(direction=1){
   initRaceAudio();
@@ -2897,6 +2899,11 @@ $('proEngineToggle')?.addEventListener('click',()=>{
   if(raceEngineSoundEnabled)startVaz2107Media();
   else updateVaz2107Media();
   updateRaceEngineAudio();syncRaceAudioButtons();
+});
+$('proHeadlightToggle')?.addEventListener('click',()=>{
+  raceHeadlightsEnabled=!raceHeadlightsEnabled;
+  syncProRaceCockpit();
+  syncRaceAudioButtons();
 });
 function bindShiftPaddle(id,direction){
   const el=$(id);if(!el)return;
