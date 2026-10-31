@@ -41,7 +41,9 @@ try {
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving scene must be inside its chase-camera world.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-png").count(), 1, "The selected car PNG must be present.");
   await page.waitForFunction(() => window.__raceEngineAudioStatus === "ready" ||
+    window.__raceEngineAudioStatus === "html-fallback-ready" ||
     window.__raceEngineAudioStatus === "playing" ||
+    window.__raceEngineAudioStatus === "playing-html-fallback" ||
     window.__raceEngineAudioStatus === "procedural-fallback", null, { timeout: 8000 });
   assert.equal(engineAssetResponseStatus, 200,
     "The new locally bundled arcade VAZ-2107 engine loop must load successfully.");
