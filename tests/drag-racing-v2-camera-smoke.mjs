@@ -134,13 +134,22 @@ try {
     "The pipe must remain concealed behind the car, except for its terminal tip.");
   assert.equal(exhaustVisual.carPng?.zIndex, "1",
     "The car PNG must cover the muffler body and most of the pipe.");
-  assert.ok(exhaustVisual.outlet?.width >= 9 && exhaustVisual.outlet?.width <= 12 &&
-    exhaustVisual.outlet?.height >= 4 && exhaustVisual.outlet?.height <= 6,
-    "Only a small exhaust tip should be visible below the rear of the car: " + JSON.stringify(exhaustVisual));
+  assert.ok(exhaustVisual.tailpipe?.width >= 30 && exhaustVisual.tailpipe?.height >= 5,
+    "The exhaust pipe should run horizontally beneath the rear of the car.");
+  assert.ok(exhaustVisual.outlet?.width >= 4 && exhaustVisual.outlet?.width <= 6 &&
+    exhaustVisual.outlet?.height >= 7 && exhaustVisual.outlet?.height <= 9,
+    "Only a narrow side-facing exhaust tip should be visible: " + JSON.stringify(exhaustVisual));
+  const tipCenterY = exhaustVisual.outlet.top + exhaustVisual.outlet.height / 2;
+  const pipeCenterY = exhaustVisual.tailpipe.top + exhaustVisual.tailpipe.height / 2;
+  assert.ok(Math.abs(tipCenterY - pipeCenterY) <= 2.5,
+    "The exhaust tip must align with the tailpipe instead of hanging below it: " + JSON.stringify(exhaustVisual));
+  assert.ok(exhaustVisual.outlet.left < exhaustVisual.tailpipe.left &&
+    exhaustVisual.outlet.right <= exhaustVisual.tailpipe.left + 3,
+    "The pipe's terminal opening must sit on its left/rear end and point away from the player: " + JSON.stringify(exhaustVisual));
   assert.equal(exhaustVisual.outlet?.zIndex, "4",
-    "The tiny terminal tip must appear over the PNG while the rest of the exhaust remains hidden.");
+    "Only the narrow terminal tip should peek out over the car body.");
   assert.ok(Number(exhaustVisual.smoke.zIndex) >= 5,
-    "Smoke must be visible as it leaves the small terminal tip.");
+    "Smoke must be visible as it leaves the rear-facing tip.");
   assert.equal(exhaustVisual.smoke?.animationName, "race-exhaust-idle",
     "Smoke must already be emitted on engine idle.");
   assert.equal(exhaustVisual.smoke?.animationPlayState, "running",
