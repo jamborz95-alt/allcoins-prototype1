@@ -1603,12 +1603,11 @@ function ladaPaintedPng(color){
   ladaPaintImageCache.set(target,promise);return promise;
 }
 function applyLadaPaintToImages(color){
+  const key=String(color||'#cf2637');
+  document.querySelectorAll('.race-car-png,.preview-car-png').forEach(img=>{img.dataset.paintColor=key;});
   ladaPaintedPng(color).then(src=>{
     document.querySelectorAll('.race-car-png,.preview-car-png').forEach(img=>{
-      if(img.dataset.paintColor!==String(color||'#cf2637')){
-        img.dataset.paintColor=String(color||'#cf2637');
-        img.src=src;
-      }
+      if(img.dataset.paintColor===key&&img.src!==new URL(src,location.href).href)img.src=src;
     });
   });
 }
