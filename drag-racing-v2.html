@@ -3497,10 +3497,10 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   58%{opacity:.82}
   100%{opacity:0;transform:translate3d(52px,-76px,0) scale(1.42,1.72)}
 }
-/* Headlight v12: soft, rounded light source at the lamp; remove the sharp triangular origin. */
+/* Headlight v13: soft, rounded light source at the lamp; remove the sharp triangular origin. */
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
   position:absolute!important;
-  left:95%!important;top:36%!important;
+  left:96%!important;top:36%!important;
   width:60%!important;height:40%!important;
   z-index:12!important;opacity:0!important;
   display:block!important;overflow:visible!important;
@@ -3523,8 +3523,8 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 }
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow::after{
   content:""!important;display:block!important;
-  position:absolute!important;left:0%!important;top:35%!important;
-  width:6.5%!important;height:27%!important;
+  position:absolute!important;left:.5%!important;top:36%!important;
+  width:5.8%!important;height:24%!important;
   border-radius:50%!important;
   background:radial-gradient(ellipse at 50% 50%,
     rgba(255,255,246,.98) 0 17%,
@@ -3536,5 +3536,28 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 }
 #proRaceCockpit.race-headlights-on #race2dPlayerCar .race-car-headlight-glow{
   opacity:.76!important;
+}
+
+/* Burnout smoke v2: keep new smoke rolling out of the driven tyre without visible gaps. */
+#proRaceCockpit .race-wheel-smoke.burnout-active::before{
+  animation:race-burnout-smoke-flow-left 1.65s linear infinite!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-active::after{
+  animation:race-burnout-smoke-flow-right 1.65s linear infinite!important;
+  animation-delay:-.825s!important;
+}
+@keyframes race-burnout-smoke-flow-left{
+  0%{opacity:.24;transform:translate3d(0,3px,0) scale(.28,.32)}
+  16%{opacity:.92;transform:translate3d(-8px,-11px,0) scale(.62,.76)}
+  42%{opacity:.82;transform:translate3d(-28px,-41px,0) scale(1.08,1.28)}
+  72%{opacity:.58;transform:translate3d(-49px,-70px,0) scale(1.42,1.7)}
+  100%{opacity:.2;transform:translate3d(-66px,-94px,0) scale(1.72,2.04)}
+}
+@keyframes race-burnout-smoke-flow-right{
+  0%{opacity:.24;transform:translate3d(0,3px,0) scale(.28,.32)}
+  16%{opacity:.92;transform:translate3d(8px,-11px,0) scale(.62,.76)}
+  42%{opacity:.82;transform:translate3d(28px,-41px,0) scale(1.08,1.28)}
+  72%{opacity:.58;transform:translate3d(49px,-70px,0) scale(1.42,1.7)}
+  100%{opacity:.2;transform:translate3d(66px,-94px,0) scale(1.72,2.04)}
 }
 </style>
