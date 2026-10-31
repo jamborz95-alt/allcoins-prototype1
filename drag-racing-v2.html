@@ -150,6 +150,9 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* 2D detailed vector car art + left-hand manual shifter / right-hand accelerator */
 .car-thumb.car-art{height:98px;padding:4px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 80%,#334150 0,#141d29 62%,#0b121b 100%);border:1px solid #435365;box-shadow:inset 0 1px #ffffff12}
 .car-thumb.car-art svg{display:block;width:100%;height:100%;overflow:visible}
+.car-thumb.car-art .lada-png-art{position:relative;width:100%;height:100%;min-width:0;min-height:0;overflow:visible}
+.car-thumb.car-art .shop-car-png{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.car-thumb.car-art .lada-png-vinyl{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .pro-shift-paddle{left:4.4%!important;right:auto!important;top:17%!important;width:clamp(48px,5vw,70px)!important;height:clamp(56px,10vh,78px)!important;clip-path:none!important;border-radius:12px!important;background:linear-gradient(145deg,#59626a,#262d34 48%,#11161b)!important;border:2px solid #77848e!important;box-shadow:inset 0 2px 5px #ffffff35,inset 0 -8px 12px #0009,0 4px 7px #0009!important;color:#bfeeff!important;font-size:clamp(24px,3vw,38px)!important}
 .pro-shift-paddle.up{left:4.4%!important;right:auto!important;top:16%!important}
 .pro-shift-paddle.down{left:4.4%!important;right:auto!important;top:43%!important}
@@ -1648,11 +1651,12 @@ function ladaPaintedPng(color){
   });
   ladaPaintImageCache.set(target,promise);return promise;
 }
-function applyLadaPaintToImages(color){
+function applyLadaPaintToImages(color,selector){
   const key=String(color||'#dfe3e6');
-  document.querySelectorAll('.race-car-png,.preview-car-png').forEach(img=>{img.dataset.paintColor=key;});
+  const query=selector||'.race-car-png,.preview-car-png';
+  document.querySelectorAll(query).forEach(img=>{img.dataset.paintColor=key;});
   ladaPaintedPng(color).then(src=>{
-    document.querySelectorAll('.race-car-png,.preview-car-png').forEach(img=>{
+    document.querySelectorAll(query).forEach(img=>{
       if(img.dataset.paintColor===key&&img.src!==new URL(src,location.href).href)img.src=src;
     });
   });
@@ -2758,7 +2762,8 @@ async function applyVehicleStyle(){
     renderStyleControls();
   }
 }
-function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id),getCarCustomization(c.id).vinylId)+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
+function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);let vinyl=getCarCustomization(c.id).vinylId;let art=String(c.id)==='2107'?ladaPngMarkup('shop-car-png',vinyl):carSvg(c.id,carPaintCss(c.id),vinyl);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
+applyLadaPaintToImages(carPaintCss('2107'),'.shop-car-png');
 $('partsShop').innerHTML=parts.map(p=>{let has=!!upg()[p.id];return '<div class="part"><div class="part-icon">'+({ecu:'🧠',intake:'🌬️',exhaust:'🔊',turbo:'🌀',clutch:'⚙️',tires:'🏁',gearbox:'🔩',weight:'🪶'}[p.id])+'</div><div class="part-info"><b>'+p.name+'</b><div class="muted">'+p.desc+'</div><div class="part-details"><span>Что даст:</span> '+p.details+'</div><div class="part-benefit">'+p.effect+'</div><strong class="gold" style="display:block;margin-top:6px">'+money(p.price)+' AC</strong></div><button data-part="'+p.id+'" '+(has?'disabled':'')+'>'+(has?'Установлено':'Купить')+'</button></div>'}).join('');
 $('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+carSvg(c.id,carPaintCss(c.id),getCarCustomization(c.id).vinylId)+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
 $('tuningCar').innerHTML='<b>'+car().name+'</b> <span class="pill">'+effectivePower()+' л.с.</span><p class="muted">Изменяй настройки аккуратно: максимум наддува без сцепления ухудшает старт.</p>';
