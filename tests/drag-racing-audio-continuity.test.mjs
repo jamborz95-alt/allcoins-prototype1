@@ -134,9 +134,9 @@ test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tail
     "The muffler wrapper must not create a foreground stacking context.");
   assert.match(game, /\.race-car-muffler-body\{[^}]*z-index:0;[^}]*background:linear-gradient/,
     "The muffler body must be tucked behind the car body.");
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:1\.9%;top:75\.2%;width:7\.8%;[^}]*z-index:0/,
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:1\.9%;top:74%;width:7\.8%;[^}]*z-index:0/,
     "The pipe should run horizontally from beneath the rear of the car.");
-  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:1\.2%;top:74\.6%;width:5px;height:8px;z-index:4/,
+  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:1\.2%;top:73\.4%;width:5px;height:8px;z-index:4/,
     "The narrow oval outlet should face toward the rear, not toward the viewer.");
   assert.match(game, /\.race-car-exhaust-puff\{left:\.6%;top:74\.9%;z-index:5/,
     "Smoke must emerge just behind the rear-facing exhaust tip.");
