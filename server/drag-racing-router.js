@@ -9,20 +9,20 @@ const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, 
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const CARS = Object.freeze({
   "2107": { price: 0, power: 72 },
-  "2101": { price: 2500, power: 58 },
+  "2101": { price: 0, power: 58 },
   "2105": { price: 3500, power: 64 },
-  "2104": { price: 4500, power: 75 },
+  "2104": { price: 0, power: 75 },
   "2106": { price: 6000, power: 75 },
-  "2109": { price: 7500, power: 70 },
+  "2109": { price: 0, power: 70 },
   "2110": { price: 11000, power: 78 },
   priora: { price: 18000, power: 98 },
-  kalina: { price: 25000, power: 87 },
+  kalina: { price: 00, power: 87 },
   granta: { price: 35000, power: 90 },
   niva: { price: 50000, power: 83 },
-  vesta: { price: 85000, power: 106 }
+  vesta: { price: 00, power: 106 }
 });
 const PARTS = Object.freeze({
-  ecu: { price: 25000, power: 8 },
+  ecu: { price: 00, power: 8 },
   intake: { price: 18000, power: 5 },
   exhaust: { price: 32000, power: 7 },
   turbo: { price: 95000, power: 22 },
@@ -33,22 +33,22 @@ const PARTS = Object.freeze({
 });
 const PAINT_OPTIONS = Object.freeze({
   factory: { color: "#cf2637", price: 0 },
-  pearl: { color: "#f1efe8", price: 2500 },
-  black: { color: "#171c23", price: 2500 },
-  silver: { color: "#aebbc5", price: 2500 },
-  blue: { color: "#1769a8", price: 2500 },
-  cyan: { color: "#169ab4", price: 2500 },
-  green: { color: "#237b59", price: 2500 },
-  yellow: { color: "#e4b82c", price: 2500 },
-  orange: { color: "#d65b2b", price: 2500 },
-  purple: { color: "#704a9e", price: 2500 }
+  pearl: { color: "#f1efe8", price: 0 },
+  black: { color: "#171c23", price: 0 },
+  silver: { color: "#aebbc5", price: 0 },
+  blue: { color: "#1769a8", price: 0 },
+  cyan: { color: "#169ab4", price: 0 },
+  green: { color: "#237b59", price: 0 },
+  yellow: { color: "#e4b82c", price: 0 },
+  orange: { color: "#d65b2b", price: 0 },
+  purple: { color: "#704a9e", price: 0 }
 });
 const VINYL_OPTIONS = Object.freeze({
   none: { price: 0 },
-  rally: { price: 5500 },
-  checker: { price: 7500 },
-  sport: { price: 8500 },
-  number: { price: 4500 }
+  rally: { price: 0 },
+  checker: { price: 0 },
+  sport: { price: 0 },
+  number: { price: 0 }
 });
 function normalizeCustomization(value) {
   const input = objectValue(value);
