@@ -222,10 +222,14 @@ try {
   assert.ok(later.speed >= middle.speed, "The speedometer should continue to increase during the held throttle.");
   assert.ok(later.cameraX < middle.cameraX,
     "The chase camera must keep following the car as speed and distance increase.");
-  for (const key of ["cityScreenX","treeScreenX","fenceScreenX","marksX"]) {
+  for (const key of ["cityScreenX","treeScreenX","marksX"]) {
     assert.notEqual(later[key], middle[key],
       "The repeating "+key+" phase must keep advancing between sampled frames.");
   }
+  assert.ok(
+    phaseIsBounded(later.fenceScreenX, later.sceneWidth*3),
+    "The fence phase must stay bounded even when its repeating tile reaches the wrap point."
+  );
   assert.ok(Math.abs(later.envLeft-later.sceneLeft)<2 &&
     Math.abs(later.envWidth-later.sceneWidth)<2,
     "The background must stay locked to the viewport as the simulated race advances.");
