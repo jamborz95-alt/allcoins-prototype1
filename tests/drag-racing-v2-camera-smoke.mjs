@@ -115,6 +115,7 @@ try {
     const scene = document.querySelector(".race2d-scene");
     return {
       roadPseudoAnimation: getComputedStyle(scene, "::before").animationName,
+      roadGrainAnimation: getComputedStyle(document.querySelector(".race2d-road-grain")).animationName,
       cityFilter: getComputedStyle(document.querySelector("#race2dCityLayer")).filter,
       treeFilter: getComputedStyle(document.querySelector("#race2dTreeLayer")).filter,
       cityWillChange: getComputedStyle(document.querySelector("#race2dCityLayer")).willChange,
@@ -123,6 +124,7 @@ try {
   });
   assert.equal(trackRendering.roadPseudoAnimation, "none",
     "The track should not repaint its full-width background on every animation frame.");
+  assert.equal(trackRendering.roadGrainAnimation, "none", "The full-track grain texture must not animate background-position.");
   assert.equal(trackRendering.cityFilter, "none", "City scenery should stay sharp without a full-layer blur filter.");
   assert.equal(trackRendering.treeFilter, "none", "Tree scenery should stay sharp without a full-layer blur filter.");
   assert.ok(trackRendering.cityWillChange.includes("transform") &&
