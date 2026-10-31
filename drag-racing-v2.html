@@ -2031,11 +2031,11 @@ function openProRaceCockpit(){
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
   raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
-  // Play a short original starter effect, then bring in the running engine loop.
-  // Both are triggered by the player's Start gesture to work in mobile WebViews.
+  // Start all engine audio directly within the user's tap so mobile WebViews
+  // keep the audio permission. The starter briefly overlaps the rising idle loop.
   initRaceAudio();
   playVazStarterSound();
-  setTimeout(()=>{if(raceCockpitOpen&&raceEngineSoundEnabled)startVaz2107Media()},260);
+  startVaz2107Media();
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   updateRaceEngineAudio();
   startRaceMusic();
