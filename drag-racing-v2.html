@@ -2284,7 +2284,8 @@ async function preloadRaceMediaAudio(){
       return {audio,url};
     };
     const loadEngine=async()=>{
-      if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')throw new Error('Web Audio context is unavailable');
+      // Always prepare an HTMLAudio fallback as well. Some Android Telegram
+      // WebViews temporarily suspend or do not expose AudioContext.
       const path='./cars/vaz2107-engine-arcade.wav.b64?v=20261031-engine-v2';
       const response=await fetch(path,{cache:'force-cache',credentials:'same-origin'});
       if(!response.ok)throw new Error('HTTP '+response.status+' loading engine loop');
@@ -2293,21 +2294,31 @@ async function preloadRaceMediaAudio(){
       const binary=atob(encoded),bytes=new Uint8Array(binary.length);
       for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
       const copy=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
-      const decoded=await raceAudio.decodeAudioData(copy);
-      if(!decoded||decoded.duration<2)throw new Error('Engine loop decode failed');
-      return decoded;
+      const url=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));
+      const audio=new Audio();
+      audio.src=url;audio.preload='auto';audio.loop=true;audio.playsInline=true;
+      audio.preservesPitch=false;audio.mozPreservesPitch=false;audio.webkitPreservesPitch=false;
+      audio.addEventListener('playing',()=>{window.__raceEngineAudioStatus='playing-html-fallback'});
+      audio.addEventListener('error',()=>{window.__raceEngineAudioError='HTMLAudio error '+String(audio.error?.code||'unknown')});
+      audio.load();
+      let decoded=null;
+      if(raceAudioReady&&raceAudio&&raceAudio.state!=='closed'){
+        try{decoded=await raceAudio.decodeAudioData(copy);if(decoded?.duration<2)decoded=null}catch(_){decoded=null}
+      }
+      return {audio,url,buffer:decoded};
     };
     const [musicResult,engineResult]=await Promise.allSettled([loadMusic(),loadEngine()]);
     if(musicResult.status==='fulfilled'){
       raceMusicMedia=musicResult.value.audio;raceMusicObjectUrl=musicResult.value.url;
     }
     if(engineResult.status==='fulfilled'){
-      raceEngineBuffer=engineResult.value;
-      startRaceEngineSample();
-      window.__raceEngineAudioStatus='ready';
+      raceEngineMedia=engineResult.value.audio;raceEngineObjectUrl=engineResult.value.url;
+      raceEngineBuffer=engineResult.value.buffer;
+      if(raceEngineBuffer)startRaceEngineSample();
+      window.__raceEngineAudioStatus=raceEngineBuffer?'ready':'html-fallback-ready';
     }else{
       window.__raceEngineAudioStatus='procedural-fallback';
-      window.__raceEngineAudioError=String(engineResult.reason?.message||engineResult.reason||'engine decode failed');
+      window.__raceEngineAudioError=String(engineResult.reason?.message||engineResult.reason||'engine asset load failed');
     }
     window.__raceAudioStatus='original audio assets ready';
     if(raceCockpitOpen||running){
@@ -2351,16 +2362,15 @@ function startVaz2107Media(){
     updateVaz2107Media();
     return;
   }
-  if(raceEngineBuffer){
-    startRaceEngineSample();
-    updateVaz2107Media();
-  }else{
-    void preloadRaceMediaAudio().then(ok=>{
-      if(ok&&raceEngineSoundEnabled&&(raceCockpitOpen||running)){
-        startRaceEngineSample();updateVaz2107Media();updateRaceEngineAudio();
-      }
-    });
+  if(!raceEngineMedia&&!raceEngineBuffer){
+    void preloadRaceMediaAudio().then(()=>{if(raceEngineSoundEnabled&&(raceCockpitOpen||running))startVaz2107Media()});
+    return;
   }
+  // Start the decoded gapless Web Audio loop when the context is available.
+  // Until it is running, use the same WAV through HTMLAudio so the engine
+  // never becomes silent on WebViews with a suspended audio context.
+  if(raceEngineBuffer&&raceAudioReady)startRaceEngineSample();
+  updateVaz2107Media();
   updateRaceEngineAudio();
 }
 function updateVaz2107Media(){
@@ -2369,35 +2379,44 @@ function updateVaz2107Media(){
   const currentRpm=Math.max(850,Math.min(6600,Number(rpm)||900));
   const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
   const targetRate=vazEnginePlaybackRate(currentRpm)+(gasHeld?.025:0);
-  const targetVolume=active?(gasHeld?.38+rpmRatio*.07:(running?.31+rpmRatio*.04:.27)):.0001;
+  const targetVolume=active?(gasHeld?.68+rpmRatio*.08:(running?.54+rpmRatio*.06:.46)):.0001;
+  const webAudioLive=Boolean(source&&context?.state==='running');
   if(context&&context.state!=='closed'){
     const t=context.currentTime;
-    if(source){
-      // A short time constant avoids audible pitch steps when RPM changes or
-      // the player shifts gear, while keeping the engine response immediate.
-      source.playbackRate.setTargetAtTime(targetRate,t,.075);
-    }
-    if(raceEngineSampleGain){
-      raceEngineSampleGain.gain.setTargetAtTime(targetVolume,t,active?.105:.16);
+    if(source)source.playbackRate.setTargetAtTime(targetRate,t,.075);
+    if(raceEngineSampleGain)raceEngineSampleGain.gain.setTargetAtTime(webAudioLive&&active?.38+rpmRatio*.07:.0001,t,active?.105:.16);
+  }
+  if(raceEngineMedia){
+    if(webAudioLive&&active){
+      // The Web Audio source is now live; retire the safety fallback.
+      if(!raceEngineMedia.paused)raceEngineMedia.pause();
+    }else if(active){
+      raceEngineMedia.loop=true;
+      raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.12;
+      raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.16;
+      if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
+    }else if(!raceEngineMedia.paused){
+      raceEngineMedia.pause();
     }
   }
-  const samplePlaying=Boolean(source&&context?.state==='running'&&active);
+  const samplePlaying=Boolean((webAudioLive||raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended)&&active);
   window.__raceEngineAudioDebug={
     ...(window.__raceEngineAudioDebug||{}),
     enabled:active,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
-    mediaPlaying:samplePlaying,mediaPlaybackRate:targetRate,mediaVolume:targetVolume,
+    mediaPlaying:samplePlaying,mediaPlaybackRate:webAudioLive?targetRate:(raceEngineMedia?.playbackRate||targetRate),
+    mediaVolume:webAudioLive?raceEngineSampleGain?.gain?.value:raceEngineMedia?.volume,
     sample:'vaz2107-engine-arcade.wav.b64',
-    engineBackend:source?'webaudio-buffer-loop':'procedural-fallback',
-    loopingEngineSample:Boolean(source?.loop),
+    engineBackend:webAudioLive?'webaudio-buffer-loop':raceEngineMedia?'html-audio-fallback':'procedural-fallback',
+    loopingEngineSample:Boolean(webAudioLive?source?.loop:raceEngineMedia?.loop),
     engineSourceStarts:raceEngineSampleStartCount,
     engineBufferDuration:raceEngineBuffer?.duration||0
   };
-  if(active&&source&&context?.state==='running')window.__raceEngineAudioStatus='playing';
+  if(active&&webAudioLive)window.__raceEngineAudioStatus='playing';
 }
 function updateRaceEngineAudio(){
   if(!raceAudioReady||!raceAudio||raceAudio.state==='closed')return;
   const t=raceAudio.currentTime;
-  const engineMediaPlaying=Boolean(raceEngineSampleSource&&raceAudio.state==='running'&&(raceCockpitOpen||running)&&raceEngineSoundEnabled);
+  const engineMediaPlaying=Boolean((raceEngineSampleSource&&raceAudio.state==='running'||raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended)&&(raceCockpitOpen||running)&&raceEngineSoundEnabled);
   const rpmNow=Math.max(850,Math.min(6600,Number(rpm)||850));
   const rpmRatio=Math.max(0,Math.min(1,(rpmNow-850)/5750));
   const throttle=Boolean(gasHeld&&raceCockpitOpen),moving=Boolean(running&&speed>1);
