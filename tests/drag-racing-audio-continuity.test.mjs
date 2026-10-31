@@ -75,8 +75,9 @@ test("both WebAudio and HTMLAudio use the long engine asset, with a procedural s
   assert.ok(game.includes("return {audio,url,buffer:decoded};"));
   assert.ok(game.includes("raceEngineMedia.loop=true;"));
   assert.ok(game.includes("const proceduralLevel=throttle?.36:(moving?.29:.25)"));
-  assert.ok(game.includes("const safetyVolume=webAudioLive?.025:targetVolume"), "Keep the native media safety stream active under WebAudio.");
+  assert.ok(game.includes("const safetyVolume=webAudioLive?.14:targetVolume"), "Keep an audible native media safety stream active under WebAudio.");
   assert.ok(game.includes("raceEngineMedia.volume=safetyVolume;"), "Take over immediately when WebAudio drops.");
+  assert.ok(game.includes("if(now-lastEngineAudioUpdateAt>=50)"), "Throttle audio parameter updates to 20 Hz to reduce render-thread contention.");
   assert.ok(game.includes("function startRaceAudioWatchdog()"), "Recover the audio graph if Android suspends it.");
   assert.ok(game.includes("raceAudioWatchdogTimer=setInterval"), "Run the recovery watchdog while the cockpit is active.");
   assert.ok(game.includes("window.addEventListener('pageshow'"), "Resume sound when the app returns to the foreground.");
