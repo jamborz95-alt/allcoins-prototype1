@@ -2266,42 +2266,6 @@ function vazEnginePlaybackRate(value){
   return Math.max(.56,Math.min(4.4,current/1500));
 }
 
-function buildLongRaceEngineLoop(sourceBuffer,repeatCount=24){
-  // Android WebView can insert a noticeable pause at short AudioBufferSource
-  // loop boundaries. A long pre-joined buffer moves that boundary far apart.
-  if(!sourceBuffer||!raceAudio||sourceBuffer.length<2)return sourceBuffer;
-  const repeats=Math.max(2,Math.min(32,Math.floor(repeatCount)||24));
-  const fade=Math.max(1,Math.min(Math.floor(sourceBuffer.sampleRate*.025),Math.floor(sourceBuffer.length/10)));
-  const outputLength=sourceBuffer.length*repeats-fade*(repeats-1);
-  try{
-    const joined=raceAudio.createBuffer(sourceBuffer.numberOfChannels,outputLength,sourceBuffer.sampleRate);
-    for(let channel=0;channel<sourceBuffer.numberOfChannels;channel++){
-      const input=sourceBuffer.getChannelData(channel);
-      const output=joined.getChannelData(channel);
-      output.set(input);
-      let writeAt=sourceBuffer.length;
-      for(let repeat=1;repeat<repeats;repeat++){
-        const crossfadeAt=writeAt-fade;
-        for(let i=0;i<fade;i++){
-          const blend=(i+1)/(fade+1);
-          output[crossfadeAt+i]=output[crossfadeAt+i]*(1-blend)+input[i]*blend;
-        }
-        output.set(input.subarray(fade),writeAt);
-        writeAt+=sourceBuffer.length-fade;
-      }
-    }
-    window.__raceEngineLoopInfo={
-      originalDuration:sourceBuffer.duration,
-      joinedDuration:joined.duration,
-      repeats,
-      crossfadeMs:fade/sourceBuffer.sampleRate*1000
-    };
-    return joined;
-  }catch(error){
-    window.__raceEngineLoopInfo={error:String(error&&error.message||error)};
-    return sourceBuffer;
-  }
-}
 async function preloadRaceMediaAudio(){
   if(raceMediaLoadPromise)return raceMediaLoadPromise;
   // Prepare the Web Audio engine loop once. BufferSource looping has no HTMLAudio
@@ -2323,7 +2287,7 @@ async function preloadRaceMediaAudio(){
     const loadEngine=async()=>{
       // Always prepare an HTMLAudio fallback as well. Some Android Telegram
       // WebViews temporarily suspend or do not expose AudioContext.
-      const path='./cars/vaz2107-engine-arcade.wav.b64?v=20261031-engine-v2';
+      const path='./cars/vaz2107-engine-continuous.wav.b64?v=20261031-engine-continuous1';
       const response=await fetch(path,{cache:'force-cache',credentials:'same-origin'});
       if(!response.ok)throw new Error('HTTP '+response.status+' loading engine loop');
       const encoded=(await response.text()).trim();
@@ -2342,11 +2306,10 @@ async function preloadRaceMediaAudio(){
       if(raceAudioReady&&raceAudio&&raceAudio.state!=='closed'){
         try{decoded=await raceAudio.decodeAudioData(copy);if(decoded?.duration<2)decoded=null}catch(_){decoded=null}
       }
-      // The short source sample itself is clean, but looping it every ~1–1.5 s
-      // can cause periodic dropouts on Android. Join many clean cycles with a
-      // short crossfade, then loop the much longer AudioBuffer instead.
-      const continuousBuffer=decoded?buildLongRaceEngineLoop(decoded,24):null;
-      return {audio,url,buffer:continuousBuffer};
+      // This file is already a 29.7-second seamless loop with 30ms crossfades.
+      // Keep it long for BOTH the WebAudio buffer and HTMLAudio fallback, so
+      // Android never has to restart the short 3-second recording mid-drive.
+      return {audio,url,buffer:decoded};
     };
     const [musicResult,engineResult]=await Promise.allSettled([loadMusic(),loadEngine()]);
     if(musicResult.status==='fulfilled'){
@@ -2517,7 +2480,7 @@ function updateRaceEngineAudio(){
 
   // The original loop provides the character; the synthesized layer fills its low/mid range.
   // When the file cannot play, the procedural engine becomes louder automatically.
-  const proceduralLevel=engineMediaPlaying?.065+load*.025:(throttle?.42:(moving?.31:.25));
+  const proceduralLevel=engineMediaPlaying?.20+load*.05:(throttle?.42:(moving?.31:.25));
   raceEngineGain.gain.setTargetAtTime(enabled?proceduralLevel:.0001,t,.09);
   if(raceExhaustFilter)raceExhaustFilter.frequency.setTargetAtTime(135+rpmRatio*310+(throttle?150:0),t,.11);
   if(raceExhaustGain)raceExhaustGain.gain.setTargetAtTime(enabled?(throttle?.052:(moving?.027:.018)):.0001,t,.11);
@@ -2532,7 +2495,8 @@ function updateRaceEngineAudio(){
     mediaPlaying:engineMediaPlaying,proceduralLevel,load,speed:Number(speed)||0,
     engineBackend:raceEngineSampleSource?'webaudio-buffer-loop':'procedural-fallback',
     loopingEngineSample:Boolean(raceEngineSampleSource?.loop),
-    engineSourceStarts:raceEngineSampleStartCount,engineBufferDuration:raceEngineBuffer?.duration||0
+    engineSourceStarts:raceEngineSampleStartCount,engineBufferDuration:raceEngineBuffer?.duration||0,
+    engineMediaDuration:raceEngineMedia?.duration||0
   };
 }
 function raceMusicTone(freq,when,duration,volume,wave='triangle',cutoff=2200){
