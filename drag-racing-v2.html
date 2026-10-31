@@ -2433,8 +2433,14 @@ function updateVaz2107Media(){
       raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.10;
       // Keep a quiet native-media safety layer playing under WebAudio. If Android
       // suspends its audio graph, the fallback is already running and can rise smoothly.
-      const safetyVolume=webAudioLive?.075:targetVolume;
-      raceEngineMedia.volume+=(safetyVolume-raceEngineMedia.volume)*.12;
+      const safetyVolume=webAudioLive?.025:targetVolume;
+      // Do not slowly fade the native backup after WebAudio stalls: Android can
+      // leave an audible gap while the 350ms watchdog and volume easing catch up.
+      // The HTMLAudio stream is already running at the same engine RPM, so switch
+      // its gain immediately when the WebAudio graph stops rendering.
+      if(Math.abs(raceEngineMedia.volume-safetyVolume)>.005){
+        raceEngineMedia.volume=safetyVolume;
+      }
       if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
     }else if(!raceEngineMedia.paused){
       raceEngineMedia.pause();
