@@ -31,6 +31,32 @@ const PARTS = Object.freeze({
   gearbox: { price: 48000, power: 6 },
   weight: { price: 65000, power: 10 }
 });
+const PAINT_OPTIONS = Object.freeze({
+  factory: { color: "#cf2637", price: 0 },
+  pearl: { color: "#f1efe8", price: 2500 },
+  black: { color: "#171c23", price: 2500 },
+  silver: { color: "#aebbc5", price: 2500 },
+  blue: { color: "#1769a8", price: 2500 },
+  cyan: { color: "#169ab4", price: 2500 },
+  green: { color: "#237b59", price: 2500 },
+  yellow: { color: "#e4b82c", price: 2500 },
+  orange: { color: "#d65b2b", price: 2500 },
+  purple: { color: "#704a9e", price: 2500 }
+});
+const VINYL_OPTIONS = Object.freeze({
+  none: { price: 0 },
+  rally: { price: 5500 },
+  checker: { price: 7500 },
+  sport: { price: 8500 },
+  number: { price: 4500 }
+});
+function normalizeCustomization(value) {
+  const input = objectValue(value);
+  return {
+    paintId: Object.hasOwn(PAINT_OPTIONS, String(input.paintId || "")) ? String(input.paintId) : "factory",
+    vinylId: Object.hasOwn(VINYL_OPTIONS, String(input.vinylId || "")) ? String(input.vinylId) : "none"
+  };
+}
 
 function isValidDragRaceFinishTime(timeMs, elapsedSinceGreen) {
   const reported = Math.round(Number(timeMs));
@@ -118,19 +144,24 @@ async function readProfile(client, telegramId) {
       [String(telegramId)]
     ),
     client.query(
-      "SELECT car_id, upgrades FROM drag_racing_player_cars WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC, car_id ASC",
+      "SELECT car_id, upgrades, customization FROM drag_racing_player_cars WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC, car_id ASC",
       [String(telegramId)]
     )
   ]);
   const profileRow = profileResult.rows[0] || {};
   const ownedCars = carsResult.rows.map(row => String(row.car_id));
   const upgrades = {};
-  for (const row of carsResult.rows) upgrades[String(row.car_id)] = objectValue(row.upgrades);
+  const customization = {};
+  for (const row of carsResult.rows) {
+    upgrades[String(row.car_id)] = objectValue(row.upgrades);
+    customization[String(row.car_id)] = normalizeCustomization(row.customization);
+  }
   const tuning = { ...DEFAULT_TUNE, ...objectValue(profileRow.tuning, DEFAULT_TUNE) };
   return {
     selectedCarId: ownedCars.includes(String(profileRow.selected_car_id)) ? String(profileRow.selected_car_id) : "2107",
     ownedCars: ownedCars.length ? ownedCars : ["2107"],
     upgrades,
+    customization,
     tune: Object.fromEntries(Object.entries(DEFAULT_TUNE).map(([key, fallback]) => {
       const value = Number(tuning[key]);
       return [key, Number.isInteger(value) ? Math.max(0, Math.min(100, value)) : fallback];
@@ -295,6 +326,9 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (telegram_id, car_id))"
     );
     await pool.query(
+      "ALTER TABLE drag_racing_player_cars ADD COLUMN IF NOT EXISTS customization JSONB NOT NULL DEFAULT '{}'::jsonb"
+    );
+    await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_rooms (" +
       "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, owner_telegram_id BIGINT NOT NULL, " +
       "owner_name TEXT NOT NULL DEFAULT 'Игрок', stake BIGINT NOT NULL CHECK (stake >= 100), " +
@@ -425,6 +459,64 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       const status = error instanceof DragRacingError ? error.status : 500;
       console.error("Buy Drag Racing upgrade:", error.message || error);
       return res.status(status).json({ ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось установить запчасть." });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/customize", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const carId = String(req.body?.carId || "");
+    const paintId = String(req.body?.paintId || "");
+    const vinylId = String(req.body?.vinylId || "");
+    if (!Object.hasOwn(CARS, carId)) {
+      return res.status(400).json({ ok: false, error: "Неизвестный автомобиль." });
+    }
+    if (!Object.hasOwn(PAINT_OPTIONS, paintId) || !Object.hasOwn(VINYL_OPTIONS, vinylId)) {
+      return res.status(400).json({ ok: false, error: "Выбери цвет и виниловую плёнку из списка." });
+    }
+
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const carResult = await client.query(
+        "SELECT customization FROM drag_racing_player_cars WHERE telegram_id = $1::BIGINT AND car_id = $2 FOR UPDATE",
+        [user.id, carId]
+      );
+      if (!carResult.rows.length) throw new DragRacingError(400, "Сначала купи этот автомобиль.");
+
+      const current = normalizeCustomization(carResult.rows[0].customization);
+      const next = { paintId, vinylId };
+      const paintPrice = paintId !== current.paintId && paintId !== "factory"
+        ? PAINT_OPTIONS[paintId].price : 0;
+      const vinylPrice = vinylId !== current.vinylId && vinylId !== "none"
+        ? VINYL_OPTIONS[vinylId].price : 0;
+      const totalPrice = BigInt(paintPrice + vinylPrice);
+      if (balance < totalPrice) {
+        throw new DragRacingError(400, "Недостаточно AC для выбранной покраски и плёнки. Стоимость: " +
+          (paintPrice + vinylPrice).toLocaleString("ru-RU") + " AC.");
+      }
+      if (totalPrice > 0n) {
+        await client.query(
+          "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
+          [totalPrice.toString(), user.id]
+        );
+      }
+      await client.query(
+        "UPDATE drag_racing_player_cars SET customization = $3::jsonb WHERE telegram_id = $1::BIGINT AND car_id = $2",
+        [user.id, carId, JSON.stringify(next)]
+      );
+      await client.query("COMMIT"); open = false;
+      return await sendProfile(res, pool, user.id);
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Customize Drag Racing car:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось сохранить внешний вид автомобиля."
+      });
     } finally { client.release(); }
   });
 
