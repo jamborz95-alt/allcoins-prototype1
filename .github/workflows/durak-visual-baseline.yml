@@ -31,6 +31,8 @@ jobs:
             if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then break; fi
             sleep 1
           done
+      - name: Run VAZ-2107 PNG paint regression test
+        run: node tests/drag-racing-paint-smoke.mjs
       - name: Run public-link localization visual test
         run: node tests/live-link-visual-smoke.mjs
       - name: Run drag-racing long-run mobile regression test
