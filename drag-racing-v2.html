@@ -3390,4 +3390,51 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   20%{opacity:.94}
   100%{opacity:0;transform:translate3d(28px,-9px,0) scale(1.42)}
 }
+
+/* Burnout tyre smoke: dense charcoal plumes rise from the contact patch and spread both ways. */
+#proRaceCockpit .race-wheel-smoke{
+  z-index:6!important;
+  overflow:visible!important;
+  background:none!important;
+  filter:none!important;
+}
+#proRaceCockpit .race-wheel-smoke::before,
+#proRaceCockpit .race-wheel-smoke::after{
+  content:"";
+  position:absolute;
+  bottom:-4%;
+  width:76%;
+  height:190%;
+  display:block;
+  border-radius:50%;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 50% 78%,
+    rgba(8,9,11,.96) 0%,
+    rgba(13,15,17,.88) 25%,
+    rgba(24,26,29,.66) 48%,
+    rgba(42,44,47,.34) 67%,
+    transparent 84%);
+  filter:blur(5px);
+  opacity:0;
+  mix-blend-mode:multiply;
+}
+#proRaceCockpit .race-wheel-smoke::before{left:-2%;transform-origin:50% 100%}
+#proRaceCockpit .race-wheel-smoke::after{right:-2%;transform-origin:50% 100%}
+#proRaceCockpit.race-burnout #race2dPlayerCar .race-wheel-smoke::before{
+  animation:race-burnout-smoke-rise-left .62s ease-out infinite;
+}
+#proRaceCockpit.race-burnout #race2dPlayerCar .race-wheel-smoke::after{
+  animation:race-burnout-smoke-rise-right .62s ease-out infinite;
+}
+@keyframes race-burnout-smoke-rise-left{
+  0%{opacity:0;transform:translate3d(0,7px,0) scale(.28,.32)}
+  18%{opacity:.92}
+  100%{opacity:0;transform:translate3d(-15px,-38px,0) scale(1.08,1.35)}
+}
+@keyframes race-burnout-smoke-rise-right{
+  0%{opacity:0;transform:translate3d(0,7px,0) scale(.28,.32)}
+  18%{opacity:.92}
+  100%{opacity:0;transform:translate3d(15px,-38px,0) scale(1.08,1.35)}
+}
+#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{left:93%!important}
 </style>
