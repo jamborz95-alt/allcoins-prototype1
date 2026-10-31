@@ -140,8 +140,8 @@ try {
     "The updated triangular beam must be visibly larger than the previous narrow beam: " + JSON.stringify(beam));
   assert.ok(beam.opacity > 0.7,
     "The beam must be visible while the headlights are on: " + JSON.stringify(beam));
-  assert.ok(Math.abs(beam.leftRatio - .92) < .01,
-    "The headlight beam must begin at 92% of the car body width: " + JSON.stringify(beam));
+  assert.ok(Math.abs(beam.leftRatio - .93) < .01,
+    "The headlight beam must begin at 93% of the car body width: " + JSON.stringify(beam));
   assert.equal(beam.hotspotDisplay, "none",
     "The old round hotspot must remain disabled.");
 
@@ -258,6 +258,9 @@ try {
       rearDuration: getComputedStyle(rear).animationDuration,
       smokeAnimation: getComputedStyle(smoke).animationName,
       smokeState: getComputedStyle(smoke).animationPlayState,
+      smokeRiseLeft: getComputedStyle(smoke, "::before").animationName,
+      smokeRiseRight: getComputedStyle(smoke, "::after").animationName,
+      smokeDarkGradient: getComputedStyle(smoke, "::before").backgroundImage,
       speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
       rpm: window.__raceV2SmokeHooks.getRaceState().rpm,
       audioThrottle: window.__raceEngineAudioDebug?.throttle
@@ -278,6 +281,12 @@ try {
   assert.notEqual(burnoutVisual.smokeAnimation, "none",
     "Burnout smoke must appear at the driven rear wheels.");
   assert.equal(burnoutVisual.smokeState, "running");
+  assert.notEqual(burnoutVisual.smokeRiseLeft, "none",
+    "Burnout tyre smoke must rise from the contact patch toward the left.");
+  assert.notEqual(burnoutVisual.smokeRiseRight, "none",
+    "Burnout tyre smoke must rise from the contact patch toward the right.");
+  assert.match(burnoutVisual.smokeDarkGradient, /radial-gradient/,
+    "Burnout tyre smoke must use a dense dark plume.");
   assert.ok(burnoutVisual.speed <= 3 && burnoutVisual.rpm > 1100 && burnoutVisual.audioThrottle === true,
     "The engine must rev while the brake holds the car nearly stationary: " + JSON.stringify(burnoutVisual));
 
