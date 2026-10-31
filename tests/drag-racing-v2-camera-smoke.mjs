@@ -94,6 +94,8 @@ try {
   assert.ok(middle.carWorldX > 80, "The car must advance through world coordinates.");
   assert.ok(middle.cityScreenX < -5 && middle.treeScreenX < -5 && middle.fenceScreenX < -5,
     "City, trees and fence must travel backwards relative to the moving car/camera.");
+  assert.ok(Math.abs(middle.fenceScreenX - middle.cameraX) < 2,
+    "The roadside fence must stay locked to the road world and must not drift away from the asphalt.");
   assert.ok(middle.roadLeft < -30, "The asphalt world must pass backwards under the chase camera.");
   assert.ok(middle.carCenterX - initial.centerX > 3,
     "The car must keep a visible forward lead on screen while the camera follows it.");
