@@ -126,19 +126,24 @@ test("crossing the finish line releases the throttle and smoothly settles the en
     "Resetting a race must cancel any leftover finish audio ramp.");
 });
 
-test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tailpipe", () => {
+test("the VAZ-2107 exhaust is attached to the sprung car body", () => {
   assert.ok(game.includes('const ladaExhaust='));
-  assert.ok(game.includes('useLadaPng?ladaPreview+ladaWheels+ladaExhaust:'),
-    "The physical exhaust assembly must be attached only to the VAZ-2107 PNG.");
-  assert.match(game, /\.race-car-muffler\{inset:0;z-index:auto/,
-    "The muffler wrapper must not create a foreground stacking context.");
+  assert.ok(game.includes('const ladaBodyLayer=\'<div class="race-car-body-layer">\'+ladaPreview+ladaExhaust+ladaSmoke+\'</div>\';'),
+    "The PNG, muffler and exhaust smoke must share one moving body layer.");
+  assert.ok(game.includes('player.innerHTML=(useLadaPng?ladaBodyLayer+ladaWheels:'),
+    "The VAZ body layer must be mounted as a single assembly.");
+  assert.match(game, /\.race-car-body-layer\{[^}]*transform:translate3d\(0,var\(--road-bump-y,0px\),0\) rotate\(var\(--road-bump-tilt,0deg\)\)/,
+    "The muffler assembly must inherit the chassis suspension and tilt movement.");
+  assert.match(game, /\.race2d-car\.png-car \.race-car-body-layer \.race-car-png\{transform:none!important\}/,
+    "The PNG must not be moved separately from the exhaust assembly.");
+  assert.match(game, /\.race-car-muffler\{inset:0;z-index:auto/);
   assert.match(game, /\.race-car-muffler-body\{[^}]*z-index:0;[^}]*background:linear-gradient/,
-    "The muffler body must be tucked behind the car body.");
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:1\.9%;top:74%;width:7\.8%;[^}]*z-index:0/,
-    "The pipe should run horizontally from beneath the rear of the car.");
-  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:1\.2%;top:73\.4%;width:5px;height:8px;z-index:4/,
-    "The narrow oval outlet should face toward the rear, not toward the viewer.");
-  assert.match(game, /\.race-car-exhaust-puff\{left:\.6%;top:74\.9%;z-index:5/,
+    "The main muffler body must stay tucked behind the car body.");
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*left:2\.7%;top:73\.2%;width:7\.8%;[^}]*z-index:0/,
+    "The pipe should remain attached under the rear of the car.");
+  assert.match(game, /\.race-car-muffler-outlet\{[^}]*left:2%;top:72\.6%;width:5px;height:8px;z-index:4/,
+    "Only the raised, slightly right-shifted narrow outlet should peek out.");
+  assert.match(game, /\.race-car-exhaust-puff\{left:1\.4%;top:72\.9%;z-index:5/,
     "Smoke must emerge just behind the rear-facing exhaust tip.");
   assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
     "The exhaust should emit light wisps while the engine idles.");
