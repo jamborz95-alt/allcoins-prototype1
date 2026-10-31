@@ -13,7 +13,13 @@ const page = await browser.newPage({
   hasTouch: true
 });
 const pageErrors = [];
+let engineAssetResponseStatus = null;
 page.on("pageerror", error => pageErrors.push(error.message));
+page.on("response", response => {
+  if (response.url().includes("/cars/vaz2107-engine-original.wav.b64")) {
+    engineAssetResponseStatus = response.status();
+  }
+});
 await page.route("https://telegram.org/**", route => route.fulfill({
   status: 200,
   contentType: "application/javascript",
@@ -34,6 +40,11 @@ try {
   );
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving scene must be inside its chase-camera world.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-png").count(), 1, "The selected car PNG must be present.");
+  await page.waitForFunction(() => window.__raceEngineAudioStatus === "ready" ||
+    window.__raceEngineAudioStatus === "playing" ||
+    window.__raceEngineAudioStatus === "procedural-fallback", null, { timeout: 8000 });
+  assert.equal(engineAssetResponseStatus, 200,
+    "The locally bundled VAZ-2107 engine loop must load successfully without an external audio host.");
 
   await page.locator("#startRace").click();
   await page.waitForFunction(() => {
@@ -41,6 +52,16 @@ try {
     return cockpit && !cockpit.classList.contains("hidden") &&
       document.querySelector("#race2dPlayerCar")?.getBoundingClientRect().width > 100;
   }, null, { timeout: 8000 });
+  await page.waitForFunction(() => window.__raceEngineAudioDebug?.enabled === true &&
+    (window.__raceEngineAudioStatus === "playing" ||
+     window.__raceEngineAudioDebug?.proceduralLevel > 0), null, { timeout: 5000 });
+  const idleAudio = await page.evaluate(() => ({
+    status: window.__raceEngineAudioStatus || null,
+    debug: window.__raceEngineAudioDebug || null,
+    contextState: window.__raceAudioState || null
+  }));
+  assert.equal(idleAudio.debug.enabled, true, "The engine audio must be enabled when the full-screen race cockpit opens.");
+  assert.ok(idleAudio.debug.proceduralLevel > 0, "The engine sound must have a live procedural fallback layer.");
 
   const initial = await page.locator("#race2dPlayerCar").evaluate(el => {
     const r = el.getBoundingClientRect();
@@ -98,6 +119,14 @@ try {
   });
 
   assert.ok(middle.speed > 0, "The car must accelerate when the gas pedal is held.");
+  const movingAudio = await page.evaluate(() => window.__raceEngineAudioDebug || null);
+  assert.ok(movingAudio?.enabled && movingAudio?.throttle,
+    "The engine audio must remain enabled and respond while the accelerator is held.");
+  assert.ok(movingAudio.rpm > idleAudio.debug.rpm &&
+    movingAudio.firingHz > idleAudio.debug.firingHz,
+    "The engine firing rate must rise as the engine revs under throttle.");
+  assert.ok(movingAudio.mediaPlaying || movingAudio.proceduralLevel > 0,
+    "A playable engine sample or procedural fallback must remain audible during driving.");
   assert.ok(middle.cameraX < -40, "The camera must move forward with the car, not remain fixed.");
   assert.ok(middle.carWorldX > 80, "The car must advance through world coordinates.");
   assert.ok(middle.cityScreenX < -5 && middle.treeScreenX < -5 && middle.fenceScreenX < -5,
