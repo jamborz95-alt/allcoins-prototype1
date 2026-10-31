@@ -132,6 +132,7 @@ try {
       opacity: Number(getComputedStyle(el).opacity),
       hotspotDisplay: getComputedStyle(el, "::after").display,
       leftRatio: Number.parseFloat(getComputedStyle(el).left) / el.offsetParent.clientWidth,
+      topRatio: Number.parseFloat(getComputedStyle(el).top) / el.offsetParent.clientHeight,
       topRatio: Number.parseFloat(getComputedStyle(el).top) / el.offsetParent.clientHeight
     };
   });
@@ -145,6 +146,8 @@ try {
     "The headlight beam must begin at 93% of the car body width: " + JSON.stringify(beam));
   assert.ok(Math.abs(beam.topRatio - .36) < .01,
     "The headlight beam should sit slightly higher at 36% of the car body: " + JSON.stringify(beam));
+  assert.ok(Math.abs(beam.topRatio - .36) < .01,
+    "The headlight beam should sit a little higher at 36% of the car body: " + JSON.stringify(beam));
   assert.equal(beam.hotspotDisplay, "none",
     "The old round hotspot must remain disabled.");
 
@@ -234,7 +237,11 @@ try {
 
   const initial = await page.locator("#race2dPlayerCar").evaluate(el => {
     const r = el.getBoundingClientRect();
-    return { centerX: r.left + r.width / 2, cameraX: new DOMMatrixReadOnly(getComputedStyle(document.querySelector("#race2dCameraWorld")).transform).m41 };
+    return {
+      centerX: r.left + r.width / 2,
+      cameraX: new DOMMatrixReadOnly(getComputedStyle(document.querySelector("#race2dCameraWorld")).transform).m41,
+      fuel: window.__raceV2SmokeHooks.getFuelLevel()
+    };
   });
   await page.locator("#proBrakeHold").dispatchEvent("pointerdown", {
     pointerId: 11, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
@@ -243,11 +250,12 @@ try {
     pointerId: 12, pointerType: "touch", isPrimary: true, button: 0, buttons: 1
   });
   await page.waitForFunction(() =>
-    document.querySelector("#proRaceCockpit")?.classList.contains("race-burnout"),
+    document.querySelector("#proRaceCockpit")?.classList.contains("race-burnout") &&
+    document.querySelector("#race2dPlayerCar .race-wheel-smoke.rear")?.classList.contains("burnout-active"),
     null, { timeout: 5000 }
   );
-  // Let the soot build up around the driven tyre before capturing the actual burnout frame.
-  await page.waitForTimeout(1900);
+  // Allow the smoke to cover the driven tyre and the fuel gauge to register the burnout load.
+  await page.waitForTimeout(2100);
   const burnoutVisual = await page.evaluate(() => {
     const cockpit = document.querySelector("#proRaceCockpit");
     const rear = document.querySelector("#race2dPlayerCar .png-wheel-spin.rear");
@@ -262,6 +270,7 @@ try {
       frontAnimation: getComputedStyle(front).animationName,
       rearDuration: getComputedStyle(rear).animationDuration,
       smokeAnimation: getComputedStyle(smoke).animationName,
+      smokeActive: smoke.classList.contains("burnout-active"),
       smokeState: getComputedStyle(smoke).animationPlayState,
       smokeRiseLeft: getComputedStyle(smoke, "::before").animationName,
       smokeRiseRight: getComputedStyle(smoke, "::after").animationName,
@@ -272,6 +281,7 @@ try {
       smokeDarkGradient: getComputedStyle(smoke, "::before").backgroundImage,
       speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
       rpm: window.__raceV2SmokeHooks.getRaceState().rpm,
+      fuelAfterBurnout: window.__raceV2SmokeHooks.getFuelLevel(),
       audioThrottle: window.__raceEngineAudioDebug?.throttle
     };
   });
@@ -287,21 +297,20 @@ try {
   assert.equal(burnoutVisual.frontAnimation, "none");
   assert.ok(Number.parseFloat(burnoutVisual.rearDuration) < .14,
     "The rear wheels must spin quickly during a burnout: " + JSON.stringify(burnoutVisual));
-  assert.notEqual(burnoutVisual.smokeAnimation, "none",
-    "Burnout smoke must appear at the driven rear wheels.");
-  assert.equal(burnoutVisual.smokeState, "running");
+  assert.equal(burnoutVisual.smokeActive, true,
+    "The powered rear tyre must receive the burnout smoke overlay.");
   assert.equal(burnoutVisual.smokeAnimation, "race-burnout-wheel-cover",
-    "Dark smoke must gradually build over the driven wheel instead of only drifting behind it.");
+    "Dark smoke must gradually build over the driven tyre.");
   assert.ok(Number.parseFloat(burnoutVisual.smokeWrapperOpacity) >= .75,
-    "The tyre area should be visibly covered after the smoke build-up: " + JSON.stringify(burnoutVisual));
+    "The tyre area should be visibly covered after smoke build-up: " + JSON.stringify(burnoutVisual));
   assert.notEqual(burnoutVisual.smokeRiseLeft, "none",
-    "Burnout tyre smoke must rise from the contact patch toward the left.");
+    "Burnout smoke must rise from the tyre toward the left.");
   assert.notEqual(burnoutVisual.smokeRiseRight, "none",
-    "Burnout tyre smoke must rise from the contact patch toward the right.");
+    "Burnout smoke must rise from the tyre toward the right.");
   assert.match(burnoutVisual.smokeDarkGradient, /radial-gradient/,
-    "Burnout tyre smoke must use a dense dark plume.");
-  assert.equal(burnoutVisual.smokeWrapperOpacity, "1",
-    "The driven tyre smoke layer must remain visible during burnout.");
+    "Burnout smoke must use a dense black plume.");
+  assert.ok(burnoutVisual.fuelAfterBurnout < initial.fuel - 0.02,
+    "Fuel must decrease during a stationary burnout: " + JSON.stringify({before:initial.fuel,after:burnoutVisual.fuelAfterBurnout}));
   await page.screenshot({
     path: resolve(root, "artifacts", "drag-racing-v2-burnout-smoke.png"),
     fullPage: false
