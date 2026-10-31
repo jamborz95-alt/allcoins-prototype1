@@ -1306,9 +1306,8 @@ function updateOnlineOpponentMotion(dt){
   raceOnlineOpponentStylesApplied=true;
   const rivalId=String(rival.id||rival.name||'rival');
   const roomId=String(currentOnlineRoom.room?.roomId||currentOnlineRoom.room?.id||'room');
-  const scene=race2dRefs?.scene||$('race2dPlayerCar')?.closest('.race2d-scene');
-  const sceneWidth=Math.max(1,scene?.clientWidth||390);
-  const sceneHeight=Math.max(1,scene?.clientHeight||320);
+  const sceneWidth=Math.max(1,race2dSceneWidthCache||390);
+  const sceneHeight=Math.max(1,race2dSceneHeightCache||320);
   if(onlineOpponentMotion.rivalId!==rivalId||onlineOpponentMotion.roomId!==roomId){
     Object.assign(onlineOpponentMotion,{roomId,rivalId,targetProgress:0,progress:0,targetSpeedKmh:0,speedKmh:0,lastUpdatedAt:0,left:12,top:38});
     opponent.style.setProperty('--opponent-translate-x','0px');
