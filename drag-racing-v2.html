@@ -635,21 +635,21 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race-car-headlight-glow{left:92%;top:29%;width:68%;height:50%;z-index:8;opacity:0;transform-origin:left center;overflow:visible;clip-path:none;background:transparent;filter:none;transition:opacity .2s ease}
 .race-car-headlight-glow:before{content:'';position:absolute;left:0;top:0;width:100%;height:100%;clip-path:polygon(0 36%,100% 4%,100% 100%,0 66%);background:linear-gradient(90deg,#fff9d9d9 0%,#fff0b47a 25%,#ffe5a53b 66%,transparent 100%);filter:blur(3px)}
 .race-car-headlight-glow:after{content:'';position:absolute;left:0;top:34%;width:7%;height:24%;border-radius:50%;background:#fff9d9;box-shadow:0 0 5px 3px #fff3a8,0 0 13px 7px #ffd66a99,0 0 24px 12px #ffce4b66}
-.race-car-muffler{inset:0;z-index:4}
-.race-car-muffler-body{position:absolute;left:5.1%;top:80.3%;width:4.6%;height:3.8%;min-height:6px;border-radius:7px 5px 5px 7px;background:linear-gradient(180deg,#f4f6f7 0%,#87939a 24%,#364149 54%,#b7c0c5 82%,#626d74 100%);border:1px solid #303a40;box-shadow:inset 0 1px 2px #fff9,0 1px 2px #000b}
-.race-car-muffler-tailpipe{position:absolute;left:1.25%;top:82.1%;width:5.7%;height:2.1%;border-radius:3px 1px 1px 3px;background:linear-gradient(180deg,#e7ecee 0%,#717d85 34%,#252d33 62%,#aeb8bd 100%);border:1px solid #303940;box-shadow:0 1px 2px #0009}
-.race-car-muffler-outlet{position:absolute;left:.9%;top:81.75%;width:5px;height:8px;border-radius:50%;background:radial-gradient(ellipse at 45% 50%,#11171b 0 43%,#6f7b83 48% 68%,#edf1f2 72% 100%);box-shadow:0 0 2px #000}
-.race-car-exhaust-puff{left:.1%;top:80.5%;z-index:0;width:17px;height:11px;border-radius:50%;opacity:0;filter:blur(1.4px);background:radial-gradient(ellipse at 38% 50%,#eef3f5dc 0%,#c0cbd0b8 35%,#89969d56 68%,transparent 100%);animation:none;will-change:transform,opacity}
-.race-car-exhaust-puff.puff-two{top:80.9%;width:20px;height:14px}
-.race-car-exhaust-puff.puff-three{top:80.1%;width:23px;height:17px}
+.race-car-muffler{inset:0;z-index:8;overflow:visible}
+.race-car-muffler-body{position:absolute;left:5.4%;top:81.3%;width:6.2%;height:6.4%;min-height:8px;border-radius:9px 7px 7px 9px;background:linear-gradient(180deg,#ffffff 0%,#c4cdd2 15%,#64717a 35%,#2e373d 54%,#d4dce0 76%,#65727a 100%);border:1px solid #273139;box-shadow:inset 0 1px 3px #fff, inset 0 -2px 3px #10171c,0 2px 3px #000c}
+.race-car-muffler-tailpipe{position:absolute;left:-.3%;top:83.5%;width:6.2%;height:3.6%;min-height:5px;border-radius:4px 1px 1px 4px;background:linear-gradient(180deg,#f7fafb 0%,#87949c 26%,#283239 55%,#d5dde1 84%,#68747c 100%);border:1px solid #202a30;box-shadow:0 1px 3px #000c}
+.race-car-muffler-outlet{position:absolute;left:-.75%;top:82.7%;width:8px;height:12px;border-radius:50%;background:radial-gradient(ellipse at 45% 50%,#080c0f 0 42%,#68757d 47% 68%,#f5f8f9 72% 100%);border:1px solid #252f35;box-shadow:0 0 3px #000d}
+.race-car-exhaust-puff{left:-1.7%;top:79.5%;z-index:7;width:23px;height:17px;border-radius:50%;opacity:0;filter:blur(1.7px);background:radial-gradient(ellipse at 38% 50%,#ffffffef 0%,#dbe3e7dc 27%,#aab8c0a6 56%,#77858d38 75%,transparent 100%);animation:none;will-change:transform,opacity;isolation:isolate}
+.race-car-exhaust-puff.puff-two{top:80.1%;width:26px;height:19px}
+.race-car-exhaust-puff.puff-three{top:79.1%;width:29px;height:21px}
 .pro-race-cockpit.race-engine-on .race-car-headlight-glow{opacity:.9;animation:none}
 .pro-race-cockpit.race-engine-on:not(.race-moving) .race2d-car.player{translate:0 0;animation:race-engine-idle .19s ease-in-out infinite alternate}
-.pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff{animation:race-exhaust-idle 1.8s ease-out infinite;opacity:.4}
+.pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff{animation:race-exhaust-idle 1.8s ease-out infinite;opacity:.62}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff.puff-two{animation-delay:.6s}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff.puff-three{animation-delay:1.2s}
-.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff{animation-duration:.78s;opacity:.62;filter:blur(1.8px)}
-.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-two{animation-delay:.26s}
-.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-three{animation-delay:.52s}
+.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff{animation-duration:.72s;opacity:.78;filter:blur(2px)}
+.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-two{animation-delay:.24s}
+.pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff.puff-three{animation-delay:.48s}
 @keyframes race-engine-idle{from{translate:0 0}to{translate:0 -1.1px}}
 @keyframes race-exhaust-idle{0%{opacity:0;transform:translate3d(0,0,0) scale(.35)}13%{opacity:.44;transform:translate3d(-4px,-2px,0) scale(.78)}62%{opacity:.24}100%{opacity:0;transform:translate3d(-43px,-17px,0) scale(2.25)}}
 
