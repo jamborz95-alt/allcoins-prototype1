@@ -3497,7 +3497,7 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   58%{opacity:.82}
   100%{opacity:0;transform:translate3d(52px,-76px,0) scale(1.42,1.72)}
 }
-/* Headlight v13: soft, rounded light source at the lamp; remove the sharp triangular origin. */
+/* /* Headlight v14: volumetric lamp-sized glow, connected directly to the beam. */
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
   position:absolute!important;
   left:96%!important;top:36%!important;
@@ -3523,41 +3523,69 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 }
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow::after{
   content:""!important;display:block!important;
-  position:absolute!important;left:.5%!important;top:36%!important;
-  width:5.8%!important;height:24%!important;
+  position:absolute!important;left:.8%!important;top:31%!important;
+  width:8.5%!important;height:38%!important;
   border-radius:50%!important;
-  background:radial-gradient(ellipse at 50% 50%,
-    rgba(255,255,246,.98) 0 17%,
-    rgba(255,244,207,.88) 34%,
-    rgba(255,222,150,.48) 60%,
-    rgba(255,214,135,0) 100%)!important;
-  filter:blur(1.3px)!important;
+  background:
+    radial-gradient(ellipse at 35% 50%,
+      rgba(255,255,252,1) 0 15%,
+      rgba(255,249,221,.98) 28%,
+      rgba(255,233,177,.78) 48%,
+      rgba(255,211,132,.34) 70%,
+      rgba(255,203,111,0) 100%),
+    radial-gradient(ellipse at 50% 50%,
+      rgba(255,232,177,.42) 0%,
+      rgba(255,215,141,.18) 58%,
+      transparent 100%)!important;
+  box-shadow:0 0 3px 1px rgba(255,244,205,.6),
+             0 0 8px 3px rgba(255,211,132,.3),
+             inset 0 0 3px rgba(255,255,255,.85)!important;
+  filter:blur(1.1px)!important;
   pointer-events:none!important;
 }
 #proRaceCockpit.race-headlights-on #race2dPlayerCar .race-car-headlight-glow{
   opacity:.76!important;
 }
-
-/* Burnout smoke v2: keep new smoke rolling out of the driven tyre without visible gaps. */
+/* Burnout smoke v3: keep a dense, unbroken smoke connection at the driven tyre. */
+#proRaceCockpit .race-wheel-smoke.burnout-active{
+  opacity:.96!important;
+  filter:blur(3.2px)!important;
+  transform-origin:50% 78%!important;
+}
+#proRaceCockpit .race-wheel-smoke.burnout-active::before,
+#proRaceCockpit .race-wheel-smoke.burnout-active::after{
+  bottom:-3%!important;
+  width:165%!important;
+  height:255%!important;
+  background:radial-gradient(ellipse at 50% 84%,
+    rgba(3,4,5,.99) 0%,
+    rgba(6,7,9,.97) 22%,
+    rgba(12,14,17,.88) 42%,
+    rgba(23,25,28,.68) 61%,
+    rgba(36,38,41,.34) 79%,
+    transparent 98%)!important;
+  filter:blur(5px)!important;
+  mix-blend-mode:multiply!important;
+}
 #proRaceCockpit .race-wheel-smoke.burnout-active::before{
-  animation:race-burnout-smoke-flow-left 1.65s linear infinite!important;
+  animation:race-burnout-smoke-connected-left 1.55s linear infinite!important;
 }
 #proRaceCockpit .race-wheel-smoke.burnout-active::after{
-  animation:race-burnout-smoke-flow-right 1.65s linear infinite!important;
-  animation-delay:-.825s!important;
+  animation:race-burnout-smoke-connected-right 1.55s linear infinite!important;
+  animation-delay:-.775s!important;
 }
-@keyframes race-burnout-smoke-flow-left{
-  0%{opacity:.24;transform:translate3d(0,3px,0) scale(.28,.32)}
-  16%{opacity:.92;transform:translate3d(-8px,-11px,0) scale(.62,.76)}
-  42%{opacity:.82;transform:translate3d(-28px,-41px,0) scale(1.08,1.28)}
-  72%{opacity:.58;transform:translate3d(-49px,-70px,0) scale(1.42,1.7)}
-  100%{opacity:.2;transform:translate3d(-66px,-94px,0) scale(1.72,2.04)}
+@keyframes race-burnout-smoke-connected-left{
+  0%{opacity:.66;transform:translate3d(0,2px,0) scale(.42,.48)}
+  16%{opacity:.98;transform:translate3d(-5px,-9px,0) scale(.68,.82)}
+  42%{opacity:.9;transform:translate3d(-17px,-25px,0) scale(1.02,1.2)}
+  72%{opacity:.74;transform:translate3d(-30px,-42px,0) scale(1.28,1.52)}
+  100%{opacity:.58;transform:translate3d(-41px,-55px,0) scale(1.48,1.78)}
 }
-@keyframes race-burnout-smoke-flow-right{
-  0%{opacity:.24;transform:translate3d(0,3px,0) scale(.28,.32)}
-  16%{opacity:.92;transform:translate3d(8px,-11px,0) scale(.62,.76)}
-  42%{opacity:.82;transform:translate3d(28px,-41px,0) scale(1.08,1.28)}
-  72%{opacity:.58;transform:translate3d(49px,-70px,0) scale(1.42,1.7)}
-  100%{opacity:.2;transform:translate3d(66px,-94px,0) scale(1.72,2.04)}
+@keyframes race-burnout-smoke-connected-right{
+  0%{opacity:.66;transform:translate3d(0,2px,0) scale(.42,.48)}
+  16%{opacity:.98;transform:translate3d(5px,-9px,0) scale(.68,.82)}
+  42%{opacity:.9;transform:translate3d(17px,-25px,0) scale(1.02,1.2)}
+  72%{opacity:.74;transform:translate3d(30px,-42px,0) scale(1.28,1.52)}
+  100%{opacity:.58;transform:translate3d(41px,-55px,0) scale(1.48,1.78)}
 }
 </style>
