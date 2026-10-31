@@ -3497,8 +3497,44 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   58%{opacity:.82}
   100%{opacity:0;transform:translate3d(52px,-76px,0) scale(1.42,1.72)}
 }
-/* Headlight: a small upward adjustment, keeping its 93% horizontal position. */
+/* Headlight v10: soft, rounded light source at the lamp; remove the sharp triangular origin. */
 #proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
+  position:absolute!important;
   left:93%!important;top:36%!important;
+  width:60%!important;height:40%!important;
+  z-index:12!important;opacity:0!important;
+  display:block!important;overflow:visible!important;
+  pointer-events:none!important;filter:none!important;
+  transform:none!important;clip-path:none!important;
+  background:transparent!important;
+}
+#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow::before{
+  content:""!important;display:block!important;
+  position:absolute!important;left:0!important;top:0!important;
+  width:100%!important;height:100%!important;
+  clip-path:polygon(0 30%,8% 25%,100% 0,100% 100%,8% 75%,0 70%)!important;
+  border-radius:10px 0 0 10px!important;
+  background:linear-gradient(90deg,
+    rgba(255,252,231,.88) 0%,
+    rgba(255,241,195,.68) 14%,
+    rgba(255,228,163,.36) 60%,
+    rgba(255,219,139,0) 100%)!important;
+  filter:blur(1.6px)!important;
+}
+#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow::after{
+  content:""!important;display:block!important;
+  position:absolute!important;left:-1.5%!important;top:31%!important;
+  width:10%!important;height:38%!important;
+  border-radius:50%!important;
+  background:radial-gradient(ellipse at 50% 50%,
+    rgba(255,255,246,.98) 0 17%,
+    rgba(255,244,207,.88) 34%,
+    rgba(255,222,150,.48) 60%,
+    rgba(255,214,135,0) 100%)!important;
+  filter:blur(1.3px)!important;
+  pointer-events:none!important;
+}
+#proRaceCockpit.race-headlights-on #race2dPlayerCar .race-car-headlight-glow{
+  opacity:.76!important;
 }
 </style>
