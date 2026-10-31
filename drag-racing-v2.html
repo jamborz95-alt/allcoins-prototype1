@@ -1365,7 +1365,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .style-apply-button:disabled{background:#273343;color:#91a0b3;opacity:.9}
 @media(max-width:370px){.paint-picker{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.paint-swatch span{width:25px;height:25px}.paint-swatch{font-size:9px}.vinyl-choice{padding:8px}}
 
-/* VAZ-2107 stays the original transparent PNG; only red body pixels are recolored. */
+/* VAZ-2107 stays the original transparent PNG; the complete painted shell is recolored by a body mask. */
 .lada-png-art{position:relative;width:100%;height:100%;min-height:1px;overflow:visible}
 .lada-png-art>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .lada-png-vinyl{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
@@ -1558,11 +1558,20 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint4" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint5" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+}
+function ladaPointInsidePolygon(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    const crosses=((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi||1e-9)+xi);
+    if(crosses)inside=!inside;
+  }
+  return inside;
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261031-png-paint4';
+  const original='./cars/lada-2107-side.png?v=20261031-png-paint5';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1583,24 +1592,42 @@ function ladaPaintedPng(color){
           if(max===tr)targetH=((tg-tb)/delta)%6;else if(max===tg)targetH=(tb-tr)/delta+2;else targetH=(tr-tg)/delta+4;
           targetH*=60;if(targetH<0)targetH+=360;
         }
-        const wheels=[[.257*w,.76*h,.079*w],[.796*w,.76*h,.079*w]];
+        // The source artwork is a pearl-white PNG. Mask the actual painted shell,
+        // not just the brightest pixels: this includes roof, pillars, doors,
+        // both quarter panels, wheel arches, hood and trunk.
+        const glassPolygons=[
+          [[.300,.105],[.399,.105],[.401,.392],[.274,.392]],
+          [[.416,.105],[.696,.108],[.738,.392],[.416,.392]]
+        ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
+        const wheels=[[.257*w,.780*h],[.796*w,.780*h]];
         for(let i=0;i<data.length;i+=4){
-          if(data[i+3]<24)continue;
-          const pixel=i/4,x=pixel%w;
-          // Recolor the whole pearl-white body, including roof, doors, fenders, hood and trunk.
-          // Only the extreme image edges (bumpers) and original wheel assemblies stay untouched.
-          if(x<.025*w||x>.975*w)continue;
+          if(data[i+3]<12)continue;
+          const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);
+          // The lower body and cabin/roof are separate painted regions.
+          const lowerBody=y>.325*h&&y<.875*h&&x>.012*w&&x<.988*w;
+          const cabinShell=x>.185*w&&x<.815*w&&y>.008*h&&y<.425*h;
+          if(!lowerBody&&!cabinShell)continue;
+          // Leave the side windows untouched, while keeping the roof and pillars paintable.
+          if(glassPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
+          // Protect the two wheel centres/rims; the upper wheel arches remain in the paint mask.
           let inWheel=false;
-          for(const [cx,cy,r] of wheels){const dx=x-cx,dy=Math.floor(pixel/w)-cy;if(dx*dx+dy*dy<r*r){inWheel=true;break;}}
+          for(const [cx,cy] of wheels){
+            const dx=(x-cx)/(.061*w),dy=(y-cy)/(.155*h);
+            if(dx*dx+dy*dy<1){inWheel=true;break;}
+          }
           if(inWheel)continue;
+          // Keep lamps, bumpers and the very dark/chromatic trim in their original finish.
+          if((x<.038*w&&y>.43*h&&y<.68*h)||(x>.928*w&&y>.43*h&&y<.57*h))continue;
+          if((x<.078*w||x>.922*w)&&y>.735*h)continue;
           const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
-          const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo,l=(hi+lo)/2;
-          const saturation=hi?d/hi:0;
-          // Tint pearl-white body paint at every shade, including dark lower panels and body shadows.
-          // Deep glass stays dark; colored lamps and strongly chromatic details remain unchanged.
-          if(l<.22||saturation>.34)continue;
-          const newL=Math.max(.055,Math.min(.96,l*(.62+targetL*.78)));
-          const c=(1-Math.abs(2*newL-1))*targetS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
+          const hi=Math.max(r,g,b),lo=Math.min(r,g,b),chroma=hi-lo,l=(hi+lo)/2;
+          const saturation=hi?chroma/hi:0;
+          if(l<.145||saturation>.52)continue;
+          // Apply the selected paint hue to every shade of the body while retaining
+          // the original PNG's highlights, reflections and panel shading.
+          const newL=Math.max(.045,Math.min(.96,targetL*(.70+.64*l)));
+          const newS=Math.min(1,targetS*(.84+.16*Math.min(1,l*1.35)));
+          const c=(1-Math.abs(2*newL-1))*newS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
           let rr=0,gg=0,bb=0;
           if(targetH<60){rr=c;gg=xh;}else if(targetH<120){rr=xh;gg=c;}else if(targetH<180){gg=c;bb=xh;}else if(targetH<240){gg=xh;bb=c;}else if(targetH<300){rr=xh;bb=c;}else{rr=c;bb=xh;}
           data[i]=Math.round((rr+m)*255);data[i+1]=Math.round((gg+m)*255);data[i+2]=Math.round((bb+m)*255);
