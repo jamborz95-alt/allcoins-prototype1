@@ -38,8 +38,20 @@ try {
     null,
     { timeout: 15000 }
   );
-  assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving scene must be inside its chase-camera world.");
+  assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving cars must be inside their chase-camera world.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-png").count(), 1, "The selected car PNG must be present.");
+  const sceneryPlacement = await page.evaluate(() => ({
+    environmentParent: document.querySelector("#race2dEnvironment")?.parentElement?.className || "",
+    cameraParent: document.querySelector("#race2dCameraWorld")?.parentElement?.className || "",
+    sceneWidth: document.querySelector(".race2d-scene")?.clientWidth || 0,
+    environmentWidth: document.querySelector("#race2dEnvironment")?.getBoundingClientRect().width || 0
+  }));
+  assert.equal(sceneryPlacement.environmentParent, "race2d-scene",
+    "The scenery must stay outside the translating chase-camera layer.");
+  assert.equal(sceneryPlacement.cameraParent, "race2d-scene",
+    "The chase camera and scenery must be sibling layers.");
+  assert.ok(Math.abs(sceneryPlacement.environmentWidth-sceneryPlacement.sceneWidth)<2,
+    "The scenery must cover only the visible viewport and repeat its layers instead of stretching into a finite world.");
   await page.waitForFunction(() => window.__raceEngineAudioStatus === "ready" ||
     window.__raceEngineAudioStatus === "html-fallback-ready" ||
     window.__raceEngineAudioStatus === "playing" ||
@@ -104,27 +116,33 @@ try {
     const cityX = matrixX(document.querySelector("#race2dCityLayer"));
     const treeX = matrixX(document.querySelector("#race2dTreeLayer"));
     const fenceX = matrixX(document.querySelector("#race2dFenceLayer"));
+    const marksX = matrixX(document.querySelector("#race2dRoadMarks"));
     const matrixData = el => {
       const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
       return { a: m.m11, b: m.m12, c: m.m21, d: m.m22, e: m.m41, f: m.m42 };
     };
-    const roadTransform = matrixData(document.querySelector(".race2d-road-surface"));
-    const fenceTransform = matrixData(document.querySelector("#race2dFenceLayer"));
+    const road = document.querySelector(".race2d-road-surface");
     const car = document.querySelector("#race2dPlayerCar");
     const carBox = car.getBoundingClientRect();
+    const sceneBox = document.querySelector(".race2d-scene").getBoundingClientRect();
+    const envBox = document.querySelector("#race2dEnvironment").getBoundingClientRect();
     return {
       speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
       cameraX,
-      cityScreenX: cameraX + cityX,
-      treeScreenX: cameraX + treeX,
-      fenceScreenX: cameraX + fenceX,
-      roadTransform,
-      fenceTransform,
+      cityScreenX: cityX,
+      treeScreenX: treeX,
+      fenceScreenX: fenceX,
+      marksX,
+      roadTransform: matrixData(road),
       carWorldX: matrixX(car),
       carCenterX: carBox.left + carBox.width / 2,
       carLeft: carBox.left,
       carRight: carBox.right,
-      roadLeft: document.querySelector(".race2d-road-surface").getBoundingClientRect().left
+      roadLeft: road.getBoundingClientRect().left,
+      sceneLeft: sceneBox.left,
+      envLeft: envBox.left,
+      envWidth: envBox.width,
+      sceneWidth: sceneBox.width
     };
   });
   await page.waitForTimeout(2200);
@@ -133,15 +151,25 @@ try {
     const cameraX = matrixX(document.querySelector("#race2dCameraWorld"));
     const cityX = matrixX(document.querySelector("#race2dCityLayer"));
     const treeX = matrixX(document.querySelector("#race2dTreeLayer"));
+    const fenceX = matrixX(document.querySelector("#race2dFenceLayer"));
+    const marksX = matrixX(document.querySelector("#race2dRoadMarks"));
     const carBox = document.querySelector("#race2dPlayerCar").getBoundingClientRect();
+    const sceneBox = document.querySelector(".race2d-scene").getBoundingClientRect();
+    const envBox = document.querySelector("#race2dEnvironment").getBoundingClientRect();
     return {
       speed: Number(document.querySelector("#proSpeedDigits")?.textContent || 0),
       cameraX,
-      cityScreenX: cameraX + cityX,
-      treeScreenX: cameraX + treeX,
+      cityScreenX: cityX,
+      treeScreenX: treeX,
+      fenceScreenX: fenceX,
+      marksX,
       carCenterX: carBox.left + carBox.width / 2,
       carLeft: carBox.left,
-      carRight: carBox.right
+      carRight: carBox.right,
+      envLeft: envBox.left,
+      envWidth: envBox.width,
+      sceneLeft: sceneBox.left,
+      sceneWidth: sceneBox.width
     };
   });
 
@@ -163,25 +191,28 @@ try {
     "Changing RPM must not restart the engine audio source or create audible gaps.");
   assert.ok(middle.cameraX < -40, "The camera must move forward with the car, not remain fixed.");
   assert.ok(middle.carWorldX > 80, "The car must advance through world coordinates.");
-  assert.ok(middle.cityScreenX < -5 && middle.treeScreenX < -5 && middle.fenceScreenX < -5,
-    "City, trees and fence must travel backwards relative to the moving car/camera.");
-  assert.ok(Math.abs(middle.fenceScreenX - middle.cameraX) < 2,
-    "The roadside fence must stay locked to the road world and must not drift away from the asphalt.");
-  for (const key of ["a", "b", "c", "d", "e", "f"]) {
-    assert.ok(Math.abs(middle.roadTransform[key] - middle.fenceTransform[key]) < 0.0005,
-      "The fence and asphalt must share the same transform (" + key + ").");
-  }
+  assert.ok(middle.cityScreenX < -5 && middle.treeScreenX < -5 && middle.fenceScreenX < -5 && middle.marksX < -5,
+    "City, trees, fence and road markings must scroll backwards behind the car.");
   assert.ok(Math.abs(middle.roadTransform.b) < 0.00005 &&
     Math.abs(middle.roadTransform.c) < 0.00005 &&
     Math.abs(middle.roadTransform.e) < 0.05 &&
     Math.abs(middle.roadTransform.f) < 0.05,
     "The asphalt must remain level and must not climb, descend, or tilt during the drive.");
-  assert.ok(middle.roadLeft < -30, "The asphalt world must pass backwards under the chase camera.");
+  assert.ok(Math.abs(middle.roadLeft-middle.sceneLeft)<2,
+    "The road surface must remain anchored to the visible scene instead of sliding out of its finite world.");
+  assert.ok(Math.abs(middle.envLeft-middle.sceneLeft)<2 &&
+    Math.abs(middle.envWidth-middle.sceneWidth)<2,
+    "The environment must remain viewport-sized and fixed while the camera follows the car.");
   assert.ok(middle.carCenterX - initial.centerX > 3,
     "The car must keep a visible forward lead on screen while the camera follows it.");
   assert.ok(later.speed >= middle.speed, "The speedometer should continue to increase during the held throttle.");
-  assert.ok(later.cameraX < middle.cameraX && later.cityScreenX < middle.cityScreenX && later.treeScreenX < middle.treeScreenX,
-    "The scenery and camera must continue moving backwards/following faster as speed and distance increase.");
+  assert.ok(later.cameraX < middle.cameraX && later.cityScreenX < middle.cityScreenX &&
+    later.treeScreenX < middle.treeScreenX && later.fenceScreenX < middle.fenceScreenX &&
+    later.marksX < middle.marksX,
+    "The camera and every repeating scenery layer must continue moving as speed and distance increase.");
+  assert.ok(Math.abs(later.envLeft-later.sceneLeft)<2 &&
+    Math.abs(later.envWidth-later.sceneWidth)<2,
+    "The background must stay locked to the viewport as the simulated race advances.");
   assert.ok(later.carCenterX > middle.carCenterX, "The car's forward screen position should progress smoothly.");
   assert.ok(later.carLeft > -50 && later.carRight < 1330, "The car must remain inside the visible track while the camera follows.");
   assert.equal(pageErrors.length, 0, "No JavaScript runtime errors are allowed: " + pageErrors.join(" | "));
