@@ -64,13 +64,11 @@
 .pro-race-cockpit.race-moving .race2d-car svg .race-wheel{animation:race2d-wheel-spin var(--race-wheel-duration,.22s) linear infinite}
 .race2d-car.player{left:12%;bottom:10%;transition:left .06s linear}
 .race2d-car.opponent{right:12%;bottom:34%;width:clamp(190px,30vw,360px);filter:drop-shadow(0 9px 6px #0008)}
-.pro-race-cockpit.race-moving .race2d-scene:before{animation:race2d-road var(--race-road-duration,.6s) linear infinite}
 .pro-race-cockpit.race-moving .race2d-car.player{animation:race2d-bounce .34s cubic-bezier(.36,0,.64,1) infinite alternate}
 .pro-race-cockpit .race2d-scene.race-road-bump .race2d-road-surface{animation:none!important;filter:none!important}
 .pro-race-cockpit .race2d-scene.race-road-bump .race2d-car.player{animation:race2d-suspension-bump .46s cubic-bezier(.2,.75,.35,1)}
 @keyframes race2d-road-bump{0%,100%{transform:translate3d(0,0,0)}35%{transform:translate3d(0,1px,0)}70%{transform:translate3d(0,-.5px,0)}}
 @keyframes race2d-suspension-bump{0%{translate:0 0}18%{translate:0 -7px}40%{translate:0 3px}65%{translate:0 -2px}100%{translate:0 0}}
-@keyframes race2d-road{to{background-position:-216px 0}}
 @keyframes race2d-bounce{to{translate:0 -2px}}
 @keyframes race2d-wheel-spin{to{transform:rotate(360deg)}}
 #proRaceTrack #race3dCanvas{display:none!important}
@@ -177,17 +175,15 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-race-track .race2d-scene:before,.pro-race-track .race2d-scene:after{display:none!important}
 .race2d-environment{position:absolute;inset:0;z-index:0;overflow:hidden;background:linear-gradient(180deg,#9eafb3 0%,#d5d6cd 36%,#9d9f8e 43%,#6e706b 51%,#74736d 100%);pointer-events:none}
 .race2d-sky-wash{position:absolute;inset:0;background:linear-gradient(180deg,#a5b7bb 0%,#d0d3cb 34%,#d9d5c7 40%,transparent 47%);z-index:0}
-.race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{position:absolute;left:0;right:0;background-repeat:repeat-x;background-position:0 0;will-change:background-position;pointer-events:none}
-.race2d-city-layer{top:0;height:47%;z-index:1;background-size:300vw 100%;filter:blur(.18px);opacity:.96;will-change:transform;backface-visibility:hidden}
-.race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;filter:blur(.42px);opacity:.96;will-change:transform;backface-visibility:hidden}
+.race2d-city-layer,.race2d-tree-layer,.race2d-fence-layer{position:absolute;left:0;right:0;background-repeat:repeat-x;background-position:0 0;pointer-events:none}
+.race2d-city-layer{top:0;height:47%;z-index:1;background-size:300vw 100%;opacity:.96;will-change:transform;backface-visibility:hidden}
+.race2d-tree-layer{top:16%;height:49%;z-index:2;background-size:300vw 100%;opacity:.96;will-change:transform;backface-visibility:hidden}
 .race2d-green-belt{position:absolute;left:0;right:0;top:39%;height:10%;z-index:2;background:linear-gradient(180deg,#adb69a 0%,#78916c 24%,#53694f 61%,#9a9c84 100%);box-shadow:inset 0 4px 5px #e6dfc766;border-bottom:2px solid #4c544d}
 .race2d-fence-layer{top:37%;height:25%;z-index:3;background-size:300vw 100%;opacity:.9;will-change:transform;backface-visibility:hidden}
 .race2d-road-surface{position:absolute;left:0;right:0;top:44%;bottom:0;z-index:3;overflow:hidden;background:linear-gradient(180deg,#a29e90 0%,#8a877d 12%,#6c6d68 25%,#696a66 60%,#77766e 100%);border-top:2px solid #dad6c7;box-shadow:inset 0 8px 12px #4e514d55}
 .race2d-road-surface:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 10px,#f4f1e61c 10px 11px,transparent 12px 23px),repeating-linear-gradient(90deg,#3f44420a 0 2px,transparent 2px 8px);opacity:.55}
 .race2d-road-markings{position:absolute;left:0;right:0;top:38%;height:4px;background:repeating-linear-gradient(90deg,#eee9d8 0 47px,transparent 47px 96px);background-position:0 0;opacity:.91;filter:drop-shadow(0 1px 1px #3c3c35);will-change:transform;backface-visibility:hidden}
 .race2d-road-grain{position:absolute;inset:0;background:linear-gradient(180deg,#f5f0dc12,transparent 27% 76%,#21232320),repeating-linear-gradient(177deg,transparent 0 17px,#dad5c21a 18px,transparent 19px 38px);opacity:.55;pointer-events:none}
-.race2d-scene.race-fast .race2d-city-layer{filter:blur(.8px)}
-.race2d-scene.race-fast .race2d-tree-layer{filter:blur(1.15px)}
 .race2d-car{width:clamp(245px,27.5vw,390px)!important;bottom:15%!important;z-index:5!important;filter:drop-shadow(0 9px 5px #161a1885)!important;will-change:transform!important;backface-visibility:hidden}
 .race2d-car.player{left:12%;transition:none!important;transform:translate3d(var(--race-car-x,0px),var(--road-bump-y,0px),0)!important}
 .race2d-scene.road-bump-active .race2d-road-surface{filter:none!important}
@@ -1354,7 +1350,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
+let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -1501,10 +1497,11 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
 
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
-  scene.classList.toggle('race-fast',currentSpeed>130);
-  scene.classList.toggle('race-finish-approach',progress>=.58);
-  scene.classList.toggle('race-near-finish',progress>=.82);
-  scene.classList.toggle('race-finished',Boolean(finished));
+  const setSceneClass=(name,enabled)=>{if(scene.classList.contains(name)!==enabled)scene.classList.toggle(name,enabled)};
+  setSceneClass('race-fast',currentSpeed>130);
+  setSceneClass('race-finish-approach',progress>=.58);
+  setSceneClass('race-near-finish',progress>=.82);
+  setSceneClass('race-finished',Boolean(finished));
   updateOnlineOpponentMotion(dt);
   updateUnevenRoad(dt,now);
   // Audio control and AudioParam automation do not need to run at 60 Hz.
@@ -1558,14 +1555,14 @@ let lastFuelPersistAt=0,lastFuelPersistValue=null;
 function persistFuel(force=false){const now=Date.now(),fuel=getCarFuel();if(!force&&(now-lastFuelPersistAt<2500||lastFuelPersistValue!==null&&Math.abs(fuel-lastFuelPersistValue)<.1))return;try{localStorage.setItem('allcoinsDragRacingV1',JSON.stringify(state));lastFuelPersistAt=now;lastFuelPersistValue=fuel}catch(_){}}
 function updateFuelHUD(){
   const c=car(),fuel=getCarFuel(c),pct=c.tank>0?Math.max(0,Math.min(100,fuel/c.tank*100)):0,amount=fuel.toFixed(2),consumption=Number(c.consumption||0).toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1});
-  const setText=(id,value)=>{const node=$(id);if(node)node.textContent=value};
+  const setText=(id,value)=>{const node=$(id);if(node&&node.textContent!==value)node.textContent=value};
   setText('vehicleName',c.name);setText('vehiclePower',effectivePower(c)+' л.с.');setText('vehicleWeight',money(c.weight)+' кг');const driveLabel=/полный привод/i.test(c.sub)?'Полный':/передний привод/i.test(c.sub)?'Передний':/задний привод/i.test(c.sub)?'Задний':'—';setText('vehicleDrive',driveLabel);
   setText('fuelAmount',amount);setText('fuelCapacity',String(c.tank));setText('fuelConsumption','Расход: '+consumption+' л/100 км');
   const status=fuel<=0.001?'ПУСТО':pct<=15?'МАЛО БЕНЗИНА':pct>=99.9?'ПОЛНЫЙ БАК':'ОСТАЛОСЬ '+Math.round(pct)+'%';
   setText('fuelStatus',status);setText('proFuelLiters',amount);setText('proFuelCap',String(c.tank));setText('proFuelStatus',status);
-  for(const id of ['fuelBar','proFuelMeterBar']){const bar=$(id);if(bar){bar.style.width=pct+'%';bar.classList.toggle('low',pct<=15)}}
+  for(const id of ['fuelBar','proFuelMeterBar']){const bar=$(id);if(bar){const width=pct+'%';if(bar.style.width!==width)bar.style.width=width;const low=pct<=15;if(bar.classList.contains('low')!==low)bar.classList.toggle('low',low)}}
   const cannotRefuelWhileMoving=Boolean(running&&Number(speed)>1.5),full=fuel>=c.tank-.005;
-  for(const id of ['refuelFuel','proRefuelFuel']){const btn=$(id);if(btn)btn.disabled=full||cannotRefuelWhileMoving}
+  for(const id of ['refuelFuel','proRefuelFuel']){const btn=$(id);if(btn&&btn.disabled!==(full||cannotRefuelWhileMoving))btn.disabled=full||cannotRefuelWhileMoving}
   setText('fuelHint',fuel<=0.001?'Бак пуст. Машина потеряет тягу — остановись и заправься.':pct<=15?'Бензина мало — заправься до следующего заезда.':'Топливо сохраняется для каждой машины и расходуется при езде.');
 }
 function burnFuel(dt){if(!(dt>0))return;const c=car(),before=getCarFuel(c);if(before<=0)return;const distanceKm=Math.max(0,Number(speed)||0)*dt/3600,distanceBurn=distanceKm*(Number(c.consumption)||0)/100,load=gasHeld?Math.max(.35,Math.min(1.65,(Number(rpm)||900)/4500)):.04,engineBurn=dt*(gasHeld?.006:.0001)*load,after=Math.max(0,before-distanceBurn-engineBurn);if(after<before){state.fuelByCar[c.id]=after;if(before-after>=.03)persistFuel(false)}}
@@ -2105,7 +2102,8 @@ function closeProRaceCockpit(){
 }
 function syncProRaceCockpit(){
   if(!$('proRaceCockpit'))return;
-  updateFuelHUD();
+  const frameNow=performance.now();
+  if(!running||frameNow-lastFuelHudSyncAt>=250){updateFuelHUD();lastFuelHudSyncAt=frameNow;}
   const speedNow=Math.max(0,Math.min(999,Math.round(Number(speed)||0)));
   $('proSpeedDigits').textContent=String(speedNow).padStart(3,'0');
   const speedMeter=$('proSpeedMeterBar');
@@ -2121,7 +2119,6 @@ function syncProRaceCockpit(){
   cockpit.classList.toggle('race-engine-on',Boolean(raceCockpitOpen));
   cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen));
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
-  cockpit.style.setProperty('--race-road-duration',Math.max(.09,1.05-(Math.max(0,Number(speed)||0)/330))+'s');
   cockpit.style.setProperty('--race-wheel-duration',Math.max(.035,.48/(1+speedNow/18))+'s');
   cockpit.classList.toggle('race-online',Boolean(currentOnlineRoom&&currentOnlineRoom.room.status==='racing'));
   const speedNeedle=$('proSpeedNeedle');
@@ -2905,7 +2902,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -2974,7 +2971,7 @@ function updateHUD(dt=1/60,motionAlreadyUpdated=false){
   $('speed').textContent=Math.round(speed);$('speedHud').textContent=Math.round(speed)+' км/ч';
   $('distance').textContent=Math.min(maxDist,Math.round(distance));$('distanceHud').textContent=Math.max(0,Math.round(maxDist-distance))+' м';
   $('rpm').textContent=Math.round(rpm);$('speedbar').style.width=Math.min(100,speed/2.8)+'%';$('rpmbar').style.width=Math.min(100,rpm/80)+'%';
-  $('zero100').textContent=zeroAt===null?'—':zeroAt.toFixed(2)+' с';updateFuelHUD();syncProRaceCockpit();
+  $('zero100').textContent=zeroAt===null?'—':zeroAt.toFixed(2)+' с';syncProRaceCockpit();
 }
 const raceFrameRecoveredStages=new Set();
 function recoverRaceFrameError(stage,error){
