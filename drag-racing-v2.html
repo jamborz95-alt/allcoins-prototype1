@@ -2570,7 +2570,7 @@ function updateVaz2107Media(){
   const samplePlaying=Boolean((webAudioLive||raceEngineMedia&&!raceEngineMedia.paused&&!raceEngineMedia.ended)&&active);
   window.__raceEngineAudioDebug={
     ...(window.__raceEngineAudioDebug||{}),
-    enabled:active,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
+    enabled:active,throttle:Boolean(gasHeld),moving:Boolean(running&&speed>1),rpm:currentRpm,firingHz:currentRpm/30,
     mediaPlaying:samplePlaying,mediaPlaybackRate:webAudioLive?targetRate:(raceEngineMedia?.playbackRate||targetRate),
     mediaVolume:webAudioLive?raceEngineSampleGain?.gain?.value:raceEngineMedia?.volume,
     nativeSafetyVolume:raceEngineMedia?.volume??0,
