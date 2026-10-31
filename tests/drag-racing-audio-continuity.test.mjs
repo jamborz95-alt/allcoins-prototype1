@@ -91,6 +91,10 @@ test("the moving 2D track avoids expensive full-surface repaint effects", () => 
     "Track motion should use the existing compositor-transformed road markings.");
   assert.doesNotMatch(game, /\\.race2d-scene\\.race-fast \\.race2d-(?:city|tree)-layer\\{filter:blur/,
     "High speed must not add costly blur filters to full-width scenery layers.");
+  assert.ok(!game.includes(".pro-race-cockpit.race-moving .race2d-road-grain{animation:"),
+    "The full-screen road grain must not animate background-position.");
+  assert.ok(!game.includes("@keyframes race2d-road-grain-slide"),
+    "The repaint-heavy road grain animation keyframes must be absent.");
   assert.match(game, /frameNow-lastFuelHudSyncAt>=250/,
     "Fuel labels and meters should refresh at a lower rate than the live driving animation.");
 });
