@@ -146,7 +146,7 @@ try {
       // Check each parallax strip just before and just after its repeat boundary,
       // including a long accumulated world distance like a near-finish drive.
       for (const edge of [-.25, .25]) {
-        raceWorldOffset = (period + edge) / layer.rate + period * 100;
+        raceWorldOffset = (period * 101 + edge) / layer.rate;
         updateRace2DEnvironment(0, performance.now());
         const measurements = layers.map(item => {
           const element = document.getElementById(item.id);
