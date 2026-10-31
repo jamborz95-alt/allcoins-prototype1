@@ -159,3 +159,15 @@ test("the active v2 racing script parses", () => {
   assert.ok(inline, "Expected an inline racing-game script.");
   assert.doesNotThrow(() => new Function(inline[2]), "Racing-game script must be syntactically valid.");
 });
+
+test("headlights use a wide beam and can be switched on and off independently", () => {
+  assert.match(game, /id="proHeadlightToggle"/);
+  assert.match(game, /let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true/);
+  assert.match(game, /\.race-car-headlight-glow:before\\{[^}]*height:100%;clip-path:polygon\\(0 14%,100% 0%,100% 100%,0 86%\\)/);
+  assert.match(game, /\.pro-race-cockpit\.race-headlights-on \.race-car-headlight-glow\\{opacity:\.9/);
+  assert.ok(game.includes("raceHeadlightsEnabled=!raceHeadlightsEnabled;"));
+  assert.match(game, /classList\.toggle\('race-headlights-on',Boolean\(raceCockpitOpen&&raceHeadlightsEnabled\)\)/);
+  assert.ok(game.includes("raceHeadlightsEnabled?'☀ ФАРЫ ВКЛ':'☼ ФАРЫ ВЫКЛ'"));
+  assert.ok(game.includes(".race-car-headlight-glow:after{display:none!important;content:none!important}"),
+    "The round hotspot must remain disabled.");
+});
