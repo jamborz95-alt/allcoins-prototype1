@@ -129,7 +129,7 @@ try {
       hotspotDisplay: getComputedStyle(el, "::after").display
     };
   });
-  assert.match(beam.clipPath, /0% 50%.*100% 5%.*100% 95%/,
+  assert.match(beam.clipPath, /0(?:px|%) 50%.*100% 5%.*100% 95%/,
     "The headlight beam must be a clear triangular wedge that widens toward the road ahead.");
   assert.ok(beam.width > 140 && beam.height > 35,
     "The updated triangular beam must be visibly larger than the previous narrow beam: " + JSON.stringify(beam));
