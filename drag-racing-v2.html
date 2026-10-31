@@ -1548,11 +1548,14 @@ function carVinylMarkup(vinylId){
   if(vinylId==='number')return '<g opacity=".97"><path d="M78 131 L520 136" stroke="#f5f2e8" stroke-width="5" fill="none"/><circle cx="328" cy="130" r="15" fill="#f5f2e8" stroke="#20262d" stroke-width="2.5"/><text x="328" y="136" text-anchor="middle" font-size="16" font-weight="900" font-family="Arial,sans-serif" fill="#20262d">07</text></g>';
   return '';
 }
-function carPaintCss(id){
+function carFactoryPaintCss(id){
   const palette={'2101':'#c54438','2107':'#dfe3e6','2105':'#dddcd7','2104':'#4e96c5','2106':'#2d74c7','2109':'#c8323a','2110':'#435f80',priora:'#347bc1',kalina:'#788d9b',granta:'#238e82',niva:'#6b8064',vesta:'#b6c3ca'};
+  return palette[String(id)]||'#b72531';
+}
+function carPaintCss(id){
   const style=getCarCustomization(id);
   if(style.paintId!=='factory')return CAR_PAINTS.find(item=>item.id===style.paintId)?.color||'#b72531';
-  return palette[String(id)]||'#b72531';
+  return carFactoryPaintCss(id);
 }
 let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
@@ -2714,7 +2717,7 @@ function renderStyleControls(){
   const preview=$('stylePreview');
   if(preview){preview.innerHTML=String(state.selected)==='2107'?ladaPngMarkup('preview-car-png',draft.vinylId):carSvg(state.selected,paint.color,draft.vinylId);if(String(state.selected)==='2107')applyLadaPaintToImages(paint.color);}
   const picker=$('paintPicker');
-  if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
+  if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carFactoryPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
   const vinylPicker=$('vinylPicker');
   if(vinylPicker)vinylPicker.innerHTML=CAR_VINYLS.map(item=>'<button type="button" class="vinyl-choice '+(item.id===draft.vinylId?'selected':'')+'" data-vinyl="'+item.id+'"><b>'+item.name+'</b><small>'+item.desc+'</small><em>'+(item.price?money(item.price)+' AC':'Бесплатно')+'</em></button>').join('');
   const price=$('styleCost');if(price)price.textContent=cost?money(cost)+' AC':'Бесплатно';
