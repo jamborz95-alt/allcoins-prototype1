@@ -71,7 +71,26 @@ try {
 
   const pngBytes = Buffer.from(inspection.paintedUrl.split(",")[1], "base64");
   await writeFile(resolve(root, "artifacts/lada-2107-orange-paint-check.png"), pngBytes);
-  console.log("VAZ-2107 PNG paint regression passed: roof, rear quarter, doors and hood recoloured; sampled glass and wheel pixels unchanged.");
+
+  // The car shop must display the same real transparent PNG, not a vector redraw.
+  await page.locator('button[data-tab="shop"]').click();
+  await page.waitForFunction(() => {
+    const shop = document.getElementById("shop");
+    const image = document.querySelector("#carShop .shop-car-png");
+    return shop && !shop.classList.contains("hidden") && image && image.complete && image.naturalWidth > 0;
+  }, null, { timeout: 10000 });
+  const shopPng = await page.locator("#carShop .shop-car-png").evaluate(image => ({
+    src: image.currentSrc || image.src,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+    alt: image.alt
+  }));
+  assert.ok(shopPng.width >= 600 && shopPng.height >= 200,
+    "The car shop should use the original high-resolution VAZ-2107 PNG: " + JSON.stringify(shopPng));
+  assert.match(shopPng.alt, /ВАЗ-2107/i, "The shop PNG must be labelled as the VAZ-2107.");
+  await page.locator("#carShop").screenshot({ path: resolve(root, "artifacts/lada-2107-shop-png.png") });
+  console.log("VAZ-2107 shop PNG regression passed: high-resolution PNG is visible in the car shop.");
+
 } finally {
   await browser.close();
 }
