@@ -131,9 +131,9 @@ test("the VAZ-2107 has a visible muffler and exhaust smoke emitted from the tail
   assert.ok(game.includes('useLadaPng?ladaPreview+ladaWheels+ladaExhaust:'),
     "The physical exhaust assembly must be attached only to the VAZ-2107 PNG.");
   assert.match(game, /\.race-car-muffler-body\{[^}]*background:linear-gradient/);
-  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:83\.5%/);
+  assert.match(game, /\.race-car-muffler-tailpipe\{[^}]*top:80\.2%/);
   assert.match(game, /\.race-car-muffler-outlet\{[^}]*radial-gradient/);
-  assert.match(game, /\.race-car-exhaust-puff\{left:-1\.7%;top:79\.5%/,
+  assert.match(game, /\.race-car-exhaust-puff\{left:-1\.7%;top:76\.2%/,
     "Smoke must originate at the rear underside of the car, beside the tailpipe.");
   assert.match(game, /\.pro-race-cockpit\.race-engine-on \.race2d-car\.player \.race-car-exhaust-puff\{animation:race-exhaust-idle/,
     "The exhaust should emit light wisps while the engine idles.");
