@@ -1364,6 +1364,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .style-apply-button{width:100%;background:linear-gradient(135deg,#f1d28a,#c49a4e);color:#1a160e}
 .style-apply-button:disabled{background:#273343;color:#91a0b3;opacity:.9}
 @media(max-width:370px){.paint-picker{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.paint-swatch span{width:25px;height:25px}.paint-swatch{font-size:9px}.vinyl-choice{padding:8px}}
+
+/* VAZ-2107 stays the original transparent PNG; only red body pixels are recolored. */
+.lada-png-art{position:relative;width:100%;height:100%;min-height:1px;overflow:visible}
+.lada-png-art>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.lada-png-vinyl{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#previewCar .lada-png-art{width:100%;height:100%}
+.style-preview .lada-png-art{height:110px;max-width:560px}
+.style-preview .lada-png-vinyl{overflow:visible}
 </style>
 </head>
 <body><main class="app">
@@ -1547,6 +1555,63 @@ function carPaintCss(id){
   return palette[String(id)]||'#b72531';
 }
 let carSvgInstance=0;
+const ladaPaintImageCache=new Map();
+function ladaPngMarkup(imgClass,vinylId){
+  const vinyl=carVinylMarkup(vinylId||'none');
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint1" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+}
+function ladaPaintedPng(color){
+  const target=String(color||'#cf2637').toLowerCase();
+  if(!/^#[0-9a-f]{6}$/.test(target)||target==='#cf2637')return Promise.resolve('./cars/lada-2107-side.png?v=20261031-png-paint1');
+  if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
+  const promise=new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth||1200;canvas.height=img.naturalHeight||440;
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});
+        if(!ctx){resolve('./cars/lada-2107-side.png?v=20261031-png-paint1');return;}
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        const frame=ctx.getImageData(0,0,canvas.width,canvas.height),data=frame.data;
+        const tr=parseInt(target.slice(1,3),16)/255,tg=parseInt(target.slice(3,5),16)/255,tb=parseInt(target.slice(5,7),16)/255;
+        const max=Math.max(tr,tg,tb),min=Math.min(tr,tg,tb),targetL=(max+min)/2,delta=max-min;
+        let targetH=0,targetS=0;
+        if(delta){targetS=delta/(1-Math.abs(2*targetL-1));if(max===tr)targetH=((tg-tb)/delta)%6;else if(max===tg)targetH=(tb-tr)/delta+2;else targetH=(tr-tg)/delta+4;targetH*=60;if(targetH<0)targetH+=360;}
+        for(let i=0;i<data.length;i+=4){
+          if(data[i+3]<24)continue;
+          const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
+          const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo;
+          if(!d)continue;
+          let h=0;if(hi===r)h=((g-b)/d)%6;else if(hi===g)h=(b-r)/d+2;else h=(r-g)/d+4;
+          h=(h*60+360)%360;
+          // The source body is red. Only recolor red paint pixels; glass, chrome, tyres and lights stay untouched.
+          if(!(h>=345||h<=18)||hi<.18||d/(hi||1)<.16)continue;
+          const l=(hi+lo)/2;
+          const newL=Math.max(.055,Math.min(.91,l*(targetL/.48)));
+          const c=(1-Math.abs(2*newL-1))*targetS,x=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
+          let rr=0,gg=0,bb=0;
+          if(targetH<60){rr=c;gg=x;}else if(targetH<120){rr=x;gg=c;}else if(targetH<180){gg=c;bb=x;}else if(targetH<240){gg=x;bb=c;}else if(targetH<300){rr=x;bb=c;}else{rr=c;bb=x;}
+          data[i]=Math.round((rr+m)*255);data[i+1]=Math.round((gg+m)*255);data[i+2]=Math.round((bb+m)*255);
+        }
+        ctx.putImageData(frame,0,0);resolve(canvas.toDataURL('image/png'));
+      }catch(_){resolve('./cars/lada-2107-side.png?v=20261031-png-paint1');}
+    };
+    img.onerror=()=>resolve('./cars/lada-2107-side.png?v=20261031-png-paint1');
+    img.src='./cars/lada-2107-side.png?v=20261031-png-paint1';
+  });
+  ladaPaintImageCache.set(target,promise);return promise;
+}
+function applyLadaPaintToImages(color){
+  ladaPaintedPng(color).then(src=>{
+    document.querySelectorAll('.race-car-png,.preview-car-png').forEach(img=>{
+      if(img.dataset.paintColor!==String(color||'#cf2637')){
+        img.dataset.paintColor=String(color||'#cf2637');
+        img.src=src;
+      }
+    });
+  });
+}
 function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
   const selectedVinyl=vinylValue||getCarCustomization(id).vinylId;
@@ -1664,16 +1729,16 @@ function syncRace2DCarArt(){
   const player=$('race2dPlayerCar'),opponent=$('race2dOpponentCar'),preview=$('previewCar');
   const selectedId=String(state.selected||'2107');
   const selectedStyle=getCarCustomization(selectedId);
-  const useLadaPng=selectedId==='2107'&&selectedStyle.paintId==='factory'&&selectedStyle.vinylId==='none';
+  const useLadaPng=selectedId==='2107';
   const paint=carPaintCss(selectedId);
-  const ladaPreview='<img class="race-car-png" src="./cars/lada-2107-side.png?v=20261029-wheel2" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">';
+  const ladaPreview=ladaPngMarkup('race-car-png',selectedStyle.vinylId);
   const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"></i></span>';
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+'</div>';
-  if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint,selectedStyle.vinylId);
+  if(preview)preview.innerHTML=useLadaPng?ladaPngMarkup('preview-car-png',selectedStyle.vinylId):carSvg(selectedId,paint,selectedStyle.vinylId);
   if(player){
     player.classList.toggle('png-car',useLadaPng);
     player.classList.toggle('vector-side-car',!useLadaPng);
@@ -1681,6 +1746,7 @@ function syncRace2DCarArt(){
     // Keep the PNG body crisp and rotate only the two wheel faces positioned over its rims.
     // Smoke is placed after the wheel faces so it can visibly build up over the spinning tyres.
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+(selectedId==='2107'?ladaExhaust+ladaSmoke:'')+engineEffects+wheelSmokeEffects;
+    if(useLadaPng)applyLadaPaintToImages(paint);
   }
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -2604,7 +2670,7 @@ function renderStyleControls(){
   const cost=getCustomizationCost(current,draft);
   const hasChanges=draft.paintId!==current.paintId||draft.vinylId!==current.vinylId;
   const preview=$('stylePreview');
-  if(preview)preview.innerHTML=carSvg(state.selected,paint.color,draft.vinylId);
+  if(preview){preview.innerHTML=String(state.selected)==='2107'?ladaPngMarkup('preview-car-png',draft.vinylId):carSvg(state.selected,paint.color,draft.vinylId);if(String(state.selected)==='2107')applyLadaPaintToImages(paint.color);}
   const picker=$('paintPicker');
   if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
   const vinylPicker=$('vinylPicker');
