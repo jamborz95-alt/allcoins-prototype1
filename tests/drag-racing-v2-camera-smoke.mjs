@@ -56,6 +56,12 @@ try {
     const cityX = matrixX(document.querySelector("#race2dCityLayer"));
     const treeX = matrixX(document.querySelector("#race2dTreeLayer"));
     const fenceX = matrixX(document.querySelector("#race2dFenceLayer"));
+    const matrixData = el => {
+      const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+      return { a: m.m11, b: m.m12, c: m.m21, d: m.m22, e: m.m41, f: m.m42 };
+    };
+    const roadTransform = matrixData(document.querySelector(".race2d-road-surface"));
+    const fenceTransform = matrixData(document.querySelector("#race2dFenceLayer"));
     const car = document.querySelector("#race2dPlayerCar");
     const carBox = car.getBoundingClientRect();
     return {
@@ -64,6 +70,8 @@ try {
       cityScreenX: cameraX + cityX,
       treeScreenX: cameraX + treeX,
       fenceScreenX: cameraX + fenceX,
+      roadTransform,
+      fenceTransform,
       carWorldX: matrixX(car),
       carCenterX: carBox.left + carBox.width / 2,
       carLeft: carBox.left,
@@ -96,6 +104,12 @@ try {
     "City, trees and fence must travel backwards relative to the moving car/camera.");
   assert.ok(Math.abs(middle.fenceScreenX - middle.cameraX) < 2,
     "The roadside fence must stay locked to the road world and must not drift away from the asphalt.");
+  for (const key of ["a", "b", "c", "d", "e", "f"]) {
+    assert.ok(Math.abs(middle.roadTransform[key] - middle.fenceTransform[key]) < 0.0005,
+      "The fence and asphalt must share the same live road-grade transform (" + key + ").");
+  }
+  assert.ok(Math.abs(middle.roadTransform.b) > 0.00005 || Math.abs(middle.roadTransform.f) > 0.2,
+    "The regression test must exercise a non-flat road section while checking fence alignment.");
   assert.ok(middle.roadLeft < -30, "The asphalt world must pass backwards under the chase camera.");
   assert.ok(middle.carCenterX - initial.centerX > 3,
     "The car must keep a visible forward lead on screen while the camera follows it.");
