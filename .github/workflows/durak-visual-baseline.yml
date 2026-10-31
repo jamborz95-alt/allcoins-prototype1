@@ -33,6 +33,14 @@ jobs:
           done
       - name: Run VAZ-2107 PNG paint regression test
         run: node tests/drag-racing-paint-smoke.mjs
+      - name: Upload VAZ-2107 paint preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaz-2107-paint-preview
+          path: artifacts/lada-2107-orange-paint-check.png
+          if-no-files-found: warn
+          retention-days: 7
       - name: Run public-link localization visual test
         run: node tests/live-link-visual-smoke.mjs
       - name: Run drag-racing long-run mobile regression test
