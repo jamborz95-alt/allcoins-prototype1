@@ -964,14 +964,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* Place the VAZ-2107 beam at the real front lamp, not above the bonnet.
    The wedge widens slightly and falls toward the road ahead of the car. */
 #proRaceCockpit .race2d-car.png-car .race-car-headlight-glow{
-  left:98%!important;top:47%!important;width:30%!important;height:22%!important;
+  left:98%!important;top:47%!important;width:33%!important;height:24%!important;
   opacity:0!important;z-index:8!important;overflow:visible!important;
   filter:none!important;transform:none!important;transform-origin:left center!important;
 }
 #proRaceCockpit .race2d-car.png-car .race-car-headlight-glow:before{
   content:""!important;display:block!important;position:absolute!important;
   left:0!important;top:0!important;width:100%!important;height:100%!important;
-  clip-path:polygon(0 34%,100% 48%,100% 100%,0 66%)!important;
+  clip-path:polygon(0 50%,100% 7%,100% 93%)!important;
   background:linear-gradient(90deg,
     rgba(255,250,220,.96) 0%,
     rgba(255,239,177,.66) 24%,
@@ -980,14 +980,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   filter:blur(.65px)!important;
 }
 #proRaceCockpit .race2d-car.png-car .race-car-headlight-glow:after{
-  content:""!important;display:block!important;position:absolute!important;
-  left:-2%!important;top:31%!important;width:13%!important;height:38%!important;
-  border-radius:50%!important;
-  background:radial-gradient(ellipse at 35% 50%,
-    rgba(255,255,225,.98) 0 15%,
-    rgba(255,225,155,.68) 36%,
-    rgba(255,220,145,0) 76%)!important;
-  filter:blur(1px)!important;
+  display:none!important;content:none!important;
 }
 #proRaceCockpit.race-headlights-on .race2d-car.png-car .race-car-headlight-glow{
   opacity:.82!important;
