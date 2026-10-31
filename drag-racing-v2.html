@@ -1558,7 +1558,7 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint5" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint6" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
   let inside=false;
@@ -1571,7 +1571,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261031-png-paint5';
+  const original='./cars/lada-2107-side.png?v=20261031-png-paint6';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1596,10 +1596,13 @@ function ladaPaintedPng(color){
         // not just the brightest pixels: this includes roof, pillars, doors,
         // both quarter panels, wheel arches, hood and trunk.
         const glassPolygons=[
-          [[.300,.105],[.399,.105],[.401,.392],[.274,.392]],
-          [[.416,.105],[.696,.108],[.738,.392],[.416,.392]]
+          // Rear side window and front side window; overlap their edges slightly so
+          // no body-coloured stripe can leak through the narrow divider between panes.
+          [[.287,.103],[.414,.103],[.414,.397],[.267,.397]],
+          [[.405,.103],[.703,.103],[.744,.397],[.405,.397]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
-        const wheels=[[.257*w,.780*h],[.796*w,.780*h]];
+        // Protect the complete tire/rim silhouettes, including the outer tire edge.
+        const wheels=[[.257*w,.778*h,.079*w,.198*h],[.796*w,.778*h,.079*w,.198*h]];
         for(let i=0;i<data.length;i+=4){
           if(data[i+3]<12)continue;
           const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);
@@ -1611,8 +1614,8 @@ function ladaPaintedPng(color){
           if(glassPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
           // Protect the two wheel centres/rims; the upper wheel arches remain in the paint mask.
           let inWheel=false;
-          for(const [cx,cy] of wheels){
-            const dx=(x-cx)/(.061*w),dy=(y-cy)/(.155*h);
+          for(const [cx,cy,rx,ry] of wheels){
+            const dx=(x-cx)/rx,dy=(y-cy)/ry;
             if(dx*dx+dy*dy<1){inWheel=true;break;}
           }
           if(inWheel)continue;
@@ -1625,8 +1628,10 @@ function ladaPaintedPng(color){
           if(l<.145||saturation>.52)continue;
           // Apply the selected paint hue to every shade of the body while retaining
           // the original PNG's highlights, reflections and panel shading.
-          const newL=Math.max(.045,Math.min(.96,targetL*(.70+.64*l)));
-          const newS=Math.min(1,targetS*(.84+.16*Math.min(1,l*1.35)));
+          // Keep more of the PNG's original luminance contrast so paint follows
+          // stamped panel contours, soft reflections and the natural shadow under doors.
+          const newL=Math.max(.035,Math.min(.96,l*(.42+targetL*.72)));
+          const newS=Math.min(1,targetS*(.78+.22*Math.min(1,l*1.25)));
           const c=(1-Math.abs(2*newL-1))*newS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
           let rr=0,gg=0,bb=0;
           if(targetH<60){rr=c;gg=xh;}else if(targetH<120){rr=xh;gg=c;}else if(targetH<180){gg=c;bb=xh;}else if(targetH<240){gg=xh;bb=c;}else if(targetH<300){rr=xh;bb=c;}else{rr=c;bb=xh;}
