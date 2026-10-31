@@ -1312,6 +1312,37 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   #proRaceCockpit .pro-shift-paddle{width:40px!important;height:44px!important;min-width:40px!important;min-height:44px!important;font-size:26px!important}
 }
 </style>
+<style id="allcoins-painted-finish-v1">
+/* New finish: a checkered paint stripe contained entirely within the asphalt. */
+#proRaceCockpit .race2d-finish-straight,
+#proRaceCockpit .race2d-finish-gate,
+#proRaceCockpit .race2d-finish-banner,
+#proRaceCockpit .race2d-finish-post,
+#proRaceCockpit .race2d-finish-checker{display:none!important}
+#proRaceCockpit .race2d-road-surface{
+  position:absolute!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+#proRaceCockpit #race2dFinishStripe{
+  position:absolute!important;
+  left:calc(26% + clamp(245px,27.5vw,390px) - 7px)!important;
+  right:auto!important;top:0!important;bottom:0!important;
+  width:24px!important;height:auto!important;min-height:0!important;
+  display:block!important;visibility:visible!important;opacity:1!important;
+  z-index:8!important;box-sizing:border-box!important;
+  transform:none!important;translate:none!important;rotate:none!important;scale:none!important;
+  pointer-events:none!important;border-radius:0!important;
+  background-image:
+    linear-gradient(90deg,rgba(255,255,255,.12),transparent 18%,transparent 82%,rgba(0,0,0,.16)),
+    repeating-conic-gradient(#111416 0 25%,#fbf7e9 0 50%)!important;
+  background-size:100% 100%,12px 12px!important;
+  background-position:center,center!important;
+  border-left:2px solid #f1e5c4!important;
+  border-right:2px solid #f1e5c4!important;
+  box-shadow:0 0 0 1px #171b1ccc,0 1px 5px #000a,inset 0 0 0 1px #0008!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1353,7 +1384,6 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
           <div class="race2d-road-markings" id="race2dRoadMarks"></div>
           <div class="race2d-road-grain"></div>
           <div class="race2d-road-bumps" id="race2dRoadBumps" aria-hidden="true"></div>
-          <div class="race2d-finish-straight" id="race2dFinishStraight" aria-hidden="true"></div>
           <div class="race2d-finish-road-stripe" id="race2dFinishStripe" aria-hidden="true"></div>
         </div>
       </div>
@@ -3461,14 +3491,16 @@ function updateRace2DCamera(dt=1/60,motion=null){
     else
       opponent.style.transform='translate3d('+raceCameraOffset.toFixed(2)+'px,0px,0) scale(1)';
   }
-  const carWidth=Math.max(320,Math.min(600,motion.sceneWidth*.40));
-  const finishX=motion.sceneWidth*.12+carWidth*.96+motion.sceneWidth*2.56*(1-motion.progress);
+  /* The finish stripe is painted onto the road at the player's terminal car position.
+     Its position is calculated from the selected race distance, then left fixed:
+     it is never animated or translated independently of the asphalt. */
   if(stripe){
-    const stripeTransform='translate3d('+finishX.toFixed(2)+'px,0,0) translate3d(-50%,0,0)';
-    if(stripe.style.transform!==stripeTransform)stripe.style.transform=stripeTransform;
-    if(stripe.dataset.worldX!==finishX.toFixed(2))stripe.dataset.worldX=finishX.toFixed(2);
-    const stripeOpacity=String(motion.progress>=.82?.96:motion.progress>=.58?.72:.42);
-    if(stripe.style.opacity!==stripeOpacity)stripe.style.opacity=stripeOpacity;
+    const terminalWorldTravelPx=Math.max(0,Number(maxDist)||1609.344)*9.6*(motion.sceneWidth/1280);
+    const terminalScreenLeadPx=Math.min(motion.sceneWidth*.14,terminalWorldTravelPx*.015);
+    const carWidthPx=Math.max(245,Math.min(390,motion.sceneWidth*.275));
+    const finishLeftPx=motion.sceneWidth*.12+terminalScreenLeadPx+carWidthPx-7;
+    const finishLeft=finishLeftPx.toFixed(2)+'px';
+    if(stripe.style.left!==finishLeft)stripe.style.left=finishLeft;
   }
 }
 function updateHUD(dt=1/60,motionAlreadyUpdated=false){
