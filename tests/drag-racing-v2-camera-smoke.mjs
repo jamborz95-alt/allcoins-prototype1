@@ -140,8 +140,8 @@ try {
     "The updated triangular beam must be visibly larger than the previous narrow beam: " + JSON.stringify(beam));
   assert.ok(beam.opacity > 0.7,
     "The beam must be visible while the headlights are on: " + JSON.stringify(beam));
-  assert.ok(Math.abs(beam.leftRatio - .90) < .01,
-    "The headlight beam must begin at 90% of the car body width: " + JSON.stringify(beam));
+  assert.ok(Math.abs(beam.leftRatio - .92) < .01,
+    "The headlight beam must begin at 92% of the car body width: " + JSON.stringify(beam));
   assert.equal(beam.hotspotDisplay, "none",
     "The old round hotspot must remain disabled.");
 
