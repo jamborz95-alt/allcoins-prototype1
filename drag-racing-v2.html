@@ -1779,7 +1779,7 @@ function updateOnlineOpponentMotion(dt){
 }
 
 
-let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,raceCameraLockActive=false,raceCameraLockOffset=0,raceCameraLockWorldOffset=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
+let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,raceCameraLockActive=false,raceCameraLockOffset=0,raceCameraLockWorldOffset=0,raceFinishLockLeft=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
     let out='<g transform="translate('+offset+' 0)">';
@@ -3439,7 +3439,7 @@ function setLight(n){
 }
 function reset(){
   if(raceFinishIdleRampTimer!==null){clearInterval(raceFinishIdleRampTimer);raceFinishIdleRampTimer=null;}
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;raceCameraLockActive=false;raceCameraLockOffset=0;raceCameraLockWorldOffset=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;raceCameraLockActive=false;raceCameraLockOffset=0;raceCameraLockWorldOffset=0;raceFinishLockLeft=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -3491,6 +3491,7 @@ function updateRace2DCamera(dt=1/60,motion=null){
     raceCameraLockActive=true;
     raceCameraLockOffset=followingCameraOffset;
     raceCameraLockWorldOffset=worldTravelPx;
+    raceFinishLockLeft=projectedFinishLeft;
   }
 
   raceCameraOffset=raceCameraLockActive?raceCameraLockOffset:followingCameraOffset;
@@ -3513,7 +3514,9 @@ function updateRace2DCamera(dt=1/60,motion=null){
      stays steady while the player car advances across the final stretch. */
   if(stripe){
     const playerScreenLeft=sceneWidth*.12+worldTravelPx-raceCameraOffset;
-    const finishLeftPx=playerScreenLeft+carWidthPx+remainingDistance*pxPerMeter-7;
+    const finishLeftPx=raceCameraLockActive
+      ?raceFinishLockLeft
+      :playerScreenLeft+carWidthPx+remainingDistance*pxPerMeter-7;
     const finishLeft=finishLeftPx.toFixed(2)+'px';
     if(stripe.style.left!==finishLeft)
       stripe.style.setProperty('left',finishLeft,'important');
