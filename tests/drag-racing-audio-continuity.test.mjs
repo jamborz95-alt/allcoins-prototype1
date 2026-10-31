@@ -95,6 +95,10 @@ test("the moving 2D track avoids expensive full-surface repaint effects", () => 
     "The full-screen road grain must not animate background-position.");
   assert.ok(!game.includes("@keyframes race2d-road-grain-slide"),
     "The repaint-heavy road grain animation keyframes must be absent.");
+  assert.ok(game.includes("const wrap=Math.max(1,sceneWidth*1.5);"),
+    "Scenery strips must wrap at the duplicated SVG tile width, not at a different distance that makes the city jump.");
+  assert.ok(game.includes("background-size:100% 100%!important;"),
+    "The scenery bitmap must scale to the actual strip dimensions so its repeat seam matches the camera wrap.");
   assert.match(game, /frameNow-lastFuelHudSyncAt>=250/,
     "Fuel labels and meters should refresh at a lower rate than the live driving animation.");
 });
