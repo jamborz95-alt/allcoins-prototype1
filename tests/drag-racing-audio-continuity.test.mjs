@@ -99,13 +99,22 @@ test("crossing the finish line releases the throttle and smoothly settles the en
   const finishStart = game.indexOf("if(distance>=maxDist){");
   assert.notEqual(finishStart, -1, "The race finish transition must exist.");
   const finishBlock = game.slice(finishStart, finishStart + 800);
-  assert.match(finishBlock, /settleRaceEngineAtFinish\\(\\)/,
+  assert.ok(finishBlock.includes("settleRaceEngineAtFinish();"),
     "The finish transition must explicitly settle the engine audio to idle.");
-  assert.match(game, /function settleRaceEngineAtFinish\\(\\)[\\s\\S]*?gasHeld=false;[\\s\\S]*?rpm=900;[\\s\\S]*?updateVaz2107Media\\(\\);[\\s\\S]*?updateRaceEngineAudio\\(\\);/,
-    "The finish helper must release the accelerator, set idle RPM, and update both audio paths.");
-  assert.match(game, /raceFinishIdleRampTimer=setInterval\\([\\s\\S]*?},50\\)/,
-    "The native audio fallback must ease down to idle briefly after the race frame loop stops.");
-  assert.match(game, /if\\(raceFinishIdleRampTimer!==null\\)\\{clearInterval\\(raceFinishIdleRampTimer\\);raceFinishIdleRampTimer=null;\\}/,
+  const helperStart = game.indexOf("function settleRaceEngineAtFinish(){");
+  const helperEnd = game.indexOf("\nfunction start(", helperStart);
+  assert.notEqual(helperStart, -1, "A dedicated finish-to-idle helper must exist.");
+  const helper = game.slice(helperStart, helperEnd);
+  for (const required of [
+    "gasHeld=false;",
+    "rpm=900;",
+    "updateVaz2107Media();",
+    "updateRaceEngineAudio();",
+    "},50);"
+  ]) {
+    assert.ok(helper.includes(required), "Finish idle helper is missing: " + required);
+  }
+  assert.ok(game.includes("if(raceFinishIdleRampTimer!==null){clearInterval(raceFinishIdleRampTimer);raceFinishIdleRampTimer=null;}"),
     "Resetting a race must cancel any leftover finish audio ramp.");
 });
 
