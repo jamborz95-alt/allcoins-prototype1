@@ -2192,8 +2192,8 @@ function startRaceEngineSample(){
     const source=raceAudio.createBufferSource(),duration=raceEngineBuffer.duration;
     source.buffer=raceEngineBuffer;
     source.loop=true;
-    // The locally generated WAV includes a 25 ms seam crossfade at its actual
-    // beginning/end. Loop the complete buffer so there is no truncated section.
+    // The local 29.7-second WAV is built from repeated 3-second engine cycles
+    // with 30 ms seam crossfades. Its long loop avoids short mobile restarts.
     source.loopStart=0;
     source.loopEnd=duration;
     const rate=vazEnginePlaybackRate(rpm);
@@ -2212,7 +2212,7 @@ function startRaceEngineSample(){
     });
     window.__raceEngineAudioDebug={
       ...(window.__raceEngineAudioDebug||{}),
-      sample:'vaz2107-engine-arcade.wav.b64',
+      sample:'vaz2107-engine-continuous.wav.b64',
       engineBackend:'webaudio-buffer-loop',loopingEngineSample:true,
       engineSourceStarts:raceEngineSampleStartCount,engineBufferDuration:duration
     };
@@ -2446,7 +2446,7 @@ function updateVaz2107Media(){
     enabled:active,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
     mediaPlaying:samplePlaying,mediaPlaybackRate:webAudioLive?targetRate:(raceEngineMedia?.playbackRate||targetRate),
     mediaVolume:webAudioLive?raceEngineSampleGain?.gain?.value:raceEngineMedia?.volume,
-    sample:'vaz2107-engine-arcade.wav.b64',
+    sample:'vaz2107-engine-continuous.wav.b64',
     engineBackend:webAudioLive?'webaudio-buffer-loop':raceEngineMedia?'html-audio-fallback':'procedural-fallback',
     loopingEngineSample:Boolean(webAudioLive?source?.loop:raceEngineMedia?.loop),
     engineSourceStarts:raceEngineSampleStartCount,
