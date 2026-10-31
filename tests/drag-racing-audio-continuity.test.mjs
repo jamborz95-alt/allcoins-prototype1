@@ -84,6 +84,17 @@ test("both WebAudio and HTMLAudio use the long engine asset, with a procedural s
   assert.ok(!game.includes("vaz2107-engine-arcade.wav.b64"));
 });
 
+test("the moving 2D track avoids expensive full-surface repaint effects", () => {
+  assert.doesNotMatch(game, /\\.pro-race-cockpit\\.race-moving \\.race2d-scene:before\\{animation:/,
+    "The large track pseudo-element must not animate background-position on every frame.");
+  assert.doesNotMatch(game, /@keyframes race2d-road\\{to\\{background-position:/,
+    "Track motion should use the existing compositor-transformed road markings.");
+  assert.doesNotMatch(game, /\\.race2d-scene\\.race-fast \\.race2d-(?:city|tree)-layer\\{filter:blur/,
+    "High speed must not add costly blur filters to full-width scenery layers.");
+  assert.match(game, /frameNow-lastFuelHudSyncAt>=250/,
+    "Fuel labels and meters should refresh at a lower rate than the live driving animation.");
+});
+
 test("the active v2 racing script parses", () => {
   const scripts = [...game.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   const inline = scripts.find(match => !/\bsrc\s*=|\btype\s*=\s*["']importmap/i.test(match[1]));
