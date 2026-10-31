@@ -733,7 +733,140 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-race-audio-controls button{min-width:118px;padding:6px 9px;border:1px solid #aeb7bd;border-radius:7px;background:#18232dcc;color:#eef2f5;font-size:10px;line-height:1.15;box-shadow:0 2px 8px #0008}
 .pro-race-audio-controls button.active{border-color:#e9ca7f;color:#ffe2a1;background:#1b2630ee}
 @media(max-width:700px){.pro-race-audio-controls{top:58px;right:8px}.pro-race-audio-controls button{min-width:104px;font-size:9px;padding:5px 7px}}
-</style></head>
+</style>
+<style id="allcoins-dashboard-fit-v2">
+/* Compact racing dashboard: every instrument and control stays inside the lower panel. */
+.pro-race-dashboard{
+  position:relative!important;box-sizing:border-box!important;min-height:0!important;
+  overflow:hidden!important;isolation:isolate;
+  background:
+    radial-gradient(ellipse at 50% -25%,#3b464b 0,#171d21 48%,#070a0c 100%)!important;
+  border-top:2px solid #b39a66!important;
+  box-shadow:inset 0 7px 18px #000c, inset 0 1px #ffffff22!important;
+}
+.pro-race-dashboard:after{
+  content:"";position:absolute;inset:5px 6px 4px;z-index:0;pointer-events:none;
+  border:1px solid #c8ab6a35;border-radius:9px;
+  box-shadow:inset 0 1px #ffffff12,0 0 0 1px #0008;
+}
+.pro-instrument-cluster{
+  position:absolute!important;left:50%!important;top:50%!important;
+  width:min(286px,calc(100% - 145px),calc((100% - 12px)*2.04))!important;
+  height:min(140px,calc(100% - 12px))!important;
+  max-height:none!important;gap:6px!important;align-items:stretch!important;
+  justify-content:center!important;transform:translate(-50%,-50%)!important;
+  filter:drop-shadow(0 4px 5px #000c)!important;z-index:5!important;
+}
+.pro-gauge{
+  position:relative!important;flex:0 0 calc((100% - 6px)/2)!important;
+  width:calc((100% - 6px)/2)!important;height:100%!important;
+  min-width:0!important;max-width:none!important;aspect-ratio:1/1!important;
+  box-sizing:border-box!important;overflow:hidden!important;border-radius:50%!important;
+  border:5px solid #20272b!important;
+  background:radial-gradient(circle at 48% 43%,#26343d 0%,#0c1217 55%,#030506 100%)!important;
+  box-shadow:0 0 0 1px #b99c63,0 0 0 3px #07090a,
+    inset 0 0 15px #000,inset 0 1px 5px #ffffff24!important;
+}
+.pro-gauge:before{inset:5%!important;border:1px solid #d4bd8a55!important;box-shadow:inset 0 0 16px #8ba5b61c!important}
+.pro-gauge-glass{background:linear-gradient(138deg,#ffffff18,transparent 30% 62%,#0005)!important}
+.pro-tach-tick,.pro-speed-tick{background:#cbd5d8!important}
+.pro-tach-tick.major,.pro-speed-tick.major{background:#f4e7c4!important}
+.pro-tach-tick.hot{background:#ff5b55!important}
+.pro-tach-number,.pro-speed-number{color:#f0f3f2!important;text-shadow:0 1px 3px #000,0 0 4px #ffffff24!important}
+.pro-tach-needle,.pro-speed-needle{
+  top:17%!important;height:34%!important;width:3px!important;
+  background:linear-gradient(90deg,#741018,#ed4249 45%,#fff0dc 55%,#8f1019)!important;
+  box-shadow:0 0 6px #ff454b99!important;
+}
+.pro-gauge-hub{
+  width:14px!important;height:14px!important;border:2px solid #c4b17f!important;
+  background:radial-gradient(circle,#fff4d5,#667178 55%,#090d10 62%)!important;
+  box-shadow:0 0 7px #000!important;
+}
+.pro-gauge-caption{top:66%!important;font-size:clamp(7px,.85vw,10px)!important;color:#e8e5d9!important}
+.pro-gauge-caption small{font-size:6px!important;letter-spacing:1.1px!important;color:#b4c0c2!important}
+.pro-speed-digital{
+  top:48%!important;width:34%!important;padding:2px 3px!important;
+  border:1px solid #c2a86c!important;border-radius:4px!important;
+  background:linear-gradient(180deg,#1d4558,#0b1a24)!important;
+  box-shadow:inset 0 0 7px #000d,0 0 5px #61caff33!important;
+}
+.pro-speed-digital strong{font-size:clamp(13px,1.8vw,20px)!important;color:#e0f6ff!important}
+.pro-speed-digital small{font-size:6px!important;color:#bfd7df!important}
+.pro-speed-meter{height:2px!important;background:#07121a!important}
+.pro-speed-gear{top:78%!important;gap:4px!important;color:#c7d0d0!important}
+.pro-speed-gear strong{
+  min-width:15px!important;height:14px!important;border:1px solid #c0a66b!important;
+  border-radius:3px!important;background:linear-gradient(#f0e5c7,#a99a76)!important;
+}
+.pro-micro-gauge{top:-5px!important;width:29px!important;height:18px!important;border-color:#b79b61!important}
+.pro-shift-gate{
+  left:7px!important;top:7px!important;bottom:7px!important;width:39px!important;
+  z-index:14!important;
+}
+.pro-shift-rail{width:7px!important;top:5%!important;bottom:5%!important}
+.pro-shift-paddle{
+  width:31px!important;height:34px!important;min-height:0!important;
+  border:1px solid #c8b27c!important;border-radius:7px!important;
+  background:linear-gradient(145deg,#f0e8d7 0%,#8e9697 30%,#30393d 65%,#101518 100%)!important;
+  box-shadow:inset 0 1px 3px #ffffff80,inset 0 -4px 6px #000b,0 2px 5px #000b!important;
+  font-size:21px!important;
+}
+.pro-shift-paddle.up{top:5px!important}
+.pro-shift-paddle.down{top:auto!important;bottom:5px!important}
+.pro-race-status{
+  top:3px!important;bottom:auto!important;left:50%!important;
+  width:auto!important;max-width:42%!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;white-space:nowrap!important;
+  padding:3px 8px!important;border:1px solid #bca36b66!important;
+  border-radius:20px!important;background:#070b0dd9!important;
+  color:#e3dfd2!important;font-size:clamp(7px,.72vw,9px)!important;
+  line-height:1.1!important;z-index:12!important;
+}
+.pro-dash-controls{
+  position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;
+  height:auto!important;box-sizing:border-box!important;
+  align-items:flex-end!important;padding:0 8px 7px 0!important;
+  z-index:14!important;pointer-events:none!important;
+}
+.pro-dash-controls #proGasHold{
+  width:clamp(64px,9vw,88px)!important;min-width:0!important;max-width:88px!important;
+  height:min(74px,calc(100% - 14px))!important;min-height:46px!important;max-height:74px!important;
+  margin:0 0 0 auto!important;box-sizing:border-box!important;
+  border:2px solid #c0a66c!important;border-radius:8px!important;
+  background:linear-gradient(115deg,#202a2e 0%,#aeb8b6 28%,#59676b 51%,#151c20 100%)!important;
+  box-shadow:inset 0 2px 3px #ffffff8a,inset 0 -7px 9px #000b,0 3px 8px #000b!important;
+}
+.pro-pedal.gas .pro-gas-ridges{
+  inset:10% 13% 36%!important;border:1px solid #14191b!important;border-radius:3px!important;
+  background:repeating-linear-gradient(90deg,#20282b 0 3px,#d4dad6 3px 6px,#687579 6px 8px)!important;
+}
+.pro-dash-controls #proGasHold strong{bottom:19%!important;font-size:11px!important;color:#111719!important}
+.pro-dash-controls #proGasHold small{bottom:5%!important;font-size:6px!important;letter-spacing:.5px!important}
+.pro-dash-controls #proExitRace{
+  left:clamp(48px,7vw,72px)!important;bottom:5px!important;
+  padding:5px 8px!important;border:1px solid #b7a06c!important;border-radius:5px!important;
+  background:linear-gradient(180deg,#303a3d,#111719)!important;color:#eee5cf!important;
+  font-size:8px!important;opacity:.9!important;box-shadow:0 2px 5px #0009!important;
+}
+.pro-race-finish-actions{bottom:5px!important;z-index:18!important}
+.pro-race-finish-actions button{max-width:calc(50vw - 12px)!important}
+@media(orientation:portrait){
+  .pro-race-track{min-height:0!important}
+  .pro-race-dashboard{min-height:0!important}
+  .pro-instrument-cluster{
+    width:min(286px,calc(100% - 145px),calc((100% - 12px)*2.04))!important;
+    height:min(140px,calc(100% - 12px))!important;
+  }
+}
+@media(max-height:340px){
+  .pro-instrument-cluster{height:calc(100% - 8px)!important;width:min(252px,calc(100% - 132px))!important}
+  .pro-gauge{border-width:4px!important}
+  .pro-shift-paddle{width:28px!important;height:30px!important}
+  .pro-dash-controls #proGasHold{height:calc(100% - 12px)!important;min-height:40px!important}
+}
+</style>
+</head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
 <div class="tabs"><button class="tab active" data-tab="race">🏁 Гонки</button><button class="tab" data-tab="garage">🚘 Гараж</button><button class="tab" data-tab="shop">🛒 Магазин</button><button class="tab" data-tab="tuning">🔧 Тюнинг</button></div>
