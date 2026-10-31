@@ -118,21 +118,29 @@ try {
       };
     };
     return {
+      mufflerWrap: read("#race2dPlayerCar .race-car-muffler"),
       mufflerBody: read("#race2dPlayerCar .race-car-muffler-body"),
       tailpipe: read("#race2dPlayerCar .race-car-muffler-tailpipe"),
       outlet: read("#race2dPlayerCar .race-car-muffler-outlet"),
+      carPng: read("#race2dPlayerCar .race-car-png"),
       smoke: read("#race2dPlayerCar .race-car-exhaust-puff")
     };
   });
-  assert.ok(exhaustVisual.mufflerBody?.width >= 20 && exhaustVisual.mufflerBody?.height >= 8,
-    "The VAZ-2107 needs a clearly visible metal muffler under the rear of the car: " + JSON.stringify(exhaustVisual));
-  assert.ok(exhaustVisual.tailpipe?.width >= 20 && exhaustVisual.tailpipe?.height >= 5,
-    "The exhaust pipe must remain visible at mobile and desktop sizes.");
-  assert.ok(exhaustVisual.outlet?.width >= 7 && exhaustVisual.outlet?.height >= 10,
-    "The pipe outlet must be visible at the rear bumper.");
-  assert.ok(Number(exhaustVisual.mufflerBody.zIndex) >= 8 &&
-    Number(exhaustVisual.smoke.zIndex) >= 7,
-    "The muffler and exhaust particles must render above the car PNG, not underneath it.");
+  assert.equal(exhaustVisual.mufflerWrap?.zIndex, "auto",
+    "The muffler assembly must not create a stacking context above the car body.");
+  assert.equal(exhaustVisual.mufflerBody?.zIndex, "0",
+    "The muffler body must sit behind the VAZ-2107 PNG.");
+  assert.equal(exhaustVisual.tailpipe?.zIndex, "0",
+    "The pipe must remain concealed behind the car, except for its terminal tip.");
+  assert.equal(exhaustVisual.carPng?.zIndex, "1",
+    "The car PNG must cover the muffler body and most of the pipe.");
+  assert.ok(exhaustVisual.outlet?.width >= 9 && exhaustVisual.outlet?.width <= 12 &&
+    exhaustVisual.outlet?.height >= 4 && exhaustVisual.outlet?.height <= 6,
+    "Only a small exhaust tip should be visible below the rear of the car: " + JSON.stringify(exhaustVisual));
+  assert.equal(exhaustVisual.outlet?.zIndex, "4",
+    "The tiny terminal tip must appear over the PNG while the rest of the exhaust remains hidden.");
+  assert.ok(Number(exhaustVisual.smoke.zIndex) >= 5,
+    "Smoke must be visible as it leaves the small terminal tip.");
   assert.equal(exhaustVisual.smoke?.animationName, "race-exhaust-idle",
     "Smoke must already be emitted on engine idle.");
   assert.equal(exhaustVisual.smoke?.animationPlayState, "running",
