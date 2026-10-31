@@ -95,6 +95,20 @@ test("the moving 2D track avoids expensive full-surface repaint effects", () => 
     "Fuel labels and meters should refresh at a lower rate than the live driving animation.");
 });
 
+test("crossing the finish line releases the throttle and smoothly settles the engine to idle", () => {
+  const finishStart = game.indexOf("if(distance>=maxDist){");
+  assert.notEqual(finishStart, -1, "The race finish transition must exist.");
+  const finishBlock = game.slice(finishStart, finishStart + 800);
+  assert.match(finishBlock, /settleRaceEngineAtFinish\\(\\)/,
+    "The finish transition must explicitly settle the engine audio to idle.");
+  assert.match(game, /function settleRaceEngineAtFinish\\(\\)[\\s\\S]*?gasHeld=false;[\\s\\S]*?rpm=900;[\\s\\S]*?updateVaz2107Media\\(\\);[\\s\\S]*?updateRaceEngineAudio\\(\\);/,
+    "The finish helper must release the accelerator, set idle RPM, and update both audio paths.");
+  assert.match(game, /raceFinishIdleRampTimer=setInterval\\([\\s\\S]*?},50\\)/,
+    "The native audio fallback must ease down to idle briefly after the race frame loop stops.");
+  assert.match(game, /if\\(raceFinishIdleRampTimer!==null\\)\\{clearInterval\\(raceFinishIdleRampTimer\\);raceFinishIdleRampTimer=null;\\}/,
+    "Resetting a race must cancel any leftover finish audio ramp.");
+});
+
 test("the active v2 racing script parses", () => {
   const scripts = [...game.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   const inline = scripts.find(match => !/\bsrc\s*=|\btype\s*=\s*["']importmap/i.test(match[1]));
