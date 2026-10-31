@@ -1233,7 +1233,8 @@ function syncRace2DCarArt(){
   const ladaWheels='<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>';
   const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"></i></span>';
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
-  const engineEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span><span class="race-car-headlight-glow" aria-hidden="true"></span>';
+  const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
+  const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+'</div>';
   if(preview)preview.innerHTML=useLadaPng?ladaPreview.replace('race-car-png','preview-car-png'):carSvg(selectedId,paint);
   if(player){
@@ -1241,7 +1242,8 @@ function syncRace2DCarArt(){
     player.classList.toggle('vector-side-car',!useLadaPng);
     player.classList.remove('png-fallback');
     // Keep the PNG body crisp and rotate only the two wheel faces positioned over its rims.
-    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:carSvg(selectedId,paint)+engineEffects;
+    // Smoke is placed after the wheel faces so it can visibly build up over the spinning tyres.
+    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint)+engineEffects+wheelSmokeEffects;
   }
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -3391,44 +3393,69 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
   100%{opacity:0;transform:translate3d(28px,-9px,0) scale(1.42)}
 }
 
-/* Burnout tyre smoke: high-contrast black smoke visibly rises from the powered tyres and spreads outward. */
+/* Burnout smoke now layers over the wheel faces and slowly builds around the spinning tyre. */
 #proRaceCockpit .race-wheel-smoke{
-  z-index:9!important;
+  position:absolute!important;
+  z-index:10!important;
   display:block!important;
   overflow:visible!important;
-  background:none!important;
-  filter:none!important;
+  border-radius:50%!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  background:radial-gradient(ellipse at 50% 54%,
+    rgba(5,6,7,.96) 0%,
+    rgba(8,9,11,.88) 30%,
+    rgba(18,20,23,.65) 56%,
+    rgba(34,36,39,.30) 76%,
+    transparent 100%)!important;
+  filter:blur(3.6px)!important;
+  transform-origin:50% 76%!important;
+  will-change:transform,opacity;
+}
+/* Positions match the actual PNG wheel faces, not the exhaust or body edges. */
+#proRaceCockpit .race-wheel-smoke.rear{
+  left:16.2%!important;top:54%!important;width:19%!important;height:48%!important;
+}
+#proRaceCockpit .race-wheel-smoke.front{
+  left:75%!important;top:54%!important;width:20%!important;height:48%!important;
 }
 #proRaceCockpit .race-wheel-smoke::before,
 #proRaceCockpit .race-wheel-smoke::after{
   content:"";
   position:absolute;
-  bottom:-5%;
-  width:132%;
-  height:260%;
+  bottom:-3%;
+  width:138%;
+  height:250%;
   display:block;
   border-radius:50%;
   pointer-events:none;
   background:radial-gradient(ellipse at 50% 82%,
-    rgba(5,6,7,.99) 0%,
-    rgba(9,10,12,.96) 24%,
-    rgba(17,19,22,.86) 43%,
-    rgba(31,33,36,.58) 62%,
-    rgba(47,49,52,.24) 78%,
-    transparent 94%);
+    rgba(4,5,6,.98) 0%,
+    rgba(8,9,11,.94) 24%,
+    rgba(16,18,20,.82) 45%,
+    rgba(29,31,34,.55) 65%,
+    rgba(46,48,51,.23) 82%,
+    transparent 96%);
   filter:blur(6px);
   opacity:0;
   mix-blend-mode:multiply;
   will-change:transform,opacity;
 }
-#proRaceCockpit .race-wheel-smoke::before{left:-34%;transform-origin:50% 100%}
-#proRaceCockpit .race-wheel-smoke::after{right:-34%;transform-origin:50% 100%}
+#proRaceCockpit .race-wheel-smoke::before{left:-38%;transform-origin:50% 100%}
+#proRaceCockpit .race-wheel-smoke::after{right:-38%;transform-origin:50% 100%}
+
+/* Rear drive: only the powered rear tyre gets covered; front-drive/all-wheel-drive follow their own axle. */
 #proRaceCockpit.race-burnout.drive-rwd #race2dPlayerCar .race-wheel-smoke.rear,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.rear,
 #proRaceCockpit.race-burnout.drive-fwd #race2dPlayerCar .race-wheel-smoke.front,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.front{
-  opacity:1!important;
-  animation:none!important;
+  animation:race-burnout-wheel-cover 1.75s cubic-bezier(.18,.65,.28,1) forwards!important;
+}
+@keyframes race-burnout-wheel-cover{
+  0%{opacity:0;transform:scale(.34,.28)}
+  24%{opacity:.34;transform:scale(.62,.61)}
+  62%{opacity:.78;transform:scale(1.02,1.04)}
+  100%{opacity:.92;transform:scale(1.12,1.15)}
 }
 #proRaceCockpit.race-burnout.drive-rwd #race2dPlayerCar .race-wheel-smoke.rear::before,
 #proRaceCockpit.race-burnout.drive-rwd #race2dPlayerCar .race-wheel-smoke.rear::after,
@@ -3438,24 +3465,29 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 #proRaceCockpit.race-burnout.drive-fwd #race2dPlayerCar .race-wheel-smoke.front::after,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.front::before,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.front::after{
-  animation:race-burnout-smoke-rise .78s cubic-bezier(.15,.65,.3,1) infinite;
+  animation:race-burnout-smoke-rise-left 1.18s ease-out infinite;
 }
 #proRaceCockpit.race-burnout.drive-rwd #race2dPlayerCar .race-wheel-smoke.rear::after,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.rear::after,
 #proRaceCockpit.race-burnout.drive-fwd #race2dPlayerCar .race-wheel-smoke.front::after,
 #proRaceCockpit.race-burnout.drive-awd #race2dPlayerCar .race-wheel-smoke.front::after{
   animation-name:race-burnout-smoke-rise-right;
-  animation-delay:-.39s;
+  animation-delay:-.59s;
 }
-@keyframes race-burnout-smoke-rise{
-  0%{opacity:0;transform:translate3d(0,5px,0) scale(.22,.28)}
-  16%{opacity:1}
-  100%{opacity:0;transform:translate3d(-34px,-57px,0) scale(1.28,1.52)}
+@keyframes race-burnout-smoke-rise-left{
+  0%{opacity:0;transform:translate3d(0,6px,0) scale(.24,.26)}
+  18%{opacity:.94}
+  58%{opacity:.8}
+  100%{opacity:0;transform:translate3d(-52px,-76px,0) scale(1.42,1.72)}
 }
 @keyframes race-burnout-smoke-rise-right{
-  0%{opacity:0;transform:translate3d(0,5px,0) scale(.22,.28)}
-  16%{opacity:1}
-  100%{opacity:0;transform:translate3d(34px,-57px,0) scale(1.28,1.52)}
+  0%{opacity:0;transform:translate3d(0,6px,0) scale(.24,.26)}
+  18%{opacity:.94}
+  58%{opacity:.8}
+  100%{opacity:0;transform:translate3d(52px,-76px,0) scale(1.42,1.72)}
 }
-#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{left:93%!important}
+/* Move the headlight beam a little higher while preserving its 93% horizontal position. */
+#proRaceCockpit #race2dPlayerCar .race-car-headlight-glow{
+  left:93%!important;top:36%!important;
+}
 </style>
