@@ -2238,10 +2238,10 @@ function playVazStarterSound(){
 // Original WAV audio is loaded locally and played with HTMLAudio, which is more reliable
 // on Android Telegram WebView than relying on a suspended WebAudio graph.
 function vazEnginePlaybackRate(value){
+  // The replacement loop is synthesized at 1500 RPM, so playback speed follows
+  // the actual crank speed rather than the old narrow arcade pitch range.
   const current=Math.max(850,Math.min(6600,Number(value)||850));
-  const normalized=Math.max(0,Math.min(1,(current-850)/5750));
-  // A wider, smooth rev range gives the engine a clear arcade-racing rise in pitch.
-  return .76+1.24*Math.pow(normalized,.82);
+  return Math.max(.56,Math.min(4.4,current/1500));
 }
 async function preloadRaceMediaAudio(){
   if(raceMediaLoadPromise)return raceMediaLoadPromise;
@@ -2272,7 +2272,7 @@ async function preloadRaceMediaAudio(){
     };
     const [music,engine]=await Promise.all([
       load('./cars/race-music-original.wav.b64?v=20261030-audio3'),
-      load('./cars/vaz2107-engine-original.wav.b64?v=20261030-hillclimb1')
+      load('./cars/vaz2107-engine-arcade.wav.b64?v=20261031-engine-v2')
     ]);
     raceMusicMedia=music.audio;raceMusicObjectUrl=music.url;
     raceEngineMedia=engine.audio;raceEngineObjectUrl=engine.url;
@@ -2322,7 +2322,7 @@ function startVaz2107Media(){
     const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
     // Keep the sample below the synthesized layers so the combined sound has depth
     // without clipping on phone speakers.
-    raceEngineMedia.volume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
+    raceEngineMedia.volume=gasHeld?.72+rpmRatio*.06:(running?.56+rpmRatio*.05:.46);
     raceEngineMedia.playbackRate=vazEnginePlaybackRate(currentRpm);
     if(raceEngineMedia.paused)playRaceMedia(raceEngineMedia);
     window.__raceEngineAudioDebug={
@@ -2350,13 +2350,14 @@ function updateVaz2107Media(){
   const rpmRatio=Math.max(0,Math.min(1,(currentRpm-850)/5750));
   const targetRate=vazEnginePlaybackRate(currentRpm)+(gasHeld?.025:0);
   raceEngineMedia.playbackRate+=(targetRate-raceEngineMedia.playbackRate)*.13;
-  const targetVolume=gasHeld?.55+rpmRatio*.08:(running?.43+rpmRatio*.04:.34);
+  const targetVolume=gasHeld?.72+rpmRatio*.06:(running?.56+rpmRatio*.05:.46);
   raceEngineMedia.volume+=(targetVolume-raceEngineMedia.volume)*.12;
   window.__raceEngineAudioDebug={
     ...(window.__raceEngineAudioDebug||{}),
     enabled:true,throttle:Boolean(gasHeld),rpm:currentRpm,firingHz:currentRpm/30,
     mediaPlaying:!raceEngineMedia.paused&&!raceEngineMedia.ended,
-    mediaPlaybackRate:raceEngineMedia.playbackRate,mediaVolume:raceEngineMedia.volume
+    mediaPlaybackRate:raceEngineMedia.playbackRate,mediaVolume:raceEngineMedia.volume,
+    sample:'vaz2107-engine-arcade.wav.b64'
   };
   // Playback is started from an actual pointer gesture; the frame loop only adjusts pitch and volume.
 }
@@ -2388,7 +2389,7 @@ function updateRaceEngineAudio(){
 
   // The original loop provides the character; the synthesized layer fills its low/mid range.
   // When the file cannot play, the procedural engine becomes louder automatically.
-  const proceduralLevel=engineMediaPlaying?.15+load*.035:(throttle?.34:(moving?.26:.21));
+  const proceduralLevel=engineMediaPlaying?.065+load*.025:(throttle?.42:(moving?.31:.25));
   raceEngineGain.gain.setTargetAtTime(enabled?proceduralLevel:.0001,t,.09);
   if(raceExhaustFilter)raceExhaustFilter.frequency.setTargetAtTime(135+rpmRatio*310+(throttle?150:0),t,.11);
   if(raceExhaustGain)raceExhaustGain.gain.setTargetAtTime(enabled?(throttle?.052:(moving?.027:.018)):.0001,t,.11);
