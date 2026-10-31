@@ -1703,7 +1703,7 @@ function carSvgToPngDataUrl(modelId,paint){
   if(onlineOpponentPngCache.has(key))return onlineOpponentPngCache.get(key);
   const result=new Promise(resolve=>{
     try{
-      const svg=carSvg(id,color).replace('<svg xmlns="http://www.w3.org/2000/svg"','<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440"');
+      const svg=carSvg(id,color,'none').replace('<svg xmlns="http://www.w3.org/2000/svg"','<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440"');
       const image=new Image();
       image.onload=()=>{
         try{
@@ -2602,15 +2602,16 @@ function renderStyleControls(){
   const paint=CAR_PAINTS.find(item=>item.id===draft.paintId)||CAR_PAINTS[0];
   const vinyl=CAR_VINYLS.find(item=>item.id===draft.vinylId)||CAR_VINYLS[0];
   const cost=getCustomizationCost(current,draft);
+  const hasChanges=draft.paintId!==current.paintId||draft.vinylId!==current.vinylId;
   const preview=$('stylePreview');
   if(preview)preview.innerHTML=carSvg(state.selected,paint.color,draft.vinylId);
   const picker=$('paintPicker');
   if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
   const vinylPicker=$('vinylPicker');
   if(vinylPicker)vinylPicker.innerHTML=CAR_VINYLS.map(item=>'<button type="button" class="vinyl-choice '+(item.id===draft.vinylId?'selected':'')+'" data-vinyl="'+item.id+'"><b>'+item.name+'</b><small>'+item.desc+'</small><em>'+(item.price?money(item.price)+' AC':'Бесплатно')+'</em></button>').join('');
-  const price=$('styleCost');if(price)price.textContent=money(cost)+' AC';
+  const price=$('styleCost');if(price)price.textContent=cost?money(cost)+' AC':'Бесплатно';
   const button=$('applyStyle');
-  if(button){button.disabled=cost===0;button.textContent=cost===0?'Уже установлено':'Применить · '+money(cost)+' AC';}
+  if(button){button.disabled=!hasChanges;button.textContent=!hasChanges?'Уже установлено':cost?'Применить · '+money(cost)+' AC':'Применить · Бесплатно';}
 }
 function refreshCustomizedCar(){
   syncRace2DCarArt();
@@ -2621,7 +2622,8 @@ async function applyVehicleStyle(){
   const current=getCarCustomization(carId);
   const next={paintId:styleDraft?.paintId||current.paintId,vinylId:styleDraft?.vinylId||current.vinylId};
   const cost=getCustomizationCost(current,next);
-  if(!cost){$('styleStatus').textContent='Этот внешний вид уже установлен.';return;}
+  const hasChanges=next.paintId!==current.paintId||next.vinylId!==current.vinylId;
+  if(!hasChanges){$('styleStatus').textContent='Этот внешний вид уже установлен.';return;}
   try{
     $('applyStyle').disabled=true;
     $('styleStatus').textContent='Сохраняю внешний вид автомобиля…';
