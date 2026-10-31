@@ -136,6 +136,7 @@ try {
     const sceneRect = scene.getBoundingClientRect();
     const width = scene.clientWidth;
     const period = width * 1.5;
+    const originalWorldOffset = raceWorldOffset;
     const layers = [
       { id: "race2dCityLayer", rate: .36 },
       { id: "race2dTreeLayer", rate: .70 },
@@ -163,6 +164,12 @@ try {
         samples.push({ boundary: layer.id + (edge < 0 ? "-before" : "-after"), measurements });
       }
     }
+    // Restore the real simulation position before the remainder of the
+    // camera-follow test continues.
+    raceWorldOffset = originalWorldOffset;
+    updateRace2DEnvironment(0, performance.now());
+    updateRaceCarPosition(0);
+    updateRace2DCamera(0);
     return {
       sceneLeft: sceneRect.left,
       sceneRight: sceneRect.right,
