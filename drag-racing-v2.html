@@ -866,6 +866,55 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   .pro-dash-controls #proGasHold{height:calc(100% - 12px)!important;min-height:40px!important}
 }
 </style>
+
+<style id="allcoins-smooth-hills-motion-v1">
+/* Smooth asphalt: remove all raised-rut textures and random bump effects. */
+#race2dRoadBumps{display:none!important;opacity:0!important;filter:none!important}
+.race2d-road-surface{
+  transform:translate3d(0,var(--race-road-grade-y,0px),0) skewY(var(--race-road-slope,0deg))!important;
+  transform-origin:left top!important;
+  will-change:transform!important;
+  transition:transform .08s linear!important;
+  background:linear-gradient(180deg,#96948a 0%,#85847b 18%,#74736c 46%,#6e6e68 72%,#77766f 100%)!important;
+  border-top:2px solid #d0cbbb!important;
+  box-shadow:inset 0 7px 12px #44463f33!important;
+}
+.race2d-road-surface:before{
+  background:
+    linear-gradient(180deg,#ffffff0b 0%,transparent 22% 76%,#17191612 100%),
+    linear-gradient(90deg,#2023210b,transparent 18% 82%,#2023210b)!important;
+  opacity:.7!important;
+}
+.race2d-road-grain{
+  background:
+    linear-gradient(180deg,#f5f0dc0a,transparent 28% 75%,#21232318),
+    linear-gradient(90deg,transparent 0 18%,#e2ddcb08 40%,transparent 62% 100%)!important;
+  opacity:.48!important;
+}
+.race2d-scene.road-bump-active .race2d-road-surface,
+.race2d-scene.race-road-bump .race2d-road-surface,
+.race2d-scene.road-bump-active .race2d-road-grain,
+.race2d-scene.race-road-bump .race2d-road-grain{
+  filter:none!important;animation:none!important;
+}
+.pro-race-cockpit .race2d-scene .race2d-car.player{
+  transform:translate3d(var(--race-car-x,0px),var(--race-road-grade-y,0px),0)!important;
+  animation:none!important;
+  will-change:transform!important;
+}
+.race2d-car.player .race-sprung-body,
+.race2d-car.player .race-car-png{
+  transform-box:fill-box!important;
+  transform-origin:center bottom!important;
+  transform:translate3d(0,var(--road-bump-y,0px),0) rotate(var(--road-bump-tilt,0deg))!important;
+  transition:transform .10s cubic-bezier(.22,.61,.36,1)!important;
+  will-change:transform!important;
+}
+.pro-race-cockpit.race-moving .race2d-car.player .race-sprung-body,
+.pro-race-cockpit.race-moving .race2d-car.player .race-car-png{
+  animation:none!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1390,28 +1439,15 @@ function updateRace2DEnvironment(dt,frameNow=performance.now()){
   raceWorldSpeed+=(targetWorldSpeed-raceWorldSpeed)*worldSpeedBlend;
   raceWorldOffset+=(raceWorldSpeed/3.6)*dt*9.6*scale;
   const wrap=Math.max(1,sceneWidth*3);
-  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks'),bumps=$('race2dRoadBumps');
+  const city=$('race2dCityLayer'),trees=$('race2dTreeLayer'),fence=$('race2dFenceLayer'),marks=$('race2dRoadMarks');
   const setTransform=(el,value)=>{if(el&&el.style.transform!==value)el.style.transform=value};
-  // Parallax: distant buildings move slowest, trees and fence faster, road markings fastest.
-  setTransform(city,'translate3d('+(-((raceWorldOffset*.30)%wrap)).toFixed(3)+'px,0,0)');
-  setTransform(trees,'translate3d('+(-((raceWorldOffset*.62)%wrap)).toFixed(3)+'px,0,0)');
-  setTransform(fence,'translate3d('+(-((raceWorldOffset*.92)%wrap)).toFixed(3)+'px,0,0)');
-  const markShift=(raceWorldOffset*2.15)%96;
+  // Stronger but smooth parallax makes forward travel easier to see.
+  setTransform(city,'translate3d('+(-((raceWorldOffset*.36)%wrap)).toFixed(3)+'px,0,0)');
+  setTransform(trees,'translate3d('+(-((raceWorldOffset*.70)%wrap)).toFixed(3)+'px,0,0)');
+  setTransform(fence,'translate3d('+(-((raceWorldOffset*1.02)%wrap)).toFixed(3)+'px,0,0)');
+  const markShift=(raceWorldOffset*2.35)%96;
   setTransform(marks,'translate3d('+(-markShift).toFixed(3)+'px,0,0)');
-  // Raised asphalt ripples scroll beneath the car, making the uneven road visible.
-  const bumpShift=(raceWorldOffset*1.55)%1200;
-  setTransform(bumps,'translate3d('+(-bumpShift).toFixed(3)+'px,0,0)');
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
-  if(running&&currentSpeed>45&&distance>=nextRoadBumpAt){
-    lastSceneBumpAt=now;
-    nextRoadBumpAt=distance+135+Math.random()*125;
-    roadBumpUntil=now+430;
-    roadBumpStrength=.45+Math.random()*.32;
-    scene.classList.remove('race-road-bump');
-    requestAnimationFrame(()=>{if(scene.isConnected)scene.classList.add('race-road-bump')});
-    window.setTimeout(()=>scene.classList.remove('race-road-bump'),520);
-    if(currentSpeed>75&&raceAudioReady)playRoadBumpSound(roadBumpStrength);
-  }
   scene.classList.toggle('race-fast',currentSpeed>130);
   scene.classList.toggle('race-finish-approach',progress>=.58);
   scene.classList.toggle('race-near-finish',progress>=.82);
@@ -2449,20 +2485,33 @@ function playRoadBumpSound(strength){
 }
 function updateUnevenRoad(dt,frameNow=performance.now()){
   const now=Number.isFinite(frameNow)?frameNow:performance.now();
-  // Suspension motion does not need 60 DOM writes per second; CSS handles the in-between frames.
   if(now-lastUnevenRoadUpdateAt<33)return;
   lastUnevenRoadUpdateAt=now;
-  const scene=$('race2dPlayerCar')?.closest('.race2d-scene');if(!scene)return;
-  const moving=running&&speed>24;
-  // Road bumps are triggered only by the distance-based event above.
-  const active=now<roadBumpUntil?roadBumpStrength:0;
-  const bumpY=(active*4.2).toFixed(2)+'px';
-  if(scene.style.getPropertyValue('--road-bump-y')!==bumpY)scene.style.setProperty('--road-bump-y',bumpY);
-  const player=$('race2dPlayerCar');
-  if(player&&player.style.getPropertyValue('--road-bump-y')!==bumpY)player.style.setProperty('--road-bump-y',bumpY);
-  const tilt=(active*Math.sin(now*.012)*.12).toFixed(3)+'deg';
-  if(scene.style.getPropertyValue('--road-bump-tilt')!==tilt)scene.style.setProperty('--road-bump-tilt',tilt);
-  scene.classList.toggle('road-bump-active',active>0);
+  const scene=$('race2dPlayerCar')?.closest('.race2d-scene');
+  if(!scene)return;
+  const active=Boolean(running&&!finished&&speed>3);
+  const metres=Math.max(0,Number(distance)||0);
+
+  // Long, shallow rises and descents: no potholes or short sharp bumps.
+  const phase=metres/245*Math.PI*2;
+  const longGrade=Math.sin(phase);
+  const gentleGrade=Math.sin(phase*.48+1.05);
+  const roadY=active?(longGrade*5.0+gentleGrade*1.8):0;
+  const roadSlope=active?(Math.cos(phase)*.48+Math.cos(phase*.48+1.05)*.16):0;
+
+  // The chassis has a visible, soft suspension response while the wheel line stays stable.
+  const speedBlend=Math.min(1,Math.max(0,speed/95));
+  const bodyBob=active?((Math.sin(now*.0042)*1.75+Math.sin(now*.0026+1.1)*.85)*speedBlend):0;
+  const bodyTilt=active?(Math.sin(now*.0035)*.34*speedBlend):0;
+
+  const setVar=(el,name,value)=>{
+    if(el&&el.style.getPropertyValue(name)!==value)el.style.setProperty(name,value);
+  };
+  setVar(scene,'--race-road-grade-y',roadY.toFixed(2)+'px');
+  setVar(scene,'--race-road-slope',roadSlope.toFixed(3)+'deg');
+  setVar(scene,'--road-bump-y',bodyBob.toFixed(2)+'px');
+  setVar(scene,'--road-bump-tilt',bodyTilt.toFixed(3)+'deg');
+  scene.classList.remove('road-bump-active','race-road-bump');
 }
 function setGear(g){
   if(g!=='N')g=Math.max(1,Math.min(5,Number(g)||1));
@@ -2617,17 +2666,17 @@ function getRaceCarMotion(){
   racePeakSpeed=Math.max(racePeakSpeed,currentSpeed);
   const speedLead=Math.max(0,Math.min(1,racePeakSpeed/275));
   const progress=Math.max(0,Math.min(1,(Number(distance)||0)/Math.max(1,Number(maxDist)||1609.344)));
-  // Reference view: the car stays anchored in the side-on frame; the world moves around it.
-  const shiftPercent=0;
-  const shiftPx=0;
+  // Let the car ease forward in the frame as speed builds; scenery still scrolls around it.
+  const shiftPercent=Math.min(4.8,Math.max(0,currentSpeed/260*4.8));
+  const shiftPx=sceneWidth*shiftPercent/100;
   return {player,scene,sceneWidth,currentSpeed,speedLead,progress,shiftPercent,shiftPx};
 }
 function updateRaceCarPosition(dt=1/60,motion=null){
   const frameMotion=motion||getRaceCarMotion();
   if(!frameMotion.player)return frameMotion;
-  // Keep the vehicle in a stable screen position like the reference video.
-  raceCarOffset=0;
-  const x='0px';
+  // Small forward travel is visible during acceleration without letting the car leave frame.
+  raceCarOffset=frameMotion.shiftPx;
+  const x=frameMotion.shiftPx.toFixed(2)+'px';
   if(frameMotion.player.style.getPropertyValue('--race-car-x')!==x)frameMotion.player.style.setProperty('--race-car-x',x);
   return frameMotion;
 }
