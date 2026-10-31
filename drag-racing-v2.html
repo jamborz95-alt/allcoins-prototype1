@@ -1657,6 +1657,8 @@ function applyLadaPaintToImages(color){
     });
   });
 }
+// Expose only the paint preview helper for deterministic browser regression tests.
+if(typeof window!=='undefined')window.__allcoinsPaintPreview=ladaPaintedPng;
 function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
   const selectedVinyl=vinylValue||getCarCustomization(id).vinylId;
