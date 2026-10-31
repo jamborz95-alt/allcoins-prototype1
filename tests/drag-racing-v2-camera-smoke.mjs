@@ -130,6 +130,57 @@ try {
   assert.ok(trackRendering.cityWillChange.includes("transform") &&
     trackRendering.markingsWillChange.includes("transform"),
     "Moving scenery and road markings should stay on compositor transform layers.");
+
+  const lateRaceScenery = await page.evaluate(() => {
+    const scene = document.querySelector(".race2d-scene");
+    const sceneRect = scene.getBoundingClientRect();
+    const width = scene.clientWidth;
+    const period = width * 1.5;
+    const layers = [
+      { id: "race2dCityLayer", rate: .36 },
+      { id: "race2dTreeLayer", rate: .70 },
+      { id: "race2dFenceLayer", rate: 1 }
+    ];
+    const samples = [];
+    for (const layer of layers) {
+      // Check each parallax strip just before and just after its repeat boundary,
+      // including a long accumulated world distance like a near-finish drive.
+      for (const edge of [-.25, .25]) {
+        raceWorldOffset = (period + edge) / layer.rate + period * 100;
+        updateRace2DEnvironment(0, performance.now());
+        const measurements = layers.map(item => {
+          const element = document.getElementById(item.id);
+          const rect = element.getBoundingClientRect();
+          const transform = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+          return {
+            id: item.id,
+            left: rect.left,
+            right: rect.right,
+            x: transform.m41,
+            width: rect.width
+          };
+        });
+        samples.push({ boundary: layer.id + (edge < 0 ? "-before" : "-after"), measurements });
+      }
+    }
+    return {
+      sceneLeft: sceneRect.left,
+      sceneRight: sceneRect.right,
+      sceneWidth: width,
+      period,
+      samples
+    };
+  });
+  for (const sample of lateRaceScenery.samples) {
+    for (const layer of sample.measurements) {
+      assert.ok(layer.left <= lateRaceScenery.sceneLeft + 1 &&
+        layer.right >= lateRaceScenery.sceneRight - 1,
+        "Scenery strip " + layer.id + " must cover the complete horizon near a wrap boundary: " +
+        JSON.stringify({ sample: sample.boundary, layer, scene: lateRaceScenery }));
+      assert.ok(layer.x <= .5 && layer.x >= -lateRaceScenery.period - .5,
+        "Scenery strip " + layer.id + " must stay within its repeating tile period.");
+    }
+  }
   const middle = await page.evaluate(() => {
     const matrixX = el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41;
     const cameraX = matrixX(document.querySelector("#race2dCameraWorld"));
