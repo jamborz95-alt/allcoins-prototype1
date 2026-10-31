@@ -120,10 +120,23 @@ try {
 
   const beam = await page.locator("#race2dPlayerCar .race-car-headlight-glow").evaluate(el => {
     const s = getComputedStyle(el, "::before");
-    return { clipPath: s.clipPath, height: el.getBoundingClientRect().height };
+    const box = el.getBoundingClientRect();
+    return {
+      clipPath: s.clipPath,
+      width: box.width,
+      height: box.height,
+      opacity: Number(getComputedStyle(el).opacity),
+      hotspotDisplay: getComputedStyle(el, "::after").display
+    };
   });
-  assert.match(beam.clipPath, /0% 14%.*0% 86%/,
-    "The headlight beam should use the wider fan shape while keeping the round hotspot hidden.");
+  assert.match(beam.clipPath, /0% 50%.*100% 5%.*100% 95%/,
+    "The headlight beam must be a clear triangular wedge that widens toward the road ahead.");
+  assert.ok(beam.width > 140 && beam.height > 35,
+    "The updated triangular beam must be visibly larger than the previous narrow beam: " + JSON.stringify(beam));
+  assert.ok(beam.opacity > 0.7,
+    "The beam must be visible while the headlights are on: " + JSON.stringify(beam));
+  assert.equal(beam.hotspotDisplay, "none",
+    "The old round hotspot must remain disabled.");
 
   const exhaustVisual = await page.evaluate(() => {
     const read = selector => {
