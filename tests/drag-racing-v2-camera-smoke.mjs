@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -40,6 +40,49 @@ try {
   );
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving cars must be inside their chase-camera world.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-png").count(), 1, "The selected car PNG must be present.");
+  // Verify the original VAZ-2107 PNG is recolored across the body while glass and
+  // wheel details remain untouched. Keep a real PNG snapshot as a CI artifact.
+  const paintInspection = await page.evaluate(async () => {
+    if (typeof window.ladaPaintedPng !== "function") throw new Error("PNG paint function is unavailable.");
+    const paintedUrl = await window.ladaPaintedPng("#d65b2b");
+    const load = url => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+    const [original, painted] = await Promise.all([
+      load("./cars/lada-2107-side.png?v=20261031-png-paint6"),
+      load(paintedUrl)
+    ]);
+    const sample = image => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+      const pixel = (x, y) => Array.from(context.getImageData(x, y, 1, 1).data);
+      return { body: pixel(400, 150), glass: pixel(420, 75), wheel: pixel(180, 194) };
+    };
+    return { paintedUrl, original: sample(original), painted: sample(painted) };
+  });
+  const bodyBefore = paintInspection.original.body;
+  const bodyAfter = paintInspection.painted.body;
+  assert.ok(bodyAfter[0] > bodyAfter[1] + 25 && bodyAfter[0] > bodyAfter[2] + 45,
+    "The door panel sample must take the selected orange paint: " + JSON.stringify(paintInspection));
+  assert.ok(bodyAfter[0] - bodyBefore[0] > 10,
+    "The body sample must visibly change from the factory PNG: " + JSON.stringify(paintInspection));
+  const glassBefore = paintInspection.original.glass;
+  const glassAfter = paintInspection.painted.glass;
+  assert.ok(glassBefore.slice(0, 3).every((value, index) => Math.abs(value - glassAfter[index]) <= 2),
+    "The window glass must retain its original pixels: " + JSON.stringify(paintInspection));
+  const wheelBefore = paintInspection.original.wheel;
+  const wheelAfter = paintInspection.painted.wheel;
+  assert.ok(wheelBefore.slice(0, 3).every((value, index) => Math.abs(value - wheelAfter[index]) <= 2),
+    "The wheel centre must retain its original pixels: " + JSON.stringify(paintInspection));
+  const paintImageBytes = Buffer.from(paintInspection.paintedUrl.split(",")[1], "base64");
+  await writeFile(resolve(root, "artifacts/lada-2107-orange-paint-check.png"), paintImageBytes);
+
   const sceneryPlacement = await page.evaluate(() => ({
     environmentParent: document.querySelector("#race2dEnvironment")?.parentElement?.className || "",
     cameraParent: document.querySelector("#race2dCameraWorld")?.parentElement?.className || "",
