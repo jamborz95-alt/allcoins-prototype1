@@ -205,6 +205,20 @@ try {
   assert.equal(await page.locator("#race2dPlayerCar").count(), 1, "The selected car must remain mounted in the full-screen track.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-headlight-glow").count(), 1, "The cockpit should contain the headlight effect.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-exhaust-puff").count(), 3, "The running vehicle should have animated exhaust particles.");
+  const headlightButton = page.locator("#proHeadlightToggle");
+  assert.equal(await headlightButton.textContent(), "☀ ФАРЫ ВКЛ", "Headlights should start enabled.");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true);
+  await headlightButton.click();
+  assert.equal(await headlightButton.textContent(), "☼ ФАРЫ ВЫКЛ", "The control should show the off state after a tap.");
+  assert.equal(await headlightButton.getAttribute("aria-pressed"), "false");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), false,
+    "The headlight beam should turn off without disabling the engine.");
+  await headlightButton.click();
+  assert.equal(await headlightButton.textContent(), "☀ ФАРЫ ВКЛ", "The control should turn the lights back on.");
+  assert.equal(await headlightButton.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true);
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-engine-on")), true,
+    "Toggling headlights must not switch off the engine.");
   assert.equal(await page.locator("#proRaceCockpit").getAttribute("aria-hidden"), "false");
   assert.equal((await page.locator("#proRaceDistanceLabel").textContent()).trim(), "DRAG STRIP · 1 MILE", "The quarter-mile mode should display its new four-times-longer one-mile distance.");
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
