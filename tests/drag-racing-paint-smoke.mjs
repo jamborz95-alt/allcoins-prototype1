@@ -66,7 +66,8 @@ try {
         return inside;
       };
       const originalData=sampleData(original),paintedData=sampleData(painted);
-      let whiteBodyPixels=0,recolouredWhitePixels=0;\n      const whiteMisses=[];
+      let whiteBodyPixels=0,recolouredWhitePixels=0;
+      const whiteMisses=[];
       for(let y=0;y<original.naturalHeight;y++){
         for(let x=0;x<original.naturalWidth;x++){
           const i=(y*original.naturalWidth+x)*4;
@@ -81,7 +82,8 @@ try {
           if((nx>.020&&nx<.035&&ny>.475&&ny<.620)||(nx>.949&&nx<.978&&ny>.480&&ny<.535))continue;
           whiteBodyPixels++;
           const pr=paintedData[i]/255,pg=paintedData[i+1]/255,pb=paintedData[i+2]/255;
-          if(pr>pg+.08&&pr>pb+.12)recolouredWhitePixels++;\n          else if(whiteMisses.length<40)whiteMisses.push({x,y,source:[originalData[i],originalData[i+1],originalData[i+2],alpha],painted:[paintedData[i],paintedData[i+1],paintedData[i+2],paintedData[i+3]]});
+          if(pr>pg+.08&&pr>pb+.12)recolouredWhitePixels++;
+          else if(whiteMisses.length<40)whiteMisses.push({x,y,source:[originalData[i],originalData[i+1],originalData[i+2],alpha],painted:[paintedData[i],paintedData[i+1],paintedData[i+2],paintedData[i+3]]});
         }
       }
       return {
@@ -107,7 +109,8 @@ try {
           frontWindscreen: px(480, 62)
         },
         whiteBodyPixels,
-        recolouredWhitePixels,\n        whiteMisses,
+        recolouredWhitePixels,
+        whiteMisses,
         wheel: px(180, 194),
         wheelSidewall: px(144, 194),
         frontWheelSidewall: px(608, 194),
