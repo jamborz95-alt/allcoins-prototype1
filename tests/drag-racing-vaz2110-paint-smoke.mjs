@@ -44,7 +44,7 @@ try {
     if (image.complete && image.naturalWidth === 360 && image.src.startsWith("data:image/png")) return true;
     if (image.complete && image.naturalWidth > 0 && !image.src.startsWith("data:image/png")) return "original-image";
     return false;
-  }, null, { timeout: 15000 }).catch(async error => {
+  }, null, { timeout: 15000 }).then(handle => handle.jsonValue()).catch(async error => {
     const state = await page.locator("#stylePreview").evaluate(node => ({
       html: node.innerHTML.slice(0, 1000),
       image: node.querySelector("img") ? {
