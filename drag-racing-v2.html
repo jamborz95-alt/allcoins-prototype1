@@ -1564,7 +1564,7 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint7" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint8" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
   let inside=false;
@@ -1577,7 +1577,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261101-png-paint7';
+  const original='./cars/lada-2107-side.png?v=20261101-png-paint8';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1594,12 +1594,12 @@ function ladaPaintedPng(color){
         // Protect only actual window glass. The metal window surrounds and pillars
         // remain inside the paint area so no factory-white strips are left behind.
         const glassPolygons=[
-          [[.294,.136],[.479,.136],[.479,.426],[.274,.426]],
-          [[.505,.136],[.692,.136],[.731,.426],[.505,.426]]
+          [[.294,.136],[.479,.136],[.479,.388],[.274,.388]],
+          [[.505,.136],[.692,.136],[.731,.388],[.505,.388]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
-        // Tire silhouettes only; the painted wheel arches just outside these circles
-        // stay part of the body and receive the selected colour.
-        const wheels=[[.257*w,.778*h,.080*w,.225*h],[.796*w,.778*h,.080*w,.225*h]];
+        // Tight ellipse around the real tyre edge; the brighter painted wheel-arch
+        // lip immediately outside it remains part of the body paint mask.
+        const wheels=[[.257*w,.778*h,.074*w,.212*h],[.796*w,.778*h,.074*w,.212*h]];
         const bumperPolygons=[
           [[0,.595],[.088,.595],[.096,.735],[.077,.785],[0,.785]],
           [[.920,.615],[1,.615],[1,.785],[.935,.785],[.915,.745]]
