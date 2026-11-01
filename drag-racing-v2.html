@@ -1710,35 +1710,32 @@ function vaz2110PngMarkup(imgClass,vinylId){
 // window panes, tyres, lights, black trim and the empty wheel arches stay original.
 let vaz2110PaintMaskPromise=null;
 function vaz2110BuildPaintMask(ctx,width,height){
- ctx.clearRect(0,0,width,height);ctx.save();ctx.scale(width/1200,height/400);ctx.fillStyle='#fff';
- const poly=points=>{ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill()};
- poly([[30,143],[48,138],[87,136],[177,136],[207,133],[229,124],[247,103],[267,77],[291,48],[318,27],[346,18],[386,17],[570,18],[640,19],[665,25],[691,45],[715,76],[739,111],[754,135],[770,142],[797,147],[847,154],[901,164],[960,176],[1018,188],[1070,202],[1101,218],[1120,239],[1127,258],[1123,270],[1105,278],[1084,280],[1023,278],[991,273],[976,253],[968,245],[955,235],[939,226],[920,221],[900,221],[880,228],[862,244],[849,265],[839,289],[837,300],[320,300],[326,286],[321,266],[310,247],[294,232],[276,222],[255,218],[235,222],[215,233],[199,251],[188,274],[186,287],[91,281],[57,274],[31,262],[28,239],[29,202],[30,170]]);
- // Painted metal pillars and frame strips.
- poly([[171,136],[187,119],[206,96],[228,70],[251,46],[273,34],[293,34],[291,43],[275,53],[255,72],[236,95],[217,120],[202,137]]);
- poly([[662,27],[680,28],[710,58],[737,93],[761,130],[750,137],[730,112],[704,83],[680,54],[665,40]]);
+ // The PNG has a transparent background and transparent wheel openings.
+ // Start with the entire canvas paintable, then subtract only real glass and
+ // separate hardware. This avoids guessed body polygons leaving silver seams.
+ ctx.clearRect(0,0,width,height);
+ ctx.fillStyle='#fff';
+ ctx.fillRect(0,0,width,height);
+ ctx.save();
+ ctx.scale(width/1200,height/400);
  ctx.globalCompositeOperation='destination-out';
- const cut=points=>poly(points);
- // Four glass panes; their edges remain separated from the paintable pillars.
+ const cut=points=>{
+  ctx.beginPath();
+  points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+  ctx.closePath();ctx.fill();
+ };
+ // Glass panes only: the bordering metal pillars stay part of the paintable shell.
  cut([[224,117],[280,65],[291,64],[281,123]]);
  cut([[316,62],[484,62],[490,124],[315,126]]);
  cut([[535,61],[658,62],[687,121],[538,124]]);
  cut([[695,47],[728,76],[754,117],[744,121],[714,93]]);
- // Tyres and inner wheel openings.
- ctx.beginPath();ctx.ellipse(255.5,309.5,58.5,63.5,0,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.ellipse(900,305.5,59,65.5,0,0,Math.PI*2);ctx.fill();
- // Wheel-arch lips are body metal and are painted separately.
- ctx.globalCompositeOperation='source-over';
- poly([[184,280],[188,257],[202,240],[221,226],[242,218],[264,218],[286,227],[305,244],[320,267],[328,292],[316,292],[310,272],[298,253],[282,240],[263,233],[244,234],[225,243],[209,259],[199,280],[195,294]]);
- poly([[827,283],[832,259],[846,240],[865,226],[887,217],[911,218],[934,227],[953,245],[968,267],[976,292],[963,292],[957,271],[944,252],[926,239],[906,233],[888,235],[869,246],[852,265],[843,287],[838,300]]);
- ctx.globalCompositeOperation='destination-out';
- // Protect only separate hardware. Door sills and rocker panels are painted
- // with the rest of the shell; wide old trim cutouts left long silver stripes.
- cut([[28,267],[51,269],[73,276],[76,298],[58,305],[31,298]]);
- cut([[1090,267],[1128,263],[1134,288],[1120,309],[1098,308],[1088,291]]);
- // Rear and front lamp lenses only, not the surrounding fenders/bonnet.
+ // Rear lamp lens and front headlamp lens.
  cut([[39,174],[68,174],[70,218],[40,220]]);
  cut([[1090,203],[1123,208],[1127,235],[1093,233]]);
- // Small mirror body and chrome door handles remain separate.
+ // Bumper corners only; side sills/rockers and the bonnet remain paintable.
+ cut([[28,267],[51,269],[73,276],[76,298],[58,305],[31,298]]);
+ cut([[1090,267],[1128,263],[1134,288],[1120,309],[1098,308],[1088,291]]);
+ // Small mirror and chrome door handles are separate hardware.
  cut([[700,118],[720,120],[735,140],[716,148],[699,137]]);
  cut([[290,158],[339,158],[339,180],[289,180]]);
  cut([[535,158],[586,158],[586,180],[534,180]]);
@@ -1777,8 +1774,12 @@ function vaz2110PaintedPng(color){
      const image=ctx.getImageData(0,0,w,h),data=image.data;
      const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
      for(let i=0,p=0;i<mask.alpha.length;i++,p+=4){
-      const coverage=mask.alpha[i]/255;if(coverage<.02||data[p+3]<10)continue;
+      if(data[p+3]<10)continue;
       const lum=(data[p]*.2126+data[p+1]*.7152+data[p+2]*.0722)/255;
+      const t=Math.max(0,Math.min(1,(lum-.055)/(.205-.055)));
+      const metalTone=t*t*(3-2*t);
+      const coverage=(mask.alpha[i]/255)*metalTone;
+      if(coverage<.02)continue;
       const shade=Math.max(.40,Math.min(1.28,.52+.66*(lum/.82)));
       data[p]=Math.min(255,Math.round(data[p]*(1-coverage)+tr*shade*coverage));
       data[p+1]=Math.min(255,Math.round(data[p+1]*(1-coverage)+tg*shade*coverage));
