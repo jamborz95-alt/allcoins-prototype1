@@ -1613,6 +1613,16 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 #proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet{
   left:2.2%!important;top:67.8%!important;z-index:4!important;
 }
+/* The showroom preview uses the same PNG body layer and the same muffler alignment. */
+#previewCar[data-car-id="2101"] .race-car-muffler-body{
+  left:8.1%!important;top:63.5%!important;width:6.4%!important;height:5.6%!important;z-index:3!important;
+}
+#previewCar[data-car-id="2101"] .race-car-muffler-tailpipe{
+  left:2.8%!important;top:68.6%!important;width:8.2%!important;height:2.3%!important;z-index:3!important;
+}
+#previewCar[data-car-id="2101"] .race-car-muffler-outlet{
+  left:2.2%!important;top:67.8%!important;z-index:4!important;
+}
 /* A single soft exhaust plume is emitted from the exact outlet opening. */
 #proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet::after{
   content:""!important;position:absolute!important;
@@ -2309,7 +2319,10 @@ function syncRace2DCarArt(){
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+(useLada2101Png?'':engineEffects)+'</div>';
   if(preview){
-    preview.innerHTML=useLadaPng?ladaPngMarkup('preview-car-png',selectedStyle.vinylId):useLada2101Png?lada2101PngMarkup('preview-car-png',selectedStyle.vinylId):useVaz2110Png?vaz2110PngMarkup('preview-car-png',selectedStyle.vinylId):carSvg(selectedId,paint,selectedStyle.vinylId);
+    preview.dataset.carId=selectedId;
+    preview.innerHTML=usePngSprite
+      ?'<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+'</div>'
+      :carSvg(selectedId,paint,selectedStyle.vinylId);
     if(useLada2101Png)prepareLada2101Wheels(preview);
   }
   if(player){
