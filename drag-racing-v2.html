@@ -1670,7 +1670,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v18';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v19';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId,paintEditor){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1766,10 +1766,15 @@ function vaz2110GetPaintMask(){
       const i=y*width+x,p=i*4;
       const sourceAlpha=pixels[p+3]/255;
       if(sourceAlpha<0.02)continue;
-      const lum=pixels[p]*0.2126+pixels[p+1]*0.7152+pixels[p+2]*0.0722;
+      const red=pixels[p],green=pixels[p+1],blue=pixels[p+2];
+      const lum=red*0.2126+green*0.7152+blue*0.0722;
       // The original body is metallic grey; windows and rubber details are
       // almost black. A soft ramp includes shaded sheet metal without tinting glass.
-      const metalCoverage=smoothstep(13,42,lum);
+      let metalCoverage=smoothstep(13,42,lum);
+      // The source PNG has tiny blue fringe pixels on the roof/sills. Treat only
+      // low-luminance blue-dominant edge specks as body paint, not glass or lamps.
+      const blueFringe=blue<76&&blue>red*1.25&&blue>green*1.15&&blue-Math.max(red,green)>9;
+      if(blueFringe)metalCoverage=Math.max(metalCoverage,0.96);
       // Preserve only the actual end lamps and bumper corners. The previous
       // wide rectangular exclusions covered a little of the adjacent metal,
       // leaving visible factory-grey strips at the very front and rear.
