@@ -1670,7 +1670,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v15';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v16';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId,paintEditor){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1737,33 +1737,65 @@ function vaz2110BuildPaintMask(ctx,width,height){
  ctx.beginPath();ctx.ellipse(46,308,12,11,0,0,Math.PI*2);ctx.fill();
  ctx.restore();
 }
-// Build the paint mask at runtime from the body silhouette. Canvas antialiasing
-// is kept as fractional alpha so paint fades smoothly along every panel edge.
+// Detect the actual painted metal directly from the source PNG.
+// This avoids guessed polygons that can leave narrow body panels unpainted.
+// Transparent wheel arches stay transparent; dark glass and black rubber trim
+// are preserved. The source alpha and soft luminance ramp keep edges smooth.
 let vaz2110PaintMaskPromise=null;
 function vaz2110GetPaintMask(){
  if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
  vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
-  try{
-   const canvas=document.createElement('canvas');canvas.width=360;canvas.height=120;
-   const ctx=canvas.getContext('2d',{willReadFrequently:true});
-   if(!ctx)throw new Error('Не удалось создать маску покраски ВАЗ-2110.');
-   vaz2110BuildPaintMask(ctx,360,120);
-   const pixels=ctx.getImageData(0,0,360,120).data;
-   const alpha=new Uint8Array(360*120);
-   for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4+3];
-   const clip=document.createElement('canvas');clip.width=360;clip.height=120;
-   const cc=clip.getContext('2d');
-   if(!cc)throw new Error('Не удалось создать контур ручной покраски ВАЗ-2110.');
-   const frame=cc.createImageData(360,120);
-   for(let i=0;i<alpha.length;i++){
-    const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i];
+  const image=new Image();
+  image.decoding='async';
+  image.onload=()=>{
+   try{
+    const width=360,height=120;
+    const sourceCanvas=document.createElement('canvas');
+    sourceCanvas.width=width;sourceCanvas.height=height;
+    const sourceCtx=sourceCanvas.getContext('2d',{willReadFrequently:true});
+    if(!sourceCtx)throw new Error('Не удалось создать маску покраски ВАЗ-2110.');
+    sourceCtx.drawImage(image,0,0,width,height);
+    const pixels=sourceCtx.getImageData(0,0,width,height).data;
+    const alpha=new Uint8Array(width*height);
+    const smoothstep=(low,high,value)=>{
+     const t=Math.max(0,Math.min(1,(value-low)/(high-low)));
+     return t*t*(3-2*t);
+    };
+    for(let y=0;y<height;y++){
+     for(let x=0;x<width;x++){
+      const i=y*width+x,p=i*4;
+      const sourceAlpha=pixels[p+3]/255;
+      if(sourceAlpha<0.02)continue;
+      const lum=pixels[p]*0.2126+pixels[p+1]*0.7152+pixels[p+2]*0.0722;
+      // The original body is metallic grey; windows and rubber details are
+      // almost black. A soft ramp includes shaded sheet metal without tinting glass.
+      const metalCoverage=smoothstep(13,42,lum);
+      // Keep the small front and rear bumper assemblies in their original finish.
+      const rearBumper=(x<28&&y>=47&&y<=75);
+      const frontBumper=(x>329&&y>=46&&y<=75);
+      const protectedBumper=rearBumper||frontBumper;
+      alpha[i]=protectedBumper?0:Math.round(255*sourceAlpha*metalCoverage);
+     }
+    }
+    const clip=document.createElement('canvas');clip.width=width;clip.height=height;
+    const clipCtx=clip.getContext('2d');
+    if(!clipCtx)throw new Error('Не удалось создать контур покраски ВАЗ-2110.');
+    const frame=clipCtx.createImageData(width,height);
+    for(let i=0;i<alpha.length;i++){
+     const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i];
+    }
+    clipCtx.putImageData(frame,0,0);
+    resolve({alpha,clip});
+   }catch(error){
+    vaz2110PaintMaskPromise=null;
+    reject(error);
    }
-   cc.putImageData(frame,0,0);
-   resolve({alpha,clip});
-  }catch(error){
+  };
+  image.onerror=()=>{
    vaz2110PaintMaskPromise=null;
-   reject(error);
-  }
+   reject(new Error('Не удалось загрузить исходный PNG кузова ВАЗ-2110.'));
+  };
+  image.src=VAZ2110_ATLAS_URL;
  });
  return vaz2110PaintMaskPromise;
 }
