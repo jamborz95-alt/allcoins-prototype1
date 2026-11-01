@@ -49,6 +49,7 @@ try {
           door: px(400, 150),
           hood: px(620, 125),
           wheelArchLip: px(535, 150),
+          frontWheelArch: px(530, 160),
           rearWindowSill: px(240, 100),
           frontWindowSill: px(420, 100),
           rearPillar: px(210, 50)
@@ -58,6 +59,7 @@ try {
         wheel: px(180, 194),
         wheelSidewall: px(132, 194),
         frontWheelSidewall: px(608, 194),
+        frontWheelHub: px(580, 194),
         rearBumper: px(38, 172),
         frontBumper: px(670, 174)
       };
@@ -73,7 +75,7 @@ try {
       "The " + part + " must visibly change from the factory PNG: " + JSON.stringify({ before, after }));
   }
 
-  for (const part of ["rearGlass", "glass", "wheel", "wheelSidewall", "frontWheelSidewall", "rearBumper", "frontBumper"]) {
+  for (const part of ["rearGlass", "glass", "wheel", "wheelSidewall", "frontWheelSidewall", "frontWheelHub", "rearBumper", "frontBumper"]) {
     const before = inspection.original[part];
     const after = inspection.painted[part];
     assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
