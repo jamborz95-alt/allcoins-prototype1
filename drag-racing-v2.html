@@ -1577,7 +1577,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261101-png-paint14';
+  const original='./cars/lada-2107-side.png?v=20261101-png-paint15';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1620,10 +1620,8 @@ function ladaPaintedPng(color){
           const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
           const hi=Math.max(r,g,b),lo=Math.min(r,g,b);
           const sourceLuminance=.2126*r+.7152*g+.0722*b;
-          // Preserve dark rubber bumper sections, but recolour bright white/
-          // chrome areas so no factory-white patches remain on the body.
-          const inBumper=bumperPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly));
-          if(inBumper&&sourceLuminance<.30)continue;
+          // Keep both complete bumper assemblies in their original finish.
+          if(bumperPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
           let inWheel=false;
           for(const [cx,cy,rx,ry] of wheels){
             const dx=(x-cx)/rx,dy=(y-cy)/ry;
