@@ -1767,27 +1767,6 @@ function vaz2110GetPaintMask(){
  });
  return vaz2110PaintMaskPromise;
 }
-function vaz2110GetPaintMask(){
- if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
- vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
-  const image=new Image();
-  image.onload=()=>{
-   try{
-    const canvas=document.createElement('canvas');canvas.width=360;canvas.height=120;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,360,120);
-    const pixels=ctx.getImageData(0,0,360,120).data,alpha=new Uint8Array(360*120);
-    for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4]>=128?255:0;
-    const clip=document.createElement('canvas');clip.width=360;clip.height=120;
-    const cc=clip.getContext('2d'),frame=cc.createImageData(360,120);
-    for(let i=0;i<alpha.length;i++){const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i]}
-    cc.putImageData(frame,0,0);resolve({alpha,clip});
-   }catch(error){reject(error)}
-  };
-  image.onerror=()=>reject(new Error('Не удалось загрузить маску слоя покраски.'));
-  image.src=VAZ2110_PAINT_MASK_DATA;
- });
- return vaz2110PaintMaskPromise;
-}
 function vaz2110NormalizeBrushStrokes(value){
  if(!Array.isArray(value))return [];
  return value.slice(-50).map(stroke=>{
