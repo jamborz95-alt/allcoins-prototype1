@@ -1667,6 +1667,10 @@ function vaz2110PngMarkup(imgClass,vinylId){
 // Split the existing transparent VAZ-2110 PNG in the browser so the body and
 // two wheel layers remain independent. No extra network assets are required.
 const vaz2110LayerCache=new Map();
+// Reuse the actual steel wheel from the existing VAZ-2107 PNG on the VAZ-2110.
+const vaz2107WheelImage=new Image();
+vaz2107WheelImage.decoding='async';
+vaz2107WheelImage.src='./cars/lada-2107-side.png?v=20261101-2107-wheel-source1';
 function prepareVaz2110Layers(root){
   if(!root)return;
   const arts=[];
@@ -1739,17 +1743,45 @@ function prepareVaz2110Layers(root){
         });
         bodyCtx.globalCompositeOperation='source-over';
         const wheelData=[];
-        centres.forEach(point=>{
+        // Wait for the existing 2107 PNG once; if it cannot load, keep the
+        // original 2110 wheel crop instead of leaving the wheel layers empty.
+        if(!vaz2107WheelImage.complete){
+          vaz2107WheelImage.addEventListener('load',split,{once:true});
+          vaz2107WheelImage.addEventListener('error',split,{once:true});
+          return;
+        }
+        const use2107Wheels=Boolean(vaz2107WheelImage.naturalWidth&&vaz2107WheelImage.naturalHeight);
+        const sourceWheelSize=use2107Wheels
+          ?Math.round(Math.min(vaz2107WheelImage.naturalWidth*.128,vaz2107WheelImage.naturalHeight*.40))
+          :d;
+        const sourceWheelCentres=use2107Wheels?[
+          {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
+          {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.778}
+        ]:[];
+        centres.forEach((point,index)=>{
           const wheelCanvas=document.createElement('canvas');
           wheelCanvas.width=d;wheelCanvas.height=d;
           const wheelCtx=wheelCanvas.getContext('2d');
           if(!wheelCtx)throw new Error('Canvas колеса недоступен');
-          wheelCtx.drawImage(body,point.x-d/2,point.y-d/2,d,d,0,0,d,d);
-          wheelCtx.globalCompositeOperation='destination-in';
+          // Clip tightly to the tyre so no bodywork or shadow from the source
+          // sprite is carried over. The 2107's original rim and tyre stay intact.
+          wheelCtx.save();
           wheelCtx.beginPath();
-          wheelCtx.arc(d/2,d/2,d*.505,0,Math.PI*2);
-          wheelCtx.fill();
-          wheelCtx.globalCompositeOperation='source-over';
+          wheelCtx.arc(d/2,d/2,d*.49,0,Math.PI*2);
+          wheelCtx.clip();
+          if(use2107Wheels){
+            const sourcePoint=sourceWheelCentres[index];
+            wheelCtx.drawImage(
+              vaz2107WheelImage,
+              sourcePoint.x-sourceWheelSize/2,
+              sourcePoint.y-sourceWheelSize/2,
+              sourceWheelSize,sourceWheelSize,
+              0,0,d,d
+            );
+          }else{
+            wheelCtx.drawImage(body,point.x-d/2,point.y-d/2,d,d,0,0,d,d);
+          }
+          wheelCtx.restore();
           wheelData.push(wheelCanvas.toDataURL('image/png'));
         });
         const layers={
