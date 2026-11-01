@@ -1656,29 +1656,24 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="lada2101-exhaust-minimal-v6">
-/* VAZ-2101: place the visible tailpipe directly below the rear steel bumper. */
-#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-body,
+<style id="lada2101-exhaust-final-v7">
+/* VAZ-2101: short visible exhaust tip sits immediately below the rear steel bumper. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-body,
 #previewCar[data-car-id="2101"] .race-car-muffler-body{
   display:none!important;
 }
-#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-tailpipe,
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-tailpipe,
 #previewCar[data-car-id="2101"] .race-car-muffler-tailpipe{
-  left:2.8%!important;
-  top:65.6%!important;
-  width:2.4%!important;
-  height:1.2%!important;
-  min-height:3px!important;
-  z-index:3!important;
-  border-radius:3px 1px 1px 3px!important;
+  display:block!important;visibility:visible!important;opacity:1!important;
+  left:2.8%!important;top:87.4%!important;
+  width:8.2%!important;height:2.3%!important;min-height:5px!important;
+  z-index:6!important;border-radius:3px 1px 1px 3px!important;
 }
-#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet,
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet,
 #previewCar[data-car-id="2101"] .race-car-muffler-outlet{
-  left:2.2%!important;
-  top:64.8%!important;
-  width:5px!important;
-  height:7px!important;
-  z-index:5!important;
+  display:block!important;visibility:visible!important;opacity:1!important;
+  left:2.2%!important;top:86.7%!important;
+  width:5px!important;height:7px!important;z-index:7!important;
 }
 </style>
 
@@ -2325,6 +2320,35 @@ function carSvg(modelId,colorValue,vinylValue){
     .replaceAll('id="shadow"','id="shadow-'+uid+'"').replaceAll('url(#shadow)','url(#shadow-'+uid+')');
 }
 
+function applyLada2101ExhaustPosition(root){
+  if(!root)return;
+  const mufflerBody=root.querySelector('.race-car-muffler-body');
+  const tailpipe=root.querySelector('.race-car-muffler-tailpipe');
+  const outlet=root.querySelector('.race-car-muffler-outlet');
+  if(mufflerBody)mufflerBody.style.setProperty('display','none','important');
+  if(tailpipe){
+    tailpipe.style.setProperty('display','block','important');
+    tailpipe.style.setProperty('visibility','visible','important');
+    tailpipe.style.setProperty('opacity','1','important');
+    tailpipe.style.setProperty('left','2.8%','important');
+    tailpipe.style.setProperty('top','87.4%','important');
+    tailpipe.style.setProperty('width','8.2%','important');
+    tailpipe.style.setProperty('height','2.3%','important');
+    tailpipe.style.setProperty('min-height','5px','important');
+    tailpipe.style.setProperty('z-index','6','important');
+  }
+  if(outlet){
+    outlet.style.setProperty('display','block','important');
+    outlet.style.setProperty('visibility','visible','important');
+    outlet.style.setProperty('opacity','1','important');
+    outlet.style.setProperty('left','2.2%','important');
+    outlet.style.setProperty('top','86.7%','important');
+    outlet.style.setProperty('width','5px','important');
+    outlet.style.setProperty('height','7px','important');
+    outlet.style.setProperty('z-index','7','important');
+  }
+}
+
 function syncRace2DCarArt(){
   const player=$('race2dPlayerCar'),opponent=$('race2dOpponentCar'),preview=$('previewCar');
   const selectedId=String(state.selected||'2107');
@@ -2350,7 +2374,7 @@ function syncRace2DCarArt(){
     preview.innerHTML=usePngSprite
       ?'<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+'</div>'
       :carSvg(selectedId,paint,selectedStyle.vinylId);
-    if(useLada2101Png)prepareLada2101Wheels(preview);
+    if(useLada2101Png){applyLada2101ExhaustPosition(preview);prepareLada2101Wheels(preview);}
   }
   if(player){
     player.dataset.carId=selectedId;
@@ -2362,7 +2386,7 @@ function syncRace2DCarArt(){
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:(useVaz2110Png||useLada2101Png)?ladaBodyLayer:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
     if(usePngSprite)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
     if(useVaz2110Png)prepareVaz2110Layers(player);
-    if(useLada2101Png)prepareLada2101Wheels(player);
+    if(useLada2101Png){applyLada2101ExhaustPosition(player);prepareLada2101Wheels(player);}
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
   applyAirSuspension();
