@@ -31,7 +31,7 @@ try {
       image.src = url;
     });
     const [original, painted, blackPainted] = await Promise.all([
-      load("./cars/lada-2107-side.png?v=20261101-png-paint12"),
+      load("./cars/lada-2107-side.png?v=20261101-png-paint14"),
       load(paintedUrl),
       load(blackPaintedUrl)
     ]);
@@ -42,6 +42,40 @@ try {
       const context = canvas.getContext("2d", { willReadFrequently: true });
       context.drawImage(image, 0, 0);
       const px = (x, y) => Array.from(context.getImageData(x, y, 1, 1).data);
+      const windowZones = [
+        [[.195,.095],[.286,.102],[.256,.385],[.181,.378]],
+        [[.315,.095],[.478,.095],[.478,.385],[.315,.385]],
+        [[.498,.095],[.662,.095],[.662,.385],[.498,.385]],
+        [[.664,.118],[.686,.132],[.712,.382],[.682,.382]]
+      ];
+      const wheels = [[.257,.778,.064,.185],[.829,.778,.064,.185]];
+      const inPolygon = (x,y,poly) => {
+        let inside=false;
+        for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+          const [xi,yi]=poly[i],[xj,yj]=poly[j];
+          if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi||1e-9)+xi))inside=!inside;
+        }
+        return inside;
+      };
+      const originalData=sampleData(original),paintedData=sampleData(painted);
+      let whiteBodyPixels=0,recolouredWhitePixels=0;
+      for(let y=0;y<original.naturalHeight;y++){
+        for(let x=0;x<original.naturalWidth;x++){
+          const i=(y*original.naturalWidth+x)*4;
+          const alpha=originalData[i+3];
+          if(alpha<=90)continue;
+          const r=originalData[i]/255,g=originalData[i+1]/255,b=originalData[i+2]/255;
+          const hi=Math.max(r,g,b),lo=Math.min(r,g,b),lum=.2126*r+.7152*g+.0722*b;
+          if(lum<=.43||hi-lo>=.22)continue;
+          const nx=x/original.naturalWidth,ny=y/original.naturalHeight;
+          if(windowZones.some(poly=>inPolygon(nx,ny,poly)))continue;
+          if(wheels.some(([cx,cy,rx,ry])=>Math.pow((nx-cx)/rx,2)+Math.pow((ny-cy)/ry,2)<1))continue;
+          if((nx>.020&&nx<.035&&ny>.475&&ny<.620)||(nx>.949&&nx<.978&&ny>.480&&ny<.535))continue;
+          whiteBodyPixels++;
+          const pr=paintedData[i]/255,pg=paintedData[i+1]/255,pb=paintedData[i+2]/255;
+          if(pr>pg+.08&&pr>pb+.12)recolouredWhitePixels++;
+        }
+      }
       return {
         body: {
           roof: px(340, 14),
@@ -64,8 +98,10 @@ try {
           frontSideLower: px(400, 90),
           frontWindscreen: px(480, 62)
         },
+        whiteBodyPixels,
+        recolouredWhitePixels,
         wheel: px(180, 194),
-        wheelSidewall: px(132, 194),
+        wheelSidewall: px(144, 194),
         frontWheelSidewall: px(608, 194),
         frontWheelHub: px(580, 194),
         rearBumper: px(38, 172),
@@ -75,6 +111,10 @@ try {
     return { paintedUrl, original: sample(original), painted: sample(painted), black: sample(blackPainted) };
   });
 
+  assert.ok(inspection.painted.whiteBodyPixels > 100, "There must be white body pixels in the source PNG to validate.");
+  assert.equal(inspection.painted.recolouredWhitePixels, inspection.painted.whiteBodyPixels,
+    "Every bright white pixel outside glass, wheels and actual lamp lenses must be recoloured: " +
+    JSON.stringify({ total: inspection.painted.whiteBodyPixels, recoloured: inspection.painted.recolouredWhitePixels }));
   for (const [part, after] of Object.entries(inspection.painted.body)) {
     const before = inspection.original.body[part];
     assert.ok(after[0] > after[1] + 25 && after[0] > after[2] + 45,
