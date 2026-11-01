@@ -2026,6 +2026,9 @@ function syncRace2DCarArt(){
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+engineEffects+'</div>';
   const vaz2110BodyLayer='<div class="race-car-body-layer">'+vaz2110Preview+ladaSmoke+engineEffects+'</div>';
   if(preview)preview.innerHTML=useLadaPng?ladaPngMarkup('preview-car-png',selectedStyle.vinylId):useVaz2110Png?vaz2110PngMarkup('vaz2110-preview-car-png',selectedStyle.vinylId):carSvg(selectedId,paint,selectedStyle.vinylId);
+  // The showroom preview is the visible car on the main race tab. Its markup starts
+  // with a transparent placeholder, so apply the real 2110 body image here as well.
+  if(useVaz2110Png)applyVaz2110PaintToImages(paint,'img.vaz2110-preview-car-png',selectedStyle.brushStrokes);
   if(player){
     player.dataset.carId=selectedId;
     player.classList.toggle('png-car',usePngSprite);
