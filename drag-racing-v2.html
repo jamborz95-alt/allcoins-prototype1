@@ -1564,7 +1564,7 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint9" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint10" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
   let inside=false;
@@ -1577,7 +1577,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261101-png-paint9';
+  const original='./cars/lada-2107-side.png?v=20261101-png-paint10';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1594,10 +1594,14 @@ function ladaPaintedPng(color){
         // Protect only actual window glass. The metal window surrounds and pillars
         // remain inside the paint area so no factory-white strips are left behind.
         const glassPolygons=[
-          // Inner pane boundaries only. Window surrounds, lower sill, pillars and
-          // chrome body trim stay paintable instead of being mistaken for glass.
-          [[.310,.145],[.467,.145],[.467,.355],[.286,.355]],
-          [[.515,.145],[.675,.145],[.709,.355],[.515,.355]]
+          // Full, inset outlines of every real VAZ-2107 glass pane in the source PNG:
+          // rear quarter glass, rear door glass, front door glass and front windscreen.
+          // The polygons deliberately extend to the very top and bottom of each pane;
+          // only the dark glass is protected, not the surrounding painted metal.
+          [[.195,.105],[.286,.112],[.256,.410],[.181,.402]],
+          [[.300,.103],[.478,.103],[.478,.414],[.294,.414]],
+          [[.498,.103],[.662,.103],[.662,.414],[.498,.414]],
+          [[.664,.122],[.686,.138],[.712,.396],[.682,.396]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
         // Tight ellipse around the real tyre edge; the brighter painted wheel-arch
         // lip immediately outside it remains part of the body paint mask.
