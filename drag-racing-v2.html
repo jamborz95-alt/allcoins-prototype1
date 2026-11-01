@@ -1772,7 +1772,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-if(typeof window!=='undefined')window.__allcoinsPaintPreview=ladaPaintedPng;
+if(typeof window!=='undefined'){window.__allcoinsPaintPreview=ladaPaintedPng;window['ladaPaintedPng']=ladaPaintedPng;}
 
 function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
