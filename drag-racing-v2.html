@@ -1507,18 +1507,6 @@ const cars=[
 {id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:00,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
-const CAR_PAINTS = [
-  {id:'factory',name:'Заводской',color:'#dfe3e6',price:0},
-  {id:'pearl',name:'Жемчужный',color:'#f1efe8',price:0},
-  {id:'black',name:'Чёрный металлик',color:'#171c23',price:0},
-  {id:'silver',name:'Серебристый',color:'#aebbc5',price:0},
-  {id:'blue',name:'Синий',color:'#1769a8',price:0},
-  {id:'cyan',name:'Бирюзовый',color:'#169ab4',price:0},
-  {id:'green',name:'Зелёный',color:'#237b59',price:0},
-  {id:'yellow',name:'Жёлтый',color:'#e4b82c',price:0},
-  {id:'orange',name:'Оранжевый',color:'#d65b2b',price:0},
-  {id:'purple',name:'Фиолетовый',color:'#704a9e',price:0}
-];
 const CAR_VINYLS = [
   {id:'none',name:'Без плёнки',desc:'Чистый кузов без наклеек.',price:0},
   {id:'rally',name:'Ралли-полосы',desc:'Две контрастные полосы вдоль кузова.',price:0},
@@ -1658,214 +1646,18 @@ function vaz2110PngMarkup(imgClass,vinylId){
  const vinyl=carVinylMarkup(vinylId||'none');
  return '<div class="lada-png-art vaz2110-png-art"><img class="'+imgClass+' vaz2110-car-image" src="'+VAZ2110_ATLAS_URL+'" alt="ВАЗ-2110, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
-function vaz2110BuildPaintMask(ctx,width,height){
- ctx.clearRect(0,0,width,height);
- ctx.save();
- ctx.scale(width/1200,height/400);
- ctx.fillStyle='#fff';
- const polygon=points=>{
-  ctx.beginPath();
-  points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
-  ctx.closePath();
-  ctx.fill();
- };
- // Complete exterior sheet-metal shell, including roof, all window pillars,
- // doors, quarter panels, fenders, bonnet, boot and lower sills.
- polygon([
-  [30,143],[48,138],[87,136],[177,136],[207,133],[229,124],[247,103],
-  [267,77],[291,48],[318,27],[346,18],[386,17],[570,18],[640,19],
-  [665,25],[691,45],[715,76],[739,111],[754,135],[770,142],[797,147],
-  [847,154],[901,164],[960,176],[1018,188],[1070,202],[1101,218],
-  [1120,239],[1127,258],[1123,270],[1105,278],[1084,280],[1023,278],
-  [991,273],[976,253],[968,245],[955,235],[939,226],[920,221],[900,221],
-  [880,228],[862,244],[849,265],[839,289],[837,300],[320,300],
-  [326,286],[321,266],[310,247],[294,232],[276,222],[255,218],
-  [235,222],[215,233],[199,251],[188,274],[186,287],[91,281],
-  [57,274],[31,262],[28,239],[29,202],[30,170]
- ]);
- // Add the metal C-pillar and A-pillar outer strips; the following
- // glass cutouts remove only the glass itself, leaving these frames paintable.
- polygon([[171,136],[187,119],[206,96],[228,70],[251,46],[273,34],[293,34],[291,43],[275,53],[255,72],[236,95],[217,120],[202,137]]);
- polygon([[662,27],[680,28],[710,58],[737,93],[761,130],[750,137],[730,112],[704,83],[680,54],[665,40]]);
- // Glass cutouts are deliberately inset to keep the whole glass surface clear
- // while allowing the surrounding metal frames and pillars to take paint.
- ctx.globalCompositeOperation='destination-out';
- const protect=points=>polygon(points);
- protect([[224,117],[280,65],[291,64],[281,123]]);
- protect([[316,62],[484,62],[490,124],[315,126]]);
- protect([[535,61],[658,62],[687,121],[538,124]]);
- protect([[695,47],[728,76],[754,117],[744,121],[714,93]]);
- // Leave tyres and wheels untouched; wheel-arch sheet metal outside these
- // circles remains paintable.
- ctx.beginPath();ctx.ellipse(255.5,309.5,58.5,63.5,0,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.ellipse(900,305.5,59,65.5,0,0,Math.PI*2);ctx.fill();
- // The exposed metal lips around the arches are separate paintable bands.
- ctx.globalCompositeOperation='source-over';
- polygon([[184,280],[188,257],[202,240],[221,226],[242,218],[264,218],[286,227],[305,244],[320,267],[328,292],[316,292],[310,272],[298,253],[282,240],[263,233],[244,234],[225,243],[209,259],[199,280],[195,294]]);
- polygon([[827,283],[832,259],[846,240],[865,226],[887,217],[911,218],[934,227],[953,245],[968,267],[976,292],[963,292],[957,271],[944,252],[926,239],[906,233],[888,235],[869,246],[852,265],[843,287],[838,300]]);
- // Rubber side strips, plastic bumpers, lamps and small hardware stay original.
- ctx.globalCompositeOperation='destination-out';
- protect([[83,259],[192,259],[201,272],[82,273]]);
- protect([[320,259],[839,259],[849,273],[319,273]]);
- protect([[969,259],[1085,259],[1092,273],[968,273]]);
- protect([[28,267],[63,271],[124,275],[129,302],[99,311],[31,298]]);
- protect([[1065,267],[1128,263],[1134,288],[1120,309],[1083,312],[1065,300]]);
- protect([[39,174],[87,174],[89,222],[40,223]]);
- protect([[1032,198],[1104,198],[1113,239],[1038,242]]);
- protect([[680,114],[720,116],[746,145],[709,158],[679,143]]);
- protect([[290,158],[339,158],[339,180],[289,180]]);
- protect([[535,158],[586,158],[586,180],[534,180]]);
- ctx.beginPath();ctx.ellipse(548.5,194.5,9.5,9.5,0,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.ellipse(46,308,12,11,0,0,Math.PI*2);ctx.fill();
- ctx.restore();
-}
-// Detect the actual painted metal directly from the source PNG.
-// This avoids guessed polygons that can leave narrow body panels unpainted.
-// Transparent wheel arches stay transparent; dark glass and black rubber trim
-// are preserved. The source alpha and soft luminance ramp keep edges smooth.
-let vaz2110PaintMaskPromise=null;
-function vaz2110GetPaintMask(){
- if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
- vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
-  const image=new Image();
-  image.decoding='async';
-  image.onload=()=>{
-   try{
-    const width=360,height=120;
-    const sourceCanvas=document.createElement('canvas');
-    sourceCanvas.width=width;sourceCanvas.height=height;
-    const sourceCtx=sourceCanvas.getContext('2d',{willReadFrequently:true});
-    if(!sourceCtx)throw new Error('Не удалось создать маску покраски ВАЗ-2110.');
-    sourceCtx.drawImage(image,0,0,width,height);
-    const pixels=sourceCtx.getImageData(0,0,width,height).data;
-    const alpha=new Uint8Array(width*height);
-    const smoothstep=(low,high,value)=>{
-     const t=Math.max(0,Math.min(1,(value-low)/(high-low)));
-     return t*t*(3-2*t);
-    };
-    for(let y=0;y<height;y++){
-     for(let x=0;x<width;x++){
-      const i=y*width+x,p=i*4;
-      const sourceAlpha=pixels[p+3]/255;
-      if(sourceAlpha<0.02)continue;
-      const red=pixels[p],green=pixels[p+1],blue=pixels[p+2];
-      const lum=red*0.2126+green*0.7152+blue*0.0722;
-      // The original body is metallic grey; windows and rubber details are
-      // almost black. A soft ramp includes shaded sheet metal without tinting glass.
-      let metalCoverage=smoothstep(13,42,lum);
-      // The source PNG has tiny blue fringe pixels on the roof/sills. Treat only
-      // low-luminance blue-dominant edge specks as body paint, not glass or lamps.
-      const blueFringe=blue<76&&blue>red*1.25&&blue>green*1.15&&blue-Math.max(red,green)>9;
-      if(blueFringe)metalCoverage=Math.max(metalCoverage,0.96);
-      // Preserve only the actual end lamps and bumper corners. The previous
-      // wide rectangular exclusions covered a little of the adjacent metal,
-      // leaving visible factory-grey strips at the very front and rear.
-      const rearLamp=(x<19&&y>=52&&y<=82);
-      const frontLamp=(x>345&&y>=61&&y<=82);
-      const rearBumper=(x<20&&y>82);
-      const frontBumper=(x>341&&y>82);
-      const protectedHardware=rearLamp||frontLamp||rearBumper||frontBumper;
-      alpha[i]=protectedHardware?0:Math.round(255*sourceAlpha*metalCoverage);
-     }
-    }
-    const clip=document.createElement('canvas');clip.width=width;clip.height=height;
-    const clipCtx=clip.getContext('2d');
-    if(!clipCtx)throw new Error('Не удалось создать контур покраски ВАЗ-2110.');
-    const frame=clipCtx.createImageData(width,height);
-    for(let i=0;i<alpha.length;i++){
-     const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i];
-    }
-    clipCtx.putImageData(frame,0,0);
-    resolve({alpha,clip});
-   }catch(error){
-    vaz2110PaintMaskPromise=null;
-    reject(error);
-   }
-  };
-  image.onerror=()=>{
-   vaz2110PaintMaskPromise=null;
-   reject(new Error('Не удалось загрузить исходный PNG кузова ВАЗ-2110.'));
-  };
-  image.src=VAZ2110_ATLAS_URL;
- });
- return vaz2110PaintMaskPromise;
-}
-function vaz2110NormalizeBrushStrokes(value){
- if(!Array.isArray(value))return [];
- return value.slice(-50).map(stroke=>{
-  const c=String(stroke?.c||'').toLowerCase(),w=Math.max(2,Math.min(36,Math.round(Number(stroke?.w)||8)));
-  const raw=Array.isArray(stroke?.p)?stroke.p.slice(0,160):[];
-  if(!/^#[0-9a-f]{6}$/.test(c)||raw.length<2||raw.length%2)return null;
-  const p=[];
-  for(let i=0;i<raw.length;i+=2){
-   const x=Number(raw[i]),y=Number(raw[i+1]);
-   if(Number.isFinite(x)&&Number.isFinite(y))p.push(Math.max(0,Math.min(360,Math.round(x))),Math.max(0,Math.min(120,Math.round(y))));
-  }
-  return p.length>=2?{c,w,p}:null;
- }).filter(Boolean);
-}
+// VAZ-2110 artwork stays as the authored factory PNG. Paint processing is disabled.
 function vaz2110PaintedPng(){return Promise.resolve(VAZ2110_ATLAS_URL)}
 function applyVaz2110PaintToImages(color,selector){
  const images=[...document.querySelectorAll(selector||'img.vaz2110-car-image')];
  images.forEach(img=>{
   if(img.isConnected&&img.getAttribute('src')!==VAZ2110_ATLAS_URL)img.src=VAZ2110_ATLAS_URL;
-  img.dataset.paintDisabled='true';
  });
  return Promise.resolve(true);
 }
 if(typeof window!=='undefined')window.__allcoinsVaz2110PaintPreview=vaz2110PaintedPng;
-
-// Expose only the paint preview helper for deterministic browser regression tests.
 if(typeof window!=='undefined')window.__allcoinsPaintPreview=ladaPaintedPng;
 
-let vaz2110SprayEnabled=false,vaz2110SprayColor='#1769a8',vaz2110SpraySize=10;
-function vaz2110ClipBrushCanvas(canvas){
- return vaz2110GetPaintMask().then(mask=>{
-  const ctx=canvas.getContext('2d');ctx.save();ctx.globalCompositeOperation='destination-in';ctx.drawImage(mask.clip,0,0);ctx.restore();
- });
-}
-function vaz2110UpdateSprayControls(){
- const button=$('sprayModeBtn'),canvas=$('vaz2110BrushCanvas');
- if(button){button.textContent=vaz2110SprayEnabled?'🖌 Баллончик включён':'🖌 Включить баллончик';button.classList.toggle('active',vaz2110SprayEnabled)}
- if(canvas){canvas.classList.toggle('painting',vaz2110SprayEnabled);canvas.style.pointerEvents=vaz2110SprayEnabled?'auto':'none'}
-}
-function vaz2110BindBrushCanvas(){
- const canvas=$('vaz2110BrushCanvas');if(!canvas)return;
- canvas.width=360;canvas.height=120;
- const ctx=canvas.getContext('2d');if(!ctx)return;
- let drawing=false,stroke=null,last=null;
- const point=event=>{
-  const rect=canvas.getBoundingClientRect();
-  return [Math.max(0,Math.min(360,(event.clientX-rect.left)/rect.width*360)),Math.max(0,Math.min(120,(event.clientY-rect.top)/rect.height*120))];
- };
- const dot=pt=>{ctx.fillStyle=stroke.c;ctx.beginPath();ctx.arc(pt[0],pt[1],stroke.w/2,0,Math.PI*2);ctx.fill()};
- const segment=(a,b)=>{ctx.strokeStyle=stroke.c;ctx.lineWidth=stroke.w;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()};
- const finish=()=>{
-  if(!drawing)return;drawing=false;
-  if(stroke&&styleDraft){
-   styleDraft.brushStrokes=vaz2110NormalizeBrushStrokes([...(styleDraft.brushStrokes||[]),stroke]);
-   applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-preview-car-png',styleDraft.brushStrokes).then(()=>{
-    ctx.clearRect(0,0,360,120);renderStyleControls();
-    const hint=$('sprayHint');if(hint)hint.textContent='Мазок добавлен. Нажми «Применить внешний вид», чтобы сохранить ручную покраску.';
-   });
-  }
-  stroke=null;last=null;
- };
- canvas.addEventListener('pointerdown',event=>{
-  if(!vaz2110SprayEnabled||String(state.selected)!=='2110')return;
-  event.preventDefault();canvas.setPointerCapture?.(event.pointerId);
-  const pt=point(event);stroke={c:vaz2110SprayColor,w:vaz2110SpraySize,p:[Math.round(pt[0]),Math.round(pt[1])]};
-  drawing=true;last=pt;dot(pt);vaz2110ClipBrushCanvas(canvas).catch(()=>{});
- });
- canvas.addEventListener('pointermove',event=>{
-  if(!drawing||!stroke)return;event.preventDefault();
-  const pt=point(event),dx=pt[0]-last[0],dy=pt[1]-last[1];if(dx*dx+dy*dy<1.2)return;
-  stroke.p.push(Math.round(pt[0]),Math.round(pt[1]));if(stroke.p.length>160)stroke.p=stroke.p.slice(-160);
-  segment(last,pt);last=pt;vaz2110ClipBrushCanvas(canvas).catch(()=>{});
- });
- canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);canvas.addEventListener('lostpointercapture',finish);
- vaz2110UpdateSprayControls();
-}
 function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
   const selectedVinyl=vinylValue||getCarCustomization(id).vinylId;
