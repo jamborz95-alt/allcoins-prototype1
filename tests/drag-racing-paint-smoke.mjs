@@ -31,7 +31,7 @@ try {
       image.src = url;
     });
     const [original, painted, blackPainted] = await Promise.all([
-      load("./cars/lada-2107-side.png?v=20261101-png-paint9"),
+      load("./cars/lada-2107-side.png?v=20261101-png-paint10"),
       load(paintedUrl),
       load(blackPaintedUrl)
     ]);
@@ -54,8 +54,16 @@ try {
           frontWindowSill: px(420, 100),
           rearPillar: px(210, 50)
         },
-        rearGlass: px(260, 75),
-        glass: px(420, 75),
+        glass: {
+          rearQuarter: px(175, 55),
+          rearSideUpper: px(260, 40),
+          rearSideMiddle: px(260, 70),
+          rearSideLower: px(260, 90),
+          frontSideUpper: px(400, 40),
+          frontSideMiddle: px(420, 75),
+          frontSideLower: px(400, 90),
+          frontWindscreen: px(480, 62)
+        },
         wheel: px(180, 194),
         wheelSidewall: px(132, 194),
         frontWheelSidewall: px(608, 194),
@@ -75,7 +83,12 @@ try {
       "The " + part + " must visibly change from the factory PNG: " + JSON.stringify({ before, after }));
   }
 
-  for (const part of ["rearGlass", "glass", "wheel", "wheelSidewall", "frontWheelSidewall", "frontWheelHub", "rearBumper", "frontBumper"]) {
+  for (const [windowName, before] of Object.entries(inspection.original.glass)) {
+    const after = inspection.painted.glass[windowName];
+    assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
+      windowName + " glass pixels must keep their original colour: " + JSON.stringify({ before, after }));
+  }
+  for (const part of ["wheel", "wheelSidewall", "frontWheelSidewall", "frontWheelHub", "rearBumper", "frontBumper"]) {
     const before = inspection.original[part];
     const after = inspection.painted[part];
     assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
@@ -85,7 +98,12 @@ try {
     assert.ok(Math.max(...px.slice(0, 3)) < 85,
       "Black metallic paint should look genuinely dark on " + part + ": " + JSON.stringify(px));
   }
-  for (const part of ["glass", "wheel", "rearBumper", "frontBumper"]) {
+  for (const [windowName, before] of Object.entries(inspection.original.glass)) {
+    const after = inspection.black.glass[windowName];
+    assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
+      "Black paint must also leave " + windowName + " glass untouched: " + JSON.stringify({ before, after }));
+  }
+  for (const part of ["wheel", "rearBumper", "frontBumper"]) {
     const before = inspection.original[part], after = inspection.black[part];
     assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
       "Black paint must also leave " + part + " untouched: " + JSON.stringify({ before, after }));
