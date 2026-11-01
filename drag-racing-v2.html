@@ -1755,8 +1755,9 @@ function prepareVaz2110Layers(root){
           ?Math.round(Math.min(vaz2107WheelImage.naturalWidth*.128,vaz2107WheelImage.naturalHeight*.40))
           :d;
         const sourceWheelCentres=use2107Wheels?[
-          {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
-          {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.778}
+          // Centres follow the visible tyre circles in the original 2107 sprite.
+          {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.748},
+          {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.748}
         ]:[];
         centres.forEach((point,index)=>{
           const wheelCanvas=document.createElement('canvas');
@@ -1795,6 +1796,15 @@ function prepareVaz2110Layers(root){
         glass.src=layers.glass;
         rear.src=layers.rear;
         front.src=layers.front;
+        // Position each 2107 wheel from the exact cut-out centre in the 2110 PNG.
+        // The former fixed top:52.4% left the wheels too high, behind the uncut tyre.
+        centres.forEach((point,index)=>{
+          const wheel=index===0?rear:front;
+          wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('height',(d/w*100).toFixed(3)+'%','important');
+        });
         art.dataset.vaz2110Layers='ready';
       }catch(error){
         delete art.dataset.vaz2110Layers;
