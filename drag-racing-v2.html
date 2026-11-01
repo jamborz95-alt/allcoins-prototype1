@@ -1691,7 +1691,7 @@ function prepareVaz2110Layers(root){
       // The race sprite box is wider than the PNG aspect ratio. Calculate the
       // actual object-fit:contain rectangle so overlays land on the visible PNG,
       // not on the unused transparent side margins.
-      const d=Math.max(24,Math.round(w*.15));
+      const d=Math.max(24,Math.round(w*.17));
       const centres=[
         {x:w*.217,y:h*.735},
         {x:w*.825,y:h*.735}
@@ -1773,7 +1773,7 @@ function prepareVaz2110Layers(root){
         glassPolygons.forEach(poly=>paintPolygon(bodyCtx,poly));
         centres.forEach(point=>{
           bodyCtx.beginPath();
-          bodyCtx.arc(point.x,point.y,d*.51,0,Math.PI*2);
+          bodyCtx.arc(point.x,point.y,d*.56,0,Math.PI*2);
           bodyCtx.fill();
         });
         bodyCtx.globalCompositeOperation='source-over';
@@ -1787,7 +1787,7 @@ function prepareVaz2110Layers(root){
         }
         const use2107Wheels=Boolean(vaz2107WheelImage.naturalWidth&&vaz2107WheelImage.naturalHeight);
         if(!use2107Wheels)throw new Error('Не удалось загрузить исходные колёса ВАЗ-2107');
-        const sourceWheelSize=Math.round(Math.min(vaz2107WheelImage.naturalWidth*.128,vaz2107WheelImage.naturalHeight*.40));
+        const sourceWheelSize=Math.round(Math.min(vaz2107WheelImage.naturalWidth*.15,vaz2107WheelImage.naturalHeight*.46));
         const sourceWheelCentres=use2107Wheels?[
           // Centres follow the visible tyre circles in the original 2107 sprite.
           {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
