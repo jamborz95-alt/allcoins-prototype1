@@ -33,6 +33,16 @@ jobs:
           done
       - name: Run VAZ-2107 PNG paint regression test
         run: node tests/drag-racing-paint-smoke.mjs
+      - name: Run VAZ-2110 full-body PNG paint regression test
+        run: node tests/drag-racing-vaz2110-paint-smoke.mjs
+      - name: Upload VAZ-2110 paint preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaz-2110-blue-paint-preview
+          path: artifacts/vaz-2110-blue-paint-preview.png
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload VAZ-2107 paint preview
         if: always()
         uses: actions/upload-artifact@v4
