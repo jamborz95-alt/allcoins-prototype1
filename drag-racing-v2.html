@@ -1598,6 +1598,54 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+<style id="lada2101-exhaust-only-smoke-v2">
+/* VAZ-2101: smoke comes from the exhaust tip only, never from tyres or bodywork. */
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-wheel-smoke,
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-exhaust-puff{
+  display:none!important;opacity:0!important;animation:none!important;
+}
+/* Raise the complete muffler and outlet slightly while keeping their alignment. */
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-body{
+  left:8.1%!important;top:80.5%!important;width:6.4%!important;height:5.6%!important;z-index:3!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-tailpipe{
+  left:2.8%!important;top:85.6%!important;width:8.2%!important;height:2.3%!important;z-index:3!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet{
+  left:2.2%!important;top:84.8%!important;z-index:4!important;
+}
+/* A single soft exhaust plume is emitted from the exact outlet opening. */
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet::after{
+  content:""!important;position:absolute!important;
+  left:-5px!important;top:50%!important;
+  width:45px!important;height:21px!important;
+  border:0!important;border-radius:55% 48% 48% 55%!important;
+  transform:translateY(-50%) scale(.12,.2)!important;
+  transform-origin:right center!important;
+  opacity:0!important;display:block!important;pointer-events:none!important;
+  filter:blur(2.2px)!important;
+  background:radial-gradient(ellipse at 82% 50%,
+    rgba(232,239,242,.88) 0%,
+    rgba(201,211,217,.72) 28%,
+    rgba(159,173,181,.42) 58%,
+    rgba(125,140,149,.16) 78%,
+    transparent 100%)!important;
+  animation:none!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation:lada2101-exhaust-only-idle 1.35s ease-out infinite!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation-duration:.72s!important;
+}
+@keyframes lada2101-exhaust-only-idle{
+  0%{opacity:0;transform:translateY(-50%) translateX(0) scale(.12,.2)}
+  12%{opacity:.78;transform:translateY(-50%) translateX(-3px) scale(.42,.45)}
+  48%{opacity:.48;transform:translateY(-50%) translateX(-18px) translateY(-3px) scale(1,.72)}
+  100%{opacity:0;transform:translateY(-50%) translateX(-39px) translateY(-8px) scale(1.48,1.05)}
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -2260,7 +2308,7 @@ function syncRace2DCarArt(){
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
-  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+(useLada2101Png?'':engineEffects)+'</div>';
+  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+(useLada2101Png?'':engineEffects)+'</div>';
   if(preview){
     preview.innerHTML=useLadaPng?ladaPngMarkup('preview-car-png',selectedStyle.vinylId):useLada2101Png?lada2101PngMarkup('preview-car-png',selectedStyle.vinylId):useVaz2110Png?vaz2110PngMarkup('preview-car-png',selectedStyle.vinylId):carSvg(selectedId,paint,selectedStyle.vinylId);
     if(useLada2101Png)prepareLada2101Wheels(preview);
@@ -2273,7 +2321,7 @@ function syncRace2DCarArt(){
     player.classList.toggle('vector-side-car',!usePngSprite);
     player.classList.remove('png-fallback');
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:(useVaz2110Png||useLada2101Png)?ladaBodyLayer:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
-    if(usePngSprite)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
+    if(usePngSprite&&!useLada2101Png)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
     if(useVaz2110Png)prepareVaz2110Layers(player);
     if(useLada2101Png)prepareLada2101Wheels(player);
     if(useLadaPng)applyLadaPaintToImages(paint);
