@@ -1663,51 +1663,83 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-atlas1';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-paint2';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
- return '<div class="lada-png-art vaz2110-png-art"><img class="'+imgClass+' vaz2110-atlas-image" src="'+blank+'" alt="ВАЗ-2110, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+ return '<div class="lada-png-art vaz2110-png-art"><img class="'+imgClass+' vaz2110-car-image" src="'+blank+'" alt="ВАЗ-2110, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function vaz2110PaintedPng(color){
  const target=String(color||'#dfe3e6').toLowerCase();
- if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(VAZ2110_ATLAS_URL);
+ if(!/^#[0-9a-f]{6}$/.test(target))return Promise.resolve('');
  if(vaz2110PaintCache.has(target))return vaz2110PaintCache.get(target);
  const result=new Promise(resolve=>{
   const img=new Image();
+  img.decoding='async';
   img.onload=()=>{
    try{
-    const width=360,height=120,canvas=document.createElement('canvas');canvas.width=width*2;canvas.height=height;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,width*2,height);
-    const body=ctx.getImageData(0,0,width,height),maskCanvas=document.createElement('canvas');
+    const width=360,height=120;
+    if((img.naturalWidth||0)<width*2||(img.naturalHeight||0)<height){resolve('');return;}
+    // The atlas contains the visible car on the left and its grayscale paint mask on the right.
+    // Render only the left half to the final sprite so the mask can never appear in-game.
+    const canvas=document.createElement('canvas');
+    canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx){resolve('');return;}
+    ctx.drawImage(img,0,0,width,height,0,0,width,height);
+    const body=ctx.getImageData(0,0,width,height);
+    const maskCanvas=document.createElement('canvas');
     maskCanvas.width=width;maskCanvas.height=height;
     const maskCtx=maskCanvas.getContext('2d',{willReadFrequently:true});
+    if(!maskCtx){resolve('');return;}
     maskCtx.drawImage(img,width,0,width,height,0,0,width,height);
-    const mask=maskCtx.getImageData(0,0,width,height).data,data=body.data;
-    const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
-    for(let i=0;i<data.length;i+=4){
-     if(data[i+3]<10)continue;
-     const coverage=(mask[i]*.299+mask[i+1]*.587+mask[i+2]*.114)/255;
-     if(coverage<.025)continue;
-     const luminance=(data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722)/255;
-     const shade=Math.max(.48,Math.min(1.18,.60+.50*(luminance/.82)));
-     data[i]=Math.round(data[i]*(1-coverage)+tr*shade*coverage);
-     data[i+1]=Math.round(data[i+1]*(1-coverage)+tg*shade*coverage);
-     data[i+2]=Math.round(data[i+2]*(1-coverage)+tb*shade*coverage);
+    const mask=maskCtx.getImageData(0,0,width,height).data;
+    const data=body.data;
+    if(target!=='#dfe3e6'){
+     const tr=parseInt(target.slice(1,3),16);
+     const tg=parseInt(target.slice(3,5),16);
+     const tb=parseInt(target.slice(5,7),16);
+     for(let p=0;p<data.length;p+=4){
+      // Transparent pixels remain transparent, and only white mask pixels receive paint.
+      if(data[p+3]<10)continue;
+      const coverage=(mask[p]*.299+mask[p+1]*.587+mask[p+2]*.114)/255;
+      if(coverage<.025)continue;
+      const luminance=(data[p]*.2126+data[p+1]*.7152+data[p+2]*.0722)/255;
+      // Retain the original metallic shading, dark panel edges and reflections.
+      const shade=Math.max(.48,Math.min(1.18,.60+.50*(luminance/.82)));
+      data[p]=Math.round(data[p]*(1-coverage)+tr*shade*coverage);
+      data[p+1]=Math.round(data[p+1]*(1-coverage)+tg*shade*coverage);
+      data[p+2]=Math.round(data[p+2]*(1-coverage)+tb*shade*coverage);
+     }
     }
-    ctx.putImageData(body,0,0);resolve(canvas.toDataURL('image/png'));
-   }catch(_){resolve(VAZ2110_ATLAS_URL);}
+    ctx.putImageData(body,0,0);
+    resolve(canvas.toDataURL('image/png'));
+   }catch(error){
+    console.warn('VAZ-2110 paint rendering failed:',error);
+    resolve('');
+   }
   };
-  img.onerror=()=>resolve(VAZ2110_ATLAS_URL);img.src=VAZ2110_ATLAS_URL;
+  img.onerror=()=>resolve('');
+  img.src=VAZ2110_ATLAS_URL;
  });
- vaz2110PaintCache.set(target,result);return result;
+ vaz2110PaintCache.set(target,result);
+ return result;
 }
 function applyVaz2110PaintToImages(color,selector){
- const key=String(color||'#dfe3e6'),query=selector||'img.vaz2110-atlas-image';
- document.querySelectorAll(query).forEach(img=>{img.dataset.paintColor=key;});
- vaz2110PaintedPng(color).then(src=>document.querySelectorAll(query).forEach(img=>{
-  if(img.dataset.paintColor===key&&img.src!==new URL(src,location.href).href)img.src=src;
- }));
+ const key=String(color||'#dfe3e6');
+ const query=selector||'img.vaz2110-car-image';
+ const images=[...document.querySelectorAll(query)];
+ images.forEach(img=>{img.dataset.paintColor=key;});
+ return vaz2110PaintedPng(key).then(src=>{
+  if(!src)return false;
+  images.forEach(img=>{
+   if(img.isConnected&&img.dataset.paintColor===key&&img.src!==src){
+    img.src=src;
+    img.dataset.paintApplied=key;
+   }
+  });
+  return true;
+ });
 }
 if(typeof window!=='undefined')window.__allcoinsVaz2110PaintPreview=vaz2110PaintedPng;
 
@@ -4057,15 +4089,16 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 })();
 </script>
 
-<style id="vaz2110-png-integration-v1">
-.vaz2110-png-art{overflow:hidden!important}
-.vaz2110-png-art .vaz2110-atlas-image{position:absolute!important;inset:auto!important;left:0!important;top:50%!important;right:auto!important;bottom:auto!important;width:200%!important;height:auto!important;max-width:none!important;max-height:none!important;object-fit:fill!important;transform:translateY(-50%)!important}
-.race2d-car.png-car[data-car-id="2110"] .vaz2110-png-art{overflow:hidden!important}
-.race2d-car.png-car[data-car-id="2110"] .vaz2110-png-art .vaz2110-atlas-image{width:200%!important;height:auto!important;left:0!important;top:50%!important;transform:translateY(-50%)!important}
+<style id="vaz2110-png-integration-v2">
+/* The browser displays only the cropped 360x120 car output, never the mask half of the atlas. */
+.vaz2110-png-art{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+.vaz2110-png-art .vaz2110-car-image{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center center!important;transform:none!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important}
+.race2d-car.png-car[data-car-id="2110"] .vaz2110-png-art{overflow:visible!important}
+.race2d-car.png-car[data-car-id="2110"] .vaz2110-png-art .vaz2110-car-image{width:100%!important;height:100%!important;object-fit:contain!important}
 .race2d-car.png-car[data-car-id="2110"] .png-wheel-spin.rear{left:14%!important;top:58.5%!important;width:15%!important}
 .race2d-car.png-car[data-car-id="2110"] .png-wheel-spin.front{left:67.7%!important;top:59%!important;width:14.5%!important}
 .race2d-car.png-car[data-car-id="2110"] .race-car-exhaust-puff{left:calc(3.8% - 10px)!important;top:calc(78% - 6px)!important}
-.race2d-car.png-opponent-car.vaz2110-opponent .opponent-car-png{width:200%!important;height:100%!important;max-width:none!important;left:0!important;top:0!important;object-fit:fill!important;clip-path:inset(0 50% 0 0)!important}
+.race2d-car.png-opponent-car.vaz2110-opponent .opponent-car-png{width:100%!important;height:100%!important;max-width:none!important;left:0!important;top:0!important;object-fit:contain!important;clip-path:none!important}
 .race2d-car.png-opponent-car[data-car-id="2110"] .opponent-wheel-spin.rear{left:14%!important;top:58.5%!important;width:15%!important}
 .race2d-car.png-opponent-car[data-car-id="2110"] .opponent-wheel-spin.front{left:67.7%!important;top:59%!important;width:14.5%!important}
 </style></body></html>
