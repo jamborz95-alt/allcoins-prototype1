@@ -79,19 +79,17 @@ try {
     };
   });
   assert.deepEqual([wheelSpinBefore.rear.name, wheelSpinBefore.front.name],
-    ["race2d-wheel-spin", "race2d-wheel-spin"],
-    "Both independent VAZ-2110 PNG wheels must use the rotation animation.");
-  assert.ok([wheelSpinBefore.rear.duration, wheelSpinBefore.front.duration].every(value => value !== "0s"),
-    "Both VAZ-2110 wheel layers must rotate with a non-zero duration.");
+    ["none", "none"],
+    "The new VAZ-2110 PNG must keep both wheels stationary without blur.");
   await page.waitForTimeout(70);
   const wheelSpinAfter = await page.locator("#race2dPlayerCar .vaz2110-png-art").evaluate(art => ({
     rear: getComputedStyle(art.querySelector(".vaz2110-wheel-layer.rear")).transform,
     front: getComputedStyle(art.querySelector(".vaz2110-wheel-layer.front")).transform
   }));
-  assert.notEqual(wheelSpinAfter.rear, wheelSpinBefore.rear.transform,
-    "The VAZ-2110 rear wheel must visibly rotate between browser frames.");
-  assert.notEqual(wheelSpinAfter.front, wheelSpinBefore.front.transform,
-    "The VAZ-2110 front wheel must visibly rotate between browser frames.");
+  assert.equal(wheelSpinAfter.rear, wheelSpinBefore.rear.transform,
+    "The VAZ-2110 rear wheel must remain visually stationary.");
+  assert.equal(wheelSpinAfter.front, wheelSpinBefore.front.transform,
+    "The VAZ-2110 front wheel must remain visually stationary.");
   await page.locator("#proRaceCockpit").evaluate(el => el.classList.remove("race-rear-wheel-active", "race-front-wheel-active"));
   // Verify the original VAZ-2107 PNG is recolored across the body while glass and
   // wheel details remain untouched. Keep a real PNG snapshot as a CI artifact.
