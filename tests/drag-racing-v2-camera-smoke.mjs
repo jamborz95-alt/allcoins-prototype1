@@ -71,7 +71,7 @@ try {
     const read = selector => {
       const wheel = art.querySelector(selector);
       const style = getComputedStyle(wheel);
-      return { name: style.animationName, duration: style.animationDuration, transform: style.transform };
+      return { name: style.animationName, duration: style.animationDuration, transform: style.transform, filter: style.filter };
     };
     return {
       rear: read(".vaz2110-wheel-layer.rear"),
