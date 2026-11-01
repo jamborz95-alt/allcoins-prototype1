@@ -1577,7 +1577,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261101-png-paint12';
+  const original='./cars/lada-2107-side.png?v=20261101-png-paint13';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1591,21 +1591,16 @@ function ladaPaintedPng(color){
         ctx.drawImage(img,0,0,canvas.width,canvas.height);
         const frame=ctx.getImageData(0,0,canvas.width,canvas.height),data=frame.data,w=canvas.width,h=canvas.height;
         const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
-        // Protect only actual window glass. The metal window surrounds and pillars
-        // remain inside the paint area so no factory-white strips are left behind.
+        // Protect the complete glass panes, not the white metal surrounds.
         const glassPolygons=[
-          // Full, inset outlines of every real VAZ-2107 glass pane in the source PNG:
-          // rear quarter glass, rear door glass, front door glass and front windscreen.
-          // The polygons deliberately extend to the very top and bottom of each pane;
-          // only the dark glass is protected, not the surrounding painted metal.
           [[.195,.095],[.286,.102],[.256,.385],[.181,.378]],
           [[.315,.095],[.478,.095],[.478,.385],[.315,.385]],
           [[.498,.095],[.662,.095],[.662,.385],[.498,.385]],
           [[.664,.118],[.686,.132],[.712,.382],[.682,.382]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
-        // Tight ellipse around the real tyre edge; the brighter painted wheel-arch
-        // lip immediately outside it remains part of the body paint mask.
-        const wheels=[[.257*w,.778*h,.074*w,.212*h],[.829*w,.778*h,.074*w,.212*h]];
+        // These tighter ellipses follow the actual rubber-and-rim assemblies.
+        // The white wheel-arch lips outside them remain bodywork and are paintable.
+        const wheels=[[.257*w,.778*h,.064*w,.185*h],[.829*w,.778*h,.064*w,.185*h]];
         const bumperPolygons=[
           [[0,.595],[.088,.595],[.096,.735],[.077,.785],[0,.785]],
           [[.920,.615],[1,.615],[1,.785],[.935,.785],[.915,.745]]
@@ -1615,36 +1610,32 @@ function ladaPaintedPng(color){
           [[.940,.455],[.990,.455],[.990,.555],[.940,.555]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
         for(let i=0;i<data.length;i+=4){
-          if(data[i+3]<12)continue;
+          const alpha=data[i+3];
+          if(alpha<12)continue;
           const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);
-          // These two broad shell regions cover trunk, quarter panels, doors,
-          // rocker panels, wheel-arch lips, hood, roof, pillars and cabin metal.
-          const lowerBody=y>.325*h&&y<.875*h&&x>.018*w&&x<.982*w;
-          const cabinShell=x>.180*w&&x<.820*w&&y>.008*h&&y<.445*h;
-          if(!lowerBody&&!cabinShell)continue;
           if(glassPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
           if(bumperPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
           if(lampPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
-          const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
-          const sourceLuminance=.2126*r+.7152*g+.0722*b;
-          let inWheel=false,paintableWheelArch=false;
+          let inWheel=false;
           for(const [cx,cy,rx,ry] of wheels){
-            const dx=(x-cx)/rx,dy=(y-cy)/ry,radial=dx*dx+dy*dy;
-            if(radial<1){
-              // Preserve the dark tire and the inner rim. Bright pixels on the
-              // outside wheel-arch lip are painted bodywork, even where the
-              // flattened PNG makes that lip overlap the tyre's outer ellipse.
-              if(radial>.76&&sourceLuminance>.60)paintableWheelArch=true;
-              else inWheel=true;
-              break;
-            }
+            const dx=(x-cx)/rx,dy=(y-cy)/ry;
+            if(dx*dx+dy*dy<1){inWheel=true;break;}
           }
           if(inWheel)continue;
-          // Recolour every shell pixel, including the original blue-grey shadows.
-          // A luminance-only metallic mask preserves highlights and panel contouring,
-          // while multiplying the selected paint RGB keeps dark colours truly dark.
-          if(sourceLuminance<.055)continue; // preserve black rubber seals and deep outlines
-          const shade=Math.max(.58,Math.min(1.16,.62+.46*(sourceLuminance/.82)));
+          const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
+          const hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+          const sourceLuminance=.2126*r+.7152*g+.0722*b;
+          const neutralWhite=alpha>90&&sourceLuminance>.43&&(hi-lo)<.22;
+          // Main body mask recolours every shade of the shell. A second neutral-
+          // white mask catches remaining factory-white body patches outside the
+          // approximate shell bounds, while transparent background stays untouched.
+          const lowerBody=y>.285*h&&y<.895*h&&x>.012*w&&x<.988*w;
+          const cabinShell=x>.165*w&&x<.840*w&&y>.005*h&&y<.455*h;
+          if(!lowerBody&&!cabinShell&&!neutralWhite)continue;
+          if(sourceLuminance<.055)continue;
+          // Preserve original highlights and shading; multiply colour by the
+          // source brightness so dark and light shades follow the selected paint.
+          const shade=Math.max(.48,Math.min(1.18,.60+.50*(sourceLuminance/.82)));
           data[i]=Math.min(255,Math.round(tr*shade));
           data[i+1]=Math.min(255,Math.round(tg*shade));
           data[i+2]=Math.min(255,Math.round(tb*shade));
