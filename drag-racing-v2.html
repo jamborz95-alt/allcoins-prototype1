@@ -1663,7 +1663,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-paint3';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-paint4';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1702,10 +1702,10 @@ function vaz2110BuildPaintMask(ctx,width,height){
  ctx.globalCompositeOperation='destination-out';
  const protect=points=>polygon(points);
  // Inset glass panes; metal window frames and pillars remain paintable.
- protect([[229,126],[256,89],[288,56],[311,49],[322,51],[295,126]]);
- protect([[332,47],[482,46],[489,128],[331,128]]);
- protect([[539,49],[668,54],[681,128],[548,128]]);
- protect([[705,63],[749,98],[779,132],[750,135],[720,92]]);
+ protect([[184,130],[221,75],[250,38],[269,35],[259,128]]);
+ protect([[317,42],[488,40],[494,128],[312,128]]);
+ protect([[519,42],[699,49],[706,128],[522,128]]);
+ protect([[700,53],[747,86],[799,129],[757,130],[719,89]]);
  // Tyres, rims and hubs. Smaller than the arch opening so the wheel-arch lips are painted.
  ctx.beginPath();ctx.ellipse(257,303,62,64,0,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(900,303,63,65,0,0,Math.PI*2);ctx.fill();
