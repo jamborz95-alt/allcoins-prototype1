@@ -122,13 +122,10 @@ async function ensureProfile(client, telegramId) {
     "INSERT INTO drag_racing_player_profiles (telegram_id) VALUES ($1::BIGINT) ON CONFLICT (telegram_id) DO NOTHING",
     [String(telegramId)]
   );
-  // VAZ-2110 is the free starter car. Keep any previously owned cars in the garage.
+  // Both classic VAZ-2107 and VAZ-2110 are free starter cars.
+  // Preserve the player's current selection and every previously owned vehicle.
   await client.query(
-    "INSERT INTO drag_racing_player_cars (telegram_id, car_id, upgrades) VALUES ($1::BIGINT, '2110', '{}'::jsonb) ON CONFLICT (telegram_id, car_id) DO NOTHING",
-    [String(telegramId)]
-  );
-  await client.query(
-    "UPDATE drag_racing_player_profiles SET selected_car_id = '2110' WHERE telegram_id = $1::BIGINT AND (selected_car_id IS NULL OR selected_car_id = '2107')",
+    "INSERT INTO drag_racing_player_cars (telegram_id, car_id, upgrades) VALUES ($1::BIGINT, '2107', '{}'::jsonb), ($1::BIGINT, '2110', '{}'::jsonb) ON CONFLICT (telegram_id, car_id) DO NOTHING",
     [String(telegramId)]
   );
 }
@@ -155,8 +152,8 @@ async function readProfile(client, telegramId) {
   }
   const tuning = { ...DEFAULT_TUNE, ...objectValue(profileRow.tuning, DEFAULT_TUNE) };
   return {
-    selectedCarId: ownedCars.includes(String(profileRow.selected_car_id)) ? String(profileRow.selected_car_id) : "2110",
-    ownedCars: ownedCars.length ? ownedCars : ["2110"],
+    selectedCarId: ownedCars.includes(String(profileRow.selected_car_id)) ? String(profileRow.selected_car_id) : (ownedCars.includes("2107") ? "2107" : "2110"),
+    ownedCars: ownedCars.length ? ownedCars : ["2107", "2110"],
     upgrades,
     customization,
     tune: Object.fromEntries(Object.entries(DEFAULT_TUNE).map(([key, fallback]) => {
