@@ -1397,14 +1397,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .vaz2110-png-art .lada-png-vinyl{z-index:4!important}
 .vaz2110-png-art .vaz2110-wheel-layer{
   position:absolute!important;inset:auto!important;z-index:1!important;
-  top:60%!important;width:13.4%!important;height:auto!important;aspect-ratio:1/1!important;
+  top:52.4%!important;width:13.4%!important;height:auto!important;aspect-ratio:1/1!important;
   object-fit:contain!important;display:block!important;opacity:0;visibility:hidden;
   border:0!important;border-radius:50%;padding:0!important;background:none!important;
   box-shadow:none!important;mask:none!important;-webkit-mask:none!important;
   transform-origin:50% 50%!important;will-change:transform;
 }
-.vaz2110-png-art .vaz2110-wheel-layer.rear{left:18.2%!important}
-.vaz2110-png-art .vaz2110-wheel-layer.front{left:76.3%!important}
+.vaz2110-png-art .vaz2110-wheel-layer.rear{left:15.3%!important}
+.vaz2110-png-art .vaz2110-wheel-layer.front{left:75.8%!important}
 .vaz2110-png-art[data-vaz2110-layers="ready"] .vaz2110-wheel-layer{opacity:1;visibility:visible}
 #proRaceCockpit.race-rear-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.rear{
   animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
@@ -1415,7 +1415,11 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-png-art{position:absolute;inset:0;width:100%;height:100%}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-wheel-layer{opacity:1;visibility:visible}
 .race2d-car.png-opponent-car.vaz2110-opponent.opponent-moving .vaz2110-wheel-layer{
-  animation:race2d-wheel-spin var(--opponent-wheel-duration,.24s) linear infinite!important;
+  animation:none!important;transform:none!important;
+}
+#proRaceCockpit.race-rear-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.rear,
+#proRaceCockpit.race-front-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.front{
+  animation:none!important;transform:none!important;
 }
 .vaz2110-png-art.vaz2110-layer-fallback .vaz2110-wheel-layer,
 .vaz2110-png-art.vaz2110-layer-fallback .vaz2110-glass-layer{display:none!important}
@@ -1591,7 +1595,7 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-3layer-v3" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v4" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -1631,17 +1635,18 @@ function prepareVaz2110Layers(root){
       }
       try{
         const d=Math.max(24,Math.round(w*.134));
+        // Coordinates match the new clean white VAZ-2110 sprite (stationary wheels).
         const centres=[
-          {x:w*.249,y:h*.60+d/2},
-          {x:w*.830,y:h*.60+d/2}
+          {x:w*.217,y:h*.735},
+          {x:w*.825,y:h*.735}
         ];
         // The glazing uses its own alpha layer. The metal window frames remain
         // with the paintable shell, while the transparent panes sit behind them.
         const glassPolygons=[
-          [[.195,.095],[.286,.102],[.256,.385],[.181,.378]],
-          [[.315,.095],[.478,.095],[.478,.385],[.315,.385]],
-          [[.498,.095],[.662,.095],[.662,.385],[.498,.385]],
-          [[.664,.118],[.686,.132],[.712,.382],[.682,.382]]
+          [[.122,.28],[.198,.065],[.263,.06],[.201,.31],[.125,.31]],
+          [[.29,.055],[.465,.055],[.465,.30],[.29,.30]],
+          [[.48,.055],[.68,.055],[.725,.30],[.495,.30]],
+          [[.69,.12],[.735,.17],[.765,.30],[.73,.30]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
         const paintPolygon=(ctx,poly)=>{
           ctx.beginPath();
@@ -2031,7 +2036,7 @@ async function syncOnlineOpponentCar(){
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
-    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-png-v1'
+    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v4'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
