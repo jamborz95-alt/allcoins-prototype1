@@ -1701,7 +1701,7 @@ function prepareVaz2110Layers(root){
           wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
           wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
           wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('height',(d/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('height',(d/h*100).toFixed(3)+'%','important');
         });
         art.dataset.vaz2110Layers='ready';
         return;
@@ -1764,7 +1764,7 @@ function prepareVaz2110Layers(root){
           :d;
         const sourceWheelCentres=use2107Wheels?[
           // Centres follow the visible tyre circles in the original 2107 sprite.
-          {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.748},
+          {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
           {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.748}
         ]:[];
         centres.forEach((point,index)=>{
@@ -1811,7 +1811,7 @@ function prepareVaz2110Layers(root){
           wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
           wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
           wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('height',(d/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('height',(d/h*100).toFixed(3)+'%','important');
         });
         art.dataset.vaz2110Layers='ready';
       }catch(error){
