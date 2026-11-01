@@ -1564,7 +1564,7 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261031-png-paint6" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint7" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
   let inside=false;
@@ -1577,7 +1577,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261031-png-paint6';
+  const original='./cars/lada-2107-side.png?v=20261101-png-paint7';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -1590,60 +1590,54 @@ function ladaPaintedPng(color){
         if(!ctx){resolve(original);return;}
         ctx.drawImage(img,0,0,canvas.width,canvas.height);
         const frame=ctx.getImageData(0,0,canvas.width,canvas.height),data=frame.data,w=canvas.width,h=canvas.height;
-        const tr=parseInt(target.slice(1,3),16)/255,tg=parseInt(target.slice(3,5),16)/255,tb=parseInt(target.slice(5,7),16)/255;
-        const max=Math.max(tr,tg,tb),min=Math.min(tr,tg,tb),targetL=(max+min)/2,delta=max-min;
-        let targetH=0,targetS=0;
-        if(delta){
-          targetS=delta/(1-Math.abs(2*targetL-1));
-          if(max===tr)targetH=((tg-tb)/delta)%6;else if(max===tg)targetH=(tb-tr)/delta+2;else targetH=(tr-tg)/delta+4;
-          targetH*=60;if(targetH<0)targetH+=360;
-        }
-        // The source artwork is a pearl-white PNG. Mask the actual painted shell,
-        // not just the brightest pixels: this includes roof, pillars, doors,
-        // both quarter panels, wheel arches, hood and trunk.
+        const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
+        // Protect only actual window glass. The metal window surrounds and pillars
+        // remain inside the paint area so no factory-white strips are left behind.
         const glassPolygons=[
-          // Rear side window and front side window; overlap their edges slightly so
-          // no body-coloured stripe can leak through the narrow divider between panes.
-          [[.287,.103],[.414,.103],[.414,.397],[.267,.397]],
-          [[.405,.103],[.703,.103],[.744,.397],[.405,.397]]
+          [[.294,.136],[.479,.136],[.479,.426],[.274,.426]],
+          [[.505,.136],[.692,.136],[.731,.426],[.505,.426]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
-        // Protect the complete tire/rim silhouettes, including the outer tire edge.
-        const wheels=[[.257*w,.778*h,.079*w,.198*h],[.796*w,.778*h,.079*w,.198*h]];
+        // Tire silhouettes only; the painted wheel arches just outside these circles
+        // stay part of the body and receive the selected colour.
+        const wheels=[[.257*w,.778*h,.080*w,.225*h],[.796*w,.778*h,.080*w,.225*h]];
+        const bumperPolygons=[
+          [[0,.595],[.088,.595],[.096,.735],[.077,.785],[0,.785]],
+          [[.920,.615],[1,.615],[1,.785],[.935,.785],[.915,.745]]
+        ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
+        const lampPolygons=[
+          [[.012,.438],[.039,.438],[.040,.642],[.014,.642]],
+          [[.940,.455],[.990,.455],[.990,.555],[.940,.555]]
+        ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
         for(let i=0;i<data.length;i+=4){
           if(data[i+3]<12)continue;
           const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);
-          // The lower body and cabin/roof are separate painted regions.
-          const lowerBody=y>.325*h&&y<.875*h&&x>.012*w&&x<.988*w;
-          const cabinShell=x>.185*w&&x<.815*w&&y>.008*h&&y<.425*h;
+          // These two broad shell regions cover trunk, quarter panels, doors,
+          // rocker panels, wheel-arch lips, hood, roof, pillars and cabin metal.
+          const lowerBody=y>.325*h&&y<.875*h&&x>.018*w&&x<.982*w;
+          const cabinShell=x>.180*w&&x<.820*w&&y>.008*h&&y<.445*h;
           if(!lowerBody&&!cabinShell)continue;
-          // Leave the side windows untouched, while keeping the roof and pillars paintable.
           if(glassPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
-          // Protect the two wheel centres/rims; the upper wheel arches remain in the paint mask.
+          if(bumperPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
+          if(lampPolygons.some(poly=>ladaPointInsidePolygon(x,y,poly)))continue;
           let inWheel=false;
           for(const [cx,cy,rx,ry] of wheels){
             const dx=(x-cx)/rx,dy=(y-cy)/ry;
             if(dx*dx+dy*dy<1){inWheel=true;break;}
           }
           if(inWheel)continue;
-          // Keep lamps, bumpers and the very dark/chromatic trim in their original finish.
-          if((x<.038*w&&y>.43*h&&y<.68*h)||(x>.928*w&&y>.43*h&&y<.57*h))continue;
-          if((x<.078*w||x>.922*w)&&y>.735*h)continue;
           const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
-          const hi=Math.max(r,g,b),lo=Math.min(r,g,b),chroma=hi-lo,l=(hi+lo)/2;
-          const saturation=hi?chroma/hi:0;
-          if(l<.145||saturation>.52)continue;
-          // Apply the selected paint hue to every shade of the body while retaining
-          // the original PNG's highlights, reflections and panel shading.
-          // Keep more of the PNG's original luminance contrast so paint follows
-          // stamped panel contours, soft reflections and the natural shadow under doors.
-          const newL=Math.max(.035,Math.min(.96,l*(.42+targetL*.72)));
-          const newS=Math.min(1,targetS*(.78+.22*Math.min(1,l*1.25)));
-          const c=(1-Math.abs(2*newL-1))*newS,xh=c*(1-Math.abs((targetH/60)%2-1)),m=newL-c/2;
-          let rr=0,gg=0,bb=0;
-          if(targetH<60){rr=c;gg=xh;}else if(targetH<120){rr=xh;gg=c;}else if(targetH<180){gg=c;bb=xh;}else if(targetH<240){gg=xh;bb=c;}else if(targetH<300){rr=xh;bb=c;}else{rr=c;bb=xh;}
-          data[i]=Math.round((rr+m)*255);data[i+1]=Math.round((gg+m)*255);data[i+2]=Math.round((bb+m)*255);
+          const sourceLuminance=.2126*r+.7152*g+.0722*b;
+          // Recolour every shell pixel, including the original blue-grey shadows.
+          // A luminance-only metallic mask preserves highlights and panel contouring,
+          // while multiplying the selected paint RGB keeps dark colours truly dark.
+          if(sourceLuminance<.055)continue; // preserve black rubber seals and deep outlines
+          const shade=Math.max(.58,Math.min(1.16,.62+.46*(sourceLuminance/.82)));
+          data[i]=Math.min(255,Math.round(tr*shade));
+          data[i+1]=Math.min(255,Math.round(tg*shade));
+          data[i+2]=Math.min(255,Math.round(tb*shade));
         }
-        ctx.putImageData(frame,0,0);resolve(canvas.toDataURL('image/png'));
+        ctx.putImageData(frame,0,0);
+        resolve(canvas.toDataURL('image/png'));
       }catch(_){resolve(original);}
     };
     img.onerror=()=>resolve(original);
