@@ -1631,7 +1631,7 @@ function prepareVaz2110Layers(root){
         bodyCtx.globalCompositeOperation='destination-out';
         centres.forEach(point=>{
           bodyCtx.beginPath();
-          bodyCtx.arc(point.x,point.y,d*.515,0,Math.PI*2);
+          bodyCtx.arc(point.x,point.y,d*.51,0,Math.PI*2);
           bodyCtx.fill();
         });
         bodyCtx.globalCompositeOperation='source-over';
@@ -1644,7 +1644,7 @@ function prepareVaz2110Layers(root){
           wheelCtx.drawImage(body,point.x-d/2,point.y-d/2,d,d,0,0,d,d);
           wheelCtx.globalCompositeOperation='destination-in';
           wheelCtx.beginPath();
-          wheelCtx.arc(d/2,d/2,d*.49,0,Math.PI*2);
+          wheelCtx.arc(d/2,d/2,d*.505,0,Math.PI*2);
           wheelCtx.fill();
           wheelCtx.globalCompositeOperation='source-over';
           wheelData.push(wheelCanvas.toDataURL('image/png'));
@@ -1759,9 +1759,13 @@ function ladaPaintedPng(color){
 function applyLadaPaintToImages(color,selector){
   const key=String(color||'#dfe3e6');
   const query=selector||'.race-car-png,.preview-car-png';
-  document.querySelectorAll(query).forEach(img=>{img.dataset.paintColor=key;});
+  document.querySelectorAll(query).forEach(img=>{
+    if(img.closest('.vaz2110-png-art'))return;
+    img.dataset.paintColor=key;
+  });
   ladaPaintedPng(color).then(src=>{
     document.querySelectorAll(query).forEach(img=>{
+      if(img.closest('.vaz2110-png-art'))return;
       if(img.dataset.paintColor===key&&img.src!==new URL(src,location.href).href)img.src=src;
     });
   });
