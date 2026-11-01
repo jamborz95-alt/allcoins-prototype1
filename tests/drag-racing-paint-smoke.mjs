@@ -31,7 +31,7 @@ try {
       image.src = url;
     });
     const [original, painted, blackPainted] = await Promise.all([
-      load("./cars/lada-2107-side.png?v=20261101-png-paint11"),
+      load("./cars/lada-2107-side.png?v=20261101-png-paint12"),
       load(paintedUrl),
       load(blackPaintedUrl)
     ]);
