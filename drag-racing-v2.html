@@ -1554,6 +1554,50 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:translateZ(0);transform-origin:50% 50%;
 }
 </style>
+<style id="lada2101-air-suspension-burnout-v1">
+/* Three-step air suspension: move only the painted shell, keep both wheel rotors planted. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-body-layer{
+  transform:translate3d(0,var(--air-suspension-y,0px),0)!important;
+  transform-origin:center bottom!important;
+  transition:transform .32s cubic-bezier(.22,.61,.36,1)!important;
+}
+.pro-air-suspension-toggle{
+  position:absolute!important;left:calc(50% + 148px)!important;top:calc(50% + 32px)!important;
+  transform:translateY(-50%)!important;z-index:16!important;pointer-events:auto!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:84px!important;min-width:84px!important;height:27px!important;padding:3px 4px!important;
+  border:1px solid #8c9ba1!important;border-radius:6px!important;
+  color:#e5f4f5!important;background:linear-gradient(180deg,#3e535b,#111a20)!important;
+  box-shadow:inset 0 1px 2px #ffffff30,0 2px 5px #000a!important;
+  font-size:7px!important;font-weight:800!important;line-height:1!important;white-space:nowrap!important;
+}
+.pro-air-suspension-toggle.active{border-color:#f0cf83!important;color:#ffe5a6!important}
+.pro-air-suspension-toggle:disabled{opacity:.45!important;filter:grayscale(.7)}
+@media(orientation:portrait),(max-width:560px){
+  .pro-air-suspension-toggle{left:auto!important;right:clamp(82px,19vw,104px)!important;top:39px!important;transform:none!important}
+}
+/* Rear silencer and tailpipe now sit below the rear bumper line on the 2101. */
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-body{
+  left:8.1%!important;top:82%!important;width:6.4%!important;height:5.6%!important;z-index:3!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-tailpipe{
+  left:2.8%!important;top:87.1%!important;width:8.2%!important;height:2.3%!important;z-index:3!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2101"] .race-car-muffler-outlet{
+  left:2.2%!important;top:86.3%!important;z-index:4!important;
+}
+/* Driven axle rotates even when the car is held stationary by the brake. */
+#proRaceCockpit.race-rear-wheel-active #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.20s) linear infinite!important;
+}
+#proRaceCockpit.race-front-wheel-active #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.20s) linear infinite!important;
+}
+#proRaceCockpit.race-burnout #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin{
+  animation-duration:var(--race-rear-wheel-duration,.10s)!important;
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1642,6 +1686,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
       <div class="pro-micro-gauge" aria-hidden="true"><span></span></div>
     </div>
     <button id="proHeadlightToggle" class="pro-headlight-dash-toggle active" type="button" aria-label="Переключить фары" aria-pressed="true">☀ ФАРЫ ВКЛ</button>
+    <button id="proAirSuspensionToggle" class="pro-air-suspension-toggle" type="button" aria-label="Изменить высоту пневмоподвески" aria-pressed="false">ПНЕВМА · СРЕДНЕ</button>
     <div class="pro-shift-gate" aria-label="Ручное переключение передач">
       <div class="pro-shift-rail"><span>+</span><span>−</span></div>
       <button id="proShiftUp" class="pro-shift-paddle up" type="button" aria-label="Повысить передачу">+</button>
@@ -2228,11 +2273,12 @@ function syncRace2DCarArt(){
     player.classList.toggle('vector-side-car',!usePngSprite);
     player.classList.remove('png-fallback');
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:(useVaz2110Png||useLada2101Png)?ladaBodyLayer:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
-    if(usePngSprite&&!useLada2101Png)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
+    if(usePngSprite)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
     if(useVaz2110Png)prepareVaz2110Layers(player);
     if(useLada2101Png)prepareLada2101Wheels(player);
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
+  applyAirSuspension();
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
     opponent.classList.remove('png-opponent-car');
@@ -3265,6 +3311,26 @@ $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./
 let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,brakeHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,raceMusicGain=null,raceMusicTimer=null,raceMusicNextAt=0,raceMusicStep=0,raceMusicEnabled=true,raceEngineSoundEnabled=true,raceMusicMedia=null,raceEngineMedia=null,raceMusicObjectUrl=null,raceEngineObjectUrl=null,raceMediaLoadPromise=null,lastGearSoundAt=0,raceFinishIdleRampTimer=null,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true;
 let raceEngineSampleStartCount=0,raceAudioWatchdogTimer=null;
+let airSuspensionIndex=1;
+const AIR_SUSPENSION_STATES=[
+  {label:'НИЗКО',offset:'7px'},
+  {label:'СРЕДНЕ',offset:'0px'},
+  {label:'ВЫСОКО',offset:'-8px'}
+];
+function applyAirSuspension(){
+  const player=$('race2dPlayerCar'),button=$('proAirSuspensionToggle');
+  const isLada2101=player?.dataset.carId==='2101';
+  if(button){
+    button.disabled=!isLada2101;
+    button.textContent=isLada2101?'ПНЕВМА · '+AIR_SUSPENSION_STATES[airSuspensionIndex].label:'ПНЕВМА · ВАЗ-2101';
+    button.classList.toggle('active',isLada2101&&airSuspensionIndex!==1);
+    button.setAttribute('aria-pressed',String(isLada2101&&airSuspensionIndex!==1));
+  }
+  if(player){
+    const offset=isLada2101?AIR_SUSPENSION_STATES[airSuspensionIndex].offset:'0px';
+    if(player.style.getPropertyValue('--air-suspension-y')!==offset)player.style.setProperty('--air-suspension-y',offset);
+  }
+}
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
   scale.dataset.ready='1';
@@ -4166,6 +4232,12 @@ $('proEngineToggle')?.addEventListener('click',()=>{
   else updateVaz2107Media();
   updateRaceEngineAudio();syncRaceAudioButtons();
 });
+$('proAirSuspensionToggle')?.addEventListener('click',()=>{
+  const player=$('race2dPlayerCar');
+  if(player?.dataset.carId!=='2101')return;
+  airSuspensionIndex=(airSuspensionIndex+1)%AIR_SUSPENSION_STATES.length;
+  applyAirSuspension();
+});
 $('proHeadlightToggle')?.addEventListener('click',()=>{
   raceHeadlightsEnabled=!raceHeadlightsEnabled;
   syncProRaceCockpit();
@@ -4355,7 +4427,10 @@ function start(sharedStartedAt=null){
         const targetRpm=gasHeld?6000:Math.max(850,Math.min(6600,speed*5));
         rpm+=(targetRpm-rpm)*(1-Math.exp(-dt*(gasHeld?3.2:7.5)));
       }else{
-        const g=Number(gear),ratio=gearRatio(g),engineThrottle=gasHeld,throttle=engineThrottle&&!brakeHeld;
+        const g=Number(gear),ratio=gearRatio(g),engineThrottle=gasHeld;
+        // Keep engine torque applied while the brake is held: the brake holds the chassis
+        // while the driven axle spins, producing a stationary burnout instead of a dead pedal.
+        const throttle=engineThrottle;
         const wheelRpm=speed*42*ratio;
         const clutchSlip=Math.max(0,1-speed/24);
         const clutchRpm=engineThrottle?1450+1850*clutchSlip:850;
