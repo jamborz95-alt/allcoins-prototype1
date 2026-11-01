@@ -979,7 +979,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   content:""!important;display:block!important;
   position:absolute!important;left:0!important;top:0!important;
   width:100%!important;height:100%!important;
-  clip-path:polygon(0 50%,28% 27%,100% 5%,100% 95%,28% 73%)!important;
+  clip-path:polygon(0 50%,100% 5%,100% 95%)!important;
   background:linear-gradient(90deg,
     rgba(255,250,220,.98) 0%,
     rgba(255,239,177,.78) 28%,
@@ -1531,17 +1531,17 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 const tg=window.Telegram?.WebApp;try{tg?.ready();tg?.expand()}catch(e){}
 const cars=[
 {id:'2107',name:'ВАЗ-2107',sub:'Классика • задний привод',drive:'rwd',price:0,power:72,weight:1030,tank:42,consumption:9.5,emoji:'🚘',owned:true},
-{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',drive:'rwd',price:0,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
+{id:'2101',name:'ВАЗ-2101 «Копейка»',sub:'Классический седан СССР • задний привод',drive:'rwd',price:2500,power:58,weight:955,tank:39,consumption:9.2,emoji:'🚗'},
 {id:'2105',name:'ВАЗ-2105',sub:'Дешёвая классика • задний привод',drive:'rwd',price:3500,power:64,weight:995,tank:39,consumption:8.9,emoji:'🚗'},
-{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',drive:'rwd',price:0,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
+{id:'2104',name:'ВАЗ-2104',sub:'Универсал • задний привод',drive:'rwd',price:4500,power:75,weight:1020,tank:43,consumption:9.7,emoji:'🚙'},
 {id:'2106',name:'ВАЗ-2106',sub:'Классика • задний привод',drive:'rwd',price:6000,power:75,weight:1045,tank:39,consumption:9.3,emoji:'🚘'},
-{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:0,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
+{id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:7500,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
 {id:'2110',name:'ВАЗ-2110',sub:'Седан • передний привод',drive:'fwd',price:11000,power:78,weight:1020,tank:43,consumption:8.2,emoji:'🚘'},
 {id:'priora',name:'LADA Priora',sub:'Лёгкий седан • передний привод',drive:'fwd',price:18000,power:98,weight:1185,tank:43,consumption:7.4,emoji:'🚗'},
-{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:0,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
+{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:25000,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
 {id:'granta',name:'LADA Granta',sub:'Современный седан',drive:'fwd',price:35000,power:90,weight:1090,tank:50,consumption:6.9,emoji:'🚙'},
 {id:'niva',name:'LADA Niva Legend',sub:'Полный привод • повышенная масса',drive:'awd',price:50000,power:83,weight:1285,tank:58,consumption:10.8,emoji:'🚙'},
-{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:0,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
+{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:85000,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
 const CAR_VINYLS = [
@@ -1912,7 +1912,7 @@ function syncRace2DCarArt(){
     player.classList.toggle('vaz2110-png-car',useVaz2110Png);
     player.classList.toggle('vector-side-car',!usePngSprite);
     player.classList.remove('png-fallback');
-    player.innerHTML=usePngSprite?ladaBodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
+    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:useVaz2110Png?ladaBodyLayer+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
     if(useVaz2110Png)prepareVaz2110Layers(player);
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
