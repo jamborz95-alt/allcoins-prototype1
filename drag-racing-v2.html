@@ -1656,7 +1656,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="lada2101-exhaust-final-v7">
+<style id="lada2101-exhaust-final-v8">
 /* VAZ-2101: short visible exhaust tip sits immediately below the rear steel bumper. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-body,
 #previewCar[data-car-id="2101"] .race-car-muffler-body{
@@ -1665,14 +1665,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-tailpipe,
 #previewCar[data-car-id="2101"] .race-car-muffler-tailpipe{
   display:block!important;visibility:visible!important;opacity:1!important;
-  left:2.8%!important;top:87.4%!important;
+  left:2.8%!important;top:83.4%!important;
   width:8.2%!important;height:2.3%!important;min-height:5px!important;
   z-index:6!important;border-radius:3px 1px 1px 3px!important;
 }
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet,
 #previewCar[data-car-id="2101"] .race-car-muffler-outlet{
   display:block!important;visibility:visible!important;opacity:1!important;
-  left:2.2%!important;top:86.7%!important;
+  left:2.2%!important;top:82.7%!important;
   width:5px!important;height:7px!important;z-index:7!important;
 }
 </style>
@@ -2331,7 +2331,7 @@ function applyLada2101ExhaustPosition(root){
     tailpipe.style.setProperty('visibility','visible','important');
     tailpipe.style.setProperty('opacity','1','important');
     tailpipe.style.setProperty('left','2.8%','important');
-    tailpipe.style.setProperty('top','87.4%','important');
+    tailpipe.style.setProperty('top','83.4%','important');
     tailpipe.style.setProperty('width','8.2%','important');
     tailpipe.style.setProperty('height','2.3%','important');
     tailpipe.style.setProperty('min-height','5px','important');
@@ -2342,7 +2342,7 @@ function applyLada2101ExhaustPosition(root){
     outlet.style.setProperty('visibility','visible','important');
     outlet.style.setProperty('opacity','1','important');
     outlet.style.setProperty('left','2.2%','important');
-    outlet.style.setProperty('top','86.7%','important');
+    outlet.style.setProperty('top','82.7%','important');
     outlet.style.setProperty('width','5px','important');
     outlet.style.setProperty('height','7px','important');
     outlet.style.setProperty('z-index','7','important');
@@ -3440,6 +3440,9 @@ function applyAirSuspension(){
   if(player){
     const offset=isLada2101?AIR_SUSPENSION_STATES[airSuspensionIndex].offset:'0px';
     if(player.style.getPropertyValue('--air-suspension-y')!==offset)player.style.setProperty('--air-suspension-y',offset);
+    /* Keep the 2101 exhaust anchored to the chassis root, not the moving body PNG.
+       Reapply its exact coordinates after every air-suspension change. */
+    if(isLada2101)applyLada2101ExhaustPosition(player);
   }
 }
 function buildProTachScale(){
