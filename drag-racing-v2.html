@@ -1427,6 +1427,26 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .vaz2110-png-art.vaz2110-layer-fallback .vaz2110-wheel-layer,
 .vaz2110-png-art.vaz2110-layer-fallback .vaz2110-glass-layer{display:none!important}
 </style>
+<style id="vaz2110-wheel-spin-visibility-fix">
+/* VAZ-2110: apply wheel rotation at the end of the cascade so Telegram WebView
+   cannot leave the extracted wheel images stationary. Other car models are untouched. */
+#proRaceCockpit.race-moving #race2dPlayerCar.vaz2110-png-car .vaz2110-png-art .vaz2110-wheel-layer.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
+  transform-origin:50% 50%!important;
+  filter:none!important;
+  box-shadow:none!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.vaz2110-png-car .vaz2110-png-art .vaz2110-wheel-layer.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
+  transform-origin:50% 50%!important;
+  filter:none!important;
+  box-shadow:none!important;
+}
+/* The generic car drop-shadow was also outlining the isolated tyre layers. */
+#race2dPlayerCar.vaz2110-png-car{
+  filter:none!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
