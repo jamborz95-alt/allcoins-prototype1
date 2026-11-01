@@ -1531,6 +1531,29 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   animation:race2d-wheel-spin var(--opponent-wheel-duration,.24s) linear infinite!important;
 }
 </style>
+<style id="lada2101-wheel-race-final-v2">
+/* Final VAZ-2101 race wheel layer: keep the wheel rotors visible and spinning
+   independently beneath the transparent body shell during an actual run. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-png-art{
+  position:relative!important;display:block!important;overflow:visible!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin{
+  position:absolute!important;display:block!important;z-index:1!important;
+  opacity:1!important;visibility:visible!important;pointer-events:none!important;
+  transform-origin:50% 50%!important;backface-visibility:hidden!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-body-layer{
+  position:absolute!important;inset:0!important;z-index:2!important;
+  width:100%!important;height:100%!important;object-fit:contain!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin{
+  animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;
+  animation-play-state:running!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin svg{
+  transform:translateZ(0);transform-origin:50% 50%;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
