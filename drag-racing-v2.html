@@ -1663,7 +1663,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-mask-v8';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-mask-v9';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1694,6 +1694,10 @@ function vaz2110BuildPaintMask(ctx,width,height){
   [235,222],[215,233],[199,251],[188,274],[186,287],[91,281],
   [57,274],[31,262],[28,239],[29,202],[30,170]
  ]);
+ // Add the metal C-pillar and A-pillar outer strips; the following
+ // glass cutouts remove only the glass itself, leaving these frames paintable.
+ polygon([[171,136],[187,119],[206,96],[228,70],[251,46],[273,34],[293,34],[291,43],[275,53],[255,72],[236,95],[217,120],[202,137]]);
+ polygon([[662,27],[680,28],[710,58],[737,93],[761,130],[750,137],[730,112],[704,83],[680,54],[665,40]]);
  // Glass cutouts are deliberately inset to keep the whole glass surface clear
  // while allowing the surrounding metal frames and pillars to take paint.
  ctx.globalCompositeOperation='destination-out';
