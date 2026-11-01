@@ -279,6 +279,7 @@ try {
       bodyLayerContainsPng: Boolean(bodyLayer?.querySelector(".race-car-png")),
       bodyLayerContainsMuffler: Boolean(bodyLayer?.querySelector(".race-car-muffler")),
       bodyLayerContainsSmoke: Boolean(bodyLayer?.querySelector(".race-car-exhaust-puff")),
+      vaz2110Sprite: Boolean(bodyLayer?.querySelector(".vaz2110-body-layer")),
       bodyBumpDelta,
       mufflerWrap: read("#race2dPlayerCar .race-car-muffler"),
       mufflerBody: read("#race2dPlayerCar .race-car-muffler-body"),
@@ -302,8 +303,8 @@ try {
     "The muffler body must sit behind the VAZ-2107 PNG.");
   assert.equal(exhaustVisual.tailpipe?.zIndex, "0",
     "The pipe must remain concealed behind the car, except for its terminal tip.");
-  assert.equal(exhaustVisual.carPng?.zIndex, "1",
-    "The car PNG must cover the muffler body and most of the pipe.");
+  assert.equal(exhaustVisual.carPng?.zIndex, exhaustVisual.vaz2110Sprite ? "3" : "1",
+    "The car PNG must cover the muffler body and most of the pipe using its model-specific layer stack.");
   assert.ok(exhaustVisual.tailpipe?.width >= 30 && exhaustVisual.tailpipe?.height >= 5,
     "The exhaust pipe should run horizontally beneath the rear of the car.");
   assert.ok(exhaustVisual.outlet?.width >= 4 && exhaustVisual.outlet?.width <= 6 &&
