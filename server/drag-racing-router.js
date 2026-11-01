@@ -32,16 +32,7 @@ const PARTS = Object.freeze({
   weight: { price: 65000, power: 10 }
 });
 const PAINT_OPTIONS = Object.freeze({
-  factory: { color: "#cf2637", price: 0 },
-  pearl: { color: "#f1efe8", price: 0 },
-  black: { color: "#171c23", price: 0 },
-  silver: { color: "#aebbc5", price: 0 },
-  blue: { color: "#1769a8", price: 0 },
-  cyan: { color: "#169ab4", price: 0 },
-  green: { color: "#237b59", price: 0 },
-  yellow: { color: "#e4b82c", price: 0 },
-  orange: { color: "#d65b2b", price: 0 },
-  purple: { color: "#704a9e", price: 0 }
+  factory: { color: "#dfe3e6", price: 0 }
 });
 const VINYL_OPTIONS = Object.freeze({
   none: { price: 0 },
@@ -50,30 +41,12 @@ const VINYL_OPTIONS = Object.freeze({
   sport: { price: 0 },
   number: { price: 0 }
 });
-function normalizeBrushStrokes(value) {
-  if (!Array.isArray(value)) return [];
-  return value.slice(-50).map(stroke => {
-    const color = String(stroke?.c || "").toLowerCase();
-    const width = Math.max(2, Math.min(36, Math.round(Number(stroke?.w) || 8)));
-    const points = Array.isArray(stroke?.p) ? stroke.p.slice(0, 160) : [];
-    if (!/^#[0-9a-f]{6}$/.test(color) || points.length < 2 || points.length % 2 !== 0) return null;
-    const safePoints = [];
-    for (let i = 0; i < points.length; i += 2) {
-      const x = Number(points[i]), y = Number(points[i + 1]);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      safePoints.push(Math.max(0, Math.min(360, Math.round(x))));
-      safePoints.push(Math.max(0, Math.min(120, Math.round(y))));
-    }
-    return safePoints.length >= 2 ? { c: color, w: width, p: safePoints } : null;
-  }).filter(Boolean);
-}
-
 function normalizeCustomization(value) {
   const input = objectValue(value);
   return {
-    paintId: Object.hasOwn(PAINT_OPTIONS, String(input.paintId || "")) ? String(input.paintId) : "factory",
+    paintId: "factory",
     vinylId: Object.hasOwn(VINYL_OPTIONS, String(input.vinylId || "")) ? String(input.vinylId) : "none",
-    brushStrokes: normalizeBrushStrokes(input.brushStrokes)
+    brushStrokes: []
   };
 }
 
