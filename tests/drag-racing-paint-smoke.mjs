@@ -48,7 +48,7 @@ try {
           rearQuarter: px(120, 125),
           door: px(400, 150),
           hood: px(620, 125),
-          wheelArchLip: px(530, 160),
+          wheelArchLip: px(535, 150),
           rearWindowSill: px(240, 100),
           frontWindowSill: px(420, 100),
           rearPillar: px(210, 50)
