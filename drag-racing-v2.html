@@ -1594,8 +1594,8 @@ function ladaPaintedPng(color){
         // Protect only actual window glass. The metal window surrounds and pillars
         // remain inside the paint area so no factory-white strips are left behind.
         const glassPolygons=[
-          [[.294,.136],[.479,.136],[.479,.388],[.274,.388]],
-          [[.505,.136],[.692,.136],[.731,.388],[.505,.388]]
+          [[.310,.136],[.471,.136],[.471,.388],[.286,.388]],
+          [[.515,.136],[.680,.136],[.713,.388],[.515,.388]]
         ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
         // Tight ellipse around the real tyre edge; the brighter painted wheel-arch
         // lip immediately outside it remains part of the body paint mask.
