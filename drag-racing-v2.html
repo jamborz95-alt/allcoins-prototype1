@@ -1595,7 +1595,7 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v5" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v1" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -2035,7 +2035,7 @@ async function syncOnlineOpponentCar(){
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
-    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v5'
+    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v1'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
@@ -2750,13 +2750,17 @@ function initDragRacing3D(){
     group.position.y=.04;
     const id=String(modelId||'2107');
     const bodyColorCss=typeof bodyColor==='number'?'#'+Math.max(0,bodyColor).toString(16).padStart(6,'0').slice(-6):String(bodyColor||carPaintCss(id));
-    const svg=carSvg(id,bodyColorCss,vinylId||'none');
-    const texture=new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));
+    // In the 3D race scene VAZ-2110 must use the approved PNG sprite,
+    // not the legacy vector carSvg() drawing.
+    const texture=id==='2110'
+      ?new T.TextureLoader().load('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v1')
+      :new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(carSvg(id,bodyColorCss,vinylId||'none')));
     if('colorSpace' in texture&&T.SRGBColorSpace)texture.colorSpace=T.SRGBColorSpace;
     texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
     const material=new T.SpriteMaterial({map:texture,transparent:true,alphaTest:.025,depthWrite:false,depthTest:true});
     const sprite=new T.Sprite(material);
-    sprite.scale.set(4.65,1.72,1);
+    // The source PNG is 600x191; preserve its natural side-view proportions.
+    sprite.scale.set(4.65,id==='2110'?4.65*(191/600):1.72,1);
     sprite.position.set(0,.91,.82);
     sprite.renderOrder=3;
     group.add(sprite);
