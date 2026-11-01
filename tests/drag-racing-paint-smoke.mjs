@@ -31,7 +31,7 @@ try {
       image.src = url;
     });
     const [original, painted, blackPainted] = await Promise.all([
-      load("./cars/lada-2107-side.png?v=20261101-png-paint7"),
+      load("./cars/lada-2107-side.png?v=20261101-png-paint8"),
       load(paintedUrl),
       load(blackPaintedUrl)
     ]);
@@ -48,10 +48,15 @@ try {
           rearQuarter: px(120, 125),
           door: px(400, 150),
           hood: px(620, 125),
-          wheelArchLip: px(232, 145)
+          wheelArchLip: px(520, 155),
+          rearWindowSill: px(240, 100),
+          frontWindowSill: px(420, 100),
+          rearPillar: px(210, 50)
         },
         glass: px(420, 75),
         wheel: px(180, 194),
+        wheelSidewall: px(132, 194),
+        frontWheelSidewall: px(608, 194),
         rearBumper: px(38, 172),
         frontBumper: px(670, 174)
       };
@@ -67,7 +72,7 @@ try {
       "The " + part + " must visibly change from the factory PNG: " + JSON.stringify({ before, after }));
   }
 
-  for (const part of ["glass", "wheel", "rearBumper", "frontBumper"]) {
+  for (const part of ["glass", "wheel", "wheelSidewall", "frontWheelSidewall", "rearBumper", "frontBumper"]) {
     const before = inspection.original[part];
     const after = inspection.painted[part];
     assert.ok(before.slice(0, 3).every((value, index) => Math.abs(value - after[index]) <= 2),
