@@ -75,7 +75,8 @@ try {
     };
     return {
       rear: read(".vaz2110-wheel-layer.rear"),
-      front: read(".vaz2110-wheel-layer.front")
+      front: read(".vaz2110-wheel-layer.front"),
+      carFilter: getComputedStyle(document.querySelector("#race2dPlayerCar")).filter
     };
   });
   assert.deepEqual([wheelSpinBefore.rear.name, wheelSpinBefore.front.name],
@@ -84,6 +85,10 @@ try {
   assert.ok([wheelSpinBefore.rear.duration, wheelSpinBefore.front.duration]
     .every(duration => duration !== "0s"),
     "Both VAZ-2110 wheels must have a non-zero rotation duration.");
+  assert.equal(wheelSpinBefore.carFilter, "none",
+    "The VAZ-2110 car wrapper must not add a shadow halo around the isolated wheels.");
+  assert.equal(wheelSpinBefore.rear.filter, "none");
+  assert.equal(wheelSpinBefore.front.filter, "none");
   await page.waitForTimeout(90);
   const wheelSpinAfter = await page.locator("#race2dPlayerCar .vaz2110-png-art").evaluate(art => ({
     rear: getComputedStyle(art.querySelector(".vaz2110-wheel-layer.rear")).transform,
