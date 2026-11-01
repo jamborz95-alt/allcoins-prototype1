@@ -1712,7 +1712,20 @@ function prepareVaz2110Layers(root){
           // Put the 2107 wheel above the old 2110 wheel pixels so the swap is
           // visible even if Telegram's image decoder delays the transparent cut.
           wheel.style.setProperty('z-index','6','important');
+          wheel.style.setProperty('display','block','important');
+          wheel.style.setProperty('opacity','1','important');
+          wheel.style.setProperty('visibility','visible','important');
+          wheel.style.setProperty('pointer-events','none','important');
         });
+        // Recalculate when Telegram first reveals the previously hidden race view
+        // or when the player rotates the phone; the artwork itself stays unchanged.
+        if(!art._vaz2110WheelResizeObserver&&'ResizeObserver' in window){
+          art._vaz2110WheelResizeObserver=new ResizeObserver(()=>{
+            if(art.dataset.vaz2110Layers==='ready')applyWheelGeometry();
+          });
+          art._vaz2110WheelResizeObserver.observe(art);
+        }
+        requestAnimationFrame(()=>applyWheelGeometry());
       };
       const cacheKey=body.currentSrc||body.src;
       const cached=vaz2110LayerCache.get(cacheKey);
