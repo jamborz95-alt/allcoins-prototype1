@@ -1386,7 +1386,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-car.png-opponent-car.vaz2110-opponent .opponent-wheel-spin.front{left:76.3%!important}
 
 /* VAZ-2110: PNG body with independent rear/front PNG wheel layers. */
-.vaz2110-png-art .vaz2110-body-layer{z-index:3!important}
+.vaz2110-png-art .vaz2110-body-layer{z-index:1!important}
 .vaz2110-png-art .vaz2110-glass-layer{
   position:absolute!important;inset:0!important;z-index:2!important;
   display:block!important;width:100%!important;height:100%!important;
@@ -1396,9 +1396,9 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .vaz2110-png-art[data-vaz2110-layers="ready"] .vaz2110-glass-layer{opacity:1;visibility:visible}
 .vaz2110-png-art .lada-png-vinyl{z-index:4!important}
 .vaz2110-png-art .vaz2110-wheel-layer{
-  position:absolute!important;inset:auto!important;z-index:1!important;
+  position:absolute!important;inset:auto!important;z-index:9!important;
   top:52.4%!important;width:13.4%!important;height:auto!important;aspect-ratio:1/1!important;
-  object-fit:contain!important;display:block!important;opacity:0;visibility:hidden;
+  object-fit:contain!important;display:block!important;opacity:1!important;visibility:visible!important;
   border:0!important;border-radius:50%;padding:0!important;background:none!important;
   box-shadow:none!important;mask:none!important;-webkit-mask:none!important;
   transform-origin:50% 50%!important;will-change:transform;
@@ -1460,8 +1460,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 .vaz2110-png-art .vaz2110-wheel-fallback{
   position:absolute!important;
-  top:52.4%!important;
-  width:13.4%!important;
+  top:72.0%!important;
+  width:17%!important;
   height:auto!important;
   aspect-ratio:1/1!important;
   display:block!important;
@@ -1478,8 +1478,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     radial-gradient(circle,#101519 0 61%,#aab3b8 62% 69%,#151a1e 70% 100%)!important;
   transform-origin:50% 50%!important;
 }
-.vaz2110-png-art .vaz2110-wheel-fallback.rear{left:15.3%!important}
-.vaz2110-png-art .vaz2110-wheel-fallback.front{left:75.8%!important}
+.vaz2110-png-art .vaz2110-wheel-fallback.rear{left:18.0%!important}
+.vaz2110-png-art .vaz2110-wheel-fallback.front{left:77.2%!important}
 .vaz2110-png-art[data-vaz2110-layers="ready"] .vaz2110-wheel-fallback{display:none!important}
 </style>
 
@@ -1654,7 +1654,7 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -1670,7 +1670,7 @@ const vaz2110LayerCache=new Map();
 // Reuse the actual steel wheel from the existing VAZ-2107 PNG on the VAZ-2110.
 const vaz2107WheelImage=new Image();
 vaz2107WheelImage.decoding='async';
-vaz2107WheelImage.src='./cars/lada-2107-side.png?v=20261101-2107-wheel-source1';
+vaz2107WheelImage.src='./cars/lada-2107-side.png?v=20261101-2107-wheel-source2';
 function prepareVaz2110Layers(root){
   if(!root)return;
   const arts=[];
@@ -1691,7 +1691,7 @@ function prepareVaz2110Layers(root){
       // The race sprite box is wider than the PNG aspect ratio. Calculate the
       // actual object-fit:contain rectangle so overlays land on the visible PNG,
       // not on the unused transparent side margins.
-      const d=Math.max(24,Math.round(w*.17));
+      const d=Math.max(24,Math.round(w*.19));
       const centres=[
         {x:w*.217,y:h*.735},
         {x:w*.825,y:h*.735}
@@ -1773,7 +1773,7 @@ function prepareVaz2110Layers(root){
         glassPolygons.forEach(poly=>paintPolygon(bodyCtx,poly));
         centres.forEach(point=>{
           bodyCtx.beginPath();
-          bodyCtx.arc(point.x,point.y,d*.56,0,Math.PI*2);
+          bodyCtx.arc(point.x,point.y,d*.55,0,Math.PI*2);
           bodyCtx.fill();
         });
         bodyCtx.globalCompositeOperation='source-over';
@@ -1787,7 +1787,7 @@ function prepareVaz2110Layers(root){
         }
         const use2107Wheels=Boolean(vaz2107WheelImage.naturalWidth&&vaz2107WheelImage.naturalHeight);
         if(!use2107Wheels)throw new Error('Не удалось загрузить исходные колёса ВАЗ-2107');
-        const sourceWheelSize=Math.round(Math.min(vaz2107WheelImage.naturalWidth*.15,vaz2107WheelImage.naturalHeight*.46));
+        const sourceWheelSize=Math.round(Math.min(vaz2107WheelImage.naturalWidth*.12,vaz2107WheelImage.naturalHeight*.42));
         const sourceWheelCentres=use2107Wheels?[
           // Centres follow the visible tyre circles in the original 2107 sprite.
           {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
@@ -2105,7 +2105,7 @@ function ensureVaz2110RaceSprite(){
   const art=player?.querySelector('.vaz2110-png-art');
   const body=art?.querySelector('.vaz2110-body-layer');
   if(!player||!art||!body)return false;
-  const approvedPng=new URL('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3',document.baseURI).href;
+  const approvedPng=new URL('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4',document.baseURI).href;
   if(body.src!==approvedPng)body.src=approvedPng;
   body.loading='eager';
   body.decoding='async';
