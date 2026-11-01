@@ -1538,10 +1538,10 @@ const cars=[
 {id:'2109',name:'ВАЗ-2109',sub:'Хэтчбек • передний привод',drive:'fwd',price:0,power:70,weight:915,tank:43,consumption:7.8,emoji:'🚗'},
 {id:'2110',name:'ВАЗ-2110',sub:'Седан • передний привод',drive:'fwd',price:11000,power:78,weight:1020,tank:43,consumption:8.2,emoji:'🚘'},
 {id:'priora',name:'LADA Priora',sub:'Лёгкий седан • передний привод',drive:'fwd',price:18000,power:98,weight:1185,tank:43,consumption:7.4,emoji:'🚗'},
-{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:00,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
+{id:'kalina',name:'LADA Kalina',sub:'Компактный городской автомобиль',drive:'fwd',price:0,power:87,weight:1080,tank:50,consumption:7.2,emoji:'🚙'},
 {id:'granta',name:'LADA Granta',sub:'Современный седан',drive:'fwd',price:35000,power:90,weight:1090,tank:50,consumption:6.9,emoji:'🚙'},
 {id:'niva',name:'LADA Niva Legend',sub:'Полный привод • повышенная масса',drive:'awd',price:50000,power:83,weight:1285,tank:58,consumption:10.8,emoji:'🚙'},
-{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:00,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
+{id:'vesta',name:'LADA Vesta',sub:'Седан • 1.6',drive:'fwd',price:0,power:106,weight:1230,tank:55,consumption:7.1,emoji:'🏎️'}
 ];
 
 const CAR_VINYLS = [
@@ -2375,7 +2375,7 @@ function buildProSpeedScale(){
 
 
 const parts=[
-{id:'ecu',name:'Спортивный ECU',desc:'Перенастройка электронного блока управления.',details:'Повышает отдачу двигателя и помогает получить больше тяги при разгоне.',effect:'+8% к расчётной мощности',price:00,power:8,kind:'engine'},
+{id:'ecu',name:'Спортивный ECU',desc:'Перенастройка электронного блока управления.',details:'Повышает отдачу двигателя и помогает получить больше тяги при разгоне.',effect:'+8% к расчётной мощности',price:0,power:8,kind:'engine'},
 {id:'intake',name:'Холодный впуск',desc:'Улучшенная подача воздуха в двигатель.',details:'Обновлённый впуск помогает мотору эффективнее получать воздух.',effect:'+5% к расчётной мощности',price:18000,power:5,kind:'engine'},
 {id:'exhaust',name:'Прямоточный выхлоп',desc:'Улучшенный отвод выхлопных газов.',details:'Спортивная выпускная система снижает сопротивление потоку выхлопа.',effect:'+7% к расчётной мощности',price:32000,power:7,kind:'engine'},
 {id:'turbo',name:'Турбокит Stage 1',desc:'Турбонаддув для заметного прироста отдачи.',details:'Самый большой прирост мощности среди доступных запчастей.',effect:'+22% к расчётной мощности',price:95000,power:22,kind:'engine'},
@@ -2874,12 +2874,12 @@ async function applyVehicleStyle(){
   $('styleStatus').textContent='Виниловая плёнка сохранена для '+car().name+'.';
  }catch(err){$('styleStatus').textContent=err.message||'Не удалось сохранить плёнку.';renderStyleControls();}
 }
-function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);let vinyl=getCarCustomization(c.id).vinylId;let art=String(c.id)==='2107'?ladaPngMarkup('shop-car-png',vinyl):String(c.id)==='2110'?vaz2110PngMarkup('shop-car-png',vinyl):carSvg(c.id,carPaintCss(c.id),vinyl);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
+function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);let vinyl=getCarCustomization(c.id).vinylId;let art=String(c.id)==='2107'?ladaPngMarkup('shop-car-png',vinyl):String(c.id)==='2110'?vaz2110PngMarkup('vaz2110-shop-car-png',vinyl):carSvg(c.id,carPaintCss(c.id),vinyl);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
 prepareVaz2110Layers($('carShop'));
 applyLadaPaintToImages(carPaintCss('2107'),'.shop-car-png');
 
 $('partsShop').innerHTML=parts.map(p=>{let has=!!upg()[p.id];return '<div class="part"><div class="part-icon">'+({ecu:'🧠',intake:'🌬️',exhaust:'🔊',turbo:'🌀',clutch:'⚙️',tires:'🏁',gearbox:'🔩',weight:'🪶'}[p.id])+'</div><div class="part-info"><b>'+p.name+'</b><div class="muted">'+p.desc+'</div><div class="part-details"><span>Что даст:</span> '+p.details+'</div><div class="part-benefit">'+p.effect+'</div><strong class="gold" style="display:block;margin-top:6px">'+money(p.price)+' AC</strong></div><button data-part="'+p.id+'" '+(has?'disabled':'')+'>'+(has?'Установлено':'Купить')+'</button></div>'}).join('');
-$('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id),cid=String(c.id),st=getCarCustomization(cid),art=cid==='2107'?ladaPngMarkup('garage-car-png',st.vinylId):cid==='2110'?vaz2110PngMarkup('garage-car-png',st.vinylId):carSvg(c.id,carPaintCss(c.id),st.vinylId);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
+$('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id),cid=String(c.id),st=getCarCustomization(cid),art=cid==='2107'?ladaPngMarkup('garage-car-png',st.vinylId):cid==='2110'?vaz2110PngMarkup('vaz2110-garage-car-png',st.vinylId):carSvg(c.id,carPaintCss(c.id),st.vinylId);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
 prepareVaz2110Layers($('garageContent'));
 applyLadaPaintToImages(carPaintCss('2107'),'.garage-car-png');
 
