@@ -7,6 +7,8 @@ const root = process.cwd();
 await mkdir(resolve(root, "artifacts"), { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 430, height: 900 }, deviceScaleFactor: 1 });
+page.on("console", message => console.log("BROWSER CONSOLE [" + message.type() + "]: " + message.text()));
+page.on("pageerror", error => console.log("BROWSER PAGEERROR: " + error.stack));
 
 try {
   await page.route("https://telegram.org/**", route => route.fulfill({
@@ -22,6 +24,13 @@ try {
   assert.ok(response && response.status() === 200, "Drag Racing v2 must load.");
   await page.waitForFunction(() => typeof window.__allcoinsVaz2110PaintPreview === "function", null, { timeout: 15000 });
 
+  // Diagnose the colour renderer directly before exercising the actual UI.
+  const directResult = await page.evaluate(async () => {
+    const url = await window.__allcoinsVaz2110PaintPreview("#0750df");
+    return { prefix: String(url).slice(0, 80), length: String(url).length };
+  });
+  console.log("VAZ-2110 direct paint result: " + JSON.stringify(directResult));
+
   // Exercise the same user path as the garage: open tuning and choose blue paint.
   await page.locator('button[data-tab="tuning"]').click();
   await page.waitForFunction(() => {
@@ -29,10 +38,24 @@ try {
     return section && !section.classList.contains("hidden");
   });
   await page.locator('#paintPicker [data-paint="blue"]').click();
-  await page.waitForFunction(() => {
+  const previewState = await page.waitForFunction(() => {
     const image = document.querySelector("#stylePreview .vaz2110-preview-car-png");
-    return image && image.complete && image.naturalWidth === 360 && image.src.startsWith("data:image/png");
-  }, null, { timeout: 15000 });
+    if (!image) return false;
+    if (image.complete && image.naturalWidth === 360 && image.src.startsWith("data:image/png")) return true;
+    if (image.complete && image.naturalWidth > 0 && !image.src.startsWith("data:image/png")) return "original-image";
+    return false;
+  }, null, { timeout: 15000 }).catch(async error => {
+    const state = await page.locator("#stylePreview").evaluate(node => ({
+      html: node.innerHTML.slice(0, 1000),
+      image: node.querySelector("img") ? {
+        src: node.querySelector("img").src.slice(0, 100),
+        complete: node.querySelector("img").complete,
+        width: node.querySelector("img").naturalWidth
+      } : null
+    })).catch(() => null);
+    throw new Error("Paint preview wait failed: " + JSON.stringify({ directResult, state }) + "; " + error.message);
+  });
+  assert.equal(previewState, true, "Selected paint should replace the source image with a recoloured PNG.");
 
   const inspection = await page.evaluate(async () => {
     const paintedUrl = document.querySelector("#stylePreview .vaz2110-preview-car-png").src;
