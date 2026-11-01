@@ -31,7 +31,7 @@ try {
       image.src = url;
     });
     const [original, painted, blackPainted] = await Promise.all([
-      load("./cars/lada-2107-side.png?v=20261101-png-paint14"),
+      load("./cars/lada-2107-side.png?v=20261101-png-paint15"),
       load(paintedUrl),
       load(blackPaintedUrl)
     ]);
@@ -57,6 +57,14 @@ try {
         [[.664,.118],[.686,.132],[.712,.382],[.682,.382]]
       ];
       const wheels = [[.257,.778,.064,.185],[.829,.778,.064,.185]];
+      const bumpers = [
+        [[0,.595],[.088,.595],[.096,.735],[.077,.785],[0,.785]],
+        [[.920,.615],[1,.615],[1,.785],[.935,.785],[.915,.745]]
+      ];
+      const lamps = [
+        [[.020,.475],[.034,.475],[.035,.620],[.020,.620]],
+        [[.949,.480],[.977,.480],[.978,.535],[.949,.535]]
+      ];
       const inPolygon = (x,y,poly) => {
         let inside=false;
         for(let i=0,j=poly.length-1;i<poly.length;j=i++){
@@ -79,7 +87,8 @@ try {
           const nx=x/original.naturalWidth,ny=y/original.naturalHeight;
           if(windowZones.some(poly=>inPolygon(nx,ny,poly)))continue;
           if(wheels.some(([cx,cy,rx,ry])=>Math.pow((nx-cx)/rx,2)+Math.pow((ny-cy)/ry,2)<1))continue;
-          if((nx>.020&&nx<.035&&ny>.475&&ny<.620)||(nx>.949&&nx<.978&&ny>.480&&ny<.535))continue;
+          if(bumpers.some(poly=>inPolygon(nx,ny,poly)))continue;
+          if(lamps.some(poly=>inPolygon(nx,ny,poly)))continue;
           whiteBodyPixels++;
           const pr=paintedData[i]/255,pg=paintedData[i+1]/255,pb=paintedData[i+2]/255;
           if(pr>pg+.08&&pr>pb+.12)recolouredWhitePixels++;
