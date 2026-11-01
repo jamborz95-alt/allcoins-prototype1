@@ -1506,6 +1506,31 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+<style id="lada2101-wheel-spin-v1">
+/* Classic steel wheels for the transparent VAZ-2101 body.
+   Wheel circles sit behind the PNG shell so the red wheel arches stay in front. */
+.lada2101-png-art{position:relative!important;overflow:visible!important}
+.lada2101-png-art .lada2101-body-layer{position:absolute!important;inset:0!important;z-index:2!important;width:100%!important;height:100%!important;object-fit:contain!important;max-width:none!important;max-height:none!important}
+.lada2101-png-art .lada2101-wheel-spin{
+  position:absolute!important;z-index:1!important;display:block!important;
+  padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;
+  box-sizing:border-box!important;overflow:hidden!important;
+  background:transparent!important;box-shadow:none!important;
+  opacity:1!important;visibility:visible!important;pointer-events:none!important;
+  transform-origin:50% 50%!important;will-change:transform;
+}
+.lada2101-wheel-spin svg{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin{
+  animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin.rear,
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car .lada2101-wheel-spin.front{
+  transform-origin:50% 50%!important;filter:none!important;
+}
+.race2d-car.opponent.opponent-moving[data-car-id="2101"] .lada2101-wheel-spin{
+  animation:race2d-wheel-spin var(--opponent-wheel-duration,.24s) linear infinite!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1674,9 +1699,75 @@ function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint12" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
+function lada2101WheelSvgMarkup(){
+  // Period-correct stamped-steel rim and small chrome hubcap, drawn as a separate rotor.
+  return '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+    +'<circle cx="50" cy="50" r="49" fill="#090c0e" stroke="#252b2f" stroke-width="2"/>'
+    +'<circle cx="50" cy="50" r="43.5" fill="#313a40" stroke="#59636a" stroke-width="1.5"/>'
+    +'<circle cx="50" cy="50" r="39" fill="#cbd2d5" stroke="#eef1f2" stroke-width="1.3"/>'
+    +'<circle cx="50" cy="50" r="34.5" fill="#66727a" stroke="#465159" stroke-width="2"/>'
+    +'<circle cx="50" cy="50" r="30.5" fill="#d8dddf" stroke="#7e898f" stroke-width="1.4"/>'
+    +'<g fill="#657179" stroke="#f1f3f4" stroke-width=".8">'
+    +'<ellipse cx="50" cy="24" rx="2.8" ry="5.2"/><ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(45 50 50)"/>'
+    +'<ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(90 50 50)"/><ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(135 50 50)"/>'
+    +'<ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(180 50 50)"/><ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(225 50 50)"/>'
+    +'<ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(270 50 50)"/><ellipse cx="50" cy="24" rx="2.8" ry="5.2" transform="rotate(315 50 50)"/>'
+    +'</g>'
+    +'<circle cx="50" cy="50" r="14.5" fill="#aeb8bd" stroke="#f4f6f7" stroke-width="2"/>'
+    +'<circle cx="50" cy="50" r="9.5" fill="#dce1e3" stroke="#68757d" stroke-width="1.4"/>'
+    +'<circle cx="50" cy="50" r="3.5" fill="#68747b" stroke="#f7f8f8" stroke-width="1"/>'
+    +'</svg>';
+}
+function prepareLada2101Wheels(root=document){
+  if(!root)return;
+  const arts=[];
+  if(root.matches?.('.lada2101-png-art'))arts.push(root);
+  root.querySelectorAll?.('.lada2101-png-art').forEach(art=>arts.push(art));
+  arts.forEach(art=>{
+    const body=art.querySelector('.lada2101-body-layer');
+    const wheels=art.querySelectorAll('.lada2101-wheel-spin');
+    if(!body||wheels.length!==2)return;
+    const apply=()=>{
+      const rect=art.getBoundingClientRect();
+      const nw=body.naturalWidth||256,nh=body.naturalHeight||73;
+      if(!rect.width||!rect.height)return;
+      // Match the PNG's object-fit:contain letterboxing exactly.
+      const fit=Math.min(rect.width/nw,rect.height/nh);
+      const imageW=nw*fit,imageH=nh*fit;
+      const offsetX=(rect.width-imageW)/2,offsetY=(rect.height-imageH)/2;
+      const diameter=nw*.14;
+      const points=[
+        {x:nw*.239,y:nh*.835},
+        {x:nw*.855,y:nh*.835}
+      ];
+      points.forEach((point,index)=>{
+        const wheel=wheels[index];
+        wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
+        wheel.style.setProperty('top',((offsetY+(point.y-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
+        wheel.style.setProperty('width',(diameter*fit/rect.width*100).toFixed(3)+'%','important');
+        wheel.style.setProperty('height',(diameter*fit/rect.height*100).toFixed(3)+'%','important');
+        wheel.style.setProperty('display','block','important');
+        wheel.style.setProperty('opacity','1','important');
+        wheel.style.setProperty('visibility','visible','important');
+      });
+    };
+    if(body.complete&&body.naturalWidth)requestAnimationFrame(apply);
+    else body.addEventListener('load',()=>requestAnimationFrame(apply),{once:true});
+    if(!art._lada2101WheelResizeObserver&&'ResizeObserver' in window){
+      art._lada2101WheelResizeObserver=new ResizeObserver(()=>requestAnimationFrame(apply));
+      art._lada2101WheelResizeObserver.observe(art);
+    }
+    requestAnimationFrame(apply);
+  });
+}
 function lada2101PngMarkup(imgClass,vinylId){
-  // Approved shell PNG: no wheels and no front headlamps are baked into this layer.
-  return '<div class="lada2101-png-art"><img class="'+imgClass+' race-car-png lada2101-body-layer" src="./cars/lada-2101-side.png?v=20261101-lada2101-body-v3" alt="ВАЗ-2101 «Копейка», красный кузов с тёмными стёклами" decoding="async" draggable="false"></div>';
+  // Body shell stays untouched; the two period-correct wheels are independent rotating layers beneath it.
+  const wheelSvg=lada2101WheelSvgMarkup();
+  return '<div class="lada2101-png-art">'
+    +'<span class="lada2101-wheel-spin rear" aria-hidden="true">'+wheelSvg+'</span>'
+    +'<span class="lada2101-wheel-spin front" aria-hidden="true">'+wheelSvg+'</span>'
+    +'<img class="'+imgClass+' race-car-png lada2101-body-layer" src="./cars/lada-2101-side.png?v=20261101-lada2101-body-v3" alt="ВАЗ-2101 «Копейка», красный кузов с тёмными стёклами" decoding="async" draggable="false">'
+    +'</div>';
 }
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
@@ -2104,6 +2195,7 @@ function syncRace2DCarArt(){
   const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+ladaSmoke+(useLada2101Png?'':engineEffects)+'</div>';
   if(preview){
     preview.innerHTML=useLadaPng?ladaPngMarkup('preview-car-png',selectedStyle.vinylId):useLada2101Png?lada2101PngMarkup('preview-car-png',selectedStyle.vinylId):useVaz2110Png?vaz2110PngMarkup('preview-car-png',selectedStyle.vinylId):carSvg(selectedId,paint,selectedStyle.vinylId);
+    if(useLada2101Png)prepareLada2101Wheels(preview);
   }
   if(player){
     player.dataset.carId=selectedId;
@@ -2115,6 +2207,7 @@ function syncRace2DCarArt(){
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:(useVaz2110Png||useLada2101Png)?ladaBodyLayer:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
     if(usePngSprite&&!useLada2101Png)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
     if(useVaz2110Png)prepareVaz2110Layers(player);
+    if(useLada2101Png)prepareLada2101Wheels(player);
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
   if(opponent&&!currentOnlineRoom){
@@ -2227,6 +2320,7 @@ async function syncOnlineOpponentCar(){
   }
   if(modelId==='2101'){
     opponent.innerHTML=lada2101PngMarkup('opponent-car-png','none');
+    prepareLada2101Wheels(opponent);
   }else if(modelId==='2110'){
     opponent.innerHTML=vaz2110PngMarkup('opponent-car-png','none');
     prepareVaz2110Layers(opponent);
@@ -3099,6 +3193,7 @@ function renderStyleControls(){
  if(preview){
   preview.innerHTML=previewId==='2107'?ladaPngMarkup('preview-car-png',draft.vinylId):previewId==='2101'?lada2101PngMarkup('preview-car-png',draft.vinylId):previewId==='2110'?vaz2110PngMarkup('preview-car-png',draft.vinylId):carSvg(state.selected,carPaintCss(state.selected),draft.vinylId);
   if(previewId==='2110')prepareVaz2110Layers(preview);
+  if(previewId==='2101')prepareLada2101Wheels(preview);
   if(previewId==='2107')applyLadaPaintToImages(carPaintCss(state.selected),'.preview-car-png');
  }
  const vinylPicker=$('vinylPicker');
@@ -3134,6 +3229,7 @@ applyLadaPaintToImages(carPaintCss('2107'),'.shop-car-png');
 $('partsShop').innerHTML=parts.map(p=>{let has=!!upg()[p.id];return '<div class="part"><div class="part-icon">'+({ecu:'🧠',intake:'🌬️',exhaust:'🔊',turbo:'🌀',clutch:'⚙️',tires:'🏁',gearbox:'🔩',weight:'🪶'}[p.id])+'</div><div class="part-info"><b>'+p.name+'</b><div class="muted">'+p.desc+'</div><div class="part-details"><span>Что даст:</span> '+p.details+'</div><div class="part-benefit">'+p.effect+'</div><strong class="gold" style="display:block;margin-top:6px">'+money(p.price)+' AC</strong></div><button data-part="'+p.id+'" '+(has?'disabled':'')+'>'+(has?'Установлено':'Купить')+'</button></div>'}).join('');
 $('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id),cid=String(c.id),st=getCarCustomization(cid),art=cid==='2107'?ladaPngMarkup('garage-car-png',st.vinylId):cid==='2101'?lada2101PngMarkup('garage-car-png',st.vinylId):cid==='2110'?vaz2110PngMarkup('vaz2110-garage-car-png',st.vinylId):carSvg(c.id,carPaintCss(c.id),st.vinylId);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
 applyLadaPaintToImages(carPaintCss('2107'),'.garage-car-png');
+prepareLada2101Wheels(document);
 
 $('tuningCar').innerHTML='<b>'+car().name+'</b> <span class="pill">'+effectivePower()+' л.с.</span><p class="muted">Изменяй настройки аккуратно: максимум наддува без сцепления ухудшает старт.</p>';
 $('ecu').value=state.tune.ecu;$('boost').value=state.tune.boost;$('grip').value=state.tune.grip;$('shift').value=state.tune.shift;updateTuneReadout();renderStyleControls();syncRace2DCarArt();updateFuelHUD();if(race3d)race3d.syncCar()}
