@@ -1386,8 +1386,15 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-car.png-opponent-car.vaz2110-opponent .opponent-wheel-spin.front{left:76.3%!important}
 
 /* VAZ-2110: PNG body with independent rear/front PNG wheel layers. */
-.vaz2110-png-art .vaz2110-body-layer{z-index:2!important}
-.vaz2110-png-art .lada-png-vinyl{z-index:3!important}
+.vaz2110-png-art .vaz2110-body-layer{z-index:3!important}
+.vaz2110-png-art .vaz2110-glass-layer{
+  position:absolute!important;inset:0!important;z-index:2!important;
+  display:block!important;width:100%!important;height:100%!important;
+  object-fit:contain!important;pointer-events:none!important;
+  opacity:0;visibility:hidden;
+}
+.vaz2110-png-art[data-vaz2110-layers="ready"] .vaz2110-glass-layer{opacity:1;visibility:visible}
+.vaz2110-png-art .lada-png-vinyl{z-index:4!important}
 .vaz2110-png-art .vaz2110-wheel-layer{
   position:absolute!important;inset:auto!important;z-index:1!important;
   top:60%!important;width:13.4%!important;height:auto!important;aspect-ratio:1/1!important;
@@ -1410,7 +1417,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race2d-car.png-opponent-car.vaz2110-opponent.opponent-moving .vaz2110-wheel-layer{
   animation:race2d-wheel-spin var(--opponent-wheel-duration,.24s) linear infinite!important;
 }
-.vaz2110-png-art.vaz2110-layer-fallback .vaz2110-wheel-layer{display:none!important}
+.vaz2110-png-art.vaz2110-layer-fallback .vaz2110-wheel-layer,
+.vaz2110-png-art.vaz2110-layer-fallback .vaz2110-glass-layer{display:none!important}
 </style>
 </head>
 <body><main class="app">
@@ -1583,7 +1591,8 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-3layer-v2" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-3layer-v3" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
     +(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
@@ -1601,9 +1610,10 @@ function prepareVaz2110Layers(root){
   for(const art of arts){
     if(art.dataset.vaz2110Layers==='ready'||art.dataset.vaz2110Layers==='loading')continue;
     const body=art.querySelector('.vaz2110-body-layer');
+    const glass=art.querySelector('.vaz2110-glass-layer');
     const rear=art.querySelector('.vaz2110-wheel-layer.rear');
     const front=art.querySelector('.vaz2110-wheel-layer.front');
-    if(!body||!rear||!front)continue;
+    if(!body||!glass||!rear||!front)continue;
     art.dataset.vaz2110Layers='loading';
     const split=()=>{
       if(art.dataset.vaz2110Layers==='ready')return;
@@ -1613,6 +1623,7 @@ function prepareVaz2110Layers(root){
       const cached=vaz2110LayerCache.get(cacheKey);
       if(cached){
         body.src=cached.body;
+        glass.src=cached.glass;
         rear.src=cached.rear;
         front.src=cached.front;
         art.dataset.vaz2110Layers='ready';
@@ -1624,12 +1635,37 @@ function prepareVaz2110Layers(root){
           {x:w*.249,y:h*.60+d/2},
           {x:w*.830,y:h*.60+d/2}
         ];
+        // The glazing uses its own alpha layer. The metal window frames remain
+        // with the paintable shell, while the transparent panes sit behind them.
+        const glassPolygons=[
+          [[.195,.095],[.286,.102],[.256,.385],[.181,.378]],
+          [[.315,.095],[.478,.095],[.478,.385],[.315,.385]],
+          [[.498,.095],[.662,.095],[.662,.385],[.498,.385]],
+          [[.664,.118],[.686,.132],[.712,.382],[.682,.382]]
+        ].map(poly=>poly.map(([x,y])=>[x*w,y*h]));
+        const paintPolygon=(ctx,poly)=>{
+          ctx.beginPath();
+          ctx.moveTo(poly[0][0],poly[0][1]);
+          for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);
+          ctx.closePath();
+          ctx.fill();
+        };
+        const glassCanvas=document.createElement('canvas');
+        glassCanvas.width=w;glassCanvas.height=h;
+        const glassCtx=glassCanvas.getContext('2d');
+        if(!glassCtx)throw new Error('Canvas стекла недоступен');
+        glassCtx.drawImage(body,0,0,w,h);
+        glassCtx.globalCompositeOperation='destination-in';
+        glassPolygons.forEach(poly=>paintPolygon(glassCtx,poly));
+        glassCtx.globalCompositeOperation='source-over';
+
         const bodyCanvas=document.createElement('canvas');
         bodyCanvas.width=w;bodyCanvas.height=h;
         const bodyCtx=bodyCanvas.getContext('2d');
-        if(!bodyCtx)throw new Error('Canvas недоступен');
+        if(!bodyCtx)throw new Error('Canvas кузова недоступен');
         bodyCtx.drawImage(body,0,0,w,h);
         bodyCtx.globalCompositeOperation='destination-out';
+        glassPolygons.forEach(poly=>paintPolygon(bodyCtx,poly));
         centres.forEach(point=>{
           bodyCtx.beginPath();
           bodyCtx.arc(point.x,point.y,d*.51,0,Math.PI*2);
@@ -1652,11 +1688,13 @@ function prepareVaz2110Layers(root){
         });
         const layers={
           body:bodyCanvas.toDataURL('image/png'),
+          glass:glassCanvas.toDataURL('image/png'),
           rear:wheelData[0],
           front:wheelData[1]
         };
         vaz2110LayerCache.set(cacheKey,layers);
         body.src=layers.body;
+        glass.src=layers.glass;
         rear.src=layers.rear;
         front.src=layers.front;
         art.dataset.vaz2110Layers='ready';
