@@ -16,13 +16,13 @@ const CARS = Object.freeze({
   "2109": { price: 0, power: 70 },
   "2110": { price: 11000, power: 78 },
   priora: { price: 18000, power: 98 },
-  kalina: { price: 00, power: 87 },
+  kalina: { price: 0, power: 87 },
   granta: { price: 35000, power: 90 },
   niva: { price: 50000, power: 83 },
-  vesta: { price: 00, power: 106 }
+  vesta: { price: 0, power: 106 }
 });
 const PARTS = Object.freeze({
-  ecu: { price: 00, power: 8 },
+  ecu: { price: 0, power: 8 },
   intake: { price: 18000, power: 5 },
   exhaust: { price: 32000, power: 7 },
   turbo: { price: 95000, power: 22 },
