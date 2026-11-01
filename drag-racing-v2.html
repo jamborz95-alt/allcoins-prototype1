@@ -1412,6 +1412,13 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 #proRaceCockpit.race-front-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.front{
   animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
 }
+/* VAZ-2110: both isolated wheel PNGs visibly rotate while the car is rolling. */
+.pro-race-cockpit.race-moving #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
+}
+.pro-race-cockpit.race-moving #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-layer.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
+}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-png-art{position:absolute;inset:0;width:100%;height:100%}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-wheel-layer{opacity:1;visibility:visible}
 .race2d-car.png-opponent-car.vaz2110-opponent.opponent-moving .vaz2110-wheel-layer{
