@@ -1404,6 +1404,12 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 <div class="title">🎨 Внешний вид автомобиля</div>
 <p class="muted">Выбери цвет кузова и виниловую плёнку. Перед покупкой можно посмотреть, как будет выглядеть машина.</p>
 <div id="stylePreview" class="style-preview" aria-label="Предпросмотр покраски и винила"></div>
+<div id="sprayToolPanel" class="spray-tool-panel hidden">
+ <div class="spray-tool-heading">🖌 Баллончик — ручная покраска ВАЗ-2110</div>
+ <div class="spray-tool-row"><button type="button" id="sprayModeBtn" class="spray-mode-btn">🖌 Включить баллончик</button><label class="spray-color-control">Цвет<input id="sprayColor" type="color" value="#1769a8"></label><label class="spray-size-control">Размер кисти<input id="spraySize" type="range" min="2" max="30" value="10"></label></div>
+ <div class="spray-tool-row spray-actions"><button type="button" id="sprayUndoBtn" class="back">↶ Отменить</button><button type="button" id="sprayClearBtn" class="back">Очистить ручную покраску</button></div>
+ <div id="sprayHint" class="muted">Включи баллончик и проводи пальцем по кузову. Стёкла, колёса, бамперы и другие защищённые детали не закрашиваются.</div>
+</div>
 <div class="style-section-title">Покраска кузова</div><div id="paintPicker" class="paint-picker"></div>
 <div class="style-section-title">Виниловые плёнки</div><div id="vinylPicker" class="vinyl-picker"></div>
 <div class="style-price-row"><span>Стоимость выбранных изменений</span><b id="styleCost">0 AC</b></div>
@@ -1531,7 +1537,8 @@ function getCarCustomization(id){
   const saved=state.customization?.[String(id)]||{};
   return {
     paintId:CAR_PAINTS.some(item=>item.id===saved.paintId)?saved.paintId:'factory',
-    vinylId:CAR_VINYLS.some(item=>item.id===saved.vinylId)?saved.vinylId:'none'
+    vinylId:CAR_VINYLS.some(item=>item.id===saved.vinylId)?saved.vinylId:'none',
+    brushStrokes:vaz2110NormalizeBrushStrokes(saved.brushStrokes)
   };
 }
 function getCustomizationCost(current,next){
@@ -1663,11 +1670,11 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-mask-v9';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-spray-v10';
 const vaz2110PaintCache=new Map();
-function vaz2110PngMarkup(imgClass,vinylId){
- const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
- return '<div class="lada-png-art vaz2110-png-art"><img class="'+imgClass+' vaz2110-car-image" src="'+blank+'" alt="ВАЗ-2110, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+function vaz2110PngMarkup(imgClass,vinylId,paintEditor){
+ const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAACADs=';
+ return '<div class="lada-png-art vaz2110-png-art"><img class="'+imgClass+' vaz2110-car-image" src="'+blank+'" alt="ВАЗ-2110, вид сбоку" decoding="async" draggable="false">'+(paintEditor?'<canvas id="vaz2110BrushCanvas" class="vaz2110-brush-canvas" width="360" height="120" aria-label="Полотно для ручной покраски"></canvas>':'')+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function vaz2110BuildPaintMask(ctx,width,height){
  ctx.clearRect(0,0,width,height);
@@ -1730,71 +1737,108 @@ function vaz2110BuildPaintMask(ctx,width,height){
  ctx.beginPath();ctx.ellipse(46,308,12,11,0,0,Math.PI*2);ctx.fill();
  ctx.restore();
 }
-function vaz2110PaintedPng(color){
+const VAZ2110_PAINT_MASK_DATA='data:image/png;base64,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';
+let vaz2110PaintMaskPromise=null;
+function vaz2110GetPaintMask(){
+ if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
+ vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
+  const image=new Image();
+  image.onload=()=>{
+   try{
+    const canvas=document.createElement('canvas');canvas.width=360;canvas.height=120;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,360,120);
+    const pixels=ctx.getImageData(0,0,360,120).data,alpha=new Uint8Array(360*120);
+    for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4];
+    const clip=document.createElement('canvas');clip.width=360;clip.height=120;
+    const cc=clip.getContext('2d'),frame=cc.createImageData(360,120);
+    for(let i=0;i<alpha.length;i++){const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i]}
+    cc.putImageData(frame,0,0);resolve({alpha,clip});
+   }catch(error){reject(error)}
+  };
+  image.onerror=()=>reject(new Error('Не удалось загрузить маску слоя покраски.'));
+  image.src=VAZ2110_PAINT_MASK_DATA;
+ });
+ return vaz2110PaintMaskPromise;
+}
+function vaz2110NormalizeBrushStrokes(value){
+ if(!Array.isArray(value))return [];
+ return value.slice(-50).map(stroke=>{
+  const c=String(stroke?.c||'').toLowerCase(),w=Math.max(2,Math.min(36,Math.round(Number(stroke?.w)||8)));
+  const raw=Array.isArray(stroke?.p)?stroke.p.slice(0,160):[];
+  if(!/^#[0-9a-f]{6}$/.test(c)||raw.length<2||raw.length%2)return null;
+  const p=[];
+  for(let i=0;i<raw.length;i+=2){
+   const x=Number(raw[i]),y=Number(raw[i+1]);
+   if(Number.isFinite(x)&&Number.isFinite(y))p.push(Math.max(0,Math.min(360,Math.round(x))),Math.max(0,Math.min(120,Math.round(y))));
+  }
+  return p.length>=2?{c,w,p}:null;
+ }).filter(Boolean);
+}
+function vaz2110PaintedPng(color,brushStrokes){
  const target=String(color||'#dfe3e6').toLowerCase();
  if(!/^#[0-9a-f]{6}$/.test(target))return Promise.resolve('');
- if(vaz2110PaintCache.has(target))return vaz2110PaintCache.get(target);
+ const strokes=vaz2110NormalizeBrushStrokes(brushStrokes),cacheKey=target+'|'+JSON.stringify(strokes);
+ if(vaz2110PaintCache.has(cacheKey))return vaz2110PaintCache.get(cacheKey);
  const result=new Promise(resolve=>{
-  const img=new Image();
-  img.decoding='async';
+  const img=new Image();img.decoding='async';
   img.onload=()=>{
-   try{
-    const width=360,height=120;
-    if((img.naturalWidth||0)<width*2||(img.naturalHeight||0)<height){resolve('');return;}
-    // Draw the original VAZ-2110 PNG from the left atlas half, then build
-    // a precise high-resolution geometry mask for every paintable body panel.
-    const canvas=document.createElement('canvas');
-    canvas.width=width;canvas.height=height;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    if(!ctx){resolve('');return;}
-    ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(img,0,0,width,height,0,0,width,height);
-    const body=ctx.getImageData(0,0,width,height);
-    const maskCanvas=document.createElement('canvas');
-    maskCanvas.width=width;maskCanvas.height=height;
-    const maskCtx=maskCanvas.getContext('2d',{willReadFrequently:true});
-    if(!maskCtx){resolve('');return;}
-    vaz2110BuildPaintMask(maskCtx,width,height);
-    const mask=maskCtx.getImageData(0,0,width,height).data;
-    const data=body.data;
-    const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
-    for(let p=0;p<data.length;p+=4){
-     if(data[p+3]<10)continue;
-     const coverage=mask[p+3]/255;
-     if(coverage<.02)continue;
-     const luminance=(data[p]*.2126+data[p+1]*.7152+data[p+2]*.0722)/255;
-     // Recolour the complete sheet metal and retain metallic highlights and shadows.
-     const shade=Math.max(.48,Math.min(1.18,.60+.50*(luminance/.82)));
-     data[p]=Math.round(data[p]*(1-coverage)+tr*shade*coverage);
-     data[p+1]=Math.round(data[p+1]*(1-coverage)+tg*shade*coverage);
-     data[p+2]=Math.round(data[p+2]*(1-coverage)+tb*shade*coverage);
-    }
-    ctx.putImageData(body,0,0);
-    resolve(canvas.toDataURL('image/png'));
-   }catch(error){
-    console.warn('VAZ-2110 paint rendering failed:',error);
-    resolve('');
-   }
+   vaz2110GetPaintMask().then(mask=>{
+    try{
+     const width=360,height=120;
+     if((img.naturalWidth||0)<width*2||(img.naturalHeight||0)<height){resolve('');return}
+     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+     const ctx=canvas.getContext('2d',{willReadFrequently:true});
+     if(!ctx){resolve('');return}
+     ctx.imageSmoothingEnabled=true;ctx.drawImage(img,0,0,width,height,0,0,width,height);
+     const body=ctx.getImageData(0,0,width,height),data=body.data;
+     const tr=parseInt(target.slice(1,3),16),tg=parseInt(target.slice(3,5),16),tb=parseInt(target.slice(5,7),16);
+     // The authored grayscale mask is the only authority for paintable pixels.
+     for(let i=0,p=0;i<mask.alpha.length;i++,p+=4){
+      const coverage=mask.alpha[i]/255;
+      if(coverage<.02||data[p+3]<10)continue;
+      const lum=(data[p]*.2126+data[p+1]*.7152+data[p+2]*.0722)/255;
+      const shade=Math.max(.48,Math.min(1.18,.60+.50*(lum/.82)));
+      data[p]=Math.round(data[p]*(1-coverage)+tr*shade*coverage);
+      data[p+1]=Math.round(data[p+1]*(1-coverage)+tg*shade*coverage);
+      data[p+2]=Math.round(data[p+2]*(1-coverage)+tb*shade*coverage);
+     }
+     if(strokes.length){
+      const spray=document.createElement('canvas');spray.width=width;spray.height=height;
+      const sc=spray.getContext('2d',{willReadFrequently:true});sc.lineCap='round';sc.lineJoin='round';
+      for(const stroke of strokes){
+       const pts=stroke.p;sc.strokeStyle=stroke.c;sc.fillStyle=stroke.c;sc.lineWidth=stroke.w;
+       if(pts.length===2){sc.beginPath();sc.arc(pts[0],pts[1],stroke.w/2,0,Math.PI*2);sc.fill()}
+       else{sc.beginPath();sc.moveTo(pts[0],pts[1]);for(let j=2;j<pts.length;j+=2)sc.lineTo(pts[j],pts[j+1]);sc.stroke()}
+      }
+      const sprayed=sc.getImageData(0,0,width,height).data;
+      for(let i=0,p=0;i<mask.alpha.length;i++,p+=4){
+       const alpha=(sprayed[p+3]/255)*(mask.alpha[i]/255);
+       if(alpha<.01||data[p+3]<10)continue;
+       const lum=(data[p]*.2126+data[p+1]*.7152+data[p+2]*.0722)/255;
+       const shade=Math.max(.48,Math.min(1.18,.60+.50*(lum/.82)));
+       data[p]=Math.round(data[p]*(1-alpha)+sprayed[p]*shade*alpha);
+       data[p+1]=Math.round(data[p+1]*(1-alpha)+sprayed[p+1]*shade*alpha);
+       data[p+2]=Math.round(data[p+2]*(1-alpha)+sprayed[p+2]*shade*alpha);
+      }
+     }
+     ctx.putImageData(body,0,0);resolve(canvas.toDataURL('image/png'));
+    }catch(error){console.warn('VAZ-2110 spray paint failed:',error);resolve('')}
+   }).catch(error=>{console.warn(error);resolve('')});
   };
   img.onerror=()=>resolve('');
   img.src=VAZ2110_ATLAS_URL;
  });
- vaz2110PaintCache.set(target,result);
+ vaz2110PaintCache.set(cacheKey,result);
+ if(vaz2110PaintCache.size>16)vaz2110PaintCache.delete(vaz2110PaintCache.keys().next().value);
  return result;
 }
-function applyVaz2110PaintToImages(color,selector){
- const key=String(color||'#dfe3e6');
- const query=selector||'img.vaz2110-car-image';
- const images=[...document.querySelectorAll(query)];
- images.forEach(img=>{img.dataset.paintColor=key;});
- return vaz2110PaintedPng(key).then(src=>{
+function applyVaz2110PaintToImages(color,selector,brushStrokes){
+ const key=String(color||'#dfe3e6'),strokes=vaz2110NormalizeBrushStrokes(brushStrokes),tag=key+'|'+JSON.stringify(strokes);
+ const images=[...document.querySelectorAll(selector||'img.vaz2110-car-image')];
+ images.forEach(img=>{img.dataset.paintColor=tag});
+ return vaz2110PaintedPng(key,strokes).then(src=>{
   if(!src)return false;
-  images.forEach(img=>{
-   if(img.isConnected&&img.dataset.paintColor===key&&img.src!==src){
-    img.src=src;
-    img.dataset.paintApplied=key;
-   }
-  });
+  images.forEach(img=>{if(img.isConnected&&img.dataset.paintColor===tag&&img.src!==src){img.src=src;img.dataset.paintApplied=tag}});
   return true;
  });
 }
@@ -1802,6 +1846,55 @@ if(typeof window!=='undefined')window.__allcoinsVaz2110PaintPreview=vaz2110Paint
 
 // Expose only the paint preview helper for deterministic browser regression tests.
 if(typeof window!=='undefined')window.__allcoinsPaintPreview=ladaPaintedPng;
+
+let vaz2110SprayEnabled=false,vaz2110SprayColor='#1769a8',vaz2110SpraySize=10;
+function vaz2110ClipBrushCanvas(canvas){
+ return vaz2110GetPaintMask().then(mask=>{
+  const ctx=canvas.getContext('2d');ctx.save();ctx.globalCompositeOperation='destination-in';ctx.drawImage(mask.clip,0,0);ctx.restore();
+ });
+}
+function vaz2110UpdateSprayControls(){
+ const button=$('sprayModeBtn'),canvas=$('vaz2110BrushCanvas');
+ if(button){button.textContent=vaz2110SprayEnabled?'🖌 Баллончик включён':'🖌 Включить баллончик';button.classList.toggle('active',vaz2110SprayEnabled)}
+ if(canvas){canvas.classList.toggle('painting',vaz2110SprayEnabled);canvas.style.pointerEvents=vaz2110SprayEnabled?'auto':'none'}
+}
+function vaz2110BindBrushCanvas(){
+ const canvas=$('vaz2110BrushCanvas');if(!canvas)return;
+ canvas.width=360;canvas.height=120;
+ const ctx=canvas.getContext('2d');if(!ctx)return;
+ let drawing=false,stroke=null,last=null;
+ const point=event=>{
+  const rect=canvas.getBoundingClientRect();
+  return [Math.max(0,Math.min(360,(event.clientX-rect.left)/rect.width*360)),Math.max(0,Math.min(120,(event.clientY-rect.top)/rect.height*120))];
+ };
+ const dot=pt=>{ctx.fillStyle=stroke.c;ctx.beginPath();ctx.arc(pt[0],pt[1],stroke.w/2,0,Math.PI*2);ctx.fill()};
+ const segment=(a,b)=>{ctx.strokeStyle=stroke.c;ctx.lineWidth=stroke.w;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()};
+ const finish=()=>{
+  if(!drawing)return;drawing=false;
+  if(stroke&&styleDraft){
+   styleDraft.brushStrokes=vaz2110NormalizeBrushStrokes([...(styleDraft.brushStrokes||[]),stroke]);
+   applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-preview-car-png',styleDraft.brushStrokes).then(()=>{
+    ctx.clearRect(0,0,360,120);renderStyleControls();
+    const hint=$('sprayHint');if(hint)hint.textContent='Мазок добавлен. Нажми «Применить внешний вид», чтобы сохранить ручную покраску.';
+   });
+  }
+  stroke=null;last=null;
+ };
+ canvas.addEventListener('pointerdown',event=>{
+  if(!vaz2110SprayEnabled||String(state.selected)!=='2110')return;
+  event.preventDefault();canvas.setPointerCapture?.(event.pointerId);
+  const pt=point(event);stroke={c:vaz2110SprayColor,w:vaz2110SpraySize,p:[Math.round(pt[0]),Math.round(pt[1])]};
+  drawing=true;last=pt;dot(pt);vaz2110ClipBrushCanvas(canvas).catch(()=>{});
+ });
+ canvas.addEventListener('pointermove',event=>{
+  if(!drawing||!stroke)return;event.preventDefault();
+  const pt=point(event),dx=pt[0]-last[0],dy=pt[1]-last[1];if(dx*dx+dy*dy<1.2)return;
+  stroke.p.push(Math.round(pt[0]),Math.round(pt[1]));if(stroke.p.length>160)stroke.p=stroke.p.slice(-160);
+  segment(last,pt);last=pt;vaz2110ClipBrushCanvas(canvas).catch(()=>{});
+ });
+ canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);canvas.addEventListener('lostpointercapture',finish);
+ vaz2110UpdateSprayControls();
+}
 function carSvg(modelId,colorValue,vinylValue){
   const id=String(modelId||'2107');
   const selectedVinyl=vinylValue||getCarCustomization(id).vinylId;
@@ -1941,7 +2034,7 @@ function syncRace2DCarArt(){
     // The VAZ-2110 keeps its PNG exhaust tip visible while the continuous exhaust-smoke animation runs.
     player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:useVaz2110Png?vaz2110BodyLayer+ladaWheels+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+(selectedId==='2107'?ladaExhaust+ladaSmoke:'')+engineEffects+wheelSmokeEffects;
     if(useLadaPng)applyLadaPaintToImages(paint);
-    else if(useVaz2110Png)applyVaz2110PaintToImages(paint);
+    else if(useVaz2110Png)applyVaz2110PaintToImages(paint,'img.vaz2110-car-image',selectedStyle.brushStrokes);
   }
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -2856,25 +2949,33 @@ function initDragRacing3D(){
 let styleDraft=null;
 function resetStyleDraft(){
   const c=getCarCustomization(state.selected);
-  styleDraft={carId:String(state.selected),paintId:c.paintId,vinylId:c.vinylId};
+  styleDraft={carId:String(state.selected),paintId:c.paintId,vinylId:c.vinylId,brushStrokes:vaz2110NormalizeBrushStrokes(c.brushStrokes)};
 }
 function renderStyleControls(){
-  if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();
-  const current=getCarCustomization(state.selected);
-  const draft={paintId:styleDraft.paintId,vinylId:styleDraft.vinylId};
-  const paint=CAR_PAINTS.find(item=>item.id===draft.paintId)||CAR_PAINTS[0];
-  const vinyl=CAR_VINYLS.find(item=>item.id===draft.vinylId)||CAR_VINYLS[0];
-  const cost=getCustomizationCost(current,draft);
-  const hasChanges=draft.paintId!==current.paintId||draft.vinylId!==current.vinylId;
-  const preview=$('stylePreview');
-  if(preview){const previewId=String(state.selected);preview.innerHTML=previewId==='2107'?ladaPngMarkup('preview-car-png',draft.vinylId):previewId==='2110'?vaz2110PngMarkup('vaz2110-preview-car-png',draft.vinylId):carSvg(state.selected,paint.color,draft.vinylId);if(previewId==='2107')applyLadaPaintToImages(paint.color);else if(previewId==='2110')applyVaz2110PaintToImages(paint.color,'.vaz2110-preview-car-png');}
-  const picker=$('paintPicker');
-  if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+ (item.id==='factory'?carFactoryPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
-  const vinylPicker=$('vinylPicker');
-  if(vinylPicker)vinylPicker.innerHTML=CAR_VINYLS.map(item=>'<button type="button" class="vinyl-choice '+(item.id===draft.vinylId?'selected':'')+'" data-vinyl="'+item.id+'"><b>'+item.name+'</b><small>'+item.desc+'</small><em>'+(item.price?money(item.price)+' AC':'Бесплатно')+'</em></button>').join('');
-  const price=$('styleCost');if(price)price.textContent=cost?money(cost)+' AC':'Бесплатно';
-  const button=$('applyStyle');
-  if(button){button.disabled=!hasChanges;button.textContent=!hasChanges?'Уже установлено':cost?'Применить · '+money(cost)+' AC':'Применить · Бесплатно';}
+ if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();
+ const current=getCarCustomization(state.selected);
+ const draft={paintId:styleDraft.paintId,vinylId:styleDraft.vinylId,brushStrokes:vaz2110NormalizeBrushStrokes(styleDraft.brushStrokes)};
+ const paint=CAR_PAINTS.find(item=>item.id===draft.paintId)||CAR_PAINTS[0];
+ const vinyl=CAR_VINYLS.find(item=>item.id===draft.vinylId)||CAR_VINYLS[0];
+ const strokesChanged=JSON.stringify(draft.brushStrokes)!==JSON.stringify(current.brushStrokes);
+ const cost=getCustomizationCost(current,draft);
+ const hasChanges=draft.paintId!==current.paintId||draft.vinylId!==current.vinylId||strokesChanged;
+ const preview=$('stylePreview'),previewId=String(state.selected);
+ if(preview){
+  preview.innerHTML=previewId==='2107'?ladaPngMarkup('preview-car-png',draft.vinylId):previewId==='2110'?vaz2110PngMarkup('vaz2110-preview-car-png',draft.vinylId,true):carSvg(state.selected,paint.color,draft.vinylId);
+  if(previewId==='2107')applyLadaPaintToImages(paint.color);
+  else if(previewId==='2110'){
+   applyVaz2110PaintToImages(paint.color,'.vaz2110-preview-car-png',draft.brushStrokes);
+   vaz2110BindBrushCanvas();
+  }
+ }
+ const sprayPanel=$('sprayToolPanel');if(sprayPanel)sprayPanel.classList.toggle('hidden',previewId!=='2110');
+ const picker=$('paintPicker');
+ if(picker)picker.innerHTML=CAR_PAINTS.map(item=>'<button type="button" class="paint-swatch '+(item.id===draft.paintId?'selected':'')+'" data-paint="'+item.id+'" aria-label="'+item.name+'" title="'+item.name+'" style="--swatch:'+(item.id==='factory'?carFactoryPaintCss(state.selected):item.color)+'"><span></span><small>'+item.name+'</small></button>').join('');
+ const vinylPicker=$('vinylPicker');
+ if(vinylPicker)vinylPicker.innerHTML=CAR_VINYLS.map(item=>'<button type="button" class="vinyl-choice '+(item.id===draft.vinylId?'selected':'')+'" data-vinyl="'+item.id+'"><b>'+item.name+'</b><small>'+item.desc+'</small><em>'+(item.price?money(item.price)+' AC':'Бесплатно')+'</em></button>').join('');
+ const price=$('styleCost');if(price)price.textContent=cost?money(cost)+' AC':'Бесплатно';
+ const button=$('applyStyle');if(button){button.disabled=!hasChanges;button.textContent=!hasChanges?'Уже установлено':cost?'Применить · '+money(cost)+' AC':'Применить · Бесплатно';}
 }
 function refreshCustomizedCar(){
   syncRace2DCarArt();
@@ -2883,15 +2984,15 @@ function refreshCustomizedCar(){
 async function applyVehicleStyle(){
   const carId=String(state.selected);
   const current=getCarCustomization(carId);
-  const next={paintId:styleDraft?.paintId||current.paintId,vinylId:styleDraft?.vinylId||current.vinylId};
+  const next={paintId:styleDraft?.paintId||current.paintId,vinylId:styleDraft?.vinylId||current.vinylId,brushStrokes:vaz2110NormalizeBrushStrokes(styleDraft?.brushStrokes||current.brushStrokes)};
   const cost=getCustomizationCost(current,next);
-  const hasChanges=next.paintId!==current.paintId||next.vinylId!==current.vinylId;
+  const hasChanges=next.paintId!==current.paintId||next.vinylId!==current.vinylId||JSON.stringify(next.brushStrokes)!==JSON.stringify(current.brushStrokes);
   if(!hasChanges){$('styleStatus').textContent='Этот внешний вид уже установлен.';return;}
   try{
     $('applyStyle').disabled=true;
     $('styleStatus').textContent='Сохраняю внешний вид автомобиля…';
     if(tg?.initData){
-      const data=await api('/garage/customize',{carId,paintId:next.paintId,vinylId:next.vinylId});
+      const data=await api('/garage/customize',{carId,paintId:next.paintId,vinylId:next.vinylId,brushStrokes:next.brushStrokes});
       applyRemoteProfile(data);
     }else{
       if(state.balance<cost)throw new Error('Недостаточно AC. Требуется '+money(cost)+' AC.');
@@ -2910,15 +3011,16 @@ async function applyVehicleStyle(){
 }
 function render(){ $('balance').textContent=money(state.balance);$('carShop').innerHTML=cars.map(c=>{let owned=state.owned.includes(c.id);let vinyl=getCarCustomization(c.id).vinylId;let art=String(c.id)==='2107'?ladaPngMarkup('shop-car-png',vinyl):String(c.id)==='2110'?vaz2110PngMarkup('vaz2110-shop-car-png',vinyl):carSvg(c.id,carPaintCss(c.id),vinyl);return '<div class="car-card '+(owned?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><strong>'+c.name+'</strong><div class="muted">'+c.sub+'</div><div class="statline"><span>Мощность</span><b>'+c.power+' л.с.</b></div><div class="statline"><span>Масса</span><b>'+money(c.weight)+' кг</b></div><div class="statline"><span>Объём бака</span><b>'+c.tank+' л</b></div><div class="statline"><span>Расход</span><b>'+c.consumption.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+' л/100 км</b></div><div class="gold" style="font-weight:900">'+money(c.price)+' AC</div><button data-buycar="'+c.id+'" '+(owned?'disabled':'')+'>'+(owned?'В гараже':'Купить')+'</button></div>'}).join('');
 applyLadaPaintToImages(carPaintCss('2107'),'.shop-car-png');
-applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-shop-car-png');
+applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-shop-car-png',getCarCustomization('2110').brushStrokes);
 $('partsShop').innerHTML=parts.map(p=>{let has=!!upg()[p.id];return '<div class="part"><div class="part-icon">'+({ecu:'🧠',intake:'🌬️',exhaust:'🔊',turbo:'🌀',clutch:'⚙️',tires:'🏁',gearbox:'🔩',weight:'🪶'}[p.id])+'</div><div class="part-info"><b>'+p.name+'</b><div class="muted">'+p.desc+'</div><div class="part-details"><span>Что даст:</span> '+p.details+'</div><div class="part-benefit">'+p.effect+'</div><strong class="gold" style="display:block;margin-top:6px">'+money(p.price)+' AC</strong></div><button data-part="'+p.id+'" '+(has?'disabled':'')+'>'+(has?'Установлено':'Купить')+'</button></div>'}).join('');
 $('garageContent').innerHTML='<div class="cards">'+state.owned.map(id=>{let c=cars.find(x=>x.id===id),cid=String(c.id),st=getCarCustomization(cid),art=cid==='2107'?ladaPngMarkup('garage-car-png',st.vinylId):cid==='2110'?vaz2110PngMarkup('vaz2110-garage-car-png',st.vinylId):carSvg(c.id,carPaintCss(c.id),st.vinylId);return '<div class="car-card '+(state.selected===id?'owned':'')+'"><div class="car-thumb car-art">'+art+'</div><b>'+c.name+'</b><div class="muted">'+effectivePower(c)+' л.с. после тюнинга</div><button data-selectcar="'+id+'">'+(state.selected===id?'Выбрана':'Выбрать')+'</button></div>'}).join('')+'</div><div class="note" style="margin-top:10px">Выбранный автомобиль участвует в расчёте разгона. Купленные запчасти и тюнинг сохраняются на этом устройстве.</div>';
 applyLadaPaintToImages(carPaintCss('2107'),'.garage-car-png');
-applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-garage-car-png');
+applyVaz2110PaintToImages(carPaintCss('2110'),'.vaz2110-garage-car-png',getCarCustomization('2110').brushStrokes);
 $('tuningCar').innerHTML='<b>'+car().name+'</b> <span class="pill">'+effectivePower()+' л.с.</span><p class="muted">Изменяй настройки аккуратно: максимум наддува без сцепления ухудшает старт.</p>';
 $('ecu').value=state.tune.ecu;$('boost').value=state.tune.boost;$('grip').value=state.tune.grip;$('shift').value=state.tune.shift;updateTuneReadout();renderStyleControls();syncRace2DCarArt();updateFuelHUD();if(race3d)race3d.syncCar()}
 function updateTuneReadout(){$('powerValue').textContent=effectivePower()+' л.с.';$('gripValue').textContent=state.tune.grip+'%'}
-document.addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;try{if(b.dataset.paint){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.paintId=b.dataset.paint;renderStyleControls();refreshCustomizedCar();return}if(b.dataset.vinyl){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.vinylId=b.dataset.vinyl;renderStyleControls();refreshCustomizedCar();return}if(b.id==='applyStyle'){await applyVehicleStyle();return}if(b.dataset.joinroom){await joinRoom(b.dataset.joinroom);return}if(b.dataset.buycar){let c=cars.find(x=>x.id===b.dataset.buycar);if(!c||state.owned.includes(c.id))return;if(tg?.initData){const data=await api('/garage/buy',{carId:c.id});applyRemoteProfile(data);$('roomStatus').textContent='Автомобиль куплен и сохранён в серверном гараже.';return}if(state.balance<c.price){alert('Не хватает AC. Нужный баланс: '+money(c.price)+' AC.');return}state.balance-=c.price;state.owned.push(c.id);state.selected=c.id;save()}if(b.dataset.part){let p=parts.find(x=>x.id===b.dataset.part);if(!p||upg()[p.id])return;if(tg?.initData){const data=await api('/garage/upgrade',{carId:state.selected,partId:p.id});applyRemoteProfile(data);$('tuneStatus').textContent='Запчасть куплена и сохранена на сервере.';return}if(state.balance<p.price){alert('Не хватает AC для покупки запчасти.');return}state.balance-=p.price;upg()[p.id]=true;save()}if(b.dataset.selectcar){if(tg?.initData){const data=await api('/garage/select',{carId:b.dataset.selectcar});applyRemoteProfile(data);return}state.selected=b.dataset.selectcar;save()}}catch(err){$('roomStatus').textContent=err.message||'Не удалось выполнить действие.'}});
+document.addEventListener('click',async e=>{let b=e.target.closest('button');if(!b)return;try{if(b.dataset.paint){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.paintId=b.dataset.paint;renderStyleControls();refreshCustomizedCar();return}if(b.dataset.vinyl){if(!styleDraft||styleDraft.carId!==String(state.selected))resetStyleDraft();styleDraft.vinylId=b.dataset.vinyl;renderStyleControls();refreshCustomizedCar();return}if(b.id==='sprayModeBtn'){vaz2110SprayEnabled=!vaz2110SprayEnabled;vaz2110UpdateSprayControls();return}if(b.id==='sprayUndoBtn'){if(styleDraft){styleDraft.brushStrokes=(styleDraft.brushStrokes||[]).slice(0,-1);renderStyleControls();const h=$('sprayHint');if(h)h.textContent='Последний мазок отменён. Нажми «Применить внешний вид», чтобы сохранить изменения.'}return}if(b.id==='sprayClearBtn'){if(styleDraft){styleDraft.brushStrokes=[];renderStyleControls();const h=$('sprayHint');if(h)h.textContent='Ручная покраска очищена. Нажми «Применить внешний вид», чтобы сохранить изменения.'}return}if(b.id==='applyStyle'){await applyVehicleStyle();return}if(b.dataset.joinroom){await joinRoom(b.dataset.joinroom);return}if(b.dataset.buycar){let c=cars.find(x=>x.id===b.dataset.buycar);if(!c||state.owned.includes(c.id))return;if(tg?.initData){const data=await api('/garage/buy',{carId:c.id});applyRemoteProfile(data);$('roomStatus').textContent='Автомобиль куплен и сохранён в серверном гараже.';return}if(state.balance<c.price){alert('Не хватает AC. Нужный баланс: '+money(c.price)+' AC.');return}state.balance-=c.price;state.owned.push(c.id);state.selected=c.id;save()}if(b.dataset.part){let p=parts.find(x=>x.id===b.dataset.part);if(!p||upg()[p.id])return;if(tg?.initData){const data=await api('/garage/upgrade',{carId:state.selected,partId:p.id});applyRemoteProfile(data);$('tuneStatus').textContent='Запчасть куплена и сохранена на сервере.';return}if(state.balance<p.price){alert('Не хватает AC для покупки запчасти.');return}state.balance-=p.price;upg()[p.id]=true;save()}if(b.dataset.selectcar){if(tg?.initData){const data=await api('/garage/select',{carId:b.dataset.selectcar});applyRemoteProfile(data);return}state.selected=b.dataset.selectcar;save()}}catch(err){$('roomStatus').textContent=err.message||'Не удалось выполнить действие.'}});
+document.addEventListener('input',event=>{if(event.target?.id==='sprayColor')vaz2110SprayColor=String(event.target.value||'#1769a8');if(event.target?.id==='spraySize')vaz2110SpraySize=Math.max(2,Math.min(30,Number(event.target.value)||10))});
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
@@ -4158,4 +4260,21 @@ if(new URLSearchParams(location.search).has('camera-follow-smoke')){
 .race2d-car.png-opponent-car.vaz2110-opponent .opponent-car-png{width:100%!important;height:100%!important;max-width:none!important;left:0!important;top:0!important;object-fit:contain!important;clip-path:none!important}
 .race2d-car.png-opponent-car[data-car-id="2110"] .opponent-wheel-spin.rear{left:14%!important;top:58.5%!important;width:15%!important}
 .race2d-car.png-opponent-car[data-car-id="2110"] .opponent-wheel-spin.front{left:67.7%!important;top:59%!important;width:14.5%!important}
+</style><style id="vaz2110-spray-paint-ui">
+.style-preview .vaz2110-png-art{position:relative!important;display:block!important;width:min(100%,560px)!important;height:auto!important;aspect-ratio:3/1!important;max-width:560px!important;overflow:hidden!important}
+.style-preview .vaz2110-png-art .vaz2110-car-image{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:fill!important;pointer-events:none!important}
+.vaz2110-brush-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;touch-action:none;cursor:crosshair}
+.vaz2110-brush-canvas.painting{pointer-events:auto}
+.spray-tool-panel{margin:4px 0 14px;padding:11px;border:1px solid #78613b;border-radius:12px;background:linear-gradient(145deg,#172438,#0b121c)}
+.spray-tool-heading{margin-bottom:9px;color:#f4d58c;font-weight:900;font-size:13px}
+.spray-tool-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spray-mode-btn{flex:1;min-width:150px;background:linear-gradient(135deg,#e9c46e,#c18d35);color:#1b160c}
+.spray-mode-btn.active{background:linear-gradient(135deg,#75e7af,#22966b);color:#061b12}
+.spray-color-control,.spray-size-control{display:flex;align-items:center;gap:6px;color:#ccd7e4;font-size:11px}
+.spray-color-control input{width:42px;height:35px;padding:2px;margin:0;border:1px solid #52647a;background:#0a111c}
+.spray-size-control{flex:1;min-width:130px}
+.spray-size-control input{width:100%;margin:0;padding:0}
+.spray-actions{margin-top:8px}
+.spray-actions button{flex:1;padding:9px 10px;font-size:11px}
+#sprayHint{margin-top:8px;line-height:1.45}
 </style></body></html>
