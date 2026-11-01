@@ -1695,6 +1695,14 @@ function prepareVaz2110Layers(root){
         glass.src=cached.glass;
         rear.src=cached.rear;
         front.src=cached.front;
+        // Apply the same exact wheel geometry to every reused layer set too.
+        centres.forEach((point,index)=>{
+          const wheel=index===0?rear:front;
+          wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('height',(d/w*100).toFixed(3)+'%','important');
+        });
         art.dataset.vaz2110Layers='ready';
         return;
       }
