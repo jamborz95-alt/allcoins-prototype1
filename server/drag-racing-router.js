@@ -50,11 +50,30 @@ const VINYL_OPTIONS = Object.freeze({
   sport: { price: 0 },
   number: { price: 0 }
 });
+function normalizeBrushStrokes(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(-50).map(stroke => {
+    const color = String(stroke?.c || "").toLowerCase();
+    const width = Math.max(2, Math.min(36, Math.round(Number(stroke?.w) || 8)));
+    const points = Array.isArray(stroke?.p) ? stroke.p.slice(0, 160) : [];
+    if (!/^#[0-9a-f]{6}$/.test(color) || points.length < 2 || points.length % 2 !== 0) return null;
+    const safePoints = [];
+    for (let i = 0; i < points.length; i += 2) {
+      const x = Number(points[i]), y = Number(points[i + 1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      safePoints.push(Math.max(0, Math.min(360, Math.round(x))));
+      safePoints.push(Math.max(0, Math.min(120, Math.round(y))));
+    }
+    return safePoints.length >= 2 ? { c: color, w: width, p: safePoints } : null;
+  }).filter(Boolean);
+}
+
 function normalizeCustomization(value) {
   const input = objectValue(value);
   return {
     paintId: Object.hasOwn(PAINT_OPTIONS, String(input.paintId || "")) ? String(input.paintId) : "factory",
-    vinylId: Object.hasOwn(VINYL_OPTIONS, String(input.vinylId || "")) ? String(input.vinylId) : "none"
+    vinylId: Object.hasOwn(VINYL_OPTIONS, String(input.vinylId || "")) ? String(input.vinylId) : "none",
+    brushStrokes: normalizeBrushStrokes(input.brushStrokes)
   };
 }
 
@@ -485,7 +504,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       );
       if (!carResult.rows.length) throw new DragRacingError(400, "Сначала купи этот автомобиль.");
 
-      const next = { paintId, vinylId };
+      const existing = objectValue(carResult.rows[0].customization);
+      const next = normalizeCustomization({
+        ...existing,
+        paintId,
+        vinylId,
+        brushStrokes: Array.isArray(req.body?.brushStrokes) ? req.body.brushStrokes : existing.brushStrokes
+      });
       await client.query(
         "UPDATE drag_racing_player_cars SET customization = $3::jsonb WHERE telegram_id = $1::BIGINT AND car_id = $2",
         [user.id, carId, JSON.stringify(next)]
