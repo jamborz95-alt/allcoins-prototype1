@@ -1670,7 +1670,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-spray-v10';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-atlas.png?v=20261101-vaz2110-spray-v11';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId,paintEditor){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1748,7 +1748,7 @@ function vaz2110GetPaintMask(){
     const canvas=document.createElement('canvas');canvas.width=360;canvas.height=120;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,360,120);
     const pixels=ctx.getImageData(0,0,360,120).data,alpha=new Uint8Array(360*120);
-    for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4];
+    for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4]>=128?255:0;
     const clip=document.createElement('canvas');clip.width=360;clip.height=120;
     const cc=clip.getContext('2d'),frame=cc.createImageData(360,120);
     for(let i=0;i<alpha.length;i++){const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i]}
