@@ -1670,7 +1670,7 @@ function applyLadaPaintToImages(color,selector){
   });
 }
 
-const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v16';
+const VAZ2110_ATLAS_URL='./cars/vaz2110-body.png?v=20261101-vaz2110-body-v17';
 const vaz2110PaintCache=new Map();
 function vaz2110PngMarkup(imgClass,vinylId,paintEditor){
  const vinyl=carVinylMarkup(vinylId||'none'),blank='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
@@ -1770,11 +1770,15 @@ function vaz2110GetPaintMask(){
       // The original body is metallic grey; windows and rubber details are
       // almost black. A soft ramp includes shaded sheet metal without tinting glass.
       const metalCoverage=smoothstep(13,42,lum);
-      // Keep the small front and rear bumper assemblies in their original finish.
-      const rearBumper=(x<28&&y>=47&&y<=75);
-      const frontBumper=(x>329&&y>=46&&y<=75);
-      const protectedBumper=rearBumper||frontBumper;
-      alpha[i]=protectedBumper?0:Math.round(255*sourceAlpha*metalCoverage);
+      // Preserve only the actual end lamps and bumper corners. The previous
+      // wide rectangular exclusions covered a little of the adjacent metal,
+      // leaving visible factory-grey strips at the very front and rear.
+      const rearLamp=(x<19&&y>=52&&y<=82);
+      const frontLamp=(x>345&&y>=61&&y<=82);
+      const rearBumper=(x<20&&y>82);
+      const frontBumper=(x>341&&y>82);
+      const protectedHardware=rearLamp||frontLamp||rearBumper||frontBumper;
+      alpha[i]=protectedHardware?0:Math.round(255*sourceAlpha*metalCoverage);
      }
     }
     const clip=document.createElement('canvas');clip.width=width;clip.height=height;
