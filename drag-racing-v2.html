@@ -1688,6 +1688,32 @@ function prepareVaz2110Layers(root){
       if(art.dataset.vaz2110Layers==='ready')return;
       const w=body.naturalWidth,h=body.naturalHeight;
       if(!w||!h){delete art.dataset.vaz2110Layers;return;}
+      // The race sprite box is wider than the PNG aspect ratio. Calculate the
+      // actual object-fit:contain rectangle so overlays land on the visible PNG,
+      // not on the unused transparent side margins.
+      const d=Math.max(24,Math.round(w*.15));
+      const centres=[
+        {x:w*.217,y:h*.735},
+        {x:w*.825,y:h*.735}
+      ];
+      const applyWheelGeometry=()=>{
+        const rect=art.getBoundingClientRect();
+        const boxW=rect.width||Math.max(320,Math.min(window.innerWidth*.40,600));
+        const boxH=rect.height||Math.max(110,Math.min(window.innerWidth*.14,215));
+        const fit=Math.min(boxW/w,boxH/h);
+        const imageW=w*fit,imageH=h*fit;
+        const offsetX=(boxW-imageW)/2,offsetY=(boxH-imageH)/2;
+        centres.forEach((point,index)=>{
+          const wheel=index===0?rear:front;
+          wheel.style.setProperty('left',((offsetX+(point.x-d/2)*fit)/boxW*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('top',((offsetY+(point.y-d/2)*fit)/boxH*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('width',(d*fit/boxW*100).toFixed(3)+'%','important');
+          wheel.style.setProperty('height',(d*fit/boxH*100).toFixed(3)+'%','important');
+          // Put the 2107 wheel above the old 2110 wheel pixels so the swap is
+          // visible even if Telegram's image decoder delays the transparent cut.
+          wheel.style.setProperty('z-index','6','important');
+        });
+      };
       const cacheKey=body.currentSrc||body.src;
       const cached=vaz2110LayerCache.get(cacheKey);
       if(cached){
@@ -1695,24 +1721,12 @@ function prepareVaz2110Layers(root){
         glass.src=cached.glass;
         rear.src=cached.rear;
         front.src=cached.front;
-        // Apply the same exact wheel geometry to every reused layer set too.
-        centres.forEach((point,index)=>{
-          const wheel=index===0?rear:front;
-          wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('height',(d/h*100).toFixed(3)+'%','important');
-        });
+        applyWheelGeometry();
         art.dataset.vaz2110Layers='ready';
         return;
       }
       try{
-        const d=Math.max(24,Math.round(w*.134));
-        // Coordinates match the new clean white VAZ-2110 sprite (stationary wheels).
-        const centres=[
-          {x:w*.217,y:h*.735},
-          {x:w*.825,y:h*.735}
-        ];
+        // Wheel centres and diameter are shared with applyWheelGeometry above.
         // The glazing uses its own alpha layer. The metal window frames remain
         // with the paintable shell, while the transparent panes sit behind them.
         const glassPolygons=[
@@ -1759,13 +1773,12 @@ function prepareVaz2110Layers(root){
           return;
         }
         const use2107Wheels=Boolean(vaz2107WheelImage.naturalWidth&&vaz2107WheelImage.naturalHeight);
-        const sourceWheelSize=use2107Wheels
-          ?Math.round(Math.min(vaz2107WheelImage.naturalWidth*.128,vaz2107WheelImage.naturalHeight*.40))
-          :d;
+        if(!use2107Wheels)throw new Error('Не удалось загрузить исходные колёса ВАЗ-2107');
+        const sourceWheelSize=Math.round(Math.min(vaz2107WheelImage.naturalWidth*.128,vaz2107WheelImage.naturalHeight*.40));
         const sourceWheelCentres=use2107Wheels?[
           // Centres follow the visible tyre circles in the original 2107 sprite.
           {x:vaz2107WheelImage.naturalWidth*.257,y:vaz2107WheelImage.naturalHeight*.778},
-          {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.748}
+          {x:vaz2107WheelImage.naturalWidth*.829,y:vaz2107WheelImage.naturalHeight*.778}
         ]:[];
         centres.forEach((point,index)=>{
           const wheelCanvas=document.createElement('canvas');
@@ -1778,18 +1791,14 @@ function prepareVaz2110Layers(root){
           wheelCtx.beginPath();
           wheelCtx.arc(d/2,d/2,d*.49,0,Math.PI*2);
           wheelCtx.clip();
-          if(use2107Wheels){
-            const sourcePoint=sourceWheelCentres[index];
-            wheelCtx.drawImage(
-              vaz2107WheelImage,
-              sourcePoint.x-sourceWheelSize/2,
-              sourcePoint.y-sourceWheelSize/2,
-              sourceWheelSize,sourceWheelSize,
-              0,0,d,d
-            );
-          }else{
-            wheelCtx.drawImage(body,point.x-d/2,point.y-d/2,d,d,0,0,d,d);
-          }
+          const sourcePoint=sourceWheelCentres[index];
+          wheelCtx.drawImage(
+            vaz2107WheelImage,
+            sourcePoint.x-sourceWheelSize/2,
+            sourcePoint.y-sourceWheelSize/2,
+            sourceWheelSize,sourceWheelSize,
+            0,0,d,d
+          );
           wheelCtx.restore();
           wheelData.push(wheelCanvas.toDataURL('image/png'));
         });
@@ -1804,15 +1813,7 @@ function prepareVaz2110Layers(root){
         glass.src=layers.glass;
         rear.src=layers.rear;
         front.src=layers.front;
-        // Position each 2107 wheel from the exact cut-out centre in the 2110 PNG.
-        // The former fixed top:52.4% left the wheels too high, behind the uncut tyre.
-        centres.forEach((point,index)=>{
-          const wheel=index===0?rear:front;
-          wheel.style.setProperty('left',((point.x-d/2)/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('top',((point.y-d/2)/h*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('width',(d/w*100).toFixed(3)+'%','important');
-          wheel.style.setProperty('height',(d/h*100).toFixed(3)+'%','important');
-        });
+        applyWheelGeometry();
         art.dataset.vaz2110Layers='ready';
       }catch(error){
         delete art.dataset.vaz2110Layers;
