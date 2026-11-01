@@ -1595,7 +1595,7 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v2" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -1970,6 +1970,27 @@ function syncRace2DCarArt(){
   syncOnlineOpponentCar();
 }
 
+// Rebind the already-approved VAZ-2110 PNG to the live race car immediately
+// before the cockpit opens. This refreshes the existing race sprite; it does
+// not create or substitute another car asset.
+function ensureVaz2110RaceSprite(){
+  if(String(state.selected||'')!=='2110')return false;
+  syncRace2DCarArt();
+  const player=$('race2dPlayerCar');
+  const art=player?.querySelector('.vaz2110-png-art');
+  const body=art?.querySelector('.vaz2110-body-layer');
+  if(!player||!art||!body)return false;
+  const approvedPng=new URL('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3',document.baseURI).href;
+  if(body.src!==approvedPng)body.src=approvedPng;
+  body.loading='eager';
+  body.decoding='async';
+  player.dataset.carId='2110';
+  player.classList.add('png-car','vaz2110-png-car');
+  player.classList.remove('vector-side-car','png-fallback');
+  player.setAttribute('aria-label','Автомобиль игрока: ВАЗ-2110');
+  return true;
+}
+
 // Render the opponent using their actual selected garage model as a PNG.
 // The VAZ-2107 uses the authored transparent side-view asset; other car models
 // are rasterized at high resolution and cached as PNGs rather than inline SVGs.
@@ -2035,7 +2056,7 @@ async function syncOnlineOpponentCar(){
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
-    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v2'
+    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
@@ -2753,7 +2774,7 @@ function initDragRacing3D(){
     // In the 3D race scene VAZ-2110 must use the approved PNG sprite,
     // not the legacy vector carSvg() drawing.
     const texture=id==='2110'
-      ?new T.TextureLoader().load('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v2')
+      ?new T.TextureLoader().load('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v3')
       :new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(carSvg(id,bodyColorCss,vinylId||'none')));
     if('colorSpace' in texture&&T.SRGBColorSpace)texture.colorSpace=T.SRGBColorSpace;
     texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
@@ -3019,7 +3040,7 @@ function openProRaceCockpit(){
   if(!panel||!track||!host)return;
   // Opening the cockpit is a direct user gesture: unlock mobile audio here as well.
   initRaceAudio();
-  syncRace2DCarArt();
+  if(!ensureVaz2110RaceSprite())syncRace2DCarArt();
   if(currentOnlineRoom)void syncOnlineOpponentCar();
   if(currentOnlineRoom?.room?.status==='racing')updateOnlineOpponentMotion(1/60);
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
