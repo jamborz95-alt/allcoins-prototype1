@@ -1676,7 +1676,7 @@ function ladaPngMarkup(imgClass,vinylId){
 }
 function lada2101PngMarkup(imgClass,vinylId){
   // Approved shell PNG: no wheels and no front headlamps are baked into this layer.
-  return '<div class="lada2101-png-art"><img class="'+imgClass+' race-car-png lada2101-body-layer" src="./cars/lada-2101-side.png?v=20261101-lada2101-body-v1" alt="ВАЗ-2101 «Копейка», красный кузов с тёмными стёклами" decoding="async" draggable="false"></div>';
+  return '<div class="lada2101-png-art"><img class="'+imgClass+' race-car-png lada2101-body-layer" src="./cars/lada-2101-side.webp?v=20261101-lada2101-body-v2" alt="ВАЗ-2101 «Копейка», красный кузов с тёмными стёклами" decoding="async" draggable="false"></div>';
 }
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
@@ -2214,7 +2214,7 @@ async function syncOnlineOpponentCar(){
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
-    :modelId==='2101'?'./cars/lada-2101-side.png?v=20261101-lada2101-body-v1'
+    :modelId==='2101'?'./cars/lada-2101-side.webp?v=20261101-lada2101-body-v2'
     :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
@@ -2959,7 +2959,7 @@ function initDragRacing3D(){
     const texture=id==='2110'
       ?new T.TextureLoader().load('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4')
       :id==='2101'
-        ?new T.TextureLoader().load('./cars/lada-2101-side.png?v=20261101-lada2101-body-v1')
+        ?new T.TextureLoader().load('./cars/lada-2101-side.webp?v=20261101-lada2101-body-v2')
         :new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(carSvg(id,bodyColorCss,vinylId||'none')));
     if('colorSpace' in texture&&T.SRGBColorSpace)texture.colorSpace=T.SRGBColorSpace;
     texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
