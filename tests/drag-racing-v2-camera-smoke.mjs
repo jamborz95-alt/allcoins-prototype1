@@ -40,6 +40,31 @@ try {
   );
   assert.equal(await page.locator("#race2dCameraWorld").count(), 1, "The driving cars must be inside their chase-camera world.");
   assert.equal(await page.locator("#race2dPlayerCar .race-car-png").count(), 1, "The selected car PNG must be present.");
+  // The default race model is the VAZ-2110. Its body, glazing and two wheels
+  // must be three independently composed layers before the cockpit is usable.
+  await page.waitForFunction(() => {
+    const art = document.querySelector("#race2dPlayerCar .vaz2110-png-art");
+    return art?.dataset.vaz2110Layers === "ready";
+  }, null, { timeout: 7000 });
+  const threeLayerArt = await page.locator("#race2dPlayerCar .vaz2110-png-art").evaluate(art => {
+    const body = art.querySelector(".vaz2110-body-layer");
+    const glass = art.querySelector(".vaz2110-glass-layer");
+    const rear = art.querySelector(".vaz2110-wheel-layer.rear");
+    const front = art.querySelector(".vaz2110-wheel-layer.front");
+    return {
+      ready: art.dataset.vaz2110Layers,
+      layers: [body, glass, rear, front].map(el => ({
+        exists: Boolean(el),
+        loaded: Boolean(el?.complete && el.naturalWidth > 0),
+        z: el ? getComputedStyle(el).zIndex : null
+      }))
+    };
+  });
+  assert.equal(threeLayerArt.ready, "ready", "The VAZ-2110 PNG layers must finish extraction.");
+  assert.ok(threeLayerArt.layers.every(layer => layer.exists && layer.loaded),
+    "The body, glass and both independent wheel PNGs must be loaded: " + JSON.stringify(threeLayerArt));
+  assert.deepEqual(threeLayerArt.layers.map(layer => layer.z), ["3", "2", "1", "1"],
+    "The shell must sit above the glass, with both wheels behind the shell.");
   // Verify the original VAZ-2107 PNG is recolored across the body while glass and
   // wheel details remain untouched. Keep a real PNG snapshot as a CI artifact.
   const paintInspection = await page.evaluate(async () => {
