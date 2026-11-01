@@ -1737,8 +1737,36 @@ function vaz2110BuildPaintMask(ctx,width,height){
  ctx.beginPath();ctx.ellipse(46,308,12,11,0,0,Math.PI*2);ctx.fill();
  ctx.restore();
 }
-const VAZ2110_PAINT_MASK_DATA='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAB4AQAAAAD3P1VXAAADH0lEQVR42u2XTY6cMBCFPxs0sIgCBxilOcIssxhpOFJOkOm5SW4SZ5dl3yCMlMXsQksjhY5onAU/NmC76W0yb0XDo3iuKr9yw/+JB63bjdRMD9hvizuicj2P7B+7g7nOhVqzhf3mTO8pXbOldX0LwJNITwWQXFCttVYASQPJpYUK3d4zssk0YSU67tnEwJFw7KSm6S9agIcqXBlFbbGzJqjkTonaevIaB2N/JqrsvOsguyVSNvtBBZRELbGyb1ZFOCXZ8F5n0u6LnR4Wj/7cBNh3aow9FksElDzC/UyJa5kTOsMecpfVXiXCsIfQNKk/JQ1D4RHaBPDETl/W/S72PnZeIZY6y9LHLhRy6tEh5uHOxy4dzb9a5sgWj0xt4q/myJYdpOtlethxa+Ray/RUM6vhwxRzJO1qd+y8hnU/v6RudlGZilvb6cbNLtXUJhbOwuNTQLPSzaNyxZYztoFy7s2kxWoTY/ULC5KA0DpdWOJU+3jBznQHdeQeHW20YOdjJcxkMDU9L+u7mwZTs9bN/JO22ERr3a80N5/J7WkkXQPT7sZ3t7PhZZQs0AyzaPwgIPF6Y6K17nd/VnmUuLG7ij02hc1+9r+aqBW7CsyO+4CSo1j6Tj9kNuqGjz273MZO9sO2WaO2zzXTPZ8Sl3G/98Z2Yg/C4ekeHPNr2OcYcWmez85gm/MN7K9il1PDb4DiqtgguXDaMhkrNsTWU13zDWzp/eFMcmM1j9yyzCc584Eev/3GstNatyDTcJ8CfIefa6s6e2IPJWznq/Sco86DSUd6C7sF+AKgJvazSEM+VQMUI/tccMI91evplXxkvwKl226rSU46sg/Awc1WVnPtTJYifwL7XVAPsTVA12xssW7enLOWtaaitHJ6aTuArC3vD+0i25Frc2fz1vgxl7oWGVsVQCz+99mmVwFIO2vP6fI8KERpE+TJmg3J4PHdWJgOvuXrmdtnI/m6YGutv+7NAaCScBJB8/tk/s0WMYDIjv3yA/+HjmLK4DFkw173KXybwcmurzFc8Wudk9nBah47v6ZPtOghhUFa8YY3vOHfwV/AIDZEECra2AAAAABJRU5ErkJggg==';
+// Build the paint mask at runtime from the body silhouette. Canvas antialiasing
+// is kept as fractional alpha so paint fades smoothly along every panel edge.
 let vaz2110PaintMaskPromise=null;
+function vaz2110GetPaintMask(){
+ if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
+ vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
+  try{
+   const canvas=document.createElement('canvas');canvas.width=360;canvas.height=120;
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});
+   if(!ctx)throw new Error('Не удалось создать маску покраски ВАЗ-2110.');
+   vaz2110BuildPaintMask(ctx,360,120);
+   const pixels=ctx.getImageData(0,0,360,120).data;
+   const alpha=new Uint8Array(360*120);
+   for(let i=0;i<alpha.length;i++)alpha[i]=pixels[i*4+3];
+   const clip=document.createElement('canvas');clip.width=360;clip.height=120;
+   const cc=clip.getContext('2d');
+   if(!cc)throw new Error('Не удалось создать контур ручной покраски ВАЗ-2110.');
+   const frame=cc.createImageData(360,120);
+   for(let i=0;i<alpha.length;i++){
+    const p=i*4;frame.data[p]=255;frame.data[p+1]=255;frame.data[p+2]=255;frame.data[p+3]=alpha[i];
+   }
+   cc.putImageData(frame,0,0);
+   resolve({alpha,clip});
+  }catch(error){
+   vaz2110PaintMaskPromise=null;
+   reject(error);
+  }
+ });
+ return vaz2110PaintMaskPromise;
+}
 function vaz2110GetPaintMask(){
  if(vaz2110PaintMaskPromise)return vaz2110PaintMaskPromise;
  vaz2110PaintMaskPromise=new Promise((resolve,reject)=>{
