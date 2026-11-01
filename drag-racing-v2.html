@@ -1950,7 +1950,8 @@ function syncRace2DCarArt(){
     player.classList.toggle('vaz2110-png-car',useVaz2110Png);
     player.classList.toggle('vector-side-car',!usePngSprite);
     player.classList.remove('png-fallback');
-    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels+wheelSmokeEffects:useVaz2110Png?ladaBodyLayer+wheelSmokeEffects:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
+    player.innerHTML=useLadaPng?ladaBodyLayer+ladaWheels:useVaz2110Png?ladaBodyLayer:carSvg(selectedId,paint,selectedStyle.vinylId)+engineEffects+wheelSmokeEffects;
+    if(usePngSprite)player.insertAdjacentHTML('beforeend',wheelSmokeEffects);
     if(useVaz2110Png)prepareVaz2110Layers(player);
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
