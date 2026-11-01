@@ -1595,7 +1595,7 @@ function ladaPngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v4" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v5" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -2035,7 +2035,7 @@ async function syncOnlineOpponentCar(){
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
-    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v4'
+    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-static-white-v5'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
