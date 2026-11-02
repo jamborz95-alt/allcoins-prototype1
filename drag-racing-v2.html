@@ -2655,7 +2655,7 @@ function lada2101PngMarkup(imgClass,vinylId){
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   return '<div class="lada-png-art vaz2110-png-art">'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-game.png?v=20261102-vaz2110-user-png-v40" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +'<img class="vaz2110-glass-layer" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer rear" alt="" aria-hidden="true" draggable="false">'
     +'<img class="vaz2110-wheel-layer front" alt="" aria-hidden="true" draggable="false">'
@@ -3249,7 +3249,7 @@ function ensureVaz2110RaceSprite(){
   const art=player?.querySelector('.vaz2110-png-art');
   const body=art?.querySelector('.vaz2110-body-layer');
   if(!player||!art||!body)return false;
-  const approvedPng=new URL('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4',document.baseURI).href;
+  const approvedPng=new URL('./cars/vaz-2110-game.png?v=20261102-vaz2110-user-png-v40',document.baseURI).href;
   if(body.src!==approvedPng)body.src=approvedPng;
   body.loading='eager';
   body.decoding='async';
@@ -3326,7 +3326,7 @@ async function syncOnlineOpponentCar(){
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
     :modelId==='2101'?'./cars/lada-2101-side.png?v=20261101-lada2101-body-v3'
-    :modelId==='2110'?'./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4'
+    :modelId==='2110'?'./cars/vaz-2110-game.png?v=20261102-vaz2110-user-png-v40'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
@@ -4070,7 +4070,7 @@ function initDragRacing3D(){
     // In the 3D race scene VAZ-2110 must use the approved PNG sprite,
     // not the legacy vector carSvg() drawing.
     const texture=id==='2110'
-      ?new T.TextureLoader().load('./cars/vaz-2110-white-side.png?v=20261101-vaz2110-race-v4')
+      ?new T.TextureLoader().load('./cars/vaz-2110-game.png?v=20261102-vaz2110-user-png-v40')
       :id==='2101'
         ?new T.TextureLoader().load('./cars/lada-2101-side.png?v=20261101-lada2101-body-v3')
         :new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(carSvg(id,bodyColorCss,vinylId||'none')));
