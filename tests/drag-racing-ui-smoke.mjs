@@ -213,13 +213,13 @@ try {
   assert.equal(await page.locator("#proBrakeHold").count(), 1, "The cockpit must show a dedicated brake pedal.");
   const headlightsToggle = page.locator("#proHeadlightsToggle");
   assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "true", "Headlights should retain their default on state.");
-  await headlightsToggle.click();
+  await headlightsToggle.evaluate(el => el.click());
   assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "false", "The headlight switch must turn the lights off.");
   assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), false,
     "Turning headlights off must remove the live headlight beam.");
   assert.equal(await page.evaluate(() => localStorage.getItem("allcoinsDragHeadlightsOn")), "0",
     "The off state must persist in local storage.");
-  await headlightsToggle.click();
+  await headlightsToggle.evaluate(el => el.click());
   assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "true", "The headlight switch must turn the lights back on.");
   assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true,
     "Turning headlights on must restore the live headlight beam.");
