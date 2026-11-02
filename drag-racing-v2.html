@@ -3056,6 +3056,46 @@ function carSvg(modelId,colorValue,vinylValue){
     .replaceAll('id="shadow"','id="shadow-'+uid+'"').replaceAll('url(#shadow)','url(#shadow-'+uid+')');
 }
 
+function alignLada2101ExhaustOpening(root){
+  if(!root||root.dataset.carId!=='2101')return false;
+  const muffler=root.querySelector('.race-car-muffler');
+  const tailpipe=root.querySelector('.race-car-muffler-tailpipe');
+  const outlet=root.querySelector('.race-car-muffler-outlet');
+  if(!muffler||!tailpipe||!outlet)return false;
+  const parentRect=muffler.getBoundingClientRect();
+  const pipeRect=tailpipe.getBoundingClientRect();
+  const outletHeight=outlet.offsetHeight||7;
+  const layoutHeight=muffler.offsetHeight||parentRect.height;
+  if(parentRect.height<1||pipeRect.height<1||layoutHeight<1)return false;
+  /* Measure both pieces against the same parent after mobile rotation/resize. */
+  const scaleY=parentRect.height/layoutHeight||1;
+  const pipeCenter=(pipeRect.top+pipeRect.height/2-parentRect.top)/scaleY;
+  const outletTop=pipeCenter-outletHeight/2;
+  outlet.style.setProperty('top',outletTop+'px','important');
+  Array.from(muffler.children).forEach(function(cloud){
+    if(!cloud.dataset||!cloud.dataset.lada2101Smoke)return;
+    const cloudHeight=cloud.offsetHeight||21;
+    const yOffset=Number(cloud.dataset.yOffset)||0;
+    cloud.style.setProperty('top',(pipeCenter-cloudHeight/2+yOffset)+'px','important');
+  });
+  return true;
+}
+function scheduleLada2101ExhaustAlignment(root,withOrientationRetries){
+  if(!root||root.dataset.carId!=='2101')return;
+  const align=function(){
+    if(root.isConnected)alignLada2101ExhaustOpening(root);
+  };
+  const afterLayout=function(){
+    requestAnimationFrame(function(){requestAnimationFrame(align)});
+  };
+  afterLayout();
+  if(withOrientationRetries){
+    setTimeout(afterLayout,160);
+    setTimeout(afterLayout,420);
+    setTimeout(afterLayout,760);
+  }
+}
+
 function applyLada2101ExhaustPosition(root){
   if(!root)return;
   const mufflerBody=root.querySelector('.race-car-muffler-body');
@@ -3100,11 +3140,8 @@ function applyLada2101ExhaustPosition(root){
     outlet.style.setProperty('height','7px','important');
     outlet.style.setProperty('z-index','80','important');
     outlet.style.setProperty('overflow','visible','important');
-    /* Center the opening vertically on the metal tailpipe, independent of screen size. */
-    if(tailpipe){
-      const centeredTop=tailpipe.offsetTop+(tailpipe.offsetHeight-outlet.offsetHeight)/2;
-      outlet.style.setProperty('top',centeredTop+'px','important');
-    }
+    /* Percentage fallback; final alignment is recalculated after the race scene lays out. */
+    outlet.style.setProperty('top','81.25%','important');
   }
   /* Three real animated smoke clouds stay centered on the exhaust opening. */
   if(muffler && root.id==='race2dPlayerCar'){
@@ -3123,6 +3160,7 @@ function applyLada2101ExhaustPosition(root){
         cloud.setAttribute('aria-hidden','true');
         muffler.appendChild(cloud);
       }
+      cloud.dataset.yOffset=String(spec.yOffset);
       const smokeTop=outlet
         ?outlet.offsetTop+outlet.offsetHeight/2-spec.height/2+spec.yOffset
         :81;
@@ -3146,6 +3184,7 @@ function applyLada2101ExhaustPosition(root){
       }
     });
   }
+  if(root.id==='race2dPlayerCar')scheduleLada2101ExhaustAlignment(root,false);
 }
 
 function syncRace2DCarArt(){
@@ -4318,8 +4357,8 @@ function updateOrientationPrompt(){
 $('orientationDismiss').addEventListener('click',()=>{
   orientationWarningDismissed=true;updateOrientationPrompt();
 });
-window.addEventListener('orientationchange',()=>setTimeout(updateOrientationPrompt,100),{passive:true});
-window.addEventListener('resize',()=>{updateOrientationPrompt();race3d?.resize?.()},{passive:true});
+window.addEventListener('orientationchange',()=>{setTimeout(updateOrientationPrompt,100);scheduleLada2101ExhaustAlignment($('race2dPlayerCar'),true)},{passive:true});
+window.addEventListener('resize',()=>{updateOrientationPrompt();race3d?.resize?.();scheduleLada2101ExhaustAlignment($('race2dPlayerCar'),false)},{passive:true});
 function openProRaceCockpit(){
   const panel=$('proRaceCockpit'),track=$('proRaceTrack'),host=$('race3dCanvas');
   if(!panel||!track||!host)return;
@@ -4331,6 +4370,8 @@ function openProRaceCockpit(){
   panel.classList.remove('hidden');panel.setAttribute('aria-hidden','false');document.body.classList.add('pro-race-open');
   requestRaceLandscape();
   track.appendChild(host);
+  /* Re-align after the first visible layout and again when Telegram applies landscape sizing. */
+  scheduleLada2101ExhaustAlignment($('race2dPlayerCar'),true);
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
