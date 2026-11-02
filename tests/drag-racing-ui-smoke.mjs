@@ -131,6 +131,13 @@ try {
   await page.waitForFunction(() => document.querySelectorAll("#carShop .car-card").length === 12);
   await page.waitForSelector("#scene", { timeout: 10000 });
   await page.waitForFunction(() => document.querySelector("#scene")?.classList.contains("has3d"), { timeout: 30000 });
+  const headlightSwitch = page.locator("#toggleHeadlights");
+  assert.equal(await headlightSwitch.getAttribute("aria-pressed"), "false", "headlights should start off");
+  await headlightSwitch.click();
+  assert.equal(await headlightSwitch.getAttribute("aria-pressed"), "true", "headlights should switch on");
+  assert.equal(await page.evaluate(() => localStorage.getItem("allcoinsDragHeadlightsOn")), "1", "headlight setting should persist");
+  await headlightSwitch.click();
+  assert.equal(await headlightSwitch.getAttribute("aria-pressed"), "false", "headlights should switch off");
   assert.equal(await page.locator("#race3dCanvas").count(), 1, "3D canvas should be present");
   const dimensions = await page.locator("#race3dCanvas").evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   assert.ok(dimensions.width > 250 && dimensions.height > 160, "3D renderer should size the canvas");
