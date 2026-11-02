@@ -1780,6 +1780,91 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+
+<style id="allcoins-lada2101-beam-exhaust-v29">
+/* VAZ-2101: extend the headlight cone forward and make its spread easier to see. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam{
+  left:96.5%!important;
+  top:44%!important;
+  width:145%!important;
+  height:32%!important;
+  z-index:8!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam::before{
+  filter:blur(2px)!important;
+}
+
+/* Exhaust vapor starts at the center of the visible tailpipe opening and drifts backward. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet{
+  overflow:visible!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  content:""!important;
+  position:absolute!important;
+  left:-2px!important;
+  top:50%!important;
+  width:24px!important;
+  height:9px!important;
+  display:block!important;
+  border:0!important;
+  border-radius:50%!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  transform:translateY(-50%) scaleX(.08) scaleY(.3)!important;
+  transform-origin:right center!important;
+  filter:blur(1.2px)!important;
+  background:radial-gradient(ellipse at 92% 50%,
+    rgba(247,250,251,.96) 0%,
+    rgba(216,225,230,.78) 34%,
+    rgba(170,184,192,.3) 72%,
+    transparent 100%)!important;
+  animation:none!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  left:-6px!important;
+  top:50%!important;
+  width:58px!important;
+  height:29px!important;
+  border-radius:55% 48% 48% 55%!important;
+  opacity:0!important;
+  filter:blur(2.8px)!important;
+  transform:translateY(-50%) scale(.08,.18)!important;
+  transform-origin:right center!important;
+  background:radial-gradient(ellipse at 91% 50%,
+    rgba(235,241,244,.9) 0%,
+    rgba(202,213,219,.72) 25%,
+    rgba(161,176,184,.43) 54%,
+    rgba(126,141,150,.18) 76%,
+    transparent 100%)!important;
+  animation:none!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  animation:lada2101-exhaust-core-v29 1.25s ease-out infinite!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation:lada2101-exhaust-cloud-v29 1.55s ease-out infinite!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  animation-duration:.72s!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation-duration:.88s!important;
+}
+@keyframes lada2101-exhaust-core-v29{
+  0%{opacity:0;transform:translateY(-50%) translateX(0) scaleX(.08) scaleY(.3)}
+  9%{opacity:.88;transform:translateY(-50%) translateX(-2px) scaleX(.62) scaleY(.8)}
+  34%{opacity:.52;transform:translateY(-50%) translateX(-10px) scaleX(1.05) scaleY(.8)}
+  100%{opacity:0;transform:translateY(-50%) translateX(-25px) translateY(-3px) scaleX(1.45) scaleY(.95)}
+}
+@keyframes lada2101-exhaust-cloud-v29{
+  0%{opacity:0;transform:translateY(-50%) translateX(0) scale(.08,.18)}
+  11%{opacity:.82;transform:translateY(-50%) translateX(-4px) scale(.48,.52)}
+  42%{opacity:.5;transform:translateY(-50%) translateX(-22px) translateY(-4px) scale(1,.82)}
+  72%{opacity:.22;transform:translateY(-50%) translateX(-39px) translateY(-8px) scale(1.38,1.05)}
+  100%{opacity:0;transform:translateY(-50%) translateX(-56px) translateY(-12px) scale(1.7,1.22)}
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
