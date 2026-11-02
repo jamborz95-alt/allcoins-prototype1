@@ -189,10 +189,11 @@
       addBox(car,new THREE.BoxGeometry(0.14,0.1,0.045),head,x*0.68,0.69,-1.72);
       for(const z of [-1.12,1.1]){
         const wheel=new THREE.Group();wheel.position.set(x,0.38,z);car.add(wheel);
-        const tire=new THREE.Mesh(new THREE.CylinderGeometry(0.39,0.39,0.21,20),rubber);tire.rotation.z=Math.PI/2;wheel.add(tire);
-        const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.224,12),rim);hub.rotation.z=Math.PI/2;wheel.add(hub);
-        const center=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.23,10),dark);center.rotation.z=Math.PI/2;wheel.add(center);
-        wheel.userData.rotating=true;
+        const tire=new THREE.Mesh(new THREE.CylinderGeometry(0.39,0.39,0.21,24),rubber);tire.rotation.z=Math.PI/2;wheel.add(tire);
+        const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.224,16),rim);hub.rotation.z=Math.PI/2;wheel.add(hub);
+        const center=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.23,12),dark);center.rotation.z=Math.PI/2;wheel.add(center);
+        // Wheel group spins around its axle; the angle is derived from travelled distance.
+        wheel.userData.rotating=true;wheel.userData.radius=0.39;wheel.userData.axle=z<0?"front":"rear";
       }
     }
     // Each owned VAZ/LADA has its own paint and proportions in the 3D garage preview.
@@ -311,7 +312,7 @@
     window.addEventListener("allcoins:race-state",event=>setRaceState(event.detail));
     if(window.__allcoinsRaceState)setRaceState(window.__allcoinsRaceState);
 
-    let progress=0, previous=performance.now();
+    let progress=0, previous=performance.now(), lastWheelSpeed=0, wheelAngle=0;
     const resize=()=>{
       const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);
       camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
@@ -320,8 +321,14 @@
     const animate=now=>{
       requestAnimationFrame(animate);
       const dt=Math.min(0.05,Math.max(0,(now-previous)/1000));previous=now;
-      const speed=Number(document.getElementById("speed")?.textContent||0);
+      const speed=Math.max(0,Number(document.getElementById("speed")?.textContent||0));
       const running=host.classList.contains("racing");
+      // Use actual vehicle speed (km/h -> m/s) for physically proportional wheel rotation.
+      // Brake deceleration naturally slows the wheels instead of allowing a fixed-rate spin.
+      const speedMps=speed/3.6;
+      const wheelAngularVelocity=speedMps/0.39;
+      wheelAngle+=wheelAngularVelocity*dt;
+      lastWheelSpeed=speedMps;
       progress+=speed/3.6*dt*(running?1.35:0.12);
       roadTexture.offset.y=mod(progress/520,1);
       curbTexture.offset.y=mod(progress/520,1);
@@ -343,15 +350,16 @@
         model.position.z=2.6-Math.max(-8,Math.min(70,delta))*0.45;
         model.position.y=-0.07;
         model.rotation.y=Math.sin(now*0.0013+index)*0.012*Math.min(1,Number(player.speed||0)/210);
+        const opponentAngle=(Number(player.distance)||0)/0.39;
         model.traverse(node=>{
-          if(node.userData.rotating)node.children.forEach(child=>{child.rotation.x+=Number(player.speed||0)*dt*0.0017;});
+          if(node.userData.rotating)node.rotation.x=opponentAngle;
         });
       }
       const factor=Math.min(1,speed/210);
       car.rotation.y=Math.sin(now*0.0013)*0.014*factor;
       car.position.y=-0.07+(running?Math.abs(Math.sin(now*0.024))*0.012*factor:0);
       car.traverse(node=>{
-        if(node.userData.rotating){node.children.forEach(child=>{child.rotation.x+=speed*dt*0.0017;});}
+        if(node.userData.rotating)node.rotation.x=wheelAngle;
       });
       camera.position.x=Math.sin(now*0.0008)*0.045*factor;
       camera.position.y=4.0+Math.sin(now*0.018)*0.018*factor;
