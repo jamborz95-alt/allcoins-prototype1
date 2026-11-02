@@ -2360,6 +2360,56 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   #proRaceCockpit .pro-air-suspension-toggle{top:calc(50% + 4px)!important}
 }
 </style>
+<style id="allcoins-dashboard-switches-structural-v38">
+/* The switches are children of the instrument cluster: anchor them immediately to its left. */
+#proRaceCockpit #proTachometer{
+  overflow:visible!important;
+  left:calc(50% + clamp(34px,4.5vw,44px))!important;
+}
+#proRaceCockpit #proTachometer #proHeadlightToggle,
+#proRaceCockpit #proTachometer #proAirSuspensionToggle{
+  position:absolute!important;
+  left:-104px!important;
+  right:auto!important;
+  width:96px!important;
+  min-width:96px!important;
+  max-width:96px!important;
+  height:29px!important;
+  min-height:29px!important;
+  max-height:29px!important;
+  margin:0!important;
+  padding:3px 4px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  transform:none!important;
+  z-index:40!important;
+  pointer-events:auto!important;
+  font-size:8px!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  border-radius:7px!important;
+}
+#proRaceCockpit #proTachometer #proHeadlightToggle{
+  top:calc(50% - 34px)!important;
+}
+#proRaceCockpit #proTachometer #proAirSuspensionToggle{
+  top:calc(50% + 5px)!important;
+}
+@media(orientation:portrait){
+  #proRaceCockpit #proTachometer{
+    left:calc(50% + 42px)!important;
+  }
+  #proRaceCockpit #proTachometer #proHeadlightToggle{
+    top:calc(50% - 34px)!important;
+  }
+  #proRaceCockpit #proTachometer #proAirSuspensionToggle{
+    top:calc(50% + 5px)!important;
+  }
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -2446,9 +2496,9 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
         <div class="pro-speed-gear"><span>GEAR</span><strong id="proGearDigits">1</strong></div>
       </div>
       <div class="pro-micro-gauge" aria-hidden="true"><span></span></div>
+      <button id="proHeadlightToggle" class="pro-headlight-dash-toggle active" type="button" aria-label="Переключить фары" aria-pressed="true">☀ ФАРЫ ВКЛ</button>
+      <button id="proAirSuspensionToggle" class="pro-air-suspension-toggle" type="button" aria-label="Изменить высоту пневмоподвески" aria-pressed="false">ПНЕВМА · СРЕДНЕ</button>
     </div>
-    <button id="proHeadlightToggle" class="pro-headlight-dash-toggle active" type="button" aria-label="Переключить фары" aria-pressed="true">☀ ФАРЫ ВКЛ</button>
-    <button id="proAirSuspensionToggle" class="pro-air-suspension-toggle" type="button" aria-label="Изменить высоту пневмоподвески" aria-pressed="false">ПНЕВМА · СРЕДНЕ</button>
     <div class="pro-shift-gate" aria-label="Ручное переключение передач">
       <div class="pro-shift-rail"><span>+</span><span>−</span></div>
       <button id="proShiftUp" class="pro-shift-paddle up" type="button" aria-label="Повысить передачу">+</button>
