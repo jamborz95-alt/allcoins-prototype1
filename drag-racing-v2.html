@@ -1656,7 +1656,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="lada2101-exhaust-final-v8">
+<style id="lada2101-exhaust-final-v9">
 /* VAZ-2101: short visible exhaust tip sits immediately below the rear steel bumper. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-body,
 #previewCar[data-car-id="2101"] .race-car-muffler-body{
@@ -1674,6 +1674,14 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   display:block!important;visibility:visible!important;opacity:1!important;
   left:2.2%!important;top:82.7%!important;
   width:5px!important;height:7px!important;z-index:7!important;
+}
+
+/* Exhaust follows the same air-suspension offset as the painted shell.
+   The pipe stays at a constant point under the bumper at every ride height. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .race-car-muffler{
+  transform:translate3d(0,var(--air-suspension-y,0px),0)!important;
+  transform-origin:center bottom!important;
+  transition:transform .32s cubic-bezier(.22,.61,.36,1)!important;
 }
 </style>
 
@@ -2325,6 +2333,13 @@ function applyLada2101ExhaustPosition(root){
   const mufflerBody=root.querySelector('.race-car-muffler-body');
   const tailpipe=root.querySelector('.race-car-muffler-tailpipe');
   const outlet=root.querySelector('.race-car-muffler-outlet');
+  const muffler=root.querySelector('.race-car-muffler');
+  if(muffler){
+    /* Match the body shell's pneuma offset so the pipe stays under the bumper. */
+    muffler.style.setProperty('transform','translate3d(0,var(--air-suspension-y,0px),0)','important');
+    muffler.style.setProperty('transform-origin','center bottom','important');
+    muffler.style.setProperty('transition','transform .32s cubic-bezier(.22,.61,.36,1)','important');
+  }
   if(mufflerBody)mufflerBody.style.setProperty('display','none','important');
   if(tailpipe){
     tailpipe.style.setProperty('display','block','important');
