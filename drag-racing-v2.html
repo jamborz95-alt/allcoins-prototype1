@@ -2304,7 +2304,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* VAZ-2110: transparent body shell with two independent steel wheel rotors. */
 .vaz2110-png-art{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important}
 .vaz2110-png-art img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important}
-.vaz2110-png-art .vaz2110-body-layer{z-index:2!important}
+.vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translateY(-3px)!important}
+.vaz2110-png-art .vaz2110-aroma-accessories{position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important;transform:translateY(-3px)!important}
 .vaz2110-png-art .vaz2110-wheel-spin{position:absolute!important;z-index:1!important;display:block!important;padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;box-sizing:border-box!important;overflow:hidden!important;background:transparent!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;transform-origin:50% 50%!important;will-change:transform}
 .vaz2110-png-art .vaz2110-wheel-spin svg{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
 .vaz2110-png-art .vaz2110-png-vinyl{position:absolute!important;inset:0!important;z-index:4!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important}
@@ -2559,6 +2560,34 @@ function lada2101PngMarkup(imgClass,vinylId){
     +'</span>'
     +'</div>';
 }
+function vaz2110StampedWheelSvgMarkup(){
+  return '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+    +'<circle cx="50" cy="50" r="49" fill="#090c0f" stroke="#30383d" stroke-width="2"/>'
+    +'<circle cx="50" cy="50" r="44" fill="#1a2024" stroke="#080b0e" stroke-width="2"/>'
+    +'<circle cx="50" cy="50" r="39.5" fill="#7e898f" stroke="#d5dadd" stroke-width="1.5"/>'
+    +'<circle cx="50" cy="50" r="35.5" fill="#aeb7bc" stroke="#58636a" stroke-width="1.5"/>'
+    +'<circle cx="50" cy="50" r="29.5" fill="#737e84" stroke="#e0e5e8" stroke-width="1.2"/>'
+    +'<circle cx="50" cy="50" r="25.5" fill="#b9c1c5" stroke="#667178" stroke-width="1.5"/>'
+    +'<g fill="#30383d" stroke="#e0e5e8" stroke-width="1">'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(45 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(90 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(135 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(180 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(225 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(270 50 50)"/>'
+    +'<ellipse cx="50" cy="27" rx="3.1" ry="6.3" transform="rotate(315 50 50)"/>'
+    +'</g>'
+    +'<circle cx="50" cy="50" r="15" fill="#858f95" stroke="#e7ecee" stroke-width="1.6"/>'
+    +'<circle cx="50" cy="50" r="10" fill="#30383d" stroke="#d2d9dc" stroke-width="1.2"/>'
+    +'<g fill="#dce2e5" stroke="#4e5960" stroke-width=".8">'
+    +'<circle cx="50" cy="39" r="2.2"/><circle cx="60.5" cy="46.5" r="2.2"/>'
+    +'<circle cx="56.5" cy="58.5" r="2.2"/><circle cx="43.5" cy="58.5" r="2.2"/>'
+    +'<circle cx="39.5" cy="46.5" r="2.2"/>'
+    +'</g>'
+    +'<circle cx="50" cy="50" r="4" fill="#c6cdd1" stroke="#f3f5f6" stroke-width="1"/>'
+    +'</svg>';
+}
 function prepareVaz2110Wheels(root=document){
   if(!root)return;
   const arts=[];
@@ -2574,8 +2603,9 @@ function prepareVaz2110Wheels(root=document){
       if(!rect.width||!rect.height)return;
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const offsetX=(rect.width-nw*fit)/2,offsetY=(rect.height-nh*fit)/2;
-      const diameter=nw*.15;
-      const points=[{x:nw*.20,y:nh*.73},{x:nw*.80,y:nh*.73}];
+      const diameter=nw*.168;
+      // Centers follow the wheel-arch openings in the VAZ-2110 body PNG.
+      const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
       points.forEach((point,index)=>{
         const wheel=wheels[index];
         wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
@@ -2598,12 +2628,23 @@ function prepareVaz2110Wheels(root=document){
 }
 function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  const wheelSvg=lada2101WheelSvgMarkup();
+  const wheelSvg=vaz2110StampedWheelSvgMarkup();
   return '<div class="vaz2110-png-art">'
     +'<span class="vaz2110-wheel-spin rear" aria-hidden="true">'+wheelSvg+'</span>'
     +'<span class="vaz2110-wheel-spin front" aria-hidden="true">'+wheelSvg+'</span>'
     +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +(vinyl?'<svg class="vaz2110-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
+    +'<svg class="vaz2110-aroma-accessories" viewBox="0 0 800 278" preserveAspectRatio="none" aria-hidden="true">'
+    +'<path d="M438 20 L438 43" fill="none" stroke="#d8d3c6" stroke-width="2.2" stroke-linecap="round"/>'
+    +'<path d="M438 43 L438 48" fill="none" stroke="#171c20" stroke-width="1.2"/>'
+    +'<path d="M438 47 L428 59 L433 59 L425 69 L451 69 L443 59 L448 59 Z" fill="#2f8a58" stroke="#174c35" stroke-width="1.4"/>'
+    +'<path d="M435 69 L441 69 L441 75 L435 75 Z" fill="#8b6847"/>'
+    +'<circle cx="438" cy="46" r="2.4" fill="#d9c9a1" stroke="#4d4536" stroke-width="1"/>'
+    +'<path d="M470 21 L470 48" fill="none" stroke="#c9c5b8" stroke-width="1.8" stroke-linecap="round"/>'
+    +'<path d="M465 48 Q470 43 475 48 L477 65 Q470 69 463 65 Z" fill="#d4b96e" stroke="#635331" stroke-width="1.4"/>'
+    +'<path d="M466 53 L474 53" stroke="#fff1c5" stroke-width="1.6" opacity=".8"/>'
+    +'<path d="M467 46 L473 46 L473 49 L467 49 Z" fill="#6d777b" stroke="#30383d" stroke-width="1"/>'
+    +'</svg>'
     +'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
