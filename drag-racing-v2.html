@@ -945,20 +945,19 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 #proRaceCockpit.race-headlights-on .race-car-headlight-glow{opacity:.48!important}
 .pro-headlight-dash-toggle{
-  position:absolute!important;left:calc(50% + 148px)!important;top:50%!important;
-  transform:translateY(-50%)!important;z-index:16!important;pointer-events:auto!important;
+  position:absolute!important;right:14px!important;left:auto!important;top:9px!important;
+  transform:none!important;z-index:30!important;pointer-events:auto!important;
   display:flex!important;align-items:center!important;justify-content:center!important;
-  width:78px!important;min-width:78px!important;height:27px!important;padding:3px 5px!important;
-  border:1px solid #bda46e!important;border-radius:6px!important;
-  color:#f1e7cf!important;background:linear-gradient(180deg,#344047,#10171b)!important;
-  box-shadow:inset 0 1px 2px #ffffff30,0 2px 5px #000a!important;
-  font-size:8px!important;font-weight:700!important;line-height:1!important;white-space:nowrap!important;
+  width:118px!important;min-width:118px!important;height:34px!important;padding:4px 8px!important;
+  border:2px solid #d8b969!important;border-radius:8px!important;
+  color:#fff0be!important;background:linear-gradient(180deg,#56421d,#17140e)!important;
+  box-shadow:inset 0 1px 2px #ffffff30,0 3px 8px #000c,0 0 10px #f3cb6d2b!important;
+  font-size:10px!important;font-weight:1000!important;line-height:1!important;letter-spacing:.35px!important;white-space:nowrap!important;
 }
-.pro-headlight-dash-toggle.active{color:#ffe5a6!important;border-color:#f0cf83!important}
+.pro-headlight-dash-toggle.active{color:#241a06!important;border-color:#fff0ae!important;background:linear-gradient(180deg,#fff0b4,#d5a848)!important;box-shadow:inset 0 1px 2px #ffffffa0,0 3px 9px #000c,0 0 16px #ffe19b8a!important}
 @media(orientation:portrait),(max-width:560px){
   .pro-headlight-dash-toggle{
-    left:auto!important;right:clamp(82px,19vw,104px)!important;top:7px!important;
-    transform:none!important;width:76px!important;min-width:76px!important;
+    right:8px!important;top:7px!important;width:112px!important;min-width:112px!important;height:32px!important;
   }
 }
 </style>
@@ -3438,6 +3437,7 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
 let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,brakeHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,raceMusicGain=null,raceMusicTimer=null,raceMusicNextAt=0,raceMusicStep=0,raceMusicEnabled=true,raceEngineSoundEnabled=true,raceMusicMedia=null,raceEngineMedia=null,raceMusicObjectUrl=null,raceEngineObjectUrl=null,raceMediaLoadPromise=null,lastGearSoundAt=0,raceFinishIdleRampTimer=null,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true;
+try{const savedLights=localStorage.getItem('allcoinsDragRacingHeadlights');if(savedLights!==null)raceHeadlightsEnabled=savedLights==='1'}catch(_){}
 let raceEngineSampleStartCount=0,raceAudioWatchdogTimer=null;
 let airSuspensionIndex=1;
 const AIR_SUSPENSION_STATES=[
@@ -4371,6 +4371,7 @@ $('proAirSuspensionToggle')?.addEventListener('click',()=>{
 });
 $('proHeadlightToggle')?.addEventListener('click',()=>{
   raceHeadlightsEnabled=!raceHeadlightsEnabled;
+  try{localStorage.setItem('allcoinsDragRacingHeadlights',raceHeadlightsEnabled?'1':'0')}catch(_){}
   syncProRaceCockpit();
   syncRaceAudioButtons();
 });
