@@ -2310,7 +2310,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .vaz2110-png-art .vaz2110-png-vinyl{position:absolute!important;inset:0!important;z-index:4!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important}
 .race2d-car.png-car.vaz2110-png-car{width:clamp(320px,40vw,600px)!important;height:clamp(110px,14vw,215px)!important;aspect-ratio:auto!important;bottom:8%!important;overflow:visible!important;filter:none!important}
 .race2d-car.png-car.vaz2110-png-car .race-car-body-layer{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important}
-#proRaceCockpit.race-moving #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin{animation:race2d-wheel-spin var(--race-wheel-duration,.24s) linear infinite!important;animation-play-state:running!important}
+#proRaceCockpit #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin{animation:none!important;transform-origin:50% 50%!important;will-change:transform}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-png-art{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
 .race2d-car.png-opponent-car.vaz2110-opponent .vaz2110-wheel-spin{z-index:2!important}
 .race2d-car.png-opponent-car.vaz2110-opponent.opponent-moving .vaz2110-wheel-spin{animation:race2d-wheel-spin var(--opponent-wheel-duration,.24s) linear infinite!important}
@@ -3380,6 +3380,25 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   setDuration('--race-front-wheel-duration',frontDuration);
 
 
+  // VAZ-2110 wheel rotors are driven from the same frame clock as traction.
+  // This covers rolling, front-wheel drive on launch, and stationary burnout.
+  if(player.classList.contains('vaz2110-png-car')){
+    const spinAxis=(selector,active,duration)=>{
+      player.querySelectorAll(selector).forEach(node=>{
+        const previous=Number(node.dataset.vaz2110SpinAt||now);
+        let angle=Number(node.dataset.vaz2110SpinAngle||0);
+        if(active){
+          const elapsed=Math.max(0,Math.min(.05,(now-previous)/1000));
+          angle=(angle+elapsed*360/Math.max(.035,duration))%360;
+          node.style.transform='rotate('+angle.toFixed(2)+'deg)';
+          node.dataset.vaz2110SpinAngle=String(angle);
+        }
+        node.dataset.vaz2110SpinAt=String(now);
+      });
+    };
+    spinAxis('.vaz2110-wheel-spin.rear',rearActive,rearDuration);
+    spinAxis('.vaz2110-wheel-spin.front',frontActive,frontDuration);
+  }
 }
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const refs=race2dRefs;
