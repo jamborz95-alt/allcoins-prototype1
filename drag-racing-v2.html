@@ -1656,13 +1656,18 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="lada2101-exhaust-final-v10">
-/* VAZ-2101: hide all visible muffler metal; keep only the outlet opening at its current position. */
+<style id="lada2101-exhaust-final-v11">
+/* VAZ-2101: show only a short metal lip immediately behind the exhaust opening. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-body,
-#previewCar[data-car-id="2101"] .race-car-muffler-body,
+#previewCar[data-car-id="2101"] .race-car-muffler-body{
+  display:none!important;visibility:hidden!important;opacity:0!important;
+}
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-tailpipe,
 #previewCar[data-car-id="2101"] .race-car-muffler-tailpipe{
-  display:none!important;visibility:hidden!important;opacity:0!important;
+  display:block!important;visibility:visible!important;opacity:1!important;
+  left:2.8%!important;top:83.4%!important;
+  width:2.6%!important;height:1.2%!important;min-height:4px!important;
+  z-index:6!important;border-radius:3px 1px 1px 3px!important;
 }
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet,
 #previewCar[data-car-id="2101"] .race-car-muffler-outlet{
@@ -1670,7 +1675,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   left:2.2%!important;top:82.7%!important;
   width:5px!important;height:7px!important;z-index:7!important;
 }
-/* The opening follows the body shell's air-suspension offset, without shifting relative to the bumper. */
+/* Both the short metal lip and the outlet follow the air-suspension movement together. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .race-car-muffler{
   transform:translate3d(0,var(--air-suspension-y,0px),0)!important;
   transform-origin:center bottom!important;
@@ -2328,7 +2333,7 @@ function applyLada2101ExhaustPosition(root){
   const outlet=root.querySelector('.race-car-muffler-outlet');
   const muffler=root.querySelector('.race-car-muffler');
   if(muffler){
-    /* Match the body shell's pneuma offset so the outlet stays fixed under the bumper. */
+    /* Keep the metal lip and outlet attached to the body when air suspension changes. */
     muffler.style.setProperty('transform','translate3d(0,var(--air-suspension-y,0px),0)','important');
     muffler.style.setProperty('transform-origin','center bottom','important');
     muffler.style.setProperty('transition','transform .32s cubic-bezier(.22,.61,.36,1)','important');
@@ -2338,15 +2343,21 @@ function applyLada2101ExhaustPosition(root){
     mufflerBody.style.setProperty('visibility','hidden','important');
   }
   if(tailpipe){
-    tailpipe.style.setProperty('display','none','important');
-    tailpipe.style.setProperty('visibility','hidden','important');
-    tailpipe.style.setProperty('opacity','0','important');
+    tailpipe.style.setProperty('display','block','important');
+    tailpipe.style.setProperty('visibility','visible','important');
+    tailpipe.style.setProperty('opacity','1','important');
+    tailpipe.style.setProperty('left','2.8%','important');
+    tailpipe.style.setProperty('top','83.4%','important');
+    tailpipe.style.setProperty('width','2.6%','important');
+    tailpipe.style.setProperty('height','1.2%','important');
+    tailpipe.style.setProperty('min-height','4px','important');
+    tailpipe.style.setProperty('z-index','6','important');
   }
   if(outlet){
     outlet.style.setProperty('display','block','important');
     outlet.style.setProperty('visibility','visible','important');
     outlet.style.setProperty('opacity','1','important');
-    /* Preserve the outlet opening position from v19 exactly. */
+    /* Opening coordinates are unchanged. */
     outlet.style.setProperty('left','2.2%','important');
     outlet.style.setProperty('top','82.7%','important');
     outlet.style.setProperty('width','5px','important');
