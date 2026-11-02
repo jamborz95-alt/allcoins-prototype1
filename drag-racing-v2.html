@@ -1683,6 +1683,21 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+
+<style id="physical-wheel-motion-v1">
+/* Player wheel rotors are advanced from actual road speed (or driven-axle slip during burnout). */
+#proRaceCockpit #race2dPlayerCar .lada2101-wheel-spin,
+#proRaceCockpit #race2dPlayerCar .png-wheel-spin,
+#proRaceCockpit #race2dPlayerCar .vaz2110-wheel-layer,
+#proRaceCockpit #race2dPlayerCar .vaz2110-wheel-fallback,
+#proRaceCockpit #race2dPlayerCar svg .race-wheel{
+  animation:none!important;
+  transform-origin:50% 50%!important;
+  transform-box:fill-box!important;
+  backface-visibility:hidden!important;
+  will-change:transform;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -2406,6 +2421,7 @@ function syncRace2DCarArt(){
     if(useLada2101Png){applyLada2101ExhaustPosition(player);prepareLada2101Wheels(player);}
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
+  resetRaceWheelVisualState();
   applyAirSuspension();
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -2735,6 +2751,28 @@ function buildRace2DEnvironment(){
     race2dSceneHeightCache=Math.max(1,scene?.clientHeight||320);
   }
 }
+const RACE_WHEEL_RADIUS_METERS=.29;
+const RACE_FINAL_DRIVE_RATIO=4.1;
+let raceWheelVisualLastAt=0;
+const raceWheelVisualAngles={rear:0,front:0};
+const RACE_WHEEL_SELECTORS={
+  rear:'.lada2101-wheel-spin.rear, .png-wheel-spin.rear, .vaz2110-wheel-layer.rear, .vaz2110-wheel-fallback.rear, svg .race-wheel.rear',
+  front:'.lada2101-wheel-spin.front, .png-wheel-spin.front, .vaz2110-wheel-layer.front, .vaz2110-wheel-fallback.front, svg .race-wheel.front'
+};
+function resetRaceWheelVisualState(){
+  raceWheelVisualAngles.rear=0;
+  raceWheelVisualAngles.front=0;
+  raceWheelVisualLastAt=performance.now();
+  const player=$('race2dPlayerCar');
+  if(!player)return;
+  for(const axle of ['rear','front']){
+    player.querySelectorAll(RACE_WHEEL_SELECTORS[axle]).forEach(node=>{
+      node.style.setProperty('animation','none','important');
+      node.style.setProperty('transform-origin','50% 50%','important');
+      node.style.setProperty('transform','rotate(0deg)','important');
+    });
+  }
+}
 function updateRaceWheelDriveVisuals(now=performance.now()){
   const cockpit=$('proRaceCockpit'),player=$('race2dPlayerCar');
   if(!cockpit||!player)return;
@@ -2744,27 +2782,32 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   const frontDriven=driveType==='fwd'||driveType==='awd';
   const engineDriving=Boolean(running&&!finished&&gasHeld&&gear!=='N'&&now>=greenAt);
   const currentSpeed=Math.max(0,Number(speed)||0);
-  const rolling=Boolean(running&&!finished&&currentSpeed>.45);
-  const rearActive=rolling||(engineDriving&&rearDriven);
-  const frontActive=rolling||(engineDriving&&frontDriven);
+  const frameDt=raceWheelVisualLastAt?Math.max(0,Math.min(.05,(now-raceWheelVisualLastAt)/1000)):0;
+  raceWheelVisualLastAt=now;
+
+  // A rolling tyre's RPM is set by distance travelled and its real-world radius.
+  // During a stationary burnout, only the driven axle can spin above road speed.
+  const rollingWheelRpm=currentSpeed/3.6/(2*Math.PI*RACE_WHEEL_RADIUS_METERS)*60;
   const burnout=Boolean(engineDriving&&brakeHeld&&currentSpeed<9&&Number(rpm)>1100);
-  const rpmRatio=Math.max(0,Math.min(1,(Number(rpm)-850)/5750));
-  const rollingDuration=Math.max(.035,Math.min(.48,.48/(1+currentSpeed/18)));
-  const drivenDuration=burnout
-    ? Math.max(.055,.165-rpmRatio*.085)
-    : Math.max(.075,Math.min(rollingDuration,.245-rpmRatio*.115));
-  const rearDuration=engineDriving&&rearDriven?drivenDuration:rollingDuration;
-  const frontDuration=engineDriving&&frontDriven?drivenDuration:rollingDuration;
-  const setDuration=(name,value)=>{
-    const next=value.toFixed(3)+'s';
-    if(cockpit.style.getPropertyValue(name)!==next)cockpit.style.setProperty(name,next);
-  };
+  const selectedGear=gear==='N'?1:Math.max(1,Number(gear)||1);
+  const engineWheelRpm=Math.min(900,Math.max(0,Number(rpm)||0)/(gearRatio(selectedGear)*RACE_FINAL_DRIVE_RATIO));
+  const slippedDrivenWheelRpm=burnout?Math.max(rollingWheelRpm,engineWheelRpm):rollingWheelRpm;
+  const rearWheelRpm=rearDriven&&burnout?slippedDrivenWheelRpm:rollingWheelRpm;
+  const frontWheelRpm=frontDriven&&burnout?slippedDrivenWheelRpm:rollingWheelRpm;
+  const rearActive=rearWheelRpm>.15;
+  const frontActive=frontWheelRpm>.15;
+
   cockpit.classList.toggle('drive-rwd',driveType==='rwd');
   cockpit.classList.toggle('drive-fwd',driveType==='fwd');
   cockpit.classList.toggle('drive-awd',driveType==='awd');
   cockpit.classList.toggle('race-rear-wheel-active',rearActive);
   cockpit.classList.toggle('race-front-wheel-active',frontActive);
   cockpit.classList.toggle('race-burnout',burnout);
+  cockpit.classList.toggle('race-braking',Boolean(brakeHeld));
+  const brakeBiasFront=driveType==='fwd'?.70:driveType==='rwd'?.68:.64;
+  cockpit.style.setProperty('--race-brake-bias-front',String(brakeBiasFront));
+  cockpit.style.setProperty('--race-brake-bias-rear',String(1-brakeBiasFront));
+
   const rearSmoke=player.querySelector('.race-wheel-smoke.rear');
   const frontSmoke=player.querySelector('.race-wheel-smoke.front');
   const syncBurnoutSmoke=(node,active)=>{
@@ -2809,31 +2852,24 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   };
   syncBurnoutSmoke(rearSmoke,Boolean(burnout&&rearDriven));
   syncBurnoutSmoke(frontSmoke,Boolean(burnout&&frontDriven));
-  setDuration('--race-rear-wheel-duration',rearDuration);
-  setDuration('--race-front-wheel-duration',frontDuration);
 
-  // Rotate the actual extracted wheel PNGs directly from the race frame loop.
-  // CSS-only animation was unreliable in some Telegram Android WebViews.
-  // The CSS rotor is a visible fallback when canvas extraction is unavailable.
-  if(player.classList.contains('vaz2110-png-car')){
-    const spinAxis=(selector,active,duration)=>{
-      player.querySelectorAll(selector).forEach(node=>{
-        if(node.tagName==='IMG'&&!node.getAttribute('src'))return;
-        const previous=Number(node.dataset.vaz2110SpinAt||now);
-        let angle=Number(node.dataset.vaz2110SpinAngle||0);
-        if(active){
-          const elapsed=Math.max(0,Math.min(.05,(now-previous)/1000));
-          angle=(angle+elapsed*360/Math.max(.035,duration))%360;
-          node.style.transform='rotate('+angle.toFixed(2)+'deg)';
-          node.dataset.vaz2110SpinAngle=String(angle);
-        }
-        node.dataset.vaz2110SpinAt=String(now);
-      });
-    };
-    spinAxis('.vaz2110-wheel-layer.rear, .vaz2110-wheel-fallback.rear',rearActive,rearDuration);
-    spinAxis('.vaz2110-wheel-layer.front, .vaz2110-wheel-fallback.front',frontActive,frontDuration);
-  }
+  const rotateAxle=(axle,wheelRpm)=>{
+    if(frameDt>0&&wheelRpm>0){
+      raceWheelVisualAngles[axle]=(raceWheelVisualAngles[axle]+wheelRpm*6*frameDt)%360;
+    }
+    const transform='rotate('+raceWheelVisualAngles[axle].toFixed(2)+'deg)';
+    player.querySelectorAll(RACE_WHEEL_SELECTORS[axle]).forEach(node=>{
+      if(node.style.getPropertyValue('animation')!=='none'||node.style.getPropertyPriority('animation')!=='important')
+        node.style.setProperty('animation','none','important');
+      if(node.style.getPropertyValue('transform-origin')!=='50% 50%'||node.style.getPropertyPriority('transform-origin')!=='important')
+        node.style.setProperty('transform-origin','50% 50%','important');
+      node.style.setProperty('transform',transform,'important');
+    });
+  };
+  rotateAxle('rear',rearWheelRpm);
+  rotateAxle('front',frontWheelRpm);
 }
+
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const refs=race2dRefs;
   const player=refs?.player||$('race2dPlayerCar');
@@ -3437,7 +3473,17 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
 let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,brakeHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceAudioMaster=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceIntakeNoise=null,raceIntakeFilter=null,raceIntakeGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,raceMusicGain=null,raceMusicTimer=null,raceMusicNextAt=0,raceMusicStep=0,raceMusicEnabled=true,raceEngineSoundEnabled=true,raceMusicMedia=null,raceEngineMedia=null,raceMusicObjectUrl=null,raceEngineObjectUrl=null,raceMediaLoadPromise=null,lastGearSoundAt=0,raceFinishIdleRampTimer=null,shiftTorqueStartAt=0,shiftTorqueUntil=0,shiftRpmTransitionFrom=0,shiftRpmTransitionTo=0,shiftRpmTransitionAt=0,shiftRpmTransitionUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
-function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true;
+function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}
+function serviceBrakeForceForCar(c){
+  if(!brakeHeld)return 0;
+  const total=Math.max(0,Number(c?.weight)||0)*5.5;
+  const frontBias=c?.drive==='fwd'?.70:c?.drive==='rwd'?.68:.64;
+  const frontAxle=total*frontBias;
+  const rearAxle=total-frontAxle;
+  const frontLeft=frontAxle/2,frontRight=frontAxle/2;
+  const rearLeft=rearAxle/2,rearRight=rearAxle/2;
+  return frontLeft+frontRight+rearLeft+rearRight;
+}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0,raceHeadlightsEnabled=true;
 let raceEngineSampleStartCount=0,raceAudioWatchdogTimer=null;
 let airSuspensionIndex=1;
 const AIR_SUSPENSION_STATES=[
@@ -4393,7 +4439,7 @@ function setLight(n){
 }
 function reset(){
   if(raceFinishIdleRampTimer!==null){clearInterval(raceFinishIdleRampTimer);raceFinishIdleRampTimer=null;}
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;resetRaceWheelVisualState();shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -4553,7 +4599,7 @@ function start(sharedStartedAt=null){
         $('raceStatus').textContent='⛽ Бензин закончился — заправь автомобиль.';
       }else if(gear==='N'){
         const velocity=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
-        const dragForce=dragCoeff*velocity*velocity,rollingForce=c.weight*9.81*.014,brakeForce=brakeHeld?c.weight*5.5:0;
+        const dragForce=dragCoeff*velocity*velocity,rollingForce=c.weight*9.81*.014,brakeForce=serviceBrakeForceForCar(c);
         speed=Math.max(0,speed-((dragForce+rollingForce+brakeForce)/c.weight)*dt*3.6);
         const targetRpm=gasHeld?6000:Math.max(850,Math.min(6600,speed*5));
         rpm+=(targetRpm-rpm)*(1-Math.exp(-dt*(gasHeld?3.2:7.5)));
@@ -4588,7 +4634,7 @@ function start(sharedStartedAt=null){
         const dragForce=dragCoeff*velocity*velocity;
         const rollingForce=c.weight*9.81*.014;
         const engineBrake=throttle?0:(speed>.5?c.weight*.11:0);
-        const serviceBrake=brakeHeld?c.weight*5.5:0;
+        const serviceBrake=serviceBrakeForceForCar(c);
         const downshiftDrag=now<downshiftBrakeUntil?c.weight*.055:0;
         const acceleration=(driveForce-dragForce-rollingForce-engineBrake-serviceBrake-downshiftDrag)/c.weight;
         speed=Math.max(0,Math.min(400,speed+acceleration*dt*3.6));
