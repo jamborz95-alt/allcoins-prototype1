@@ -2313,6 +2313,53 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+<style id="allcoins-dashboard-left-switches-v37">
+/* Move the headlight and air-suspension switches together to the left of the speedometer cluster. */
+#proRaceCockpit .pro-instrument-cluster{
+  left:calc(50% + clamp(32px,4.5vw,45px))!important;
+}
+#proRaceCockpit .pro-headlight-dash-toggle,
+#proRaceCockpit .pro-air-suspension-toggle{
+  position:absolute!important;
+  left:clamp(50px,calc(50% - 250px),20%)!important;
+  right:auto!important;
+  width:clamp(84px,10vw,118px)!important;
+  min-width:0!important;
+  height:clamp(25px,3.6vh,34px)!important;
+  box-sizing:border-box!important;
+  padding:3px 5px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:7px!important;
+  font-size:clamp(7px,.78vw,10px)!important;
+  line-height:1!important;
+  letter-spacing:.15px!important;
+  white-space:nowrap!important;
+  z-index:30!important;
+  transform:none!important;
+}
+#proRaceCockpit .pro-headlight-dash-toggle{
+  top:calc(50% - 36px)!important;
+}
+#proRaceCockpit .pro-air-suspension-toggle{
+  top:calc(50% + 3px)!important;
+}
+@media(orientation:portrait){
+  #proRaceCockpit .pro-instrument-cluster{
+    left:calc(50% + 43px)!important;
+  }
+  #proRaceCockpit .pro-headlight-dash-toggle,
+  #proRaceCockpit .pro-air-suspension-toggle{
+    left:clamp(52px,calc(50% - 410px),15%)!important;
+    width:clamp(84px,10dvh,118px)!important;
+    height:clamp(27px,3.6vw,34px)!important;
+    font-size:clamp(7px,.78dvh,10px)!important;
+  }
+  #proRaceCockpit .pro-headlight-dash-toggle{top:calc(50% - 36px)!important}
+  #proRaceCockpit .pro-air-suspension-toggle{top:calc(50% + 4px)!important}
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
