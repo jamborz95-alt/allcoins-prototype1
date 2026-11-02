@@ -1684,20 +1684,6 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="physical-wheel-motion-v1">
-/* Player wheel rotors are advanced from actual road speed (or driven-axle slip during burnout). */
-#proRaceCockpit #race2dPlayerCar .lada2101-wheel-spin,
-#proRaceCockpit #race2dPlayerCar .png-wheel-spin,
-#proRaceCockpit #race2dPlayerCar .vaz2110-wheel-layer,
-#proRaceCockpit #race2dPlayerCar .vaz2110-wheel-fallback,
-#proRaceCockpit #race2dPlayerCar svg .race-wheel{
-  animation:none!important;
-  transform-origin:50% 50%!important;
-  transform-box:fill-box!important;
-  backface-visibility:hidden!important;
-  will-change:transform;
-}
-</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -2421,7 +2407,7 @@ function syncRace2DCarArt(){
     if(useLada2101Png){applyLada2101ExhaustPosition(player);prepareLada2101Wheels(player);}
     if(useLadaPng)applyLadaPaintToImages(paint);
   }
-  resetRaceWheelVisualState();
+  
   applyAirSuspension();
   if(opponent&&!currentOnlineRoom){
     opponent.innerHTML='';
@@ -2753,26 +2739,6 @@ function buildRace2DEnvironment(){
 }
 const RACE_WHEEL_RADIUS_METERS=.29;
 const RACE_FINAL_DRIVE_RATIO=4.1;
-let raceWheelVisualLastAt=0;
-const raceWheelVisualAngles={rear:0,front:0};
-const RACE_WHEEL_SELECTORS={
-  rear:'.lada2101-wheel-spin.rear, .png-wheel-spin.rear, .vaz2110-wheel-layer.rear, .vaz2110-wheel-fallback.rear, svg .race-wheel.rear',
-  front:'.lada2101-wheel-spin.front, .png-wheel-spin.front, .vaz2110-wheel-layer.front, .vaz2110-wheel-fallback.front, svg .race-wheel.front'
-};
-function resetRaceWheelVisualState(){
-  raceWheelVisualAngles.rear=0;
-  raceWheelVisualAngles.front=0;
-  raceWheelVisualLastAt=performance.now();
-  const player=$('race2dPlayerCar');
-  if(!player)return;
-  for(const axle of ['rear','front']){
-    player.querySelectorAll(RACE_WHEEL_SELECTORS[axle]).forEach(node=>{
-      node.style.setProperty('animation','none','important');
-      node.style.setProperty('transform-origin','50% 50%','important');
-      node.style.setProperty('transform','rotate(0deg)','important');
-    });
-  }
-}
 function updateRaceWheelDriveVisuals(now=performance.now()){
   const cockpit=$('proRaceCockpit'),player=$('race2dPlayerCar');
   if(!cockpit||!player)return;
@@ -2782,11 +2748,8 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   const frontDriven=driveType==='fwd'||driveType==='awd';
   const engineDriving=Boolean(running&&!finished&&gasHeld&&gear!=='N'&&now>=greenAt);
   const currentSpeed=Math.max(0,Number(speed)||0);
-  const frameDt=raceWheelVisualLastAt?Math.max(0,Math.min(.05,(now-raceWheelVisualLastAt)/1000)):0;
-  raceWheelVisualLastAt=now;
 
-  // A rolling tyre's RPM is set by distance travelled and its real-world radius.
-  // During a stationary burnout, only the driven axle can spin above road speed.
+  // RPM for a rolling tyre comes from the car's linear speed and the tyre radius.
   const rollingWheelRpm=currentSpeed/3.6/(2*Math.PI*RACE_WHEEL_RADIUS_METERS)*60;
   const burnout=Boolean(engineDriving&&brakeHeld&&currentSpeed<9&&Number(rpm)>1100);
   const selectedGear=gear==='N'?1:Math.max(1,Number(gear)||1);
@@ -2807,6 +2770,15 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   const brakeBiasFront=driveType==='fwd'?.70:driveType==='rwd'?.68:.64;
   cockpit.style.setProperty('--race-brake-bias-front',String(brakeBiasFront));
   cockpit.style.setProperty('--race-brake-bias-rear',String(1-brakeBiasFront));
+
+  // CSS animations remain compositor-driven, but their period is physically tied to RPM:
+  // faster speed = shorter period; braking = longer period; zero speed = inactive axle.
+  const durationForRpm=wheelRpm=>Math.min(120,Math.max(.018,60/Math.max(.001,wheelRpm)))+'s';
+  const setDuration=(name,value)=>{
+    if(cockpit.style.getPropertyValue(name)!==value)cockpit.style.setProperty(name,value);
+  };
+  setDuration('--race-rear-wheel-duration',durationForRpm(rearWheelRpm));
+  setDuration('--race-front-wheel-duration',durationForRpm(frontWheelRpm));
 
   const rearSmoke=player.querySelector('.race-wheel-smoke.rear');
   const frontSmoke=player.querySelector('.race-wheel-smoke.front');
@@ -2852,22 +2824,6 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   };
   syncBurnoutSmoke(rearSmoke,Boolean(burnout&&rearDriven));
   syncBurnoutSmoke(frontSmoke,Boolean(burnout&&frontDriven));
-
-  const rotateAxle=(axle,wheelRpm)=>{
-    if(frameDt>0&&wheelRpm>0){
-      raceWheelVisualAngles[axle]=(raceWheelVisualAngles[axle]+wheelRpm*6*frameDt)%360;
-    }
-    const transform='rotate('+raceWheelVisualAngles[axle].toFixed(2)+'deg)';
-    player.querySelectorAll(RACE_WHEEL_SELECTORS[axle]).forEach(node=>{
-      if(node.style.getPropertyValue('animation')!=='none'||node.style.getPropertyPriority('animation')!=='important')
-        node.style.setProperty('animation','none','important');
-      if(node.style.getPropertyValue('transform-origin')!=='50% 50%'||node.style.getPropertyPriority('transform-origin')!=='important')
-        node.style.setProperty('transform-origin','50% 50%','important');
-      node.style.setProperty('transform',transform,'important');
-    });
-  };
-  rotateAxle('rear',rearWheelRpm);
-  rotateAxle('front',frontWheelRpm);
 }
 
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
@@ -4439,7 +4395,7 @@ function setLight(n){
 }
 function reset(){
   if(raceFinishIdleRampTimer!==null){clearInterval(raceFinishIdleRampTimer);raceFinishIdleRampTimer=null;}
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;resetRaceWheelVisualState();shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueStartAt=0;shiftTorqueUntil=0;shiftRpmTransitionFrom=0;shiftRpmTransitionTo=0;shiftRpmTransitionAt=0;shiftRpmTransitionUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceWorldSpeed=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;lastFuelHudSyncAt=0;nextRoadBumpAt=135+Math.random()*85;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
