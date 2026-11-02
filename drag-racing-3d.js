@@ -170,10 +170,10 @@
     hood.rotation.x=-0.025;
     const trunk=addBox(car,new THREE.BoxGeometry(1.52,0.105,0.58),red,0,0.755,1.22);
     trunk.rotation.x=0.018;
-    const roofMesh=addBox(car,new THREE.BoxGeometry(1.35,0.48,1.38),red,0,0.98,0.13);
-    roofMesh.name="drag-car-roof";
-    const roofGlassMesh=addBox(car,new THREE.BoxGeometry(1.25,0.34,1.13),glass,0,1.02,0.11);
-    roofGlassMesh.name="drag-car-roof-glass";
+    const initialRoofMesh=addBox(car,new THREE.BoxGeometry(1.35,0.48,1.38),red,0,0.98,0.13);
+    initialRoofMesh.name="drag-car-roof";
+    const initialRoofGlassMesh=addBox(car,new THREE.BoxGeometry(1.25,0.34,1.13),glass,0,1.02,0.11);
+    initialRoofGlassMesh.name="drag-car-roof-glass";
     addBox(car,new THREE.BoxGeometry(1.28,0.045,0.075),dark,0,0.56,-1.79);
     addBox(car,new THREE.BoxGeometry(0.52,0.18,0.08),mat(0x171b22,0.4,0.25),0,0.54,-1.805);
     addBox(car,new THREE.BoxGeometry(1.32,0.055,0.88),dark,0,0.705,0.42);
