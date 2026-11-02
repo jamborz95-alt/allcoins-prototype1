@@ -210,6 +210,19 @@ try {
   assert.equal(await page.locator("#proClutchHold").count(), 0, "There must be no clutch pedal in the race cockpit.");
   assert.equal(await page.locator("#clutch").count(), 0, "There must be no clutch control on the race page.");
   assert.equal(await page.locator("#proGasHold").count(), 1, "The cockpit must show a dedicated hold-to-accelerate pedal.");
+  assert.equal(await page.locator("#proBrakeHold").count(), 1, "The cockpit must show a dedicated brake pedal.");
+  const headlightsToggle = page.locator("#proHeadlightsToggle");
+  assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "true", "Headlights should retain their default on state.");
+  await headlightsToggle.click();
+  assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "false", "The headlight switch must turn the lights off.");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), false,
+    "Turning headlights off must remove the live headlight beam.");
+  assert.equal(await page.evaluate(() => localStorage.getItem("allcoinsDragHeadlightsOn")), "0",
+    "The off state must persist in local storage.");
+  await headlightsToggle.click();
+  assert.equal(await headlightsToggle.getAttribute("aria-pressed"), "true", "The headlight switch must turn the lights back on.");
+  assert.equal(await page.locator("#proRaceCockpit").evaluate(el => el.classList.contains("race-headlights-on")), true,
+    "Turning headlights on must restore the live headlight beam.");
 
   const art = await page.locator("#carShop .car-thumb svg").count();
   assert.ok(art > 0, "The garage/shop must render detailed scalable 2D SVG car illustrations.");
@@ -343,6 +356,18 @@ try {
     `The race loop must stay active beyond the freeze seen on Android (clock advanced ${(longRunClockAfter-longRunClockBefore).toFixed(3)} s).`);
   assert.ok(longRunSpeedAfter > longRunSpeedBefore,
     `The car must keep accelerating during an extended throttle hold (speed ${longRunSpeedBefore} → ${longRunSpeedAfter} km/h).`);
+  await page.locator("#proGasHold").dispatchEvent("pointerup", { pointerId: 9, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
+  const speedBeforeBrake = Number(await page.locator("#proSpeedDigits").textContent());
+  await page.locator("#proBrakeHold").dispatchEvent("pointerdown", { pointerId: 11, pointerType: "touch", isPrimary: true, button: 0, buttons: 1 });
+  assert.equal(await page.locator("#proBrakeHold").evaluate(el => el.classList.contains("held")), true,
+    "Holding the brake pedal should visibly engage it.");
+  await page.waitForTimeout(450);
+  const speedAfterBrake = Number(await page.locator("#proSpeedDigits").textContent());
+  assert.ok(speedAfterBrake < speedBeforeBrake,
+    `Holding the brake must decelerate the car (speed ${speedBeforeBrake} → ${speedAfterBrake} km/h).`);
+  await page.locator("#proBrakeHold").dispatchEvent("pointerup", { pointerId: 11, pointerType: "touch", isPrimary: true, button: 0, buttons: 0 });
+  assert.equal(await page.locator("#proBrakeHold").evaluate(el => el.classList.contains("held")), false,
+    "Releasing the brake pedal should disengage it.");
   assert.equal(recoveredFrameError, null,
     `No runtime recovery should be required during normal driving: ${JSON.stringify(recoveredFrameError)}`);
   const spinningWheels = await page.locator("#race2dPlayerCar .png-wheel-spin").evaluateAll(els => els.map(el => ({ animation: getComputedStyle(el).animationName, duration: getComputedStyle(el).animationDuration })));
