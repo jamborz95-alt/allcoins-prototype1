@@ -1865,6 +1865,108 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+
+<style id="allcoins-lada2101-beam-exhaust-v30">
+/* VAZ-2101: widen the visible spread of the headlamp beam without moving its origin. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam{
+  left:96.5%!important;
+  top:36%!important;
+  width:145%!important;
+  height:50%!important;
+  z-index:8!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam::before{
+  clip-path:polygon(0 50%,100% 0,100% 100%)!important;
+  filter:blur(2.2px)!important;
+}
+
+/* The muffler is a sibling of the PNG body assembly. Raise the whole exhaust
+   layer above the transparent shell so the outlet and its smoke are not hidden. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-body-layer > .race-car-muffler{
+  position:absolute!important;
+  inset:0!important;
+  z-index:10!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet{
+  position:absolute!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:12!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before,
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  content:""!important;
+  position:absolute!important;
+  display:block!important;
+  pointer-events:none!important;
+  transform-origin:right center!important;
+  border:0!important;
+  border-radius:50%!important;
+  opacity:0!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  left:-1px!important;
+  top:50%!important;
+  width:25px!important;
+  height:9px!important;
+  transform:translateY(-50%) scaleX(.06) scaleY(.28)!important;
+  filter:blur(1px)!important;
+  background:radial-gradient(ellipse at 94% 50%,
+    rgba(255,255,255,1) 0%,
+    rgba(232,240,244,.92) 30%,
+    rgba(190,204,211,.55) 66%,
+    transparent 100%)!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  left:-4px!important;
+  top:50%!important;
+  width:76px!important;
+  height:38px!important;
+  transform:translateY(-50%) scale(.06,.16)!important;
+  filter:blur(1.7px)!important;
+  background:radial-gradient(ellipse at 91% 50%,
+    rgba(246,249,251,.96) 0%,
+    rgba(220,229,234,.88) 22%,
+    rgba(185,198,205,.68) 48%,
+    rgba(151,166,175,.36) 72%,
+    rgba(126,143,152,.12) 88%,
+    transparent 100%)!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  animation:lada2101-exhaust-core-v30 1.05s ease-out infinite!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation:lada2101-exhaust-cloud-v30 1.45s ease-out infinite!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::before{
+  animation-duration:.64s!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet::after{
+  animation-duration:.82s!important;
+}
+@keyframes lada2101-exhaust-core-v30{
+  0%{opacity:0;transform:translateY(-50%) translateX(0) scaleX(.06) scaleY(.28)}
+  8%{opacity:1;transform:translateY(-50%) translateX(-2px) scaleX(.72) scaleY(.82)}
+  32%{opacity:.72;transform:translateY(-50%) translateX(-9px) scaleX(1.08) scaleY(.9)}
+  100%{opacity:0;transform:translateY(-50%) translateX(-26px) translateY(-4px) scaleX(1.55) scaleY(1.05)}
+}
+@keyframes lada2101-exhaust-cloud-v30{
+  0%{opacity:0;transform:translateY(-50%) translateX(0) scale(.06,.16)}
+  10%{opacity:.96;transform:translateY(-50%) translateX(-4px) scale(.5,.55)}
+  38%{opacity:.76;transform:translateY(-50%) translateX(-19px) translateY(-3px) scale(1,.82)}
+  70%{opacity:.38;transform:translateY(-50%) translateX(-42px) translateY(-8px) scale(1.45,1.12)}
+  100%{opacity:0;transform:translateY(-50%) translateX(-68px) translateY(-13px) scale(1.9,1.38)}
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
