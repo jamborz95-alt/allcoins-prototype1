@@ -82,6 +82,10 @@
     const rim = mat(0xb6c5d1,0.26,0.8);
     const tail = new THREE.MeshStandardMaterial({color:0xff1738,emissive:0x790013,emissiveIntensity:2.1,roughness:0.25});
     const head = new THREE.MeshStandardMaterial({color:0xfff0be,emissive:0xffb84b,emissiveIntensity:1.6});
+    // Round chrome-rimmed headlights inspired by the classic VAZ-2101.
+    const headlampChrome=mat(0xc8d2dc,0.2,0.92);
+    const headlampLens=new THREE.MeshStandardMaterial({color:0xdce8ed,emissive:0xffe7af,emissiveIntensity:0.08,roughness:0.16,metalness:0.12});
+    const headlampBeamMaterial=new THREE.MeshBasicMaterial({color:0xffe9b5,transparent:true,opacity:0.11,depthWrite:false,side:THREE.DoubleSide});
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(260,520),mat(0x3c5149,1));
     ground.rotation.x=-Math.PI/2;ground.position.set(0,-0.17,-225);scene.add(ground);
     const road = new THREE.Mesh(new THREE.PlaneGeometry(13,520),roadMat);
@@ -186,7 +190,17 @@
       const mirror=addBox(car,new THREE.BoxGeometry(0.19,0.12,0.17),red,x*1.18,0.86,-0.47);
       mirror.rotation.y=x<0?-0.12:0.12;
       addBox(car,new THREE.BoxGeometry(0.12,0.18,0.07),tail,x*0.69,0.69,1.705);
-      addBox(car,new THREE.BoxGeometry(0.14,0.1,0.045),head,x*0.68,0.69,-1.72);
+      const lampX=x*0.68;
+      const lampHousing=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.075,32),headlampChrome);
+      lampHousing.rotation.x=Math.PI/2;lampHousing.position.set(lampX,0.69,-1.79);car.add(lampHousing);
+      const lampLens=new THREE.Mesh(new THREE.CircleGeometry(0.128,32),headlampLens);
+      lampLens.position.set(lampX,0.69,-1.832);lampLens.userData.headlightLens=true;car.add(lampLens);
+      const lampTrim=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.018,8,32),headlampChrome);
+      lampTrim.position.set(lampX,0.69,-1.839);car.add(lampTrim);
+      const beam=new THREE.Mesh(new THREE.ConeGeometry(0.78,12,24,1,true),headlampBeamMaterial);
+      beam.rotation.x=-Math.PI/2;beam.position.set(lampX,0.47,-7.83);beam.userData.headlightBeam=true;beam.visible=false;car.add(beam);
+      const lampGlow=new THREE.PointLight(0xffe8b4,0,6,1.8);
+      lampGlow.position.set(lampX,0.69,-1.86);lampGlow.userData.headlightGlow=true;car.add(lampGlow);
       for(const z of [-1.12,1.1]){
         const wheel=new THREE.Group();wheel.position.set(x,0.38,z);car.add(wheel);
         const tire=new THREE.Mesh(new THREE.CylinderGeometry(0.39,0.39,0.21,24),rubber);tire.rotation.z=Math.PI/2;wheel.add(tire);
@@ -260,6 +274,20 @@
     }
 
     const opponentCars=new Map();
+    let headlightsEnabled=Boolean(window.__allcoinsHeadlightsOn);
+    function applyHeadlights(model,enabled){
+      model.traverse(node=>{
+        if(node.userData.headlightBeam)node.visible=enabled;
+        if(node.userData.headlightGlow)node.intensity=enabled?8:0;
+        if(node.userData.headlightLens&&node.material)node.material.emissiveIntensity=enabled?1.9:0.08;
+      });
+    }
+    applyHeadlights(car,headlightsEnabled);
+    window.addEventListener("allcoins:headlights",event=>{
+      headlightsEnabled=Boolean(event.detail?.enabled);
+      applyHeadlights(car,headlightsEnabled);
+      for(const model of opponentCars.values())applyHeadlights(model,headlightsEnabled);
+    });
     let raceState={room:null,players:[]};
     const paintByCar={"2104":0xd7dce2,"2105":0x254c72,"2106":0x8f2936,"2107":0xe52e3d,"2109":0x24486f,"2110":0xd9dde0,"2112":0xe2bd3d,"2114":0x2773a2,"priora":0x20262d,"granta":0xaebdc8,"niva":0x637650,"vesta":0xf1f1e8};
     const scaleByCar={"2104":[1.02,1.04],"2105":[0.99,0.99],"2106":[1.01,1.02],"2107":[1,1],"2109":[0.95,0.93],"2110":[1,1.01],"2112":[0.97,0.94],"2114":[0.96,0.94],"priora":[1,1],"granta":[1,1],"niva":[1.07,1.07],"vesta":[1.03,1.03]};
@@ -306,6 +334,7 @@
         model.userData.racerId=id;
         model.userData.carId=String(p.car_id||"2107");
         scene.add(model);
+        applyHeadlights(model,headlightsEnabled);
         opponentCars.set(id,model);
       }
     }
