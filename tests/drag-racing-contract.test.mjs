@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const server = readFileSync(new URL("../server/server.js", import.meta.url), "utf8");
 const router = readFileSync(new URL("../server/drag-racing-router.js", import.meta.url), "utf8");
 const page = readFileSync(new URL("../drag-racing.html", import.meta.url), "utf8");
+const pageV2 = readFileSync(new URL("../drag-racing-v2.html", import.meta.url), "utf8");
 const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 
@@ -232,4 +233,17 @@ test("headlight beam originates at the front bumper and road bumps do not flash 
   assert.ok(bump, "road bump animation remains defined for compatibility");
   assert.doesNotMatch(bump[1], /brightness|filter/, "road bump keyframes must not flash the scene");
   assert.match(page, /road-bump-active \.race2d-road-surface\{filter:none!important\}/, "the uneven-road state must not change screen brightness");
+});
+
+
+test("current drag racing uses speed-synchronised individual wheel rotation and axle-specific burnout", () => {
+  assert.match(pageV2, /const RACE_WHEEL_RADIUS_METERS=\.29/);
+  assert.match(pageV2, /const rollingWheelRpm=currentSpeed\/3\.6\/\(2\*Math\.PI\*RACE_WHEEL_RADIUS_METERS\)\*60/);
+  assert.match(pageV2, /raceWheelVisualAngles\[axle\]=\(raceWheelVisualAngles\[axle\]\+wheelRpm\*6\*frameDt\)%360/);
+  assert.match(pageV2, /const rearWheelRpm=rearDriven&&burnout\?slippedDrivenWheelRpm:rollingWheelRpm/);
+  assert.match(pageV2, /const frontWheelRpm=frontDriven&&burnout\?slippedDrivenWheelRpm:rollingWheelRpm/);
+  assert.match(pageV2, /function serviceBrakeForceForCar\(c\)/);
+  assert.match(pageV2, /const frontBias=c\?\.drive==='fwd'\?\.70:c\?\.drive==='rwd'\?\.68:\.64/);
+  assert.match(pageV2, /const serviceBrake=serviceBrakeForceForCar\(c\)/);
+  assert.match(pageV2, /#proRaceCockpit #race2dPlayerCar \.lada2101-wheel-spin,[\s\S]*animation:none!important/);
 });
