@@ -1505,6 +1505,29 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+<style id="lada2101-headlight-beam-v1">
+/* VAZ-2101: place the warm low-beam cone directly at the front round lamp. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .race-car-headlight-glow{
+  left:92.3%!important;
+  top:39.1%!important;
+  width:60%!important;
+  height:40%!important;
+  z-index:14!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .race-car-headlight-glow::before{
+  clip-path:polygon(0 50%,100% 13%,100% 87%)!important;
+  background:linear-gradient(90deg,
+    rgba(255,252,231,.9) 0%,
+    rgba(255,241,195,.68) 18%,
+    rgba(255,228,163,.34) 62%,
+    rgba(255,219,139,0) 100%)!important;
+  filter:blur(1.4px)!important;
+}
+#proRaceCockpit.race-headlights-on #race2dPlayerCar.lada2101-png-car .race-car-headlight-glow{
+  opacity:.82!important;
+}
+</style>
+
 <style id="lada2101-wheel-spin-v1">
 /* Classic steel wheels for the transparent VAZ-2101 body.
    Wheel circles sit behind the PNG shell so the red wheel arches stay in front. */
@@ -2384,7 +2407,7 @@ function syncRace2DCarArt(){
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
-  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+(useLada2101Png?'':engineEffects)+'</div>';
+  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+engineEffects+'</div>';
   if(preview){
     preview.dataset.carId=selectedId;
     preview.innerHTML=usePngSprite
