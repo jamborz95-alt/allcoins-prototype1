@@ -1656,18 +1656,13 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 
 
-<style id="lada2101-exhaust-final-v9">
-/* VAZ-2101: short visible exhaust tip sits immediately below the rear steel bumper. */
+<style id="lada2101-exhaust-final-v10">
+/* VAZ-2101: hide all visible muffler metal; keep only the outlet opening at its current position. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-body,
-#previewCar[data-car-id="2101"] .race-car-muffler-body{
-  display:none!important;
-}
+#previewCar[data-car-id="2101"] .race-car-muffler-body,
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-tailpipe,
 #previewCar[data-car-id="2101"] .race-car-muffler-tailpipe{
-  display:block!important;visibility:visible!important;opacity:1!important;
-  left:2.8%!important;top:83.4%!important;
-  width:8.2%!important;height:2.3%!important;min-height:5px!important;
-  z-index:6!important;border-radius:3px 1px 1px 3px!important;
+  display:none!important;visibility:hidden!important;opacity:0!important;
 }
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet,
 #previewCar[data-car-id="2101"] .race-car-muffler-outlet{
@@ -1675,9 +1670,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   left:2.2%!important;top:82.7%!important;
   width:5px!important;height:7px!important;z-index:7!important;
 }
-
-/* Exhaust follows the same air-suspension offset as the painted shell.
-   The pipe stays at a constant point under the bumper at every ride height. */
+/* The opening follows the body shell's air-suspension offset, without shifting relative to the bumper. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .race-car-muffler{
   transform:translate3d(0,var(--air-suspension-y,0px),0)!important;
   transform-origin:center bottom!important;
@@ -1890,7 +1883,7 @@ function prepareLada2101Wheels(root=document){
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const imageW=nw*fit,imageH=nh*fit;
       const offsetX=(rect.width-imageW)/2,offsetY=(rect.height-imageH)/2;
-      const diameter=nw*.14;
+      const diameter=nw*.15; // Slightly larger steel wheels (+~7%), centered in the original arches.
       const points=[
         {x:nw*.239,y:nh*.835},
         {x:nw*.855,y:nh*.835}
@@ -2335,27 +2328,25 @@ function applyLada2101ExhaustPosition(root){
   const outlet=root.querySelector('.race-car-muffler-outlet');
   const muffler=root.querySelector('.race-car-muffler');
   if(muffler){
-    /* Match the body shell's pneuma offset so the pipe stays under the bumper. */
+    /* Match the body shell's pneuma offset so the outlet stays fixed under the bumper. */
     muffler.style.setProperty('transform','translate3d(0,var(--air-suspension-y,0px),0)','important');
     muffler.style.setProperty('transform-origin','center bottom','important');
     muffler.style.setProperty('transition','transform .32s cubic-bezier(.22,.61,.36,1)','important');
   }
-  if(mufflerBody)mufflerBody.style.setProperty('display','none','important');
+  if(mufflerBody){
+    mufflerBody.style.setProperty('display','none','important');
+    mufflerBody.style.setProperty('visibility','hidden','important');
+  }
   if(tailpipe){
-    tailpipe.style.setProperty('display','block','important');
-    tailpipe.style.setProperty('visibility','visible','important');
-    tailpipe.style.setProperty('opacity','1','important');
-    tailpipe.style.setProperty('left','2.8%','important');
-    tailpipe.style.setProperty('top','83.4%','important');
-    tailpipe.style.setProperty('width','8.2%','important');
-    tailpipe.style.setProperty('height','2.3%','important');
-    tailpipe.style.setProperty('min-height','5px','important');
-    tailpipe.style.setProperty('z-index','6','important');
+    tailpipe.style.setProperty('display','none','important');
+    tailpipe.style.setProperty('visibility','hidden','important');
+    tailpipe.style.setProperty('opacity','0','important');
   }
   if(outlet){
     outlet.style.setProperty('display','block','important');
     outlet.style.setProperty('visibility','visible','important');
     outlet.style.setProperty('opacity','1','important');
+    /* Preserve the outlet opening position from v19 exactly. */
     outlet.style.setProperty('left','2.2%','important');
     outlet.style.setProperty('top','82.7%','important');
     outlet.style.setProperty('width','5px','important');
