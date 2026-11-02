@@ -1705,6 +1705,61 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+<style id="lada2101-headlight-overlay-v3">
+/* VAZ-2101: beam is anchored to the PNG art, over the headlamp itself. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-png-art{
+  position:relative!important;
+  overflow:visible!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam{
+  position:absolute!important;
+  left:93.8%!important;
+  top:50.5%!important;
+  width:100%!important;
+  height:19%!important;
+  z-index:8!important;
+  display:block!important;
+  opacity:0!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  transform:none!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;top:0!important;
+  width:100%!important;height:100%!important;
+  display:block!important;
+  clip-path:polygon(0 50%,100% 0,100% 100%)!important;
+  background:linear-gradient(90deg,
+    rgba(255,255,244,.98) 0%,
+    rgba(255,246,205,.86) 12%,
+    rgba(255,229,164,.58) 42%,
+    rgba(255,219,139,.28) 74%,
+    rgba(255,219,139,0) 100%)!important;
+  filter:blur(1.8px)!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam::after{
+  content:""!important;
+  position:absolute!important;
+  left:-1.4%!important;top:31%!important;
+  width:4.2%!important;height:38%!important;
+  display:block!important;
+  border-radius:50%!important;
+  background:radial-gradient(ellipse at 40% 50%,
+    #fff 0 18%,
+    rgba(255,250,222,.98) 34%,
+    rgba(255,229,166,.74) 58%,
+    rgba(255,211,132,0) 100%)!important;
+  box-shadow:0 0 4px 2px rgba(255,246,206,.82),
+             0 0 12px 5px rgba(255,213,136,.55)!important;
+  filter:blur(1px)!important;
+}
+#proRaceCockpit.race-headlights-on #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam{
+  opacity:1!important;
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -1942,6 +1997,7 @@ function lada2101PngMarkup(imgClass,vinylId){
     +'<span class="lada2101-wheel-spin rear" aria-hidden="true">'+wheelSvg+'</span>'
     +'<span class="lada2101-wheel-spin front" aria-hidden="true">'+wheelSvg+'</span>'
     +'<img class="'+imgClass+' race-car-png lada2101-body-layer" src="./cars/lada-2101-side.png?v=20261101-lada2101-body-v3" alt="ВАЗ-2101 «Копейка», красный кузов с тёмными стёклами" decoding="async" draggable="false">'
+    +'<span class="lada2101-headlight-beam" aria-hidden="true"></span>'
     +'</div>';
 }
 function vaz2110PngMarkup(imgClass,vinylId){
@@ -2407,7 +2463,7 @@ function syncRace2DCarArt(){
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
-  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+engineEffects+'</div>';
+  const ladaBodyLayer='<div class="race-car-body-layer">'+ladaPreview+ladaExhaust+(useLada2101Png?'':ladaSmoke)+(useLada2101Png?'':engineEffects)+'</div>';
   if(preview){
     preview.dataset.carId=selectedId;
     preview.innerHTML=usePngSprite
