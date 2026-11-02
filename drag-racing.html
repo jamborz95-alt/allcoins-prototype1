@@ -248,7 +248,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .pro-pedal.gas .pro-gas-ridges{inset:13% 12% 35%!important;border:1px solid #131819!important;border-radius:2px!important;background:repeating-linear-gradient(90deg,#161b1d 0 4px,#d6dbd8 4px 7px,#70797c 7px 9px)!important;box-shadow:inset 0 1px 2px #ffffff8a,0 2px 3px #0007!important}
 .pro-dash-controls #proGasHold strong{position:absolute;left:0;right:0;bottom:20%;font-size:clamp(9px,1vw,12px)!important;pointer-events:none}
 .pro-dash-controls #proGasHold small{position:absolute;left:0;right:0;bottom:6%;font-size:clamp(5px,.58vw,7px)!important;letter-spacing:.6px!important;color:#dfe4e1!important;text-shadow:0 1px #000!important}
-.pro-dash-controls #proExitRace,.pro-dash-controls #proGasHold{pointer-events:auto}
+.pro-dash-controls #proExitRace,.pro-dash-controls #proGasHold,.pro-dash-controls #proBrakeHold{pointer-events:auto}
 .pro-race-status{left:50%!important;top:4px!important;bottom:auto!important;transform:translateX(-50%)!important;width:auto!important;max-width:42%!important;padding:2px 6px!important;border-radius:4px!important;background:#0009!important;font-size:clamp(7px,.7vw,9px)!important;line-height:1.15!important;white-space:nowrap!important;color:#d6e0e2!important}
 .pro-race-finish-actions{bottom:4px!important;z-index:18!important}
 .pro-race-finish-actions button{padding:5px 8px!important;font-size:9px!important}
@@ -363,6 +363,31 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   transform:perspective(420px) rotateX(5deg) translateY(3px)!important;
   box-shadow:inset 0 4px 6px #0008,inset 0 -2px 4px #ffffff32,0 2px 3px #000b!important;
 }
+.pro-pedal-pair{display:flex;align-items:flex-end;gap:clamp(7px,1vw,12px);margin-left:auto;pointer-events:auto}
+.pro-dash-controls .pro-pedal-pair #proGasHold{margin:0!important}
+.pro-dash-controls #proBrakeHold{
+  width:clamp(70px,7.4vw,96px)!important;min-width:70px!important;max-width:96px!important;
+  height:clamp(72px,12vh,92px)!important;min-height:72px!important;
+  padding:0!important;border-radius:5px 5px 8px 8px!important;
+  clip-path:polygon(17% 0,83% 0,100% 100%,0 100%)!important;
+  border:2px solid #a36a6c!important;
+  background:linear-gradient(100deg,#171012 0%,#633238 18%,#c58a8c 32%,#713b40 51%,#2b171a 78%,#0a0809 100%)!important;
+  box-shadow:inset 0 2px 3px #fff6,inset 0 -8px 12px #000d,0 5px 8px #000b!important;
+  color:#fff!important;text-shadow:0 1px 3px #000!important;
+  font-size:clamp(8px,.9vw,12px)!important;letter-spacing:.45px!important;
+  touch-action:none!important;pointer-events:auto!important;transform:translateZ(0);
+}
+.pro-dash-controls #proBrakeHold strong{display:block;margin-top:29px;font-size:clamp(9px,1vw,13px)!important;pointer-events:none}
+.pro-dash-controls #proBrakeHold small{display:block;margin-top:3px;font-size:clamp(5px,.56vw,7px)!important;color:#ffe5e5!important;pointer-events:none}
+.pro-dash-controls #proBrakeHold.held{filter:brightness(1.3)!important;transform:perspective(420px) rotateX(5deg) translateY(3px)!important;box-shadow:inset 0 4px 6px #0009,0 2px 3px #000b!important}
+.pro-headlight-toggle{
+  position:absolute;left:14px;top:clamp(52px,7.8vh,78px);z-index:20;
+  padding:7px 10px;border:1px solid #aeb8bd;border-radius:8px;
+  background:#111a22dc;color:#f1f4f5;font-size:clamp(9px,1vw,12px);
+  font-weight:900;letter-spacing:.5px;text-shadow:0 1px 2px #000;
+  box-shadow:0 3px 8px #0007;pointer-events:auto;touch-action:manipulation
+}
+.pro-headlight-toggle.active{background:linear-gradient(135deg,#fff0b4,#d6a84b);border-color:#fff0b4;color:#18140c;text-shadow:none;box-shadow:0 0 14px #ffe2a277}
 @media(orientation:portrait){
   .pro-shift-gate{
     left:1.6%!important;
@@ -643,7 +668,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .race-car-exhaust-puff{left:10.5%;bottom:24%;z-index:0;width:12px;height:8px;border-radius:50%;opacity:0;filter:blur(1.5px);background:radial-gradient(ellipse at center,#eef3f5d9 0%,#b9c4cad9 32%,#87939b48 67%,transparent 100%);animation:race-exhaust-idle 1.55s ease-out infinite}
 .race-car-exhaust-puff.puff-two{animation-delay:.52s;transform:scale(.72)}
 .race-car-exhaust-puff.puff-three{animation-delay:1.04s;transform:scale(.58)}
-.pro-race-cockpit.race-engine-on .race-car-headlight-glow{opacity:.9;animation:none}
+.pro-race-cockpit.race-headlights-on .race-car-headlight-glow{opacity:.9;animation:none}
 .pro-race-cockpit.race-engine-on:not(.race-moving) .race2d-car.player{translate:0 0;animation:race-engine-idle .19s ease-in-out infinite alternate}
 .pro-race-cockpit.race-engine-on .race2d-car.player .race-car-exhaust-puff{opacity:.42}
 .pro-race-cockpit.race-moving .race2d-car.player .race-car-exhaust-puff{animation-duration:.78s;opacity:.7;filter:blur(2px)}
@@ -678,6 +703,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 <div id="proRaceCockpit" class="pro-race-cockpit hidden" aria-hidden="true">
   <div id="proRaceTrack" class="pro-race-track">
     <div class="pro-race-brand"><span class="pro-race-mark">A</span><span>ALLCOINS <b>RACING</b><span id="proRaceDistanceLabel" class="pro-race-subbrand">DRAG STRIP · 1 MILE</span></span></div>
+    <button id="proHeadlightsToggle" class="pro-headlight-toggle active" type="button" aria-label="Переключить фары" aria-pressed="true">💡 ФАРЫ ВКЛ.</button>
     <div class="pro-fuel-readout" aria-label="Топливо"><div class="pro-fuel-head"><span>⛽ БЕНЗИН</span><strong><span id="proFuelLiters">42.00</span>/<span id="proFuelCap">42</span> л</strong></div><div class="pro-fuel-meter"><i id="proFuelMeterBar"></i></div><div id="proFuelStatus" class="pro-fuel-status">ПОЛНЫЙ БАК</div><button id="proRefuelFuel" type="button">ЗАПРАВИТЬ</button></div>
     <div id="proRaceTimer" class="pro-race-timer">00.000</div>
     <div class="pro-race-top-label">PRO DRAG STRIP · LIVE</div>
@@ -729,7 +755,10 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     <div id="proRaceStatus" class="pro-race-status">Удерживай газ во время отсчёта. Переключай передачи по оборотам.</div>
     <div class="pro-dash-controls">
       <button id="proExitRace" class="pro-exit" type="button">← ГАРАЖ</button>
-      <button id="proGasHold" class="pro-pedal gas" type="button" draggable="false" aria-label="Удерживать педаль газа"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>УДЕРЖИВАТЬ</small></button>
+      <div class="pro-pedal-pair">
+        <button id="proBrakeHold" class="pro-pedal brake" type="button" draggable="false" aria-label="Удерживать тормоз"><strong>ТОРМОЗ</strong><small>УДЕРЖИВАТЬ</small></button>
+        <button id="proGasHold" class="pro-pedal gas" type="button" draggable="false" aria-label="Удерживать педаль газа"><span class="pro-gas-ridges" aria-hidden="true"></span><strong>ГАЗ</strong><small>УДЕРЖИВАТЬ</small></button>
+      </div>
     </div>
     <div id="proRaceFinishActions" class="pro-race-finish-actions"><button id="proRaceAgain" class="primary" type="button">ЕЩЁ ЗАЕЗД</button><button id="proRaceReturn" type="button">В ГАРАЖ</button></div>
   </section>
@@ -1667,8 +1696,28 @@ document.addEventListener('click',async e=>{let b=e.target.closest('button');if(
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='garage')render()}));
 ['ecu','boost','grip','shift'].forEach(id=>$(id).addEventListener('input',()=>{state.tune[id]=Number($(id).value);updateTuneReadout()}));$('saveTune').onclick=async()=>{try{if(tg?.initData){const data=await api('/garage/tune',{tune:state.tune});applyRemoteProfile(data)}else save();$('tuneStatus').textContent='Настройка сохранена. Мощность: '+effectivePower()+' л.с.'}catch(err){$('tuneStatus').textContent=err.message||'Не удалось сохранить настройку.'}};
 $('back').onclick=()=>{if(history.length>1)history.back();else location.href='./index.html'};
-let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,shiftTorqueUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
+let running=false,finished=false,gear=1,speed=0,distance=0,rpm=900,launchRpm=900,gasHeld=false,brakeHeld=false,startAt=0,last=0,greenAt=0,zeroAt=null,raf=0;let maxDist=1609.344;let raceAudio=null,raceEngineOsc=null,raceEngineSubOsc=null,raceEngineHarmonicOsc=null,raceEngineGain=null,raceEngineFilter=null,raceEnginePulseGain=null,raceEngineSubGain=null,raceEngineHarmonicGain=null,raceExhaustNoise=null,raceExhaustFilter=null,raceExhaustGain=null,raceEngineSampleGain=null,raceEngineSampleSource=null,raceEngineBuffer=null,raceShiftBuffer=null,raceAudioSamplesLoading=false,raceAudioReady=false,lastGearSoundAt=0,shiftTorqueUntil=0,downshiftBrakeUntil=0,gearWarningUntil=0,lastRoadBumpAt=0,roadBumpUntil=0,roadBumpStrength=0,lastEngineAudioUpdateAt=0,lastUnevenRoadUpdateAt=0,lastSceneBumpAt=0;const RACE_ENGINE_SAMPLE_URLS=['https://sfxmint.com/dl/car-revving-08.mp3','https://sfxmint.com/dl/race-car-05.mp3','https://sfxmint.com/dl/car-revving-07.mp3'];const RACE_SHIFT_SAMPLE_URLS=['https://sfxmint.com/dl/race-car-10.mp3','https://sfxmint.com/dl/race-car-05.mp3'];const distanceByMode={quarter:1609.344,half:3218.688,sprint:4000};const raceDistanceLabels={quarter:'DRAG STRIP · 1 MILE',half:'DRAG STRIP · 2 MILES',sprint:'DRAG STRIP · 4 KM'};
 function gearRatio(g){return ({1:3.3,2:2.15,3:1.55,4:1.2,5:.95})[g]||0}let raceCockpitOpen=false,lastFinishMs=0,gearToastUntil=0;
+const HEADLIGHTS_STORAGE_KEY='allcoinsDragHeadlightsOn';
+let headlightsOn=true;
+try{const savedHeadlights=localStorage.getItem(HEADLIGHTS_STORAGE_KEY);if(savedHeadlights!==null)headlightsOn=savedHeadlights==='1'}catch(_){}
+function updateHeadlightToggle(){
+  const button=$('proHeadlightsToggle');
+  if(button){
+    const label=headlightsOn?'💡 ФАРЫ ВКЛ.':'💡 ФАРЫ ВЫКЛ.';
+    if(button.textContent!==label)button.textContent=label;
+    button.classList.toggle('active',headlightsOn);
+    button.setAttribute('aria-pressed',String(headlightsOn));
+  }
+  const panel=$('proRaceCockpit');
+  if(panel)panel.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen&&headlightsOn));
+}
+$('proHeadlightsToggle').addEventListener('click',()=>{
+  headlightsOn=!headlightsOn;
+  try{localStorage.setItem(HEADLIGHTS_STORAGE_KEY,headlightsOn?'1':'0')}catch(_){}
+  updateHeadlightToggle();
+});
+updateHeadlightToggle();
 function buildProTachScale(){
   const scale=$('proTachScale');if(!scale||scale.dataset.ready)return;
   scale.dataset.ready='1';
@@ -1758,7 +1807,7 @@ function openProRaceCockpit(){
   // The old Three.js preview uses a front three-quarter angle. Keep it hidden
   // in this side-profile cockpit so it cannot cover the corrected vehicle.
   host.hidden=true;
-  raceCockpitOpen=true;panel.classList.add('race-engine-on','race-headlights-on');orientationWarningDismissed=false;
+  raceCockpitOpen=true;panel.classList.add('race-engine-on');orientationWarningDismissed=false;
   buildProTachScale();buildProSpeedScale();buildRace2DEnvironment();syncProRaceCockpit();updateOrientationPrompt();
   requestAnimationFrame(()=>race3d?.resize?.());
 }
@@ -1785,9 +1834,11 @@ function syncProRaceCockpit(){
   })();
   $('proTachNeedle').style.transform='translateX(-50%) rotate('+(-125+Math.max(0,Math.min(9000,rpm))/9000*250)+'deg)';
   $('proGasHold').classList.toggle('held',gasHeld);
+  $('proBrakeHold').classList.toggle('held',brakeHeld);
   const cockpit=$('proRaceCockpit');
   cockpit.classList.toggle('race-engine-on',Boolean(raceCockpitOpen));
-  cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen));
+  cockpit.classList.toggle('race-headlights-on',Boolean(raceCockpitOpen&&headlightsOn));
+  updateHeadlightToggle();
   cockpit.classList.toggle('race-moving',Boolean(running&&speed>.5&&!finished));
   cockpit.style.setProperty('--race-road-duration',Math.max(.09,1.05-(Math.max(0,Number(speed)||0)/330))+'s');
   cockpit.style.setProperty('--race-wheel-duration',Math.max(.035,.48/(1+speedNow/18))+'s');
@@ -2076,8 +2127,9 @@ function holdButton(id,on,off){
   ['contextmenu','selectstart','dragstart'].forEach(type=>el.addEventListener(type,e=>e.preventDefault()));
   el.addEventListener('copy',e=>e.preventDefault());
 }
-holdButton('gas',()=>gasHeld=true,()=>gasHeld=false);
-holdButton('proGasHold',()=>gasHeld=true,()=>gasHeld=false);
+holdButton('gas',()=>{if(!brakeHeld)gasHeld=true},()=>gasHeld=false);
+holdButton('proGasHold',()=>{if(!brakeHeld)gasHeld=true},()=>gasHeld=false);
+holdButton('proBrakeHold',()=>{brakeHeld=true;gasHeld=false},()=>brakeHeld=false);
 function bindShiftPaddle(id,direction){
   const el=$(id);if(!el)return;
   const change=()=>setGear(gear==='N'?1:Math.max(1,Math.min(5,Number(gear)+direction)));
@@ -2096,7 +2148,7 @@ function setLight(n){
   if(race3d?.setLight)race3d.setLight(n);
 }
 function reset(){
-  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;zeroAt=null;shiftTorqueUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
+  running=false;finished=false;lastFinishMs=0;cancelAnimationFrame(raf);gear=1;speed=0;distance=0;rpm=900;launchRpm=900;gasHeld=false;brakeHeld=false;zeroAt=null;shiftTorqueUntil=0;downshiftBrakeUntil=0;gearWarningUntil=0;racePeakSpeed=0;raceWorldOffset=0;raceCarOffset=0;raceCameraOffset=0;raceCameraY=0;lastHUDUpdateAt=0;nextRoadBumpAt=40;lastSceneBumpAt=0;lastRoadBumpAt=0;roadBumpUntil=0;roadBumpStrength=0;lastUnevenRoadUpdateAt=0;lastEngineAudioUpdateAt=0;
   setGear(1);setLight(0);$('scene').classList.remove('racing');$('startRace').disabled=false;$('startRace').textContent='🏁 НАЧАТЬ ЗАЕЗД';
   updateRace2DEnvironment(0);
   $('raceStatus').textContent='Нажми «Старт заезда», нажми газ и переключай передачи вручную.';updateHUD();syncProRaceCockpit();
@@ -2202,16 +2254,18 @@ function start(sharedStartedAt=null){
       if(!fuelAvailable){
         rpm=Math.max(0,rpm-dt*5000);
         const velocity=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
-        speed=Math.max(0,speed-((dragCoeff*velocity*velocity+c.weight*9.81*.014)/c.weight)*dt*3.6);
+        const brakeForce=brakeHeld?c.weight*8.5:0;
+        speed=Math.max(0,speed-((dragCoeff*velocity*velocity+c.weight*9.81*.014+brakeForce)/c.weight)*dt*3.6);
         $('raceStatus').textContent='⛽ Бензин закончился — заправь автомобиль.';
       }else if(gear==='N'){
         const velocity=speed/3.6,dragCoeff=c.id==='niva'?.54:(['priora','kalina','granta','vesta'].includes(c.id)?.42:.45);
         const dragForce=dragCoeff*velocity*velocity,rollingForce=c.weight*9.81*.014;
-        speed=Math.max(0,speed-((dragForce+rollingForce)/c.weight)*dt*3.6);
-        const targetRpm=gasHeld?6000:Math.max(850,Math.min(6600,speed*5));
+        const brakeForce=brakeHeld?c.weight*8.5:0;
+        speed=Math.max(0,speed-((dragForce+rollingForce+brakeForce)/c.weight)*dt*3.6);
+        const targetRpm=gasHeld&&!brakeHeld?6000:Math.max(850,Math.min(6600,speed*5));
         rpm+=(targetRpm-rpm)*(1-Math.exp(-dt*(gasHeld?3.2:7.5)));
       }else{
-        const g=Number(gear),ratio=gearRatio(g),throttle=gasHeld;
+        const g=Number(gear),ratio=gearRatio(g),throttle=gasHeld&&!brakeHeld;
         const wheelRpm=speed*42*ratio;
         const clutchSlip=Math.max(0,1-speed/24);
         const clutchRpm=throttle?1450+1850*clutchSlip:850;
@@ -2231,7 +2285,8 @@ function start(sharedStartedAt=null){
         const rollingForce=c.weight*9.81*.014;
         const engineBrake=throttle?0:(speed>.5?c.weight*.11:0);
         const downshiftDrag=now<downshiftBrakeUntil?c.weight*.055:0;
-        const acceleration=(driveForce-dragForce-rollingForce-engineBrake-downshiftDrag)/c.weight;
+        const brakeForce=brakeHeld?c.weight*8.5:0;
+        const acceleration=(driveForce-dragForce-rollingForce-engineBrake-downshiftDrag-brakeForce)/c.weight;
         speed=Math.max(0,Math.min(400,speed+acceleration*dt*3.6));
       }
     }
