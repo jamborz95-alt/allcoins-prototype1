@@ -1705,15 +1705,17 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
-<style id="lada2101-headlight-overlay-v3">
-/* VAZ-2101: beam is anchored to the PNG art, over the headlamp itself. */
+<style id="lada2101-headlight-overlay-v4">
+/* The beam is a child of the PNG body-art layer: it scales and moves with the кузов,
+   including suspension movement, and is not positioned against the road/camera. */
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-png-art{
   position:relative!important;
   overflow:visible!important;
+  transform-origin:center center!important;
 }
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam{
   position:absolute!important;
-  left:93.8%!important;
+  left:96.5%!important;
   top:50.5%!important;
   width:100%!important;
   height:19%!important;
@@ -1723,6 +1725,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   overflow:visible!important;
   pointer-events:none!important;
   transform:none!important;
+  transform-origin:left center!important;
 }
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam::before{
   content:""!important;
@@ -1742,7 +1745,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 #proRaceCockpit #race2dPlayerCar.lada2101-png-car .lada2101-headlight-beam::after{
   content:""!important;
   position:absolute!important;
-  left:-1.4%!important;top:31%!important;
+  left:-.8%!important;top:31%!important;
   width:4.2%!important;height:38%!important;
   display:block!important;
   border-radius:50%!important;
