@@ -236,14 +236,14 @@ test("headlight beam originates at the front bumper and road bumps do not flash 
 });
 
 
-test("current drag racing uses speed-synchronised individual wheel rotation and axle-specific burnout", () => {
+test("current drag racing synchronises wheel rotation with speed and braking", () => {
   assert.match(pageV2, /const RACE_WHEEL_RADIUS_METERS=\.29/);
   assert.match(pageV2, /const rollingWheelRpm=currentSpeed\/3\.6\/\(2\*Math\.PI\*RACE_WHEEL_RADIUS_METERS\)\*60/);
-  assert.match(pageV2, /raceWheelVisualAngles\[axle\]=\(raceWheelVisualAngles\[axle\]\+wheelRpm\*6\*frameDt\)%360/);
+  assert.match(pageV2, /const durationForRpm=wheelRpm=>Math\.min\(120,Math\.max\(\.018,60\/Math\.max\(\.001,wheelRpm\)\)\)\+'s'/);
   assert.match(pageV2, /const rearWheelRpm=rearDriven&&burnout\?slippedDrivenWheelRpm:rollingWheelRpm/);
   assert.match(pageV2, /const frontWheelRpm=frontDriven&&burnout\?slippedDrivenWheelRpm:rollingWheelRpm/);
   assert.match(pageV2, /function serviceBrakeForceForCar\(c\)/);
   assert.match(pageV2, /const frontBias=c\?\.drive==='fwd'\?\.70:c\?\.drive==='rwd'\?\.68:\.64/);
   assert.match(pageV2, /const serviceBrake=serviceBrakeForceForCar\(c\)/);
-  assert.match(pageV2, /#proRaceCockpit #race2dPlayerCar \.lada2101-wheel-spin,[\s\S]*animation:none!important/);
+  assert.match(pageV2, /race-braking/);
 });
