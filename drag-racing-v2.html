@@ -1967,6 +1967,98 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 }
 </style>
 
+
+<style id="allcoins-lada2101-visible-smoke-v31">
+/* Slightly broaden the headlight cone while keeping its mounting point fixed. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam{
+  left:96.5%!important;
+  top:33%!important;
+  width:145%!important;
+  height:56%!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-body-assembly .lada2101-headlight-beam::before{
+  clip-path:polygon(0 50%,100% 0,100% 100%)!important;
+  filter:blur(2.2px)!important;
+}
+
+/* Use real DOM smoke particles rather than pseudo-elements, anchored to the exhaust hole. */
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-body-layer > .race-car-muffler{
+  z-index:10!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  overflow:visible!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .race-car-muffler-outlet{
+  position:absolute!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+  z-index:12!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke{
+  position:absolute!important;
+  display:block!important;
+  left:-2px!important;
+  top:-4px!important;
+  width:28px!important;
+  height:14px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  opacity:0!important;
+  z-index:20!important;
+  pointer-events:none!important;
+  transform:translate3d(0,0,0) scale(.16,.3)!important;
+  transform-origin:right center!important;
+  filter:blur(1.1px)!important;
+  background:radial-gradient(ellipse at 88% 50%,
+    rgba(255,255,255,.98) 0%,
+    rgba(230,237,241,.94) 28%,
+    rgba(190,202,209,.72) 55%,
+    rgba(151,166,175,.3) 78%,
+    transparent 100%)!important;
+  box-shadow:0 0 5px rgba(230,238,242,.2)!important;
+  animation:none!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke.smoke-b{
+  top:-7px!important;width:36px!important;height:18px!important;
+  filter:blur(1.6px)!important;
+  background:radial-gradient(ellipse at 86% 50%,
+    rgba(244,248,250,.94) 0%,
+    rgba(212,222,228,.82) 38%,
+    rgba(168,182,190,.4) 72%,
+    transparent 100%)!important;
+}
+#proRaceCockpit #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke.smoke-c{
+  top:-3px!important;width:43px!important;height:21px!important;
+  filter:blur(2px)!important;
+  background:radial-gradient(ellipse at 88% 50%,
+    rgba(235,241,244,.86) 0%,
+    rgba(202,213,219,.68) 40%,
+    rgba(158,174,183,.32) 74%,
+    transparent 100%)!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke{
+  animation:lada2101-visible-smoke-v31 1.28s ease-out infinite!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke.smoke-b{
+  animation-delay:-.42s!important;
+}
+#proRaceCockpit.race-engine-on #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke.smoke-c{
+  animation-delay:-.84s!important;
+}
+#proRaceCockpit.race-moving #race2dPlayerCar.lada2101-png-car[data-car-id="2101"] .lada2101-exhaust-smoke{
+  animation-duration:.82s!important;
+}
+@keyframes lada2101-visible-smoke-v31{
+  0%{opacity:0;transform:translate3d(0,0,0) scale(.16,.3)}
+  12%{opacity:.98;transform:translate3d(-7px,-1px,0) scale(.52,.62)}
+  38%{opacity:.82;transform:translate3d(-23px,-5px,0) scale(.95,.9)}
+  68%{opacity:.4;transform:translate3d(-43px,-10px,0) scale(1.35,1.12)}
+  100%{opacity:0;transform:translate3d(-65px,-15px,0) scale(1.75,1.35)}
+}
+</style>
+
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -2668,7 +2760,7 @@ function syncRace2DCarArt(){
       ?lada2101PngMarkup('race-car-png',selectedStyle.vinylId)
       :vaz2110PngMarkup('race-car-png',selectedStyle.vinylId);
   const ladaWheels=useLadaPng?'<span class="png-wheel-spin rear" aria-hidden="true"></span><span class="png-wheel-spin front" aria-hidden="true"></span>':'';
-  const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"></i></span>';
+  const ladaExhaust='<span class="race-car-muffler" aria-hidden="true"><i class="race-car-muffler-body"></i><i class="race-car-muffler-tailpipe"></i><i class="race-car-muffler-outlet"><span class="lada2101-exhaust-smoke smoke-a"></span><span class="lada2101-exhaust-smoke smoke-b"></span><span class="lada2101-exhaust-smoke smoke-c"></span></i></span>';
   const ladaSmoke='<span class="race-car-exhaust-puff puff-one" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-two" aria-hidden="true"></span><span class="race-car-exhaust-puff puff-three" aria-hidden="true"></span>';
   const wheelSmokeEffects='<span class="race-wheel-smoke rear" aria-hidden="true"></span><span class="race-wheel-smoke front" aria-hidden="true"></span>';
   const engineEffects='<span class="race-car-headlight-glow" aria-hidden="true"></span>';
