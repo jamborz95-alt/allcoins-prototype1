@@ -3003,14 +3003,18 @@ function applyLada2101ExhaustPosition(root){
     outlet.style.setProperty('height','7px','important');
     outlet.style.setProperty('z-index','80','important');
     outlet.style.setProperty('overflow','visible','important');
+    /* Center the opening vertically on the metal tailpipe, independent of screen size. */
+    if(tailpipe){
+      const centeredTop=tailpipe.offsetTop+(tailpipe.offsetHeight-outlet.offsetHeight)/2;
+      outlet.style.setProperty('top',centeredTop+'px','important');
+    }
   }
-  /* Use three real DOM smoke clouds attached to the muffler layer. This avoids
-     clipping inside the tiny exhaust opening and does not depend on CSS selectors. */
+  /* Three real animated smoke clouds stay centered on the exhaust opening. */
   if(muffler && root.id==='race2dPlayerCar'){
     const smokeSpecs=[
-      {id:'a',width:40,height:21,top:81.05,delay:0},
-      {id:'b',width:47,height:24,top:80.72,delay:-380},
-      {id:'c',width:54,height:27,top:81.18,delay:-760}
+      {id:'a',width:40,height:21,yOffset:-1,delay:0},
+      {id:'b',width:47,height:24,yOffset:0,delay:-380},
+      {id:'c',width:54,height:27,yOffset:1,delay:-760}
     ];
     smokeSpecs.forEach(function(spec){
       let cloud=Array.from(muffler.children).find(function(node){
@@ -3022,8 +3026,11 @@ function applyLada2101ExhaustPosition(root){
         cloud.setAttribute('aria-hidden','true');
         muffler.appendChild(cloud);
       }
+      const smokeTop=outlet
+        ?outlet.offsetTop+outlet.offsetHeight/2-spec.height/2+spec.yOffset
+        :81;
       cloud.style.cssText=
-        'position:absolute;left:calc(2.65% - '+spec.width+'px);top:'+spec.top+'%;'+
+        'position:absolute;left:calc(2.65% - '+spec.width+'px);top:'+smokeTop+'px;'+
         'width:'+spec.width+'px;height:'+spec.height+'px;display:block;visibility:visible;'+
         'pointer-events:none;z-index:95;border:0;border-radius:50%;'+
         'background:radial-gradient(ellipse at 96% 50%,rgba(250,252,253,.98) 0%,rgba(224,232,237,.92) 28%,rgba(190,202,210,.72) 58%,rgba(157,171,181,.30) 78%,transparent 100%);'+
