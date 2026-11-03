@@ -2603,11 +2603,11 @@ function prepareVaz2110Wheels(root=document){
       if(!rect.width||!rect.height)return;
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const offsetX=(rect.width-nw*fit)/2,offsetY=(rect.height-nh*fit)/2;
-      const diameter=nw*.19; // Slightly wider, thicker tyre profile.
-      // Centers follow the wheel-arch openings in the VAZ-2110 body PNG.
+      // Keep the rear wheel as-is; make the front wheel about 8% larger.
       const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
       points.forEach((point,index)=>{
         const wheel=wheels[index];
+        const diameter=nw*(index===1?.205:.19);
         wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
         wheel.style.setProperty('top',((offsetY+(point.y-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('width',(diameter*fit/rect.width*100).toFixed(3)+'%','important');
@@ -4038,9 +4038,9 @@ try{const savedLights=localStorage.getItem('allcoinsDragRacingHeadlightsV2');if(
 let raceEngineSampleStartCount=0,raceAudioWatchdogTimer=null;
 let airSuspensionIndex=1;
 const AIR_SUSPENSION_STATES=[
-  {label:'НИЗКО',offset:'7px'},
+  {label:'НИЗКО',offset:'14px'},
   {label:'СРЕДНЕ',offset:'0px'},
-  {label:'ВЫСОКО',offset:'-8px'}
+  {label:'ВЫСОКО',offset:'-18px'}
 ];
 function applyAirSuspension(){
   const player=$('race2dPlayerCar'),button=$('proAirSuspensionToggle');
@@ -4053,8 +4053,17 @@ function applyAirSuspension(){
     button.setAttribute('aria-pressed',String(supportsAirSuspension&&airSuspensionIndex!==1));
   }
   if(player){
-    const offset=supportsAirSuspension?AIR_SUSPENSION_STATES[airSuspensionIndex].offset:'0px';
+    const suspensionState=AIR_SUSPENSION_STATES[airSuspensionIndex];
+    const offset=supportsAirSuspension?suspensionState.offset:'0px';
     if(player.style.getPropertyValue('--air-suspension-y')!==offset)player.style.setProperty('--air-suspension-y',offset);
+    if(selectedId==='2110'){
+      const body=player.querySelector('.vaz2110-body-layer');
+      if(body){
+        const bodyY=-18+(Number.parseFloat(suspensionState.offset)||0);
+        body.style.setProperty('transform','translate3d(0,'+bodyY+'px,0)','important');
+        body.style.setProperty('transition','transform .32s cubic-bezier(.22,.61,.36,1)','important');
+      }
+    }
     /* Keep the 2101 exhaust anchored to its chassis after pneumatic movement. */
     if(selectedId==='2101')applyLada2101ExhaustPosition(player);
   }
