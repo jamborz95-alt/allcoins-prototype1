@@ -2304,8 +2304,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* VAZ-2110: transparent body shell with two independent steel wheel rotors. */
 .vaz2110-png-art{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important}
 .vaz2110-png-art img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important}
-.vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translateY(-3px)!important}
-.vaz2110-png-art .vaz2110-shock-absorbers{position:absolute!important;inset:0!important;z-index:3!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important;transform:translateY(-3px)!important}
+.vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translate3d(0,calc(-3px + var(--air-suspension-y,0px)),0)!important;transform-origin:center bottom!important;transition:transform .32s cubic-bezier(.22,.61,.36,1)!important}
 .vaz2110-png-art .vaz2110-wheel-spin img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}
 .vaz2110-png-art .vaz2110-wheel-spin{position:absolute!important;z-index:1!important;display:block!important;padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;box-sizing:border-box!important;overflow:hidden!important;background:transparent!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;transform-origin:50% 50%!important;will-change:transform}
 .vaz2110-png-art .vaz2110-wheel-spin svg{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
@@ -2635,15 +2634,7 @@ function vaz2110PngMarkup(imgClass,vinylId){
     +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v1" alt=""></span>'
     +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +(vinyl?'<svg class="vaz2110-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
-    +'<svg class="vaz2110-shock-absorbers" viewBox="0 0 800 278" preserveAspectRatio="none" aria-hidden="true">'
-    +'<g fill="none" stroke-linecap="round" stroke-linejoin="round">'
-    +'<path d="M148 104 L181 177 L194 184" stroke="#20272c" stroke-width="9"/>'
-    +'<path d="M148 104 L181 177 L194 184" stroke="#b9c1c5" stroke-width="3.2"/>'
-    +'<path d="M158 125 L165 120 L173 132 L166 138 L175 149 L168 155 L180 168" stroke="#555f65" stroke-width="3.3"/>'
-    +'<path d="M607 104 L640 177 L653 184" stroke="#20272c" stroke-width="9"/>'
-    +'<path d="M607 104 L640 177 L653 184" stroke="#b9c1c5" stroke-width="3.2"/>'
-    +'<path d="M617 125 L624 120 L632 132 L625 138 L634 149 L627 155 L639 168" stroke="#555f65" stroke-width="3.3"/>'
-    +'</g><g fill="#8d989e" stroke="#20272c" stroke-width="2"><circle cx="148" cy="104" r="5"/><circle cx="194" cy="184" r="5"/><circle cx="607" cy="104" r="5"/><circle cx="653" cy="184" r="5"/></g></svg>'
+
     +'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
@@ -4053,19 +4044,19 @@ const AIR_SUSPENSION_STATES=[
 ];
 function applyAirSuspension(){
   const player=$('race2dPlayerCar'),button=$('proAirSuspensionToggle');
-  const isLada2101=player?.dataset.carId==='2101';
+  const selectedId=String(player?.dataset.carId||'');
+  const supportsAirSuspension=selectedId==='2101'||selectedId==='2110';
   if(button){
-    button.disabled=!isLada2101;
-    button.textContent=isLada2101?'ПНЕВМА · '+AIR_SUSPENSION_STATES[airSuspensionIndex].label:'ПНЕВМА · ВАЗ-2101';
-    button.classList.toggle('active',isLada2101&&airSuspensionIndex!==1);
-    button.setAttribute('aria-pressed',String(isLada2101&&airSuspensionIndex!==1));
+    button.disabled=!supportsAirSuspension;
+    button.textContent=supportsAirSuspension?'ПНЕВМА · '+AIR_SUSPENSION_STATES[airSuspensionIndex].label:'ПНЕВМА · НЕТ';
+    button.classList.toggle('active',supportsAirSuspension&&airSuspensionIndex!==1);
+    button.setAttribute('aria-pressed',String(supportsAirSuspension&&airSuspensionIndex!==1));
   }
   if(player){
-    const offset=isLada2101?AIR_SUSPENSION_STATES[airSuspensionIndex].offset:'0px';
+    const offset=supportsAirSuspension?AIR_SUSPENSION_STATES[airSuspensionIndex].offset:'0px';
     if(player.style.getPropertyValue('--air-suspension-y')!==offset)player.style.setProperty('--air-suspension-y',offset);
-    /* Keep the 2101 exhaust anchored to the chassis root, not the moving body PNG.
-       Reapply its exact coordinates after every air-suspension change. */
-    if(isLada2101)applyLada2101ExhaustPosition(player);
+    /* Keep the 2101 exhaust anchored to its chassis after pneumatic movement. */
+    if(selectedId==='2101')applyLada2101ExhaustPosition(player);
   }
 }
 function buildProTachScale(){
@@ -4973,7 +4964,7 @@ $('proEngineToggle')?.addEventListener('click',()=>{
 });
 $('proAirSuspensionToggle')?.addEventListener('click',()=>{
   const player=$('race2dPlayerCar');
-  if(player?.dataset.carId!=='2101')return;
+  if(!['2101','2110'].includes(String(player?.dataset.carId||'')))return;
   airSuspensionIndex=(airSuspensionIndex+1)%AIR_SUSPENSION_STATES.length;
   applyAirSuspension();
 });
