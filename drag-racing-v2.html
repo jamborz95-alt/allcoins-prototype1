@@ -2603,7 +2603,7 @@ function prepareVaz2110Wheels(root=document){
       if(!rect.width||!rect.height)return;
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const offsetX=(rect.width-nw*fit)/2,offsetY=(rect.height-nh*fit)/2;
-      const diameter=nw*.168;
+      const diameter=nw*.19; // Slightly wider, thicker tyre profile.
       // Centers follow the wheel-arch openings in the VAZ-2110 body PNG.
       const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
       points.forEach((point,index)=>{
@@ -2630,8 +2630,8 @@ function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   const wheelSvg=vaz2110StampedWheelSvgMarkup();
   return '<div class="vaz2110-png-art">'
-    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v2" alt=""></span>'
-    +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v2" alt=""></span>'
+    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v3" alt=""></span>'
+    +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v3" alt=""></span>'
     +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261103-vaz2110-body-v2" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +(vinyl?'<svg class="vaz2110-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
 
