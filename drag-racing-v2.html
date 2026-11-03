@@ -2356,6 +2356,39 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   object-position:center!important;
 }
 </style>
+<style id="allcoins-vaz2110-spin-and-exhaust-v61">
+/* Drive each VAZ-2110 wheel with a continuous rotation animation, using the live speed/axle durations. */
+#proRaceCockpit.race-rear-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin.rear{
+  animation:race2d-wheel-spin var(--race-rear-wheel-duration,.24s) linear infinite!important;
+}
+#proRaceCockpit.race-front-wheel-active #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin.front{
+  animation:race2d-wheel-spin var(--race-front-wheel-duration,.24s) linear infinite!important;
+}
+#proRaceCockpit #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin{
+  transform-origin:50% 50%!important;
+  backface-visibility:hidden!important;
+  -webkit-backface-visibility:hidden!important;
+  will-change:transform!important;
+}
+/* Move the silencer assembly a few pixels toward the rear; move exhaust puffs with its outlet. */
+#proRaceCockpit #race2dPlayerCar[data-car-id="2110"] .race-car-muffler,
+#previewCar[data-car-id="2110"] .race-car-muffler{
+  transform:translateX(-6px)!important;
+  transform-origin:center center!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2110"] .race-car-exhaust-puff.puff-one,
+#previewCar[data-car-id="2110"] .race-car-exhaust-puff.puff-one{
+  left:calc(4.6% - 15.5px)!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2110"] .race-car-exhaust-puff.puff-two,
+#previewCar[data-car-id="2110"] .race-car-exhaust-puff.puff-two{
+  left:calc(4.6% - 17px)!important;
+}
+#proRaceCockpit #race2dPlayerCar[data-car-id="2110"] .race-car-exhaust-puff.puff-three,
+#previewCar[data-car-id="2110"] .race-car-exhaust-puff.puff-three{
+  left:calc(4.6% - 18.5px)!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -3452,25 +3485,6 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   setDuration('--race-front-wheel-duration',frontDuration);
 
 
-  // VAZ-2110 wheel rotors are driven from the same frame clock as traction.
-  // This covers rolling, front-wheel drive on launch, and stationary burnout.
-  if(player.classList.contains('vaz2110-png-car')){
-    const spinAxis=(selector,active,duration)=>{
-      player.querySelectorAll(selector).forEach(node=>{
-        const previous=Number(node.dataset.vaz2110SpinAt||now);
-        let angle=Number(node.dataset.vaz2110SpinAngle||0);
-        if(active){
-          const elapsed=Math.max(0,Math.min(.05,(now-previous)/1000));
-          angle=(angle+elapsed*360/Math.max(.035,duration))%360;
-          node.style.transform='rotate('+angle.toFixed(2)+'deg)';
-          node.dataset.vaz2110SpinAngle=String(angle);
-        }
-        node.dataset.vaz2110SpinAt=String(now);
-      });
-    };
-    spinAxis('.vaz2110-wheel-spin.rear',rearActive,rearDuration);
-    spinAxis('.vaz2110-wheel-spin.front',frontActive,frontDuration);
-  }
 }
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
   const refs=race2dRefs;
