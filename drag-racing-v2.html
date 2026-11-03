@@ -2389,6 +2389,16 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   left:calc(4.6% - 18.5px)!important;
 }
 </style>
+<style id="allcoins-vaz2110-braking-wheel-response-v64">
+/* VAZ-2110 rotor angles are updated from the measured vehicle speed in JS. */
+#proRaceCockpit #race2dPlayerCar.vaz2110-png-car .vaz2110-wheel-spin{
+  animation:none!important;
+  transition:none!important;
+  transform-origin:50% 50%!important;
+  backface-visibility:hidden!important;
+  -webkit-backface-visibility:hidden!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
@@ -3486,6 +3496,33 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   setDuration('--race-rear-wheel-duration',rearDuration);
   setDuration('--race-front-wheel-duration',frontDuration);
 
+  // The VAZ-2110 rotors follow actual road speed, so they slow down with braking
+  // and stop exactly as the car reaches zero speed. Burnout remains RPM-driven.
+  if(player.classList.contains('vaz2110-png-car')){
+    const wheelCircumference=1.9; // metres, visual tyre circumference
+    const roadAngularSpeed=currentSpeed*360/(3.6*wheelCircumference); // degrees/second
+    const spinWheel=(selector,shouldSpin,angularSpeed)=>{
+      player.querySelectorAll(selector).forEach(node=>{
+        const previous=Number(node.dataset.vaz2110SpinAt||now);
+        const elapsed=Math.max(0,Math.min(.05,(now-previous)/1000));
+        let angle=Number(node.dataset.vaz2110SpinAngle||0);
+        if(shouldSpin&&elapsed>0){
+          angle=(angle+Math.max(0,angularSpeed)*elapsed)%360;
+        }
+        node.style.transform='rotate('+angle.toFixed(2)+'deg)';
+        node.dataset.vaz2110SpinAngle=String(angle);
+        node.dataset.vaz2110SpinAt=String(now);
+      });
+    };
+    const movingForWheel=running&&!finished&&currentSpeed>.02;
+    const burnoutAngularSpeed=360/Math.max(.055,drivenDuration);
+    spinWheel('.vaz2110-wheel-spin.rear',
+      movingForWheel&&!single2110Burnout,
+      roadAngularSpeed);
+    spinWheel('.vaz2110-wheel-spin.front',
+      single2110Burnout||movingForWheel,
+      single2110Burnout?burnoutAngularSpeed:roadAngularSpeed);
+  }
 
 }
 function updateRace2DEnvironment(dt,frameNow=performance.now()){
