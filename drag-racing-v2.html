@@ -2607,7 +2607,7 @@ function prepareVaz2110Wheels(root=document){
       const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
       points.forEach((point,index)=>{
         const wheel=wheels[index];
-        const diameter=nw*(index===1?.205:.19);
+        const diameter=nw*.19;
         wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
         wheel.style.setProperty('top',((offsetY+(point.y-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('width',(diameter*fit/rect.width*100).toFixed(3)+'%','important');
@@ -4040,7 +4040,7 @@ let airSuspensionIndex=1;
 const AIR_SUSPENSION_STATES=[
   {label:'НИЗКО',offset:'14px'},
   {label:'СРЕДНЕ',offset:'0px'},
-  {label:'ВЫСОКО',offset:'-18px'}
+  {label:'ВЫСОКО',offset:'-8px'}
 ];
 function applyAirSuspension(){
   const player=$('race2dPlayerCar'),button=$('proAirSuspensionToggle');
