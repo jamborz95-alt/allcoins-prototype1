@@ -2304,7 +2304,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 /* VAZ-2110: transparent body shell with two independent steel wheel rotors. */
 .vaz2110-png-art{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important}
 .vaz2110-png-art img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important}
-.vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translate3d(0,calc(-10px + var(--air-suspension-y,0px)),0)!important;transform-origin:center bottom!important;transition:transform .32s cubic-bezier(.22,.61,.36,1)!important}
+.vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translate3d(0,calc(-18px + var(--air-suspension-y,0px)),0)!important;transform-origin:center bottom!important;transition:transform .32s cubic-bezier(.22,.61,.36,1)!important}
 .vaz2110-png-art .vaz2110-wheel-spin img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}
 .vaz2110-png-art .vaz2110-wheel-spin{position:absolute!important;z-index:1!important;display:block!important;padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;box-sizing:border-box!important;overflow:hidden!important;background:transparent!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;transform-origin:50% 50%!important;will-change:transform}
 .vaz2110-png-art .vaz2110-wheel-spin svg{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
@@ -2523,7 +2523,7 @@ function prepareLada2101Wheels(root=document){
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const imageW=nw*fit,imageH=nh*fit;
       const offsetX=(rect.width-imageW)/2,offsetY=(rect.height-imageH)/2;
-      const diameter=nw*.15; // Slightly larger steel wheels (+~7%), centered in the original arches.
+      const diameter=nw*.17; // Thicker-looking tyre profile; retain the stamped-wheel PNG.
       const points=[
         {x:nw*.239,y:nh*.835},
         {x:nw*.855,y:nh*.835}
@@ -2630,9 +2630,9 @@ function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   const wheelSvg=vaz2110StampedWheelSvgMarkup();
   return '<div class="vaz2110-png-art">'
-    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v1" alt=""></span>'
-    +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v1" alt=""></span>'
-    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
+    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v2" alt=""></span>'
+    +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v2" alt=""></span>'
+    +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261103-vaz2110-body-v2" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +(vinyl?'<svg class="vaz2110-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
 
     +'</div>';
@@ -3103,7 +3103,7 @@ async function syncOnlineOpponentCar(){
   const source=modelId==='2107'
     ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
     :modelId==='2101'?'./cars/lada-2101-side.png?v=20261101-lada2101-body-v3'
-    :modelId==='2110'?'./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1'
+    :modelId==='2110'?'./cars/vaz-2110-body.png?v=20261103-vaz2110-body-v2'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
   if(token!==onlineOpponentRenderToken)return;
   delete opponent.dataset.pendingCarArtKey;
@@ -3844,7 +3844,7 @@ function initDragRacing3D(){
     const id=String(modelId||'2107');
     const bodyColorCss=typeof bodyColor==='number'?'#'+Math.max(0,bodyColor).toString(16).padStart(6,'0').slice(-6):String(bodyColor||carPaintCss(id));
     const texture=id==='2110'
-      ?new T.TextureLoader().load('./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1')
+      ?new T.TextureLoader().load('./cars/vaz-2110-body.png?v=20261103-vaz2110-body-v2')
       :id==='2101'
         ?new T.TextureLoader().load('./cars/lada-2101-side.png?v=20261101-lada2101-body-v3')
         :new T.TextureLoader().load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(carSvg(id,bodyColorCss,vinylId||'none')));
