@@ -2677,7 +2677,7 @@ function prepareVaz2110Wheels(root=document){
       const fit=Math.min(rect.width/nw,rect.height/nh);
       const offsetX=(rect.width-nw*fit)/2,offsetY=(rect.height-nh*fit)/2;
       // Keep the rear wheel as-is; make the front wheel about 8% larger.
-      const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
+      const points=[{x:nw*.205,y:nh*.70},{x:nw*.800,y:nh*.70}]; // Move the front wheel slightly left.
       points.forEach((point,index)=>{
         const wheel=wheels[index];
         const diameter=nw*.152; // 80% of the previous tyre diameter.
@@ -3417,9 +3417,11 @@ function updateRaceWheelDriveVisuals(now=performance.now()){
   const engineDriving=Boolean(running&&!finished&&gasHeld&&gear!=='N'&&now>=greenAt);
   const currentSpeed=Math.max(0,Number(speed)||0);
   const rolling=Boolean(running&&!finished&&currentSpeed>.45);
-  const rearActive=rolling||(engineDriving&&rearDriven);
-  const frontActive=rolling||(engineDriving&&frontDriven);
   const burnout=Boolean(engineDriving&&brakeHeld&&currentSpeed<9&&Number(rpm)>1100);
+  // On the front-wheel-drive VAZ-2110, a burnout spins only the visible front wheel.
+  const single2110Burnout=player.classList.contains('vaz2110-png-car')&&burnout;
+  const rearActive=single2110Burnout?false:(rolling||(engineDriving&&rearDriven));
+  const frontActive=single2110Burnout?true:(rolling||(engineDriving&&frontDriven));
   const rpmRatio=Math.max(0,Math.min(1,(Number(rpm)-850)/5750));
   const rollingDuration=Math.max(.035,Math.min(.48,.48/(1+currentSpeed/18)));
   const drivenDuration=burnout
