@@ -2305,7 +2305,8 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 .vaz2110-png-art{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important}
 .vaz2110-png-art img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important}
 .vaz2110-png-art .vaz2110-body-layer{z-index:2!important;transform:translateY(-3px)!important}
-.vaz2110-png-art .vaz2110-aroma-accessories{position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important;transform:translateY(-3px)!important}
+.vaz2110-png-art .vaz2110-shock-absorbers{position:absolute!important;inset:0!important;z-index:3!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important;transform:translateY(-3px)!important}
+.vaz2110-png-art .vaz2110-wheel-spin img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}
 .vaz2110-png-art .vaz2110-wheel-spin{position:absolute!important;z-index:1!important;display:block!important;padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;box-sizing:border-box!important;overflow:hidden!important;background:transparent!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;transform-origin:50% 50%!important;will-change:transform}
 .vaz2110-png-art .vaz2110-wheel-spin svg{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
 .vaz2110-png-art .vaz2110-png-vinyl{position:absolute!important;inset:0!important;z-index:4!important;width:100%!important;height:100%!important;overflow:visible!important;pointer-events:none!important}
@@ -2630,21 +2631,19 @@ function vaz2110PngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
   const wheelSvg=vaz2110StampedWheelSvgMarkup();
   return '<div class="vaz2110-png-art">'
-    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true">'+wheelSvg+'</span>'
-    +'<span class="vaz2110-wheel-spin front" aria-hidden="true">'+wheelSvg+'</span>'
+    +'<span class="vaz2110-wheel-spin rear" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v1" alt=""></span>'
+    +'<span class="vaz2110-wheel-spin front" aria-hidden="true"><img src="./cars/vaz-2110-stamped-wheel.png?v=20261103-wheel-png-v1" alt=""></span>'
     +'<img class="'+imgClass+' race-car-png vaz2110-body-layer" src="./cars/vaz-2110-body.png?v=20261102-vaz2110-body-v1" alt="ВАЗ-2110, кузов PNG" decoding="async" draggable="false">'
     +(vinyl?'<svg class="vaz2110-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')
-    +'<svg class="vaz2110-aroma-accessories" viewBox="0 0 800 278" preserveAspectRatio="none" aria-hidden="true">'
-    +'<path d="M438 20 L438 43" fill="none" stroke="#d8d3c6" stroke-width="2.2" stroke-linecap="round"/>'
-    +'<path d="M438 43 L438 48" fill="none" stroke="#171c20" stroke-width="1.2"/>'
-    +'<path d="M438 47 L428 59 L433 59 L425 69 L451 69 L443 59 L448 59 Z" fill="#2f8a58" stroke="#174c35" stroke-width="1.4"/>'
-    +'<path d="M435 69 L441 69 L441 75 L435 75 Z" fill="#8b6847"/>'
-    +'<circle cx="438" cy="46" r="2.4" fill="#d9c9a1" stroke="#4d4536" stroke-width="1"/>'
-    +'<path d="M470 21 L470 48" fill="none" stroke="#c9c5b8" stroke-width="1.8" stroke-linecap="round"/>'
-    +'<path d="M465 48 Q470 43 475 48 L477 65 Q470 69 463 65 Z" fill="#d4b96e" stroke="#635331" stroke-width="1.4"/>'
-    +'<path d="M466 53 L474 53" stroke="#fff1c5" stroke-width="1.6" opacity=".8"/>'
-    +'<path d="M467 46 L473 46 L473 49 L467 49 Z" fill="#6d777b" stroke="#30383d" stroke-width="1"/>'
-    +'</svg>'
+    +'<svg class="vaz2110-shock-absorbers" viewBox="0 0 800 278" preserveAspectRatio="none" aria-hidden="true">'
+    +'<g fill="none" stroke-linecap="round" stroke-linejoin="round">'
+    +'<path d="M148 104 L181 177 L194 184" stroke="#20272c" stroke-width="9"/>'
+    +'<path d="M148 104 L181 177 L194 184" stroke="#b9c1c5" stroke-width="3.2"/>'
+    +'<path d="M158 125 L165 120 L173 132 L166 138 L175 149 L168 155 L180 168" stroke="#555f65" stroke-width="3.3"/>'
+    +'<path d="M607 104 L640 177 L653 184" stroke="#20272c" stroke-width="9"/>'
+    +'<path d="M607 104 L640 177 L653 184" stroke="#b9c1c5" stroke-width="3.2"/>'
+    +'<path d="M617 125 L624 120 L632 132 L625 138 L634 149 L627 155 L639 168" stroke="#555f65" stroke-width="3.3"/>'
+    +'</g><g fill="#8d989e" stroke="#20272c" stroke-width="2"><circle cx="148" cy="104" r="5"/><circle cx="194" cy="184" r="5"/><circle cx="607" cy="104" r="5"/><circle cx="653" cy="184" r="5"/></g></svg>'
     +'</div>';
 }
 function ladaPointInsidePolygon(x,y,poly){
