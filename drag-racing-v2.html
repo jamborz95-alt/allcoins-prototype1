@@ -2570,7 +2570,8 @@ function prepareLada2101Wheels(root=document){
       points.forEach((point,index)=>{
         const wheel=wheels[index];
         wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
-        wheel.style.setProperty('top',((offsetY+(point.y-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
+        const centerY=point.y+(nw*.19-diameter)/2; // Keep the tyre contact line on the asphalt.
+        wheel.style.setProperty('top',((offsetY+(centerY-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('width',(diameter*fit/rect.width*100).toFixed(3)+'%','important');
         wheel.style.setProperty('height',(diameter*fit/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('display','block','important');
@@ -2646,9 +2647,10 @@ function prepareVaz2110Wheels(root=document){
       const points=[{x:nw*.205,y:nh*.70},{x:nw*.805,y:nh*.70}];
       points.forEach((point,index)=>{
         const wheel=wheels[index];
-        const diameter=nw*.19;
+        const diameter=nw*.152; // 80% of the previous tyre diameter.
         wheel.style.setProperty('left',((offsetX+(point.x-diameter/2)*fit)/rect.width*100).toFixed(3)+'%','important');
-        wheel.style.setProperty('top',((offsetY+(point.y-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
+        const centerY=point.y+(nw*.19-diameter)/2; // Keep the tyre contact line on the asphalt.
+        wheel.style.setProperty('top',((offsetY+(centerY-diameter/2)*fit)/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('width',(diameter*fit/rect.width*100).toFixed(3)+'%','important');
         wheel.style.setProperty('height',(diameter*fit/rect.height*100).toFixed(3)+'%','important');
         wheel.style.setProperty('display','block','important');
