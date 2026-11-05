@@ -3,6 +3,7 @@ import express from "express";
 const BREEDER_COST = 4500;
 const INCUBATOR_COST = 6500;
 const EGG_HATCH_MS = 20 * 60 * 1000;
+const EGG_INTERVAL_MS = 60 * 1000;
 const GROWTH_MS = 2 * 60 * 60 * 1000;
 const MAX_BREEDERS = 5;
 const INCUBATOR_SLOTS = 2;
@@ -60,7 +61,28 @@ function createDragonRouter({ pool, verifyTelegram }) {
         );
         CREATE INDEX IF NOT EXISTS dragon_eggs_owner_status_idx
           ON dragon_eggs (telegram_id, status, laid_at);
-      `);
+      `).then(async () => {
+        // Apply the cadence change once, so existing breeders join the one-minute cycle
+        // without having their timers reset on every server restart.
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS dragon_system_migrations (
+            migration_key TEXT PRIMARY KEY,
+            applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          WITH applied AS (
+            INSERT INTO dragon_system_migrations (migration_key)
+            VALUES ('breeder-egg-cycle-one-minute')
+            ON CONFLICT (migration_key) DO NOTHING
+            RETURNING 1
+          )
+          UPDATE dragon_creatures
+          SET next_egg_at = NOW() + INTERVAL '1 minute'
+          WHERE kind = 'breeder'
+            AND stage = 'adult'
+            AND next_egg_at IS NOT NULL
+            AND EXISTS (SELECT 1 FROM applied);
+        `);
+      });
     }
     try { await schemaPromise; } catch (error) { schemaPromise = null; throw error; }
   }
@@ -83,17 +105,20 @@ function createDragonRouter({ pool, verifyTelegram }) {
 
   async function processWorld(client, userId) {
     const dueBreeders = await client.query(
-      "SELECT id FROM dragon_creatures WHERE telegram_id = $1 AND kind = 'breeder' AND stage = 'adult' AND next_egg_at IS NOT NULL AND next_egg_at <= NOW() ORDER BY next_egg_at FOR UPDATE",
+      "SELECT id, next_egg_at FROM dragon_creatures WHERE telegram_id = $1 AND kind = 'breeder' AND stage = 'adult' AND next_egg_at IS NOT NULL AND next_egg_at <= NOW() ORDER BY next_egg_at FOR UPDATE",
       [userId]
     );
     for (const breeder of dueBreeders.rows) {
+      // Catch up every elapsed minute, including time while the player was offline.
+      const overdueMs = Math.max(0, Date.now() - new Date(breeder.next_egg_at).getTime());
+      const eggsToLay = Math.floor(overdueMs / EGG_INTERVAL_MS) + 1;
       await client.query(
-        "INSERT INTO dragon_eggs (telegram_id, status) VALUES ($1, 'laid')",
-        [userId]
+        "INSERT INTO dragon_eggs (telegram_id, status) SELECT $1, 'laid' FROM generate_series(1, $2)",
+        [userId, eggsToLay]
       );
       await client.query(
-        "UPDATE dragon_creatures SET next_egg_at = NOW() + INTERVAL '4 hours' WHERE id = $1 AND telegram_id = $2",
-        [breeder.id, userId]
+        "UPDATE dragon_creatures SET next_egg_at = next_egg_at + ($1::TEXT || ' milliseconds')::INTERVAL WHERE id = $2 AND telegram_id = $3",
+        [String(eggsToLay * EGG_INTERVAL_MS), breeder.id, userId]
       );
     }
 
@@ -219,12 +244,12 @@ function createDragonRouter({ pool, verifyTelegram }) {
           error.status = 400; throw error;
         }
         await client.query(
-          "INSERT INTO dragon_creatures (telegram_id, kind, stage, born_at, next_egg_at) VALUES ($1, 'breeder', 'adult', NOW(), NOW() + INTERVAL '4 hours')",
+          "INSERT INTO dragon_creatures (telegram_id, kind, stage, born_at, next_egg_at) VALUES ($1, 'breeder', 'adult', NOW(), NOW() + INTERVAL '1 minute')",
           [user.id]
         );
         return readState(client, user.id, profile);
       });
-      return res.json({ ok: true, message: "Дракон-производитель куплен. Первое яйцо появится через 4 часа.", state });
+      return res.json({ ok: true, message: "Дракон-производитель куплен. Первое яйцо появится через 1 минуту.", state });
     } catch (error) {
       console.error("Dragon breeder purchase error:", error.message);
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось купить дракона." });
