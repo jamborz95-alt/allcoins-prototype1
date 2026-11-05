@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
@@ -92,6 +92,9 @@ try {
   assert.match(await page.locator("#content").innerText(), /Инкубатор активен/);
   await page.locator(".dragon-card.hatch-new").waitFor();
   assert.ok(await page.locator(".dragon-young").count() > 0, "A newly hatched young dragon should render with its growth animation.");
+  const artifactDir = resolve(root, "artifacts");
+  await mkdir(artifactDir, { recursive: true });
+  await writeFile(resolve(artifactDir, "dragons-mobile-overview.png"), await page.screenshot({ fullPage: true }));
 
   await page.locator('[data-action="buy"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
@@ -102,6 +105,7 @@ try {
   assert.ok(calls.some(call => call.path === "/api/dragons/incubate" && call.body.kind === "attacker"));
   await page.locator(".egg-glow .egg-shell").waitFor();
   assert.ok(await page.locator(".egg-track i").count() > 0, "Incubation should display a live progress bar.");
+  await writeFile(resolve(artifactDir, "dragons-incubation-mobile.png"), await page.screenshot({ fullPage: true }));
 
   await page.locator('[data-action="expedition"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
