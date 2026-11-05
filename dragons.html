@@ -71,6 +71,28 @@ button{font:inherit}
 .loading{padding:44px 10px;text-align:center;color:#bac9d2;font-size:12px}
 .growbar{height:5px;border-radius:99px;background:#ffffff12;overflow:hidden;margin-top:7px}
 .growbar i{display:block;height:100%;background:linear-gradient(90deg,#55c7d2,#a7eddb);border-radius:99px}
+.egg-glow{position:relative;isolation:isolate;background:radial-gradient(circle,#f4d88c35 0,transparent 70%)}
+.egg-glow:before{content:"";position:absolute;inset:4px;border-radius:50%;background:#f6d98a22;filter:blur(5px);animation:eggHalo 2.5s ease-in-out infinite}
+.egg-shell{position:relative;z-index:1;display:block;filter:drop-shadow(0 3px 5px #f2c66c55);transform-origin:50% 80%;animation:eggRock 2.8s ease-in-out infinite}
+.egg-track{height:4px;margin-top:8px;background:#06131e;box-shadow:inset 0 1px 2px #0008}
+.egg-track i{background:linear-gradient(90deg,#65c9d2,#f8da8c);box-shadow:0 0 8px #e9c57788}
+.dragon-avatar{position:relative;overflow:visible;background:linear-gradient(145deg,#28495a,#172b39)}
+.dragon-avatar>span{position:relative;z-index:1;display:inline-block;filter:drop-shadow(0 4px 4px #0007)}
+.dragon-young>span{animation:dragonHover 2.6s ease-in-out infinite}
+.dragon-adult>span{animation:dragonBreath 3.4s ease-in-out infinite}
+.dragon-attacker{border:1px solid #e5a66c55;background:radial-gradient(circle at 50% 35%,#9e603b,#2b2938 78%)}
+.dragon-defender{border:1px solid #79c9d055;background:radial-gradient(circle at 50% 35%,#3d8790,#213747 78%)}
+.dragon-card.hatch-new{border-color:#f4d389aa;box-shadow:0 0 0 1px #f4d38933,0 0 24px #e5b85c42;animation:hatchReveal 1.25s cubic-bezier(.2,.8,.2,1) both}
+.dragon-card.hatch-new .dragon-avatar:after{content:"";position:absolute;inset:-6px;border-radius:16px;border:2px solid #ffe6a0;animation:hatchFlash 1.1s ease-out both;pointer-events:none}
+.hatch-label{display:inline-block;margin-top:4px;color:#ffe1a0;font-size:9px;font-weight:900;letter-spacing:.5px}
+@keyframes eggRock{0%,100%{transform:rotate(0) translateY(0)}18%{transform:rotate(-7deg) translateY(-1px)}36%{transform:rotate(6deg)}54%{transform:rotate(-4deg) translateY(-2px)}72%{transform:rotate(3deg)}}
+@keyframes eggHalo{0%,100%{opacity:.35;transform:scale(.88)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes dragonHover{0%,100%{transform:translateY(1px) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+@keyframes dragonBreath{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.055)}}
+@keyframes hatchReveal{0%{transform:scale(.92);opacity:.4;filter:brightness(1.8)}55%{transform:scale(1.025);opacity:1}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes hatchFlash{0%{opacity:0;transform:scale(.72)}30%{opacity:1}100%{opacity:0;transform:scale(1.16)}}
+@media(prefers-reduced-motion:reduce){.egg-shell,.egg-glow:before,.dragon-young>span,.dragon-adult>span,.dragon-card.hatch-new,.dragon-card.hatch-new .dragon-avatar:after{animation:none!important}}
+
 @media(max-width:390px){.app{padding-left:11px;padding-right:11px}.stats{gap:6px}.stat{padding:10px 4px}.stat b{font-size:18px}.stat span{font-size:8px}.hero{padding:17px;min-height:170px}.hero-copy{max-width:65%}.hero p{font-size:10px}.panel{padding:13px}}
 </style>
 </head>
@@ -116,6 +138,11 @@ button{font:inherit}
   let state = null;
   let busy = false;
   let toastTimer = null;
+  const hatchStorageKey = "allcoins:dragons:hatches:" + String(tg?.initDataUnsafe?.user?.id || "session");
+  const seenHatches = (() => {
+    try { return new Set(JSON.parse(localStorage.getItem(hatchStorageKey) || "[]").map(String)); }
+    catch { return new Set(); }
+  })();
 
   const $ = id => document.getElementById(id);
   const money = value => new Intl.NumberFormat("ru-RU").format(Number(value || 0));
@@ -127,6 +154,17 @@ button{font:inherit}
     return h ? h + " ч " + m + " мин" : m ? m + " мин " + s + " сек" : s + " сек";
   };
   const dateMs = value => value ? new Date(value).getTime() : 0;
+  function isFreshHatch(creature) {
+    const id = String(creature?.id || "");
+    const bornAt = dateMs(creature?.bornAt);
+    const age = Date.now() - bornAt;
+    if (!id || !bornAt || age < 0 || age > 180000 || seenHatches.has(id)) return false;
+    seenHatches.add(id);
+    try {
+      localStorage.setItem(hatchStorageKey, JSON.stringify([...seenHatches].slice(-60)));
+    } catch {}
+    return true;
+  }
   function toast(message) {
     $("toast").textContent = message;
     $("toast").classList.add("show");
@@ -197,7 +235,8 @@ button{font:inherit}
       const id = esc(egg.id);
       if (egg.status === "incubating") {
         const hatch = dateMs(egg.hatchAt);
-        return '<div class="item"><div class="item-emoji">🥚</div><div class="item-main"><b>Яйцо в инкубаторе</b><small>Будущий дракон: ' + (egg.dragonKind === "attacker" ? "⚔️ атакующий" : "🛡️ защитник") + ' · <span data-time="' + hatch + '">' + timeText(hatch) + '</span></small></div><span class="tag">В РАБОТЕ</span></div>';
+        const incubationStart = hatch - 20 * 60 * 1000;
+        return '<div class="item"><div class="item-emoji egg-glow"><span class="egg-shell">🥚</span></div><div class="item-main"><b>Яйцо в инкубаторе</b><small>Будущий дракон: ' + (egg.dragonKind === "attacker" ? "⚔️ атакующий" : "🛡️ защитник") + ' · <span data-time="' + hatch + '">' + timeText(hatch) + '</span></small><div class="growbar egg-track"><i data-progress-start="' + incubationStart + '" data-progress-end="' + hatch + '"></i></div></div><span class="tag">В РАБОТЕ</span></div>';
       }
       return '<div class="item"><div class="item-emoji">🥚</div><div class="item-main"><b>Новое яйцо #' + id + '</b><small>Выбери роль будущего дракона и отправь яйцо в инкубатор.</small></div><div class="item-actions">' +
         '<button class="btn btn-blue" data-action="incubate" data-egg="' + id + '" data-kind="defender" ' + (!profile.incubatorBuilt ? "disabled" : "") + '>🛡️ Защитник</button>' +
@@ -206,9 +245,12 @@ button{font:inherit}
 
     const youngAndWarriors = state.creatures.filter(c => c.kind !== "breeder").map(c => {
       const ready = dateMs(c.maturesAt);
+      const born = dateMs(c.bornAt);
       const adult = c.stage === "adult";
       const attacker = c.kind === "attacker";
-      return '<div class="item"><div class="item-emoji">' + (attacker ? "⚔️" : "🛡️") + '</div><div class="item-main"><b>' + (attacker ? "Дракон-атакующий" : "Дракон-защитник") + ' #' + esc(c.id) + '</b><small>' + (adult ? "Взрослый · готов к службе" : 'Молодой дракон · вырастет через <span data-time="' + ready + '">' + timeText(ready) + '</span>') + '</small>' + (!adult ? '<div class="growbar"><i style="width:28%"></i></div>' : '') + '</div><span class="tag">' + (adult ? "ВЗРОСЛЫЙ" : "МАЛЬКИ") + '</span></div>';
+      const freshHatch = !adult && isFreshHatch(c);
+      const roleName = attacker ? "Дракон-атакующий" : "Дракон-защитник";
+      return '<div class="item dragon-card ' + (freshHatch ? "hatch-new" : "") + '"><div class="item-emoji dragon-avatar ' + (attacker ? "dragon-attacker" : "dragon-defender") + ' ' + (adult ? "dragon-adult" : "dragon-young") + '"><span>' + (adult ? "🐉" : "🐲") + '</span></div><div class="item-main"><b>' + roleName + ' #' + esc(c.id) + '</b><small>' + (adult ? "Взрослый · готов к службе" : 'Молодой дракон · вырастет через <span data-time="' + ready + '">' + timeText(ready) + '</span>') + '</small>' + (freshHatch ? '<span class="hatch-label">✦ ТОЛЬКО ЧТО ВЫЛУПИЛСЯ</span>' : '') + (!adult ? '<div class="growbar"><i data-progress-start="' + born + '" data-progress-end="' + ready + '"></i></div>' : '') + '</div><span class="tag">' + (adult ? "ВЗРОСЛЫЙ" : "МАЛЬКИ") + '</span></div>';
     }).join("") || '<div class="empty">Когда яйцо вылупится, здесь появятся твои драконы. Взросление занимает 2 часа.</div>';
 
     const nextRaid = profile.nextRaidAt ? Number(profile.nextRaidAt) : 0;
@@ -235,6 +277,13 @@ button{font:inherit}
     document.querySelectorAll("[data-time]").forEach(node => {
       const ms = Number(node.getAttribute("data-time"));
       node.textContent = timeText(ms);
+    });
+    document.querySelectorAll("[data-progress-start][data-progress-end]").forEach(node => {
+      const start = Number(node.getAttribute("data-progress-start"));
+      const end = Number(node.getAttribute("data-progress-end"));
+      const span = end - start;
+      const percent = span > 0 ? Math.max(0, Math.min(100, ((Date.now() - start) / span) * 100)) : 0;
+      node.style.width = percent.toFixed(1) + "%";
     });
   }
 
