@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-label="Золотой дракон">
+<defs>
+ <linearGradient id="scale" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe8a0"/><stop offset=".35" stop-color="#d99a42"/><stop offset=".72" stop-color="#8e4e2b"/><stop offset="1" stop-color="#422b36"/></linearGradient>
+ <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b86a3d"/><stop offset="1" stop-color="#392b43"/></linearGradient>
+ <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe7ad"/><stop offset="1" stop-color="#bd8349"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#ffc96d" stop-opacity=".55"/><stop offset="1" stop-color="#ffc96d" stop-opacity="0"/></radialGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="330" cy="450" rx="225" ry="35" fill="#000" opacity=".42" filter="url(#shadow)"/>
+<circle cx="370" cy="260" r="235" fill="url(#glow)"/>
+<!-- tail -->
+<path d="M205 337 C125 405 82 403 35 366 C88 450 185 455 270 370Z" fill="url(#scale)" stroke="#633d32" stroke-width="9" stroke-linejoin="round"/>
+<path d="M42 369l-24-39 47 12 27-34 8 53Z" fill="#f2c56f" stroke="#633d32" stroke-width="6"/>
+<!-- far wing -->
+<path d="M300 267 C250 80 110 37 54 66 C113 111 111 176 72 220 C159 204 195 270 208 330 C237 305 270 288 300 267Z" fill="url(#wing)" stroke="#4c3037" stroke-width="12" stroke-linejoin="round"/>
+<path d="M286 260L75 75M270 272L91 216M264 290L204 320" fill="none" stroke="#e4a65e" stroke-width="8" opacity=".8"/>
+<!-- body -->
+<path d="M176 332 C191 264 255 226 338 242 C409 256 456 323 427 383 C395 441 292 439 226 397Z" fill="url(#scale)" stroke="#593b36" stroke-width="12"/>
+<path d="M245 337 C278 313 358 309 410 345 C405 389 358 414 302 403 C273 394 251 369 245 337Z" fill="url(#belly)" stroke="#8b5738" stroke-width="7"/>
+<path d="M277 349l15 47m23-54 12 59m22-58 8 49m21-42 5 31" stroke="#a66c43" stroke-width="5" opacity=".7"/>
+<!-- near wing -->
+<path d="M320 290 C332 105 465 58 548 94 C495 134 486 190 533 235 C455 221 414 277 400 340 C373 317 348 301 320 290Z" fill="url(#wing)" stroke="#4c3037" stroke-width="13" stroke-linejoin="round"/>
+<path d="M331 291L539 103M351 302L520 231M385 324L407 341" fill="none" stroke="#efbd70" stroke-width="9" opacity=".9"/>
+<!-- neck and head -->
+<path d="M350 318 C390 272 420 225 426 177 C430 137 462 113 508 128 C548 140 566 176 548 207 C530 236 491 233 468 216 C461 263 442 309 409 344Z" fill="url(#scale)" stroke="#593b36" stroke-width="12"/>
+<path d="M455 143l-9-53 39 40 19-54 15 63" fill="#f0c16b" stroke="#593b36" stroke-width="9" stroke-linejoin="round"/>
+<path d="M501 190 C536 178 578 185 604 207 C579 229 548 236 511 222 L477 214Z" fill="url(#scale)" stroke="#593b36" stroke-width="10"/>
+<path d="M554 210l47-3-31 24" fill="#d88a4c" stroke="#593b36" stroke-width="7"/>
+<ellipse cx="515" cy="174" rx="13" ry="10" fill="#fff0bd"/>
+<ellipse cx="519" cy="175" rx="5" ry="8" fill="#291c23"/>
+<path d="M474 247l-25 33m54-29-14 35m44-42-7 31" stroke="#f4cc7c" stroke-width="8" stroke-linecap="round"/>
+<!-- claws -->
+<path d="M248 395l-7 32 24-18m71-4 2 31 21-25m56-36 12 27 12-30" fill="#f7d48c" stroke="#593b36" stroke-width="6" stroke-linejoin="round"/>
+<!-- fire breath -->
+<path d="M600 204 C635 180 631 153 611 143 C636 145 649 169 640 191 C632 210 618 218 600 219Z" fill="#ffb34f" opacity=".95"/>
+<path d="M605 205 C625 192 626 180 617 173" fill="none" stroke="#fff0b2" stroke-width="7" stroke-linecap="round"/>
+</svg>
