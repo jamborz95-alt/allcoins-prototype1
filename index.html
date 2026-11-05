@@ -2776,6 +2776,13 @@
       }
     </style>
     <!-- КАРТОЧКА ДУРАКА НА СТРАНИЦЕ ИГРЫ -->
+
+<style id="dragons-entry-icon-styles">
+  #games .dragons-entry-appicon{position:relative;isolation:isolate;display:grid;place-items:center;flex:0 0 82px;width:82px;height:82px;margin:0 auto 9px;overflow:hidden;border:1px solid rgba(244,213,133,.9);border-radius:21px;background:radial-gradient(circle at 50% 25%,rgba(245,177,83,.3),transparent 48%),linear-gradient(145deg,#3c4031 0%,#102538 67%,#24172a 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 7px 16px rgba(0,0,0,.38);font-size:43px}
+  #games .dragons-entry-appicon:before{content:"";position:absolute;inset:5px;border:1px solid rgba(244,213,133,.28);border-radius:15px;pointer-events:none}
+  #games .dragons-entry-appicon i{position:absolute;right:9px;top:5px;color:#f4d589;font-size:14px;font-style:normal;text-shadow:0 2px 3px #000}
+</style>
+
 <div class="games-app-grid">
   <div class="game-app-tile" id="durakEntry">
     <button type="button" id="openDurak" class="game-app-launch" aria-label="Открыть игру Дурак Онлайн">
@@ -2786,6 +2793,12 @@
       </span>
       <span class="game-app-title">Дурак Онлайн</span>
     </button>
+  </div>
+  <div class="game-app-tile" id="dragonsEntry">
+    <a id="openDragons" class="game-app-launch" href="./dragons.html?v=20261105-dragon-economy1" aria-label="Открыть экономическую игру Драконы">
+      <span class="dragons-entry-appicon" aria-hidden="true">🐉<i>✦</i></span>
+      <span class="game-app-title">Драконы</span>
+    </a>
   </div>
   <div class="game-app-tile" id="bombEntry">
     <a id="openBomb" class="game-app-launch"
