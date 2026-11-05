@@ -43,6 +43,11 @@ const server = createServer(async (req, res) => {
     res.end(html);
     return;
   }
+  if (pathname === "/assets/dragons/dragon-hero.svg") {
+    res.writeHead(200, { "content-type": "image/svg+xml; charset=utf-8" });
+    res.end(await readFile(resolve(root, "assets/dragons/dragon-hero.svg")));
+    return;
+  }
   res.writeHead(404);
   res.end("Not found");
 });
@@ -87,6 +92,8 @@ try {
 
   await page.goto("http://127.0.0.1:4173/dragons.html");
   await page.getByRole("heading", { name: "ДРАКОНЫ" }).waitFor();
+  await page.locator(".dragon-art").evaluate(img => img.decode());
+  assert.ok(await page.locator(".dragon-art").evaluate(img => img.naturalWidth > 0), "The hero dragon artwork should load in the mobile browser.");
   await page.getByText("100 000 AC").waitFor().catch(() => {});
   assert.match(await page.locator("#content").innerText(), /Питомник/);
   assert.match(await page.locator("#content").innerText(), /Инкубатор активен/);
