@@ -19,6 +19,7 @@ import { createBombOnlineRouter } from "./bomb-online-router.js";
 import { createTugOfWarRouter } from "./tug-of-war-router.js";
 import { createBaldaRouter } from "./balda-router.js";
 import { createDragRacingRouter } from "./drag-racing-router.js";
+import { createDragonRouter } from "./dragons-router.js";
 import {
   initializeCommissionTables,
   recordGameCommission,
@@ -323,6 +324,8 @@ const baldaRouter = createBaldaRouter({ pool, verifyTelegram });
 app.use("/api/balda", baldaRouter);
 const dragRacingRouter = createDragRacingRouter({ pool, verifyTelegram, recordGameCommission });
 app.use("/api/drag-racing", dragRacingRouter);
+const dragonsRouter = createDragonRouter({ pool, verifyTelegram });
+app.use("/api/dragons", dragonsRouter);
 
 app.get("/", (req, res) => {
   res.json({
