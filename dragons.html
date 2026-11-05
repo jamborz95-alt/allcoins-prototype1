@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#081420">
+<title>Драконы — ALLCOINS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#081420;--panel:#112536;--panel2:#172f40;--gold:#f2ca72;--gold2:#9d7134;--mint:#72dfbd;--muted:#a8bac8;--line:#ffffff18;--red:#f18b78}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#23465a 0,#0b1b2a 45%,#07111b 100%);color:#f4f7f8;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);overflow-x:hidden}
+button{font:inherit}
+.app{max-width:720px;margin:0 auto;padding:14px 14px 34px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:3px 0 16px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{width:42px;height:42px;display:grid;place-items:center;border:1px solid #d5b76c;border-radius:14px;background:linear-gradient(145deg,#254c58,#142535 70%);box-shadow:inset 0 1px #ffffff30,0 6px 18px #0005;font-size:24px}
+.brand h1{font-size:18px;line-height:1.1;margin:0;font-weight:950;letter-spacing:.5px}
+.brand small{display:block;color:var(--gold);font-size:9px;letter-spacing:2px;font-weight:900;margin-top:4px}
+.back{border:1px solid var(--line);color:#e6edf1;background:#ffffff0b;border-radius:12px;padding:10px 12px;text-decoration:none;font-size:12px;font-weight:800}
+.balancebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #d1ad5b66;border-radius:17px;background:linear-gradient(105deg,#3a2d1b99,#172839 52%,#122a31);box-shadow:0 9px 24px #0004}
+.balancebar span{font-size:11px;color:#d8e0e5;font-weight:700}
+.balancebar strong{display:block;color:#ffe2a0;font-size:22px;letter-spacing:.3px;margin-top:2px}
+.ac-chip{flex-shrink:0;border:1px solid #e5bf6a88;border-radius:11px;padding:8px 11px;color:#ffe8b2;background:#5a4522aa;font-size:11px;font-weight:1000}
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;min-height:180px;margin:14px 0;padding:20px;border:1px solid #e0bd6b55;border-radius:22px;background:radial-gradient(ellipse at 85% 45%,#d78b3b2b,transparent 38%),linear-gradient(125deg,#1c3945,#112433 58%,#2b2630);box-shadow:0 14px 30px #0005}
+.hero:before{content:"";position:absolute;inset:9px;border:1px solid #f3d68a26;border-radius:16px;pointer-events:none}
+.hero-copy{position:relative;z-index:1;max-width:62%}
+.eyebrow{color:var(--gold);font-size:9px;font-weight:1000;letter-spacing:2px}
+.hero h2{font-family:Georgia,serif;font-size:clamp(25px,6vw,38px);line-height:.98;margin:8px 0 9px;color:#fff1cf;text-shadow:0 3px 14px #0008}
+.hero p{font-size:11px;line-height:1.5;color:#c4d1d9;margin:0;max-width:290px}
+.dragon-art{position:absolute;right:1%;bottom:-9px;width:43%;height:100%;display:grid;place-items:center;font-size:clamp(90px,27vw,170px);filter:drop-shadow(0 12px 10px #0009);transform:scaleX(-1);opacity:.95}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 15px}
+.stat{min-width:0;padding:11px 8px;text-align:center;border:1px solid var(--line);border-radius:15px;background:#112536c9}
+.stat b{display:block;font-size:20px;color:#f6d58e;line-height:1.1}
+.stat span{display:block;margin-top:5px;font-size:9px;color:#aabcc7;line-height:1.2}
+.panel{margin-top:13px;padding:15px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(145deg,#142b3cF2,#0d1c2aF5);box-shadow:0 9px 25px #0003}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.panel-head h3{margin:0;font-size:15px;font-weight:950}
+.tag{font-size:9px;font-weight:900;letter-spacing:.5px;color:#f4d38e;border:1px solid #d5ae5d55;background:#5a452222;padding:6px 8px;border-radius:9px;white-space:nowrap}
+.muted{color:var(--muted);font-size:11px;line-height:1.5}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-size:12px;font-weight:950;cursor:pointer;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-gold{color:#2e2417;background:linear-gradient(135deg,#ffe6a3,#d9a74d);box-shadow:0 5px 13px #0003}
+.btn-blue{color:#eaf7fc;border:1px solid #75c9e466;background:linear-gradient(135deg,#23607a,#174058)}
+.btn-quiet{color:#d6e0e7;border:1px solid var(--line);background:#ffffff0a}
+.price{display:inline-block;margin-left:5px;color:#7d541c;font-size:10px}
+.info-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.info-row:first-of-type{border-top:0}
+.info-row strong{font-size:12px}
+.info-row small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.item-list{display:grid;gap:8px}
+.item{display:flex;align-items:center;gap:11px;padding:10px;border-radius:14px;background:#ffffff08;border:1px solid #ffffff12;min-width:0}
+.item-emoji{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,#345267,#192d3b);font-size:25px}
+.item-main{flex:1;min-width:0}
+.item-main b{display:block;font-size:12px}
+.item-main small{display:block;color:var(--muted);font-size:10px;line-height:1.4;margin-top:3px}
+.item-actions{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.item-actions .btn{padding:8px 9px;font-size:10px}
+.empty{padding:16px 10px;text-align:center;border:1px dashed #ffffff2a;border-radius:14px;color:#9fb2c0;font-size:11px;line-height:1.5}
+.incubator{position:relative;overflow:hidden;padding:15px;border-radius:16px;border:1px solid #8ed2e044;background:radial-gradient(circle at 85% 50%,#66d7ec20,transparent 33%),linear-gradient(120deg,#1a3e50,#102737)}
+.incubator-icon{font-size:34px;float:right;margin:0 4px 0 10px;filter:drop-shadow(0 5px 6px #0008)}
+.incubator b{font-size:13px}
+.incubator p{font-size:10px;color:#b9cbd5;line-height:1.45;margin:5px 0 0;max-width:80%}
+.pill{display:inline-block;border-radius:8px;padding:5px 8px;background:#ffffff12;color:#d8e7ed;font-size:9px;font-weight:900;margin-top:8px}
+.note{margin-top:13px;padding:11px 12px;border-left:3px solid #c79e50;border-radius:0 10px 10px 0;background:#ffffff08;color:#b6c5ce;font-size:10px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));z-index:10;transform:translate(-50%,20px);width:min(92vw,460px);padding:12px 14px;border-radius:13px;background:#20384a;border:1px solid #e1c27688;color:#fff1cd;text-align:center;font-size:12px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;box-shadow:0 12px 30px #0008}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.loading{padding:44px 10px;text-align:center;color:#bac9d2;font-size:12px}
+.growbar{height:5px;border-radius:99px;background:#ffffff12;overflow:hidden;margin-top:7px}
+.growbar i{display:block;height:100%;background:linear-gradient(90deg,#55c7d2,#a7eddb);border-radius:99px}
+@media(max-width:390px){.app{padding-left:11px;padding-right:11px}.stats{gap:6px}.stat{padding:10px 4px}.stat b{font-size:18px}.stat span{font-size:8px}.hero{padding:17px;min-height:170px}.hero-copy{max-width:65%}.hero p{font-size:10px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="brand-mark">🐉</div><div><h1>ДРАКОНЫ</h1><small>ALLCOINS · DRAGON VALLEY</small></div></div>
+    <a class="back" href="./index.html">‹ В ALLCOINS</a>
+  </header>
+
+  <div class="balancebar">
+    <div><span>ТВОЙ БАЛАНС</span><strong id="balance">— AC</strong></div>
+    <div class="ac-chip">✦ ALLCOINS</div>
+  </div>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">СОЗДАЙ СВОЮ ДРАКОНЬЮ ДИНАСТИЮ</div>
+      <h2>Выведи<br>легенду.</h2>
+      <p>Покупай драконов, собирай яйца, выращивай защитников и отправляй атакующих за сокровищами.</p>
+    </div>
+    <div class="dragon-art" aria-hidden="true">🐉</div>
+  </section>
+
+  <div id="stats" class="stats">
+    <div class="stat"><b>—</b><span>Производители</span></div>
+    <div class="stat"><b>—</b><span>Защитники</span></div>
+    <div class="stat"><b>—</b><span>Атакующие</span></div>
+    <div class="stat"><b>—</b><span>Растут</span></div>
+  </div>
+
+  <div id="content"><div class="loading">Пробуждаем драконье логово…</div></div>
+  <div class="note">AC — виртуальная игровая валюта ALLCOINS. Покупки, яйца, драконы и награды сохраняются на сервере. В этой версии экспедиции проходят против игрового мира, не против других игроков.</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+(() => {
+  const API = "https://allcoins-server.onrender.com/api/dragons";
+  const tg = window.Telegram?.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch {} }
+  const initData = tg?.initData || "";
+  let state = null;
+  let busy = false;
+  let toastTimer = null;
+
+  const $ = id => document.getElementById(id);
+  const money = value => new Intl.NumberFormat("ru-RU").format(Number(value || 0));
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+  const timeText = ms => {
+    const seconds = Math.max(0, Math.ceil((Number(ms) - Date.now()) / 1000));
+    if (!Number.isFinite(seconds) || seconds <= 0) return "готово";
+    const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+    return h ? h + " ч " + m + " мин" : m ? m + " мин " + s + " сек" : s + " сек";
+  };
+  const dateMs = value => value ? new Date(value).getTime() : 0;
+  function toast(message) {
+    $("toast").textContent = message;
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2800);
+  }
+  async function request(path, data = {}) {
+    const response = await fetch(API + path, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, initData }), cache: "no-store"
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) throw new Error(payload.error || "Ошибка соединения с сервером.");
+    return payload;
+  }
+  async function load(showLoading = false) {
+    if (showLoading) $("content").innerHTML = '<div class="loading">Загружаем логово…</div>';
+    try {
+      const result = await request("/state");
+      state = result.state;
+      render();
+    } catch (error) {
+      $("content").innerHTML = '<div class="empty">' + esc(error.message) + '<br><br>Открой игру из Telegram Mini App и обнови экран.</div>';
+      if (!initData) $("balance").textContent = "Нужен Telegram";
+    }
+  }
+  async function act(path, data = {}) {
+    if (busy) return;
+    busy = true;
+    document.querySelectorAll(".btn").forEach(button => button.disabled = true);
+    try {
+      const result = await request(path, data);
+      if (result.state) state = result.state;
+      render();
+      if (result.reward) toast(result.message + " +" + money(result.reward) + " AC");
+      else if (result.message) toast(result.message);
+    } catch (error) {
+      toast(error.message);
+      await load(false);
+    } finally {
+      busy = false;
+      document.querySelectorAll(".btn").forEach(button => button.disabled = false);
+      updateTimers();
+    }
+  }
+
+  function render() {
+    if (!state) return;
+    $("balance").textContent = money(state.balance) + " AC";
+    const s = state.stats || {};
+    $("stats").innerHTML = [
+      ["🐲",s.breeders,"Производители"],["🛡️",s.defenders,"Защитники"],["⚔️",s.attackers,"Атакующие"],["🥚",s.growing,"Растут"]
+    ].map(item => '<div class="stat"><b>' + item[0] + ' ' + Number(item[1] || 0) + '</b><span>' + item[2] + '</span></div>').join("");
+
+    const profile = state.profile || {};
+    const breederCount = Number(s.breeders || 0) + state.creatures.filter(c => c.kind === "breeder" && c.stage === "growing").length;
+    const canBuy = breederCount < 5;
+    const incubator = profile.incubatorBuilt
+      ? '<div class="incubator"><div class="incubator-icon">🧪</div><b>Инкубатор активен</b><p>Два места для яиц. Выбирай, каким станет дракон: защитником или атакующим.</p><span class="pill">2 ЯЧЕЙКИ · ВЫЛУПЛЕНИЕ 20 МИН</span></div>'
+      : '<div class="incubator"><div class="incubator-icon">🏗️</div><b>Место для инкубатора свободно</b><p>Построй инкубатор, чтобы превращать яйца в будущих драконов.</p><div class="actions"><button class="btn btn-gold" data-action="build" ' + (state.balance < 6500 ? "disabled" : "") + '>Построить <span class="price">6 500 AC</span></button></div></div>';
+
+    const breederList = state.creatures.filter(c => c.kind === "breeder").map(c => {
+      const ready = c.nextEggAt ? dateMs(c.nextEggAt) : 0;
+      return '<div class="item"><div class="item-emoji">🐉</div><div class="item-main"><b>Дракон-производитель #' + esc(c.id) + '</b><small>' + (c.stage === "adult" ? 'Следующее яйцо: <span data-time="' + ready + '">' + timeText(ready) + '</span>' : 'Растёт до взрослого состояния') + '</small></div><span class="tag">МАТКА</span></div>';
+    }).join("") || '<div class="empty">Пока здесь пусто. Купи первого дракона — он начнёт приносить яйца через 4 часа.</div>';
+
+    const eggList = state.eggs.map(egg => {
+      const id = esc(egg.id);
+      if (egg.status === "incubating") {
+        const hatch = dateMs(egg.hatchAt);
+        return '<div class="item"><div class="item-emoji">🥚</div><div class="item-main"><b>Яйцо в инкубаторе</b><small>Будущий дракон: ' + (egg.dragonKind === "attacker" ? "⚔️ атакующий" : "🛡️ защитник") + ' · <span data-time="' + hatch + '">' + timeText(hatch) + '</span></small></div><span class="tag">В РАБОТЕ</span></div>';
+      }
+      return '<div class="item"><div class="item-emoji">🥚</div><div class="item-main"><b>Новое яйцо #' + id + '</b><small>Выбери роль будущего дракона и отправь яйцо в инкубатор.</small></div><div class="item-actions">' +
+        '<button class="btn btn-blue" data-action="incubate" data-egg="' + id + '" data-kind="defender" ' + (!profile.incubatorBuilt ? "disabled" : "") + '>🛡️ Защитник</button>' +
+        '<button class="btn btn-gold" data-action="incubate" data-egg="' + id + '" data-kind="attacker" ' + (!profile.incubatorBuilt ? "disabled" : "") + '>⚔️ Атакующий</button></div></div>';
+    }).join("") || '<div class="empty">Яиц пока нет. Первое появится через 4 часа после покупки дракона-производителя.</div>';
+
+    const youngAndWarriors = state.creatures.filter(c => c.kind !== "breeder").map(c => {
+      const ready = dateMs(c.maturesAt);
+      const adult = c.stage === "adult";
+      const attacker = c.kind === "attacker";
+      return '<div class="item"><div class="item-emoji">' + (attacker ? "⚔️" : "🛡️") + '</div><div class="item-main"><b>' + (attacker ? "Дракон-атакующий" : "Дракон-защитник") + ' #' + esc(c.id) + '</b><small>' + (adult ? "Взрослый · готов к службе" : 'Молодой дракон · вырастет через <span data-time="' + ready + '">' + timeText(ready) + '</span>') + '</small>' + (!adult ? '<div class="growbar"><i style="width:28%"></i></div>' : '') + '</div><span class="tag">' + (adult ? "ВЗРОСЛЫЙ" : "МАЛЬКИ") + '</span></div>';
+    }).join("") || '<div class="empty">Когда яйцо вылупится, здесь появятся твои драконы. Взросление занимает 2 часа.</div>';
+
+    const nextRaid = profile.nextRaidAt ? Number(profile.nextRaidAt) : 0;
+    const raidReady = !nextRaid || nextRaid <= Date.now();
+    const attackers = Number(s.attackers || 0);
+    const raidSection = '<div class="info-row"><div><strong>Драконы-атакующие</strong><small>Нужен хотя бы один взрослый атакующий.</small></div><span class="tag">' + attackers + ' / 1</span></div>' +
+      '<div class="info-row"><div><strong>Защита логова</strong><small>Каждый взрослый защитник усиливает экспедицию.</small></div><span class="tag">' + Number(s.defensePower || 0) + ' ед.</span></div>' +
+      '<div class="actions"><button class="btn btn-gold" data-action="expedition" ' + (!raidReady || !attackers ? "disabled" : "") + '>Отправить в экспедицию</button><span class="muted">' + (attackers ? (raidReady ? "Готовы искать сокровища" : 'Повторно через <span data-time="' + nextRaid + '">' + timeText(nextRaid) + '</span>') : "Выведи атакующего дракона") + '</span></div>' +
+      '<div class="muted" style="margin-top:8px">Награда: 250 AC + бонус за взрослых атакующих и защитников. Экспедиция доступна раз в 8 часов.</div>';
+
+    $("content").innerHTML =
+      '<section class="panel"><div class="panel-head"><h3>🐉 Питомник</h3><span class="tag">' + breederCount + ' / 5</span></div>' +
+      '<div class="muted" style="margin-bottom:10px">Покупай взрослых драконов-производителей. Каждый приносит одно яйцо каждые 4 часа.</div>' +
+      '<div class="item-list">' + breederList + '</div>' +
+      '<div class="actions"><button class="btn btn-gold" data-action="buy" ' + (!canBuy || state.balance < 4500 ? "disabled" : "") + '>Купить дракона <span class="price">4 500 AC</span></button></div></section>' +
+      '<section class="panel"><div class="panel-head"><h3>🧬 Инкубатор</h3><span class="tag">' + (profile.incubatorBuilt ? "ПОСТРОЕН" : "НЕ ПОСТРОЕН") + '</span></div>' + incubator + '</section>' +
+      '<section class="panel"><div class="panel-head"><h3>🥚 Коллекция яиц</h3><span class="tag">' + state.eggs.length + ' ШТ.</span></div><div class="item-list">' + eggList + '</div></section>' +
+      '<section class="panel"><div class="panel-head"><h3>🛡️ Армия драконов</h3><span class="tag">' + (s.defenders + s.attackers) + ' ДРАКОНОВ</span></div><div class="item-list">' + youngAndWarriors + '</div></section>' +
+      '<section class="panel"><div class="panel-head"><h3>⚔️ Экспедиции в Долину</h3><span class="tag">PVE · AC НАГРАДЫ</span></div><div class="muted" style="margin-bottom:10px">Атакующие отправляются за сокровищами игрового мира. Защитники сопровождают отряд и увеличивают награду.</div>' + raidSection + '</section>';
+    updateTimers();
+  }
+
+  function updateTimers() {
+    document.querySelectorAll("[data-time]").forEach(node => {
+      const ms = Number(node.getAttribute("data-time"));
+      node.textContent = timeText(ms);
+    });
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-action]");
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (action === "buy") act("/buy-breeder");
+    if (action === "build") act("/build-incubator");
+    if (action === "incubate") act("/incubate", { eggId: button.dataset.egg, kind: button.dataset.kind });
+    if (action === "expedition") act("/expedition");
+  });
+
+  load(true);
+  setInterval(updateTimers, 1000);
+  setInterval(() => load(false), 30000);
+})();
+</script>
+</body>
+</html>
