@@ -22,6 +22,10 @@ assert.match(html, /@keyframes eggRock/, "Incubating eggs should animate.");
 assert.match(html, /@keyframes hatchReveal/, "Newly hatched dragons should reveal with an animation.");
 assert.match(html, /data-progress-start/, "Egg and dragon growth should show real progress.");
 assert.match(router, /balance = balance \+ \$1/);
+assert.match(router, /const EGG_INTERVAL_MS = 60 \* 1000/, "Each breeder should lay one egg per minute.");
+assert.match(router, /generate_series\(1, \$2\)/, "Missed egg cycles should be accumulated while offline.");
+assert.match(router, /breeder-egg-cycle-one-minute/, "Existing breeders should migrate to the one-minute cycle.");
+assert.match(html, /Каждый приносит одно яйцо каждую минуту\./, "The breeder cadence should be clear in the UI.");
 
 let state = {
   balance: 100000,
