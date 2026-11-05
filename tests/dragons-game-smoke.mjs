@@ -18,16 +18,20 @@ for (const route of ["/state", "/buy-breeder", "/build-incubator", "/incubate", 
   assert.ok(router.includes('router.post("' + route + '"'), "Missing API route " + route);
 }
 assert.match(router, /balance = balance - \$1/);
+assert.match(html, /@keyframes eggRock/, "Incubating eggs should animate.");
+assert.match(html, /@keyframes hatchReveal/, "Newly hatched dragons should reveal with an animation.");
+assert.match(html, /data-progress-start/, "Egg and dragon growth should show real progress.");
 assert.match(router, /balance = balance \+ \$1/);
 
 let state = {
   balance: 100000,
   profile: { incubatorBuilt: true, incubatorSlots: 2, raidCooldownHours: 8, lastRaidAt: null, nextRaidAt: null },
-  stats: { breeders: 1, defenders: 1, attackers: 1, growing: 0, defensePower: 10 },
+  stats: { breeders: 1, defenders: 1, attackers: 1, growing: 1, defensePower: 10 },
   creatures: [
     { id: "11", kind: "breeder", stage: "adult", nextEggAt: new Date(Date.now() + 7200000).toISOString() },
     { id: "12", kind: "defender", stage: "adult" },
-    { id: "13", kind: "attacker", stage: "adult" }
+    { id: "13", kind: "attacker", stage: "adult" },
+    { id: "15", kind: "attacker", stage: "growing", bornAt: new Date(Date.now() - 30000).toISOString(), maturesAt: new Date(Date.now() + 7170000).toISOString() }
   ],
   eggs: [{ id: "21", status: "laid", dragonKind: null, laidAt: new Date().toISOString(), hatchAt: null }]
 };
@@ -86,6 +90,8 @@ try {
   await page.getByText("100 000 AC").waitFor().catch(() => {});
   assert.match(await page.locator("#content").innerText(), /Питомник/);
   assert.match(await page.locator("#content").innerText(), /Инкубатор активен/);
+  await page.locator(".dragon-card.hatch-new").waitFor();
+  assert.ok(await page.locator(".dragon-young").count() > 0, "A newly hatched young dragon should render with its growth animation.");
 
   await page.locator('[data-action="buy"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
@@ -94,6 +100,8 @@ try {
   await page.locator('[data-action="incubate"][data-kind="attacker"]').click();
   await page.waitForFunction(() => document.querySelector("#content")?.innerText.includes("атакующий"));
   assert.ok(calls.some(call => call.path === "/api/dragons/incubate" && call.body.kind === "attacker"));
+  await page.locator(".egg-glow .egg-shell").waitFor();
+  assert.ok(await page.locator(".egg-track i").count() > 0, "Incubation should display a live progress bar.");
 
   await page.locator('[data-action="expedition"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
