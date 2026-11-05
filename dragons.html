@@ -229,7 +229,7 @@ button{font:inherit}
     const breederList = state.creatures.filter(c => c.kind === "breeder").map(c => {
       const ready = c.nextEggAt ? dateMs(c.nextEggAt) : 0;
       return '<div class="item"><div class="item-emoji">🐉</div><div class="item-main"><b>Дракон-производитель #' + esc(c.id) + '</b><small>' + (c.stage === "adult" ? 'Следующее яйцо: <span data-time="' + ready + '">' + timeText(ready) + '</span>' : 'Растёт до взрослого состояния') + '</small></div><span class="tag">МАТКА</span></div>';
-    }).join("") || '<div class="empty">Пока здесь пусто. Купи первого дракона — он начнёт приносить яйца через 4 часа.</div>';
+    }).join("") || '<div class="empty">Пока здесь пусто. Купи первого дракона — он начнёт приносить яйца через 1 минуту.</div>';
 
     const eggList = state.eggs.map(egg => {
       const id = esc(egg.id);
@@ -241,7 +241,7 @@ button{font:inherit}
       return '<div class="item"><div class="item-emoji">🥚</div><div class="item-main"><b>Новое яйцо #' + id + '</b><small>Выбери роль будущего дракона и отправь яйцо в инкубатор.</small></div><div class="item-actions">' +
         '<button class="btn btn-blue" data-action="incubate" data-egg="' + id + '" data-kind="defender" ' + (!profile.incubatorBuilt ? "disabled" : "") + '>🛡️ Защитник</button>' +
         '<button class="btn btn-gold" data-action="incubate" data-egg="' + id + '" data-kind="attacker" ' + (!profile.incubatorBuilt ? "disabled" : "") + '>⚔️ Атакующий</button></div></div>';
-    }).join("") || '<div class="empty">Яиц пока нет. Первое появится через 4 часа после покупки дракона-производителя.</div>';
+    }).join("") || '<div class="empty">Яиц пока нет. Первое появится через 1 минуту после покупки дракона-производителя.</div>';
 
     const youngAndWarriors = state.creatures.filter(c => c.kind !== "breeder").map(c => {
       const ready = dateMs(c.maturesAt);
@@ -263,7 +263,7 @@ button{font:inherit}
 
     $("content").innerHTML =
       '<section class="panel"><div class="panel-head"><h3>🐉 Питомник</h3><span class="tag">' + breederCount + ' / 5</span></div>' +
-      '<div class="muted" style="margin-bottom:10px">Покупай взрослых драконов-производителей. Каждый приносит одно яйцо каждые 4 часа.</div>' +
+      '<div class="muted" style="margin-bottom:10px">Покупай взрослых драконов-производителей. Каждый приносит одно яйцо каждую минуту.</div>' +
       '<div class="item-list">' + breederList + '</div>' +
       '<div class="actions"><button class="btn btn-gold" data-action="buy" ' + (!canBuy || state.balance < 4500 ? "disabled" : "") + '>Купить дракона <span class="price">4 500 AC</span></button></div></section>' +
       '<section class="panel"><div class="panel-head"><h3>🧬 Инкубатор</h3><span class="tag">' + (profile.incubatorBuilt ? "ПОСТРОЕН" : "НЕ ПОСТРОЕН") + '</span></div>' + incubator + '</section>' +
