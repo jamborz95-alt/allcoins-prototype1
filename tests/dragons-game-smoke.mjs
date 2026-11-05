@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
@@ -18,16 +18,20 @@ for (const route of ["/state", "/buy-breeder", "/build-incubator", "/incubate", 
   assert.ok(router.includes('router.post("' + route + '"'), "Missing API route " + route);
 }
 assert.match(router, /balance = balance - \$1/);
+assert.match(html, /@keyframes eggRock/, "Incubating eggs should animate.");
+assert.match(html, /@keyframes hatchReveal/, "Newly hatched dragons should reveal with an animation.");
+assert.match(html, /data-progress-start/, "Egg and dragon growth should show real progress.");
 assert.match(router, /balance = balance \+ \$1/);
 
 let state = {
   balance: 100000,
   profile: { incubatorBuilt: true, incubatorSlots: 2, raidCooldownHours: 8, lastRaidAt: null, nextRaidAt: null },
-  stats: { breeders: 1, defenders: 1, attackers: 1, growing: 0, defensePower: 10 },
+  stats: { breeders: 1, defenders: 1, attackers: 1, growing: 1, defensePower: 10 },
   creatures: [
     { id: "11", kind: "breeder", stage: "adult", nextEggAt: new Date(Date.now() + 7200000).toISOString() },
     { id: "12", kind: "defender", stage: "adult" },
-    { id: "13", kind: "attacker", stage: "adult" }
+    { id: "13", kind: "attacker", stage: "adult" },
+    { id: "15", kind: "attacker", stage: "growing", bornAt: new Date(Date.now() - 30000).toISOString(), maturesAt: new Date(Date.now() + 7170000).toISOString() }
   ],
   eggs: [{ id: "21", status: "laid", dragonKind: null, laidAt: new Date().toISOString(), hatchAt: null }]
 };
@@ -37,6 +41,11 @@ const server = createServer(async (req, res) => {
   if (pathname === "/dragons.html") {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     res.end(html);
+    return;
+  }
+  if (pathname === "/assets/dragons/dragon-hero.svg") {
+    res.writeHead(200, { "content-type": "image/svg+xml; charset=utf-8" });
+    res.end(await readFile(resolve(root, "assets/dragons/dragon-hero.svg")));
     return;
   }
   res.writeHead(404);
@@ -83,9 +92,16 @@ try {
 
   await page.goto("http://127.0.0.1:4173/dragons.html");
   await page.getByRole("heading", { name: "ДРАКОНЫ" }).waitFor();
+  await page.locator(".dragon-art").evaluate(img => img.decode());
+  assert.ok(await page.locator(".dragon-art").evaluate(img => img.naturalWidth > 0), "The hero dragon artwork should load in the mobile browser.");
   await page.getByText("100 000 AC").waitFor().catch(() => {});
   assert.match(await page.locator("#content").innerText(), /Питомник/);
   assert.match(await page.locator("#content").innerText(), /Инкубатор активен/);
+  await page.locator(".dragon-card.hatch-new").waitFor();
+  assert.ok(await page.locator(".dragon-young").count() > 0, "A newly hatched young dragon should render with its growth animation.");
+  const artifactDir = resolve(root, "artifacts");
+  await mkdir(artifactDir, { recursive: true });
+  await writeFile(resolve(artifactDir, "dragons-mobile-overview.png"), await page.screenshot({ fullPage: true }));
 
   await page.locator('[data-action="buy"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
@@ -94,6 +110,9 @@ try {
   await page.locator('[data-action="incubate"][data-kind="attacker"]').click();
   await page.waitForFunction(() => document.querySelector("#content")?.innerText.includes("атакующий"));
   assert.ok(calls.some(call => call.path === "/api/dragons/incubate" && call.body.kind === "attacker"));
+  await page.locator(".egg-glow .egg-shell").waitFor();
+  assert.ok(await page.locator(".egg-track i").count() > 0, "Incubation should display a live progress bar.");
+  await writeFile(resolve(artifactDir, "dragons-incubation-mobile.png"), await page.screenshot({ fullPage: true }));
 
   await page.locator('[data-action="expedition"]').click();
   await page.waitForFunction(() => document.querySelector("#balance")?.textContent.includes("95"));
