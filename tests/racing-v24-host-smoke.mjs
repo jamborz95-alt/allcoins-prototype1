@@ -20,8 +20,10 @@ assert.match(hostScript, /indexedDB\.open\(MODEL_CACHE_DB/,
   "The bridge must persist the car model in the browser cache.");
 assert.match(hostScript, /id = "allcoinsRacingModelProgress"/,
   "The model transfer must show a visible progress panel.");
-assert.match(hostScript, /response\.body\.getReader\(\)/,
-  "The model transfer must update progress while bytes are streaming.");
+assert.match(hostScript, /response\.arrayBuffer\(\)/,
+  "The model transfer must use the reliable ranged binary response path.");
+assert.match(hostScript, /allcoins-model-progress-sweep/,
+  "The visible progress bar must animate while a range is being downloaded.");
 
 const gameHtml = [
   "<!doctype html>",
