@@ -24,6 +24,12 @@ assert.match(hostScript, /response\.arrayBuffer\(\)/,
   "The model transfer must use the reliable ranged binary response path.");
 assert.match(hostScript, /allcoins-model-progress-sweep/,
   "The visible progress bar must animate while a range is being downloaded.");
+assert.match(hostScript, /tg\.requestFullscreen\(\)/,
+  "The racing launch must request Telegram's native fullscreen mode.");
+assert.match(hostScript, /height:100dvh/,
+  "The V24 overlay and iframe must occupy the full dynamic Android viewport.");
+assert.match(hostScript, /requestRacingFullscreen\(\);\s*void openRacing\(\)/,
+  "Fullscreen must be requested synchronously from the racing tile tap.");
 
 const gameHtml = [
   "<!doctype html>",
@@ -48,7 +54,7 @@ const fixtureHtml = [
   "<html lang=\"ru\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>ALLCOINS V24 bridge test</title></head>",
   "<body>",
   "<a id=\"openDragRacing\" href=\"#allcoins-racing-v24\" data-allcoins-racing-launch=\"true\">Драг-рейсинг 3D</a>",
-  "<script>window.Telegram = { WebApp: { initData: \"mock-telegram-init-data\", ready() {}, expand() {} } };</script>",
+  "<script>window.__telegramFullscreenCalls = { request: 0, exit: 0 }; window.Telegram = { WebApp: { initData: \"mock-telegram-init-data\", isFullscreen: false, ready() {}, expand() {}, setHeaderColor() {}, setBackgroundColor() {}, requestFullscreen() { window.__telegramFullscreenCalls.request++; this.isFullscreen = true; }, exitFullscreen() { window.__telegramFullscreenCalls.exit++; this.isFullscreen = false; } } };</script>",
   "<script src=\"/racing-host.js\"></script>",
   "</body></html>"
 ].join("\n");
@@ -164,6 +170,8 @@ try {
 
   await page.goto("http://127.0.0.1:" + address.port + "/", { waitUntil: "domcontentloaded" });
   await page.locator("#openDragRacing").click();
+  assert.equal(await page.evaluate(() => window.__telegramFullscreenCalls.request), 1,
+    "Tapping the racing tile must request Telegram fullscreen immediately.");
   const frame = page.locator("#allcoinsRacingV24Overlay iframe");
   await frame.waitFor({ state: "attached", timeout: 8000 });
 
@@ -207,7 +215,11 @@ try {
   // Close and reopen the game: the GLB must be served from IndexedDB without another API download.
   await page.locator("#allcoinsRacingV24Overlay button").filter({ hasText: "Назад" }).click();
   await page.locator("#allcoinsRacingV24Overlay").waitFor({ state: "detached", timeout: 5000 });
+  assert.equal(await page.evaluate(() => window.__telegramFullscreenCalls.exit), 1,
+    "Closing the racing screen must request exiting Telegram fullscreen.");
   await page.locator("#openDragRacing").click();
+  assert.equal(await page.evaluate(() => window.__telegramFullscreenCalls.request), 2,
+    "Reopening the racing screen must request fullscreen again.");
   const reopenedFrame = page.locator("#allcoinsRacingV24Overlay iframe");
   await reopenedFrame.waitFor({ state: "attached", timeout: 8000 });
   await page.waitForFunction(() => {
@@ -220,7 +232,7 @@ try {
   assert.equal(calls.filter(call => call.path === "/api/racing/shared-model-asset").length, 1,
     "Reopening the game must not download the same GLB from the local database again.");
 
-  console.log("V24 host bridge smoke test passed: Telegram auth, game load, room list/create, authenticated GLB transfer, and persistent local cache.");
+  console.log("V24 host bridge smoke test passed: Telegram auth/fullscreen, full-height overlay, rooms, GLB transfer, and persistent local cache.");
 } finally {
   if (browser) await browser.close();
   if (server.listening) await new Promise(resolveClose => server.close(resolveClose));
