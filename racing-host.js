@@ -3,7 +3,7 @@
 
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
   const RACING_API_BASE = "https://harold-overcome-acdbentity-breeding.trycloudflare.com";
-  const CHUNK_SIZE = 16 * 1024 * 1024;
+  const CHUNK_SIZE = 64 * 1024 * 1024;
   // Bump this key whenever the saved VAZ-2107 GLB is replaced.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
@@ -244,7 +244,8 @@
       let total = null;
       let fileName = "vaz-2107.glb";
 
-      for (let start = 0; total === null || start < total; start += CHUNK_SIZE) {
+      let start = 0;
+      while (total === null || start < total) {
         const end = total === null ? start + CHUNK_SIZE - 1 : Math.min(total - 1, start + CHUNK_SIZE - 1);
         let response = null;
 
@@ -298,14 +299,17 @@
 
         const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("Content-Range") || "");
         if (!range || Number(range[1]) !== start) throw new Error("Сервер вернул неверный диапазон GLB.");
+        const rangeEnd = Number(range[2]);
         total = Number(range[3]);
-        if (!Number.isSafeInteger(total) || total <= 0 ||
-            buffer.byteLength !== Number(range[2]) - Number(range[1]) + 1) {
+        if (!Number.isSafeInteger(total) || total <= 0 || !Number.isSafeInteger(rangeEnd) ||
+            rangeEnd < start || rangeEnd >= total ||
+            buffer.byteLength !== rangeEnd - start + 1) {
           throw new Error("Получен неполный фрагмент GLB.");
         }
         chunks.push(new Uint8Array(buffer));
-        const loaded = Math.min(total, start + buffer.byteLength);
+        const loaded = rangeEnd + 1;
         setStatus("Загрузка 3D-модели: " + Math.round((loaded / total) * 100) + "%", false);
+        start = loaded;
       }
 
       if (!total) throw new Error("Сохранённая 3D-модель пуста.");
