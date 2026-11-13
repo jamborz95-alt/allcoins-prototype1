@@ -16,6 +16,8 @@ assert.match(hostScript, /\/api\/auth\/telegram/,
   "The bridge must authenticate using Telegram initData.");
 assert.match(hostScript, /\/api\/racing\/shared-model-asset/,
   "The bridge must load the saved GLB through the Engine API.");
+assert.match(hostScript, /indexedDB\.open\(MODEL_CACHE_DB/,
+  "The bridge must persist the car model in the browser cache.");
 
 const gameHtml = [
   "<!doctype html>",
@@ -187,7 +189,23 @@ try {
   assert.ok(calls.some(call => call.path === "/api/racing/shared-model-asset" && call.range.startsWith("bytes=0-")));
   assert.deepEqual(pageErrors, [], "The V24 host fixture must not raise browser runtime errors.");
 
-  console.log("V24 host bridge smoke test passed: Telegram auth, game load, room list/create, and authenticated GLB transfer.");
+  // Close and reopen the game: the GLB must be served from IndexedDB without another API download.
+  await page.locator("#allcoinsRacingV24Overlay button").filter({ hasText: "Назад" }).click();
+  await page.locator("#allcoinsRacingV24Overlay").waitFor({ state: "detached", timeout: 5000 });
+  await page.locator("#openDragRacing").click();
+  const reopenedFrame = page.locator("#allcoinsRacingV24Overlay iframe");
+  await reopenedFrame.waitFor({ state: "attached", timeout: 8000 });
+  await page.waitForFunction(() => {
+    const element = document.querySelector("#allcoinsRacingV24Overlay iframe");
+    return element?.contentWindow?.__bridgeModel;
+  }, null, { timeout: 8000 });
+  const secondModel = await reopenedFrame.evaluate(element => element.contentWindow.__bridgeModel);
+  assert.deepEqual(secondModel, { fileName: "test-vaz-2107.glb", byteLength: 4 },
+    "Reopening V24 must restore the locally cached GLB.");
+  assert.equal(calls.filter(call => call.path === "/api/racing/shared-model-asset").length, 1,
+    "Reopening the game must not download the same GLB from the local database again.");
+
+  console.log("V24 host bridge smoke test passed: Telegram auth, game load, room list/create, authenticated GLB transfer, and persistent local cache.");
 } finally {
   if (browser) await browser.close();
   if (server.listening) await new Promise(resolveClose => server.close(resolveClose));
