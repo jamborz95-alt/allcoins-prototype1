@@ -2,7 +2,7 @@
   "use strict";
 
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
-  const RACING_API_BASE = "__ALLCOINS_ENGINE_API_BASE__";
+  const RACING_API_BASE = "https://harold-overcome-acdbentity-breeding.trycloudflare.com";
   const CHUNK_SIZE = 16 * 1024 * 1024;
 
   let engineToken = "";
