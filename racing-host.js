@@ -4,6 +4,10 @@
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
   const RACING_API_BASE = "https://harold-overcome-acdbentity-breeding.trycloudflare.com";
   const CHUNK_SIZE = 16 * 1024 * 1024;
+  // Bump this key whenever the saved VAZ-2107 GLB is replaced.
+  const MODEL_CACHE_DB = "allcoins-racing-model-cache";
+  const MODEL_CACHE_STORE = "models";
+  const MODEL_CACHE_KEY = "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
   let overlay = null;
@@ -147,11 +151,95 @@
     return code;
   }
 
+  function openModelCache() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error("IndexedDB недоступна"));
+        return;
+      }
+      let request;
+      try {
+        request = window.indexedDB.open(MODEL_CACHE_DB, 1);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(MODEL_CACHE_STORE)) {
+          db.createObjectStore(MODEL_CACHE_STORE);
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("Не удалось открыть кэш 3D-модели"));
+      request.onblocked = () => reject(new Error("Хранилище 3D-модели занято"));
+    });
+  }
+
+  async function readCachedModel() {
+    const db = await openModelCache();
+    try {
+      return await new Promise((resolve, reject) => {
+        const transaction = db.transaction(MODEL_CACHE_STORE, "readonly");
+        const request = transaction.objectStore(MODEL_CACHE_STORE).get(MODEL_CACHE_KEY);
+        let value = null;
+        request.onsuccess = () => { value = request.result || null; };
+        request.onerror = () => reject(request.error || new Error("Не удалось прочитать кэш модели"));
+        transaction.oncomplete = () => {
+          if (value && value.buffer instanceof ArrayBuffer && value.buffer.byteLength >= 4) {
+            const magic = new TextDecoder().decode(new Uint8Array(value.buffer, 0, 4));
+            resolve(magic === "glTF" ? value : null);
+          } else {
+            resolve(null);
+          }
+        };
+        transaction.onerror = () => reject(transaction.error || new Error("Ошибка чтения кэша модели"));
+        transaction.onabort = () => reject(transaction.error || new Error("Чтение кэша модели отменено"));
+      });
+    } finally {
+      db.close();
+    }
+  }
+
+  async function writeCachedModel(model) {
+    let db;
+    try {
+      db = await openModelCache();
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(MODEL_CACHE_STORE, "readwrite");
+        transaction.objectStore(MODEL_CACHE_STORE).put({
+          buffer: model.buffer,
+          fileName: model.fileName,
+          savedAt: Date.now()
+        }, MODEL_CACHE_KEY);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error || new Error("Не удалось сохранить модель"));
+        transaction.onabort = () => reject(transaction.error || new Error("Сохранение модели отменено"));
+      });
+    } catch (error) {
+      // Storage quotas or private browsing must never prevent the game from loading.
+      console.warn("ALLCOINS Racing: persistent model cache unavailable:", error);
+    } finally {
+      if (db) db.close();
+    }
+  }
+
   async function loadSharedModel() {
     if (cachedModel) return cachedModel;
     if (loadingModel) return loadingModel;
 
     loadingModel = (async () => {
+      setStatus("Проверяем кэш 3D-модели…", false);
+      try {
+        const saved = await readCachedModel();
+        if (saved) {
+          setStatus("3D-модель загружена с устройства", false);
+          return { buffer: saved.buffer, fileName: saved.fileName || "vaz-2107.glb" };
+        }
+      } catch (error) {
+        console.warn("ALLCOINS Racing: could not read cached model:", error);
+      }
+
       const chunks = [];
       let total = null;
       let fileName = "vaz-2107.glb";
@@ -159,6 +247,10 @@
       for (let start = 0; total === null || start < total; start += CHUNK_SIZE) {
         const end = total === null ? start + CHUNK_SIZE - 1 : Math.min(total - 1, start + CHUNK_SIZE - 1);
         let response = null;
+
+        setStatus(total
+          ? "Загрузка 3D-модели: " + Math.round((start / total) * 100) + "%"
+          : "Загрузка 3D-модели из локальной базы…", false);
 
         for (let attempt = 1; attempt <= 5; attempt++) {
           try {
@@ -197,7 +289,10 @@
         const buffer = await response.arrayBuffer();
         if (response.status === 200) {
           if (!buffer.byteLength) throw new Error("Сервер вернул пустую 3D-модель.");
-          return { buffer, fileName };
+          const model = { buffer, fileName };
+          await writeCachedModel(model);
+          setStatus("3D-модель готова", false);
+          return model;
         }
         if (response.status !== 206) throw new Error("Неожиданный ответ при загрузке 3D-модели.");
 
@@ -209,6 +304,8 @@
           throw new Error("Получен неполный фрагмент GLB.");
         }
         chunks.push(new Uint8Array(buffer));
+        const loaded = Math.min(total, start + buffer.byteLength);
+        setStatus("Загрузка 3D-модели: " + Math.round((loaded / total) * 100) + "%", false);
       }
 
       if (!total) throw new Error("Сохранённая 3D-модель пуста.");
@@ -219,7 +316,10 @@
         offset += chunk.byteLength;
       }
       if (offset !== total) throw new Error("Получен неполный файл GLB.");
-      return { buffer: combined.buffer, fileName };
+      const model = { buffer: combined.buffer, fileName };
+      await writeCachedModel(model);
+      setStatus("3D-модель сохранена на устройстве", false);
+      return model;
     })();
 
     try {
