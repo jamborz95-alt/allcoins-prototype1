@@ -3,7 +3,7 @@
 
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
   const RACING_API_BASE = "https://harold-overcome-acdbentity-breeding.trycloudflare.com";
-  const CHUNK_SIZE = 64 * 1024 * 1024;
+  const CHUNK_SIZE = 16 * 1024 * 1024;
   // Bump this key whenever the saved VAZ-2107 GLB is replaced.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
@@ -41,7 +41,8 @@
     modelProgressText.textContent = message || "Загружаем 3D-модель автомобиля…";
     const validPercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : null;
     modelProgressPercent.textContent = validPercent === null ? "…" : Math.round(validPercent) + "%";
-    modelProgressFill.style.width = validPercent === null ? "8%" : validPercent + "%";
+    modelProgressFill.style.width = validPercent === null ? "38%" : validPercent + "%";
+    modelProgressFill.style.animationName = validPercent === null ? "allcoins-model-progress-sweep" : "none";
     modelProgressPanel.setAttribute("aria-valuenow", validPercent === null ? "0" : String(Math.round(validPercent)));
   }
 
@@ -50,40 +51,18 @@
   }
 
   async function readModelResponse(response, start, total) {
-    if (!response.body || typeof response.body.getReader !== "function") {
-      const fallback = await response.arrayBuffer();
-      const mb = (fallback.byteLength / 1048576).toFixed(1);
-      setModelProgress("Получено " + mb + " МБ. Подготавливаем автомобиль…", 100);
-      return fallback;
-    }
-
-    const reader = response.body.getReader();
-    const pieces = [];
-    let loaded = 0;
-    while (true) {
-      const part = await reader.read();
-      if (part.done) break;
-      if (!part.value || !part.value.byteLength) continue;
-      pieces.push(part.value);
-      loaded += part.value.byteLength;
-      const current = start + loaded;
-      const currentMb = (current / 1048576).toFixed(1);
-      const totalMb = total ? (total / 1048576).toFixed(1) : "";
-      const percent = total ? Math.min(100, current / total * 100) : null;
-      setModelProgress(
-        total ? "Загрузка автомобиля · " + currentMb + " / " + totalMb + " МБ" :
-          "Загружено " + currentMb + " МБ",
-        percent
-      );
-    }
-
-    const result = new Uint8Array(loaded);
-    let offset = 0;
-    for (const piece of pieces) {
-      result.set(piece, offset);
-      offset += piece.byteLength;
-    }
-    return result.buffer;
+    // Keep the proven small-buffer download path; the visible bar animates while each range arrives.
+    const buffer = await response.arrayBuffer();
+    const loaded = start + buffer.byteLength;
+    const currentMb = (loaded / 1048576).toFixed(1);
+    const totalMb = total ? (total / 1048576).toFixed(1) : "";
+    const percent = total ? Math.min(100, loaded / total * 100) : null;
+    setModelProgress(
+      total ? "Загрузка автомобиля · " + currentMb + " / " + totalMb + " МБ" :
+        "Получено " + currentMb + " МБ. Подготавливаем автомобиль…",
+      percent
+    );
+    return buffer;
   }
 
   async function requestApi(path, options) {
@@ -212,6 +191,9 @@
       "box-shadow:0 0 14px rgba(255,211,103,.42);transition:width .12s linear;");
     progressTrack.append(modelProgressFill);
 
+    const progressStyle = makeElement("style");
+    progressStyle.textContent = "@keyframes allcoins-model-progress-sweep{" +
+      "from{transform:translateX(-115%)}to{transform:translateX(270%)}}";
     const progressHint = makeElement("div",
       "margin-top:8px;font:11px/1.35 Arial,sans-serif;color:#aebbd0;",
       "Первая загрузка может занять время. После неё модель сохранится на устройстве.");
@@ -225,7 +207,7 @@
       "min-height:0;border:0;background:#080d18;";
     frame.addEventListener("load", () => setStatus("Гоночный экран загружен", false));
 
-    overlay.append(header, frame, modelProgressPanel);
+    overlay.append(progressStyle, header, frame, modelProgressPanel);
     oldBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.body.appendChild(overlay);
