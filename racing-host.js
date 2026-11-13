@@ -13,6 +13,10 @@
   let overlay = null;
   let frame = null;
   let statusNode = null;
+  let modelProgressPanel = null;
+  let modelProgressText = null;
+  let modelProgressPercent = null;
+  let modelProgressFill = null;
   let activeRoomCode = "";
   let cachedModel = null;
   let loadingModel = null;
@@ -29,6 +33,57 @@
     if (!statusNode) return;
     statusNode.textContent = message || "";
     statusNode.style.color = isError ? "#ff9b9b" : "#cbd5e1";
+  }
+
+  function setModelProgress(message, percent) {
+    if (!modelProgressPanel) return;
+    modelProgressPanel.style.display = "block";
+    modelProgressText.textContent = message || "Загружаем 3D-модель автомобиля…";
+    const validPercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : null;
+    modelProgressPercent.textContent = validPercent === null ? "…" : Math.round(validPercent) + "%";
+    modelProgressFill.style.width = validPercent === null ? "8%" : validPercent + "%";
+    modelProgressPanel.setAttribute("aria-valuenow", validPercent === null ? "0" : String(Math.round(validPercent)));
+  }
+
+  function hideModelProgress() {
+    if (modelProgressPanel) modelProgressPanel.style.display = "none";
+  }
+
+  async function readModelResponse(response, start, total) {
+    if (!response.body || typeof response.body.getReader !== "function") {
+      const fallback = await response.arrayBuffer();
+      const mb = (fallback.byteLength / 1048576).toFixed(1);
+      setModelProgress("Получено " + mb + " МБ. Подготавливаем автомобиль…", 100);
+      return fallback;
+    }
+
+    const reader = response.body.getReader();
+    const pieces = [];
+    let loaded = 0;
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      if (!part.value || !part.value.byteLength) continue;
+      pieces.push(part.value);
+      loaded += part.value.byteLength;
+      const current = start + loaded;
+      const currentMb = (current / 1048576).toFixed(1);
+      const totalMb = total ? (total / 1048576).toFixed(1) : "";
+      const percent = total ? Math.min(100, current / total * 100) : null;
+      setModelProgress(
+        total ? "Загрузка автомобиля · " + currentMb + " / " + totalMb + " МБ" :
+          "Загружено " + currentMb + " МБ",
+        percent
+      );
+    }
+
+    const result = new Uint8Array(loaded);
+    let offset = 0;
+    for (const piece of pieces) {
+      result.set(piece, offset);
+      offset += piece.byteLength;
+    }
+    return result.buffer;
   }
 
   async function requestApi(path, options) {
@@ -129,6 +184,39 @@
 
     header.append(back, title, statusNode);
 
+    modelProgressPanel = makeElement("div",
+      "position:absolute;top:64px;left:14px;right:14px;z-index:20;max-width:560px;margin:0 auto;" +
+      "display:none;padding:14px 16px 15px;border:1px solid #d7b65f;border-radius:15px;" +
+      "background:rgba(12,19,31,.96);box-shadow:0 12px 36px rgba(0,0,0,.45);" +
+      "backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);");
+    modelProgressPanel.id = "allcoinsRacingModelProgress";
+    modelProgressPanel.setAttribute("role", "progressbar");
+    modelProgressPanel.setAttribute("aria-label", "Загрузка 3D-модели автомобиля");
+    modelProgressPanel.setAttribute("aria-valuemin", "0");
+    modelProgressPanel.setAttribute("aria-valuemax", "100");
+
+    const progressTop = makeElement("div",
+      "display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;");
+    modelProgressText = makeElement("div",
+      "font:700 13px/1.35 Arial,sans-serif;color:#fff;min-width:0;",
+      "Загружаем 3D-модель автомобиля…");
+    modelProgressPercent = makeElement("div",
+      "font:800 17px Arial,sans-serif;color:#f2d27c;white-space:nowrap;",
+      "0%");
+    progressTop.append(modelProgressText, modelProgressPercent);
+
+    const progressTrack = makeElement("div",
+      "height:9px;border-radius:99px;overflow:hidden;background:#29364a;border:1px solid #536078;");
+    modelProgressFill = makeElement("div",
+      "height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#c49a3b,#ffe28c);" +
+      "box-shadow:0 0 14px rgba(255,211,103,.42);transition:width .12s linear;");
+    progressTrack.append(modelProgressFill);
+
+    const progressHint = makeElement("div",
+      "margin-top:8px;font:11px/1.35 Arial,sans-serif;color:#aebbd0;",
+      "Первая загрузка может занять время. После неё модель сохранится на устройстве.");
+    modelProgressPanel.append(progressTop, progressTrack, progressHint);
+
     frame = document.createElement("iframe");
     frame.title = "ALLCOINS Racing V24";
     frame.allow = "fullscreen; autoplay; gamepad; picture-in-picture";
@@ -137,7 +225,7 @@
       "min-height:0;border:0;background:#080d18;";
     frame.addEventListener("load", () => setStatus("Гоночный экран загружен", false));
 
-    overlay.append(header, frame);
+    overlay.append(header, frame, modelProgressPanel);
     oldBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.body.appendChild(overlay);
@@ -234,6 +322,7 @@
         const saved = await readCachedModel();
         if (saved) {
           setStatus("3D-модель загружена с устройства", false);
+          hideModelProgress();
           return { buffer: saved.buffer, fileName: saved.fileName || "vaz-2107.glb" };
         }
       } catch (error) {
@@ -249,9 +338,12 @@
         const end = total === null ? start + CHUNK_SIZE - 1 : Math.min(total - 1, start + CHUNK_SIZE - 1);
         let response = null;
 
-        setStatus(total
-          ? "Загрузка 3D-модели: " + Math.round((start / total) * 100) + "%"
-          : "Загрузка 3D-модели из локальной базы…", false);
+        setStatus("Загружаем 3D-модель автомобиля…", false);
+        setModelProgress(
+          total ? "Загрузка автомобиля · " + (start / 1048576).toFixed(1) + " / " + (total / 1048576).toFixed(1) + " МБ" :
+            "Подключаемся к локальной базе автомобиля…",
+          total ? (start / total) * 100 : 0
+        );
 
         for (let attempt = 1; attempt <= 5; attempt++) {
           try {
@@ -287,29 +379,39 @@
           try { fileName = decodeURIComponent(headerName); } catch (_) { fileName = headerName; }
         }
 
-        const buffer = await response.arrayBuffer();
+        let range = null;
+        let rangeEnd = null;
+        if (response.status === 206) {
+          range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("Content-Range") || "");
+          if (!range || Number(range[1]) !== start) throw new Error("Сервер вернул неверный диапазон GLB.");
+          rangeEnd = Number(range[2]);
+          total = Number(range[3]);
+          if (!Number.isSafeInteger(total) || total <= 0 || !Number.isSafeInteger(rangeEnd) ||
+              rangeEnd < start || rangeEnd >= total) {
+            throw new Error("Сервер вернул неверный размер GLB.");
+          }
+        } else if (response.status === 200) {
+          const contentLength = Number(response.headers.get("Content-Length") || 0);
+          if (Number.isSafeInteger(contentLength) && contentLength > 0) total = contentLength;
+        } else {
+          throw new Error("Неожиданный ответ при загрузке 3D-модели.");
+        }
+
+        const buffer = await readModelResponse(response, start, total);
         if (response.status === 200) {
           if (!buffer.byteLength) throw new Error("Сервер вернул пустую 3D-модель.");
           const model = { buffer, fileName };
+          setModelProgress("Сохранение 3D-модели на устройстве…", 100);
           await writeCachedModel(model);
           setStatus("3D-модель готова", false);
           return model;
         }
-        if (response.status !== 206) throw new Error("Неожиданный ответ при загрузке 3D-модели.");
 
-        const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("Content-Range") || "");
-        if (!range || Number(range[1]) !== start) throw new Error("Сервер вернул неверный диапазон GLB.");
-        const rangeEnd = Number(range[2]);
-        total = Number(range[3]);
-        if (!Number.isSafeInteger(total) || total <= 0 || !Number.isSafeInteger(rangeEnd) ||
-            rangeEnd < start || rangeEnd >= total ||
-            buffer.byteLength !== rangeEnd - start + 1) {
+        if (buffer.byteLength !== rangeEnd - start + 1) {
           throw new Error("Получен неполный фрагмент GLB.");
         }
         chunks.push(new Uint8Array(buffer));
-        const loaded = rangeEnd + 1;
-        setStatus("Загрузка 3D-модели: " + Math.round((loaded / total) * 100) + "%", false);
-        start = loaded;
+        start = rangeEnd + 1;
       }
 
       if (!total) throw new Error("Сохранённая 3D-модель пуста.");
@@ -322,6 +424,7 @@
       if (offset !== total) throw new Error("Получен неполный файл GLB.");
       const model = { buffer: combined.buffer, fileName };
       await writeCachedModel(model);
+      setModelProgress("Модель загружена и сохранена на устройстве", 100);
       setStatus("3D-модель сохранена на устройстве", false);
       return model;
     })();
@@ -343,6 +446,7 @@
       fileName: model.fileName,
       buffer: transferable
     }, targetOrigin, [transferable]);
+    hideModelProgress();
   }
 
   async function handleRacingAction(data) {
@@ -445,6 +549,8 @@
           type: "allcoins:car-model-error",
           message: error && error.message ? error.message : "Не удалось получить GLB-модель."
         }, event.origin);
+        setModelProgress("Не удалось загрузить автомобиль: " +
+          (error && error.message ? error.message : "ошибка загрузки"), 0);
         console.error("ALLCOINS Racing model transfer failed:", error);
       }
       return;
@@ -490,6 +596,10 @@
     overlay = null;
     frame = null;
     statusNode = null;
+    modelProgressPanel = null;
+    modelProgressText = null;
+    modelProgressPercent = null;
+    modelProgressFill = null;
     document.body.style.overflow = oldBodyOverflow;
   }
 
