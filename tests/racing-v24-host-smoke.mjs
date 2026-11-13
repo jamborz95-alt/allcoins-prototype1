@@ -18,6 +18,10 @@ assert.match(hostScript, /\/api\/racing\/shared-model-asset/,
   "The bridge must load the saved GLB through the Engine API.");
 assert.match(hostScript, /indexedDB\.open\(MODEL_CACHE_DB/,
   "The bridge must persist the car model in the browser cache.");
+assert.match(hostScript, /id = "allcoinsRacingModelProgress"/,
+  "The model transfer must show a visible progress panel.");
+assert.match(hostScript, /response\.body\.getReader\(\)/,
+  "The model transfer must update progress while bytes are streaming.");
 
 const gameHtml = [
   "<!doctype html>",
@@ -136,6 +140,8 @@ try {
         "The GLB asset must be requested with the Engine session.");
       assert.match(headers.range || "", /^bytes=0-/,
         "The GLB transfer must use a byte range.");
+      // Keep the response open briefly so the test can observe the progress panel before bytes arrive.
+      await new Promise(resolve => setTimeout(resolve, 500));
       return route.fulfill({
         status: 200,
         headers: {
@@ -158,6 +164,11 @@ try {
   await page.locator("#openDragRacing").click();
   const frame = page.locator("#allcoinsRacingV24Overlay iframe");
   await frame.waitFor({ state: "attached", timeout: 8000 });
+
+  const progressPanel = page.locator("#allcoinsRacingModelProgress");
+  await progressPanel.waitFor({ state: "visible", timeout: 5000 });
+  assert.match(await progressPanel.textContent(), /Загружаем 3D-модель автомобиля|Загрузка автомобиля|Подключаемся/,
+    "The visible progress panel must explain that the car model is loading.");
 
   await page.waitForFunction(() => {
     const element = document.querySelector("#allcoinsRacingV24Overlay iframe");
@@ -182,6 +193,8 @@ try {
     "The V24 frame must receive the created room code.");
   assert.deepEqual(bridgeState.model, { fileName: "test-vaz-2107.glb", byteLength: 4 },
     "The V24 frame must receive the GLB bytes and file name.");
+  await progressPanel.waitFor({ state: "hidden", timeout: 5000 });
+
   assert.ok(calls.some(call => call.path === "/api/auth/telegram"));
   assert.ok(calls.some(call => call.path === "/api/racing/game" && call.authorization === "Bearer mock-engine-session-token"));
   assert.ok(calls.some(call => call.path === "/api/racing/rooms" && call.method === "GET"));
