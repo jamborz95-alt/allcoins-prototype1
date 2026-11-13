@@ -21,6 +21,7 @@
   let cachedModel = null;
   let loadingModel = null;
   let oldBodyOverflow = "";
+  let oldRootOverflow = "";
 
   function apiUrl(path) {
     if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(RACING_API_BASE)) {
@@ -137,37 +138,41 @@
     if (overlay) return;
 
     overlay = makeElement("div",
-      "position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;" +
-      "background:#070b13;color:#fff;overflow:hidden;overscroll-behavior:contain;");
+      "position:fixed;inset:0;z-index:2147483000;display:block;width:100vw;height:100vh;height:100dvh;" +
+      "background:#070b13;color:#fff;overflow:hidden;overscroll-behavior:none;touch-action:pan-x pan-y;");
     overlay.id = "allcoinsRacingV24Overlay";
 
-    const header = makeElement("div",
-      "height:52px;min-height:52px;display:flex;align-items:center;gap:10px;" +
-      "padding:6px 10px;background:#111a2a;border-bottom:1px solid #344158;" +
-      "font:600 14px Arial,sans-serif;");
+    frame = document.createElement("iframe");
+    frame.title = "ALLCOINS Racing V24";
+    frame.allow = "fullscreen; autoplay; gamepad; picture-in-picture";
+    frame.allowFullscreen = true;
+    frame.style.cssText = "position:absolute;inset:0;display:block;width:100%;height:100%;height:100dvh;" +
+      "min-height:0;border:0;background:#080d18;";
+    frame.addEventListener("load", () => setStatus("Гоночный экран загружен", false));
+
     const back = makeElement("button",
-      "border:1px solid #506078;border-radius:9px;background:#202d42;color:#fff;" +
-      "padding:8px 12px;font:700 14px Arial,sans-serif;cursor:pointer;",
+      "position:absolute;left:12px;top:calc(env(safe-area-inset-top, 0px) + 10px);z-index:40;" +
+      "min-width:42px;min-height:42px;padding:8px 12px;border:1px solid #ffffff55;border-radius:12px;" +
+      "background:rgba(9,15,24,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);" +
+      "color:#fff;font:800 13px Arial,sans-serif;box-shadow:0 3px 14px #0007;cursor:pointer;",
       "← Назад");
     back.type = "button";
+    back.setAttribute("aria-label", "Выйти из гонки");
     back.addEventListener("click", closeOverlay);
 
-    const title = makeElement("div",
-      "flex:1;min-width:0;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
-      "ALLCOINS Racing V24");
-
     statusNode = makeElement("div",
-      "max-width:42%;font:11px Arial,sans-serif;color:#cbd5e1;text-align:right;",
+      "position:absolute;right:12px;top:calc(env(safe-area-inset-top, 0px) + 12px);z-index:35;" +
+      "max-width:48%;padding:7px 10px;border:1px solid #ffffff25;border-radius:10px;" +
+      "background:rgba(9,15,24,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" +
+      "font:10px/1.25 Arial,sans-serif;color:#d6deea;text-align:right;pointer-events:none;",
       "Подключение…");
     statusNode.setAttribute("aria-live", "polite");
 
-    header.append(back, title, statusNode);
-
     modelProgressPanel = makeElement("div",
-      "position:absolute;top:64px;left:14px;right:14px;z-index:20;max-width:560px;margin:0 auto;" +
-      "display:none;padding:14px 16px 15px;border:1px solid #d7b65f;border-radius:15px;" +
-      "background:rgba(12,19,31,.96);box-shadow:0 12px 36px rgba(0,0,0,.45);" +
-      "backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);");
+      "position:absolute;top:calc(env(safe-area-inset-top, 0px) + 62px);left:14px;right:14px;" +
+      "z-index:30;max-width:560px;margin:0 auto;display:none;padding:14px 16px 15px;" +
+      "border:1px solid #d7b65f;border-radius:15px;background:rgba(12,19,31,.96);" +
+      "box-shadow:0 12px 36px rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);");
     modelProgressPanel.id = "allcoinsRacingModelProgress";
     modelProgressPanel.setAttribute("role", "progressbar");
     modelProgressPanel.setAttribute("aria-label", "Загрузка 3D-модели автомобиля");
@@ -199,16 +204,10 @@
       "Первая загрузка может занять время. После неё модель сохранится на устройстве.");
     modelProgressPanel.append(progressTop, progressTrack, progressHint);
 
-    frame = document.createElement("iframe");
-    frame.title = "ALLCOINS Racing V24";
-    frame.allow = "fullscreen; autoplay; gamepad; picture-in-picture";
-    frame.allowFullscreen = true;
-    frame.style.cssText = "display:block;flex:1 1 auto;width:100%;height:calc(100% - 52px);" +
-      "min-height:0;border:0;background:#080d18;";
-    frame.addEventListener("load", () => setStatus("Гоночный экран загружен", false));
-
-    overlay.append(progressStyle, header, frame, modelProgressPanel);
+    overlay.append(frame, back, statusNode, progressStyle, modelProgressPanel);
     oldBodyOverflow = document.body.style.overflow;
+    oldRootOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     document.body.appendChild(overlay);
   }
@@ -562,6 +561,12 @@
 
   async function closeOverlay() {
     if (!overlay) return;
+    const tg = window.Telegram && window.Telegram.WebApp;
+    try {
+      if (tg && tg.isFullscreen && typeof tg.exitFullscreen === "function") tg.exitFullscreen();
+    } catch (error) {
+      console.warn("ALLCOINS Racing: Telegram fullscreen exit was not available:", error);
+    }
     const code = activeRoomCode;
     if (code && engineToken) {
       try {
@@ -583,6 +588,27 @@
     modelProgressPercent = null;
     modelProgressFill = null;
     document.body.style.overflow = oldBodyOverflow;
+    document.documentElement.style.overflow = oldRootOverflow;
+  }
+
+  function requestRacingFullscreen() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (!tg) return;
+    try {
+      if (typeof tg.ready === "function") tg.ready();
+      if (typeof tg.expand === "function") tg.expand();
+      if (typeof tg.setHeaderColor === "function") tg.setHeaderColor("#070b13");
+      if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor("#070b13");
+      if (typeof tg.requestFullscreen === "function") {
+        // Telegram Mini Apps Bot API 8.0+: use native immersive fullscreen.
+        tg.requestFullscreen();
+      } else if (document.documentElement.requestFullscreen) {
+        const result = document.documentElement.requestFullscreen();
+        if (result && typeof result.catch === "function") result.catch(() => {});
+      }
+    } catch (error) {
+      console.warn("ALLCOINS Racing: fullscreen request was not accepted:", error);
+    }
   }
 
   async function openRacing() {
@@ -617,6 +643,8 @@
     if (!link) return;
     link.addEventListener("click", event => {
       event.preventDefault();
+      // Must run synchronously in the tap handler for Telegram to accept fullscreen.
+      requestRacingFullscreen();
       void openRacing();
     });
   });
