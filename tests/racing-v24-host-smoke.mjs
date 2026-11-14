@@ -235,9 +235,9 @@ try {
   assert.equal(visualDiagnostics.centralMarkingsTravelSign, 1, "The center markings must move in the corrected forward screen direction.");
   assert.equal(visualDiagnostics.skidMarksFollowTrackDirection, true, "Rubber wear marks must stay aligned with road travel.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
-  assert.ok(visualDiagnostics.cityWindows >= 1400, "The taller apartment facades must contain dense repeated windows.");
-  assert.equal(visualDiagnostics.cityBuildingFloorsMin, 8, "The city must use taller apartment blocks.");
-  assert.equal(visualDiagnostics.cityBuildingFloorsMax, 10, "The city must use varied 8–10 floor apartment blocks.");
+  assert.ok(visualDiagnostics.cityWindows >= 650, "The mid-rise apartment facades must contain dense repeated windows.");
+  assert.equal(visualDiagnostics.cityBuildingFloorsMin, 4, "The city must use four-floor minimum European apartment blocks.");
+  assert.equal(visualDiagnostics.cityBuildingFloorsMax, 6, "The city must use varied 4–6 floor apartment blocks.");
   assert.equal(visualDiagnostics.cityBuildingOffsetZ, -22.2, "The foreground buildings must be set farther back from the road.");
   assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
   assert.equal(visualDiagnostics.cityFenceType, "cross-braced-metal-panels", "The roadside fence must use silver cross-braced metal panels.");
