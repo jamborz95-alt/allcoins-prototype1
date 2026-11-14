@@ -2505,14 +2505,15 @@ function acAdvanceRoadSurface(scroll) {
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
-const buildingPalette = [0xc3cccd, 0xd0c7b6, 0xb7c5c7, 0xc9b69c, 0xbcc6c7, 0xcac9c1];
+// Тёплая европейская палитра: светлый песочный камень, слоновая кость и кремовая штукатурка.
+const buildingPalette = [0xe5d6bd, 0xd9c7a9, 0xeee2cc, 0xcdbb9e, 0xe7ddca, 0xd4c3a7];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
   roughness: .92,
   metalness: .025
 }));
-const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x758494, roughness: .62, metalness: .48 });
+const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x9b8d79, roughness: .68, metalness: .22 });
 const darkWindowMaterial = new THREE.MeshStandardMaterial({
   color: 0x183047,
   roughness: .24,
@@ -2527,8 +2528,8 @@ const litWindowMaterial = new THREE.MeshStandardMaterial({
   emissive: 0xffa94a,
   emissiveIntensity: .72
 });
-const trimMaterial = new THREE.MeshStandardMaterial({ color: 0xaab2bb, roughness: .68, metalness: .22 });
-const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x394657, roughness: .86, metalness: .12 });
+const trimMaterial = new THREE.MeshStandardMaterial({ color: 0xc8b99f, roughness: .78, metalness: .08 });
+const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x55504a, roughness: .9, metalness: .04 });
 const shopGlassMaterial = new THREE.MeshStandardMaterial({
   color: 0x1b354b, roughness: .22, metalness: .36,
   emissive: 0x07111d, emissiveIntensity: .24
@@ -2559,7 +2560,7 @@ for (let i = 0; i < 33; i++) {
   const random = acSeededRandom(202611 + i * 971);
   const width = 6.35 + (i % 4) * .16 + random() * .38;
   const depth = 4.8 + (i % 3) * .42;
-  const floors = 8 + (i * 5) % 3;
+  const floors = 4 + (i * 5) % 3;
   const floorHeight = 1.8;
   const height = floors * floorHeight + 1.05;
   const building = new THREE.Group();
@@ -2612,7 +2613,7 @@ for (let i = 0; i < 33; i++) {
         acUnits.push(cityDummy.matrix.clone());
       }
 
-      if ((i % 3 === 1) && floor === 2 && column === columns - 1) {
+      if ((i % 3 === 1) && floor >= 1 && floor <= 2 && column === columns - 1) {
         cityDummy.position.set(x + .10, windowY - .72, frontZ + .22);
         cityDummy.scale.set(1, 1, 1);
         cityDummy.updateMatrix();
@@ -2700,7 +2701,13 @@ for (let i = 0; i < 33; i++) {
     building.add(entranceStep);
   }
 
-  // Парапет и компактное оборудование на крыше.
+  // Карниз и парапет подчёркивают европейскую архитектуру светлых жилых фасадов.
+  const upperCornice = new THREE.Mesh(
+    new THREE.BoxGeometry(width + .48, .22, depth + .42),
+    trimMaterial
+  );
+  upperCornice.position.y = height - .10;
+  building.add(upperCornice);
   const roofLip = new THREE.Mesh(new THREE.BoxGeometry(width + .28, .24, depth + .28), roofMaterial);
   roofLip.position.y = height + .10;
   building.add(roofLip);
@@ -2919,8 +2926,11 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   skidMarksFollowTrackDirection: true,
   cityBuildings: city.length,
   cityWindows: acCityWindowCount,
-  cityBuildingFloorsMin: 8,
-  cityBuildingFloorsMax: 10,
+  cityBuildingFloorsMin: 4,
+  cityBuildingFloorsMax: 6,
+  cityFacadePalette: "warm-beige-cream",
+  cityEuropeanBalconies: true,
+  cityUpperCornices: true,
   skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
   cityBuildingOffsetZ: -22.2,
