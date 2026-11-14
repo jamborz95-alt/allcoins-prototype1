@@ -85,10 +85,18 @@
     }
 
     let response;
+    const controller = new AbortController();
+    const requestTimeout = setTimeout(() => controller.abort(), 20000);
+    request.signal = controller.signal;
     try {
       response = await fetch(apiUrl(path), request);
     } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("Гоночный сервер не ответил за 20 секунд. Проверь, запущен ли Engine на ПК.");
+      }
       throw new Error("Не удалось связаться с гоночным сервером. Проверь подключение к ПК.");
+    } finally {
+      clearTimeout(requestTimeout);
     }
 
     const raw = await response.text();
@@ -530,25 +538,27 @@
   }
 
   window.addEventListener("message", async event => {
-    // The scene is now a normal same-origin page inside this iframe.
-    // Check both the exact iframe window and the expected app origin.
+    // Trust the exact iframe window. Android Telegram WebView may report an
+    // opaque/different origin for embedded pages, so origin filtering here can
+    // silently discard the model request even though the game screen loaded.
     if (!frame || event.source !== frame.contentWindow) return;
-    if (event.origin !== window.location.origin) return;
 
     const data = event.data || {};
 
     if (data.type === "allcoins:request-car-model") {
-      setStatus("Сцена запросила 3D-модель автомобиля…", false);
+      setStatus("Игровая сцена запросила автомобиль. Проверяем подключение…", false);
+      // Show progress inside the game before awaiting authentication/network.
+      event.source.postMessage({ type: "allcoins:car-model-loading" }, "*");
       try {
         await ensureTelegramAuthentication();
-        await sendCarModel(event.source, event.origin);
+        await sendCarModel(event.source, "*");
         setStatus("3D-модель передана в игровую сцену", false);
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось получить GLB-модель.";
         event.source.postMessage({
           type: "allcoins:car-model-error",
           message
-        }, event.origin);
+        }, "*");
         setStatus("Ошибка загрузки автомобиля: " + message, true);
         setModelProgress("Не удалось загрузить автомобиль: " + message, 0);
         console.error("ALLCOINS Racing model transfer failed:", error);
@@ -567,14 +577,14 @@
         requestId,
         ok: true,
         data: result
-      }, event.origin);
+      }, "*");
     } catch (error) {
       event.source.postMessage({
         type: "allcoins:racing:response",
         requestId,
         ok: false,
         error: error && error.message ? error.message : "Ошибка подключения к гоночному серверу."
-      }, event.origin);
+      }, "*");
     }
   });
 
