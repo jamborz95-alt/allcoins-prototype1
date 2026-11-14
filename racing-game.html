@@ -2344,6 +2344,16 @@ for (let i = 0; i < 42; i++) {
   scene.add(mark);
   laneMarks.push(mark);
 }
+
+// Положительный знак scroll для центрального пунктира: вперёд — вправо, назад — влево.
+function acAdvanceCentralMarkings(scroll) {
+  if (!Number.isFinite(scroll) || scroll === 0) return;
+  for (const mark of laneMarks) {
+    mark.position.x += scroll;
+    while (mark.position.x > 135) mark.position.x -= 260.4;
+    while (mark.position.x < -135) mark.position.x += 260.4;
+  }
+}
 const edgeMat = new THREE.MeshStandardMaterial({
   color: 0xbfc4e2,
   roughness: .58,
@@ -2656,6 +2666,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltRoadDirection: "forward-x",
   asphaltFollowsTrackDirection: true,
   centralMarkingsLoopBothDirections: true,
+  centralMarkingsTravelSign: 1,
   skidMarksFollowTrackDirection: true,
   cityBuildings: city.length,
   cityWindows: acCityWindowCount,
@@ -3556,12 +3567,9 @@ function animate(now){
     $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';const raceFill=document.getElementById('raceProgressFill');if(raceFill)raceFill.style.width=(Math.max(0,Math.min(100,distance/RACE_DISTANCE_METERS*100)))+'%';
     const scroll=(signedSpeed/3.6)*WORLD_UNITS_PER_METER*dt;
     acAdvanceRoadSurface(scroll);
-    // Дорожная разметка движется вместе с полотном и корректно зацикливается в обе стороны.
-    for(const m of laneMarks){
-      m.position.x -= scroll;
-      while(m.position.x < -135) m.position.x += 260.4;
-      while(m.position.x > 135) m.position.x -= 260.4;
-    }
+    // Центральная разметка исправлена: при движении вперёд она уходит вправо по экрану,
+    // при заднем ходе — влево; зацикливание сохраняет равномерный пунктир.
+    acAdvanceCentralMarkings(scroll);
     for(const b of city){
       b.position.x -= scroll * .19;
       while(b.position.x < -132) b.position.x += 236;
