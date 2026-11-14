@@ -3478,10 +3478,9 @@ function torqueCurve(value){
 }
 function updateGear(){
   $('gearNow').textContent=gear===-1?'R':String(gear);$('gearNow').classList.add('current');
-  $('gearHint').textContent=gear===-1?'ЗАДНИЙ ХОД · ЗАДНИЙ ПРИВОД':(throttle?'ОТПУСТИ ГАЗ':'ЗАДНИЙ ПРИВОД · МЕХАНИКА');
+  $('gearHint').textContent=gear===-1?'ЗАДНИЙ ХОД · ЗАДНИЙ ПРИВОД':'ЗАДНИЙ ПРИВОД · МЕХАНИКА';
 }
 function shift(delta){
-  if(throttle){$('gearHint').textContent='ОТПУСТИ ГАЗ';return;}
   const stopped=speed<1.2;
   let next=gear;
   if(gear===-1){
@@ -3496,8 +3495,10 @@ function shift(delta){
   if(next===gear)return;
   const oldRatio=gear===-1?reverseGearRatio:gearRatios[gear];
   const newRatio=next===-1?reverseGearRatio:gearRatios[next];
+  const requestedRpm=rpm*(newRatio/oldRatio);
+  if(delta<0&&next>0&&requestedRpm>6250){$('gearHint').textContent='ВЫСОКИЕ ОБОРОТЫ · РАНО ПОНИЖАТЬ';return;}
   gear=next;rearSlip=0;burnout=0;
-  rpm=Math.max(900,Math.min(6500,rpm*(newRatio/oldRatio)));
+  rpm=Math.max(900,Math.min(6500,requestedRpm));
   updateGear();
   playGearChangeCue();
 }
@@ -3773,11 +3774,6 @@ function updateRpmTachometer() {
 }
 
 function selectGearFromPattern(target) {
-  if (throttle) {
-    $('gearHint').textContent = 'ОТПУСТИ ГАЗ';
-    return;
-  }
-
   const desired = target === 'R' ? -1 : Number(target);
 
   if (!Number.isInteger(desired) ||
