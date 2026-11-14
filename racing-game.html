@@ -3997,7 +3997,7 @@ updateAnalogSpeedometer();
 
 /* ALLCOINS V24 REAL DASHBOARD V2: тахометр и выбор механической передачи */
 function updateRpmTachometer() {
-  const value = Math.max(0, Math.min(8000, Number(rpm) || 0));
+  const value = Math.max(0, Math.min(9000, Number(rpm) || 0));
   const needle = document.getElementById('rpmNeedle');
   const readout = document.getElementById('rpmDial');
 
