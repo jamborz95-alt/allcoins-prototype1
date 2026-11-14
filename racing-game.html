@@ -3549,13 +3549,28 @@ function shift(delta){
   const oldRatio=gear===-1?reverseGearRatio:gearRatios[gear];
   const newRatio=next===-1?reverseGearRatio:gearRatios[next];
   const requestedRpm=rpm*(newRatio/oldRatio);
-  if(delta<0&&next>0&&requestedRpm>6250){$('gearHint').textContent='ВЫСОКИЕ ОБОРОТЫ · РАНО ПОНИЖАТЬ';return;}
+  // Передачи 1–5 разрешено менять на ходу и под газом.
+  // Обороты ограничиваются безопасным диапазоном, а задний ход по-прежнему
+  // включается только после остановки.
   gear=next;rearSlip=0;burnout=0;
   rpm=Math.max(900,Math.min(6500,requestedRpm));
   updateGear();
   playGearChangeCue();
 }
-$('gearUp').addEventListener('click',()=>shift(1));$('gearDown').addEventListener('click',()=>shift(-1));
+function bindGearShift(id,delta){
+  const el=$(id);
+  el.addEventListener('pointerdown',event=>{
+    event.preventDefault();
+    shift(delta);
+  });
+  // Поддержка клавиатуры и экранных средств доступности.
+  el.addEventListener('click',event=>{
+    if(event.detail===0)shift(delta);
+  });
+  el.addEventListener('contextmenu',event=>event.preventDefault());
+}
+bindGearShift('gearUp',1);
+bindGearShift('gearDown',-1);
 function acRacingApplyRearLowRideShadowPolicy(){
   const suppressRearWheelShadows=suspensionMode===0;
   let affectedMeshes=0;
@@ -3594,8 +3609,21 @@ $('suspension').addEventListener('click',()=>setSuspension(suspensionMode+1));
 setSuspension(1);
 function bindHold(id,setter){
   const el=$(id);
-  const on=e=>{e.preventDefault();setter(true);el.classList.add('active');try{el.setPointerCapture(e.pointerId);}catch{}};
-  const off=()=>{setter(false);el.classList.remove('active');};
+  const activePointers=new Set();
+  const on=e=>{
+    e.preventDefault();
+    activePointers.add(e.pointerId);
+    setter(true);
+    el.classList.add('active');
+    try{el.setPointerCapture(e.pointerId);}catch{}
+  };
+  const off=e=>{
+    if(e&&Number.isFinite(e.pointerId))activePointers.delete(e.pointerId);
+    else activePointers.clear();
+    const held=activePointers.size>0;
+    setter(held);
+    if(!held)el.classList.remove('active');
+  };
   el.addEventListener('pointerdown',on);
   ['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,off));
   el.addEventListener('contextmenu',e=>e.preventDefault());
