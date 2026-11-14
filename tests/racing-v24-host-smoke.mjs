@@ -72,7 +72,7 @@ try {
   page.on("pageerror", error => pageErrors.push(error.message));
 
   const apiCalls = [];
-  await page.route(/trycloudflare\\.com\\/api\\//, async route => {
+  await page.route("**/api/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
     apiCalls.push({ path: url.pathname, method: request.method() });
@@ -134,12 +134,10 @@ try {
   }, null, { timeout: 10000 });
 
   let gameFrame;
-  await page.waitForFunction(() => {
-    return [...document.querySelector("#allcoinsRacingV24Overlay").querySelector("iframe").contentWindow.document
-      ? [document.querySelector("#allcoinsRacingV24Overlay").querySelector("iframe").contentWindow]
-      : []].length > 0;
-  }, null, { timeout: 10000 });
-  gameFrame = page.frames().find(frame => frame.url().includes("racing-game.html"));
+  for (let attempt = 0; attempt < 50 && !gameFrame; attempt++) {
+    gameFrame = page.frames().find(frame => frame.url().includes("racing-game.html"));
+    if (!gameFrame) await page.waitForTimeout(100);
+  }
   assert.ok(gameFrame, "The game must load as a normal same-origin iframe document.");
 
   await gameFrame.waitForFunction(() => {
