@@ -162,6 +162,43 @@ try {
     throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
   }
 
+  const dashboardDiagnostics = await gameFrame.evaluate(() => window.__allcoinsRacingDashboardDiagnostics || null);
+  assert.ok(dashboardDiagnostics, "The V26 live dashboard must be initialized.");
+  assert.equal(dashboardDiagnostics.speedometerUsesLiveSpeed, true);
+  assert.equal(dashboardDiagnostics.tachometerUsesLiveRpm, true);
+  assert.equal(dashboardDiagnostics.speedometerScaleTicks, 49);
+  assert.equal(dashboardDiagnostics.tachometerScaleTicks, 41);
+  assert.equal(dashboardDiagnostics.acceleratorButton, true);
+  assert.equal(dashboardDiagnostics.brakeButton, true);
+  assert.equal(dashboardDiagnostics.gearPlusButton, true);
+  assert.equal(dashboardDiagnostics.gearMinusButton, true);
+  assert.ok(await gameFrame.locator("#speedometer-ticks svg line, .speedometer-ticks svg line").count() >= 49,
+    "The speedometer must show a graduated 0–240 km/h scale.");
+  assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 41,
+    "The tachometer must show a graduated 0–8,000 RPM scale.");
+  assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none",
+    "The upshift (+) control must be visible.");
+  assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
+    "The downshift (−) control must be visible.");
+  await gameFrame.locator("#gearUp").click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
+    "The + control must raise the selected gear.");
+  await gameFrame.locator("#gearDown").click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
+    "The − control must lower the selected gear.");
+  await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
+  assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
+    "The gas pedal must activate while pressed.");
+  await gameFrame.locator("#gas").dispatchEvent("pointerup", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true });
+  assert.ok(!(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active"))),
+    "The gas pedal must release cleanly.");
+  await gameFrame.locator("#brake").dispatchEvent("pointerdown", { pointerId: 8, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
+  assert.ok(await gameFrame.locator("#brake").evaluate(el => el.classList.contains("active")),
+    "The brake pedal must activate while pressed.");
+  await gameFrame.locator("#brake").dispatchEvent("pointerup", { pointerId: 8, pointerType: "touch", isPrimary: true, bubbles: true });
+  assert.ok(!(await gameFrame.locator("#brake").evaluate(el => el.classList.contains("active"))),
+    "The brake pedal must release cleanly.");
+
   const visualDiagnostics = await gameFrame.evaluate(() => window.__allcoinsRacingVisualDiagnostics || null);
   assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
   assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
