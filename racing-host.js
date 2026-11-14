@@ -518,20 +518,25 @@
   }
 
   window.addEventListener("message", async event => {
+    // The scene is injected through iframe.srcdoc. In Android WebViews its
+    // reported origin can differ from the host origin, so identify it by the
+    // exact iframe window instead of rejecting a valid scene message by origin.
     if (!frame || event.source !== frame.contentWindow) return;
-    if (event.origin !== window.location.origin) return;
 
     const data = event.data || {};
     if (data.type === "allcoins:request-car-model") {
+      setStatus("Сцена запросила 3D-модель автомобиля…", false);
       try {
-        await sendCarModel(event.source, event.origin);
+        await sendCarModel(event.source, "*");
+        setStatus("3D-модель передана в игровую сцену", false);
       } catch (error) {
+        const message = error && error.message ? error.message : "Не удалось получить GLB-модель.";
         event.source.postMessage({
           type: "allcoins:car-model-error",
-          message: error && error.message ? error.message : "Не удалось получить GLB-модель."
-        }, event.origin);
-        setModelProgress("Не удалось загрузить автомобиль: " +
-          (error && error.message ? error.message : "ошибка загрузки"), 0);
+          message
+        }, "*");
+        setStatus("Ошибка загрузки автомобиля: " + message, true);
+        setModelProgress("Не удалось загрузить автомобиль: " + message, 0);
         console.error("ALLCOINS Racing model transfer failed:", error);
       }
       return;
@@ -548,14 +553,14 @@
         requestId,
         ok: true,
         data: result
-      }, event.origin);
+      }, "*");
     } catch (error) {
       event.source.postMessage({
         type: "allcoins:racing:response",
         requestId,
         ok: false,
         error: error && error.message ? error.message : "Ошибка подключения к гоночному серверу."
-      }, event.origin);
+      }, "*");
     }
   });
 
