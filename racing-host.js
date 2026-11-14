@@ -2,7 +2,7 @@
   "use strict";
 
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
-  const RACING_API_BASE = "https://harold-overcome-acdbentity-breeding.trycloudflare.com";
+  const RACING_API_BASE = "https://pharmaceuticals-coordinator-brochure-becomes.trycloudflare.com";
   const CHUNK_SIZE = 16 * 1024 * 1024;
   // Bump this key whenever the saved VAZ-2107 GLB is replaced.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
