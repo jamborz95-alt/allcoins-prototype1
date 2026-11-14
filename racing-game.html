@@ -973,8 +973,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
     <div class="tachometer-needle" id="rpmNeedle"></div>
     <div class="tachometer-hub"></div>
     <div class="tachometer-value">
-      <strong id="rpmDial">900</strong>
-      <small>ОБ/МИН</small>
+      <strong>RPM × 1000</strong>
+      <small>ENGINE</small>
     </div>
     <div class="tachometer-range">
       <span>0</span><span>2</span><span>4</span>
@@ -1677,7 +1677,7 @@ function acOnlineApplyLaneLayout(enabled) {
     vehicle.position.z = acOnlinePlayerBaseZ;
     acOnlinePlayerBaseZ = null;
     acOnlineLaneLayoutActive = false;
-    for (const mark of laneMarks) mark.position.z = 1.8;
+    for (const mark of laneMarks) mark.position.z = -1.8;
     vehicle.updateMatrixWorld(true);
   }
 }
@@ -2078,8 +2078,8 @@ function playGearChangeCue(){
 
 const canvas = $('view');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07101f);
-scene.fog = new THREE.Fog(0x07101f, 38, 120);
+scene.background = new THREE.Color(0xaab6b8);
+scene.fog = new THREE.Fog(0xaab6b8, 58, 168);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -2091,9 +2091,9 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
-scene.add(new THREE.HemisphereLight(0x7387ad,0x10131f,.85));
-const sun = new THREE.DirectionalLight(0x9db9e8,.85); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
-const fill = new THREE.DirectionalLight(0x638dc8,.60); fill.position.set(8,5,-12); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xc5d3d7,0x424a43,1.02));
+const sun = new THREE.DirectionalLight(0xffedcf,1.05); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xb7c5c8,.56); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -2116,20 +2116,20 @@ function acCreateAsphaltMaps() {
 
   // Холодный сине-фиолетовый оттенок, как у мокрой гоночной трассы на референсе.
   for (let i = 0; i < size * size; i++) {
-    const grain = 56 + random() * 27 + (random() - .5) * 10;
+    const grain = 79 + random() * 22 + (random() - .5) * 8;
     const offset = i * 4;
-    pixels.data[offset] = Math.max(0, Math.min(255, Math.round(grain - 2)));
-    pixels.data[offset + 1] = Math.max(0, Math.min(255, Math.round(grain - 4 + random() * 5)));
-    pixels.data[offset + 2] = Math.max(0, Math.min(255, Math.round(grain * 1.43 + 12)));
+    pixels.data[offset] = Math.max(0, Math.min(255, Math.round(grain + 1)));
+    pixels.data[offset + 1] = Math.max(0, Math.min(255, Math.round(grain + 2 + random() * 2)));
+    pixels.data[offset + 2] = Math.max(0, Math.min(255, Math.round(grain - 1)));
     pixels.data[offset + 3] = 255;
   }
   asphaltContext.putImageData(pixels, 0, 0);
 
   // Мягкие холодные переливы покрытия и неоднородность старого асфальта.
   const coolWash = asphaltContext.createLinearGradient(0, 0, 0, size);
-  coolWash.addColorStop(0, 'rgba(150,151,211,.075)');
-  coolWash.addColorStop(.48, 'rgba(97,96,164,.025)');
-  coolWash.addColorStop(1, 'rgba(37,39,91,.105)');
+  coolWash.addColorStop(0, 'rgba(226,229,226,.055)');
+  coolWash.addColorStop(.48, 'rgba(120,126,123,.018)');
+  coolWash.addColorStop(1, 'rgba(34,39,37,.075)');
   asphaltContext.fillStyle = coolWash;
   asphaltContext.fillRect(0, 0, size, size);
 
@@ -2299,9 +2299,9 @@ const roadMat = new THREE.MeshStandardMaterial({
   map: asphaltMaps.colorMap,
   roughnessMap: asphaltMaps.roughnessMap,
   bumpMap: asphaltMaps.bumpMap,
-  bumpScale: .014,
-  roughness: .46,
-  metalness: .035
+  bumpScale: .018,
+  roughness: .68,
+  metalness: .012
 });
 const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 18), roadMat);
 road.rotation.x = -Math.PI / 2;
@@ -2339,16 +2339,16 @@ curbSegments.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 scene.add(curbSegments);
 
 const stripeMat = new THREE.MeshStandardMaterial({
-  color: 0xc9cce8,
-  roughness: .56,
-  metalness: .025,
-  emissive: 0x252a56,
-  emissiveIntensity: .12
+  color: 0xe2dfd1,
+  roughness: .82,
+  metalness: .005,
+  emissive: 0x151713,
+  emissiveIntensity: .025
 });
 const laneMarks = [];
 for (let i = 0; i < 42; i++) {
   const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
-  mark.position.set(-126 + i * 6.2, -.085, 1.8);
+  mark.position.set(-126 + i * 6.2, -.085, -1.8);
   scene.add(mark);
   laneMarks.push(mark);
 }
@@ -2363,11 +2363,11 @@ function acAdvanceCentralMarkings(scroll) {
   }
 }
 const edgeMat = new THREE.MeshStandardMaterial({
-  color: 0xbfc4e2,
-  roughness: .58,
-  metalness: .02,
-  emissive: 0x242b5d,
-  emissiveIntensity: .10
+  color: 0xc5c7bd,
+  roughness: .78,
+  metalness: .008,
+  emissive: 0x151713,
+  emissiveIntensity: .02
 });
 for (const z of [-8.34, 8.34]) {
   const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
@@ -2391,7 +2391,7 @@ function acAdvanceRoadSurface(scroll) {
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
-const buildingPalette = [0xb6c8d5, 0xcfc5b5, 0xa9c0ce, 0xc4a98f, 0xb5c3d0, 0xc4cbc8];
+const buildingPalette = [0xc3cccd, 0xd0c7b6, 0xb7c5c7, 0xc9b69c, 0xbcc6c7, 0xcac9c1];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
@@ -2601,7 +2601,7 @@ for (let i = 0; i < 33; i++) {
   }
 
   // Отодвигаем здания глубже за ограждение, сохраняя свободной всю дорожную полосу.
-  building.position.set(-115 + i * 7.15, 0, -29.2);
+  building.position.set(-115 + i * 7.15, 0, -22.2);
   scene.add(building);
   city.push(building);
 }
@@ -2673,6 +2673,28 @@ acFenceWire.renderOrder = 2;
 acCityFence.add(acFenceWire);
 scene.add(acCityFence);
 
+// Полоса живых кустов между металлическим забором и жилыми фасадами.
+const acCityShrubs = new THREE.Group();
+const acShrubGround = new THREE.Mesh(new THREE.PlaneGeometry(260,1.5),new THREE.MeshStandardMaterial({color:0x53674a,roughness:.98,metalness:0}));
+acShrubGround.rotation.x=-Math.PI/2;acShrubGround.position.set(0,-.155,-18.25);acCityShrubs.add(acShrubGround);
+const acShrubGeometry=new THREE.SphereGeometry(1,12,8);
+const acShrubMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
+const acShrubCount=147;const acShrubInstances=new THREE.InstancedMesh(acShrubGeometry,acShrubMaterial,acShrubCount);
+const acShrubDummy=new THREE.Object3D();const acShrubRandom=acSeededRandom(20261114);
+const acShrubColors=[0x566d4b,0x71845b,0x87936a,0x667c50,0x9aa078];let acShrubIndex=0;
+for(let cluster=0;cluster<49;cluster++){
+ const centerX=-130+cluster*(260/48);
+ for(let lobe=0;lobe<3;lobe++){
+  const x=centerX+(lobe-1)*(.9+acShrubRandom()*.16);const height=.38+acShrubRandom()*.28;
+  acShrubDummy.position.set(x,.02+height,-18.25+(acShrubRandom()-.5)*.28);
+  acShrubDummy.scale.set(1.05+acShrubRandom()*.45,height,.42+acShrubRandom()*.18);
+  acShrubDummy.rotation.y=(acShrubRandom()-.5)*.25;acShrubDummy.updateMatrix();
+  acShrubInstances.setMatrixAt(acShrubIndex,acShrubDummy.matrix);
+  acShrubInstances.setColorAt(acShrubIndex,new THREE.Color(acShrubColors[Math.floor(acShrubRandom()*acShrubColors.length)]));acShrubIndex++;
+ }
+}
+acShrubInstances.instanceMatrix.needsUpdate=true;if(acShrubInstances.instanceColor)acShrubInstances.instanceColor.needsUpdate=true;
+acShrubInstances.castShadow=true;acShrubInstances.receiveShadow=true;acCityShrubs.add(acShrubInstances);scene.add(acCityShrubs);
 
 // Дальний городской силуэт: высотные корпуса и редкие окна создают глубину улицы.
 const distantHills = new THREE.Group();
@@ -2687,9 +2709,9 @@ const farWindowLitMaterial = new THREE.MeshStandardMaterial({
   color: 0xffd18a, roughness: .42, emissive: 0xffa94a, emissiveIntensity: .52
 });
 const farBuildingMaterials = [
-  new THREE.MeshStandardMaterial({ color: 0x33465b, roughness: .94, metalness: .08 }),
-  new THREE.MeshStandardMaterial({ color: 0x405065, roughness: .92, metalness: .10 }),
-  new THREE.MeshStandardMaterial({ color: 0x293c51, roughness: .94, metalness: .08 })
+  new THREE.MeshStandardMaterial({ color: 0x9ba8a9, roughness: .94, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0xb2a99a, roughness: .92, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0x85999d, roughness: .94, metalness: .02 })
 ];
 for (let i = 0; i < farCityTowerCount; i++) {
   const random = acSeededRandom(88001 + i * 157);
@@ -2697,7 +2719,7 @@ for (let i = 0; i < farCityTowerCount; i++) {
   const height = 10 + (i * 11 % 12) + random() * 2;
   const depth = 3.3 + (i % 3) * .7;
   const x = -128 + i * 16.8;
-  const z = -43;
+  const z = -48;
   const tower = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, depth),
     farBuildingMaterials[i % farBuildingMaterials.length]
@@ -2749,7 +2771,7 @@ scene.add(finishLine);
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
   asphaltRepeatX: roadMat.map.repeat.x,
-  asphaltTone: "cool-blue-violet",
+  asphaltTone: "neutral-road-gray",
   asphaltWetGloss: roadMat.roughness < .5,
   asphaltSkidArcs: 0,
   asphaltLongitudinalWear: true,
@@ -2762,11 +2784,13 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityWindows: acCityWindowCount,
   skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
-  cityBuildingOffsetZ: -29.2,
+  cityBuildingOffsetZ: -22.2,
   cityFence: true,
   cityFenceType: "diamond-metal-mesh",
   cityFenceZ: -16.4,
-  skylineOffsetZ: -43,
+  cityShrubs: 147,
+  cityShrubOffsetZ: -18.25,
+  skylineOffsetZ: -48,
   cameraViewHeight: 10.6
 });
 
@@ -3730,10 +3754,13 @@ function animate(now){
       while(b.position.x < -132) b.position.x += 236;
       while(b.position.x > 104) b.position.x -= 236;
     }
-    // Ограждение движется с той же скоростью, что и здания, оставаясь параллельно дороге.
+    // Ограждение и зелёная полоса движутся вместе с кварталом.
     acCityFence.position.x -= scroll * .19;
     while(acCityFence.position.x < -132) acCityFence.position.x += 236;
     while(acCityFence.position.x > 104) acCityFence.position.x -= 236;
+    acCityShrubs.position.x -= scroll * .19;
+    while(acCityShrubs.position.x < -132) acCityShrubs.position.x += 236;
+    while(acCityShrubs.position.x > 104) acCityShrubs.position.x -= 236;
     distantHills.position.x -= scroll * .045;
     while(distantHills.position.x < -260) distantHills.position.x += 260;
     while(distantHills.position.x > 0) distantHills.position.x -= 260;
@@ -3843,8 +3870,8 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
   host.replaceChildren(svg);
   return svg.querySelectorAll('line').length;
 }
-const acSpeedScaleTickCount = acBuildInstrumentScale('.speedometer-ticks', 240, 40, 5, 9999);
-const acRpmScaleTickCount = acBuildInstrumentScale('.tachometer-ticks', 8000, 1000, 200, 6500);
+const acSpeedScaleTickCount = acBuildInstrumentScale('.speedometer-ticks', 280, 40, 5, 9999);
+const acRpmScaleTickCount = acBuildInstrumentScale('.tachometer-ticks', 9000, 1000, 200, 6500);
 window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
   speedometerScaleTicks: acSpeedScaleTickCount,
   tachometerScaleTicks: acRpmScaleTickCount,
@@ -3858,12 +3885,12 @@ window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
 
 /* ALLCOINS V24 ANDROID DASHBOARD V1: только отображение скорости */
 function updateAnalogSpeedometer() {
-  const value = Math.max(0, Math.min(240, Number(speed) || 0));
+  const value = Math.max(0, Math.min(280, Number(speed) || 0));
   const needle = document.getElementById('speedNeedle');
   const readout = document.getElementById('speedDial');
 
   if (needle) {
-    const angle = -135 + (value / 240) * 270;
+    const angle = -135 + (value / 280) * 270;
     needle.style.transform =
       'translateX(-50%) rotate(' + angle + 'deg)';
   }
@@ -3884,7 +3911,7 @@ function updateRpmTachometer() {
   const readout = document.getElementById('rpmDial');
 
   if (needle) {
-    const angle = -135 + (value / 8000) * 270;
+    const angle = -135 + (value / 9000) * 270;
     needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
     needle.classList.toggle('redline', value >= 6500);
   }
