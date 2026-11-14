@@ -1768,7 +1768,7 @@ function acOnlineApplyLaneLayout(enabled) {
     vehicle.position.z = acOnlinePlayerBaseZ;
     acOnlinePlayerBaseZ = null;
     acOnlineLaneLayoutActive = false;
-    for (const mark of laneMarks) mark.position.z = -1.8;
+    for (const mark of laneMarks) mark.position.z = -5.0;
     vehicle.updateMatrixWorld(true);
   }
 }
@@ -2207,7 +2207,7 @@ function acCreateAsphaltMaps() {
 
   // Холодный сине-фиолетовый оттенок, как у мокрой гоночной трассы на референсе.
   for (let i = 0; i < size * size; i++) {
-    const grain = 79 + random() * 22 + (random() - .5) * 8;
+    const grain = 101 + random() * 20 + (random() - .5) * 8;
     const offset = i * 4;
     pixels.data[offset] = Math.max(0, Math.min(255, Math.round(grain + 1)));
     pixels.data[offset + 1] = Math.max(0, Math.min(255, Math.round(grain + 2 + random() * 2)));
@@ -2230,9 +2230,9 @@ function acCreateAsphaltMaps() {
     const rx = 22 + random() * 74;
     const ry = 5 + random() * 22;
     const gradient = asphaltContext.createRadialGradient(x, y, 1, x, y, Math.max(rx, ry));
-    gradient.addColorStop(0, 'rgba(158,157,214,' + (.025 + random() * .045).toFixed(3) + ')');
-    gradient.addColorStop(.65, 'rgba(119,119,184,.025)');
-    gradient.addColorStop(1, 'rgba(35,37,82,0)');
+    gradient.addColorStop(0, 'rgba(192,194,187,' + (.025 + random() * .035).toFixed(3) + ')');
+    gradient.addColorStop(.65, 'rgba(137,140,132,.02)');
+    gradient.addColorStop(1, 'rgba(43,47,43,0)');
     asphaltContext.fillStyle = gradient;
     asphaltContext.beginPath();
     asphaltContext.ellipse(x, y, rx, ry, (random() - .5) * .24, 0, Math.PI * 2);
@@ -2244,7 +2244,7 @@ function acCreateAsphaltMaps() {
     const length = 38 + random() * 96;
     const x = random() * (size - length);
     const y = random() * size;
-    asphaltContext.strokeStyle = 'rgba(24,25,55,' + (.045 + random() * .07).toFixed(3) + ')';
+    asphaltContext.strokeStyle = 'rgba(24,27,24,' + (.045 + random() * .07).toFixed(3) + ')';
     asphaltContext.lineWidth = .45 + random() * 1.15;
     asphaltContext.beginPath();
     asphaltContext.moveTo(x, y);
@@ -2277,9 +2277,9 @@ function acCreateAsphaltMaps() {
     const rx = 14 + random() * 54;
     const ry = 4 + random() * 18;
     const gradient = roughContext.createRadialGradient(x, y, 1, x, y, Math.max(rx, ry));
-    gradient.addColorStop(0, 'rgba(52,52,72,.52)');
-    gradient.addColorStop(.68, 'rgba(75,75,96,.25)');
-    gradient.addColorStop(1, 'rgba(75,75,96,0)');
+    gradient.addColorStop(0, 'rgba(58,61,58,.42)');
+    gradient.addColorStop(.68, 'rgba(78,81,76,.20)');
+    gradient.addColorStop(1, 'rgba(78,81,76,0)');
     roughContext.fillStyle = gradient;
     roughContext.beginPath();
     roughContext.ellipse(x, y, rx, ry, (random() - .5) * .2, 0, Math.PI * 2);
@@ -2304,11 +2304,11 @@ function acCreateFacadeTexture(style) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 512;
   const context = canvas.getContext('2d');
-  const base = ['#c6d0d8','#d1c9bb','#b8c9d3'][style % 3];
+  const base = ['#d0d5d0','#d9d1bf','#c7d0cc'][style % 3];
   const gradient = context.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, '#e7ebee');
+  gradient.addColorStop(0, '#f3f0e7');
   gradient.addColorStop(.46, base);
-  gradient.addColorStop(1, '#9aa9b5');
+  gradient.addColorStop(1, '#a7aeaa');
   context.fillStyle = gradient;
   context.fillRect(0, 0, 512, 512);
 
@@ -2439,7 +2439,7 @@ const stripeMat = new THREE.MeshStandardMaterial({
 const laneMarks = [];
 for (let i = 0; i < 42; i++) {
   const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
-  mark.position.set(-126 + i * 6.2, -.085, -1.8);
+  mark.position.set(-126 + i * 6.2, -.085, -5.0);
   scene.add(mark);
   laneMarks.push(mark);
 }
@@ -2521,9 +2521,9 @@ const citySignMaterials = signDefinitions.map(([label, accent]) => new THREE.Mes
   map: acCreateCitySignTexture(label, accent),
   toneMapped: false
 }));
-const windowFrameGeometry = new THREE.BoxGeometry(.88, 1.08, .12);
-const windowGlassGeometry = new THREE.BoxGeometry(.70, .90, .035);
-const windowSillGeometry = new THREE.BoxGeometry(.98, .085, .18);
+const windowFrameGeometry = new THREE.BoxGeometry(.94, .82, .12);
+const windowGlassGeometry = new THREE.BoxGeometry(.78, .64, .035);
+const windowSillGeometry = new THREE.BoxGeometry(1.02, .075, .18);
 const acUnitGeometry = new THREE.BoxGeometry(.42, .24, .22);
 const acUnitMaterial = new THREE.MeshStandardMaterial({ color: 0x657384, roughness: .72, metalness: .3 });
 const balconyDeckGeometry = new THREE.BoxGeometry(1.14, .09, .52);
@@ -2534,10 +2534,10 @@ let acCityWindowCount = 0;
 
 for (let i = 0; i < 33; i++) {
   const random = acSeededRandom(202611 + i * 971);
-  const width = 5.75 + (i % 4) * .26 + random() * .35;
-  const depth = 4.6 + (i % 3) * .45;
-  const floors = 3 + (i * 7) % 3;
-  const floorHeight = 2.05;
+  const width = 6.35 + (i % 4) * .16 + random() * .38;
+  const depth = 4.8 + (i % 3) * .42;
+  const floors = 8 + (i * 5) % 3;
+  const floorHeight = 1.8;
   const height = floors * floorHeight + 1.05;
   const building = new THREE.Group();
 
@@ -2550,7 +2550,7 @@ for (let i = 0; i < 33; i++) {
   building.add(shell);
 
   const frontZ = depth / 2 + .08;
-  const columns = Math.max(4, Math.floor(width / 1.05));
+  const columns = Math.max(6, Math.floor(width / .90));
   const windowFrames = [];
   const windowSills = [];
   const darkWindows = [];
@@ -2560,7 +2560,7 @@ for (let i = 0; i < 33; i++) {
   const balconyRails = [];
 
   for (let floor = 1; floor < floors; floor++) {
-    const windowY = 1.15 + floor * floorHeight;
+    const windowY = 1.12 + floor * floorHeight;
     for (let column = 0; column < columns; column++) {
       const spacing = width / (columns + 1);
       const x = -width / 2 + spacing * (column + 1);
@@ -2698,11 +2698,11 @@ for (let i = 0; i < 33; i++) {
 }
 
 
-/* ALLCOINS RACING CITY-SIDE FENCE — металлическая сетка за тротуаром, не заходит на асфальт. */
+/* ALLCOINS RACING CITY-SIDE FENCE — секционное металлическое ограждение с диагональными распорками. */
 const acCityFence = new THREE.Group();
 const acFenceZ = -16.4;
 const acFenceMetal = new THREE.MeshStandardMaterial({
-  color: 0x526d7f, roughness: .38, metalness: .76
+  color: 0x879398, roughness: .34, metalness: .72
 });
 const acFenceRailGeometry = new THREE.BoxGeometry(260, .085, .10);
 const acFenceTopRail = new THREE.Mesh(acFenceRailGeometry, acFenceMetal);
@@ -2730,38 +2730,48 @@ acFencePosts.instanceMatrix.needsUpdate = true;
 acFencePosts.castShadow = true;
 acCityFence.add(acFencePosts);
 
-// Ромбовидная металлическая сетка между стойками — вместо покрышек и сплошных щитов.
-const acFenceWirePositions = [];
-const acFenceWireStepX = .86;
-const acFenceWireStepY = .58;
-for (let x = -130; x < 130; x += acFenceWireStepX) {
-  for (let y = .29; y < 1.56; y += acFenceWireStepY) {
-    const left = x;
-    const right = Math.min(130, x + acFenceWireStepX);
-    const bottom = y;
-    const top = Math.min(1.56, y + acFenceWireStepY);
-    const midX = (left + right) * .5;
-    const midY = (bottom + top) * .5;
-    const diamond = [
-      [midX, top], [right, midY],
-      [right, midY], [midX, bottom],
-      [midX, bottom], [left, midY],
-      [left, midY], [midX, top]
-    ];
-    for (const point of diamond) acFenceWirePositions.push(point[0], point[1], acFenceZ + .055);
+// Секционные панели: диагональные X-распорки и тонкие вертикальные прутья, как на фото.
+const acFencePanelCount = acFencePostCount - 1;
+const acFenceBraceCount = acFencePanelCount * 2;
+const acFenceBraceMesh = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, .055, .065), acFenceMetal, acFenceBraceCount
+);
+const acFenceBarMesh = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(.045, 1.28, .055), acFenceMetal, acFencePanelCount * 2
+);
+let acFenceBraceIndex = 0;
+let acFenceBarIndex = 0;
+const fencePanelWidth = 260 / acFencePanelCount;
+const fencePanelBottom = .28;
+const fencePanelTop = 1.56;
+const fencePanelHeight = fencePanelTop - fencePanelBottom;
+const fencePanelDiagonal = Math.hypot(fencePanelWidth, fencePanelHeight);
+for (let bay = 0; bay < acFencePanelCount; bay++) {
+  const left = -130 + bay * fencePanelWidth;
+  const centerX = left + fencePanelWidth * .5;
+  const centerY = (fencePanelBottom + fencePanelTop) * .5;
+  for (const angle of [
+    Math.atan2(fencePanelHeight, fencePanelWidth),
+    -Math.atan2(fencePanelHeight, fencePanelWidth)
+  ]) {
+    acFenceDummy.position.set(centerX, centerY, acFenceZ + .075);
+    acFenceDummy.rotation.set(0, 0, angle);
+    acFenceDummy.scale.set(fencePanelDiagonal, 1, 1);
+    acFenceDummy.updateMatrix();
+    acFenceBraceMesh.setMatrixAt(acFenceBraceIndex++, acFenceDummy.matrix);
+  }
+  for (const fraction of [.34, .67]) {
+    acFenceDummy.position.set(left + fencePanelWidth * fraction, centerY, acFenceZ + .07);
+    acFenceDummy.rotation.set(0, 0, 0);
+    acFenceDummy.scale.set(1, 1, 1);
+    acFenceDummy.updateMatrix();
+    acFenceBarMesh.setMatrixAt(acFenceBarIndex++, acFenceDummy.matrix);
   }
 }
-const acFenceWireGeometry = new THREE.BufferGeometry();
-acFenceWireGeometry.setAttribute(
-  'position',
-  new THREE.Float32BufferAttribute(acFenceWirePositions, 3)
-);
-const acFenceWireMaterial = new THREE.LineBasicMaterial({
-  color: 0x9aadb9, transparent: true, opacity: .68, depthWrite: false
-});
-const acFenceWire = new THREE.LineSegments(acFenceWireGeometry, acFenceWireMaterial);
-acFenceWire.renderOrder = 2;
-acCityFence.add(acFenceWire);
+acFenceBraceMesh.instanceMatrix.needsUpdate = true;
+acFenceBarMesh.instanceMatrix.needsUpdate = true;
+acFenceBraceMesh.castShadow = acFenceBarMesh.castShadow = true;
+acCityFence.add(acFenceBraceMesh, acFenceBarMesh);
 scene.add(acCityFence);
 
 // Полоса живых кустов между металлическим забором и жилыми фасадами.
@@ -2770,11 +2780,11 @@ const acShrubGround = new THREE.Mesh(new THREE.PlaneGeometry(260,1.5),new THREE.
 acShrubGround.rotation.x=-Math.PI/2;acShrubGround.position.set(0,-.155,-18.25);acCityShrubs.add(acShrubGround);
 const acShrubGeometry=new THREE.SphereGeometry(1,12,8);
 const acShrubMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
-const acShrubCount=147;const acShrubInstances=new THREE.InstancedMesh(acShrubGeometry,acShrubMaterial,acShrubCount);
+const acShrubCount=180;const acShrubInstances=new THREE.InstancedMesh(acShrubGeometry,acShrubMaterial,acShrubCount);
 const acShrubDummy=new THREE.Object3D();const acShrubRandom=acSeededRandom(20261114);
 const acShrubColors=[0x566d4b,0x71845b,0x87936a,0x667c50,0x9aa078];let acShrubIndex=0;
-for(let cluster=0;cluster<49;cluster++){
- const centerX=-130+cluster*(260/48);
+for(let cluster=0;cluster<60;cluster++){
+ const centerX=-130+cluster*(260/59);
  for(let lobe=0;lobe<3;lobe++){
   const x=centerX+(lobe-1)*(.9+acShrubRandom()*.16);const height=.38+acShrubRandom()*.28;
   acShrubDummy.position.set(x,.02+height,-18.25+(acShrubRandom()-.5)*.28);
@@ -2870,16 +2880,20 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltFollowsTrackDirection: true,
   centralMarkingsLoopBothDirections: true,
   centralMarkingsTravelSign: 1,
+  centralMarkingsZ: -5.0,
   skidMarksFollowTrackDirection: true,
   cityBuildings: city.length,
   cityWindows: acCityWindowCount,
+  cityBuildingFloorsMin: 8,
+  cityBuildingFloorsMax: 10,
   skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
   cityBuildingOffsetZ: -22.2,
   cityFence: true,
-  cityFenceType: "diamond-metal-mesh",
+  cityFenceType: "cross-braced-metal-panels",
   cityFenceZ: -16.4,
-  cityShrubs: 147,
+  cityFenceBraceCount: acFenceBraceCount,
+  cityShrubs: 180,
   cityShrubOffsetZ: -18.25,
   skylineOffsetZ: -48,
   cameraViewHeight: 10.6
