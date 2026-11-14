@@ -166,16 +166,16 @@ try {
   assert.ok(dashboardDiagnostics, "The V26 live dashboard must be initialized.");
   assert.equal(dashboardDiagnostics.speedometerUsesLiveSpeed, true);
   assert.equal(dashboardDiagnostics.tachometerUsesLiveRpm, true);
-  assert.equal(dashboardDiagnostics.speedometerScaleTicks, 49);
-  assert.equal(dashboardDiagnostics.tachometerScaleTicks, 41);
+  assert.equal(dashboardDiagnostics.speedometerScaleTicks, 57);
+  assert.equal(dashboardDiagnostics.tachometerScaleTicks, 46);
   assert.equal(dashboardDiagnostics.acceleratorButton, true);
   assert.equal(dashboardDiagnostics.brakeButton, true);
   assert.equal(dashboardDiagnostics.gearPlusButton, true);
   assert.equal(dashboardDiagnostics.gearMinusButton, true);
-  assert.ok(await gameFrame.locator("#speedometer-ticks svg line, .speedometer-ticks svg line").count() >= 49,
-    "The speedometer must show a graduated 0–240 km/h scale.");
-  assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 41,
-    "The tachometer must show a graduated 0–8,000 RPM scale.");
+  assert.ok(await gameFrame.locator("#speedometer-ticks svg line, .speedometer-ticks svg line").count() >= 57,
+    "The speedometer must show a graduated 0–280 km/h scale.");
+  assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 46,
+    "The tachometer must show a graduated 0–9,000 RPM scale.");
   assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none",
     "The upshift (+) control must be visible.");
   assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
@@ -225,8 +225,8 @@ try {
   assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
   assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
   assert.ok(visualDiagnostics.asphaltRepeatX >= 90, "The asphalt grain must repeat at road scale.");
-  assert.equal(visualDiagnostics.asphaltTone, "cool-blue-violet", "The asphalt must match the cool blue-violet racing-strip reference.");
-  assert.equal(visualDiagnostics.asphaltWetGloss, true, "The asphalt must have a controlled damp sheen.");
+  assert.equal(visualDiagnostics.asphaltTone, "neutral-road-gray", "The asphalt must match the cool blue-violet racing-strip reference.");
+  assert.equal(visualDiagnostics.asphaltWetGloss, false, "The asphalt must have a dry, matte city-road finish.");
   assert.equal(visualDiagnostics.asphaltSkidArcs, 0, "The center of the road must not contain backward-curving skid arcs.");
   assert.equal(visualDiagnostics.asphaltLongitudinalWear, true, "Rubber wear marks must run along the track.");
   assert.equal(visualDiagnostics.asphaltRoadDirection, "forward-x", "The road markings must follow the racing direction.");
@@ -236,11 +236,13 @@ try {
   assert.equal(visualDiagnostics.skidMarksFollowTrackDirection, true, "Rubber wear marks must stay aligned with road travel.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
   assert.ok(visualDiagnostics.cityWindows >= 300, "The city facades must contain instanced windows.");
-  assert.equal(visualDiagnostics.cityBuildingOffsetZ, -29.2, "The foreground buildings must be set farther back from the road.");
+  assert.equal(visualDiagnostics.cityBuildingOffsetZ, -22.2, "The foreground buildings must be set farther back from the road.");
   assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
   assert.equal(visualDiagnostics.cityFenceType, "diamond-metal-mesh", "The roadside fence must use a visible metal mesh.");
   assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
-  assert.equal(visualDiagnostics.skylineOffsetZ, -43, "The skyline must sit behind the foreground buildings.");
+  assert.equal(visualDiagnostics.cityShrubs, 147, "The apartment-side green strip must be visible behind the fence.");
+  assert.equal(visualDiagnostics.cityShrubOffsetZ, -18.25, "The shrub strip must sit between the fence and apartments.");
+  assert.equal(visualDiagnostics.skylineOffsetZ, -48, "The skyline must sit behind the foreground buildings.");
   assert.equal(visualDiagnostics.cameraViewHeight, 10.6, "The camera must be slightly closer to the player's car.");
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
   assert.ok(visualDiagnostics.skylineWindows >= 100, "The distant skyline must contain illuminated windows.");
