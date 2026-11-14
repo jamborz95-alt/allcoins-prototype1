@@ -2209,42 +2209,48 @@ function acCreateAsphaltMaps() {
 
 function acCreateFacadeTexture(style) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 256;
+  canvas.width = canvas.height = 512;
   const context = canvas.getContext('2d');
-  context.fillStyle = '#b3bac2';
-  context.fillRect(0, 0, 256, 256);
+  const base = ['#aeb9c4','#bcb8ad','#9eafba'][style % 3];
+  const gradient = context.createLinearGradient(0, 0, 0, 512);
+  gradient.addColorStop(0, '#d3d8dc');
+  gradient.addColorStop(.48, base);
+  gradient.addColorStop(1, '#7e8c9a');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 512, 512);
+
+  // Fine plaster/concrete grain, kept subtle so façades look maintained rather than dirty.
+  const random = acSeededRandom(8800 + style * 73);
+  for (let i = 0; i < 1500; i++) {
+    const x = random() * 512;
+    const y = random() * 512;
+    const light = random() > .48;
+    context.fillStyle = light ? 'rgba(255,255,255,.075)' : 'rgba(24,39,54,.055)';
+    const size = .6 + random() * 2.1;
+    context.fillRect(x, y, size, size);
+  }
+
+  // Clean horizontal floor bands and restrained vertical architectural accents.
+  context.fillStyle = 'rgba(238,243,247,.18)';
+  for (let y = 0; y < 512; y += 128) context.fillRect(0, y, 512, 5);
+  context.fillStyle = 'rgba(37,55,72,.13)';
+  for (let y = 124; y < 512; y += 128) context.fillRect(0, y, 512, 3);
   if (style === 0) {
-    context.fillStyle = 'rgba(58,67,79,.20)';
-    for (let y = 0; y < 256; y += 24) {
-      context.fillRect(0, y, 256, 2);
-      for (let x = (y / 24 % 2) * 20; x < 256; x += 42) context.fillRect(x, y, 2, 24);
-    }
+    context.fillStyle = 'rgba(60,81,99,.10)';
+    for (let x = 0; x < 512; x += 64) context.fillRect(x, 0, 3, 512);
   } else if (style === 1) {
-    context.strokeStyle = 'rgba(52,68,83,.28)';
-    context.lineWidth = 2;
-    for (let x = 0; x <= 256; x += 64) {
-      context.beginPath(); context.moveTo(x, 0); context.lineTo(x, 256); context.stroke();
-    }
-    for (let y = 0; y <= 256; y += 48) {
-      context.beginPath(); context.moveTo(0, y); context.lineTo(256, y); context.stroke();
-    }
+    context.fillStyle = 'rgba(244,238,224,.16)';
+    for (let x = 0; x < 512; x += 96) context.fillRect(x, 0, 8, 512);
   } else {
-    context.fillStyle = 'rgba(232,225,211,.18)';
-    for (let x = 0; x < 256; x += 32) context.fillRect(x, 0, 5, 256);
-    context.fillStyle = 'rgba(35,50,67,.18)';
-    for (let y = 0; y < 256; y += 52) context.fillRect(0, y, 256, 3);
+    context.fillStyle = 'rgba(36,55,73,.12)';
+    for (let x = 0; x < 512; x += 128) context.fillRect(x, 0, 5, 512);
   }
-  for (let i = 0; i < 180; i++) {
-    const x = (i * 73 + style * 31) % 256;
-    const y = (i * 109 + style * 17) % 256;
-    context.fillStyle = i % 2 ? 'rgba(255,255,255,.08)' : 'rgba(20,28,38,.06)';
-    context.fillRect(x, y, 2, 2);
-  }
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(2, 3);
   texture.encoding = THREE.sRGBEncoding;
-  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   return texture;
 }
 
@@ -2383,7 +2389,7 @@ function acAdvanceRoadSurface(scroll) {
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
-const buildingPalette = [0x7e93a8, 0x9c9b91, 0x71899b, 0x9b826e, 0x78818e, 0xa2a7a8];
+const buildingPalette = [0x9eafbd, 0xb7b2a7, 0x8ea6b7, 0xb79d8b, 0x9aa7b5, 0xb7b9b6];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
@@ -2424,6 +2430,7 @@ const citySignMaterials = signDefinitions.map(([label, accent]) => new THREE.Mes
 }));
 const windowFrameGeometry = new THREE.BoxGeometry(.88, 1.08, .12);
 const windowGlassGeometry = new THREE.BoxGeometry(.70, .90, .035);
+const windowSillGeometry = new THREE.BoxGeometry(.98, .085, .18);
 const acUnitGeometry = new THREE.BoxGeometry(.42, .24, .22);
 const acUnitMaterial = new THREE.MeshStandardMaterial({ color: 0x657384, roughness: .72, metalness: .3 });
 const balconyDeckGeometry = new THREE.BoxGeometry(1.14, .09, .52);
@@ -2452,6 +2459,7 @@ for (let i = 0; i < 33; i++) {
   const frontZ = depth / 2 + .08;
   const columns = Math.max(4, Math.floor(width / 1.05));
   const windowFrames = [];
+  const windowSills = [];
   const darkWindows = [];
   const litWindows = [];
   const acUnits = [];
@@ -2473,6 +2481,9 @@ for (let i = 0; i < 33; i++) {
       cityDummy.position.set(x, windowY, frontZ + .075);
       cityDummy.updateMatrix();
       const glassMatrix = cityDummy.matrix.clone();
+      cityDummy.position.set(x, windowY - .52, frontZ + .12);
+      cityDummy.updateMatrix();
+      windowSills.push(cityDummy.matrix.clone());
       if (random() < .28) litWindows.push(glassMatrix);
       else darkWindows.push(glassMatrix);
 
@@ -2491,12 +2502,13 @@ for (let i = 0; i < 33; i++) {
 
   acCityWindowCount += windowFrames.length;
   const frameMesh = acCreateInstancedFromMatrices(windowFrameGeometry, windowFrameMaterial, windowFrames);
+  const sillMesh = acCreateInstancedFromMatrices(windowSillGeometry, trimMaterial, windowSills);
   const darkMesh = acCreateInstancedFromMatrices(windowGlassGeometry, darkWindowMaterial, darkWindows);
   const litMesh = acCreateInstancedFromMatrices(windowGlassGeometry, litWindowMaterial, litWindows);
   const acMesh = acCreateInstancedFromMatrices(acUnitGeometry, acUnitMaterial, acUnits);
   const balconyDeckMesh = acCreateInstancedFromMatrices(balconyDeckGeometry, trimMaterial, balconyDecks);
   const balconyRailMesh = acCreateInstancedFromMatrices(balconyRailGeometry, balconyMaterial, balconyRails);
-  for (const mesh of [frameMesh, darkMesh, litMesh, acMesh, balconyDeckMesh, balconyRailMesh]) {
+  for (const mesh of [frameMesh, sillMesh, darkMesh, litMesh, acMesh, balconyDeckMesh, balconyRailMesh]) {
     if (mesh) building.add(mesh);
   }
 
@@ -2579,10 +2591,55 @@ for (let i = 0; i < 33; i++) {
     building.add(bulb);
   }
 
-  building.position.set(-115 + i * 7.15, 0, -16.05);
+  // Отодвигаем фасады от тротуара: перед ними остаётся отдельная полоса и ограждение.
+  building.position.set(-115 + i * 7.15, 0, -25.2);
   scene.add(building);
   city.push(building);
 }
+
+
+/* ALLCOINS RACING CITY-SIDE FENCE — ограждение вынесено за тротуар, вне дорожного полотна. */
+const acCityFence = new THREE.Group();
+const acFenceMetal = new THREE.MeshStandardMaterial({
+  color: 0x536879, roughness: .42, metalness: .72
+});
+const acFenceRailGeometry = new THREE.BoxGeometry(260, .085, .09);
+const acFenceTopRail = new THREE.Mesh(acFenceRailGeometry, acFenceMetal);
+acFenceTopRail.position.set(0, 1.73, -15.45);
+acFenceTopRail.castShadow = true;
+const acFenceBottomRail = new THREE.Mesh(acFenceRailGeometry, acFenceMetal);
+acFenceBottomRail.position.set(0, .20, -15.45);
+acFenceBottomRail.castShadow = true;
+acCityFence.add(acFenceTopRail, acFenceBottomRail);
+
+const acFencePostCount = 70;
+const acFencePosts = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(.13, 1.82, .13), acFenceMetal, acFencePostCount
+);
+const acFencePicketCount = 434;
+const acFencePicketMaterial = new THREE.MeshStandardMaterial({
+  color: 0x8295a4, roughness: .48, metalness: .68
+});
+const acFencePickets = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(.045, 1.36, .055), acFencePicketMaterial, acFencePicketCount
+);
+const acFenceDummy = new THREE.Object3D();
+for (let i = 0; i < acFencePostCount; i++) {
+  acFenceDummy.position.set(-130 + i * (260 / (acFencePostCount - 1)), .92, -15.45);
+  acFenceDummy.updateMatrix();
+  acFencePosts.setMatrixAt(i, acFenceDummy.matrix);
+}
+for (let i = 0; i < acFencePicketCount; i++) {
+  acFenceDummy.position.set(-129.7 + i * (259.4 / (acFencePicketCount - 1)), .94, -15.45);
+  acFenceDummy.updateMatrix();
+  acFencePickets.setMatrixAt(i, acFenceDummy.matrix);
+}
+acFencePosts.instanceMatrix.needsUpdate = true;
+acFencePickets.instanceMatrix.needsUpdate = true;
+acFencePosts.castShadow = acFencePickets.castShadow = true;
+acCityFence.add(acFencePosts, acFencePickets);
+scene.add(acCityFence);
+
 
 // Дальний городской силуэт: высотные корпуса и редкие окна создают глубину улицы.
 const distantHills = new THREE.Group();
@@ -2671,7 +2728,11 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityBuildings: city.length,
   cityWindows: acCityWindowCount,
   skylineTowers: farCityTowerCount,
-  skylineWindows: farCityDarkWindows.length + farCityLitWindows.length
+  skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
+  cityBuildingOffsetZ: -25.2,
+  cityFence: true,
+  cityFenceZ: -15.45,
+  cameraViewHeight: 11.5
 });
 
 /* ALLCOINS V24 VISUAL LIGHTING V4 — только освещение и читаемость ограждений; физика V24 не меняется. */
@@ -3521,7 +3582,7 @@ function emitRearTireSmoke(){
 
 let last=performance.now();
 let runElapsed=0;
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=12.5;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=11.5;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
 function animate(now){
@@ -3575,6 +3636,10 @@ function animate(now){
       while(b.position.x < -132) b.position.x += 236;
       while(b.position.x > 104) b.position.x -= 236;
     }
+    // Ограждение движется с той же скоростью, что и здания, оставаясь параллельно дороге.
+    acCityFence.position.x -= scroll * .19;
+    while(acCityFence.position.x < -132) acCityFence.position.x += 236;
+    while(acCityFence.position.x > 104) acCityFence.position.x -= 236;
     distantHills.position.x -= scroll * .045;
     while(distantHills.position.x < -260) distantHills.position.x += 260;
     while(distantHills.position.x > 0) distantHills.position.x -= 260;
