@@ -222,6 +222,7 @@ try {
   assert.equal(visualDiagnostics.asphaltRoadDirection, "forward-x", "The road markings must follow the racing direction.");
   assert.equal(visualDiagnostics.asphaltFollowsTrackDirection, true, "The asphalt texture must scroll with signed vehicle travel.");
   assert.equal(visualDiagnostics.centralMarkingsLoopBothDirections, true, "The central road markings must loop in forward and reverse.");
+  assert.equal(visualDiagnostics.centralMarkingsTravelSign, 1, "The center markings must move in the corrected forward screen direction.");
   assert.equal(visualDiagnostics.skidMarksFollowTrackDirection, true, "Rubber wear marks must stay aligned with road travel.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
   assert.ok(visualDiagnostics.cityWindows >= 300, "The city facades must contain instanced windows.");
