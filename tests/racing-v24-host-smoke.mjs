@@ -244,6 +244,9 @@ try {
   assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
   assert.equal(visualDiagnostics.centralMarkingsZ, -5, "The dashed lane marking must sit on the far side of the visible road, as in the reference.");
   assert.equal(visualDiagnostics.cityFenceBraceCount, 138, "The metal fence must contain paired diagonal braces in every section.");
+  assert.equal(visualDiagnostics.citySidewalkSlabs, 72, "The city sidewalk must have visible concrete slab joints.");
+  assert.equal(visualDiagnostics.cityGroundFloorWindowRows, 33, "All apartment buildings must have ground-floor window rows.");
+  assert.equal(visualDiagnostics.cityResidentialEntrances, 17, "Apartment blocks must have residential entrance doors instead of shop signage.");
   assert.equal(visualDiagnostics.cityShrubs, 180, "The apartment-side green strip must be dense and continuous behind the fence.");
   assert.equal(visualDiagnostics.cityShrubOffsetZ, -18.25, "The shrub strip must sit between the fence and apartments.");
   assert.equal(visualDiagnostics.skylineOffsetZ, -48, "The skyline must sit behind the foreground buildings.");
