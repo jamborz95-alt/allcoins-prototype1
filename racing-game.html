@@ -2920,67 +2920,7 @@ for(const side of [-1,1]){
 acTireMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 scene.add(acTireMesh);
 
-/* Сегменты ограждения */
-const acRailGeo = new THREE.BoxGeometry(4.5,.13,.16);
-const acRailMat = new THREE.MeshStandardMaterial({
-  color:0x71849d,metalness:.72,roughness:.34,
-  emissive:0x14243b
-});
-const acRailRecords = [];
-const acRailMesh = new THREE.InstancedMesh(
-  acRailGeo,acRailMat,128
-);
-
-const acPostGeo = new THREE.BoxGeometry(.10,1.45,.10);
-const acPostMat = new THREE.MeshStandardMaterial({
-  color:0x8796a9,metalness:.65,roughness:.4
-});
-const acPostRecords = [];
-const acPostMesh = new THREE.InstancedMesh(
-  acPostGeo,acPostMat,128
-);
-
-for(const side of [-1,1]){
-  for(let i=0;i<64;i++){
-    const x=-140+i*4.5;
-    acRailRecords.push({
-      x:x+2.25,y:1.08,z:side*8.45
-    });
-    acPostRecords.push({
-      x,y:.72,z:side*8.45
-    });
-  }
-}
-
-for(let i=0;i<acRailRecords.length;i++){
-  const r=acRailRecords[i];
-  acDummy.position.set(r.x,r.y,r.z);
-  acDummy.scale.set(1,1,1);
-  acDummy.updateMatrix();
-  acRailMesh.setMatrixAt(i,acDummy.matrix);
-
-  const p=acPostRecords[i];
-  acDummy.position.set(p.x,p.y,p.z);
-  acDummy.updateMatrix();
-  acPostMesh.setMatrixAt(i,acDummy.matrix);
-}
-acRailMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-acPostMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-scene.add(acRailMesh,acPostMesh);
-
-/* Сетка ограждения дальней стороны трассы */
-const acFence = new THREE.Mesh(
-  new THREE.PlaneGeometry(900,1.6,220,6),
-  new THREE.MeshBasicMaterial({
-    color:0x7997bd,
-    wireframe:true,
-    transparent:true,
-    opacity:.20,
-    depthWrite:false
-  })
-);
-acFence.position.set(0,1.55,-8.30);
-scene.add(acFence);
+/* Дорожные ограждения и сетка удалены: обе полосы трассы остаются свободными. */
 
 /* Световые точки вдоль гоночной площадки */
 const acLampRecords=[];
@@ -3108,8 +3048,6 @@ function updateRaceEnvironment(dt,scroll){
   }
 
   moveInstances(acTireMesh,acTireRecords,.80);
-  moveInstances(acRailMesh,acRailRecords,.80);
-  moveInstances(acPostMesh,acPostRecords,.80);
 
   for(const lamp of acLampRecords){
     lamp.x-=scroll*.17;
