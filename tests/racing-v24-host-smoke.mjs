@@ -238,6 +238,10 @@ try {
   assert.ok(visualDiagnostics.cityWindows >= 650, "The mid-rise apartment facades must contain dense repeated windows.");
   assert.equal(visualDiagnostics.cityBuildingFloorsMin, 4, "The city must use four-floor minimum European apartment blocks.");
   assert.equal(visualDiagnostics.cityBuildingFloorsMax, 6, "The city must use varied 4–6 floor apartment blocks.");
+  assert.equal(visualDiagnostics.cityLightingStyle, "balanced-daylight", "The city must avoid blown-out white daylight.");
+  assert.equal(visualDiagnostics.cityLightingExposure, 0.98, "The scene must use balanced exposure.");
+  assert.equal(visualDiagnostics.cityFacadeTexture, "warm-beige-plaster", "Apartment facades must use warm plaster texture.");
+  assert.equal(visualDiagnostics.speedometerDigitalLayerAboveNeedle, true, "The digital speed readout must remain visible above the needle hub.");
   assert.equal(visualDiagnostics.cityBuildingOffsetZ, -22.2, "The foreground buildings must be set farther back from the road.");
   assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
   assert.equal(visualDiagnostics.cityFenceType, "cross-braced-metal-panels", "The roadside fence must use silver cross-braced metal panels.");
