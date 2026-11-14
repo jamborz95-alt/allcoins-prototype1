@@ -130,7 +130,7 @@ try {
   await frameLocator.waitFor({ state: "attached", timeout: 10000 });
   await page.waitForFunction(() => {
     const frame = document.querySelector("#allcoinsRacingV24Overlay iframe");
-    return frame && /racing-game\\.html/.test(frame.src) && !frame.srcdoc;
+    return frame && frame.src.includes("/racing-game.html") && !frame.srcdoc;
   }, null, { timeout: 10000 });
 
   let gameFrame;
