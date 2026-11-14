@@ -2171,8 +2171,8 @@ function playGearChangeCue(){
 
 const canvas = $('view');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9eb8c8);
-scene.fog = new THREE.Fog(0x9eb8c8, 88, 224);
+scene.background = new THREE.Color(0x0b1423);
+scene.fog = new THREE.Fog(0x101b2c, 78, 218);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -2184,9 +2184,9 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.98;
-scene.add(new THREE.HemisphereLight(0xc5d3d7,0x424a43,.76));
-const sun = new THREE.DirectionalLight(0xffedcf,.82); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
-const fill = new THREE.DirectionalLight(0xb7c5c8,.32); fill.position.set(8,5,-12); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0x607b9e,0x080e18,.30));
+const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x344b70,.20); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -2524,34 +2524,34 @@ function acAdvanceRoadSurface(scroll) {
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
-// Тёплая европейская палитра: светлый песочный камень, слоновая кость и кремовая штукатурка.
-const buildingPalette = [0xe5d6bd, 0xd9c7a9, 0xeee2cc, 0xcdbb9e, 0xe7ddca, 0xd4c3a7];
+// Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
+const buildingPalette = [0x26384d, 0x304258, 0x35465a, 0x29394d, 0x3a4b60, 0x26364a];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
   roughness: .92,
   metalness: .025
 }));
-const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x9b8d79, roughness: .68, metalness: .22 });
+const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x52647a, roughness: .68, metalness: .22 });
 const darkWindowMaterial = new THREE.MeshStandardMaterial({
-  color: 0x183047,
+  color: 0x101d30,
   roughness: .24,
   metalness: .28,
   emissive: 0x071421,
-  emissiveIntensity: .15
+  emissiveIntensity: .22
 });
 const litWindowMaterial = new THREE.MeshStandardMaterial({
   color: 0xffd69a,
   roughness: .38,
   metalness: .04,
   emissive: 0xffa94a,
-  emissiveIntensity: .72
+  emissiveIntensity: 1.05
 });
-const trimMaterial = new THREE.MeshStandardMaterial({ color: 0xc8b99f, roughness: .78, metalness: .08 });
-const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x55504a, roughness: .9, metalness: .04 });
+const trimMaterial = new THREE.MeshStandardMaterial({ color: 0x53657a, roughness: .78, metalness: .12 });
+const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x111c2b, roughness: .9, metalness: .04 });
 const shopGlassMaterial = new THREE.MeshStandardMaterial({
-  color: 0x1b354b, roughness: .22, metalness: .36,
-  emissive: 0x07111d, emissiveIntensity: .24
+  color: 0x10263c, roughness: .22, metalness: .36,
+  emissive: 0x07111d, emissiveIntensity: .38
 });
 const lampPoleMaterial = new THREE.MeshStandardMaterial({ color: 0x455366, roughness: .4, metalness: .72 });
 const lampBulbMaterial = new THREE.MeshBasicMaterial({ color: 0xffd49a, toneMapped: false });
@@ -2865,15 +2865,15 @@ const farCityDarkWindows = [];
 const farCityLitWindows = [];
 const farWindowGeometry = new THREE.BoxGeometry(.48, .72, .035);
 const farWindowDarkMaterial = new THREE.MeshStandardMaterial({
-  color: 0x1a3047, roughness: .28, metalness: .22, emissive: 0x071421, emissiveIntensity: .18
+  color: 0x101d30, roughness: .28, metalness: .22, emissive: 0x071421, emissiveIntensity: .22
 });
 const farWindowLitMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffd18a, roughness: .42, emissive: 0xffa94a, emissiveIntensity: .52
+  color: 0xffc875, roughness: .42, emissive: 0xffa94a, emissiveIntensity: .95
 });
 const farBuildingMaterials = [
-  new THREE.MeshStandardMaterial({ color: 0x9ba8a9, roughness: .94, metalness: .02 }),
-  new THREE.MeshStandardMaterial({ color: 0xb2a99a, roughness: .92, metalness: .02 }),
-  new THREE.MeshStandardMaterial({ color: 0x85999d, roughness: .94, metalness: .02 })
+  new THREE.MeshStandardMaterial({ color: 0x26374d, roughness: .94, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0x304158, roughness: .92, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0x1e3047, roughness: .94, metalness: .02 })
 ];
 for (let i = 0; i < farCityTowerCount; i++) {
   const random = acSeededRandom(88001 + i * 157);
@@ -2968,13 +2968,13 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   skylineOffsetZ: -48,
   cameraViewHeight: 10.6,
   cityLightingExposure: renderer.toneMappingExposure,
-  cityLightingStyle: "balanced-daylight",
-  cityFacadeTexture: "warm-beige-plaster",
+  cityLightingStyle: "night-city-blue-hour",
+  cityFacadeTexture: "deep-blue-grey-night-facades",
   speedometerDigitalLayerAboveNeedle: true
 });
 
 /* ALLCOINS V24 VISUAL LIGHTING V4 — только освещение и читаемость ограждений; физика V24 не меняется. */
-const acV4SkyFill = new THREE.HemisphereLight(0x9fc6e8, 0x17202b, 0.62);
+const acV4SkyFill = new THREE.HemisphereLight(0x58769e, 0x080e18, 0.22);
 scene.add(acV4SkyFill);
 const acV4CarKey = new THREE.DirectionalLight(0xeaf2ff, 1.15);
 acV4CarKey.position.set(-7.5, 8.0, 9.0);
@@ -3008,9 +3008,9 @@ scene.traverse((o) => {
    Только визуальные эффекты. Физика, двигатель, передачи, колёса и управление не изменяются. */
 
 // Мягко усиливаем уже созданное V4 освещение, не добавляя тяжёлые источники теней.
-acV4SkyFill.intensity = .42;
-acV4CarKey.intensity = .92;
-acV4CarRim.intensity = .48;
+acV4SkyFill.intensity = .18;
+acV4CarKey.intensity = .78;
+acV4CarRim.intensity = .55;
 acV4WarmFill.intensity = .88;
 renderer.toneMappingExposure = .98;
 
