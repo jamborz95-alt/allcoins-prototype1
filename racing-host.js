@@ -666,7 +666,7 @@
     });
 
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261114-no-lift-shift-v1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261114-no-tire-barriers-v1", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
