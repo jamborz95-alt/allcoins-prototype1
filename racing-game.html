@@ -964,6 +964,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
  width:14px!important;height:14px!important;background:radial-gradient(circle at 35% 30%,#fff,#c6c9c6 48%,#454e52 76%)!important;
  border:2px solid #e8e4d8!important;
 }
+.speedometer-hub{z-index:6!important}
 .tachometer-label,.speedometer-label{display:none!important}
 .tachometer-value{
  position:absolute!important;top:71%!important;bottom:auto!important;display:flex!important;flex-direction:column!important;
@@ -973,6 +974,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .tachometer-value small{color:#c4c8c4!important;font-size:9px!important;letter-spacing:.16em!important}
 .speedometer-value{
  top:37%!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+ z-index:9!important;
  width:clamp(72px,10vh,90px)!important;height:clamp(49px,8vh,58px)!important;
  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;
  border:2px solid #aebdc0!important;border-radius:8px!important;background:linear-gradient(145deg,#315b6d,#152d39 72%,#0c1b25)!important;
@@ -2169,8 +2171,8 @@ function playGearChangeCue(){
 
 const canvas = $('view');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xaab6b8);
-scene.fog = new THREE.Fog(0xaab6b8, 58, 168);
+scene.background = new THREE.Color(0x9eb8c8);
+scene.fog = new THREE.Fog(0x9eb8c8, 88, 224);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -2181,10 +2183,10 @@ if (window.__allcoinsRacingBoot) {
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
-scene.add(new THREE.HemisphereLight(0xc5d3d7,0x424a43,1.02));
-const sun = new THREE.DirectionalLight(0xffedcf,1.05); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
-const fill = new THREE.DirectionalLight(0xb7c5c8,.56); fill.position.set(8,5,-12); scene.add(fill);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.98;
+scene.add(new THREE.HemisphereLight(0xc5d3d7,0x424a43,.76));
+const sun = new THREE.DirectionalLight(0xffedcf,.82); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xb7c5c8,.32); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -2304,11 +2306,11 @@ function acCreateFacadeTexture(style) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 512;
   const context = canvas.getContext('2d');
-  const base = ['#d0d5d0','#d9d1bf','#c7d0cc'][style % 3];
+  const base = ['#e7d8bf','#dfcdb2','#efe4d1'][style % 3];
   const gradient = context.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, '#f3f0e7');
+  gradient.addColorStop(0, '#f7eddd');
   gradient.addColorStop(.46, base);
-  gradient.addColorStop(1, '#a7aeaa');
+  gradient.addColorStop(1, '#ad9779');
   context.fillStyle = gradient;
   context.fillRect(0, 0, 512, 512);
 
@@ -2324,9 +2326,9 @@ function acCreateFacadeTexture(style) {
   }
 
   // Clean horizontal floor bands and restrained vertical architectural accents.
-  context.fillStyle = 'rgba(238,243,247,.18)';
+  context.fillStyle = 'rgba(255,247,232,.25)';
   for (let y = 0; y < 512; y += 128) context.fillRect(0, y, 512, 5);
-  context.fillStyle = 'rgba(37,55,72,.13)';
+  context.fillStyle = 'rgba(111,86,58,.16)';
   for (let y = 124; y < 512; y += 128) context.fillRect(0, y, 512, 3);
   if (style === 0) {
     context.fillStyle = 'rgba(60,81,99,.10)';
@@ -2944,7 +2946,11 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityShrubs: 180,
   cityShrubOffsetZ: -18.25,
   skylineOffsetZ: -48,
-  cameraViewHeight: 10.6
+  cameraViewHeight: 10.6,
+  cityLightingExposure: renderer.toneMappingExposure,
+  cityLightingStyle: "balanced-daylight",
+  cityFacadeTexture: "warm-beige-plaster",
+  speedometerDigitalLayerAboveNeedle: true
 });
 
 /* ALLCOINS V24 VISUAL LIGHTING V4 — только освещение и читаемость ограждений; физика V24 не меняется. */
@@ -2961,7 +2967,7 @@ scene.add(acV4CarRim, acV4CarRim.target);
 const acV4WarmFill = new THREE.PointLight(0xffc98c, 1.8, 22, 2);
 acV4WarmFill.position.set(-4.4, 3.6, 4.2);
 scene.add(acV4WarmFill);
-if (typeof renderer !== "undefined" && renderer && "toneMappingExposure" in renderer) renderer.toneMappingExposure = Math.max(Number(renderer.toneMappingExposure) || 1, 1.16);
+if (typeof renderer !== "undefined" && renderer && "toneMappingExposure" in renderer) renderer.toneMappingExposure = .98;
 scene.traverse((o) => {
   if (!o.isMesh || !o.material) return;
   const name = String(o.name || "").toLowerCase();
@@ -2982,20 +2988,20 @@ scene.traverse((o) => {
    Только визуальные эффекты. Физика, двигатель, передачи, колёса и управление не изменяются. */
 
 // Мягко усиливаем уже созданное V4 освещение, не добавляя тяжёлые источники теней.
-acV4SkyFill.intensity = Math.max(acV4SkyFill.intensity, 0.70);
-acV4CarKey.intensity = Math.max(acV4CarKey.intensity, 1.32);
-acV4CarRim.intensity = Math.max(acV4CarRim.intensity, 0.78);
-acV4WarmFill.intensity = Math.max(acV4WarmFill.intensity, 2.05);
-renderer.toneMappingExposure = Math.max(Number(renderer.toneMappingExposure) || 1, 1.20);
+acV4SkyFill.intensity = .42;
+acV4CarKey.intensity = .92;
+acV4CarRim.intensity = .48;
+acV4WarmFill.intensity = .88;
+renderer.toneMappingExposure = .98;
 
 // Дополнительный мягкий контровой свет для боковой поверхности автомобиля.
-const acV5BodyLight = new THREE.DirectionalLight(0xdceaff, 0.48);
+const acV5BodyLight = new THREE.DirectionalLight(0xdceaff, 0.28);
 acV5BodyLight.position.set(-10, 5.8, 13);
 acV5BodyLight.target.position.set(-4.2, 1.05, 0);
 scene.add(acV5BodyLight, acV5BodyLight.target);
 
 // Небольшой тёплый свет возле кузова помогает отделить автомобиль от тёмного города.
-const acV5WarmBodyFill = new THREE.PointLight(0xffd6ad, 1.05, 18, 2);
+const acV5WarmBodyFill = new THREE.PointLight(0xffd6ad, 0.62, 18, 2);
 acV5WarmBodyFill.position.set(-7.0, 2.8, 5.8);
 scene.add(acV5WarmBodyFill);
 
