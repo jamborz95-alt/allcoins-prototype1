@@ -530,13 +530,12 @@
   }
 
   window.addEventListener("message", async event => {
-    // The scene is injected through iframe.srcdoc. In Android WebViews its
-    // reported origin can differ from the host origin, so identify it by the
-    // exact iframe window instead of rejecting a valid scene message by origin.
+    // The scene is now a normal same-origin page inside this iframe.
+    // Check both the exact iframe window and the expected app origin.
     if (!frame || event.source !== frame.contentWindow) return;
+    if (event.origin !== window.location.origin) return;
 
     const data = event.data || {};
-    if (event.origin !== window.location.origin) return;
 
     if (data.type === "allcoins:request-car-model") {
       setStatus("Сцена запросила 3D-модель автомобиля…", false);
