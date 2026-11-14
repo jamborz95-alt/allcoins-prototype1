@@ -258,6 +258,15 @@ try {
   assert.equal(visualDiagnostics.cityShrubOffsetZ, -18.25, "The shrub strip must sit between the fence and apartments.");
   assert.equal(visualDiagnostics.skylineOffsetZ, -48, "The skyline must sit behind the foreground buildings.");
   assert.equal(visualDiagnostics.cameraViewHeight, 10.6, "The camera must be slightly closer to the player's car.");
+
+  // Check the slightly reduced lower dashboard on a typical landscape Android viewport.
+  await page.setViewportSize({ width: 844, height: 390 });
+  const mobilePanelHeight = await gameFrame.locator("#dashboardBackplate").evaluate(
+    element => Math.round(element.getBoundingClientRect().height)
+  );
+  assert.ok(mobilePanelHeight >= 116 && mobilePanelHeight <= 130,
+    "The compact landscape dashboard panel must be slightly shorter on a phone.");
+  await page.setViewportSize({ width: 1365, height: 768 });
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
   assert.ok(visualDiagnostics.skylineWindows >= 100, "The distant skyline must contain illuminated windows.");
 
