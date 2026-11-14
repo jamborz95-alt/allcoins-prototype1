@@ -825,6 +825,110 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   .gauge-scale-svg .scale-number{font-size:9px}
 }
 </style>
+
+<style id="allcoins-racing-dashboard-v27">
+/* V27: приборная панель и органы управления по видеореференсу */
+#dashboardBackplate{
+  left:50%!important;bottom:0!important;transform:translateX(-50%)!important;
+  width:min(900px,76vw)!important;height:clamp(132px,23vh,166px)!important;
+  border-radius:28px 28px 0 0!important;
+  background:linear-gradient(180deg,#253346f2 0%,#121d2cf5 45%,#080e18 100%)!important;
+  border:1px solid #8396aa88!important;border-bottom:0!important;
+  box-shadow:0 -9px 28px #000a,inset 0 2px 5px #ffffff22!important;
+}
+.tachometer,.speedometer{
+  width:clamp(118px,20vh,148px)!important;height:clamp(118px,20vh,148px)!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  z-index:13!important;pointer-events:none!important;
+}
+.tachometer{left:calc(50% - 145px)!important}
+.speedometer{left:calc(50% + 2px)!important}
+.tachometer-label,.speedometer-label{display:none!important}
+.tachometer-dial,.speedometer-dial{
+  border:4px solid #9aa9b8!important;
+  background:radial-gradient(circle at 48% 44%,#142a43 0%,#081321 72%,#03070d 100%)!important;
+  box-shadow:0 0 0 3px #0b1420,inset 0 0 0 2px #ffffff22,inset 0 -8px 18px #000d,0 4px 10px #000b!important;
+}
+.tachometer-dial:before,.speedometer-dial:before{border:1px solid #62aaff88!important}
+.gauge-scale-svg .major-tick{stroke:#f1f6ff!important}
+.gauge-scale-svg .minor-tick{stroke:#9fb6cc!important}
+.gauge-scale-svg .red-tick{stroke:#ff3e40!important}
+.gauge-scale-svg .scale-number{fill:#e7f1fc!important}
+.tachometer-needle,.speedometer-needle{
+  height:37%!important;width:3px!important;
+  background:linear-gradient(#fff,#ff5a52 62%,#bb1f28)!important;
+  box-shadow:0 0 8px #ff514caa!important;
+}
+.tachometer-value,.speedometer-value{bottom:10%!important}
+.tachometer-value strong,.speedometer-value strong{
+  font-size:clamp(19px,3vh,25px)!important;color:#fff!important;
+}
+.tachometer-value small,.speedometer-value small{font-size:7px!important;color:#b8d6f7!important}
+
+/* Педали разнесены по краям, как в референсе */
+.bottom{position:static!important}
+.pedals{display:contents!important}
+#brake,#gas{
+  position:fixed!important;bottom:calc(20px + env(safe-area-inset-bottom))!important;
+  width:clamp(62px,7vw,88px)!important;height:clamp(76px,15vh,100px)!important;
+  min-width:0!important;padding:0!important;z-index:15!important;
+  border:2px solid #7e8b98!important;border-radius:9px!important;
+  color:transparent!important;font-size:0!important;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 7px,#101820 7px 11px,#aeb8c2 11px 14px,#263340 14px 18px),
+    linear-gradient(110deg,#e4e9ed,#75818d 42%,#d9e0e6 70%,#596571)!important;
+  box-shadow:inset 0 2px 4px #fff9,inset 0 -5px 8px #0009,0 5px 12px #000a!important;
+  transform:perspective(300px) rotateX(5deg)!important;
+  touch-action:none!important;
+}
+#brake{left:clamp(12px,2vw,28px)!important}
+#gas{right:clamp(12px,2vw,28px)!important}
+#brake:before,#gas:before{
+  content:"";position:absolute;inset:8px 7px;border-radius:4px;
+  background:repeating-linear-gradient(180deg,#19232e 0 4px,#d5dce2 4px 7px,#66717c 7px 9px);
+  box-shadow:inset 0 1px 3px #fff8,0 1px 2px #0008;
+}
+#brake:after,#gas:after{
+  content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+  width:45%;height:5px;border-radius:3px;background:#252f39;border:1px solid #9aa7b3;
+}
+#brake.active,#gas.active{filter:brightness(1.35);transform:perspective(300px) rotateX(5deg) translateY(3px)!important}
+
+/* Металлические лепестки переключения передач слева от приборов */
+.gearbox{display:contents!important}
+.gear-label,.gear-pattern{display:none!important}
+#gearDown,#gearUp{
+  position:fixed!important;left:calc(50% - 235px)!important;
+  width:clamp(42px,5vw,58px)!important;height:clamp(48px,9vh,62px)!important;
+  min-width:0!important;z-index:16!important;
+  border:2px solid #9da9b5!important;border-radius:9px 4px 4px 9px!important;
+  color:#27313b!important;font-size:25px!important;font-weight:900!important;
+  background:linear-gradient(105deg,#f1f3f5 0%,#8995a0 35%,#e5e9ed 62%,#65717d 100%)!important;
+  box-shadow:inset 0 2px 4px #fff,inset 0 -4px 6px #26313b99,0 4px 9px #000b!important;
+  touch-action:manipulation!important;
+}
+#gearUp{bottom:calc(84px + env(safe-area-inset-bottom))!important}
+#gearDown{bottom:calc(25px + env(safe-area-inset-bottom))!important}
+#gearNow{
+  position:fixed!important;left:calc(50% + 160px)!important;
+  bottom:calc(62px + env(safe-area-inset-bottom))!important;
+  width:34px!important;min-width:34px!important;height:34px!important;
+  z-index:16!important;border-radius:50%!important;
+  border:2px solid #70db9c!important;
+  color:#8dffb4!important;background:#061b12!important;
+  font-size:18px!important;box-shadow:0 0 12px #31e78066!important;
+}
+#gearDown:active,#gearUp:active{filter:brightness(1.3);transform:translateY(2px)!important}
+@media(max-height:440px) and (orientation:landscape){
+ #dashboardBackplate{width:min(760px,78vw)!important;height:118px!important}
+ .tachometer,.speedometer{width:clamp(104px,25vh,120px)!important;height:clamp(104px,25vh,120px)!important;bottom:5px!important}
+ .tachometer{left:calc(50% - 125px)!important}.speedometer{left:calc(50% + 7px)!important}
+ #gearDown,#gearUp{left:calc(50% - 205px)!important;width:42px!important;height:42px!important}
+ #gearUp{bottom:58px!important}#gearDown{bottom:10px!important}
+ #gearNow{left:calc(50% + 130px)!important;bottom:43px!important}
+ #brake,#gas{height:68px!important;width:58px!important;bottom:12px!important}
+}
+</style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
@@ -860,10 +964,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 
 
 <div id="dashboardBackplate"></div>
-<div class="tachometer" aria-label="Тахометр">
+<div class="tachometer" aria-label="Обороты двигателя">
   <div class="tachometer-dial">
     <div class="tachometer-ticks"></div>
-    <div class="tachometer-label">ТАХОМЕТР · ×1000</div>
+    <div class="tachometer-label" aria-hidden="true"></div>
     <div class="tachometer-needle" id="rpmNeedle"></div>
     <div class="tachometer-hub"></div>
     <div class="tachometer-value">
@@ -877,10 +981,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   </div>
 </div>
 
-<div class="speedometer" aria-label="Спидометр">
+<div class="speedometer" aria-label="Скорость автомобиля">
   <div class="speedometer-dial">
     <div class="speedometer-ticks"></div>
-    <div class="speedometer-label">СПИДОМЕТР · КМ/Ч</div>
+    <div class="speedometer-label" aria-hidden="true"></div>
     <div class="speedometer-needle" id="speedNeedle"></div>
     <div class="speedometer-hub"></div>
     <div class="speedometer-value">
