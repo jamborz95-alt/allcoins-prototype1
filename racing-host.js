@@ -618,14 +618,26 @@
 
     try {
       await authenticateTelegram();
-      setStatus("Загружаем V24…", false);
-      const game = await requestApi("/api/racing/game");
-      if (!game || typeof game.content !== "string" ||
-          !/<html[\s>]/i.test(game.content) || !/<script[\s>]/i.test(game.content)) {
-        throw new Error("Сервер не вернул корректный игровой файл V24.");
+      setStatus("Загружаем игровую сцену Telegram Mini App…", false);
+      const sceneUrl = new URL("./racing-game.html?v=20261114-miniapp-scene-v1", document.baseURI);
+      const sceneResponse = await fetch(sceneUrl.toString(), {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin"
+      });
+      if (!sceneResponse.ok) {
+        throw new Error("Не удалось загрузить сцену Mini App: HTTP " + sceneResponse.status);
       }
-      frame.srcdoc = game.content;
-      setStatus("V24 подключена", false);
+      const sceneHtml = await sceneResponse.text();
+      if (typeof sceneHtml !== "string" ||
+          !/<html[\s>]/i.test(sceneHtml) ||
+          !/<script[\s>]/i.test(sceneHtml) ||
+          !/id=["']view["']/i.test(sceneHtml) ||
+          !/allcoins:request-car-model/.test(sceneHtml)) {
+        throw new Error("Файл racing-game.html не прошёл проверку игровой сцены и загрузчика автомобиля.");
+      }
+      frame.srcdoc = sceneHtml;
+      setStatus("Сцена Mini App загружена. Подключаем 3D-модель автомобиля…", false);
     } catch (error) {
       setStatus(error && error.message ? error.message : "Не удалось открыть гонку.", true);
       const note = makeElement("div",
