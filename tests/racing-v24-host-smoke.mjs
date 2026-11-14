@@ -233,6 +233,8 @@ try {
   assert.equal(visualDiagnostics.asphaltFollowsTrackDirection, true, "The asphalt texture must scroll with signed vehicle travel.");
   assert.equal(visualDiagnostics.centralMarkingsLoopBothDirections, true, "The central road markings must loop in forward and reverse.");
   assert.equal(visualDiagnostics.centralMarkingsTravelSign, 1, "The center markings must move in the corrected forward screen direction.");
+  assert.equal(visualDiagnostics.centralMarkingsForwardDelta, -0.5, "Forward travel must move the center dashes backward across the screen.");
+  assert.equal(visualDiagnostics.centralMarkingsReverseDelta, 0.5, "Reverse travel must move the center dashes in the opposite screen direction.");
   assert.equal(visualDiagnostics.skidMarksFollowTrackDirection, true, "Rubber wear marks must stay aligned with road travel.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
   assert.ok(visualDiagnostics.cityWindows >= 650, "The mid-rise apartment facades must contain dense repeated windows.");
@@ -246,6 +248,7 @@ try {
   assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
   assert.equal(visualDiagnostics.cityFenceType, "cross-braced-metal-panels", "The roadside fence must use silver cross-braced metal panels.");
   assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
+  assert.equal(visualDiagnostics.cityFenceRoadClearanceFromEdge, 7.4, "The city fence must remain outside the road with a clear margin.");
   assert.equal(visualDiagnostics.centralMarkingsZ, -5, "The dashed lane marking must sit on the far side of the visible road, as in the reference.");
   assert.equal(visualDiagnostics.cityFenceBraceCount, 138, "The metal fence must contain paired diagonal braces in every section.");
   assert.equal(visualDiagnostics.citySidewalkSlabs, 72, "The city sidewalk must have visible concrete slab joints.");
