@@ -225,7 +225,7 @@ try {
   assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
   assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
   assert.ok(visualDiagnostics.asphaltRepeatX >= 90, "The asphalt grain must repeat at road scale.");
-  assert.equal(visualDiagnostics.asphaltTone, "neutral-road-gray", "The asphalt must match the cool blue-violet racing-strip reference.");
+  assert.equal(visualDiagnostics.asphaltTone, "neutral-road-gray", "The asphalt must match the neutral gray city-street reference.");
   assert.equal(visualDiagnostics.asphaltWetGloss, false, "The asphalt must have a dry, matte city-road finish.");
   assert.equal(visualDiagnostics.asphaltSkidArcs, 0, "The center of the road must not contain backward-curving skid arcs.");
   assert.equal(visualDiagnostics.asphaltLongitudinalWear, true, "Rubber wear marks must run along the track.");
