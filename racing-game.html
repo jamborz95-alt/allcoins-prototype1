@@ -1013,7 +1013,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
  #gearNow:before{font-size:7px!important}
 }
 @media(max-height:440px) and (orientation:landscape){
- #dashboardBackplate{height:clamp(124px,35vh,150px)!important}
+ #dashboardBackplate{height:clamp(116px,33vh,142px)!important}
  .tachometer,.speedometer{width:clamp(100px,34vh,138px)!important;height:clamp(100px,34vh,138px)!important;bottom:5px!important}
  .tachometer{left:calc(50% - 143px)!important}.speedometer{left:calc(50% + 4px)!important}
  .speedometer-value{width:70px!important;height:43px!important;top:37%!important}.speedometer-value strong{font-size:20px!important}
@@ -2478,6 +2478,23 @@ function acAdvanceCentralMarkings(scroll) {
     while (mark.position.x < -135) mark.position.x += 260.4;
   }
 }
+
+// Проверяем фактическое направление движения разметки на копии текущих координат,
+// затем восстанавливаем их, не меняя положение объектов в работающей гонке.
+function acMeasureCentralMarkingDirection() {
+  if (!laneMarks.length) return { forwardDelta: 0, reverseDelta: 0 };
+  const originalX = laneMarks.map(mark => mark.position.x);
+  const sampleIndex = Math.floor(laneMarks.length / 2);
+  acAdvanceCentralMarkings(0.5);
+  const forwardDelta = Number((laneMarks[sampleIndex].position.x - originalX[sampleIndex]).toFixed(3));
+  laneMarks.forEach((mark, index) => { mark.position.x = originalX[index]; });
+  acAdvanceCentralMarkings(-0.5);
+  const reverseDelta = Number((laneMarks[sampleIndex].position.x - originalX[sampleIndex]).toFixed(3));
+  laneMarks.forEach((mark, index) => { mark.position.x = originalX[index]; });
+  return { forwardDelta, reverseDelta };
+}
+const acCentralMarkingDirection = acMeasureCentralMarkingDirection();
+
 const edgeMat = new THREE.MeshStandardMaterial({
   color: 0xc5c7bd,
   roughness: .78,
@@ -2923,7 +2940,9 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltRoadDirection: "forward-x",
   asphaltFollowsTrackDirection: true,
   centralMarkingsLoopBothDirections: true,
-  centralMarkingsTravelSign: 1,
+  centralMarkingsTravelSign: acCentralMarkingDirection.forwardDelta < 0 ? 1 : -1,
+  centralMarkingsForwardDelta: acCentralMarkingDirection.forwardDelta,
+  centralMarkingsReverseDelta: acCentralMarkingDirection.reverseDelta,
   centralMarkingsZ: -5.0,
   skidMarksFollowTrackDirection: true,
   cityBuildings: city.length,
@@ -2939,6 +2958,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityFence: true,
   cityFenceType: "cross-braced-metal-panels",
   cityFenceZ: -16.4,
+  cityFenceRoadClearanceFromEdge: Number((Math.abs(acFenceZ) - 9).toFixed(2)),
   cityFenceBraceCount: acFenceBraceCount,
   citySidewalkSlabs: acSidewalkSeamCount,
   cityGroundFloorWindowRows: 33,
