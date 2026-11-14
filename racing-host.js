@@ -10,6 +10,7 @@
   const MODEL_CACHE_KEY = "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
+  let authenticationPromise = null;
   let overlay = null;
   let frame = null;
   let statusNode = null;
@@ -125,6 +126,16 @@
     }
     engineToken = result.token;
     return result.user || null;
+  }
+
+  function ensureTelegramAuthentication() {
+    if (engineToken) return Promise.resolve(null);
+    if (!authenticationPromise) {
+      authenticationPromise = authenticateTelegram().finally(() => {
+        authenticationPromise = null;
+      });
+    }
+    return authenticationPromise;
   }
 
   function makeElement(tag, styles, text) {
@@ -431,6 +442,7 @@
   }
 
   async function handleRacingAction(data) {
+    await ensureTelegramAuthentication();
     const action = String(data.action || "");
     let result;
 
@@ -524,17 +536,20 @@
     if (!frame || event.source !== frame.contentWindow) return;
 
     const data = event.data || {};
+    if (event.origin !== window.location.origin) return;
+
     if (data.type === "allcoins:request-car-model") {
       setStatus("Сцена запросила 3D-модель автомобиля…", false);
       try {
-        await sendCarModel(event.source, "*");
+        await ensureTelegramAuthentication();
+        await sendCarModel(event.source, event.origin);
         setStatus("3D-модель передана в игровую сцену", false);
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось получить GLB-модель.";
         event.source.postMessage({
           type: "allcoins:car-model-error",
           message
-        }, "*");
+        }, event.origin);
         setStatus("Ошибка загрузки автомобиля: " + message, true);
         setModelProgress("Не удалось загрузить автомобиль: " + message, 0);
         console.error("ALLCOINS Racing model transfer failed:", error);
@@ -553,14 +568,14 @@
         requestId,
         ok: true,
         data: result
-      }, "*");
+      }, event.origin);
     } catch (error) {
       event.source.postMessage({
         type: "allcoins:racing:response",
         requestId,
         ok: false,
         error: error && error.message ? error.message : "Ошибка подключения к гоночному серверу."
-      }, "*");
+      }, event.origin);
     }
   });
 
@@ -583,7 +598,10 @@
     }
     activeRoomCode = "";
     cachedModel = null;
-    if (frame) frame.srcdoc = "";
+    if (frame) {
+      frame.srcdoc = "";
+      frame.src = "about:blank";
+    }
     overlay.remove();
     overlay = null;
     frame = null;
@@ -619,12 +637,19 @@
   async function openRacing() {
     if (overlay) return;
     createOverlay();
-    setStatus("Проверяем Telegram…", false);
+    setStatus("Загружаем игровую сцену Telegram Mini App…", false);
+
+    // The game scene is independent from the PC tunnel. Start Telegram
+    // authentication in parallel, but never let an offline tunnel blank the game.
+    void ensureTelegramAuthentication().then(() => {
+      setStatus("Telegram подключён. Загружаем автомобиль…", false);
+    }).catch(error => {
+      console.error("ALLCOINS Racing Telegram authentication failed:", error);
+      setStatus("Игровая сцена открывается. Связь с ПК для 3D-модели пока недоступна.", true);
+    });
 
     try {
-      await authenticateTelegram();
-      setStatus("Загружаем игровую сцену Telegram Mini App…", false);
-      const sceneUrl = new URL("./racing-game.html?v=20261114-miniapp-scene-v1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261114-miniapp-direct-frame-v2", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
@@ -641,8 +666,12 @@
           !/allcoins:request-car-model/.test(sceneHtml)) {
         throw new Error("Файл racing-game.html не прошёл проверку игровой сцены и загрузчика автомобиля.");
       }
-      frame.srcdoc = sceneHtml;
-      setStatus("Сцена Mini App загружена. Подключаем 3D-модель автомобиля…", false);
+
+      // Load the scene as a real same-origin page, not srcdoc. This gives
+      // Android WebView a normal base URL for ES modules/import maps and a
+      // stable same-origin postMessage channel.
+      frame.src = sceneUrl.toString();
+      setStatus("Игровая сцена загружается…", false);
     } catch (error) {
       setStatus(error && error.message ? error.message : "Не удалось открыть гонку.", true);
       const note = makeElement("div",
