@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#10151d">
 <title>ALLCOINS Racing</title>
 <script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+{"imports":{"three":"https://esm.sh/three@0.169.0","three/addons/":"https://esm.sh/three@0.169.0/examples/jsm/"}}
 </script>
 <style>
 :root{color-scheme:dark;--gold:#e9b94f;--muted:#9da9b9;--panel:rgba(10,15,22,.88);--line:rgba(233,185,79,.28)}
@@ -782,11 +782,71 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 
 <div id="rotateHint"><div><span>↻</span>Поверните телефон горизонтально<br><small style="color:#9da9b9;font-weight:400">Гоночный экран ALLCOINS Racing</small></div></div>
 <input id="modelPicker" type="file" accept=".glb,model/gltf-binary">
-<script type="module">
+<script>
+/* ALLCOINS RACING BOOT DIAGNOSTICS */
+(() => {
+  const state = window.__allcoinsRacingBoot = {
+    moduleStarted: false,
+    webglReady: false,
+    modelRequestSent: false,
+    modelAckReceived: false,
+    errors: []
+  };
+  const title = () => document.querySelector("#message strong");
+  const body = () => document.getElementById("messageText");
+  window.__allcoinsRacingBootShow = (heading, detail) => {
+    if (title()) title().textContent = heading;
+    if (body()) body().textContent = detail;
+    const panel = document.getElementById("message");
+    if (panel) panel.classList.remove("hidden");
+  };
+  window.addEventListener("error", event => {
+    const text = event.message ||
+      (event.target && event.target.src ? "Не удалось загрузить " + event.target.src : "Ошибка JavaScript");
+    state.errors.push(String(text).slice(0, 240));
+    if (!state.moduleStarted || (event.target && event.target.id === "allcoinsRacingModule")) {
+      window.__allcoinsRacingBootShow("Ошибка запуска 3D-движка", String(text).slice(0, 240));
+    }
+  }, true);
+  window.addEventListener("unhandledrejection", event => {
+    const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason || "Неизвестная ошибка");
+    state.errors.push(reason.slice(0, 240));
+    window.__allcoinsRacingBootShow("Ошибка игрового модуля", reason.slice(0, 240));
+  });
+  setTimeout(() => {
+    if (!state.moduleStarted) {
+      window.__allcoinsRacingBootShow(
+        "3D-движок не запустился",
+        "Браузер не выполнил модуль Three.js. Проверь соединение с CDN или загрузку ES-модулей."
+      );
+    } else if (!state.webglReady) {
+      window.__allcoinsRacingBootShow(
+        "Не запустился WebGL",
+        state.errors[state.errors.length - 1] || "Модуль начал работу, но 3D-рендерер не создался."
+      );
+    } else if (!state.modelRequestSent) {
+      window.__allcoinsRacingBootShow(
+        "Сцена запущена не полностью",
+        state.errors[state.errors.length - 1] || "3D-движок работает, но запрос автомобиля не был отправлен."
+      );
+    } else if (!state.modelAckReceived) {
+      window.__allcoinsRacingBootShow(
+        "Нет ответа загрузчика автомобиля",
+        "Игровая сцена отправила запрос, но хост Mini App не подтвердил его получение."
+      );
+    }
+  }, 12000);
+})();
+</script>
+<script type="module" id="allcoinsRacingModule">
 /* ALLCOINS RACING V17 · remove blocking V15 diagnostics overlay */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+if (window.__allcoinsRacingBoot) {
+  window.__allcoinsRacingBoot.moduleStarted = true;
+  window.__allcoinsRacingBootShow?.("Запуск 3D-движка", "Библиотека загружена. Создаю игровую сцену…");
+}
 const $ = id => document.getElementById(id);
 
 /* ALLCOINS RACING ONLINE CLIENT */
@@ -1760,6 +1820,10 @@ scene.fog = new THREE.Fog(0x07101f, 38, 120);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+if (window.__allcoinsRacingBoot) {
+  window.__allcoinsRacingBoot.webglReady = true;
+  window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из локальной базы…");
+}
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -2608,10 +2672,28 @@ function attachVehicle(root,label='сохранённая модель'){
 }
 
 function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
-function requestSavedModel(){setMessage('Загрузка ВАЗ-2107','Запрашиваю GLB выбранной сцены из локальной базы…',true);try{window.parent.postMessage({type:'allcoins:request-car-model'},'*');}catch(e){console.warn(e);}}
+function requestSavedModel(){
+  if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelRequestSent = true;
+  setMessage('Загрузка ВАЗ-2107','3D-сцена запущена. Отправляю запрос на загрузку автомобиля…',true);
+  try {
+    window.parent.postMessage({type:'allcoins:request-car-model'},'*');
+    setTimeout(() => {
+      if (window.__allcoinsRacingBoot && !window.__allcoinsRacingBoot.modelAckReceived) {
+        window.__allcoinsRacingBootShow?.('Ожидание ответа загрузчика','Запрос отправлен из игровой сцены, но подтверждение от Mini App ещё не получено.');
+      }
+    }, 6000);
+  } catch(e) {
+    console.error(e);
+    setMessage('Ошибка связи с Mini App',e.message||'Не удалось отправить запрос автомобиля.',true);
+  }
+}
 window.addEventListener('message',async event=>{
   const data=event.data||{};
-  if(data.type==='allcoins:car-model-loading'){setMessage('Загрузка ВАЗ-2107','Получаю сохранённую модель из локальной базы…',true);return;}
+  if(data.type==='allcoins:car-model-loading'){
+    if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelAckReceived = true;
+    setMessage('Загрузка ВАЗ-2107','Mini App подтвердил запрос. Получаю сохранённую модель из локальной базы…',true);
+    return;
+  }
   if(data.type==='allcoins:car-model-error'){setMessage('Модель не получена',String(data.message||'Не удалось получить GLB из выбранной сцены.'),true);return;}
   if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
     try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из локальной базы');}
