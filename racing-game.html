@@ -2891,36 +2891,7 @@ scene.add(acTreeTrunks,acTreeCrowns);
 acTreeTrunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 acTreeCrowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
-/* Стена гоночных покрышек */
-const acTireGeo = new THREE.TorusGeometry(.30,.095,8,14);
-const acTireMat = new THREE.MeshStandardMaterial({
-  color:0x10141b,roughness:.92,metalness:.04
-});
-const acTireRecords = [];
-const acTireMesh = new THREE.InstancedMesh(
-  acTireGeo,acTireMat,128
-);
-
-for(const side of [-1,1]){
-  for(let i=0;i<64;i++){
-    const tire = {
-      x:-140+i*4.5,
-      y:.39,
-      z:side*9.35
-    };
-    acTireRecords.push(tire);
-
-    acDummy.position.set(tire.x,tire.y,tire.z);
-    acDummy.rotation.set(0,0,0);
-    acDummy.scale.set(1,1,1);
-    acDummy.updateMatrix();
-    acTireMesh.setMatrixAt(acTireRecords.length-1,acDummy.matrix);
-  }
-}
-acTireMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-scene.add(acTireMesh);
-
-/* Дорожные ограждения и сетка удалены: обе полосы трассы остаются свободными. */
+/* Покрышки-ограждения вдоль трассы удалены; колёса автомобиля и их физика остаются в модели машины. */
 
 /* Световые точки вдоль гоночной площадки */
 const acLampRecords=[];
@@ -3047,7 +3018,6 @@ function updateRaceEnvironment(dt,scroll){
     mesh.instanceMatrix.needsUpdate=true;
   }
 
-  moveInstances(acTireMesh,acTireRecords,.80);
 
   for(const lamp of acLampRecords){
     lamp.x-=scroll*.17;
