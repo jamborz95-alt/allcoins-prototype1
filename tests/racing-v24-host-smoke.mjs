@@ -189,18 +189,28 @@ try {
   await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "The gas pedal must activate while pressed.");
-  await gameFrame.locator("#gearUp").click();
+  await gameFrame.locator("#gearUp").dispatchEvent("pointerdown", { pointerId: 8, pointerType: "touch", isPrimary: false, bubbles: true, cancelable: true });
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
-    "The driver must be able to upshift without releasing the gas pedal.");
+    "A second touch must upshift while the first touch keeps the accelerator pressed.");
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "Upshifting must keep the accelerator held.");
+  assert.deepEqual(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics), {
+    shiftCount: 3,
+    lastShiftWithThrottle: true,
+    throttlePreserved: true
+  }, "The gear handler must preserve the live throttle state during a second-finger shift.");
   assert.doesNotMatch(await gameFrame.locator("#gearHint").textContent(), /ОТПУСТИ ГАЗ/,
     "The dashboard must not ask the driver to release the accelerator before shifting.");
-  await gameFrame.locator("#gearDown").click();
+  await gameFrame.locator("#gearUp").dispatchEvent("pointerup", { pointerId: 8, pointerType: "touch", isPrimary: false, bubbles: true });
+  await gameFrame.locator("#gearDown").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: false, bubbles: true, cancelable: true });
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
-    "The driver must be able to downshift without releasing the gas pedal.");
+    "A second touch must downshift while the first touch keeps the accelerator pressed.");
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "Downshifting must keep the accelerator held.");
+  assert.equal(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics.lastShiftWithThrottle), true,
+    "Downshifting must register that the accelerator is still held.");
+  assert.equal(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics.throttlePreserved), true,
+    "Downshifting must not release the accelerator.");
   await gameFrame.locator("#gas").dispatchEvent("pointerup", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true });
   assert.ok(!(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active"))),
     "The gas pedal must release cleanly.");
