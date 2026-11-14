@@ -346,6 +346,8 @@
         );
 
         for (let attempt = 1; attempt <= 5; attempt++) {
+          const modelController = new AbortController();
+          const modelTimeout = setTimeout(() => modelController.abort(), 30000);
           try {
             response = await fetch(apiUrl("/api/racing/shared-model-asset"), {
               method: "GET",
@@ -353,12 +355,18 @@
                 Authorization: "Bearer " + engineToken,
                 Range: "bytes=" + start + "-" + end
               },
-              cache: "no-store"
+              cache: "no-store",
+              signal: modelController.signal
             });
           } catch (error) {
+            if (error && error.name === "AbortError") {
+              throw new Error("ПК не передал файл автомобиля за 30 секунд. Проверь работу Engine и туннеля.");
+            }
             if (attempt === 5) throw new Error("Сеть прервала загрузку 3D-модели.");
             await new Promise(resolve => setTimeout(resolve, Math.min(10000, 1000 * 2 ** (attempt - 1))));
             continue;
+          } finally {
+            clearTimeout(modelTimeout);
           }
 
           if ([429, 502, 503, 504].includes(response.status)) {
