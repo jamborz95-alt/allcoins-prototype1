@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#10151d">
 <title>ALLCOINS Racing</title>
-<script type="importmap">
-{"imports":{"three":"https://esm.sh/three@0.169.0","three/addons/":"https://esm.sh/three@0.169.0/examples/jsm/"}}
-</script>
+<!-- Local classic scripts: avoid ES-module/import-map restrictions in Telegram Android WebView. -->
+<script src="./vendor/three-r147.min.js"></script>
+<script src="./vendor/GLTFLoader-r147.js"></script>
 <style>
 :root{color-scheme:dark;--gold:#e9b94f;--muted:#9da9b9;--panel:rgba(10,15,22,.88);--line:rgba(233,185,79,.28)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -838,10 +838,15 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   }, 12000);
 })();
 </script>
-<script type="module" id="allcoinsRacingModule">
-/* ALLCOINS RACING V17 · remove blocking V15 diagnostics overlay */
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+<script id="allcoinsRacingModule">
+/* ALLCOINS RACING V17 · classic-script runtime for Android WebView */
+const THREE = window.THREE;
+const GLTFLoader = THREE && THREE.GLTFLoader;
+if (!THREE || !GLTFLoader) {
+  const detail = "Локальные библиотеки Three.js / GLTFLoader не загрузились.";
+  if (window.__allcoinsRacingBootShow) window.__allcoinsRacingBootShow("Ошибка 3D-библиотеки", detail);
+  throw new Error(detail);
+}
 
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.moduleStarted = true;
@@ -1826,7 +1831,7 @@ if (window.__allcoinsRacingBoot) {
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
 scene.add(new THREE.HemisphereLight(0x7387ad,0x10131f,.85));
 const sun = new THREE.DirectionalLight(0x9db9e8,.85); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
