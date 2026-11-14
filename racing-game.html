@@ -2211,11 +2211,11 @@ function acCreateFacadeTexture(style) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 512;
   const context = canvas.getContext('2d');
-  const base = ['#aeb9c4','#bcb8ad','#9eafba'][style % 3];
+  const base = ['#c6d0d8','#d1c9bb','#b8c9d3'][style % 3];
   const gradient = context.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, '#d3d8dc');
-  gradient.addColorStop(.48, base);
-  gradient.addColorStop(1, '#7e8c9a');
+  gradient.addColorStop(0, '#e7ebee');
+  gradient.addColorStop(.46, base);
+  gradient.addColorStop(1, '#9aa9b5');
   context.fillStyle = gradient;
   context.fillRect(0, 0, 512, 512);
 
@@ -2389,7 +2389,7 @@ function acAdvanceRoadSurface(scroll) {
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
-const buildingPalette = [0x9eafbd, 0xb7b2a7, 0x8ea6b7, 0xb79d8b, 0x9aa7b5, 0xb7b9b6];
+const buildingPalette = [0xb6c8d5, 0xcfc5b5, 0xa9c0ce, 0xc4a98f, 0xb5c3d0, 0xc4cbc8];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
@@ -2486,6 +2486,13 @@ for (let i = 0; i < 33; i++) {
       windowSills.push(cityDummy.matrix.clone());
       if (random() < .28) litWindows.push(glassMatrix);
       else darkWindows.push(glassMatrix);
+
+      // Ухоженные наружные кондиционеры под частью окон добавляют фасадам городской реализм.
+      if ((i + floor * 2 + column) % 5 === 0) {
+        cityDummy.position.set(x + spacing * .24, windowY - .69, frontZ + .19);
+        cityDummy.updateMatrix();
+        acUnits.push(cityDummy.matrix.clone());
+      }
 
       if ((i % 3 === 1) && floor === 2 && column === columns - 1) {
         cityDummy.position.set(x + .10, windowY - .72, frontZ + .22);
@@ -2591,53 +2598,77 @@ for (let i = 0; i < 33; i++) {
     building.add(bulb);
   }
 
-  // Отодвигаем фасады от тротуара: перед ними остаётся отдельная полоса и ограждение.
-  building.position.set(-115 + i * 7.15, 0, -25.2);
+  // Отодвигаем здания глубже за ограждение, сохраняя свободной всю дорожную полосу.
+  building.position.set(-115 + i * 7.15, 0, -29.2);
   scene.add(building);
   city.push(building);
 }
 
 
-/* ALLCOINS RACING CITY-SIDE FENCE — ограждение вынесено за тротуар, вне дорожного полотна. */
+/* ALLCOINS RACING CITY-SIDE FENCE — металлическая сетка за тротуаром, не заходит на асфальт. */
 const acCityFence = new THREE.Group();
+const acFenceZ = -16.4;
 const acFenceMetal = new THREE.MeshStandardMaterial({
-  color: 0x536879, roughness: .42, metalness: .72
+  color: 0x526d7f, roughness: .38, metalness: .76
 });
-const acFenceRailGeometry = new THREE.BoxGeometry(260, .085, .09);
+const acFenceRailGeometry = new THREE.BoxGeometry(260, .085, .10);
 const acFenceTopRail = new THREE.Mesh(acFenceRailGeometry, acFenceMetal);
-acFenceTopRail.position.set(0, 1.73, -15.45);
+acFenceTopRail.position.set(0, 1.73, acFenceZ);
 acFenceTopRail.castShadow = true;
 const acFenceBottomRail = new THREE.Mesh(acFenceRailGeometry, acFenceMetal);
-acFenceBottomRail.position.set(0, .20, -15.45);
+acFenceBottomRail.position.set(0, .20, acFenceZ);
 acFenceBottomRail.castShadow = true;
-acCityFence.add(acFenceTopRail, acFenceBottomRail);
+const acFenceMiddleRail = new THREE.Mesh(new THREE.BoxGeometry(260, .055, .075), acFenceMetal);
+acFenceMiddleRail.position.set(0, .94, acFenceZ);
+acFenceMiddleRail.castShadow = true;
+acCityFence.add(acFenceTopRail, acFenceBottomRail, acFenceMiddleRail);
 
 const acFencePostCount = 70;
 const acFencePosts = new THREE.InstancedMesh(
-  new THREE.BoxGeometry(.13, 1.82, .13), acFenceMetal, acFencePostCount
-);
-const acFencePicketCount = 434;
-const acFencePicketMaterial = new THREE.MeshStandardMaterial({
-  color: 0x8295a4, roughness: .48, metalness: .68
-});
-const acFencePickets = new THREE.InstancedMesh(
-  new THREE.BoxGeometry(.045, 1.36, .055), acFencePicketMaterial, acFencePicketCount
+  new THREE.BoxGeometry(.15, 1.9, .16), acFenceMetal, acFencePostCount
 );
 const acFenceDummy = new THREE.Object3D();
 for (let i = 0; i < acFencePostCount; i++) {
-  acFenceDummy.position.set(-130 + i * (260 / (acFencePostCount - 1)), .92, -15.45);
+  acFenceDummy.position.set(-130 + i * (260 / (acFencePostCount - 1)), .92, acFenceZ);
   acFenceDummy.updateMatrix();
   acFencePosts.setMatrixAt(i, acFenceDummy.matrix);
 }
-for (let i = 0; i < acFencePicketCount; i++) {
-  acFenceDummy.position.set(-129.7 + i * (259.4 / (acFencePicketCount - 1)), .94, -15.45);
-  acFenceDummy.updateMatrix();
-  acFencePickets.setMatrixAt(i, acFenceDummy.matrix);
-}
 acFencePosts.instanceMatrix.needsUpdate = true;
-acFencePickets.instanceMatrix.needsUpdate = true;
-acFencePosts.castShadow = acFencePickets.castShadow = true;
-acCityFence.add(acFencePosts, acFencePickets);
+acFencePosts.castShadow = true;
+acCityFence.add(acFencePosts);
+
+// Ромбовидная металлическая сетка между стойками — вместо покрышек и сплошных щитов.
+const acFenceWirePositions = [];
+const acFenceWireStepX = .86;
+const acFenceWireStepY = .58;
+for (let x = -130; x < 130; x += acFenceWireStepX) {
+  for (let y = .29; y < 1.56; y += acFenceWireStepY) {
+    const left = x;
+    const right = Math.min(130, x + acFenceWireStepX);
+    const bottom = y;
+    const top = Math.min(1.56, y + acFenceWireStepY);
+    const midX = (left + right) * .5;
+    const midY = (bottom + top) * .5;
+    const diamond = [
+      [midX, top], [right, midY],
+      [right, midY], [midX, bottom],
+      [midX, bottom], [left, midY],
+      [left, midY], [midX, top]
+    ];
+    for (const point of diamond) acFenceWirePositions.push(point[0], point[1], acFenceZ + .055);
+  }
+}
+const acFenceWireGeometry = new THREE.BufferGeometry();
+acFenceWireGeometry.setAttribute(
+  'position',
+  new THREE.Float32BufferAttribute(acFenceWirePositions, 3)
+);
+const acFenceWireMaterial = new THREE.LineBasicMaterial({
+  color: 0x9aadb9, transparent: true, opacity: .68, depthWrite: false
+});
+const acFenceWire = new THREE.LineSegments(acFenceWireGeometry, acFenceWireMaterial);
+acFenceWire.renderOrder = 2;
+acCityFence.add(acFenceWire);
 scene.add(acCityFence);
 
 
@@ -2664,7 +2695,7 @@ for (let i = 0; i < farCityTowerCount; i++) {
   const height = 10 + (i * 11 % 12) + random() * 2;
   const depth = 3.3 + (i % 3) * .7;
   const x = -128 + i * 16.8;
-  const z = -34;
+  const z = -43;
   const tower = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, depth),
     farBuildingMaterials[i % farBuildingMaterials.length]
@@ -2729,10 +2760,12 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityWindows: acCityWindowCount,
   skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
-  cityBuildingOffsetZ: -25.2,
+  cityBuildingOffsetZ: -29.2,
   cityFence: true,
-  cityFenceZ: -15.45,
-  cameraViewHeight: 11.5
+  cityFenceType: "diamond-metal-mesh",
+  cityFenceZ: -16.4,
+  skylineOffsetZ: -43,
+  cameraViewHeight: 10.6
 });
 
 /* ALLCOINS V24 VISUAL LIGHTING V4 — только освещение и читаемость ограждений; физика V24 не меняется. */
@@ -3582,7 +3615,7 @@ function emitRearTireSmoke(){
 
 let last=performance.now();
 let runElapsed=0;
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=11.5;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=10.6;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
 function animate(now){
