@@ -226,6 +226,12 @@ try {
   assert.equal(visualDiagnostics.skidMarksFollowTrackDirection, true, "Rubber wear marks must stay aligned with road travel.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
   assert.ok(visualDiagnostics.cityWindows >= 300, "The city facades must contain instanced windows.");
+  assert.equal(visualDiagnostics.cityBuildingOffsetZ, -29.2, "The foreground buildings must be set farther back from the road.");
+  assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
+  assert.equal(visualDiagnostics.cityFenceType, "diamond-metal-mesh", "The roadside fence must use a visible metal mesh.");
+  assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
+  assert.equal(visualDiagnostics.skylineOffsetZ, -43, "The skyline must sit behind the foreground buildings.");
+  assert.equal(visualDiagnostics.cameraViewHeight, 10.6, "The camera must be slightly closer to the player's car.");
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
   assert.ok(visualDiagnostics.skylineWindows >= 100, "The distant skyline must contain illuminated windows.");
 
