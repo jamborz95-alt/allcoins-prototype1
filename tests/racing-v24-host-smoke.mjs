@@ -140,10 +140,27 @@ try {
   }
   assert.ok(gameFrame, "The game must load as a normal same-origin iframe document.");
 
-  await gameFrame.waitForFunction(() => {
-    const state = window.__allcoinsRacingBoot;
-    return state && state.moduleStarted && state.webglReady && state.modelRequestSent && state.modelAckReceived;
-  }, null, { timeout: 20000 });
+  try {
+    await gameFrame.waitForFunction(() => {
+      const state = window.__allcoinsRacingBoot;
+      return state && state.moduleStarted && state.webglReady && state.modelRequestSent && state.modelAckReceived;
+    }, null, { timeout: 20000 });
+  } catch (error) {
+    const diagnostic = await gameFrame.evaluate(() => ({
+      href: location.href,
+      readyState: document.readyState,
+      boot: window.__allcoinsRacingBoot || null,
+      threeLoaded: Boolean(window.THREE),
+      gltfLoaderLoaded: Boolean(window.THREE && window.THREE.GLTFLoader),
+      messageTitle: document.querySelector("#message strong")?.textContent || null,
+      messageText: document.querySelector("#messageText")?.textContent || null,
+      rendererCanvas: Boolean(document.querySelector("#view")),
+      scripts: [...document.scripts].map(s => ({ src: s.src || "inline", type: s.type || "classic", loaded: !s.src || s.dataset.loaded || true }))
+    }));
+    console.error("RACING BOOT DIAGNOSTIC:", JSON.stringify(diagnostic));
+    await page.screenshot({ path: resolve(root, "artifacts", "racing-boot-failure.png"), fullPage: true });
+    throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
+  }
 
   await gameFrame.locator("#pause").click();
   assert.equal(await gameFrame.locator("#pause").textContent(), "ПРОДОЛЖИТЬ",
