@@ -2419,6 +2419,7 @@ sidewalk.rotation.x = -Math.PI / 2;
 sidewalk.position.set(0, -.105, -11.2);
 sidewalk.receiveShadow = true;
 scene.add(sidewalk);
+sidewalk.visible = false;
 
 // Тротуар разбит на ровные бетонные плиты с тонкими поперечными швами.
 const acSidewalkDetails = new THREE.Group();
@@ -2441,6 +2442,7 @@ acSidewalkSeams.instanceMatrix.needsUpdate = true;
 acSidewalkSeams.receiveShadow = true;
 acSidewalkDetails.add(acSidewalkSeams);
 scene.add(acSidewalkDetails);
+acSidewalkDetails.visible = false;
 
 const curbMat = new THREE.MeshStandardMaterial({ color: 0x9ba3ab, roughness: .78, metalness: .04 });
 const curbGeo = new THREE.BoxGeometry(2.2, .18, .30);
@@ -2453,6 +2455,7 @@ for (let i = 0; i < 240; i++) {
 }
 curbSegments.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 scene.add(curbSegments);
+curbSegments.visible = false;
 
 const stripeMat = new THREE.MeshStandardMaterial({
   color: 0xe2dfd1,
@@ -2758,6 +2761,8 @@ for (let i = 0; i < 33; i++) {
   city.push(building);
 }
 
+// Временный чистый режим трассы: город вернём отдельными этапами после проверки основы.
+for (const building of city) building.visible = false;
 
 /* ALLCOINS RACING CITY-SIDE FENCE — секционное металлическое ограждение с диагональными распорками. */
 const acCityFence = new THREE.Group();
@@ -2834,6 +2839,7 @@ acFenceBarMesh.instanceMatrix.needsUpdate = true;
 acFenceBraceMesh.castShadow = acFenceBarMesh.castShadow = true;
 acCityFence.add(acFenceBraceMesh, acFenceBarMesh);
 scene.add(acCityFence);
+acCityFence.visible = false;
 
 // Полоса живых кустов между металлическим забором и жилыми фасадами.
 const acCityShrubs = new THREE.Group();
@@ -2857,6 +2863,7 @@ for(let cluster=0;cluster<60;cluster++){
 }
 acShrubInstances.instanceMatrix.needsUpdate=true;if(acShrubInstances.instanceColor)acShrubInstances.instanceColor.needsUpdate=true;
 acShrubInstances.castShadow=true;acShrubInstances.receiveShadow=true;acCityShrubs.add(acShrubInstances);scene.add(acCityShrubs);
+acCityShrubs.visible = false;
 
 // Дальний городской силуэт: высотные корпуса и редкие окна создают глубину улицы.
 const distantHills = new THREE.Group();
@@ -2910,6 +2917,7 @@ const farLitMesh = acCreateInstancedFromMatrices(farWindowGeometry, farWindowLit
 if (farDarkMesh) distantHills.add(farDarkMesh);
 if (farLitMesh) distantHills.add(farLitMesh);
 scene.add(distantHills);
+distantHills.visible = false;
 
 const carAnchor = -4.2;
 // Finish marker belongs to the track and advances in exact proportion to race distance.
@@ -2945,17 +2953,18 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   centralMarkingsReverseDelta: acCentralMarkingDirection.reverseDelta,
   centralMarkingsZ: -5.0,
   skidMarksFollowTrackDirection: true,
-  cityBuildings: city.length,
+  cleanTrackMode: true,
+  cityBuildings: 0,
   cityWindows: acCityWindowCount,
   cityBuildingFloorsMin: 4,
   cityBuildingFloorsMax: 6,
   cityFacadePalette: "warm-beige-cream",
   cityEuropeanBalconies: true,
   cityUpperCornices: true,
-  skylineTowers: farCityTowerCount,
+  skylineTowers: 0,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
   cityBuildingOffsetZ: -22.2,
-  cityFence: true,
+  cityFence: false,
   cityFenceType: "cross-braced-metal-panels",
   cityFenceZ: -16.4,
   cityFenceRoadClearanceFromEdge: Number((Math.abs(acFenceZ) - 9).toFixed(2)),
@@ -2963,7 +2972,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   citySidewalkSlabs: acSidewalkSeamCount,
   cityGroundFloorWindowRows: 33,
   cityResidentialEntrances: 17,
-  cityShrubs: 180,
+  cityShrubs: 0,
   cityShrubOffsetZ: -18.25,
   skylineOffsetZ: -48,
   cameraViewHeight: 10.6,
@@ -3157,6 +3166,9 @@ for(let i=0;i<7;i++){
   scene.add(light);
 
   acLampRecords.push({x,bulb,light,halo});
+  bulb.visible = false;
+  halo.visible = false;
+  light.visible = false;
 }
 
 /* Дождь перед камерой */
@@ -3193,6 +3205,7 @@ const acRain=new THREE.LineSegments(
 );
 acRain.frustumCulled=false;
 scene.add(acRain);
+acRain.visible = false;
 
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,scroll){
