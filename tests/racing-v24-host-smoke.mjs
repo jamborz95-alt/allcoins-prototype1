@@ -189,6 +189,18 @@ try {
   await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "The gas pedal must activate while pressed.");
+  await gameFrame.locator("#gearUp").click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
+    "The driver must be able to upshift without releasing the gas pedal.");
+  assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
+    "Upshifting must keep the accelerator held.");
+  assert.doesNotMatch(await gameFrame.locator("#gearHint").textContent(), /ОТПУСТИ ГАЗ/,
+    "The dashboard must not ask the driver to release the accelerator before shifting.");
+  await gameFrame.locator("#gearDown").click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
+    "The driver must be able to downshift without releasing the gas pedal.");
+  assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
+    "Downshifting must keep the accelerator held.");
   await gameFrame.locator("#gas").dispatchEvent("pointerup", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true });
   assert.ok(!(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active"))),
     "The gas pedal must release cleanly.");
