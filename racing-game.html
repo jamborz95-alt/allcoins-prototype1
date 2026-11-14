@@ -2106,42 +2106,59 @@ function acSeededRandom(seed) {
 
 function acCreateAsphaltMaps() {
   const size = 512;
-  const random = acSeededRandom(250914);
+  const random = acSeededRandom(251114);
   const asphaltCanvas = document.createElement('canvas');
   asphaltCanvas.width = asphaltCanvas.height = size;
   const asphaltContext = asphaltCanvas.getContext('2d', { willReadFrequently: true });
   const pixels = asphaltContext.createImageData(size, size);
 
+  // Холодный сине-фиолетовый оттенок, как у мокрой гоночной трассы на референсе.
   for (let i = 0; i < size * size; i++) {
-    const grain = Math.floor(54 + random() * 35 + (random() - .5) * 12);
+    const grain = 56 + random() * 27 + (random() - .5) * 10;
     const offset = i * 4;
-    pixels.data[offset] = grain;
-    pixels.data[offset + 1] = grain + 1;
-    pixels.data[offset + 2] = grain + 3;
+    pixels.data[offset] = Math.max(0, Math.min(255, Math.round(grain - 2)));
+    pixels.data[offset + 1] = Math.max(0, Math.min(255, Math.round(grain - 4 + random() * 5)));
+    pixels.data[offset + 2] = Math.max(0, Math.min(255, Math.round(grain * 1.43 + 12)));
     pixels.data[offset + 3] = 255;
   }
   asphaltContext.putImageData(pixels, 0, 0);
 
-  // Едва заметные заплатки старого покрытия и следы шин.
-  for (let i = 0; i < 26; i++) {
+  // Мягкие холодные переливы покрытия и неоднородность старого асфальта.
+  const coolWash = asphaltContext.createLinearGradient(0, 0, 0, size);
+  coolWash.addColorStop(0, 'rgba(150,151,211,.075)');
+  coolWash.addColorStop(.48, 'rgba(97,96,164,.025)');
+  coolWash.addColorStop(1, 'rgba(37,39,91,.105)');
+  asphaltContext.fillStyle = coolWash;
+  asphaltContext.fillRect(0, 0, size, size);
+
+  for (let i = 0; i < 22; i++) {
     const x = random() * size;
     const y = random() * size;
-    const rx = 7 + random() * 30;
-    const ry = 3 + random() * 10;
-    asphaltContext.fillStyle = 'rgba(8,11,14,' + (.035 + random() * .055).toFixed(3) + ')';
+    const rx = 22 + random() * 74;
+    const ry = 5 + random() * 22;
+    const gradient = asphaltContext.createRadialGradient(x, y, 1, x, y, Math.max(rx, ry));
+    gradient.addColorStop(0, 'rgba(158,157,214,' + (.025 + random() * .045).toFixed(3) + ')');
+    gradient.addColorStop(.65, 'rgba(119,119,184,.025)');
+    gradient.addColorStop(1, 'rgba(35,37,82,0)');
+    asphaltContext.fillStyle = gradient;
     asphaltContext.beginPath();
-    asphaltContext.ellipse(x, y, rx, ry, random() * Math.PI, 0, Math.PI * 2);
+    asphaltContext.ellipse(x, y, rx, ry, (random() - .5) * .24, 0, Math.PI * 2);
     asphaltContext.fill();
   }
-  for (let i = 0; i < 7; i++) {
+
+  // Слабые следы резины и мелкие потёртости остаются частью текстуры.
+  for (let i = 0; i < 18; i++) {
     const x = random() * size;
     const y = random() * size;
-    asphaltContext.strokeStyle = 'rgba(8,10,12,' + (.10 + random() * .08).toFixed(3) + ')';
-    asphaltContext.lineWidth = 1 + random() * 2;
+    asphaltContext.strokeStyle = 'rgba(24,25,55,' + (.045 + random() * .07).toFixed(3) + ')';
+    asphaltContext.lineWidth = .7 + random() * 1.5;
     asphaltContext.beginPath();
     asphaltContext.moveTo(x, y);
-    asphaltContext.lineTo(x + (random() - .5) * 16, y + 8 + random() * 22);
-    asphaltContext.lineTo(x + (random() - .5) * 23, y + 18 + random() * 35);
+    asphaltContext.bezierCurveTo(
+      x + (random() - .5) * 22, y + 4 + random() * 8,
+      x + (random() - .5) * 32, y + 10 + random() * 13,
+      x + (random() - .5) * 42, y + 17 + random() * 19
+    );
     asphaltContext.stroke();
   }
 
@@ -2150,7 +2167,7 @@ function acCreateAsphaltMaps() {
   const roughContext = roughCanvas.getContext('2d', { willReadFrequently: true });
   const roughPixels = roughContext.createImageData(size, size);
   for (let i = 0; i < size * size; i++) {
-    const value = Math.floor(190 + random() * 58);
+    const value = Math.floor(145 + random() * 62);
     const offset = i * 4;
     roughPixels.data[offset] = value;
     roughPixels.data[offset + 1] = value;
@@ -2159,17 +2176,19 @@ function acCreateAsphaltMaps() {
   }
   roughContext.putImageData(roughPixels, 0, 0);
 
-  // Тёмные участки roughness-карты дают мокрые, но не зеркальные пятна.
-  for (let i = 0; i < 24; i++) {
+  // Пониженная roughness в отдельных пятнах даёт мокрый блеск без зеркальной лужи.
+  for (let i = 0; i < 28; i++) {
     const x = random() * size;
     const y = random() * size;
-    const radius = 9 + random() * 28;
-    const gradient = roughContext.createRadialGradient(x, y, 1, x, y, radius);
-    gradient.addColorStop(0, 'rgba(28,28,28,' + (.28 + random() * .18).toFixed(2) + ')');
-    gradient.addColorStop(1, 'rgba(28,28,28,0)');
+    const rx = 14 + random() * 54;
+    const ry = 4 + random() * 18;
+    const gradient = roughContext.createRadialGradient(x, y, 1, x, y, Math.max(rx, ry));
+    gradient.addColorStop(0, 'rgba(52,52,72,.52)');
+    gradient.addColorStop(.68, 'rgba(75,75,96,.25)');
+    gradient.addColorStop(1, 'rgba(75,75,96,0)');
     roughContext.fillStyle = gradient;
     roughContext.beginPath();
-    roughContext.arc(x, y, radius, 0, Math.PI * 2);
+    roughContext.ellipse(x, y, rx, ry, (random() - .5) * .2, 0, Math.PI * 2);
     roughContext.fill();
   }
 
@@ -2271,9 +2290,9 @@ const roadMat = new THREE.MeshStandardMaterial({
   map: asphaltMaps.colorMap,
   roughnessMap: asphaltMaps.roughnessMap,
   bumpMap: asphaltMaps.bumpMap,
-  bumpScale: .035,
-  roughness: .72,
-  metalness: .015
+  bumpScale: .014,
+  roughness: .46,
+  metalness: .035
 });
 const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 18), roadMat);
 road.rotation.x = -Math.PI / 2;
@@ -2311,9 +2330,11 @@ curbSegments.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 scene.add(curbSegments);
 
 const stripeMat = new THREE.MeshStandardMaterial({
-  color: 0xf0eee5,
-  roughness: .78,
-  metalness: .01
+  color: 0xc9cce8,
+  roughness: .56,
+  metalness: .025,
+  emissive: 0x252a56,
+  emissiveIntensity: .12
 });
 const laneMarks = [];
 for (let i = 0; i < 42; i++) {
@@ -2322,12 +2343,60 @@ for (let i = 0; i < 42; i++) {
   scene.add(mark);
   laneMarks.push(mark);
 }
-const edgeMat = new THREE.MeshStandardMaterial({ color: 0xe0e2dd, roughness: .82, metalness: .01 });
+const edgeMat = new THREE.MeshStandardMaterial({
+  color: 0xbfc4e2,
+  roughness: .58,
+  metalness: .02,
+  emissive: 0x242b5d,
+  emissiveIntensity: .10
+});
 for (const z of [-8.34, 8.34]) {
   const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
   edge.position.set(0, -.088, z);
   scene.add(edge);
 }
+
+// Тонкая холодная линия разметки в стиле гоночной трассы из референса.
+const roadLineGlow = new THREE.Mesh(
+  new THREE.BoxGeometry(900, .008, .20),
+  new THREE.MeshBasicMaterial({ color: 0x8d94ca, transparent: true, opacity: .10, depthWrite: false })
+);
+roadLineGlow.position.set(0, -.091, 5.05);
+scene.add(roadLineGlow);
+const roadLine = new THREE.Mesh(
+  new THREE.BoxGeometry(900, .012, .045),
+  new THREE.MeshStandardMaterial({
+    color: 0xbfc3e1, roughness: .62, metalness: .02,
+    emissive: 0x30365e, emissiveIntensity: .08
+  })
+);
+roadLine.position.set(0, -.087, 5.05);
+scene.add(roadLine);
+
+// Две мягкие дуги резины на покрытии — лёгкий след от разгона, не объёмный объект.
+const roadSkidMarks = new THREE.Group();
+const roadSkidMaterial = new THREE.MeshBasicMaterial({
+  color: 0x292b49, transparent: true, opacity: .22, depthWrite: false, toneMapped: false
+});
+function acAddRoadSkidArc(centerX, centerZ, radiusX, radiusZ, offsetZ, startAngle, endAngle) {
+  const points = [];
+  const segments = 72;
+  for (let i = 0; i <= segments; i++) {
+    const angle = startAngle + (endAngle - startAngle) * i / segments;
+    points.push(new THREE.Vector3(
+      centerX + Math.cos(angle) * radiusX,
+      -.091,
+      centerZ + Math.sin(angle) * radiusZ + offsetZ
+    ));
+  }
+  const curve = new THREE.CatmullRomCurve3(points);
+  const mark = new THREE.Mesh(new THREE.TubeGeometry(curve, 88, .022, 5, false), roadSkidMaterial);
+  mark.renderOrder = 2;
+  roadSkidMarks.add(mark);
+}
+acAddRoadSkidArc(5.1, 2.2, 3.15, 1.25, -.055, -.82, 1.72);
+acAddRoadSkidArc(5.1, 2.2, 3.32, 1.34, .055, -.78, 1.70);
+scene.add(roadSkidMarks);
 
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
@@ -2607,6 +2676,9 @@ scene.add(finishLine);
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
   asphaltRepeatX: roadMat.map.repeat.x,
+  asphaltTone: "cool-blue-violet",
+  asphaltWetGloss: roadMat.roughness < .5,
+  asphaltSkidArcs: roadSkidMarks.children.length,
   cityBuildings: city.length,
   cityWindows: acCityWindowCount,
   skylineTowers: farCityTowerCount,
