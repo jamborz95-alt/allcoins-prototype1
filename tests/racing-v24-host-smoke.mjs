@@ -162,6 +162,15 @@ try {
     throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
   }
 
+  const visualDiagnostics = await gameFrame.evaluate(() => window.__allcoinsRacingVisualDiagnostics || null);
+  assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
+  assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
+  assert.ok(visualDiagnostics.asphaltRepeatX >= 90, "The asphalt grain must repeat at road scale.");
+  assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
+  assert.ok(visualDiagnostics.cityWindows >= 300, "The city facades must contain instanced windows.");
+  assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
+  assert.ok(visualDiagnostics.skylineWindows >= 100, "The distant skyline must contain illuminated windows.");
+
   await gameFrame.locator("#pause").click();
   assert.equal(await gameFrame.locator("#pause").textContent(), "ПРОДОЛЖИТЬ",
     "The pause control must respond to taps/clicks.");
