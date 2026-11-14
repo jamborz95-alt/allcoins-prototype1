@@ -931,6 +931,97 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
  #brake,#gas{height:68px!important;width:58px!important;bottom:12px!important}
 }
 </style>
+<style id="allcoins-racing-reference-scene-v28">
+/* Инструменты, приборная панель и органы управления как на присланном городском референсе. */
+#dashboardBackplate{
+ width:100vw!important;max-width:none!important;height:clamp(176px,31vh,218px)!important;
+ border-radius:18px 18px 0 0!important;border:1px solid #8d999688!important;
+ border-top:2px solid #b6a578!important;border-bottom:0!important;
+ background:linear-gradient(180deg,#20272bef 0%,#11171bf4 44%,#080d10 100%)!important;
+ box-shadow:0 -8px 26px #0008,inset 0 2px 4px #ffffff18!important;
+}
+.tachometer,.speedometer{
+ width:clamp(142px,29vh,204px)!important;height:clamp(142px,29vh,204px)!important;
+ bottom:calc(9px + env(safe-area-inset-bottom))!important;z-index:14!important;filter:drop-shadow(0 5px 10px #000d)!important;
+}
+.tachometer{left:calc(50% - 201px)!important}.speedometer{left:calc(50% + 2px)!important}
+.tachometer-dial,.speedometer-dial{
+ border:5px solid #bba773!important;background:radial-gradient(circle at 48% 42%,#394246 0%,#1b2327 60%,#090e11 100%)!important;
+ box-shadow:0 0 0 3px #141a1d,inset 0 0 0 2px #ffffff1c,inset 0 -10px 22px #000d,0 3px 9px #000b!important;
+}
+.tachometer-dial:before,.speedometer-dial:before{border:1px solid #d8c18b88!important;inset:6px!important}
+.gauge-scale-svg .major-tick{stroke:#f0eee5!important;stroke-width:2.2!important}
+.gauge-scale-svg .minor-tick{stroke:#c4c7c2!important;opacity:.85!important}
+.gauge-scale-svg .red-tick{stroke:#e05245!important}
+.gauge-scale-svg .scale-number{fill:#f4f1e8!important;font-size:12px!important}
+.tachometer .gauge-scale-svg .scale-number{font-size:13px!important}
+.tachometer-needle,.speedometer-needle{
+ height:37%!important;width:3px!important;background:linear-gradient(#fff8e9 0%,#e85c52 60%,#b52524 100%)!important;
+ box-shadow:0 0 8px #ff685b88!important;
+}
+.tachometer-needle.redline{background:linear-gradient(#fff,#ff3a2c 62%,#a50000)!important}
+.tachometer-hub,.speedometer-hub{
+ width:14px!important;height:14px!important;background:radial-gradient(circle at 35% 30%,#fff,#c6c9c6 48%,#454e52 76%)!important;
+ border:2px solid #e8e4d8!important;
+}
+.tachometer-label,.speedometer-label{display:none!important}
+.tachometer-value{
+ position:absolute!important;top:71%!important;bottom:auto!important;display:flex!important;flex-direction:column!important;
+ align-items:center!important;gap:1px!important;color:#e6e6df!important;width:100%;
+}
+.tachometer-value strong{font-size:clamp(9px,1.7vh,13px)!important;letter-spacing:.09em!important;color:#e8e7df!important;font-weight:800!important}
+.tachometer-value small{color:#c4c8c4!important;font-size:9px!important;letter-spacing:.16em!important}
+.speedometer-value{
+ top:37%!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+ width:clamp(72px,10vh,90px)!important;height:clamp(49px,8vh,58px)!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;
+ border:2px solid #aebdc0!important;border-radius:8px!important;background:linear-gradient(145deg,#315b6d,#152d39 72%,#0c1b25)!important;
+ box-shadow:inset 0 2px 4px #ffffff35,inset 0 -3px 6px #0009,0 1px 4px #0009!important;padding:3px 5px!important;
+}
+.speedometer-value strong{font-size:clamp(22px,3.7vh,30px)!important;font-family:ui-monospace,Consolas,monospace!important;letter-spacing:.07em!important;color:#f2f4ed!important;line-height:1!important}
+.speedometer-value small{font-size:9px!important;letter-spacing:.16em!important;color:#d0e1df!important}
+#gearNow{
+ position:fixed!important;left:calc(50% + 126px)!important;bottom:calc(23px + env(safe-area-inset-bottom))!important;
+ width:35px!important;min-width:35px!important;height:34px!important;border:2px solid #c5ad77!important;border-radius:7px!important;
+ background:linear-gradient(145deg,#e1d2a6,#9b824c)!important;color:#171a18!important;font-size:17px!important;font-weight:900!important;
+ z-index:16!important;box-shadow:0 2px 6px #0009!important;
+}
+#gearNow:before{content:"GEAR";position:absolute;right:calc(100% + 5px);top:50%;transform:translateY(-50%);font-size:9px;letter-spacing:.12em;color:#d9d9cf}
+#gearUp,#gearDown{
+ left:clamp(14px,1.4vw,24px)!important;width:clamp(58px,6vw,82px)!important;height:clamp(60px,12vh,84px)!important;
+ min-width:0!important;border:2px solid #d7c69b!important;border-radius:15px!important;color:#f3ead2!important;
+ font-size:clamp(30px,4.5vh,42px)!important;background:linear-gradient(145deg,#f2e3b9 0%,#aa986e 42%,#4c4b40 100%)!important;
+ box-shadow:inset 0 2px 4px #fff9,inset 0 -5px 8px #0008,0 4px 10px #0009!important;
+}
+#gearUp{bottom:calc(108px + env(safe-area-inset-bottom))!important}#gearDown{bottom:calc(21px + env(safe-area-inset-bottom))!important}
+#gearDown:active,#gearUp:active{filter:brightness(1.25);transform:translateY(2px)!important}
+#brake{
+ left:clamp(240px,77vw,calc(100vw - 268px))!important;right:auto!important;
+ width:clamp(88px,10vw,156px)!important;height:clamp(82px,16vh,112px)!important;
+}
+#gas{right:clamp(12px,1.4vw,24px)!important;width:clamp(78px,8.5vw,132px)!important;height:clamp(82px,16vh,112px)!important}
+@media(max-width:900px){
+ #brake{left:auto!important;right:clamp(150px,20vw,190px)!important;width:clamp(76px,13vw,112px)!important}
+ #gas{width:clamp(70px,13vw,108px)!important}
+}
+@media(max-width:700px){
+ .tachometer,.speedometer{width:clamp(112px,25vh,160px)!important;height:clamp(112px,25vh,160px)!important}
+ .tachometer{left:calc(50% - 157px)!important}.speedometer{left:calc(50% + 3px)!important}
+ #gearNow{left:calc(50% + 93px)!important;width:30px!important;height:30px!important;min-width:30px!important}
+ #gearNow:before{font-size:7px!important}
+}
+@media(max-height:440px) and (orientation:landscape){
+ #dashboardBackplate{height:clamp(124px,35vh,150px)!important}
+ .tachometer,.speedometer{width:clamp(100px,34vh,138px)!important;height:clamp(100px,34vh,138px)!important;bottom:5px!important}
+ .tachometer{left:calc(50% - 143px)!important}.speedometer{left:calc(50% + 4px)!important}
+ .speedometer-value{width:70px!important;height:43px!important;top:37%!important}.speedometer-value strong{font-size:20px!important}
+ #gearUp,#gearDown{left:12px!important;width:42px!important;height:44px!important}
+ #gearUp{bottom:54px!important}#gearDown{bottom:5px!important}
+ #gearNow{left:calc(50% + 92px)!important;bottom:12px!important;width:28px!important;height:27px!important;min-width:28px!important}
+ #brake{left:auto!important;right:125px!important;width:76px!important;height:68px!important}
+ #gas{right:12px!important;width:70px!important;height:68px!important}
+}
+</style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
