@@ -3130,54 +3130,7 @@ function acV5EnhanceCarBody(root) {
 }
 
 
-/* ALLCOINS V24 NIGHT RACE SCENE V3: race facility, tire walls, trees and rain */
-
-/* Деревья на дальнем плане */
-const acTreeTrunkGeo = new THREE.CylinderGeometry(.12,.18,1.7,7);
-const acTreeTrunkMat = new THREE.MeshStandardMaterial({
-  color:0x303344,roughness:1
-});
-const acTreeCrownGeo = new THREE.ConeGeometry(1.25,2.35,7);
-const acTreeCrownMat = new THREE.MeshStandardMaterial({
-  color:0x17283a,roughness:1
-});
-
-const acTreeCount = 24;
-const acTreeTrunks = new THREE.InstancedMesh(
-  acTreeTrunkGeo,acTreeTrunkMat,acTreeCount
-);
-const acTreeCrowns = new THREE.InstancedMesh(
-  acTreeCrownGeo,acTreeCrownMat,acTreeCount*3
-);
-const acTreeRecords = [];
-const acDummy = new THREE.Object3D();
-
-for(let i=0;i<acTreeCount;i++){
-  const tree = {
-    x:-125+i*10.5,
-    z:-20-(i%3)*1.3
-  };
-  acTreeRecords.push(tree);
-
-  acDummy.position.set(tree.x,.85,tree.z);
-  acDummy.scale.set(1,1,1);
-  acDummy.updateMatrix();
-  acTreeTrunks.setMatrixAt(i,acDummy.matrix);
-
-  for(let layer=0;layer<3;layer++){
-    acDummy.position.set(tree.x,2.0+layer*1.15,tree.z);
-    acDummy.scale.set(
-      1-layer*.13,
-      1-layer*.05,
-      1-layer*.13
-    );
-    acDummy.updateMatrix();
-    acTreeCrowns.setMatrixAt(i*3+layer,acDummy.matrix);
-  }
-}
-scene.add(acTreeTrunks,acTreeCrowns);
-acTreeTrunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-acTreeCrowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+/* ALLCOINS V24 NIGHT RACE SCENE V4: trees removed completely. */
 
 /* Покрышки-ограждения вдоль трассы удалены; колёса автомобиля и их физика остаются в модели машины. */
 
@@ -3269,28 +3222,6 @@ function updateRaceEnvironment(dt,scroll){
   if(!scroll)return;
 
   acV5UpdateWetReflections(scroll);
-
-  for(const tree of acTreeRecords){
-    tree.x-=scroll*.075;
-    if(tree.x < -132)tree.x+=252;
-  }
-
-  for(let i=0;i<acTreeRecords.length;i++){
-    const t=acTreeRecords[i];
-    acDummy.position.set(t.x,.85,t.z);
-    acDummy.scale.set(1,1,1);
-    acDummy.updateMatrix();
-    acTreeTrunks.setMatrixAt(i,acDummy.matrix);
-
-    for(let layer=0;layer<3;layer++){
-      acDummy.position.set(t.x,2+layer*1.15,t.z);
-      acDummy.scale.set(1-layer*.13,1-layer*.05,1-layer*.13);
-      acDummy.updateMatrix();
-      acTreeCrowns.setMatrixAt(i*3+layer,acDummy.matrix);
-    }
-  }
-  acTreeTrunks.instanceMatrix.needsUpdate=true;
-  acTreeCrowns.instanceMatrix.needsUpdate=true;
 
   function moveInstances(mesh,records,factor){
     for(let i=0;i<records.length;i++){
