@@ -2399,6 +2399,34 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
   -webkit-backface-visibility:hidden!important;
 }
 </style>
+<style id="allcoins-racing-daylight-city-fix">
+/* Daytime race environment: keep the loaded car untouched and stop foliage crossing the buildings. */
+.pro-race-cockpit .race2d-tree-layer{display:none!important}
+.pro-race-cockpit .race2d-track,
+.pro-race-cockpit .race2d-scene{
+  background:linear-gradient(180deg,#8fc4e6 0%,#c9e4f2 25%,#e5edf0 39%,#bfc8c2 46%,#777a76 47%,#777a76 100%)!important;
+}
+.pro-race-cockpit .race2d-environment{
+  background:linear-gradient(180deg,#91c8ee 0%,#c7e5f5 28%,#eaf2f4 39%,#c4c9bd 45%,#777a76 51%,#747570 100%)!important;
+}
+.pro-race-cockpit .race2d-sky-wash{
+  background:
+    radial-gradient(ellipse at 78% 13%,#fff8d9a8 0%,#fff4d65c 13%,transparent 31%),
+    linear-gradient(180deg,#8fc8f0 0%,#c7e6f6 29%,#edf4f4 43%,transparent 48%)!important;
+}
+.pro-race-cockpit .race2d-city-layer{
+  filter:brightness(1.12) saturate(.92)!important;
+  opacity:1!important;
+}
+.pro-race-cockpit .race2d-green-belt{
+  top:39%!important;height:9%!important;
+  background:linear-gradient(180deg,#b9cba5 0%,#8fae79 32%,#62845b 72%,#a3ad8b 100%)!important;
+  box-shadow:inset 0 4px 6px #f4f0d777!important;
+}
+.pro-race-cockpit .race2d-road-surface{
+  background:linear-gradient(180deg,#aaa99f 0%,#92928b 14%,#777975 33%,#737570 70%,#828078 100%)!important;
+}
+</style>
 </head>
 <body><main class="app">
 <div class="top"><button class="back" id="back">← Назад</button><div class="brand">ALLCOINS <span>DRAG RACING</span></div><div class="balance"><span id="balance">10 000</span> AC<small>виртуальный баланс</small></div></div>
