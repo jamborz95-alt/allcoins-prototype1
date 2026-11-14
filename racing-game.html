@@ -1,0 +1,2954 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#10151d">
+<title>ALLCOINS Racing</title>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+</script>
+<style>
+:root{color-scheme:dark;--gold:#e9b94f;--muted:#9da9b9;--panel:rgba(10,15,22,.88);--line:rgba(233,185,79,.28)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;color:#f4f6fa;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;touch-action:none}
+#stage{position:fixed;inset:0;background:linear-gradient(#7e9bad,#c8d1d2 60%,#7e8380)}
+#view{display:block;width:100%;height:100%;outline:none}
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(8px,2vw,20px);padding-top:max(9px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.brand,.stats,.gearbox,.actions{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px #0005;backdrop-filter:blur(10px);border-radius:14px}
+.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}
+.stats{display:flex;gap:clamp(10px,3vw,25px);padding:8px 13px;align-items:center}.metric{text-align:center;min-width:54px}.metric strong{display:block;font-size:clamp(18px,3.4vw,27px);font-variant-numeric:tabular-nums;line-height:1.05}.metric small{font-size:9px;letter-spacing:.12em;color:var(--muted)}
+.actions{pointer-events:auto;display:flex;gap:6px;padding:5px}.small-btn{border:1px solid #ffffff18;background:#202a36;color:#f6f7fa;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px}
+.bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.pedals{display:flex;gap:10px;pointer-events:auto;align-items:flex-end}.pedal{width:clamp(82px,15vw,130px);height:clamp(74px,13vw,104px);border-radius:16px;border:1px solid #ffffff35;background:linear-gradient(145deg,#263341,#111821);color:#fff;font-weight:900;font-size:15px;box-shadow:0 8px 20px #0006;touch-action:none;user-select:none}.pedal span{display:block;font-size:10px;letter-spacing:.16em;color:#bcc8d5;margin-top:5px}.pedal.gas{border-color:#56b88a88;background:linear-gradient(145deg,#245340,#10251e)}.pedal.brake{border-color:#d66a5d88;background:linear-gradient(145deg,#63332f,#271615)}.pedal.active{transform:translateY(3px);filter:brightness(1.3)}
+.gearbox{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:8px}.gear{min-width:44px;height:43px;border-radius:10px;border:1px solid #ffffff22;background:#202a36;color:#fff;font-weight:900;font-size:18px}.gear.current{color:#111;background:var(--gold);border-color:#ffe39b}.gear-label{font-size:9px;color:var(--muted);letter-spacing:.1em;text-align:center}
+.message{position:absolute;left:50%;top:23%;transform:translateX(-50%);max-width:min(92vw,560px);background:#101720eF;border:1px solid var(--line);border-radius:14px;padding:13px 18px;text-align:center;box-shadow:0 12px 35px #0007;font-size:13px;line-height:1.45;pointer-events:auto}.message strong{color:var(--gold)}.message button{margin-top:8px}.message.hidden{display:none}
+#modelPicker{display:none}
+.online-panel[hidden]{display:none!important}
+.online-panel{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:14px;background:#080e18eF;pointer-events:auto}
+.online-card{width:min(560px,96vw);max-height:86vh;overflow:auto;padding:18px;border:1px solid #e9b94f66;border-radius:18px;background:#111a25;box-shadow:0 20px 70px #000b}
+.online-head,.online-row{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.online-head{margin-bottom:12px;color:#e9b94f;letter-spacing:.08em}
+.online-card p{color:#c4cfdb;font-size:13px;line-height:1.45}
+.online-row{margin:10px 0}
+.online-card button,.online-card select,.online-card input{min-height:40px;padding:9px 12px;border:1px solid #ffffff30;border-radius:9px;background:#202b38;color:#fff;font-weight:700}
+.online-card button{cursor:pointer}
+.online-card button:disabled{opacity:.4;cursor:not-allowed}
+.online-card input{min-width:150px;flex:1;text-transform:uppercase}
+#onlineRooms,#onlinePlayerList{display:grid;gap:7px;margin-top:10px}
+#onlineRooms button{text-align:left;width:100%;font-size:12px}
+#onlineRoom{margin-top:14px;padding-top:12px;border-top:1px solid #ffffff25}
+#onlineRoomCodeText{color:#e9b94f;font-size:20px;letter-spacing:.14em}
+.online-player{padding:8px 10px;border-radius:8px;background:#ffffff0c;color:#dce5ef;font-size:12px}
+.meter{position:fixed;left:50%;bottom:clamp(92px,15vh,126px);transform:translateX(-50%);width:min(300px,50vw);height:5px;background:#111a;border-radius:9px;overflow:hidden;pointer-events:none}.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#57bd8e,#e8bd55,#dc6656)}
+#rotateHint{display:none;position:fixed;inset:0;background:#0b1018ed;z-index:20;place-items:center;text-align:center;padding:25px;font-weight:700}#rotateHint span{display:block;color:var(--gold);font-size:32px;margin-bottom:12px}
+@media(orientation:portrait){#rotateHint{display:grid}.hud{opacity:.28}}
+@media(max-width:640px){.top{align-items:flex-start}.stats{gap:8px;padding:7px}.metric{min-width:43px}.metric strong{font-size:18px}.brand{min-width:105px}.actions{flex-direction:column}.bottom{align-items:flex-end}.pedals{gap:7px}.pedal{width:76px;height:75px;font-size:13px}.gearbox{gap:5px;padding:6px}.gear{min-width:36px;height:38px}.gear-label{display:none}}
+
+/* ALLCOINS RACING RWD + SUSPENSION V3 */
+#suspension{min-width:88px;color:#f5d88b;border-color:#d6ab4a88}
+
+/* ALLCOINS RACING ENGINE AUDIO V4 */
+#engineSound{min-width:92px;color:#dce8f1;border-color:#8da8c588}
+#engineSound.sound-active{color:#102019;background:linear-gradient(145deg,#72d6a1,#b3e8c6);border-color:#b6f0cf}
+
+/* ALLCOINS RACING V5 · WHEEL AXLES + HEADLIGHTS + EXHAUST */
+#headlights{min-width:86px;color:#f5e7b7;border-color:#d8c17b88}
+#headlights.lights-active{color:#18202a;background:linear-gradient(145deg,#fff0b4,#f2c96a);border-color:#fff0b4;box-shadow:0 0 16px #ffe69b55}
+
+/* ALLCOINS V24 ANDROID DASHBOARD V1 */
+.speedometer {
+  position:fixed;
+  left:50%;
+  bottom:clamp(82px,12vh,112px);
+  transform:translateX(-50%);
+  width:clamp(106px,17vh,146px);
+  height:clamp(106px,17vh,146px);
+  z-index:5;
+  pointer-events:none;
+  filter:drop-shadow(0 8px 18px #0009);
+}
+.speedometer-dial {
+  position:relative;
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  overflow:hidden;
+  background:radial-gradient(circle,#25313e,#111923 67%,#090e15);
+  border:3px solid #c99a39;
+  box-shadow:inset 0 0 0 3px #ffffff13,inset 0 0 18px #000b;
+}
+.speedometer-dial:before {
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  border:1px solid #e9b94f66;
+}
+.speedometer-ticks {
+  position:absolute;
+  inset:9%;
+  border-radius:50%;
+  background:repeating-conic-gradient(
+    from 225deg,
+    #e9b94fc9 0deg 1.3deg,
+    transparent 1.3deg 12deg
+  );
+  mask:radial-gradient(circle,transparent 0 76%,#000 77% 100%);
+}
+.speedometer-label {
+  position:absolute;
+  top:22%;
+  left:0;
+  right:0;
+  text-align:center;
+  font-size:8px;
+  letter-spacing:.17em;
+  color:#d3b46f;
+  font-weight:800;
+}
+.speedometer-needle {
+  position:absolute;
+  left:50%;
+  bottom:50%;
+  height:34%;
+  width:3px;
+  border-radius:5px;
+  background:linear-gradient(#fff0b3,#e9b94f);
+  transform:translateX(-50%) rotate(-135deg);
+  transform-origin:50% 100%;
+  box-shadow:0 0 8px #e9b94f88;
+}
+.speedometer-hub {
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:#f0c76b;
+  border:2px solid #fff0bd;
+}
+.speedometer-value {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:17%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+}
+.speedometer-value strong {
+  font-size:clamp(23px,4vh,34px);
+  line-height:1;
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}
+.speedometer-value small {
+  font-size:8px;
+  color:#e9b94f;
+  font-weight:900;
+}
+.speedometer-range {
+  position:absolute;
+  left:13%;
+  right:13%;
+  bottom:7%;
+  display:flex;
+  justify-content:space-between;
+  color:#9eacbd;
+  font-size:8px;
+  font-weight:800;
+}
+.bottom {
+  flex-direction:row-reverse;
+  align-items:flex-end;
+  padding:0 2px;
+}
+.gearbox {
+  gap:clamp(5px,1vw,10px);
+  padding:8px;
+  min-height:58px;
+  border-color:#d5a54488;
+}
+.gear {
+  min-width:clamp(38px,5vw,52px);
+  height:clamp(42px,9vh,54px);
+  border-radius:11px;
+  font-size:19px;
+  touch-action:manipulation;
+}
+.gear.current {
+  box-shadow:0 0 13px #e9b94f55;
+}
+.pedals {
+  gap:8px;
+}
+.pedal {
+  width:clamp(72px,11vw,94px);
+  height:clamp(62px,17vh,80px);
+  border-radius:15px;
+  font-size:13px;
+  touch-action:none;
+}
+.pedal.gas {
+  border-color:#5dce91;
+  box-shadow:0 5px 17px #1d8c5744;
+}
+.pedal.brake {
+  border-color:#de786d;
+}
+.pedal span {
+  font-size:9px;
+}
+.meter {
+  display:none!important;
+}
+@media(max-height:440px) and (orientation:landscape) {
+  .speedometer {
+    width:100px;
+    height:100px;
+    bottom:76px;
+  }
+  .pedal {
+    height:58px;
+  }
+  .gear {
+    height:40px;
+    min-width:36px;
+  }
+  .gearbox {
+    padding:5px;
+    min-height:46px;
+  }
+  .hud {
+    padding-top:max(5px,env(safe-area-inset-top));
+  }
+}
+
+
+/* ALLCOINS V24 REAL DASHBOARD V2 */
+
+/* Два настоящих круглых прибора */
+.speedometer,.tachometer {
+  position:fixed!important;
+  bottom:clamp(78px,13vh,104px)!important;
+  width:clamp(100px,15vh,116px)!important;
+  height:clamp(100px,15vh,116px)!important;
+  transform:none!important;
+  z-index:6;
+  pointer-events:none;
+  filter:drop-shadow(0 7px 16px #0009);
+}
+.tachometer {
+  left:calc(50% - 124px)!important;
+}
+.speedometer {
+  left:calc(50% + 8px)!important;
+}
+.tachometer-dial {
+  position:relative;
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  overflow:hidden;
+  background:radial-gradient(circle,#29333e,#101720 70%,#080d13);
+  border:3px solid #c99a39;
+  box-shadow:inset 0 0 0 3px #ffffff13,inset 0 0 18px #000b;
+}
+.tachometer-dial:before {
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  border:1px solid #e9b94f66;
+}
+.tachometer-ticks {
+  position:absolute;
+  inset:9%;
+  border-radius:50%;
+  background:repeating-conic-gradient(
+    from 225deg,
+    #e9b94fc9 0deg 1.5deg,
+    transparent 1.5deg 11deg
+  );
+  mask:radial-gradient(circle,transparent 0 76%,#000 77% 100%);
+}
+.tachometer-label {
+  position:absolute;
+  top:21%;
+  left:0;
+  right:0;
+  text-align:center;
+  color:#d3b46f;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+.tachometer-needle {
+  position:absolute;
+  left:50%;
+  bottom:50%;
+  width:3px;
+  height:34%;
+  border-radius:5px;
+  background:linear-gradient(#fff0b3,#e9b94f);
+  transform:translateX(-50%) rotate(-135deg);
+  transform-origin:50% 100%;
+  box-shadow:0 0 8px #e9b94f88;
+}
+.tachometer-needle.redline {
+  background:#ff554b;
+  box-shadow:0 0 10px #ff443f;
+}
+.tachometer-hub {
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:#f0c76b;
+  border:2px solid #fff0bd;
+}
+.tachometer-value {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:17%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:3px;
+}
+.tachometer-value strong {
+  font-size:clamp(20px,3.5vh,28px);
+  color:white;
+  font-variant-numeric:tabular-nums;
+}
+.tachometer-value small {
+  font-size:8px;
+  color:#e9b94f;
+  font-weight:900;
+}
+.tachometer-range {
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:7%;
+  display:flex;
+  justify-content:space-between;
+  color:#e4c77f;
+  font-size:8px;
+}
+
+/* Реалистичные металлические педали */
+.pedals {
+  gap:9px!important;
+  align-items:flex-end;
+}
+.pedal {
+  position:relative;
+  overflow:hidden;
+  width:clamp(76px,7vw,94px)!important;
+  height:clamp(88px,16vh,112px)!important;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:center;
+  padding:0 4px 12px!important;
+  border-radius:13px 13px 20px 20px!important;
+  font-size:13px!important;
+  font-weight:900;
+  transform:perspective(320px) rotateX(7deg);
+  box-shadow:inset 2px 2px 5px #ffffff35,
+             inset -3px -4px 8px #0008,
+             0 8px 17px #0008;
+}
+.pedal:before {
+  content:"";
+  position:absolute;
+  top:10px;
+  left:12px;
+  right:12px;
+  bottom:38px;
+  border:1px solid #ffffff45;
+  border-radius:7px;
+  background:repeating-linear-gradient(
+    0deg,
+    #ffffff55 0 3px,
+    transparent 3px 9px
+  );
+  box-shadow:inset 0 0 8px #0007;
+  pointer-events:none;
+}
+.pedal span {
+  position:relative;
+  z-index:1;
+  margin-top:5px;
+  font-size:9px;
+  letter-spacing:.12em;
+  color:#e8edf2;
+}
+.pedal.gas {
+  border:2px solid #54bc83!important;
+  background:linear-gradient(135deg,#397c5c,#102b20 70%,#09170f)!important;
+}
+.pedal.brake {
+  border:2px solid #d76b61!important;
+  background:linear-gradient(135deg,#86453e,#351b1a 70%,#180e0d)!important;
+}
+.pedal.active {
+  transform:perspective(320px) rotateX(7deg) translateY(4px);
+  filter:brightness(1.35);
+}
+
+/* Механическая схема коробки передач */
+.gear-pattern {
+  display:grid;
+  grid-template-columns:repeat(3,34px);
+  grid-template-rows:repeat(2,31px);
+  gap:5px;
+  padding:5px;
+  margin-left:3px;
+  border:1px solid #c99a3966;
+  border-radius:10px;
+  background:linear-gradient(145deg,#26313e,#101720);
+}
+.gear-pattern button {
+  border:1px solid #ffffff35;
+  border-radius:7px;
+  background:linear-gradient(145deg,#3b4652,#151d27);
+  color:#f0f2f5;
+  font-size:14px;
+  font-weight:900;
+  box-shadow:inset 0 1px 2px #ffffff25,0 2px 3px #0008;
+  touch-action:manipulation;
+}
+.gear-pattern button.selected {
+  color:#17120a;
+  background:linear-gradient(145deg,#ffe49a,#d49a32);
+  border-color:#fff0b0;
+  box-shadow:0 0 10px #e9b94f77;
+}
+#gearUp,#gearDown {
+  display:none!important;
+}
+.gearbox {
+  gap:5px!important;
+  padding:7px!important;
+}
+#gearNow {
+  min-width:42px!important;
+  height:43px!important;
+}
+#gearHint {
+  max-width:115px;
+}
+
+/* Компактный горизонтальный экран телефона */
+@media(max-height:440px) and (orientation:landscape) {
+  .speedometer,.tachometer {
+    width:94px!important;
+    height:94px!important;
+    bottom:78px!important;
+  }
+  .tachometer {
+    left:calc(50% - 101px)!important;
+  }
+  .speedometer {
+    left:calc(50% + 7px)!important;
+  }
+  .pedal {
+    height:72px!important;
+    width:72px!important;
+  }
+  .gear-pattern {
+    grid-template-columns:repeat(3,29px);
+    grid-template-rows:repeat(2,27px);
+    gap:3px;
+  }
+}
+
+
+/* ALLCOINS V24 NIGHT RACE SCENE V3 */
+
+/* Единая приборная консоль */
+#dashboardBackplate {
+  position:fixed;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:min(1540px,100vw);
+  height:clamp(142px,24vh,176px);
+  z-index:4;
+  pointer-events:none;
+  border:1px solid #8197b855;
+  border-bottom:0;
+  border-radius:25px 25px 0 0;
+  background:
+    linear-gradient(180deg,#263448eF 0%,#131c2beF 38%,#080d17F7 100%);
+  box-shadow:0 -10px 35px #0009,inset 0 2px 5px #ffffff18;
+}
+.hud {
+  z-index:7;
+}
+.top,.bottom {
+  position:relative;
+  z-index:8;
+}
+.stats .metric:nth-child(1),
+.stats .metric:nth-child(2) {
+  display:none!important;
+}
+
+/* Большие синие приборы */
+.tachometer,.speedometer {
+  position:fixed!important;
+  bottom:calc(18px + env(safe-area-inset-bottom))!important;
+  width:clamp(105px,17vh,132px)!important;
+  height:clamp(105px,17vh,132px)!important;
+  transform:none!important;
+  z-index:11!important;
+  filter:drop-shadow(0 5px 12px #000b);
+}
+.tachometer {
+  left:calc(50% - 147px)!important;
+}
+.speedometer {
+  left:calc(50% + 13px)!important;
+}
+.tachometer-dial,.speedometer-dial {
+  background:radial-gradient(circle,#172943 0%,#0b1422 70%,#050a12 100%)!important;
+  border:4px solid #8197b8!important;
+  box-shadow:
+    0 0 0 3px #101827,
+    inset 0 0 0 3px #ffffff16,
+    inset 0 0 22px #000!important;
+}
+.tachometer-dial:before,.speedometer-dial:before {
+  border:1px solid #8abaff77!important;
+}
+.tachometer-ticks,.speedometer-ticks {
+  background:repeating-conic-gradient(
+    from 225deg,
+    #dceaff 0deg 1.2deg,
+    transparent 1.2deg 12deg
+  )!important;
+}
+.tachometer-label,.speedometer-label {
+  color:#b9d9ff!important;
+}
+.tachometer-needle,.speedometer-needle {
+  background:linear-gradient(#ffdad2,#ef554f)!important;
+  box-shadow:0 0 9px #ff514b99!important;
+}
+.tachometer-hub,.speedometer-hub {
+  background:#d9e7f5!important;
+  border:2px solid #ffffff!important;
+}
+.tachometer-value strong,.speedometer-value strong {
+  color:#ffffff!important;
+}
+.tachometer-value small,.speedometer-value small {
+  color:#8fc2ff!important;
+}
+.tachometer-range,.speedometer-range {
+  color:#aac7ec!important;
+}
+
+/* Металлические педали */
+.pedal {
+  position:relative!important;
+  overflow:hidden;
+  border:2px solid #91a4bd!important;
+  border-radius:13px 13px 20px 20px!important;
+  background:linear-gradient(145deg,#d6dce5 0%,#67788c 35%,#263448 100%)!important;
+  box-shadow:
+    inset 2px 2px 5px #ffffff88,
+    inset -3px -4px 8px #0009,
+    0 7px 18px #000b!important;
+  color:#ffffff!important;
+}
+.pedal:before {
+  content:"";
+  position:absolute;
+  top:10px;
+  left:12px;
+  right:12px;
+  bottom:34px;
+  border:1px solid #dce8f5aa;
+  border-radius:6px;
+  background:repeating-linear-gradient(
+    0deg,
+    #172538 0 4px,
+    #b7c6d8 4px 7px,
+    #34475e 7px 11px
+  );
+  box-shadow:inset 0 0 7px #0009;
+}
+.pedal span {
+  position:relative;
+  z-index:1;
+  color:#ffffff!important;
+  font-size:9px!important;
+}
+.pedal.gas,.pedal.brake {
+  border-color:#91b5e4!important;
+}
+.pedal.active {
+  filter:brightness(1.25);
+  transform:translateY(4px);
+}
+
+/* Переключатель H-pattern */
+.gearbox {
+  border-color:#8197b888!important;
+  background:linear-gradient(145deg,#202d40,#0c1421)!important;
+}
+.gear-pattern {
+  background:linear-gradient(145deg,#273950,#0b1320)!important;
+  border-color:#8aa8d077!important;
+}
+.gear-pattern button {
+  background:linear-gradient(145deg,#687b91,#1b293d)!important;
+  border-color:#b5c8df77!important;
+  color:#ffffff!important;
+}
+.gear-pattern button.selected {
+  background:linear-gradient(145deg,#dcecff,#6296d1)!important;
+  color:#071326!important;
+  border-color:#ffffff!important;
+  box-shadow:0 0 13px #65aaff88!important;
+}
+#gearNow {
+  background:linear-gradient(145deg,#dcecff,#6296d1)!important;
+  color:#071326!important;
+}
+#raceProgress {
+  position:fixed;
+  z-index:12;
+  left:50%;
+  top:max(8px,env(safe-area-inset-top));
+  transform:translateX(-50%);
+  width:min(520px,42vw);
+  height:7px;
+  border-radius:8px;
+  background:#111b2b;
+  border:1px solid #90b9e477;
+  overflow:hidden;
+  pointer-events:none;
+}
+#raceProgressFill {
+  width:0%;
+  height:100%;
+  border-radius:8px;
+  background:linear-gradient(90deg,#459cff,#9ed5ff);
+  box-shadow:0 0 10px #64aaff;
+}
+
+/* Горизонтальный Android */
+@media(max-height:440px) and (orientation:landscape) {
+  #dashboardBackplate {
+    height:128px;
+  }
+  .tachometer,.speedometer {
+    width:96px!important;
+    height:96px!important;
+    bottom:14px!important;
+  }
+  .tachometer {
+    left:calc(50% - 110px)!important;
+  }
+  .speedometer {
+    left:calc(50% + 12px)!important;
+  }
+  .pedal {
+    width:68px!important;
+    height:69px!important;
+  }
+}
+
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="view"></canvas></div>
+<div class="hud">
+  <div class="top">
+    <div class="brand"><b>ALLCOINS</b><span>RACING · RWD 5MT · V5</span></div>
+    <div class="stats">
+      <div class="metric"><strong id="speed">0</strong><small>КМ/Ч</small></div>
+      <div class="metric"><strong id="rpm">900</strong><small>ОБ/МИН</small></div>
+      <div class="metric"><strong id="distance">0</strong><small>МЕТРЫ</small></div>
+      <div class="metric"><strong id="timer">00:00</strong><small>ВРЕМЯ</small></div>
+    </div>
+    <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Переключить высоту подвески">ПОДВЕСКА · СРЕДНЯЯ</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
+  </div>
+  <div id="raceProgress"><div id="raceProgressFill"></div></div>
+<div class="bottom">
+    <div class="pedals">
+      <button class="pedal brake" id="brake">ТОРМОЗ<span>НАЖАТЬ</span></button>
+      <button class="pedal gas" id="gas">ГАЗ<span>УДЕРЖИВАТЬ</span></button>
+    </div>
+    <div class="gearbox"><div><div class="gear-label">ПЕРЕДАЧА</div><div class="gear-label" id="gearHint">МЕХАНИКА</div></div><button class="gear current" id="gearNow">1</button>
+<div class="gear-pattern" id="gearPattern">
+  <button type="button" data-gear-target="1">1</button>
+  <button type="button" data-gear-target="3">3</button>
+  <button type="button" data-gear-target="5">5</button>
+  <button type="button" data-gear-target="2">2</button>
+  <button type="button" data-gear-target="4">4</button>
+  <button type="button" data-gear-target="R">R</button>
+</div>
+<button class="gear" id="gearDown">−</button><button class="gear" id="gearUp">+</button></div>
+  </div>
+</div>
+
+
+<div id="dashboardBackplate"></div>
+<div class="tachometer" aria-label="Тахометр">
+  <div class="tachometer-dial">
+    <div class="tachometer-ticks"></div>
+    <div class="tachometer-label">ENGINE RPM</div>
+    <div class="tachometer-needle" id="rpmNeedle"></div>
+    <div class="tachometer-hub"></div>
+    <div class="tachometer-value">
+      <strong id="rpmDial">900</strong>
+      <small>RPM</small>
+    </div>
+    <div class="tachometer-range">
+      <span>0</span><span>2</span><span>4</span>
+      <span>6</span><span>8</span>
+    </div>
+  </div>
+</div>
+
+<div class="speedometer" aria-label="Спидометр">
+  <div class="speedometer-dial">
+    <div class="speedometer-ticks"></div>
+    <div class="speedometer-label">ALLCOINS SPEED</div>
+    <div class="speedometer-needle" id="speedNeedle"></div>
+    <div class="speedometer-hub"></div>
+    <div class="speedometer-value">
+      <strong id="speedDial">0</strong>
+      <small>КМ/Ч</small>
+    </div>
+    <div class="speedometer-range">
+      <span>0</span><span>120</span><span>240</span>
+    </div>
+  </div>
+</div>
+
+<div class="meter"><i id="rpmBar"></i></div>
+<div class="message" id="message"><strong>Загрузка ВАЗ-2107</strong><br><span id="messageText">Запрашиваю сохранённую 3D-модель выбранной сцены…</span><br><button class="small-btn" id="chooseModel">ВЫБРАТЬ GLB ВРУЧНУЮ</button></div>
+
+<div class="online-panel" id="onlinePanel" hidden>
+  <section class="online-card">
+    <div class="online-head">
+      <b>ALLCOINS RACING · ONLINE</b>
+      <button id="onlineClose">ЗАКРЫТЬ</button>
+    </div>
+    <p id="onlineStatus">Создай комнату или подключись по коду. Нужно минимум два игрока.</p>
+    <div class="online-row">
+      <select id="onlineMaxPlayers">
+        <option value="2">2 игрока</option>
+        <option value="3">3 игрока</option>
+        <option value="4">4 игрока</option>
+        <option value="5" selected>5 игроков</option>
+      </select>
+      <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
+    </div>
+    <div class="online-row">
+      <input id="onlineCode" maxlength="8" placeholder="КОД КОМНАТЫ">
+      <button id="onlineJoin">ПОДКЛЮЧИТЬСЯ</button>
+    </div>
+    <div class="online-row">
+      <button id="onlineRefresh">ОБНОВИТЬ СПИСОК</button>
+    </div>
+    <div id="onlineRooms"></div>
+    <div id="onlineRoom" hidden>
+      <p>ТВОЯ КОМНАТА: <strong id="onlineRoomCodeText"></strong></p>
+      <div id="onlinePlayerList"></div>
+      <div class="online-row">
+        <button id="onlineReady">ГОТОВ</button>
+        <button id="onlineStart" hidden disabled>НАЧАТЬ ГОНКУ</button>
+        <button id="onlineLeave">ПОКИНУТЬ КОМНАТУ</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="rotateHint"><div><span>↻</span>Поверните телефон горизонтально<br><small style="color:#9da9b9;font-weight:400">Гоночный экран ALLCOINS Racing</small></div></div>
+<input id="modelPicker" type="file" accept=".glb,model/gltf-binary">
+<script type="module">
+/* ALLCOINS RACING V17 · remove blocking V15 diagnostics overlay */
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const $ = id => document.getElementById(id);
+
+/* ALLCOINS RACING ONLINE CLIENT */
+let onlineRoomCode = "";
+let onlineSocket = null;
+let onlineMode = false;
+let onlineRaceStarted = false;
+let onlineIsHost = false;
+let onlineIsReady = false;
+let onlineRoomStatus = "waiting";
+let onlineCountdownInterval = null;
+let onlineCountdownToken = 0;
+let onlineLastStateAt = 0;
+const onlineRemoteStates = new Map();
+const onlineRemoteCars = new Map();
+const onlinePendingRequests = new Map();
+
+function onlineSetStatus(message) {
+  const el = $("onlineStatus");
+  if (el) el.textContent = message;
+}
+
+function onlineHostRequest(action, extra = {}) {
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) {
+      reject(new Error("Игровой экран открыт без редактора ALLCOINS Engine."));
+      return;
+    }
+
+    const requestId = "race-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    const timer = setTimeout(() => {
+      onlinePendingRequests.delete(requestId);
+      reject(new Error("Редактор не ответил. Проверь подключение ALLCOINS Engine."));
+    }, 12000);
+
+    onlinePendingRequests.set(requestId, { resolve, reject, timer });
+    window.parent.postMessage({
+      type: "allcoins:racing:request",
+      requestId,
+      action,
+      ...extra
+    }, "*");
+  });
+}
+
+window.addEventListener("message", event => {
+  const data = event.data;
+  if (data?.type !== "allcoins:racing:response") return;
+
+  const pending = onlinePendingRequests.get(data.requestId);
+  if (!pending) return;
+
+  clearTimeout(pending.timer);
+  onlinePendingRequests.delete(data.requestId);
+
+  if (!data.ok) pending.reject(new Error(data.error || "Ошибка онлайн-сервера."));
+  else pending.resolve(data.data);
+});
+
+/* ALLCOINS RACE RESULTS UI 2026-11-12 */
+/* ALLCOINS READY COUNTDOWN 2026-11-12 */
+function onlineRenderPlayers(players) {
+  const list = $("onlinePlayerList");
+  list.replaceChildren();
+
+  const ordered = [...(players || [])].sort((a, b) => {
+    const at = a.finish_time_ms == null ? Infinity : Number(a.finish_time_ms);
+    const bt = b.finish_time_ms == null ? Infinity : Number(b.finish_time_ms);
+    if (at !== bt) return at < bt ? -1 : 1;
+    return String(a.joined_at || "").localeCompare(String(b.joined_at || ""));
+  });
+
+  let place = 0;
+
+  for (const player of ordered) {
+    const row = document.createElement("div");
+    row.className = "online-player";
+
+    const host = player.is_host ? " · СОЗДАТЕЛЬ" : "";
+    const time = Number(player.finish_time_ms);
+    const hasFinished = player.finish_time_ms != null && Number.isFinite(time);
+
+    let stateText;
+    if (hasFinished) {
+      stateText = " · " + (++place) + " МЕСТО · ФИНИШ " + (time / 1000).toFixed(2) + " с";
+    } else if (onlineRoomStatus === "waiting") {
+      stateText = player.is_ready ? " · ГОТОВ ✓" : " · НЕ ГОТОВ";
+    } else {
+      stateText = " · В ГОНКЕ";
+    }
+
+    row.textContent = (player.name || "Игрок") + host + stateText;
+    list.appendChild(row);
+  }
+}
+async function onlineRefreshRoom() {
+  if (!onlineRoomCode) return;
+
+  const result = await onlineHostRequest("room:info", { code: onlineRoomCode });
+  const room = result.room;
+  const players = result.players || [];
+
+  onlineRoomStatus = room.status;
+  onlineIsHost = Boolean(result.isHost);
+  const me = players.find(player => player.is_me);
+  onlineIsReady = Boolean(me?.is_ready);
+
+  $("onlineRoom").hidden = false;
+  $("onlineRoomCodeText").textContent = room.code;
+  onlineRenderPlayers(players);
+
+  const readyButton = $("onlineReady");
+  readyButton.hidden = room.status !== "waiting";
+  readyButton.disabled = room.status !== "waiting" || !me;
+  readyButton.textContent = onlineIsReady ? "ГОТОВ ✓ · ОТМЕНИТЬ" : "ГОТОВ";
+
+  const allReady = players.length >= 2 && players.every(player => player.is_ready === true);
+  const start = $("onlineStart");
+  start.hidden = !onlineIsHost || room.status !== "waiting";
+  start.disabled = players.length < 2 || !allReady;
+
+  if (room.status === "finished") {
+    const finishers = players
+      .filter(player => player.finish_time_ms != null && Number.isFinite(Number(player.finish_time_ms)))
+      .sort((a, b) => Number(a.finish_time_ms) - Number(b.finish_time_ms));
+    const winner = finishers[0];
+
+    onlineSetStatus(winner
+      ? "ГОНКА ЗАВЕРШЕНА · Победитель: " + (winner.name || "Игрок") +
+        " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с"
+      : "Гонка завершена. Нет зафиксированных результатов.");
+  } else if (room.status === "waiting") {
+    const readyCount = players.filter(player => player.is_ready).length;
+    onlineSetStatus(
+      "Готовы: " + readyCount + " из " + players.length +
+      (allReady ? ". Создатель может начать гонку." : ". Ожидаем готовности игроков.")
+    );
+  } else {
+    const done = players.filter(player => player.finish_time_ms != null).length;
+    onlineSetStatus(done
+      ? "Заезд идёт · финишировали " + done + " из " + players.length + "."
+      : "Все готовы. Ожидайте общего старта.");
+  }
+}
+async function onlineRefreshRooms() {
+  try {
+    const result = await onlineHostRequest("rooms:list");
+    const list = $("onlineRooms");
+    list.replaceChildren();
+
+    for (const room of result.rooms || []) {
+      const button = document.createElement("button");
+      button.textContent =
+        room.code + " · " + room.host_name + " · " +
+        room.players + "/" + room.max_players + " игроков";
+
+      button.addEventListener("click", () => {
+        $("onlineCode").value = room.code;
+      });
+      list.appendChild(button);
+    }
+
+    if (!list.children.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "Открытых комнат пока нет.";
+      list.appendChild(empty);
+    }
+  } catch (error) {
+    onlineSetStatus(error.message);
+  }
+}
+
+function onlineBeginRace() {
+  onlineMode = true;
+  onlineRaceStarted = true;
+  distance = 0;
+  elapsed = 0;
+  speed = 0;
+  rpm = 900;
+  gear = 1;
+  finished = false;
+  paused = false;
+  raceStarted = Boolean(vehicle);
+  onlineLastStateAt = 0;
+  updateGear();
+
+  if (vehicle) hideMessage();
+  onlineSetStatus("ЗАЕЗД НАЧАЛСЯ! Удачной гонки.");
+}
+
+/* ALLCOINS READY COUNTDOWN 2026-11-12 */
+function onlineShowCountdown(value) {
+  let overlay = $("onlineCountdownOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "onlineCountdownOverlay";
+    overlay.style.cssText = [
+      "position:fixed",
+      "inset:0",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "z-index:99999",
+      "background:rgba(0,0,0,.38)",
+      "color:#fff",
+      "font:900 clamp(76px,20vw,190px)/1 Arial,sans-serif",
+      "text-shadow:0 8px 30px rgba(0,0,0,.85)",
+      "pointer-events:none",
+      "letter-spacing:.03em"
+    ].join(";");
+    document.body.appendChild(overlay);
+  }
+  overlay.textContent = value;
+  overlay.style.display = "flex";
+}
+
+function onlineHideCountdown() {
+  const overlay = $("onlineCountdownOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+function onlinePrepareCountdown(payload = {}) {
+  if (onlineCountdownInterval) clearInterval(onlineCountdownInterval);
+  onlineCountdownInterval = null;
+
+  const token = ++onlineCountdownToken;
+  const startedAtMs = Number(payload.startedAtMs ?? Date.parse(payload.startedAt || ""));
+  const serverTimeMs = Number(payload.serverTimeMs ?? payload.serverTime ?? Date.now());
+
+  if (!Number.isFinite(startedAtMs) || !Number.isFinite(serverTimeMs)) {
+    onlineSetStatus("Не удалось синхронизировать время общего старта.");
+    return;
+  }
+
+  onlineRoomStatus = "racing";
+  onlineRaceStarted = false;
+  raceStarted = false;
+  distance = 0;
+  elapsed = 0;
+  speed = 0;
+  rpm = 900;
+  gear = 1;
+  finished = false;
+  paused = false;
+  throttle = false;
+  braking = false;
+  updateGear();
+
+  onlineSetStatus("Все готовы. Машины на стартовой линии.");
+  const targetLocalTime = Date.now() + Math.max(0, startedAtMs - serverTimeMs);
+  let previousLabel = "";
+
+  const tick = () => {
+    if (token !== onlineCountdownToken) return;
+
+    const remaining = targetLocalTime - Date.now();
+    const label = remaining > 2000 ? "3"
+      : remaining > 1000 ? "2"
+      : remaining > 0 ? "1"
+      : "СТАРТ!";
+
+    if (label !== previousLabel) {
+      previousLabel = label;
+      onlineShowCountdown(label);
+    }
+
+    if (remaining <= 0) {
+      if (onlineCountdownInterval) clearInterval(onlineCountdownInterval);
+      onlineCountdownInterval = null;
+      onlineBeginRace();
+      onlineShowCountdown("СТАРТ!");
+      window.setTimeout(() => {
+        if (token === onlineCountdownToken) onlineHideCountdown();
+      }, 650);
+    }
+  };
+
+  tick();
+  if (targetLocalTime > Date.now()) {
+    onlineCountdownInterval = window.setInterval(tick, 40);
+  }
+}
+
+async function onlineConnectRoom(code) {
+  onlineRoomCode = code;
+  onlineMode = true;
+
+  if (onlineSocket) {
+    const old = onlineSocket;
+    onlineSocket = null;
+    old.close();
+  }
+
+  const auth = await onlineHostRequest("room:ticket");
+  const ws = new WebSocket(auth.wsUrl);
+  onlineSocket = ws;
+  let socketError = "";
+  onlineSetStatus("Подключаемся к комнате " + code + "…");
+
+  ws.addEventListener("open", () => {
+    ws.send(JSON.stringify({
+      type: "auth",
+      ticket: auth.ticket,
+      roomCode: code
+    }));
+  });
+
+  ws.addEventListener("message", event => {
+    let message;
+    try {
+      message = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+
+    if (message.type === "welcome") {
+      onlineSetStatus("Подключено к комнате " + code + ".");
+      for (const player of message.players || []) {
+        if (player.userId) onlineRemoteStates.set(player.userId, player);
+      }
+      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+      if (message.room?.status === "racing") onlinePrepareCountdown({ startedAt: message.room.startedAt, serverTimeMs: message.serverTime });
+    } else if (message.type === "player-state" && message.player?.userId) {
+      onlineRemoteStates.set(message.player.userId, message.player);
+    } else if (message.type === "player-left") {
+      const userId = message.player?.userId;
+      if (userId) {
+        onlineRemoteStates.delete(userId);
+        onlineRemoveOpponentCar(userId);
+      }
+      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+    } else if (
+      message.type === "lobby-updated" ||
+      message.type === "player-joined"
+    ) {
+      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+    } else if (message.type === "race-countdown") {
+      onlinePrepareCountdown(message);
+    } else if (message.type === "race-start") {
+      onlineBeginRace();
+    } else if (message.type === "finish-ack") {
+      onlineSetStatus(
+        "Сервер подтвердил финиш: " +
+        (Number(message.finishTimeMs || 0) / 1000).toFixed(2) + " с."
+      );
+      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+    } else if (message.type === "player-finished") {
+      onlineSetStatus("Финишировал игрок: " + (message.player?.name || "Участник"));
+      void onlineRefreshRoom().catch(() => {});
+    } else if (message.type === "race-finished") {
+      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+    } else if (message.type === "error") {
+      socketError = String(message.message || "Ошибка онлайн-соединения.");
+      onlineSetStatus("Ошибка онлайн-подключения: " + socketError);
+    }
+  });
+
+  /* ALLCOINS WS ERROR DIAGNOSTICS 2026-11-12 */
+  ws.addEventListener("close", event => {
+    if (onlineSocket === ws) {
+      onlineSocket = null;
+      const detail = socketError
+        ? "Ошибка онлайн-подключения: " + socketError
+        : "Соединение закрыто (код " + event.code +
+          (event.reason ? ", " + event.reason : "") + ").";
+      onlineSetStatus(detail);
+    }
+  });
+
+  ws.addEventListener("error", () => {
+    onlineSetStatus(socketError || "Ошибка сети WebSocket. Проверь код закрытия.");
+  });
+}
+
+async function onlineCreateRoom() {
+  try {
+    $("onlineCreate").disabled = true;
+    const result = await onlineHostRequest("room:create", {
+      maxPlayers: Number($("onlineMaxPlayers").value)
+    });
+    await onlineConnectRoom(result.room.code);
+    $("onlineCode").value = result.room.code;
+  } catch (error) {
+    onlineSetStatus(error.message);
+  } finally {
+    $("onlineCreate").disabled = false;
+  }
+}
+
+async function onlineJoinRoom() {
+  try {
+    const code = $("onlineCode").value.trim().toUpperCase();
+    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
+      throw new Error("Введи правильный восьмизначный код комнаты.");
+    }
+    $("onlineJoin").disabled = true;
+    await onlineHostRequest("room:join", { code });
+    await onlineConnectRoom(code);
+  } catch (error) {
+    onlineSetStatus(error.message);
+  } finally {
+    $("onlineJoin").disabled = false;
+  }
+}
+
+
+/* ALLCOINS SHARED ROOM AUTO CONNECT 2026-11-12 */
+window.addEventListener("message", async event => {
+  const data = event.data;
+  if (event.source !== window.parent || data?.type !== "allcoins:racing:join-room") return;
+
+  const code = String(data.code || "").trim().toUpperCase();
+  if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
+    onlineSetStatus("В ссылке указан неправильный код гоночной комнаты.");
+    return;
+  }
+
+  if (onlineRoomCode === code && onlineSocket &&
+      (onlineSocket.readyState === WebSocket.CONNECTING ||
+       onlineSocket.readyState === WebSocket.OPEN)) return;
+
+  $("onlineCode").value = code;
+  $("onlineJoin").disabled = true;
+  try {
+    await onlineConnectRoom(code);
+  } catch (error) {
+    onlineSetStatus(error?.message || "Не удалось подключиться к гоночной комнате.");
+  } finally {
+    $("onlineJoin").disabled = false;
+  }
+});
+
+async function onlineToggleReady() {
+  const button = $("onlineReady");
+  if (!onlineRoomCode || button.disabled) return;
+
+  button.disabled = true;
+  try {
+    const nextReady = !onlineIsReady;
+    await onlineHostRequest("room:ready", {
+      code: onlineRoomCode,
+      ready: nextReady
+    });
+    await onlineRefreshRoom();
+  } catch (error) {
+    onlineSetStatus(error.message);
+  } finally {
+    button.disabled = false;
+    if (onlineRoomStatus !== "waiting") button.disabled = true;
+  }
+}
+
+async function onlineStartRoom() {
+  try {
+    $("onlineStart").disabled = true;
+    await onlineHostRequest("room:start", { code: onlineRoomCode });
+    onlineSetStatus("Команда старта отправлена всем участникам.");
+  } catch (error) {
+    onlineSetStatus(error.message);
+  } finally {
+    $("onlineStart").disabled = false;
+  }
+}
+
+async function onlineLeaveRoom() {
+  try {
+    if (onlineRoomCode) {
+      await onlineHostRequest("room:leave", { code: onlineRoomCode });
+    }
+  } catch (error) {
+    onlineSetStatus(error.message);
+    return;
+  }
+
+  if (onlineSocket) onlineSocket.close();
+  onlineSocket = null;
+  onlineRoomCode = "";
+  onlineMode = false;
+  onlineRaceStarted = false;
+  onlineIsHost = false;
+  onlineRemoteStates.clear();
+  onlineClearOpponentCars();
+  $("onlineRoom").hidden = true;
+  onlineSetStatus("Ты покинул комнату.");
+  void onlineRefreshRooms();
+}
+
+function onlineSendState(now, force = false) {
+  if (!onlineRaceStarted || !onlineSocket || onlineSocket.readyState !== WebSocket.OPEN) return;
+  if (!force && now - onlineLastStateAt < 50) return;
+
+  onlineLastStateAt = now;
+  onlineSocket.send(JSON.stringify({
+    type: "state",
+    distanceM: distance,
+    speedKmh: speed,
+    rpm,
+    gear,
+    elapsedMs: elapsed * 1000,
+    throttle,
+    braking
+  }));
+}
+
+
+function onlineRemoveOpponentCar(userId) {
+  const entry = onlineRemoteCars.get(userId);
+  if (!entry) return;
+
+  scene.remove(entry.root);
+  entry.root.traverse(object => {
+    if (!object.isMesh) return;
+    const materials = Array.isArray(object.material)
+      ? object.material : [object.material];
+    for (const material of materials) material?.dispose?.();
+  });
+  onlineRemoteCars.delete(userId);
+}
+
+function onlineClearOpponentCars() {
+  for (const userId of [...onlineRemoteCars.keys()]) {
+    onlineRemoveOpponentCar(userId);
+  }
+}
+
+
+
+/* ALLCOINS RACING V24 ONLINE LANES V6.2
+   Две машины размещаются на соседних полосах только при активной онлайн-гонке
+   и наличии состояния хотя бы одного другого участника. В одиночном режиме
+   координаты машины, камера и разметка возвращаются к исходным значениям V5.
+   Физика, двигатель, коробка передач и управление не изменяются. */
+const acOnlineLaneOffset = 3.25;
+let acOnlinePlayerBaseZ = null;
+let acOnlineLaneLayoutActive = false;
+let acOnlineCameraMode = 'solo';
+const acOnlineSoloCameraPosition = camera.position.clone();
+const acOnlineSoloCameraTarget = new THREE.Vector3(0, 2.2, 0);
+const acOnlineRaceCameraPosition = new THREE.Vector3(0, 9.4, 28);
+const acOnlineRaceCameraTarget = new THREE.Vector3(0, 2.0, 0);
+
+function acOnlineSetCameraMode(mode) {
+  if (acOnlineCameraMode === mode) return;
+  const online = mode === 'online';
+  camera.position.copy(online ? acOnlineRaceCameraPosition : acOnlineSoloCameraPosition);
+  camera.lookAt(online ? acOnlineRaceCameraTarget : acOnlineSoloCameraTarget);
+  camera.updateMatrixWorld(true);
+  acOnlineCameraMode = mode;
+}
+
+function acOnlineApplyLaneLayout(enabled) {
+  if (!vehicle) return;
+
+  if (enabled && !acOnlineLaneLayoutActive) {
+    acOnlinePlayerBaseZ = vehicle.position.z;
+    acOnlineLaneLayoutActive = true;
+    // Игрок остаётся на ближней полосе; реальный участник займёт дальнюю.
+    vehicle.position.z = acOnlinePlayerBaseZ + acOnlineLaneOffset;
+    for (const mark of laneMarks) mark.position.z = 0;
+    vehicle.updateMatrixWorld(true);
+    return;
+  }
+
+  if (!enabled && acOnlineLaneLayoutActive) {
+    vehicle.position.z = acOnlinePlayerBaseZ;
+    acOnlinePlayerBaseZ = null;
+    acOnlineLaneLayoutActive = false;
+    for (const mark of laneMarks) mark.position.z = 1.8;
+    vehicle.updateMatrixWorld(true);
+  }
+}
+
+function onlineUpdateOpponentCars(dt) {
+  if (!vehicle) return;
+
+  const hasRealOpponent = onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
+  acOnlineApplyLaneLayout(hasRealOpponent);
+  acOnlineSetCameraMode(hasRealOpponent ? 'online' : 'solo');
+
+  if (!hasRealOpponent) {
+    onlineClearOpponentCars();
+    return;
+  }
+
+  const active = new Set();
+  let slot = 0;
+
+  for (const [userId, state] of onlineRemoteStates) {
+    const remoteDistance = Number(state.distanceM);
+    if (!userId || !Number.isFinite(remoteDistance)) continue;
+
+    active.add(userId);
+    slot++;
+
+    let entry = onlineRemoteCars.get(userId);
+
+    if (!entry) {
+      const root = vehicle.clone(true);
+
+      root.traverse(object => {
+        if (!object.isMesh) return;
+        object.castShadow = false;
+        object.receiveShadow = false;
+
+        if (Array.isArray(object.material)) {
+          object.material = object.material.map(material =>
+            material?.clone ? material.clone() : material
+          );
+        } else if (object.material?.clone) {
+          object.material = object.material.clone();
+        }
+      });
+
+      root.name = "ALLCOINS opponent " + (state.name || userId);
+      scene.add(root);
+      entry = { root, initialized: false };
+      onlineRemoteCars.set(userId, entry);
+    }
+
+    const delta = Math.max(-80, Math.min(80, remoteDistance - distance));
+    const targetX = carAnchor + delta * WORLD_UNITS_PER_METER;
+    const targetY = vehicle.position.y;
+    const targetZ = acOnlinePlayerBaseZ - acOnlineLaneOffset;
+
+    const alpha = entry.initialized ? Math.min(1, dt * 8) : 1;
+    const root = entry.root;
+
+    root.position.x += (targetX - root.position.x) * alpha;
+    root.position.y += (targetY - root.position.y) * alpha;
+    root.position.z += (targetZ - root.position.z) * alpha;
+    root.visible = Math.abs(delta) <= 80;
+    entry.initialized = true;
+  }
+
+  for (const userId of [...onlineRemoteCars.keys()]) {
+    if (!active.has(userId)) onlineRemoveOpponentCar(userId);
+  }
+}
+
+$("onlineToggle").addEventListener("click", () => {
+  $("onlinePanel").hidden = false;
+  void onlineRefreshRooms();
+  if (onlineRoomCode) void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+});
+$("onlineClose").addEventListener("click", () => $("onlinePanel").hidden = true);
+$("onlineCreate").addEventListener("click", onlineCreateRoom);
+$("onlineJoin").addEventListener("click", onlineJoinRoom);
+$("onlineRefresh").addEventListener("click", onlineRefreshRooms);
+$("onlineReady").addEventListener("click", onlineToggleReady);
+$("onlineStart").addEventListener("click", onlineStartRoom);
+$("onlineLeave").addEventListener("click", onlineLeaveRoom);
+
+
+/* ALLCOINS RACING ENGINE AUDIO V4 */
+/* ALLCOINS RACING V5 · WHEEL AXLES + HEADLIGHTS + EXHAUST */
+function setHeadlights(enabled){
+  headlightEnabled=Boolean(enabled);
+  if(headlightRig){
+    headlightRig.visible=headlightEnabled;
+    for(const light of headlightRig.userData.spotlights||[])light.intensity=headlightEnabled?26:0;
+    for(const material of headlightRig.userData.bulbMaterials||[])material.emissiveIntensity=headlightEnabled?2.4:0;
+  }
+  const button=$('headlights');
+  if(button){button.textContent=headlightEnabled?'ФАРЫ · ВКЛ':'ФАРЫ · ВЫКЛ';button.classList.toggle('lights-active',headlightEnabled);}
+}
+$('headlights').addEventListener('click',()=>setHeadlights(!headlightEnabled));
+window.addEventListener('keydown',event=>{if(event.code==='KeyL'&&!event.repeat){setHeadlights(!headlightEnabled);}});
+function updateWheelGroundContact(){
+  if(!vehicle||!wheelNodes.length)return;
+  vehicle.updateMatrixWorld(true);
+  for(const wheel of wheelNodes){
+    const parent=wheel.node.parent;
+    if(!parent)continue;
+    const world=wheel.node.getWorldPosition(new THREE.Vector3());
+    world.y=wheel.groundWorldY;
+    parent.updateMatrixWorld(true);
+    wheel.node.position.copy(parent.worldToLocal(world));
+    vehicle.updateMatrixWorld(true);
+  }
+}
+/* ALLCOINS RACING V8 · INDEPENDENT CHASSIS SUSPENSION */
+/* ALLCOINS RACING V9 · WORLD-AXIS SUSPENSION + PITCH */
+/* ALLCOINS RACING V10 · WORLD-POSITION SUSPENSION FIX */
+/* ALLCOINS Racing V11 · multi-island wheel assemblies */
+/* ALLCOINS Racing V12 · low-ride rear wheel shadow polish */
+/* ALLCOINS Racing V13 · rear fender receiver shadow polish */
+function acRacingApplyRearLowRideBodyReceiverPolicy(){
+  if(!vehicle)return 0;
+  /* ALLCOINS Racing V20 · body shadow receivers disabled at all ride heights */
+/* ALLCOINS Racing V21 · low-ride rear details shadow receiver fix */
+/* ALLCOINS Racing V24 · reverse gear + directional wheel motion */
+/* ALLCOINS Racing V22 · body detail receivers disabled at all ride heights */
+  // Keep the body from receiving wheel/self-shadows in every ride mode.
+  // castShadow remains unchanged, so the car still casts a shadow onto the road.
+  const suppressBodyReceivers=true;
+  const targetNames=new Set(['Car_Bottom_0','Car_CarBody_0']);
+  const affected=[];
+  vehicle.traverse(object=>{
+    if(!object.isMesh||!targetNames.has(object.name))return;
+    if(object.userData.acV13OriginalReceiveShadow===undefined){
+      object.userData.acV13OriginalReceiveShadow=object.receiveShadow;
+    }
+    object.receiveShadow=suppressBodyReceivers?false:object.userData.acV13OriginalReceiveShadow;
+    affected.push(object.name);
+  });
+  console.info('ALLCOINS Racing V13 · rear fender shadow receivers',{
+    suspension:rideModes[suspensionMode]?.label||String(suspensionMode),
+    lowRide:suppressBodyReceivers,
+    affectedMeshes:affected
+  });
+  return affected.length;
+}
+
+/* ALLCOINS Racing V14 · underside caster shadow polish */
+function acRacingApplyRearLowRideUndersideCasterPolicy(){
+  if(!vehicle)return 0;
+  const suppressUndersideCaster=suspensionMode===0;
+  let affected=0;
+  vehicle.traverse(object=>{
+    if(!object.isMesh||object.name!=='Car_Bottom_0')return;
+    if(object.userData.acV14OriginalCastShadow===undefined){
+      object.userData.acV14OriginalCastShadow=object.castShadow;
+    }
+    object.castShadow=suppressUndersideCaster?false:object.userData.acV14OriginalCastShadow;
+    affected++;
+  });
+  console.info('ALLCOINS Racing V14 · underside caster policy',{
+    suspension:rideModes[suspensionMode]?.label||String(suspensionMode),
+    lowRide:suppressUndersideCaster,
+    affectedMeshes:affected,
+    undersideCastsShadow:!suppressUndersideCaster
+  });
+  return affected;
+}
+
+/* ALLCOINS RACING V16 · reversible bottom AO test */
+function acRacingApplyLowRideAmbientOcclusionPolicy(){
+  if(!vehicle)return 0;
+  const lowRide=suspensionMode===0;
+  const targetMeshes=new Set(['Car_Bottom_0']);
+  let changedMaterials=0;
+  const affectedMeshes=[];
+  vehicle.traverse(object=>{
+    if(!object.isMesh||!targetMeshes.has(object.name))return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    let meshAffected=false;
+    for(const material of materials){
+      if(!material||!material.aoMap)continue;
+      material.userData=material.userData||{};
+      if(material.userData.acV16OriginalAoMapIntensity===undefined){
+        material.userData.acV16OriginalAoMapIntensity=Number.isFinite(material.aoMapIntensity)?material.aoMapIntensity:1;
+      }
+      material.aoMapIntensity=lowRide?0:material.userData.acV16OriginalAoMapIntensity;
+      changedMaterials++;
+      meshAffected=true;
+    }
+    if(meshAffected)affectedMeshes.push(object.name);
+  });
+  console.info('ALLCOINS Racing V16 · bottom ambient-occlusion test',{
+    suspension:rideModes[suspensionMode]?.label||String(suspensionMode),
+    lowRide,
+    affectedMeshes,
+    materialsChanged:changedMaterials,
+    bottomAOIntensity:lowRide?0:'restored'
+  });
+  return changedMaterials;
+}
+
+function acRacingApplyRearDetailsShadowPolicy(){
+  if(!vehicle)return 0;
+  // V22: these body/detail meshes should never receive wheel or self-shadows.
+  // The body still casts its own shadow onto the road; wheel and rim nodes are untouched.
+  const targetNames=new Set(['Car_Details_0','Car_Details_Transparent_0']);
+  let affectedMeshes=0;
+  vehicle.traverse(object=>{
+    if(!object.isMesh||!targetNames.has(object.name))return;
+    if(object.userData.acV22OriginalReceiveShadow===undefined){
+      object.userData.acV22OriginalReceiveShadow=object.receiveShadow;
+    }
+    object.receiveShadow=false;
+    affectedMeshes++;
+  });
+  console.info('ALLCOINS Racing V22 · body/detail shadow receiver policy',{
+    suspension:rideModes[suspensionMode]?.label||String(suspensionMode),
+    affectedMeshes,
+    disabledMeshes:[...targetNames]
+  });
+  return affectedMeshes;
+}
+
+function acRacingPrepareSuspensionRig(actual){
+  if(!vehicle)return false;
+  vehicle.updateMatrixWorld(true);
+  const exhaustWorld=vehicle.localToWorld(exhaustLocalPoint.clone());
+  const pivotLocal=vehicle.worldToLocal(actual.getCenter(new THREE.Vector3()));
+  const wheelSet=new Set(wheelNodes.map(w=>w.node));
+
+  // Move each complete wheel (tire + rim) out of the animated chassis hierarchy.
+  // Keep its world transform and convert the spin axis into vehicle-root space.
+  for(const wheel of wheelNodes){
+    if(!wheel.node||!wheel.node.parent)continue;
+    const oldParent=wheel.node.parent;
+    const oldParentQuaternion=new THREE.Quaternion();
+    oldParent.getWorldQuaternion(oldParentQuaternion);
+    const axisWorld=wheel.spinAxisParent.clone().applyQuaternion(oldParentQuaternion).normalize();
+    vehicle.attach(wheel.node);
+    const rootQuaternion=new THREE.Quaternion();
+    vehicle.getWorldQuaternion(rootQuaternion);
+    rootQuaternion.invert();
+    wheel.spinAxisParent.copy(axisWorld.applyQuaternion(rootQuaternion).normalize());
+    wheel.baseQuaternion.copy(wheel.node.quaternion);
+    const fixedCenter=wheel.node.getWorldPosition(new THREE.Vector3());
+    wheel.centerWorld.copy(fixedCenter);
+    wheel.groundWorldY=fixedCenter.y;
+  }
+
+  // The body group pivots at the vehicle's geometric center. Wheels stay as
+  // direct children of `vehicle`, so changing ride height or body pitch
+  // cannot drag the tire/rim assemblies with the body.
+  const chassis=new THREE.Group();
+  chassis.name='ALLCOINS_ChassisSuspensionGroup';
+  chassis.position.copy(pivotLocal);
+  vehicle.add(chassis);
+  vehicle.updateMatrixWorld(true);
+  chassis.updateMatrixWorld(true);
+
+  const rootChildren=[...vehicle.children];
+  for(const child of rootChildren){
+    if(child===chassis||wheelSet.has(child))continue;
+    chassis.attach(child);
+  }
+
+  // Some versions parent the auxiliary headlight rig to the scene rather than
+  // the vehicle. Keep it attached to the moving body in either case.
+  if(headlightRig&&headlightRig.parent){
+    let inside=false;
+    for(let node=headlightRig;node;node=node.parent){
+      if(node===chassis){inside=true;break;}
+    }
+    if(!inside)chassis.attach(headlightRig);
+  }
+
+  vehicleChassis=chassis;
+  vehicleChassisBaseY=chassis.position.y;
+  vehicleChassisBaseRotationZ=chassis.rotation.z;
+  vehicleChassisBasePosition.copy(chassis.position);
+  vehicleChassisBaseQuaternion.copy(chassis.quaternion);
+  const vehicleWorldQuaternion=new THREE.Quaternion();
+  vehicle.getWorldQuaternion(vehicleWorldQuaternion);
+  vehicleWorldQuaternion.invert();
+  // Express true world-up and world-Z pitch axes in vehicle-root local coordinates.
+  vehicleChassisSuspensionUp.set(0,1,0).applyQuaternion(vehicleWorldQuaternion).normalize();
+  vehicleChassisPitchAxis.set(0,0,1).applyQuaternion(vehicleWorldQuaternion).normalize();
+  vehicle.position.y=vehicleBaseY;
+  vehicle.rotation.z=vehicleBaseRotationZ;
+  vehicle.updateMatrixWorld(true);
+  chassis.updateMatrixWorld(true);
+  exhaustLocalPoint.copy(chassis.worldToLocal(exhaustWorld));
+
+  console.info('ALLCOINS Racing V8 · chassis isolated from wheel suspension',{
+    wheels:wheelNodes.length,
+    front:frontWheelNodes.length,
+    rear:rearWheelNodes.length,
+    chassisPivot:pivotLocal.toArray().map(v=>Number(v.toFixed(3)))
+  });
+  return true;
+}
+
+function updateAnchoredEffects(){
+  if(!vehicle)return;
+  vehicle.updateMatrixWorld(true);
+  exhaustPoint.copy((vehicleChassis||vehicle).localToWorld(exhaustLocalPoint.clone()));
+  if(rearWheelNodes.length){
+    const visibleRear=rearWheelNodes.slice().sort((a,b)=>b.centerWorld.z-a.centerWorld.z);
+    rearWheelPoint.copy(visibleRear[0].node.getWorldPosition(new THREE.Vector3()));
+    rearWheelPoint.y-=.08;
+  }
+}
+function spinWheelSet(nodes,angle){
+  for(const wheel of nodes){
+    /* ALLCOINS RACING V7 · WHEEL ROTATION DIRECTION */
+    const delta=new THREE.Quaternion().setFromAxisAngle(wheel.spinAxisParent,angle);
+    wheel.node.quaternion.copy(delta).multiply(wheel.baseQuaternion);
+  }
+}
+function createHeadlightRig(actual,actualSize){
+  if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
+  headlightRig=new THREE.Group();headlightRig.name='ALLCOINS · дополнительные фары и световые пучки';
+  const center=actual.getCenter(new THREE.Vector3());
+  const frontWorld=new THREE.Vector3(actual.max.x+.018,actual.min.y+actualSize.y*.53,center.z);
+  const localOrigin=vehicle.worldToLocal(frontWorld.clone());
+  const forwardPoint=vehicle.worldToLocal(frontWorld.clone().add(new THREE.Vector3(1,0,0)));
+  const forward=forwardPoint.sub(localOrigin).normalize();
+  const sidePoint=vehicle.worldToLocal(frontWorld.clone().add(new THREE.Vector3(0,0,Math.max(.12,actualSize.z*.24))));
+  const side=sidePoint.sub(localOrigin).normalize();
+  headlightRig.position.copy(localOrigin);vehicle.add(headlightRig);
+  const spots=[],bulbs=[];
+  for(const sign of [-1,1]){
+    const position=side.clone().multiplyScalar(sign*Math.max(.12,actualSize.z*.22));
+    const bulbMaterial=new THREE.MeshStandardMaterial({color:0xfff0c8,emissive:0xffd978,emissiveIntensity:0,roughness:.24,metalness:.08});
+    const bulb=new THREE.Mesh(new THREE.SphereGeometry(.075,12,10),bulbMaterial);bulb.position.copy(position);headlightRig.add(bulb);bulbs.push(bulbMaterial);
+    const spot=new THREE.SpotLight(0xffedbd,0,36,Math.PI/8,.62,1.35);spot.position.copy(position);
+    spot.target.position.copy(position).add(forward.clone().multiplyScalar(15));headlightRig.add(spot);headlightRig.add(spot.target);spots.push(spot);
+    const beamMaterial=new THREE.MeshBasicMaterial({color:0xffe7a3,transparent:true,opacity:.135,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+    const beam=new THREE.Mesh(new THREE.ConeGeometry(1.15,14,18,1,true),beamMaterial);
+    beam.position.copy(position).add(forward.clone().multiplyScalar(7));
+    beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),forward.clone().negate());
+    beam.renderOrder=2;headlightRig.add(beam);
+  }
+  headlightRig.userData.spotlights=spots;headlightRig.userData.bulbMaterials=bulbs;
+  setHeadlights(false);
+}
+
+let engineAudioContext=null, engineAudioMaster=null, engineAudioFilter=null;
+let engineOscillator=null, engineHarmonic=null, engineHarmonicGain=null;
+let engineAudioEnabled=false, engineAudioLastUpdate=0;
+function updateEngineAudio(force=false){
+  if(!engineAudioContext||!engineAudioMaster||!engineOscillator)return;
+  const now=engineAudioContext.currentTime;
+  if(!force&&now-engineAudioLastUpdate<.075)return;
+  engineAudioLastUpdate=now;
+  const active=engineAudioEnabled&&!paused&&!document.hidden;
+  const engineHz=Math.max(25,Math.min(235,(rpm||900)/60*2));
+  const load=throttle&&!braking?1:0;
+  const volume=active?(.022+load*.032+Math.min(.018,(speed||0)/2200)):0;
+  engineOscillator.frequency.setTargetAtTime(engineHz,now,.055);
+  if(engineHarmonic)engineHarmonic.frequency.setTargetAtTime(engineHz*2.01,now,.065);
+  if(engineAudioFilter)engineAudioFilter.frequency.setTargetAtTime(420+Math.min(760,(rpm||900)*.105)+load*180,now,.09);
+  engineAudioMaster.gain.setTargetAtTime(volume,now,active?.10:.16);
+}
+async function enableEngineAudio(){
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass){$('engineSound').textContent='ЗВУК · НЕДОСТУПЕН';return;}
+  if(!engineAudioContext){
+    engineAudioContext=new AudioContextClass();
+    engineAudioMaster=engineAudioContext.createGain();engineAudioMaster.gain.value=0;
+    engineAudioFilter=engineAudioContext.createBiquadFilter();engineAudioFilter.type='lowpass';engineAudioFilter.frequency.value=480;engineAudioFilter.Q.value=.72;
+    engineOscillator=engineAudioContext.createOscillator();engineOscillator.type='sawtooth';engineOscillator.frequency.value=30;
+    engineHarmonic=engineAudioContext.createOscillator();engineHarmonic.type='triangle';engineHarmonic.frequency.value=60;
+    engineHarmonicGain=engineAudioContext.createGain();engineHarmonicGain.gain.value=.16;
+    engineOscillator.connect(engineAudioFilter);engineHarmonic.connect(engineHarmonicGain);engineHarmonicGain.connect(engineAudioFilter);
+    engineAudioFilter.connect(engineAudioMaster);engineAudioMaster.connect(engineAudioContext.destination);
+    engineOscillator.start();engineHarmonic.start();
+  }
+  await engineAudioContext.resume();
+  engineAudioEnabled=true;$('engineSound').textContent='ЗВУК · ВКЛ';$('engineSound').classList.add('sound-active');
+  updateEngineAudio(true);
+}
+function disableEngineAudio(){
+  engineAudioEnabled=false;
+  $('engineSound').textContent='ЗВУК · ВЫКЛ';$('engineSound').classList.remove('sound-active');
+  updateEngineAudio(true);
+}
+$('engineSound').addEventListener('click',async()=>{
+  if(engineAudioEnabled){disableEngineAudio();return;}
+  try{await enableEngineAudio();}catch(error){console.warn('Engine audio unavailable:',error);$('engineSound').textContent='ЗВУК · ОШИБКА';}
+});
+function playGearChangeCue(){
+  if(!engineAudioEnabled||!engineAudioContext||engineAudioContext.state!=='running')return;
+  const ctx=engineAudioContext,now=ctx.currentTime;
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type='triangle';osc.frequency.setValueAtTime(310,now);osc.frequency.exponentialRampToValueAtTime(145,now+.13);
+  gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(.035,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.17);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+.19);
+}
+
+const canvas = $('view');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07101f);
+scene.fog = new THREE.Fog(0x07101f, 38, 120);
+const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
+camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
+scene.add(new THREE.HemisphereLight(0x7387ad,0x10131f,.85));
+const sun = new THREE.DirectionalLight(0x9db9e8,.85); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x638dc8,.60); fill.position.set(8,5,-12); scene.add(fill);
+
+const roadMat = new THREE.MeshStandardMaterial({color:0x171e2c,roughness:.18,metalness:.32});
+const road = new THREE.Mesh(new THREE.PlaneGeometry(900,18),roadMat); road.rotation.x=-Math.PI/2; road.position.y=-.12; road.receiveShadow=true; scene.add(road);
+const shoulderMat = new THREE.MeshStandardMaterial({color:0x111a28,roughness:.72,metalness:.12});
+const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900,25),shoulderMat); shoulder.rotation.x=-Math.PI/2; shoulder.position.set(0,-.19,-.2); scene.add(shoulder);
+const stripeMat = new THREE.MeshStandardMaterial({color:0xb7c9e5,roughness:.42,emissive:0x718ab4,emissiveIntensity:.42});
+const laneMarks=[];
+for(let i=0;i<42;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(3.2,.035,.16),stripeMat);m.position.set(-126+i*6.2,.005,1.8);scene.add(m);laneMarks.push(m);}
+const edgeMat=new THREE.MeshStandardMaterial({color:0x8298b7,metalness:.45,roughness:.4,emissive:0x17263e});
+for(const z of [-5.8,5.8]){const e=new THREE.Mesh(new THREE.BoxGeometry(900,.05,.17),edgeMat);e.position.set(0,.015,z);scene.add(e);}
+
+const city=[];
+const buildingMats=[0x18263b,0x25344a,0x202c40,0x30384e,0x152338,0x354157].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.88,metalness:.10}));
+const windowMat=new THREE.MeshBasicMaterial({color:0xffc979});
+for(let i=0;i<33;i++){
+  const w=2.5+(i%4)*.65,h=3.5+((i*7)%8)*.72,d=1.2+(i%3)*.45;
+  const group=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),buildingMats[i%buildingMats.length]);body.position.y=h/2;group.add(body);
+  if(i%3!==0){for(let row=0;row<Math.min(5,Math.floor(h/1.15));row++)for(let col=0;col<Math.max(1,Math.floor(w/.8));col++){const win=new THREE.Mesh(new THREE.BoxGeometry(.22,.28,.025),windowMat);win.position.set(-w/2+.45+col*.72,.75+row*1.05,d/2+.018);group.add(win);}}
+  group.position.set(-115+i*7.15,0,-9-(i%4)*1.6);scene.add(group);city.push(group);
+}
+const carAnchor=-4.2;
+// Finish marker belongs to the track and advances in exact proportion to race distance.
+const WORLD_UNITS_PER_METER = .22;
+const RACE_DISTANCE_METERS = 1000;
+const finishStartX = carAnchor + RACE_DISTANCE_METERS * WORLD_UNITS_PER_METER;
+const finishLine = new THREE.Group();
+const finishTileMats = [
+  new THREE.MeshStandardMaterial({color:0xf0f0ec,roughness:.85}),
+  new THREE.MeshStandardMaterial({color:0x15191d,roughness:.9})
+];
+for (let row=0; row<12; row++) {
+  const tile = new THREE.Mesh(new THREE.BoxGeometry(.42,.028,.92),finishTileMats[row%2]);
+  tile.position.set(0,.022,-5.06+row*.92);
+  tile.receiveShadow = true;
+  finishLine.add(tile);
+}
+finishLine.position.x = finishStartX;
+scene.add(finishLine);
+
+const distantHills=new THREE.Group();
+for(let i=0;i<14;i++){const hill=new THREE.Mesh(new THREE.ConeGeometry(9+(i%4)*2,9+(i%5)*1.5,5),new THREE.MeshStandardMaterial({color:i%2?0x71877d:0x879889,roughness:1}));hill.position.set(-110+i*18,3,-30);hill.rotation.y=i*.31;distantHills.add(hill);}scene.add(distantHills);
+/* ALLCOINS V24 VISUAL LIGHTING V4 — только освещение и читаемость ограждений; физика V24 не меняется. */
+const acV4SkyFill = new THREE.HemisphereLight(0x9fc6e8, 0x17202b, 0.62);
+scene.add(acV4SkyFill);
+const acV4CarKey = new THREE.DirectionalLight(0xeaf2ff, 1.15);
+acV4CarKey.position.set(-7.5, 8.0, 9.0);
+acV4CarKey.target.position.set(-4.2, 1.0, 0);
+scene.add(acV4CarKey, acV4CarKey.target);
+const acV4CarRim = new THREE.DirectionalLight(0x75aaff, 0.62);
+acV4CarRim.position.set(-1.0, 5.5, -8.0);
+acV4CarRim.target.position.set(-4.2, 1.0, 0);
+scene.add(acV4CarRim, acV4CarRim.target);
+const acV4WarmFill = new THREE.PointLight(0xffc98c, 1.8, 22, 2);
+acV4WarmFill.position.set(-4.4, 3.6, 4.2);
+scene.add(acV4WarmFill);
+if (typeof renderer !== "undefined" && renderer && "toneMappingExposure" in renderer) renderer.toneMappingExposure = Math.max(Number(renderer.toneMappingExposure) || 1, 1.16);
+scene.traverse((o) => {
+  if (!o.isMesh || !o.material) return;
+  const name = String(o.name || "").toLowerCase();
+  const mats = Array.isArray(o.material) ? o.material : [o.material];
+  for (const m of mats) {
+    if (m && (m.wireframe || /fence|rail|barrier|ограж/.test(name))) {
+      m.transparent = true;
+      m.opacity = Math.min(Number(m.opacity ?? 1), m.wireframe ? 0.16 : 0.48);
+      m.depthWrite = false;
+      if (m.color) m.color.multiplyScalar(0.68);
+      m.needsUpdate = true;
+    }
+  }
+});
+
+
+/* ALLCOINS V24 VISUAL LIGHTING V5 — мокрая трасса, выразительные фонари и читаемость кузова.
+   Только визуальные эффекты. Физика, двигатель, передачи, колёса и управление не изменяются. */
+
+// Мягко усиливаем уже созданное V4 освещение, не добавляя тяжёлые источники теней.
+acV4SkyFill.intensity = Math.max(acV4SkyFill.intensity, 0.70);
+acV4CarKey.intensity = Math.max(acV4CarKey.intensity, 1.32);
+acV4CarRim.intensity = Math.max(acV4CarRim.intensity, 0.78);
+acV4WarmFill.intensity = Math.max(acV4WarmFill.intensity, 2.05);
+renderer.toneMappingExposure = Math.max(Number(renderer.toneMappingExposure) || 1, 1.20);
+
+// Дополнительный мягкий контровой свет для боковой поверхности автомобиля.
+const acV5BodyLight = new THREE.DirectionalLight(0xdceaff, 0.48);
+acV5BodyLight.position.set(-10, 5.8, 13);
+acV5BodyLight.target.position.set(-4.2, 1.05, 0);
+scene.add(acV5BodyLight, acV5BodyLight.target);
+
+// Небольшой тёплый свет возле кузова помогает отделить автомобиль от тёмного города.
+const acV5WarmBodyFill = new THREE.PointLight(0xffd6ad, 1.05, 18, 2);
+acV5WarmBodyFill.position.set(-7.0, 2.8, 5.8);
+scene.add(acV5WarmBodyFill);
+
+// Умеренное усиление отражающего вида дорожного покрытия.
+roadMat.roughness = Math.min(roadMat.roughness, 0.18);
+roadMat.metalness = Math.max(roadMat.metalness, 0.32);
+
+// Световые блики на мокром асфальте. InstancedMesh ограничивает число draw calls для Android.
+const acV5WetGeometry = new THREE.PlaneGeometry(1, 1);
+const acV5WetBlueMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.105,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  blending: THREE.AdditiveBlending
+});
+const acV5WetWarmMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.085,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  blending: THREE.AdditiveBlending
+});
+const acV5WetBlue = new THREE.InstancedMesh(acV5WetGeometry, acV5WetBlueMaterial, 32);
+const acV5WetWarm = new THREE.InstancedMesh(acV5WetGeometry, acV5WetWarmMaterial, 9);
+acV5WetBlue.frustumCulled = false;
+acV5WetWarm.frustumCulled = false;
+acV5WetBlue.renderOrder = 1;
+acV5WetWarm.renderOrder = 1;
+scene.add(acV5WetBlue, acV5WetWarm);
+
+const acV5WetDummy = new THREE.Object3D();
+const acV5WetRecords = [];
+function acV5PlaceWet(mesh, index, x, z, length, width) {
+  acV5WetDummy.position.set(x, -0.102, z);
+  acV5WetDummy.rotation.set(-Math.PI / 2, 0, 0);
+  acV5WetDummy.scale.set(length, width, 1);
+  acV5WetDummy.updateMatrix();
+  mesh.setMatrixAt(index, acV5WetDummy.matrix);
+}
+
+for (let i = 0; i < 32; i++) {
+  const x = -132 + i * 8.55;
+  const z = ((i * 19) % 78) / 10 - 3.9;
+  const length = 2.4 + (i % 5) * 1.25;
+  const width = 0.075 + (i % 3) * 0.045;
+  const color = new THREE.Color(i % 4 === 0 ? 0xb4d8ff : 0x6f9cc8);
+  acV5WetBlue.setColorAt(i, color);
+  acV5PlaceWet(acV5WetBlue, i, x, z, length, width);
+  acV5WetRecords.push({ mesh: acV5WetBlue, index: i, x, z, length, width });
+}
+
+for (let i = 0; i < 9; i++) {
+  const x = -118 + i * 31.5;
+  const z = i % 2 ? -1.75 : 1.65;
+  const length = 3.8 + (i % 3) * 1.7;
+  const width = 0.11 + (i % 2) * 0.06;
+  acV5WetWarm.setColorAt(i, new THREE.Color(i % 2 ? 0xffc98c : 0xffe0b2));
+  acV5PlaceWet(acV5WetWarm, i, x, z, length, width);
+  acV5WetRecords.push({ mesh: acV5WetWarm, index: i, x, z, length, width });
+}
+acV5WetBlue.instanceMatrix.needsUpdate = true;
+acV5WetWarm.instanceMatrix.needsUpdate = true;
+if (acV5WetBlue.instanceColor) acV5WetBlue.instanceColor.needsUpdate = true;
+if (acV5WetWarm.instanceColor) acV5WetWarm.instanceColor.needsUpdate = true;
+
+function acV5UpdateWetReflections(scroll) {
+  if (!scroll) return;
+  for (const record of acV5WetRecords) {
+    record.x -= scroll * 0.80;
+    while (record.x < -145) record.x += 288;
+    while (record.x > 143) record.x -= 288;
+    acV5PlaceWet(record.mesh, record.index, record.x, record.z, record.length, record.width);
+  }
+  acV5WetBlue.instanceMatrix.needsUpdate = true;
+  acV5WetWarm.instanceMatrix.needsUpdate = true;
+}
+
+// Осветляем только материал кузова ВАЗ-2107. Материалы колёс, стёкол и шин не трогаем.
+function acV5EnhanceCarBody(root) {
+  if (!root || root.userData.acV5BodyEnhanced) return 0;
+  let changed = 0;
+  root.traverse(object => {
+    if (!object.isMesh || object.name !== 'Car_CarBody_0' || !object.material) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material || material.userData.acV5BodyEnhanced) continue;
+      if (material.color) material.color.multiplyScalar(1.12);
+      if (material.emissive) {
+        material.emissive.set(0x0a1420);
+        material.emissiveIntensity = Math.max(Number(material.emissiveIntensity) || 0, 0.12);
+      }
+      if (Number.isFinite(material.roughness)) material.roughness = Math.min(material.roughness, 0.48);
+      if (Number.isFinite(material.metalness)) material.metalness = Math.max(material.metalness, 0.12);
+      material.userData.acV5BodyEnhanced = true;
+      material.needsUpdate = true;
+      changed++;
+    }
+  });
+  root.userData.acV5BodyEnhanced = true;
+  console.info('ALLCOINS Racing V5 · материалы кузова подготовлены', { changedMaterials: changed });
+  return changed;
+}
+
+
+/* ALLCOINS V24 NIGHT RACE SCENE V3: race facility, tire walls, trees and rain */
+
+/* Деревья на дальнем плане */
+const acTreeTrunkGeo = new THREE.CylinderGeometry(.12,.18,1.7,7);
+const acTreeTrunkMat = new THREE.MeshStandardMaterial({
+  color:0x303344,roughness:1
+});
+const acTreeCrownGeo = new THREE.ConeGeometry(1.25,2.35,7);
+const acTreeCrownMat = new THREE.MeshStandardMaterial({
+  color:0x17283a,roughness:1
+});
+
+const acTreeCount = 24;
+const acTreeTrunks = new THREE.InstancedMesh(
+  acTreeTrunkGeo,acTreeTrunkMat,acTreeCount
+);
+const acTreeCrowns = new THREE.InstancedMesh(
+  acTreeCrownGeo,acTreeCrownMat,acTreeCount*3
+);
+const acTreeRecords = [];
+const acDummy = new THREE.Object3D();
+
+for(let i=0;i<acTreeCount;i++){
+  const tree = {
+    x:-125+i*10.5,
+    z:-20-(i%3)*1.3
+  };
+  acTreeRecords.push(tree);
+
+  acDummy.position.set(tree.x,.85,tree.z);
+  acDummy.scale.set(1,1,1);
+  acDummy.updateMatrix();
+  acTreeTrunks.setMatrixAt(i,acDummy.matrix);
+
+  for(let layer=0;layer<3;layer++){
+    acDummy.position.set(tree.x,2.0+layer*1.15,tree.z);
+    acDummy.scale.set(
+      1-layer*.13,
+      1-layer*.05,
+      1-layer*.13
+    );
+    acDummy.updateMatrix();
+    acTreeCrowns.setMatrixAt(i*3+layer,acDummy.matrix);
+  }
+}
+scene.add(acTreeTrunks,acTreeCrowns);
+acTreeTrunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+acTreeCrowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+/* Стена гоночных покрышек */
+const acTireGeo = new THREE.TorusGeometry(.30,.095,8,14);
+const acTireMat = new THREE.MeshStandardMaterial({
+  color:0x10141b,roughness:.92,metalness:.04
+});
+const acTireRecords = [];
+const acTireMesh = new THREE.InstancedMesh(
+  acTireGeo,acTireMat,128
+);
+
+for(const side of [-1,1]){
+  for(let i=0;i<64;i++){
+    const tire = {
+      x:-140+i*4.5,
+      y:.39,
+      z:side*9.35
+    };
+    acTireRecords.push(tire);
+
+    acDummy.position.set(tire.x,tire.y,tire.z);
+    acDummy.rotation.set(0,0,0);
+    acDummy.scale.set(1,1,1);
+    acDummy.updateMatrix();
+    acTireMesh.setMatrixAt(acTireRecords.length-1,acDummy.matrix);
+  }
+}
+acTireMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+scene.add(acTireMesh);
+
+/* Сегменты ограждения */
+const acRailGeo = new THREE.BoxGeometry(4.5,.13,.16);
+const acRailMat = new THREE.MeshStandardMaterial({
+  color:0x71849d,metalness:.72,roughness:.34,
+  emissive:0x14243b
+});
+const acRailRecords = [];
+const acRailMesh = new THREE.InstancedMesh(
+  acRailGeo,acRailMat,128
+);
+
+const acPostGeo = new THREE.BoxGeometry(.10,1.45,.10);
+const acPostMat = new THREE.MeshStandardMaterial({
+  color:0x8796a9,metalness:.65,roughness:.4
+});
+const acPostRecords = [];
+const acPostMesh = new THREE.InstancedMesh(
+  acPostGeo,acPostMat,128
+);
+
+for(const side of [-1,1]){
+  for(let i=0;i<64;i++){
+    const x=-140+i*4.5;
+    acRailRecords.push({
+      x:x+2.25,y:1.08,z:side*8.45
+    });
+    acPostRecords.push({
+      x,y:.72,z:side*8.45
+    });
+  }
+}
+
+for(let i=0;i<acRailRecords.length;i++){
+  const r=acRailRecords[i];
+  acDummy.position.set(r.x,r.y,r.z);
+  acDummy.scale.set(1,1,1);
+  acDummy.updateMatrix();
+  acRailMesh.setMatrixAt(i,acDummy.matrix);
+
+  const p=acPostRecords[i];
+  acDummy.position.set(p.x,p.y,p.z);
+  acDummy.updateMatrix();
+  acPostMesh.setMatrixAt(i,acDummy.matrix);
+}
+acRailMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+acPostMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+scene.add(acRailMesh,acPostMesh);
+
+/* Сетка ограждения дальней стороны трассы */
+const acFence = new THREE.Mesh(
+  new THREE.PlaneGeometry(900,1.6,220,6),
+  new THREE.MeshBasicMaterial({
+    color:0x7997bd,
+    wireframe:true,
+    transparent:true,
+    opacity:.20,
+    depthWrite:false
+  })
+);
+acFence.position.set(0,1.55,-8.30);
+scene.add(acFence);
+
+/* Световые точки вдоль гоночной площадки */
+const acLampRecords=[];
+const acLampGlowMat=new THREE.MeshBasicMaterial({color:0xffe2bb});
+const acLampGeo=new THREE.SphereGeometry(.17,8,8);
+const acLampHaloGeo=new THREE.SphereGeometry(.34,10,8);
+const acLampHaloMat=new THREE.MeshBasicMaterial({color:0xffd69a,transparent:true,opacity:.16,depthWrite:false,blending:THREE.AdditiveBlending});
+
+for(let i=0;i<7;i++){
+  const x=-108+i*36;
+  const bulb=new THREE.Mesh(acLampGeo,acLampGlowMat);
+  bulb.position.set(x,5.2,-7.4);
+  scene.add(bulb);
+
+  const halo=new THREE.Mesh(acLampHaloGeo,acLampHaloMat);
+  halo.position.copy(bulb.position);
+  scene.add(halo);
+
+  const light=new THREE.PointLight(0x9fc8ff,2.6,31,2);
+  light.position.set(x,4.7,-6.1);
+  light.castShadow=false;
+  scene.add(light);
+
+  acLampRecords.push({x,bulb,light,halo});
+}
+
+/* Дождь перед камерой */
+const acRainCount=150;
+const acRainPositions=new Float32Array(acRainCount*6);
+
+for(let i=0;i<acRainCount;i++){
+  const k=i*6;
+  const x=(Math.random()-.5)*55;
+  const y=-1+Math.random()*15;
+  const z=9+Math.random()*15;
+
+  acRainPositions[k]=x;
+  acRainPositions[k+1]=y;
+  acRainPositions[k+2]=z;
+  acRainPositions[k+3]=x+.13;
+  acRainPositions[k+4]=y-.78;
+  acRainPositions[k+5]=z;
+}
+
+const acRainGeometry=new THREE.BufferGeometry();
+acRainGeometry.setAttribute(
+  'position',
+  new THREE.BufferAttribute(acRainPositions,3)
+);
+const acRain=new THREE.LineSegments(
+  acRainGeometry,
+  new THREE.LineBasicMaterial({
+    color:0xaacdf5,
+    transparent:true,
+    opacity:.25,
+    depthWrite:false
+  })
+);
+acRain.frustumCulled=false;
+scene.add(acRain);
+
+/* Обновление окружения — не затрагивает физику машины */
+function updateRaceEnvironment(dt,scroll){
+  const rain=acRainGeometry.attributes.position.array;
+
+  for(let i=0;i<acRainCount;i++){
+    const k=i*6;
+    rain[k]-=dt*2.8;
+    rain[k+1]-=dt*13;
+    rain[k+3]-=dt*2.8;
+    rain[k+4]-=dt*13;
+
+    if(rain[k+1]<-2){
+      const x=(Math.random()-.5)*55;
+      const y=11+Math.random()*6;
+      const z=9+Math.random()*15;
+      rain[k]=x;
+      rain[k+1]=y;
+      rain[k+2]=z;
+      rain[k+3]=x+.13;
+      rain[k+4]=y-.78;
+      rain[k+5]=z;
+    }
+  }
+  acRainGeometry.attributes.position.needsUpdate=true;
+
+  if(!scroll)return;
+
+  acV5UpdateWetReflections(scroll);
+
+  for(const tree of acTreeRecords){
+    tree.x-=scroll*.075;
+    if(tree.x < -132)tree.x+=252;
+  }
+
+  for(let i=0;i<acTreeRecords.length;i++){
+    const t=acTreeRecords[i];
+    acDummy.position.set(t.x,.85,t.z);
+    acDummy.scale.set(1,1,1);
+    acDummy.updateMatrix();
+    acTreeTrunks.setMatrixAt(i,acDummy.matrix);
+
+    for(let layer=0;layer<3;layer++){
+      acDummy.position.set(t.x,2+layer*1.15,t.z);
+      acDummy.scale.set(1-layer*.13,1-layer*.05,1-layer*.13);
+      acDummy.updateMatrix();
+      acTreeCrowns.setMatrixAt(i*3+layer,acDummy.matrix);
+    }
+  }
+  acTreeTrunks.instanceMatrix.needsUpdate=true;
+  acTreeCrowns.instanceMatrix.needsUpdate=true;
+
+  function moveInstances(mesh,records,factor){
+    for(let i=0;i<records.length;i++){
+      const r=records[i];
+      r.x-=scroll*factor;
+      if(r.x < -145)r.x+=288;
+      acDummy.position.set(r.x,r.y,r.z);
+      acDummy.rotation.set(0,0,0);
+      acDummy.scale.set(1,1,1);
+      acDummy.updateMatrix();
+      mesh.setMatrixAt(i,acDummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+  }
+
+  moveInstances(acTireMesh,acTireRecords,.80);
+  moveInstances(acRailMesh,acRailRecords,.80);
+  moveInstances(acPostMesh,acPostRecords,.80);
+
+  for(const lamp of acLampRecords){
+    lamp.x-=scroll*.17;
+    if(lamp.x < -125)lamp.x+=252;
+    lamp.bulb.position.x=lamp.x;
+    lamp.light.position.x=lamp.x;
+    lamp.halo.position.x=lamp.x;
+  }
+}
+
+
+
+let vehicle=null, wheelNodes=[], frontWheelNodes=[], rearWheelNodes=[], exhaustPoint=new THREE.Vector3(carAnchor-2.2,.55,-.2), rearWheelPoint=new THREE.Vector3(carAnchor-1.45,.42,.15);
+let vehicleLength=4.6, vehicleCenterY=1.0;
+let vehicleBaseY=0, vehicleBaseRotationZ=0, wheelSpinAngle=0, rearWheelSpinAngle=0;
+let vehicleChassis=null, vehicleChassisBaseY=0, vehicleChassisBaseRotationZ=0;
+let vehicleChassisBasePosition=new THREE.Vector3(), vehicleChassisBaseQuaternion=new THREE.Quaternion(), vehicleChassisPitchAxis=new THREE.Vector3(0,0,1), vehicleChassisSuspensionUp=new THREE.Vector3(0,1,0);
+let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vector3();
+const loader=new GLTFLoader();
+const smokeParticles=[];
+const smokeGeometry=new THREE.SphereGeometry(.13,7,6);
+function addSmoke(position,kind='exhaust'){
+  const tire = kind === 'tire';
+  const life = tire ? 2.15 : 1.35;
+  const material = new THREE.MeshBasicMaterial({
+    color: tire ? 0x202326 : 0x969fa3,
+    transparent:true,
+    opacity:tire ? .66 : .30,
+    depthWrite:false
+  });
+  const mesh=new THREE.Mesh(smokeGeometry,material);
+  mesh.position.copy(position);
+  mesh.scale.setScalar(tire ? 1.12+Math.random()*.45 : .65+Math.random()*.3);
+  scene.add(mesh);
+  smokeParticles.push({mesh,life,max:life,baseOpacity:material.opacity,vx:-.55-Math.random()*.75,vy:tire?.20+Math.random()*.38:.22+Math.random()*.48});
+  if(smokeParticles.length>130){const old=smokeParticles.shift();scene.remove(old.mesh);old.mesh.material.dispose();}
+}
+function setMessage(title,body,allowPick=true){$('message').classList.remove('hidden');$('message').querySelector('strong').textContent=title;$('messageText').textContent=body;$('chooseModel').style.display=allowPick?'inline-block':'none';}
+function hideMessage(){$('message').classList.add('hidden');}
+/* ALLCOINS RACING V6 · GEOMETRY ISLAND WHEELS */
+function acRacingBuildGeometryPart(sourceGeometry, triangles, offset=null){
+  const out=new THREE.BufferGeometry();
+  const sourceAttributes=sourceGeometry.attributes||{};
+  for(const [name,attribute] of Object.entries(sourceAttributes)){
+    const values=[];
+    const itemSize=attribute.itemSize;
+    const interleaved=Boolean(attribute.isInterleavedBufferAttribute);
+    for(const triangle of triangles){
+      for(const vertexIndex of [triangle.a,triangle.b,triangle.c]){
+        for(let component=0;component<itemSize;component++){
+          let value;
+          if(interleaved){
+            value=attribute.data.array[vertexIndex*attribute.data.stride+attribute.offset+component];
+          }else{
+            value=attribute.array[vertexIndex*itemSize+component];
+          }
+          if(name==='position'&&offset)value-=offset.getComponent(component);
+          values.push(value);
+        }
+      }
+    }
+    const backingArray=interleaved?attribute.data.array:attribute.array;
+    const resultAttribute=new THREE.BufferAttribute(new backingArray.constructor(values),itemSize,attribute.normalized);
+    resultAttribute.name=attribute.name||name;
+    out.setAttribute(name,resultAttribute);
+  }
+  let activeMaterial=null,groupStart=0,groupCount=0;
+  const flushGroup=()=>{
+    if(groupCount>0)out.addGroup(groupStart,groupCount,activeMaterial??0);
+  };
+  for(let i=0;i<triangles.length;i++){
+    const materialIndex=triangles[i].materialIndex??0;
+    if(activeMaterial===null){activeMaterial=materialIndex;groupStart=0;groupCount=3;}
+    else if(materialIndex===activeMaterial){groupCount+=3;}
+    else{flushGroup();groupStart+=groupCount;activeMaterial=materialIndex;groupCount=3;}
+  }
+  flushGroup();
+  out.setDrawRange(0,triangles.length*3);
+  out.userData={...(sourceGeometry.userData||{})};
+  if(out.getAttribute('position')){
+    out.computeBoundingBox();
+    out.computeBoundingSphere();
+  }
+  return out;
+}
+
+function acRacingReadGeometryIslands(object){
+  const geometry=object.geometry;
+  const position=geometry?.getAttribute('position');
+  if(!position||position.count<3)return [];
+  const vertexCount=position.count;
+  const index=geometry.index;
+  const elementCount=index?index.count:vertexCount;
+  const triangleCount=Math.floor(elementCount/3);
+  if(!triangleCount)return [];
+  const parent=new Int32Array(vertexCount);
+  for(let i=0;i<vertexCount;i++)parent[i]=i;
+  const find=(value)=>{
+    let root=value;
+    while(parent[root]!==root)root=parent[root];
+    while(parent[value]!==value){const next=parent[value];parent[value]=root;value=next;}
+    return root;
+  };
+  const union=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent[rb]=ra;};
+  const objectBounds=new THREE.Box3();
+  for(let i=0;i<vertexCount;i++)objectBounds.expandByPoint(new THREE.Vector3(position.getX(i),position.getY(i),position.getZ(i)));
+  const objectSize=objectBounds.getSize(new THREE.Vector3());
+  const weldEpsilon=Math.max(1e-7,Math.max(objectSize.x,objectSize.y,objectSize.z)*1e-6);
+  const positionOwners=new Map();
+  for(let i=0;i<vertexCount;i++){
+    const x=Math.round(position.getX(i)/weldEpsilon);
+    const y=Math.round(position.getY(i)/weldEpsilon);
+    const z=Math.round(position.getZ(i)/weldEpsilon);
+    const key=x+','+y+','+z;
+    const previous=positionOwners.get(key);
+    if(previous===undefined)positionOwners.set(key,i);else union(i,previous);
+  }
+  const materialForElement=(elementStart)=>{
+    const groups=geometry.groups||[];
+    for(const group of groups){
+      if(elementStart>=group.start&&elementStart<group.start+group.count)return group.materialIndex??0;
+    }
+    return 0;
+  };
+  const getIndex=(element)=>index?index.getX(element):element;
+  for(let t=0;t<triangleCount;t++){
+    const at=t*3,a=getIndex(at),b=getIndex(at+1),c=getIndex(at+2);
+    if(a>=vertexCount||b>=vertexCount||c>=vertexCount)continue;
+    union(a,b);union(a,c);
+  }
+  const components=new Map();
+  for(let t=0;t<triangleCount;t++){
+    const at=t*3,a=getIndex(at),b=getIndex(at+1),c=getIndex(at+2);
+    if(a>=vertexCount||b>=vertexCount||c>=vertexCount)continue;
+    const root=find(a);
+    let component=components.get(root);
+    if(!component){component={triangles:[],vertices:new Set()};components.set(root,component);}
+    component.triangles.push({a,b,c,materialIndex:materialForElement(at),triangleIndex:t});
+    component.vertices.add(a);component.vertices.add(b);component.vertices.add(c);
+  }
+  const result=[];
+  for(const component of components.values()){
+    const localBox=new THREE.Box3();
+    for(const vertexIndex of component.vertices){
+      localBox.expandByPoint(new THREE.Vector3(position.getX(vertexIndex),position.getY(vertexIndex),position.getZ(vertexIndex)));
+    }
+    const localSize=localBox.getSize(new THREE.Vector3());
+    const localCenter=localBox.getCenter(new THREE.Vector3());
+    const worldBox=new THREE.Box3();
+    for(const vertexIndex of component.vertices){
+      const point=new THREE.Vector3(position.getX(vertexIndex),position.getY(vertexIndex),position.getZ(vertexIndex));
+      worldBox.expandByPoint(object.localToWorld(point));
+    }
+    const worldSize=worldBox.getSize(new THREE.Vector3());
+    const sortedWorld=[worldSize.x,worldSize.y,worldSize.z].sort((a,b)=>a-b);
+    const sortedLocal=[localSize.x,localSize.y,localSize.z].sort((a,b)=>a-b);
+    result.push({
+      triangles:component.triangles,
+      vertexCount:component.vertices.size,
+      triangleCount:component.triangles.length,
+      localBox,localSize,localCenter,worldBox,
+      centerWorld:worldBox.getCenter(new THREE.Vector3()),
+      worldSize,
+      thinWorld:sortedWorld[0],
+      middleWorld:sortedWorld[1],
+      radialWorld:sortedWorld[2],
+      thinLocalAxis:localSize.x<=localSize.y&&localSize.x<=localSize.z?0:(localSize.y<=localSize.z?1:2),
+      radialLocal:sortedLocal[2]
+    });
+  }
+  return result;
+}
+
+function acRacingExtractWheelIslands(source,vehicleLength){
+  if(!source?.geometry)return null;
+  const components=acRacingReadGeometryIslands(source);
+  const outerCandidates=components.filter(component=>
+    component.triangleCount>=150&&
+    component.radialWorld>vehicleLength*.095&&
+    component.radialWorld<vehicleLength*.22&&
+    component.thinWorld/component.radialWorld<.58&&
+    component.middleWorld/component.radialWorld>.82
+  ).sort((a,b)=>b.radialWorld-a.radialWorld);
+  if(outerCandidates.length<4)return null;
+  const wheels=outerCandidates.slice(0,4);
+  const wheelSizes=wheels.map(w=>w.radialWorld);
+  if(Math.max(...wheelSizes)/Math.max(.001,Math.min(...wheelSizes))>1.35)return null;
+  const wheelSet=new Set(wheels);
+  const pairedRims=new Map();
+  const usedRims=new Set();
+  // A visible wheel face can consist of several disconnected concentric islands
+  // (rim face, hub ring and center cap). Attach ALL matching islands to the same
+  // wheel pivot; selecting only matches[0] leaves the other parts on the chassis.
+  for(const wheel of wheels){
+    const matches=components.filter(component=>{
+      if(wheelSet.has(component)||usedRims.has(component)||component.triangleCount<8)return false;
+      const ratio=component.radialWorld/wheel.radialWorld;
+      if(ratio<.12||ratio>.86||component.thinWorld/component.radialWorld>.90||component.middleWorld/component.radialWorld<.58)return false;
+      return component.centerWorld.distanceTo(wheel.centerWorld)<wheel.radialWorld*.18;
+    }).sort((a,b)=>a.centerWorld.distanceTo(wheel.centerWorld)-b.centerWorld.distanceTo(wheel.centerWorld));
+    if(matches.length){
+      pairedRims.set(wheel,matches);
+      for(const rim of matches)usedRims.add(rim);
+    }
+  }
+  const removed=new Set(wheels);
+  for(const rim of usedRims)removed.add(rim);
+  const bodyTriangles=[];
+  for(const component of components){if(!removed.has(component))bodyTriangles.push(...component.triangles);}
+  bodyTriangles.sort((a,b)=>a.triangleIndex-b.triangleIndex);
+  if(bodyTriangles.length<100)return null;
+  const wheelParts=[];
+  for(const wheel of wheels){
+    const partTriangles=wheel.triangles.slice();
+    const rims=pairedRims.get(wheel)||[];
+    for(const rim of rims)partTriangles.push(...rim.triangles);
+    partTriangles.sort((a,b)=>a.triangleIndex-b.triangleIndex);
+    wheelParts.push({wheel,partTriangles,rims});
+  }
+  const sourceGeometry=source.geometry;
+  const bodyGeometry=acRacingBuildGeometryPart(sourceGeometry,bodyTriangles,null);
+  const wheelGeometries=[];
+  try{
+    for(const part of wheelParts)wheelGeometries.push(acRacingBuildGeometryPart(sourceGeometry,part.partTriangles,part.wheel.localCenter));
+  }catch(error){
+    bodyGeometry.dispose();
+    for(const geometry of wheelGeometries)geometry.dispose();
+    throw error;
+  }
+  const created=[];
+  try{
+    source.geometry=bodyGeometry;
+    for(let i=0;i<wheelParts.length;i++){
+      const part=wheelParts[i],wheel=part.wheel;
+      const pivot=new THREE.Group();
+      pivot.name='ALLCOINS_Wheel_'+(i+1);
+      pivot.position.copy(wheel.localCenter);
+      const wheelMesh=new THREE.Mesh(wheelGeometries[i],source.material);
+      wheelMesh.name='ALLCOINS_WheelGeometry_'+(i+1);
+      wheelMesh.castShadow=true;
+      wheelMesh.receiveShadow=true;
+      pivot.add(wheelMesh);
+      source.add(pivot);
+      const axis=wheel.thinLocalAxis===0?new THREE.Vector3(1,0,0):(wheel.thinLocalAxis===1?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1));
+      created.push({
+        node:pivot,
+        baseQuaternion:pivot.quaternion.clone(),
+        spinAxisParent:axis,
+        centerWorld:wheel.centerWorld.clone(),
+        groundWorldY:wheel.centerWorld.y,
+        radius:wheel.radialWorld*.5,
+        axle:'unknown',
+        sourceTriangles:wheel.triangleCount,
+        rimTriangles:part.rims.reduce((sum,rim)=>sum+rim.triangleCount,0),
+        rimComponents:part.rims.length
+      });
+    }
+    sourceGeometry.dispose();
+  }catch(error){
+    for(const wheel of created){if(wheel.node.parent)wheel.node.parent.remove(wheel.node);}
+    source.geometry=sourceGeometry;
+    bodyGeometry.dispose();
+    for(const geometry of wheelGeometries)geometry.dispose();
+    throw error;
+  }
+  return {wheels:created,components:components.length,removedComponents:removed.size,rimPairs:usedRims.size};
+}
+
+function attachVehicle(root,label='сохранённая модель'){
+  onlineClearOpponentCars();
+  if(vehicle){scene.remove(vehicle);vehicle.traverse(o=>{if(o.geometry)o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.();});}
+  if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
+  wheelNodes=[];frontWheelNodes=[];rearWheelNodes=[];
+  vehicleChassis=null;vehicleChassisBaseY=0;vehicleChassisBaseRotationZ=0;vehicleChassisBasePosition.set(0,0,0);vehicleChassisBaseQuaternion.identity();vehicleChassisPitchAxis.set(0,0,1);vehicleChassisSuspensionUp.set(0,1,0);
+  root.updateMatrixWorld(true);
+  let box=new THREE.Box3().setFromObject(root);let size=box.getSize(new THREE.Vector3());
+  if(size.z>size.x*1.08)root.rotation.y=Math.PI/2;
+  root.updateMatrixWorld(true);box.setFromObject(root);size=box.getSize(new THREE.Vector3());
+  const longAxis=Math.max(size.x,size.z);if(!Number.isFinite(longAxis)||longAxis<.05)throw new Error('В GLB не удалось определить размеры кузова.');
+  const scale=4.75/longAxis;root.scale.setScalar(scale);root.updateMatrixWorld(true);box.setFromObject(root);
+  root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
+  root.position.y+=-box.min.y+.025;
+  root.position.z+=-(box.min.z+box.max.z)/2;
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);
+  const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
+  vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
+  wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
+  const wheelRegex=/wheel|tire|tyre|колес|шина|disk|rim|pneu|reifen|llanta/i;
+  const meshAudit=[];
+  let wheelSourceMesh=null;
+  vehicle.traverse(object=>{
+    if(!object.isMesh||!object.geometry)return;
+    object.castShadow=true;object.receiveShadow=true;
+    const bounds=new THREE.Box3().setFromObject(object);
+    const dims=bounds.getSize(new THREE.Vector3());
+    const centerWorld=bounds.getCenter(new THREE.Vector3());
+    const names=[];let cursor=object;
+    while(cursor&&cursor!==vehicle){if(cursor.name)names.push(cursor.name);cursor=cursor.parent;}
+    const namePath=names.join(' / ');
+    const exhaustNamed=/exhaust|muffler|tailpipe|pipe|глушител|выхлоп|труба/i.test(namePath);
+    const lightNamed=/head.?light|lamp|фара/i.test(namePath);
+    const acV15Materials=(Array.isArray(object.material)?object.material:[object.material]).filter(Boolean).map((m,i)=>({
+      slot:i,name:m.name||'(без имени)',type:m.type||'(unknown)',
+      map:Boolean(m.map),aoMap:Boolean(m.aoMap),normalMap:Boolean(m.normalMap),
+      roughnessMap:Boolean(m.roughnessMap),metalnessMap:Boolean(m.metalnessMap),
+      emissiveMap:Boolean(m.emissiveMap),alphaMap:Boolean(m.alphaMap),
+      transparent:Boolean(m.transparent),opacity:Number.isFinite(m.opacity)?Number(m.opacity.toFixed(3)):null,
+      aoMapIntensity:Number.isFinite(m.aoMapIntensity)?Number(m.aoMapIntensity.toFixed(3)):null,
+      color:m.color?.getHexString?.()||null
+    }));
+    meshAudit.push({name:object.name||'(без имени)',path:namePath||'(без имени)',size:[dims.x,dims.y,dims.z].map(v=>Number(v.toFixed(3))),center:[centerWorld.x,centerWorld.y,centerWorld.z].map(v=>Number(v.toFixed(3))),wheelCandidate:false,exhaust:exhaustNamed,lights:lightNamed,castsShadow:object.castShadow,receivesShadow:object.receiveShadow,materialInfo:acV15Materials});
+    if(!wheelSourceMesh&&/Car_Bottom_0/i.test(namePath))wheelSourceMesh=object;
+  });
+  let islandWheelInfo=null;
+  if(wheelSourceMesh){
+    try{islandWheelInfo=acRacingExtractWheelIslands(wheelSourceMesh,vehicleLength);}
+    catch(error){console.error('ALLCOINS Racing V6 · wheel island extraction failed',error);}
+  }
+  if(islandWheelInfo){
+    wheelNodes=islandWheelInfo.wheels;
+    const spreadX=Math.max(...wheelNodes.map(w=>w.centerWorld.x))-Math.min(...wheelNodes.map(w=>w.centerWorld.x));
+    const spreadZ=Math.max(...wheelNodes.map(w=>w.centerWorld.z))-Math.min(...wheelNodes.map(w=>w.centerWorld.z));
+    const axleAxis=spreadX>=spreadZ?'x':'z';
+    const wheelSpan=Math.max(spreadX,spreadZ);
+    if(wheelSpan>vehicleLength*.22){
+      const values=wheelNodes.map(w=>w.centerWorld[axleAxis]);
+      const split=(Math.min(...values)+Math.max(...values))/2;
+      for(const wheel of wheelNodes){
+        wheel.axle=wheel.centerWorld[axleAxis]>split?'front':'rear';
+        (wheel.axle==='rear'?rearWheelNodes:frontWheelNodes).push(wheel);
+      }
+    }else{
+      wheelNodes=[];
+      console.warn('ALLCOINS Racing V6 · wheel islands found, but axle direction was not reliable; animation disabled');
+    }
+    console.info('ALLCOINS Racing V6 · extracted wheel islands',{
+      wheels:wheelNodes.length,front:frontWheelNodes.length,rear:rearWheelNodes.length,
+      sourceMesh:wheelSourceMesh.name,components:islandWheelInfo.components,
+      removedComponents:islandWheelInfo.removedComponents,rimPairs:islandWheelInfo.rimPairs,
+      rimComponentsPerWheel:wheelNodes.map(w=>w.rimComponents||0),
+      wheelCenters:wheelNodes.map(w=>w.centerWorld.toArray().map(v=>Number(v.toFixed(3))))
+    });
+  }else{
+    console.warn('ALLCOINS Racing V6 · Car_Bottom_0 found, but four safe wheel islands were not identified; original geometry kept intact');
+  }
+  wheelRadiusWorld=rearWheelNodes[0]?.radius||frontWheelNodes[0]?.radius||.34;
+  worldUnitsPerRealMeter=vehicleLength/4.57;
+  const center=actual.getCenter(new THREE.Vector3());
+  const namedTail=meshAudit.find(item=>item.exhaust);
+  // Exhaust outlet is kept on the camera-facing side and follows suspension travel.
+  const tailWorld=namedTail?new THREE.Vector3(actual.min.x-.035,actual.min.y+actualSize.y*.22,center.z+actualSize.z*.20):new THREE.Vector3(actual.min.x-.11,actual.min.y+actualSize.y*.19,center.z+actualSize.z*.22);
+  exhaustLocalPoint.copy(vehicle.worldToLocal(tailWorld.clone()));exhaustPoint.copy(tailWorld);
+  if(rearWheelNodes.length){const w=rearWheelNodes.slice().sort((a,b)=>b.centerWorld.z-a.centerWorld.z)[0];rearWheelPoint.copy(w.node.getWorldPosition(new THREE.Vector3()));rearWheelPoint.y-=.08;}
+  else rearWheelPoint.set(actual.min.x+actualSize.x*.22,actual.min.y+actualSize.y*.24,center.z+actualSize.z*.22);
+  createHeadlightRig(actual,actualSize);
+  acRacingPrepareSuspensionRig(actual);
+  acRacingApplyRearLowRideShadowPolicy();
+  acRacingApplyRearLowRideBodyReceiverPolicy();
+    acRacingApplyLowRideAmbientOcclusionPolicy();
+  acRacingApplyRearDetailsShadowPolicy();
+  setMessage('ВАЗ-2107 загружена',label+'. Мешей: '+meshAudit.length+'. Отдельно распознано колёс: '+wheelNodes.length+' (задняя ось: '+rearWheelNodes.length+', передняя: '+frontWheelNodes.length+'). Фары включаются кнопкой «ФАРЫ».',false);
+  const start=document.createElement('button');start.className='small-btn';start.textContent='СТАРТ';start.style.marginLeft='8px';start.addEventListener('click',()=>{
+    if(onlineMode&&!onlineRaceStarted){
+      setMessage('ОЖИДАНИЕ ОНЛАЙН-СТАРТА','Создатель комнаты запустит гонку для всех участников.',true);
+      return;
+    }
+    raceStarted=true;
+    hideMessage();
+  });
+  if(onlineRaceStarted){raceStarted=true;hideMessage();}$('message').appendChild(start);
+  console.info('ALLCOINS Racing V5 · GLB mesh audit',label,'dimensions',actualSize.toArray(),'independent wheel meshes',wheelNodes.length,'front',frontWheelNodes.length,'rear',rearWheelNodes.length,'named exhaust',Boolean(namedTail));
+  console.table(meshAudit);
+}
+
+function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
+function requestSavedModel(){setMessage('Загрузка ВАЗ-2107','Запрашиваю GLB выбранной сцены из локальной базы…',true);try{window.parent.postMessage({type:'allcoins:request-car-model'},'*');}catch(e){console.warn(e);}}
+window.addEventListener('message',async event=>{
+  const data=event.data||{};
+  if(data.type==='allcoins:car-model-loading'){setMessage('Загрузка ВАЗ-2107','Получаю сохранённую модель из локальной базы…',true);return;}
+  if(data.type==='allcoins:car-model-error'){setMessage('Модель не получена',String(data.message||'Не удалось получить GLB из выбранной сцены.'),true);return;}
+  if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
+    try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из локальной базы');}
+    catch(e){console.error(e);setMessage('Ошибка чтения GLB',e.message||'Файл модели не удалось открыть.',true);}
+  }
+});
+$('chooseModel').addEventListener('click',()=>$('modelPicker').click());
+$('modelPicker').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;setMessage('Импорт GLB',`Читаю ${file.name}…`,false);try{await loadGlbBuffer(await file.arrayBuffer(),file.name);}catch(err){setMessage('Ошибка импорта',err.message||'Не удалось открыть файл GLB.',true);}finally{e.target.value='';}});
+
+/* ALLCOINS RACING RWD + SUSPENSION V3 */
+let speed=0,rpm=900,gear=1,distance=0,elapsed=0,raceStarted=false,paused=false,finished=false,throttle=false,braking=false,burnout=0;
+let rearSlip=0, suspensionMode=1, suspensionOffset=0, suspensionVelocity=0, chassisPitch=0, wheelRadiusWorld=.34, worldUnitsPerRealMeter=1, rearSmokeCooldown=0;
+const gearTopSpeed=[0,42,78,118,158,210];
+const gearRatios=[0,3.67,2.10,1.36,1.00,.82];
+const finalDrive=3.90;
+const accelerationByGear=[0,17,12.5,9.5,7.2,5.5];
+const reverseGearRatio=3.20, reverseTopSpeed=24;
+const rideModes=[
+  /* ALLCOINS Racing V19 · smooth suspension no artificial bounce */
+  /* ALLCOINS Racing V18 · low-ride clearance adjustment */
+  {label:'НИЗКАЯ',offset:-.08,spring:13.5},
+  {label:'СРЕДНЯЯ',offset:0,spring:11.5},
+  {label:'ВЫСОКАЯ',offset:.18,spring:9.0}
+];
+function torqueCurve(value){
+  const r=Math.max(850,Math.min(7000,value));
+  if(r<1500)return .58+(r-850)/650*.22;
+  if(r<3200)return .80+(r-1500)/1700*.20;
+  if(r<5200)return 1-(r-3200)/2000*.13;
+  return .87-(r-5200)/1800*.25;
+}
+function updateGear(){
+  $('gearNow').textContent=gear===-1?'R':String(gear);$('gearNow').classList.add('current');
+  $('gearHint').textContent=gear===-1?'ЗАДНИЙ ХОД · ЗАДНИЙ ПРИВОД':(throttle?'ОТПУСТИ ГАЗ':'ЗАДНИЙ ПРИВОД · МЕХАНИКА');
+}
+function shift(delta){
+  if(throttle){$('gearHint').textContent='ОТПУСТИ ГАЗ';return;}
+  const stopped=speed<1.2;
+  let next=gear;
+  if(gear===-1){
+    if(delta>0){if(!stopped){$('gearHint').textContent='ОСТАНОВИТЕСЬ ДЛЯ ПЕРВОЙ';return;}next=1;}
+    else return;
+  }else if(delta<0&&gear===1){
+    if(!stopped){$('gearHint').textContent='ОСТАНОВИТЕСЬ ДЛЯ R';return;}
+    next=-1;
+  }else{
+    next=Math.max(1,Math.min(5,gear+delta));
+  }
+  if(next===gear)return;
+  const oldRatio=gear===-1?reverseGearRatio:gearRatios[gear];
+  const newRatio=next===-1?reverseGearRatio:gearRatios[next];
+  gear=next;rearSlip=0;burnout=0;
+  rpm=Math.max(900,Math.min(6500,rpm*(newRatio/oldRatio)));
+  updateGear();
+  playGearChangeCue();
+}
+$('gearUp').addEventListener('click',()=>shift(1));$('gearDown').addEventListener('click',()=>shift(-1));
+function acRacingApplyRearLowRideShadowPolicy(){
+  const suppressRearWheelShadows=suspensionMode===0;
+  let affectedMeshes=0;
+  for(const wheel of rearWheelNodes){
+    if(!wheel||!wheel.node)continue;
+    wheel.node.traverse(object=>{
+      if(!object.isMesh)return;
+      object.castShadow=!suppressRearWheelShadows;
+      affectedMeshes++;
+    });
+  }
+  console.info('ALLCOINS Racing V12 · rear wheel shadow policy',{
+    suspension:rideModes[suspensionMode]?.label||String(suspensionMode),
+    rearWheels:rearWheelNodes.length,
+    affectedMeshes,
+    rearWheelCastsShadows:!suppressRearWheelShadows
+  });
+}
+function setSuspension(mode){
+  suspensionMode=(mode+rideModes.length)%rideModes.length;
+  suspensionVelocity=0;
+  $('suspension').textContent='ПОДВЕСКА · '+rideModes[suspensionMode].label;
+  console.info('ALLCOINS Racing V10 · suspension selected',{
+    mode:rideModes[suspensionMode].label,
+    targetWorldOffset:rideModes[suspensionMode].offset,
+    chassisRig:Boolean(vehicleChassis),
+    independentWheels:wheelNodes.length
+  });
+  acRacingApplyRearLowRideShadowPolicy();
+  acRacingApplyRearLowRideBodyReceiverPolicy();
+  acRacingApplyRearLowRideUndersideCasterPolicy();
+  acRacingApplyLowRideAmbientOcclusionPolicy();
+  acRacingApplyRearDetailsShadowPolicy();
+}
+$('suspension').addEventListener('click',()=>setSuspension(suspensionMode+1));
+setSuspension(1);
+function bindHold(id,setter){
+  const el=$(id);
+  const on=e=>{e.preventDefault();setter(true);el.classList.add('active');try{el.setPointerCapture(e.pointerId);}catch{}};
+  const off=()=>{setter(false);el.classList.remove('active');};
+  el.addEventListener('pointerdown',on);
+  ['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,off));
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+bindHold('gas',v=>{throttle=v;if(v)raceStarted=true;updateGear();});bindHold('brake',v=>{braking=v;if(v)raceStarted=true;});
+window.addEventListener('keydown',e=>{if(e.repeat&&['ArrowRight','ArrowLeft','KeyE','KeyQ'].includes(e.code))return;if(['ArrowUp','KeyW','Space'].includes(e.code)){e.preventDefault();throttle=true;raceStarted=true;updateGear();}if(['ArrowDown','KeyS'].includes(e.code)){e.preventDefault();braking=true;raceStarted=true;}if(e.code==='ArrowRight'||e.code==='KeyE')shift(1);if(e.code==='ArrowLeft'||e.code==='KeyQ')shift(-1);if(e.code==='Escape')paused=!paused;});
+window.addEventListener('keyup',e=>{if(['ArrowUp','KeyW','Space'].includes(e.code)){throttle=false;updateGear();}if(['ArrowDown','KeyS'].includes(e.code))braking=false;});
+$('pause').addEventListener('click',()=>{paused=!paused;$('pause').textContent=paused?'ПРОДОЛЖИТЬ':'ПАУЗА';});
+$('fullscreen').addEventListener('click',async()=>{try{await document.documentElement.requestFullscreen?.();await screen.orientation?.lock?.('landscape');}catch(e){console.info('Fullscreen/orientation lock unavailable',e.message);}});
+function emitRearTireSmoke(){
+  if(rearSmokeCooldown>0)return;
+  rearSmokeCooldown=.12;
+  if(rearWheelNodes.length){
+    for(const wheel of rearWheelNodes){const p=wheel.node.getWorldPosition(new THREE.Vector3());p.y-=.12;addSmoke(p,'tire');}
+  }else addSmoke(rearWheelPoint,'tire');
+}
+
+let last=performance.now();
+let runElapsed=0;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=12.5;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
+function animate(now){
+  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000||0);last=now;updateEngineAudio();updateRaceEnvironment(dt,(!paused&&raceStarted&&!finished&&vehicle?speed*(gear===-1?-1:1)/3.6*WORLD_UNITS_PER_METER:0));rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
+  if(!paused&&raceStarted&&!finished&&vehicle){
+    elapsed+=dt;
+    const top=gear===-1?reverseTopSpeed:gearTopSpeed[gear];
+    const burnoutActive=gear>0&&throttle&&braking&&speed<14;
+    let targetRpm=900;
+    if(burnoutActive){
+      burnout=Math.min(6,burnout+dt*1.45);
+      rearSlip=Math.min(1.25,rearSlip+dt*1.7);
+      targetRpm=3000+burnout*570;
+      speed=Math.max(0,speed-dt*9);
+      if(rearSlip>.32&&Math.random()<.94)emitRearTireSmoke();
+    }else{
+      burnout=Math.max(0,burnout-dt*2.4);
+      const slipTarget=throttle?(gear===-1?.035:(gear===1&&speed<24?.19:speed<45?.075:.025)):0;
+      rearSlip+=(slipTarget-rearSlip)*Math.min(1,dt*(slipTarget>rearSlip?3.8:2.2));
+      if(throttle){
+        const speedRatio=Math.min(1,speed/Math.max(1,top));
+        const torque=torqueCurve(rpm);
+        const traction=Math.max(.68,1-rearSlip*.34);
+        const engineAcceleration=gear===-1?accelerationByGear[1]*.52:accelerationByGear[gear];
+        const accel=engineAcceleration*torque*traction*(1-speedRatio*.24);
+        if(speed<top)speed=Math.min(top,speed+accel*dt);
+        else speed=Math.max(top,speed-dt*1.8);
+      }else{
+        const coast=braking?31:2.8;
+        speed=Math.max(0,speed-dt*coast);
+      }
+      if(braking)speed=Math.max(0,speed-dt*(throttle?10:18));
+      const wheelRpm=(speed/3.6)/(2*Math.PI*Math.max(.18,wheelRadiusWorld/Math.max(.3,worldUnitsPerRealMeter)))*60;
+      const coupledRpm=wheelRpm*(gear===-1?reverseGearRatio:gearRatios[gear])*finalDrive;
+      targetRpm=throttle?Math.max(1150,Math.min(6800,coupledRpm||1750+burnout*300)):Math.max(850,Math.min(6800,coupledRpm||900));
+      if(throttle&&rearSlip>.30&&Math.random()<Math.min(.7,rearSlip*.45))emitRearTireSmoke();
+      if(braking&&speed>58&&Math.random()<.018)addSmoke(rearWheelPoint,'tire');
+    }
+    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?4.2:6.2));
+    const kmh=Math.round(speed);
+    const signedSpeed=speed*(gear===-1?-1:1);
+    distance+=signedSpeed/3.6*dt;
+    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';const raceFill=document.getElementById('raceProgressFill');if(raceFill)raceFill.style.width=(Math.max(0,Math.min(100,distance/RACE_DISTANCE_METERS*100)))+'%';
+    const scroll=(signedSpeed/3.6)*WORLD_UNITS_PER_METER*dt;
+    for(const m of laneMarks){m.position.x-=scroll;if(m.position.x< -135)m.position.x+=260.4;}
+    for(const b of city){b.position.x-=scroll*.19;if(b.position.x< -132)b.position.x+=236;}
+    distantHills.position.x-=scroll*.045;if(distantHills.position.x< -20)distantHills.position.x+=30;
+    finishLine.position.x=finishStartX-distance*WORLD_UNITS_PER_METER;
+    const ride=rideModes[suspensionMode];
+    /* ALLCOINS Racing V23 · reduced throttle squat */
+    const bodyLoad=throttle&&!braking ? -.004 : braking ? -.020 : 0;
+    const suspensionTarget=ride.offset+bodyLoad;
+    suspensionVelocity+=(suspensionTarget-suspensionOffset)*ride.spring*dt;
+    suspensionVelocity*=Math.exp(-dt*(2*Math.sqrt(ride.spring)));
+    suspensionOffset+=suspensionVelocity*dt;
+    const roadBounce=0;
+    vehicle.position.y=vehicleBaseY;
+    if(vehicleChassis){
+      // Calculate the base chassis point in world space, change only world Y,
+      // then convert the result back into the vehicle-root local coordinate system.
+      vehicle.updateMatrixWorld(true);
+      const chassisTargetWorld=vehicle.localToWorld(vehicleChassisBasePosition.clone());
+      chassisTargetWorld.y+=suspensionOffset+roadBounce;
+      vehicleChassis.position.copy(vehicle.worldToLocal(chassisTargetWorld));
+      vehicle.updateMatrixWorld(true);
+    }else vehicle.position.y=vehicleBaseY+suspensionOffset+roadBounce;
+    // Positive world-Z pitch lifts the nose (+X) and lets the rear settle under acceleration.
+    const pitchTarget=throttle&&!braking ? .0025 : braking ? -.014 : 0;
+    chassisPitch+=(pitchTarget-chassisPitch)*Math.min(1,dt*4.5);
+    const pitchAngle=chassisPitch;
+    if(vehicleChassis){
+      const pitchDelta=new THREE.Quaternion().setFromAxisAngle(vehicleChassisPitchAxis,pitchAngle);
+      vehicleChassis.quaternion.copy(pitchDelta).multiply(vehicleChassisBaseQuaternion);
+    }else vehicle.rotation.z=vehicleBaseRotationZ+pitchAngle;
+    updateWheelGroundContact();
+    updateAnchoredEffects();
+    const roadWheelRate=(signedSpeed/3.6)*worldUnitsPerRealMeter/Math.max(.12,wheelRadiusWorld);
+    const freeWheelAngle=roadWheelRate*dt;
+    wheelSpinAngle+=freeWheelAngle;
+    const drivenWheelRate=burnoutActive?Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(gearRatios[gear]*finalDrive)*.92):roadWheelRate*(1+rearSlip*3.3);
+    rearWheelSpinAngle+=drivenWheelRate*dt;
+    spinWheelSet(frontWheelNodes,wheelSpinAngle);
+    spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
+    if(throttle&&speed>10&&Math.random()<Math.min(.55,speed/3200))addSmoke(exhaustPoint,'exhaust');
+    onlineSendState(now);
+    /* ALLCOINS CLIENT FINISH SYNC 2026-11-12 */
+if(distance>=RACE_DISTANCE_METERS){
+      if(onlineMode){
+        if(onlineRaceStarted) onlineSendState(now,true);
+        if(onlineSocket&&onlineSocket.readyState===WebSocket.OPEN){
+          onlineSocket.send(JSON.stringify({type:'finish',distanceM:distance}));
+          onlineSetStatus('Финиш отправлен серверу. Ожидаем подтверждения...');
+        } else {
+          onlineSetStatus('Локальный финиш: нет соединения с сервером. Результат не подтверждён.');
+        }
+      }
+      onlineRaceStarted=false;
+      finished=true;speed=0;throttle=false;braking=false;
+      setMessage('ФИНИШ!','Дистанция '+RACE_DISTANCE_METERS+' м пройдена за '+clockText(elapsed)+'. Нажми «НОВЫЙ ЗАЕЗД», чтобы повторить.',false);
+      const restart=document.createElement('button');restart.className='small-btn';restart.style.marginLeft='8px';restart.textContent='НОВЫЙ ЗАЕЗД';
+      restart.onclick=()=>{distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);};
+      $('message').appendChild(restart);
+    }
+  }
+  for(let i=smokeParticles.length-1;i>=0;i--){const p=smokeParticles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.scale.multiplyScalar(1+dt*.55);p.mesh.material.opacity=Math.max(0,p.baseOpacity*(p.life/p.max));if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();smokeParticles.splice(i,1);}}
+  onlineUpdateOpponentCars(dt);
+  renderer.render(scene,camera);
+}
+
+document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';}});
+
+/* ALLCOINS V24 ANDROID DASHBOARD V1: только отображение скорости */
+function updateAnalogSpeedometer() {
+  const value = Math.max(0, Math.min(240, Number(speed) || 0));
+  const needle = document.getElementById('speedNeedle');
+  const readout = document.getElementById('speedDial');
+
+  if (needle) {
+    const angle = -135 + (value / 240) * 270;
+    needle.style.transform =
+      'translateX(-50%) rotate(' + angle + 'deg)';
+  }
+
+  if (readout) {
+    readout.textContent = String(Math.round(Number(speed) || 0));
+  }
+
+  requestAnimationFrame(updateAnalogSpeedometer);
+}
+updateAnalogSpeedometer();
+
+
+/* ALLCOINS V24 REAL DASHBOARD V2: тахометр и выбор механической передачи */
+function updateRpmTachometer() {
+  const value = Math.max(0, Math.min(8000, Number(rpm) || 0));
+  const needle = document.getElementById('rpmNeedle');
+  const readout = document.getElementById('rpmDial');
+
+  if (needle) {
+    const angle = -135 + (value / 8000) * 270;
+    needle.style.transform =
+      'translateX(-50%) rotate(' + angle + 'deg)';
+    needle.classList.toggle('redline', value >= 6500);
+  }
+
+  if (readout) {
+    readout.textContent = String(Math.round(Number(rpm) || 0));
+  }
+
+  const currentGear = gear === -1 ? 'R' : String(gear);
+  document.querySelectorAll('[data-gear-target]').forEach(button => {
+    button.classList.toggle(
+      'selected',
+      button.dataset.gearTarget === currentGear
+    );
+  });
+
+  requestAnimationFrame(updateRpmTachometer);
+}
+
+function selectGearFromPattern(target) {
+  if (throttle) {
+    $('gearHint').textContent = 'ОТПУСТИ ГАЗ';
+    return;
+  }
+
+  const desired = target === 'R' ? -1 : Number(target);
+
+  if (!Number.isInteger(desired) ||
+      (desired !== -1 && (desired < 1 || desired > 5))) return;
+
+  if (desired === -1) {
+    if (gear === -1) return;
+    if (speed >= 1.2) {
+      $('gearHint').textContent = 'ОСТАНОВИТЕСЬ ДЛЯ R';
+      return;
+    }
+
+    while (gear > 1) {
+      const previous = gear;
+      shift(-1);
+      if (gear === previous) return;
+    }
+
+    if (gear === 1) shift(-1);
+    return;
+  }
+
+  if (gear === -1) {
+    if (speed >= 1.2) {
+      $('gearHint').textContent = 'ОСТАНОВИТЕСЬ ДЛЯ ПЕРВОЙ';
+      return;
+    }
+
+    shift(1);
+    if (gear === -1) return;
+  }
+
+  while (gear > desired) {
+    const previous = gear;
+    shift(-1);
+    if (gear === previous) return;
+  }
+
+  while (gear < desired) {
+    const previous = gear;
+    shift(1);
+    if (gear === previous) return;
+  }
+}
+
+document.querySelectorAll('[data-gear-target]').forEach(button => {
+  button.addEventListener('click', () => {
+    selectGearFromPattern(button.dataset.gearTarget);
+  });
+});
+
+updateRpmTachometer();
+
+requestAnimationFrame(animate);requestSavedModel();
+</script>
+</body>
+</html>
