@@ -2401,7 +2401,7 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
 </style>
 <style id="allcoins-racing-daylight-city-fix">
 /* Daytime race environment: keep the loaded car untouched and stop foliage crossing the buildings. */
-.pro-race-cockpit .race2d-tree-layer{display:none!important}
+#race2dTreeLayer,.race2d-tree-layer{display:none!important}
 .pro-race-cockpit .race2d-track,
 .pro-race-cockpit .race2d-scene{
   background:linear-gradient(180deg,#8fc4e6 0%,#c9e4f2 25%,#e5edf0 39%,#bfc8c2 46%,#777a76 47%,#777a76 100%)!important;
@@ -2414,9 +2414,13 @@ body.pro-race-open{overflow:hidden!important;touch-action:none}
     radial-gradient(ellipse at 78% 13%,#fff8d9a8 0%,#fff4d65c 13%,transparent 31%),
     linear-gradient(180deg,#8fc8f0 0%,#c7e6f6 29%,#edf4f4 43%,transparent 48%)!important;
 }
-.pro-race-cockpit .race2d-city-layer{
-  filter:brightness(1.12) saturate(.92)!important;
-  opacity:1!important;
+#race2dCityLayer.race2d-city-layer{
+  filter:brightness(1.08) saturate(.78)!important;
+  opacity:.92!important;
+}
+#race2dEnvironment:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,#d9ecf4a6 0%,#e7eff0a1 33%,transparent 49%);
 }
 .pro-race-cockpit .race2d-green-belt{
   top:39%!important;height:9%!important;
@@ -3336,7 +3340,7 @@ function updateOnlineOpponentMotion(dt){
 let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
-    let out='<g transform="translate('+offset+' 0)">';
+    let out='<g transform="translate('+offset+' 68) scale(1 .82)">';
     const buildings=[
       {x:-26,y:78,w:150,h:258,c:'#c9bda9',side:'#998c7b',floors:5},
       {x:102,y:28,w:208,h:312,c:'#d8cbb7',side:'#a99b88',floors:6},
