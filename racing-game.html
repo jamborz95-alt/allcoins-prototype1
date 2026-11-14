@@ -2345,11 +2345,11 @@ for (let i = 0; i < 42; i++) {
   laneMarks.push(mark);
 }
 
-// Положительный знак scroll для центрального пунктира: вперёд — вправо, назад — влево.
+// Центральный пунктир движется вместе с остальным миром: при ходе вперёд — влево, при заднем ходе — вправо.
 function acAdvanceCentralMarkings(scroll) {
   if (!Number.isFinite(scroll) || scroll === 0) return;
   for (const mark of laneMarks) {
-    mark.position.x += scroll;
+    mark.position.x -= scroll;
     while (mark.position.x > 135) mark.position.x -= 260.4;
     while (mark.position.x < -135) mark.position.x += 260.4;
   }
