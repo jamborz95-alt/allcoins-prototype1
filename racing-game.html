@@ -2357,6 +2357,19 @@ for (const z of [-8.34, 8.34]) {
   scene.add(edge);
 }
 
+// Асфальт и разметка используют один знак скорости: вперёд — полотно визуально уходит назад, задний ход — наоборот.
+function acAdvanceRoadSurface(scroll) {
+  if (!Number.isFinite(scroll) || scroll === 0) return;
+  const roadWidth = Math.max(1, Number(road.geometry.parameters.width) || 900);
+  const repeatX = Number(roadMat.map && roadMat.map.repeat.x) || 1;
+  const textureDelta = scroll * repeatX / roadWidth;
+  for (const texture of [roadMat.map, roadMat.roughnessMap, roadMat.bumpMap]) {
+    if (!texture) continue;
+    texture.offset.x = (texture.offset.x + textureDelta) % 1;
+    if (texture.offset.x < 0) texture.offset.x += 1;
+  }
+}
+
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
