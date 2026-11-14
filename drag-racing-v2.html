@@ -3340,7 +3340,7 @@ function updateOnlineOpponentMotion(dt){
 let raceWorldOffset=0,raceWorldSpeed=0,racePeakSpeed=0,raceCarOffset=0,raceCameraOffset=0,raceCameraY=0,lastHUDUpdateAt=0,lastFuelHudSyncAt=0,nextRoadBumpAt=150,race2dSceneWidthCache=1280,race2dSceneHeightCache=320,race2dRefs=null,raceOnlineOpponentStylesApplied=false;
 function makeRaceCitySvg(){
   const tile=(offset)=>{
-    let out='<g transform="translate('+offset+' 68) scale(1 .82)">';
+    let out='<g transform="translate('+offset+' 82) scale(.88 .72)">';
     const buildings=[
       {x:-26,y:78,w:150,h:258,c:'#c9bda9',side:'#998c7b',floors:5},
       {x:102,y:28,w:208,h:312,c:'#d8cbb7',side:'#a99b88',floors:6},
@@ -3393,27 +3393,7 @@ function makeRaceCitySvg(){
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 420" preserveAspectRatio="none"><defs><linearGradient id="city-haze" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dce4e3" stop-opacity=".02"/><stop offset="1" stop-color="#c9bda9" stop-opacity=".12"/></linearGradient></defs><rect width="3200" height="420" fill="url(#city-haze)"/>'+tile(0)+tile(1600)+'</svg>';
 }
 function makeRaceTreeSvg(){
-  const tile=(offset)=>{
-    let out='<g transform="translate('+offset+' 0)">';
-    const trees=[[22,300,42],[115,285,48],[236,308,37],[345,293,52],[505,310,41],[630,288,55],[780,305,39],[912,290,48],[1040,304,44],[1178,285,51],[1310,306,40],[1432,292,49],[1552,307,39]];
-    for(let i=0;i<trees.length;i++){
-      const [x,y,r]=trees[i],trunk=r*1.32;
-      out+='<g>';
-      out+='<path d="M'+(x-7)+' '+y+' l5 '+(-trunk)+' h8 l5 '+trunk+'Z" fill="#65513d"/>';
-      out+='<path d="M'+x+' '+(y-trunk*.5)+' l'+(-r*.8)+' '+(-r*.68)+' M'+x+' '+(y-trunk*.65)+' l'+(r*.84)+' '+(-r*.72)+'" stroke="#6c5944" stroke-width="7" stroke-linecap="round"/>';
-      out+='<circle cx="'+(x-r*.36)+'" cy="'+(y-trunk-r*.36)+'" r="'+(r*.7)+'" fill="#3e6248"/>';
-      out+='<circle cx="'+(x+r*.30)+'" cy="'+(y-trunk-r*.52)+'" r="'+(r*.83)+'" fill="#527653"/>';
-      out+='<circle cx="'+x+'" cy="'+(y-trunk-r*.02)+'" r="'+(r*.75)+'" fill="#6f8c62"/>';
-      out+='<circle cx="'+(x-r*.12)+'" cy="'+(y-trunk-r*.42)+'" r="'+(r*.4)+'" fill="#a4b58a" opacity=".48"/>';
-      out+='<circle cx="'+(x+r*.36)+'" cy="'+(y-trunk-r*.14)+'" r="'+(r*.24)+'" fill="#879d70" opacity=".6"/>';
-      out+='</g>';
-    }
-    out+='<path d="M0 355 Q220 332 430 357 T900 354 T1330 351 T1600 355 V420 H0Z" fill="#526f50"/>';
-    out+='<path d="M0 374 Q250 350 500 378 T1000 372 T1600 376" fill="none" stroke="#91a879" stroke-width="13" opacity=".55"/>';
-    out+='<path d="M0 390 Q300 370 600 395 T1200 390 T1600 392" fill="none" stroke="#3d6047" stroke-width="17" opacity=".65"/>';
-    return out+'</g>';
-  };
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 420" preserveAspectRatio="none">'+tile(0)+tile(1600)+'</svg>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3200 420" preserveAspectRatio="none"></svg>';
 }
 function makeRaceFenceSvg(){
   const tile=(offset)=>{
@@ -3438,6 +3418,7 @@ function buildRace2DEnvironment(){
   if(!env.dataset.ready){
     setSvgBackground('race2dCityLayer',makeRaceCitySvg());
     setSvgBackground('race2dTreeLayer',makeRaceTreeSvg());
+    const treeLayer=$('race2dTreeLayer');if(treeLayer){treeLayer.style.setProperty('display','none','important');treeLayer.style.setProperty('visibility','hidden','important');}
     setSvgBackground('race2dFenceLayer',makeRaceFenceSvg());
     env.dataset.ready='1';
   }
