@@ -2587,6 +2587,8 @@ for (let i = 0; i < 33; i++) {
     for (let column = 0; column < columns; column++) {
       const spacing = width / (columns + 1);
       const x = -width / 2 + spacing * (column + 1);
+      // Освобождаем центральное окно первого этажа под подъездную дверь.
+      if (floor === 0 && i % 2 === 0 && column === Math.floor(columns / 2)) continue;
       cityDummy.position.set(x, windowY, frontZ);
       cityDummy.rotation.set(0, 0, 0);
       cityDummy.scale.set(1, 1, 1);
