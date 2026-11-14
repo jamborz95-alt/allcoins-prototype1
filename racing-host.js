@@ -546,27 +546,27 @@
   }
 
   window.addEventListener("message", async event => {
-    // Trust the exact iframe window. Android Telegram WebView may report an
-    // opaque/different origin for embedded pages, so origin filtering here can
-    // silently discard the model request even though the game screen loaded.
-    if (!frame || event.source !== frame.contentWindow) return;
+    // The racing scene is loaded from the same GitHub Pages origin as this
+    // Mini App. Check that origin, but do not rely on event.source identity:
+    // Android Telegram WebView may wrap/replace WindowProxy objects.
+    if (!frame || event.origin !== window.location.origin) return;
 
     const data = event.data || {};
 
     if (data.type === "allcoins:request-car-model") {
-      setStatus("Игровая сцена запросила автомобиль. Проверяем подключение…", false);
-      // Show progress inside the game before awaiting authentication/network.
-      event.source.postMessage({ type: "allcoins:car-model-loading" }, "*");
+      setStatus("Запрос ВАЗ-2107 получен. Проверяем связь с локальной базой…", false);
+      // Send a visible acknowledgement before any PC/network request starts.
+      event.source.postMessage({ type: "allcoins:car-model-loading" }, event.origin);
       try {
         await ensureTelegramAuthentication();
-        await sendCarModel(event.source, "*");
+        await sendCarModel(event.source, event.origin);
         setStatus("3D-модель передана в игровую сцену", false);
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось получить GLB-модель.";
         event.source.postMessage({
           type: "allcoins:car-model-error",
           message
-        }, "*");
+        }, event.origin);
         setStatus("Ошибка загрузки автомобиля: " + message, true);
         setModelProgress("Не удалось загрузить автомобиль: " + message, 0);
         console.error("ALLCOINS Racing model transfer failed:", error);
@@ -585,14 +585,14 @@
         requestId,
         ok: true,
         data: result
-      }, "*");
+      }, event.origin);
     } catch (error) {
       event.source.postMessage({
         type: "allcoins:racing:response",
         requestId,
         ok: false,
         error: error && error.message ? error.message : "Ошибка подключения к гоночному серверу."
-      }, "*");
+      }, event.origin);
     }
   });
 
