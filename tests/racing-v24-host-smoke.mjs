@@ -203,6 +203,9 @@ try {
   assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
   assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
   assert.ok(visualDiagnostics.asphaltRepeatX >= 90, "The asphalt grain must repeat at road scale.");
+  assert.equal(visualDiagnostics.asphaltTone, "cool-blue-violet", "The asphalt must match the cool blue-violet racing-strip reference.");
+  assert.equal(visualDiagnostics.asphaltWetGloss, true, "The asphalt must have a controlled damp sheen.");
+  assert.equal(visualDiagnostics.asphaltSkidArcs, 2, "The road must contain two subtle rubber skid arcs.");
   assert.equal(visualDiagnostics.cityBuildings, 33, "The foreground street must contain 33 detailed buildings.");
   assert.ok(visualDiagnostics.cityWindows >= 300, "The city facades must contain instanced windows.");
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
