@@ -236,7 +236,7 @@ async function settleGame(client, roomId, room, game) {
     game.winnerName = null;
     game.payout = "0";
     game.commission = "0";
-    game.message = "Ничья! Обе ставки возвращены игрокам.";
+    game.message = "Ничья! все суммы Allcoins возвращены игрокам.";
   } else {
     const winner = Number(first.score) > Number(second.score) ? first : second;
     const gross = BigInt(String(game.pot));
@@ -317,11 +317,11 @@ export function createBaldaRouter({ pool, verifyTelegram }) {
       const user = authenticatedUser(req, verifyTelegram);
       const name = String(req.body?.name || "").trim().slice(0, 32) || "Комната Балды";
       const stake = safeStake(req.body?.stake);
-      if (stake === null) throw new BaldaError(400, "Укажи целую ставку от 100 AC. Верхнего лимита нет, кроме технического лимита баланса.");
+      if (stake === null) throw new BaldaError(400, "Укажи целую сумму Allcoins от 100 AC. Верхнего лимита нет, кроме технического лимита баланса.");
       client = await pool.connect();
       await client.query("BEGIN"); open = true;
       const balance = await ensurePlayer(client, user);
-      if (balance < BigInt(stake)) throw new BaldaError(400, "На балансе недостаточно AC для этой ставки.");
+      if (balance < BigInt(stake)) throw new BaldaError(400, "На балансе недостаточно AC для этой суммы Allcoins.");
       const active = await client.query(
         "SELECT r.id FROM balda_rooms r JOIN balda_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1::BIGINT AND r.status IN ('waiting','playing') LIMIT 1",
@@ -370,7 +370,7 @@ export function createBaldaRouter({ pool, verifyTelegram }) {
       }
       if (room.status !== "waiting") throw new BaldaError(409, "Эта партия уже началась.");
       const balance = await ensurePlayer(client, user);
-      if (balance < BigInt(String(room.stake))) throw new BaldaError(400, "На балансе недостаточно AC для этой ставки.");
+      if (balance < BigInt(String(room.stake))) throw new BaldaError(400, "На балансе недостаточно AC для этой суммы Allcoins.");
       const active = await client.query(
         "SELECT r.id FROM balda_rooms r JOIN balda_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1::BIGINT AND r.status IN ('waiting','playing') LIMIT 1",
@@ -461,7 +461,7 @@ export function createBaldaRouter({ pool, verifyTelegram }) {
           "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
           [stake.toString(), String(member.id)]
         );
-        if (!charged.rows.length) throw new BaldaError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC. Ставка не списана ни у кого.");
+        if (!charged.rows.length) throw new BaldaError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC. сумма Allcoins не списана ни у кого.");
       }
       const players = members.rows.map(member => ({
         id: String(member.id), name: String(member.display_name || "Игрок"), score: 0

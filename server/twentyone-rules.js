@@ -78,7 +78,7 @@ export function createTwentyOneRound(players, stake, random = Math.random) {
     throw new Error("В комнате должно быть от 1 до 5 игроков");
   }
   if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 100 || Number(stake) > 1000000) {
-    throw new Error("Ставка должна быть от 100 до 1 000 000 AC");
+    throw new Error("сумма Allcoins должна быть от 100 до 1 000 000 AC");
   }
 
   const deck = createTwentyOneDeck(random);
