@@ -599,7 +599,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     const stake = safeStake(req.body?.stake);
     const maxPlayers = Number(req.body?.maxPlayers ?? req.body?.players);
     const mode = String(req.body?.mode || "quarter");
-    if (stake === null) return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом не меньше 100 AC." });
+    if (stake === null) return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом не меньше 100 AC." });
     if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 5) return res.status(400).json({ ok: false, error: "В комнате должно быть от 2 до 5 игроков." });
     if (!VALID_MODES.has(mode)) return res.status(400).json({ ok: false, error: "Выбран неизвестный режим гонки." });
     const client = await pool.connect();
@@ -614,7 +614,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         [user.id]
       );
       if (active.rows.length) throw new DragRacingError(409, "Сначала выйди из своей текущей комнаты.");
-      if (balance < BigInt(stake)) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой ставки.");
+      if (balance < BigInt(stake)) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       const profile = await readProfile(client, user.id);
       const requestedCar = String(req.body?.carId || profile.selectedCarId);
       const carId = profile.ownedCars.includes(requestedCar) ? requestedCar : profile.selectedCarId;
@@ -677,7 +677,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         [user.id]
       );
       if (active.rows.length) throw new DragRacingError(409, "Сначала выйди из своей текущей комнаты.");
-      if (balance < BigInt(String(room.stake))) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой ставки.");
+      if (balance < BigInt(String(room.stake))) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       await ensureProfile(client, user.id);
       const profile = await readProfile(client, user.id);
       const requestedCar = String(req.body?.carId || profile.selectedCarId);
@@ -860,7 +860,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
             game.finishedAt = Date.now();
             game.payout = 0;
             game.commission = 0;
-            game.message = "Заезд отменён из-за отсутствия результатов. Ставки возвращены всем игрокам.";
+            game.message = "Заезд отменён из-за отсутствия результатов. суммы Allcoins возвращены всем игрокам.";
             await client.query(
               "UPDATE drag_racing_rooms SET status = 'finished', game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
               [roomId, JSON.stringify(game)]
@@ -948,7 +948,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       );
       const room = roomResult.rows[0];
       if (!room) throw new DragRacingError(404, "Комната уже закрыта.");
-      if (room.status === "racing") throw new DragRacingError(409, "Заезд уже идёт. Дождись результата; ставки защищены сервером.");
+      if (room.status === "racing") throw new DragRacingError(409, "Заезд уже идёт. Дождись результата; суммы Allcoins защищены сервером.");
       const membership = await client.query(
         "SELECT 1 FROM drag_racing_room_players WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT",
         [roomId, user.id]
@@ -978,7 +978,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       }
       const balance = await readBalance(client, user.id);
       await client.query("COMMIT"); open = false;
-      return res.json({ ok: true, balance, message: room.status === "waiting" ? "Ты вышел из комнаты. Ставка возвращена." : "Ты вышел из комнаты." });
+      return res.json({ ok: true, balance, message: room.status === "waiting" ? "Ты вышел из комнаты. сумма Allcoins возвращена." : "Ты вышел из комнаты." });
     } catch (error) {
       if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
       const status = error instanceof DragRacingError ? error.status : 500;

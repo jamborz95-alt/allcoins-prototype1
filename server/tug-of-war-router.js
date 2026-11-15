@@ -261,7 +261,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
     if (!user) return;
     const stake = safeStake(req.body?.stake);
     const maxPlayers = Number(req.body?.maxPlayers);
-    if (stake === null) return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом от 100 AC." });
+    if (stake === null) return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом от 100 AC." });
     if (!VALID_PLAYER_COUNTS.has(maxPlayers)) return res.status(400).json({ ok: false, error: "Выбери комнату на 2, 4 или 6 игроков." });
 
     const client = await pool.connect();
@@ -269,7 +269,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
     try {
       await client.query("BEGIN"); open = true;
       const balance = await ensurePlayer(client, user);
-      if (balance < BigInt(stake)) throw new TugError(400, "На балансе недостаточно Allcoins для этой ставки.");
+      if (balance < BigInt(stake)) throw new TugError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       const active = await client.query(
         "SELECT r.id FROM tug_rooms r JOIN tug_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1 AND r.status IN ('waiting','playing') LIMIT 1",
@@ -324,7 +324,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
       }
       if (room.status !== "waiting") throw new TugError(409, "Матч уже начался. Найди другую комнату.");
       const balance = await ensurePlayer(client, user);
-      if (balance < BigInt(String(room.stake))) throw new TugError(400, "На балансе недостаточно Allcoins для этой ставки.");
+      if (balance < BigInt(String(room.stake))) throw new TugError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       const active = await client.query(
         "SELECT r.id FROM tug_rooms r JOIN tug_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1 AND r.status IN ('waiting','playing') LIMIT 1",
@@ -415,7 +415,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
           [String(room.stake), String(player.telegram_id)]
         );
         if (!charged.rows.length) {
-          throw new TugError(400, "У игрока «" + String(player.display_name || "Игрок") + "» недостаточно AC. Ставка не списана ни у кого.");
+          throw new TugError(400, "У игрока «" + String(player.display_name || "Игрок") + "» недостаточно AC. сумма Allcoins не списана ни у кого.");
         }
       }
       const game = freshGame(Number(room.max_players));
@@ -515,7 +515,7 @@ export function createTugOfWarRouter({ pool, verifyTelegram, recordGameCommissio
               [roomId, JSON.stringify(game)]);
           }
           await client.query("COMMIT"); open = false;
-          return res.json({ ok: true, integrity: "disqualified", error: "Повторное нарушение: матч для тебя проигран, ставка остаётся в призовом фонде.", ...(await roomPayload(pool, roomId, user.id)) });
+          return res.json({ ok: true, integrity: "disqualified", error: "Повторное нарушение: матч для тебя проигран, сумма Allcoins остаётся в призовом фонде.", ...(await roomPayload(pool, roomId, user.id)) });
         }
         integrity.warningPending = true;
         game.message = "Предупреждение: подозрительно частые или механически ровные нажатия. Останови автокликер — повторное нарушение приведёт к дисквалификации.";

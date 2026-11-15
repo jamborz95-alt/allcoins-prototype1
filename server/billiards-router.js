@@ -433,7 +433,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       const user = userFromRequest(req, verifyTelegram);
       const name = String(req.body?.name || "").trim().slice(0, 30) || "Бильярд ALLCOINS";
       const stake = safeStake(req.body?.stake);
-      if (stake === null) throw new BilliardsError(400, "Укажи целую ставку от 100 AC. Верхний лимит не задан.");
+      if (stake === null) throw new BilliardsError(400, "Укажи целую сумму Allcoins от 100 AC. Верхний лимит не задан.");
       await client.query("BEGIN"); transactionOpen = true;
       await ensurePlayer(client, user);
       const created = await client.query(
@@ -551,7 +551,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
         for (const member of members) {
           const balanceResult = await client.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [String(member.telegram_id)]);
           if (!balanceResult.rows.length || BigInt(balanceResult.rows[0].balance) < BigInt(room.stake)) {
-            throw new BilliardsError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для ставки.");
+            throw new BilliardsError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для суммы Allcoins.");
           }
         }
         for (const member of members) {
@@ -559,7 +559,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
             "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance",
             [String(room.stake), String(member.telegram_id)]
           );
-          if (!charged.rows.length) throw new BilliardsError(400, "Не удалось списать ставку. Проверьте баланс.");
+          if (!charged.rows.length) throw new BilliardsError(400, "не удалось списать сумму Allcoins. Проверьте баланс.");
         }
       }
       const game = {
@@ -589,7 +589,7 @@ export function createBilliardsRouter({ pool, verifyTelegram }) {
       await client.query("COMMIT"); transactionOpen = false;
       return res.json({
         ok: true, game: makePublicGame(game, user.id),
-        message: botMode ? "Тестовая партия началась. Баланс AC не меняется." : "Игра началась. Ставка списана с обоих игроков."
+        message: botMode ? "Тестовая партия началась. Баланс AC не меняется." : "Игра началась. сумма Allcoins списана с обоих игроков."
       });
     } catch (error) {
       if (transactionOpen) { try { await client.query("ROLLBACK"); } catch {} }

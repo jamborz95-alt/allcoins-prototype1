@@ -188,7 +188,7 @@ export function createLottoRouter(options) {
     );
     await client.query(
       "UPDATE lotto_rooms SET status = 'finished', prize = 0, finished_at = NOW(), result_note = $1 WHERE id = $2 AND status = 'playing'",
-      ["Все 90 чисел выпали, полный билет не собран. Ставки возвращены.", String(room.id)]
+      ["Все 90 чисел выпали, полный билет не собран. суммы Allcoins возвращены.", String(room.id)]
     );
   }
 

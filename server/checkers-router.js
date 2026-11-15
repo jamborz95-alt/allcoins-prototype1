@@ -69,7 +69,7 @@ function publicGame(state, userId) {
             " AC. Комиссия: " + Number(state.commission || 0).toLocaleString("ru-RU") + " AC."
           : state.winner
             ? "Партия завершена. Победитель получил " + Number(state.payout || 0).toLocaleString("ru-RU") + " AC."
-            : "Ничья. Обе ставки возвращены.")
+            : "Ничья. Обе суммы Allcoins возвращены.")
       : (String(state.turnTelegramId) === String(userId) ? "Твой ход." : "Ход соперника.")
   };
 }
@@ -118,7 +118,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
       }
       state.payout = "0";
       state.commission = "0";
-      state.message = "Ничья. Обе ставки возвращены.";
+      state.message = "Ничья. Обе суммы Allcoins возвращены.";
     } else {
       const gross = BigInt(String(room.stake)) * 2n;
       const commissionResult = await recordGameCommission(client, {
@@ -263,7 +263,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
     if (!user) return;
     const stake = validStake(req.body?.stake);
     if (stake === null) {
-      return res.status(400).json({ ok: false, error: "Ставка должна быть от 100 до 1 000 000 AC с шагом 100." });
+      return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть от 100 до 1 000 000 AC с шагом 100." });
     }
 
     const ownerName = userName(user);
@@ -428,7 +428,7 @@ export function createCheckersRouter({ pool, verifyTelegram }) {
         );
         if (!charged.rows.length) {
           const error = new Error("У игрока «" + String(player.display_name || "Игрок") +
-            "» недостаточно AC для ставки " + stake.toString() + ". Ставка не списана ни у кого.");
+            "» недостаточно AC для суммы Allcoins " + stake.toString() + ". сумма Allcoins не списана ни у кого.");
           error.statusCode = 400;
           throw error;
         }

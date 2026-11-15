@@ -612,7 +612,7 @@ const mode = req.body.mode === "transfer" ? "transfer" : "throw-in";
     if (!Number.isSafeInteger(stake) || stake < 1) {
       return res.status(400).json({
         ok: false,
-        error: "Ставка должна быть целым числом больше нуля"
+        error: "сумма Allcoins должна быть целым числом больше нуля"
       });
     }
 
@@ -1557,14 +1557,14 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       [roomId]
     );
 
-    // Списываем ставку со всех реальных участников внутри одной транзакции.
+    // Списываем сумму Allcoins со всех реальных участников внутри одной транзакции.
     // Если средств не хватит хотя бы одному игроку, вся операция откатится.
     const humanPlayerIds = [...new Set(
       playersResult.rows.map(row => String(row.telegram_id)).filter(id => id !== "0")
     )];
     const stakePerPlayer = Math.floor(Number(room.stake));
     if (!Number.isSafeInteger(stakePerPlayer) || stakePerPlayer <= 0 || !humanPlayerIds.length) {
-      return res.status(400).json({ ok: false, error: "Некорректная ставка или нет реальных игроков" });
+      return res.status(400).json({ ok: false, error: "некорректная сумма Allcoins или нет реальных игроков" });
     }
     for (const telegramId of humanPlayerIds) {
       await client.query(
@@ -1584,7 +1584,7 @@ const deck = shuffleDurakDeck(createDurakDeck(Number(room.deck || 36)), crypto.r
       if (!debit.rows.length) {
         return res.status(400).json({
           ok: false,
-          error: "У одного из игроков недостаточно AC для ставки. Списание отменено."
+          error: "У одного из игроков недостаточно AC для суммы Allcoins. Списание отменено."
         });
       }
     }
@@ -1850,7 +1850,7 @@ app.post("/api/durak/game", async (req, res) => {
                 lockedState?.finishedReason === "timeout" &&
                 lockedState?.timeoutBalanceSettled !== true) {
               // Тайм-аут заканчивает партию, но НЕ конфискует кошелёк игрока.
-              // Проигрыш ограничивается ставкой, которая уже была удержана при старте игры.
+              // Проигрыш ограничивается суммой Allcoins, которая уже была удержана при старте игры.
               const loserId = String(lockedState.loserTelegramId || "");
               if (loserId && loserId !== "0") {
                 await timeoutClient.query(
@@ -1908,7 +1908,7 @@ app.post("/api/durak/game", async (req, res) => {
             if (gameState?.pot && gameState.pot.settled !== true) {
               await settleDurakGamePayout(payoutClient, gameState, roomId);
             }
-            // Тайм-аут не конфискует свободный баланс: удерживается только ранее внесённая ставка.
+            // Тайм-аут не конфискует свободный баланс: удерживается только ранее внесённая сумма Allcoins.
             if (gameState.finishedReason === "timeout" && gameState.timeoutBalanceSettled !== true) {
               const loserId = String(gameState.loserTelegramId || "");
               if (loserId && loserId !== "0") {
@@ -2104,7 +2104,7 @@ app.post("/api/durak/action", async (req, res) => {
     }
 
     // Храним небольшой список последних обработанных запросов, а не только
-    // самый последний: повторная доставка может прийти уже после следующего хода.
+    // самый последний: повторная досумма Allcoins может прийти уже после следующего хода.
     // FOR UPDATE выше сериализует запросы комнаты.
     const processedActionRequestIds = Array.isArray(game?.processedActionRequestIds)
       ? game.processedActionRequestIds
@@ -2736,7 +2736,7 @@ if (action === "beat") {
     }
 
     // Сохраняем последние 100 идентификаторов вместе с состоянием партии.
-    // Это защищает и от повторной доставки старого запроса после новых ходов.
+    // Это защищает и от повторной досуммы Allcoins старого запроса после новых ходов.
     if (actionRequestId) {
       game.processedActionRequestIds = [
         ...processedActionRequestIds.filter(id => id !== actionRequestId),
@@ -2934,7 +2934,7 @@ async function startTwentyOneRematchInTransaction(client, room) {
       readyCount: 0,
       playerCount: members.length,
       rematchDeadlineAt: null,
-      message: "У одного из готовых игроков недостаточно AC для ставки. Отметьтесь готовыми ещё раз после пополнения баланса."
+      message: "У одного из готовых игроков недостаточно AC для суммы Allcoins. Отметьтесь готовыми ещё раз после пополнения баланса."
     };
   }
 
@@ -2944,7 +2944,7 @@ async function startTwentyOneRematchInTransaction(client, room) {
        WHERE telegram_id = $2 AND balance >= $1 RETURNING balance`,
       [stake, String(player.telegram_id)]
     );
-    if (!debit.rows.length) throw new Error("Не удалось списать ставку у готового игрока");
+    if (!debit.rows.length) throw new Error("не удалось списать сумму Allcoins у готового игрока");
   }
 
   const gameState = createTwentyOneRound(
@@ -3028,7 +3028,7 @@ app.post("/api/twentyone/rooms/create", async (req, res) => {
     const maxPlayers = 5;
     const stake = Number(req.body?.stake);
     if (!Number.isSafeInteger(stake) || stake < 100 || stake > 1000000) {
-      return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом от 100 до 1 000 000 AC" });
+      return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом от 100 до 1 000 000 AC" });
     }
 
     client = await pool.connect();
@@ -3038,7 +3038,7 @@ app.post("/api/twentyone/rooms/create", async (req, res) => {
     if (balance < stake) {
       await client.query("ROLLBACK");
       transactionOpen = false;
-      return res.status(400).json({ ok: false, error: "Недостаточно AC для выбранной ставки" });
+      return res.status(400).json({ ok: false, error: "Недостаточно AC для выбранной суммы Allcoins" });
     }
 
     const roomResult = await client.query(
@@ -3326,7 +3326,7 @@ app.post("/api/twentyone/rooms/start", async (req, res) => {
       await client.query("ROLLBACK"); transactionOpen = false;
       return res.status(400).json({
         ok: false,
-        error: "У одного из игроков недостаточно AC для ставки " + stake.toLocaleString("ru-RU")
+        error: "У одного из игроков недостаточно AC для суммы Allcoins " + stake.toLocaleString("ru-RU")
       });
     }
 
@@ -3336,7 +3336,7 @@ app.post("/api/twentyone/rooms/start", async (req, res) => {
          WHERE telegram_id = $2 AND balance >= $1 RETURNING balance`,
         [stake, String(player.telegram_id)]
       );
-      if (!debit.rows.length) throw new Error("Не удалось списать ставку у всех игроков");
+      if (!debit.rows.length) throw new Error("не удалось списать сумму Allcoins у всех игроков");
     }
     let gameState = createTwentyOneRound(
       members.map(player => ({
@@ -3414,7 +3414,7 @@ app.post("/api/twentyone/rooms/rematch-ready", async (req, res) => {
     }
     if (Number(memberResult.rows[0].balance) < Number(room.stake)) {
       await client.query("ROLLBACK"); transactionOpen = false;
-      return res.status(400).json({ ok: false, error: "Недостаточно AC для ставки следующего раунда" });
+      return res.status(400).json({ ok: false, error: "Недостаточно AC для суммы Allcoins следующего раунда" });
     }
 
     await client.query(

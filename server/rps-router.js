@@ -296,7 +296,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
       const user = authenticatedUser(req, res);
       if (!user) return;
       const stake = parseStake(req.body?.stake);
-      if (stake === null) throw new RpsHttpError(400, "Ставка должна быть целым числом не меньше 100 AC. Верхнего лимита у поля нет.");
+      if (stake === null) throw new RpsHttpError(400, "сумма Allcoins должна быть целым числом не меньше 100 AC. Верхнего лимита у поля нет.");
       client = await pool.connect();
       await client.query("BEGIN");
       transactionOpen = true;
@@ -585,7 +585,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
         transactionOpen = false;
         return res.status(400).json({
           ok: false,
-          error: "У одного или нескольких игроков недостаточно AC для ставки. Все выборы сброшены; пополните баланс и выберите снова."
+          error: "У одного или нескольких игроков недостаточно AC для суммы Allcoins. Все выборы сброшены; пополните баланс и выберите снова."
         });
       }
 
@@ -595,7 +595,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
           "WHERE telegram_id = $2 AND balance >= $1 RETURNING telegram_id",
           [Number(room.stake), telegramId]
         );
-        if (!debit.rows.length) throw new RpsHttpError(400, "Не удалось подтвердить ставку. Выбери жест ещё раз.");
+        if (!debit.rows.length) throw new RpsHttpError(400, "Не удалось подтвердить сумму Allcoins. Выбери жест ещё раз.");
       }
 
       }
@@ -630,7 +630,7 @@ export function createRpsRouter({ pool, verifyTelegram }) {
             "WHERE telegram_id = $2 RETURNING balance",
             [Number(room.stake), telegramId]
           );
-          if (!refund.rows.length) throw new RpsHttpError(500, "Не удалось вернуть ставку при ничьей.");
+          if (!refund.rows.length) throw new RpsHttpError(500, "Не удалось вернуть сумму Allcoins при ничьей.");
           payouts.push({
             telegramId,
             label: labels.get(telegramId) || "Игрок",

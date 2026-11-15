@@ -322,7 +322,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
       const maxPlayers = Number(req.body?.maxPlayers);
       const stake = safeStake(req.body?.stake);
       if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) throw new UnoHttpError(400, "В комнате УНО может быть от 2 до 10 мест.");
-      if (stake === null) throw new UnoHttpError(400, "Укажи ставку от 100 AC. Верхний лимит ставки не задан.");
+      if (stake === null) throw new UnoHttpError(400, "Укажи сумму Allcoins от 100 AC. Верхний лимит суммы Allcoins не задан.");
       await client.query("BEGIN");
       await ensurePlayer(client, user);
       const created = await client.query(
@@ -422,7 +422,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
         for (const member of members) {
           const balanceResult = await client.query("SELECT balance FROM players WHERE telegram_id = $1 FOR UPDATE", [String(member.telegram_id)]);
           if (!balanceResult.rows.length || Number(balanceResult.rows[0].balance) < Number(room.stake)) {
-            throw new UnoHttpError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для ставки " + Number(room.stake).toLocaleString("ru-RU") + ".");
+            throw new UnoHttpError(400, "У игрока «" + String(member.display_name || "Игрок") + "» недостаточно AC для суммы Allcoins " + Number(room.stake).toLocaleString("ru-RU") + ".");
           }
         }
         for (const member of members) {
@@ -430,7 +430,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
             "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance",
             [String(room.stake), String(member.telegram_id)]
           );
-          if (!charged.rows.length) throw new UnoHttpError(400, "Недостаточно AC для ставки. Создай комнату с меньшей суммой.");
+          if (!charged.rows.length) throw new UnoHttpError(400, "Недостаточно AC для суммы Allcoins. Создай комнату с меньшей суммой.");
         }
       }
       const game = buildGame(members, Number(room.max_players), Number(room.stake), withBots);
@@ -440,7 +440,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
         [roomId, JSON.stringify(game)]
       );
       await client.query("COMMIT");
-      return res.json({ ok: true, roomId, status: "playing", mode: game.mode, message: withBots ? "Тренировочная партия с ботами запущена. AC не списываются." : "Онлайн-партия запущена. Ставки списаны, победитель получит банк за вычетом комиссии." });
+      return res.json({ ok: true, roomId, status: "playing", mode: game.mode, message: withBots ? "Тренировочная партия с ботами запущена. AC не списываются." : "Онлайн-партия запущена. суммы Allcoins списаны, победитель получит банк за вычетом комиссии." });
     } catch (error) {
       try { await client.query("ROLLBACK"); } catch {}
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось начать партию УНО." });

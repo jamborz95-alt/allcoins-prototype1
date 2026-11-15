@@ -338,13 +338,13 @@ export function createTowersRouter({ pool, verifyTelegram }) {
     const stake = amountValue(req.body?.stake);
     const maxPlayers = Number(req.body?.maxPlayers);
     const name = String(req.body?.name || "Захват башен").trim().slice(0, 40) || "Захват башен";
-    if (stake === null) return res.status(400).json({ ok: false, error: "Ставка должна быть целым числом не меньше 100 AC." });
+    if (stake === null) return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом не меньше 100 AC." });
     if (![2, 3].includes(maxPlayers)) return res.status(400).json({ ok: false, error: "Выбери комнату на 2 или 3 игроков." });
     let client;
     try {
       client = await pool.connect(); await client.query("BEGIN");
       const balance = await ensurePlayer(client, user);
-      if (balance < stake) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "На балансе недостаточно AC для этой ставки." }); }
+      if (balance < stake) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "На балансе недостаточно AC для этой суммы Allcoins." }); }
       const created = await client.query(
         "INSERT INTO towers_rooms (name, owner_telegram_id, owner_name, stake, max_players) VALUES ($1,$2,$3,$4,$5) RETURNING id",
         [name, String(user.id), displayName(user), String(stake), maxPlayers]
@@ -373,7 +373,7 @@ export function createTowersRouter({ pool, verifyTelegram }) {
       const room = await readRoom(client, roomId, true);
       if (!room || room.status !== "waiting") { await client.query("ROLLBACK"); return res.status(404).json({ ok: false, error: "Комната уже началась или не найдена." }); }
       const balance = await ensurePlayer(client, user);
-      if (balance < Number(room.stake)) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "Недостаточно AC для этой ставки." }); }
+      if (balance < Number(room.stake)) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "Недостаточно AC для этой суммы Allcoins." }); }
       const countResult = await client.query("SELECT COUNT(*)::INTEGER AS count FROM towers_room_players WHERE room_id = $1", [roomId]);
       if (Number(countResult.rows[0].count) >= Number(room.max_players)) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "В комнате нет свободных мест." }); }
       await client.query("INSERT INTO towers_room_players (room_id, telegram_id, display_name) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING", [roomId, String(user.id), displayName(user)]);
@@ -485,7 +485,7 @@ export function createTowersRouter({ pool, verifyTelegram }) {
       if (members.rows.length > Number(room.max_players)) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "В комнате больше игроков, чем разрешено." }); }
       for (const member of members.rows) {
         const debit = await client.query("UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance", [String(room.stake), String(member.telegram_id)]);
-        if (!debit.rows.length) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "У игрока не хватает AC для ставки. Комната не запущена." }); }
+        if (!debit.rows.length) { await client.query("ROLLBACK"); return res.status(400).json({ ok: false, error: "У игрока не хватает AC для суммы Allcoins. Комната не запущена." }); }
       }
       const game = makeGame(members.rows, Number(room.stake));
       await client.query("INSERT INTO towers_games (room_id, game_state, updated_at) VALUES ($1,$2::jsonb,NOW()) ON CONFLICT (room_id) DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()", [roomId, JSON.stringify(game)]);

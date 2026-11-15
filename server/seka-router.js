@@ -88,14 +88,14 @@ export function createSekaRouter({ pool, verifyTelegram }) {
 
   async function chargePlayer(client, telegramId, amount) {
     const charge = safeAmount(amount);
-    if (charge === null) throw new SekaHttpError(400, "Некорректная сумма ставки");
+    if (charge === null) throw new SekaHttpError(400, "Некорректная сумма Allcoins");
     if (charge === 0) return;
     const result = await client.query(
       "UPDATE players SET balance = balance - $1, updated_at = NOW() WHERE telegram_id = $2 AND balance >= $1 RETURNING balance",
       [charge, String(telegramId)]
     );
     if (!result.rows.length) {
-      throw new SekaHttpError(400, "Недостаточно AC для этой ставки. Поддержи меньшую ставку или нажми «Пас».");
+      throw new SekaHttpError(400, "Недостаточно AC для этой суммы Allcoins. укажи меньшую сумму Allcoins или нажми «Пас».");
     }
   }
 
@@ -250,7 +250,7 @@ async function finishByFold(client, game, winner) {
           if (!player.folded) player.acted = String(player.telegramId) === String(actor.telegramId);
         }
         await advanceOrFinish(client, game, actorIndex);
-        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " повысил ставку до " +
+        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " увеличил сумму Allcoins до " +
           targetBet.toLocaleString("ru-RU") + " AC. " + game.message;
       } else if (action === "open") {
         actor.contribution = currentBet;
@@ -261,7 +261,7 @@ async function finishByFold(client, game, winner) {
         actor.contribution = currentBet;
         actor.acted = true;
         await advanceOrFinish(client, game, actorIndex);
-        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " поддержал ставку. " + game.message;
+        if (game.status === "playing") game.message = SEKA_BOT_LABEL + " поддержал текущую сумму Allcoins. " + game.message;
       }
       steps++;
     }
@@ -364,7 +364,7 @@ async function finishByFold(client, game, winner) {
       const tier = req.body?.tier == null || req.body?.tier === "" || req.body?.tier === "all"
         ? null : Number(req.body.tier);
       if (tier !== null && (!Number.isInteger(tier) || !SEKA_LIMITS[tier])) {
-        return res.status(400).json({ ok: false, error: "Выбери один из пяти уровней ставок" });
+        return res.status(400).json({ ok: false, error: "Выбери один из пяти уровней сумм Allcoins" });
       }
       await pool.query("DELETE FROM seka_rooms WHERE status = 'waiting' AND created_at < NOW() - INTERVAL '45 minutes'");
       const result = await pool.query(
@@ -402,7 +402,7 @@ async function finishByFold(client, game, winner) {
       if (!limit) return res.status(400).json({ ok: false, error: "Выбери уровень лимита комнаты" });
       const ante = safeAmount(req.body?.stake);
       if (ante === null || ante < limit.min || (limit.max !== null && ante > limit.max)) {
-        return res.status(400).json({ ok: false, error: "Начальная ставка должна быть в пределах выбранного лимита: " + limit.label });
+        return res.status(400).json({ ok: false, error: "начальная сумма Allcoins должна быть в пределах выбранного лимита: " + limit.label });
       }
       client = await pool.connect();
       await client.query("BEGIN");
@@ -508,7 +508,7 @@ async function finishByFold(client, game, winner) {
         const count = await getRoomCounts(client, roomId);
         if (count >= Number(room.max_players)) throw new SekaHttpError(400, "Комната заполнена");
         const balance = await ensurePlayer(client, user);
-        if (balance < Number(room.ante)) throw new SekaHttpError(400, "Недостаточно AC для входа в комнату с такой начальной ставкой.");
+        if (balance < Number(room.ante)) throw new SekaHttpError(400, "Недостаточно AC для входа в комнату с такой начальной суммой Allcoins.");
         await client.query(
           "INSERT INTO seka_room_players (room_id, telegram_id, display_name) VALUES ($1, $2, $3)",
           [roomId, String(user.id), user.first_name || user.username || "Игрок"]
@@ -873,9 +873,9 @@ async function finishByFold(client, game, winner) {
           throw new SekaHttpError(400, "Повышение должно быть не меньше " + Number(room.min_bet).toLocaleString("ru-RU") + " AC");
         }
         const targetBet = currentBet + raiseAmount;
-        if (!Number.isSafeInteger(targetBet)) throw new SekaHttpError(400, "Слишком большая ставка");
+        if (!Number.isSafeInteger(targetBet)) throw new SekaHttpError(400, "слишком большая сумма Allcoins");
         if (room.max_bet != null && targetBet > Number(room.max_bet)) {
-          throw new SekaHttpError(400, "В этой комнате максимальная ставка — " + Number(room.max_bet).toLocaleString("ru-RU") + " AC");
+          throw new SekaHttpError(400, "В этой комнате максимальная сумма Allcoins — " + Number(room.max_bet).toLocaleString("ru-RU") + " AC");
         }
         const due = Math.max(0, targetBet - Number(actor.contribution || 0));
         if (!game.testMode) await chargePlayer(client, actor.telegramId, due);
@@ -886,7 +886,7 @@ async function finishByFold(client, game, winner) {
           if (!player.folded) player.acted = String(player.telegramId) === String(actor.telegramId);
         }
         await advanceOrFinish(client, game, actorIndex);
-        game.message = actor.label + " повысил ставку до " + targetBet.toLocaleString("ru-RU") + " AC. " + game.message;
+        game.message = actor.label + " увеличил сумму Allcoins до " + targetBet.toLocaleString("ru-RU") + " AC. " + game.message;
       } else if (action === "open") {
         if (liveCount > 2) throw new SekaHttpError(400, "Вскрыться можно, когда в игре осталось два игрока");
         const due = Math.max(0, currentBet - Number(actor.contribution || 0));
