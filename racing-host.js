@@ -8,7 +8,7 @@
   // The multiplayer-room API remains on RACING_API_BASE; only the GLB source moves to Amvera.
   const RACING_AMVERA_API_BASE = String(
     document.querySelector('meta[name="allcoins-racing-amvera-api"]')?.content || ""
-  ).trim().replace(/\\/+$/, "");
+  ).trim().replace(/\/+$/, "");
   // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
