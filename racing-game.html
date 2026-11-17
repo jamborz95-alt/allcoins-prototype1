@@ -1885,8 +1885,9 @@ function onlineClearOpponentCars() {
    координаты машины, камера и разметка возвращаются к исходным значениям V5.
    Физика, двигатель, коробка передач и управление не изменяются. */
 // Полоса игрока расположена ближе к камере; вторая полоса остаётся для соперников.
-const acOnlineLaneOffset = 4.2;
-const AC_PLAYER_LANE_Z = 4.2;
+// Положение ближней полосы немного сдвинуто к зрителю, не выходя за пределы асфальта.
+const acOnlineLaneOffset = 5.2;
+const AC_PLAYER_LANE_Z = 5.2;
 let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
