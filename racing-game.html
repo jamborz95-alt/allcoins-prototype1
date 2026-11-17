@@ -1884,7 +1884,9 @@ function onlineClearOpponentCars() {
    и наличии состояния хотя бы одного другого участника. В одиночном режиме
    координаты машины, камера и разметка возвращаются к исходным значениям V5.
    Физика, двигатель, коробка передач и управление не изменяются. */
-const acOnlineLaneOffset = 3.25;
+// Полоса игрока расположена ближе к камере; вторая полоса остаётся для соперников.
+const acOnlineLaneOffset = 4.2;
+const AC_PLAYER_LANE_Z = 4.2;
 let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
@@ -1906,20 +1908,19 @@ function acOnlineApplyLaneLayout(enabled) {
   if (!vehicle) return;
 
   if (enabled && !acOnlineLaneLayoutActive) {
+    // Машина игрока уже стоит на ближней полосе и не смещается повторно.
     acOnlinePlayerBaseZ = vehicle.position.z;
     acOnlineLaneLayoutActive = true;
-    // Игрок остаётся на ближней полосе; реальный участник займёт дальнюю.
-    vehicle.position.z = acOnlinePlayerBaseZ + acOnlineLaneOffset;
     for (const mark of laneMarks) mark.position.z = 0;
     vehicle.updateMatrixWorld(true);
     return;
   }
 
   if (!enabled && acOnlineLaneLayoutActive) {
-    vehicle.position.z = acOnlinePlayerBaseZ;
+    // В одиночной игре машина остаётся на той же ближней полосе.
     acOnlinePlayerBaseZ = null;
     acOnlineLaneLayoutActive = false;
-    for (const mark of laneMarks) mark.position.z = -5.0;
+    for (const mark of laneMarks) mark.position.z = 0;
     vehicle.updateMatrixWorld(true);
   }
 }
@@ -1974,7 +1975,7 @@ function onlineUpdateOpponentCars(dt) {
     const delta = Math.max(-80, Math.min(80, remoteDistance - distance));
     const targetX = carAnchor + delta * WORLD_UNITS_PER_METER;
     const targetY = vehicle.position.y;
-    const targetZ = acOnlinePlayerBaseZ - acOnlineLaneOffset;
+    const targetZ = acOnlinePlayerBaseZ - acOnlineLaneOffset * 2;
 
     const alpha = entry.initialized ? Math.min(1, dt * 8) : 1;
     const root = entry.root;
@@ -2617,7 +2618,7 @@ const stripeMat = new THREE.MeshStandardMaterial({
 const laneMarks = [];
 for (let i = 0; i < 42; i++) {
   const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
-  mark.position.set(-126 + i * 6.2, -.085, -5.0);
+  mark.position.set(-126 + i * 6.2, -.085, 0);
   scene.add(mark);
   laneMarks.push(mark);
 }
@@ -3101,7 +3102,10 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   centralMarkingsTravelSign: acCentralMarkingDirection.forwardDelta < 0 ? 1 : -1,
   centralMarkingsForwardDelta: acCentralMarkingDirection.forwardDelta,
   centralMarkingsReverseDelta: acCentralMarkingDirection.reverseDelta,
-  centralMarkingsZ: -5.0,
+  centralMarkingsZ: 0,
+  asphaltLaneCount: 2,
+  playerVehicleLane: "near-side",
+  playerVehicleLaneCenterZ: AC_PLAYER_LANE_Z,
   skidMarksFollowTrackDirection: true,
   cleanTrackMode: true,
   cityBuildings: 0,
@@ -3682,7 +3686,7 @@ function attachVehicle(root,label='сохранённая модель'){
   const scale=4.75/longAxis;root.scale.setScalar(scale);root.updateMatrixWorld(true);box.setFromObject(root);
   root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
   root.position.y+=-box.min.y+.025;
-  root.position.z+=-(box.min.z+box.max.z)/2;
+  root.position.z+=-(box.min.z+box.max.z)/2 + AC_PLAYER_LANE_Z;
   vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
