@@ -628,26 +628,26 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   background:linear-gradient(145deg,#dcecff,#6296d1)!important;
   color:#071326!important;
 }
-#raceProgress {
-  position:fixed;
-  z-index:12;
-  left:50%;
-  top:max(8px,env(safe-area-inset-top));
-  transform:translateX(-50%);
-  width:min(520px,42vw);
-  height:7px;
-  border-radius:8px;
-  background:#111b2b;
-  border:1px solid #90b9e477;
-  overflow:hidden;
-  pointer-events:none;
+#raceProgress{
+  position:fixed;z-index:40;left:50%;top:max(7px,env(safe-area-inset-top));
+  transform:translateX(-50%);width:min(430px,74vw);padding:6px 9px;
+  display:none;flex-direction:column;gap:5px;border:1px solid #91b9e477;
+  border-radius:12px;background:rgba(7,14,24,.86);box-shadow:0 6px 18px #0007;
+  backdrop-filter:blur(8px);pointer-events:none;
 }
-#raceProgressFill {
-  width:0%;
-  height:100%;
-  border-radius:8px;
-  background:linear-gradient(90deg,#459cff,#9ed5ff);
-  box-shadow:0 0 10px #64aaff;
+#raceProgress.active{display:flex}
+.race-progress-row{display:grid;grid-template-columns:56px minmax(0,1fr) 34px;align-items:center;gap:7px;min-width:0}
+.race-progress-label{color:#dce9f6;font-size:9px;font-weight:950;letter-spacing:.04em;white-space:nowrap}
+.race-progress-value{color:#b8cbe0;font-size:9px;font-weight:850;text-align:right}
+.race-progress-track{position:relative;height:7px;overflow:hidden;border:1px solid #91a7c455;border-radius:8px;background:#111b2b}
+.race-progress-fill{width:0%;height:100%;border-radius:8px;transition:width .08s linear}
+#raceProgressFill{background:linear-gradient(90deg,#398fe9,#b3e0ff);box-shadow:0 0 8px #64aaff}
+#opponentProgressFill{background:linear-gradient(90deg,#b57a24,#ffe09a);box-shadow:0 0 8px #efbd64}
+@media(max-width:520px){
+  #raceProgress{width:min(360px,78vw);padding:5px 7px;gap:4px}
+  .race-progress-row{grid-template-columns:50px minmax(0,1fr) 30px;gap:5px}
+  .race-progress-label,.race-progress-value{font-size:8px}
+  .race-progress-track{height:6px}
 }
 
 /* Горизонтальный Android */
@@ -1263,7 +1263,18 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
     </div>
     <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Переключить высоту подвески">ПОДВЕСКА · СРЕДНЯЯ</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
   </div>
-  <div id="raceProgress"><div id="raceProgressFill"></div></div>
+  <div id="raceProgress" aria-label="Расположение машин на дистанции">
+  <div class="race-progress-row">
+    <span class="race-progress-label">ТЫ</span>
+    <div class="race-progress-track"><div id="raceProgressFill" class="race-progress-fill"></div></div>
+    <span class="race-progress-value" id="raceProgressPlayerValue">0%</span>
+  </div>
+  <div class="race-progress-row">
+    <span class="race-progress-label">СОПЕРНИК</span>
+    <div class="race-progress-track"><div id="opponentProgressFill" class="race-progress-fill"></div></div>
+    <span class="race-progress-value" id="opponentProgressValue">0%</span>
+  </div>
+</div>
 <div class="bottom">
     <div class="pedals">
       <button class="pedal brake" id="brake" type="button" aria-label="Тормоз, удерживать">ТОРМОЗ<span>УДЕРЖИВАТЬ</span></button>
@@ -2089,6 +2100,26 @@ function acOnlineApplyLaneLayout(enabled) {
   }
 }
 
+function onlineUpdateRaceProgress() {
+  const panel = $("raceProgress");
+  if (!panel) return;
+  const inGarage = document.body.classList.contains("garage-mode");
+  const opponents = [...onlineRemoteStates.values()]
+    .filter(state => Number.isFinite(Number(state.distanceM)))
+    .sort((a, b) => Number(b.distanceM) - Number(a.distanceM));
+  const show = !inGarage && onlineMode && onlineRaceStarted && opponents.length > 0;
+  panel.classList.toggle("active", show);
+  if (!show) return;
+
+  const playerPercent = Math.max(0, Math.min(100, distance / RACE_DISTANCE_METERS * 100));
+  const opponentDistance = Number(opponents[0].distanceM) || 0;
+  const opponentPercent = Math.max(0, Math.min(100, opponentDistance / RACE_DISTANCE_METERS * 100));
+  $("raceProgressFill").style.width = playerPercent.toFixed(2) + "%";
+  $("opponentProgressFill").style.width = opponentPercent.toFixed(2) + "%";
+  $("raceProgressPlayerValue").textContent = Math.round(playerPercent) + "%";
+  $("opponentProgressValue").textContent = Math.round(opponentPercent) + "%";
+}
+
 function onlineUpdateOpponentCars(dt) {
   const inGarage = document.body.classList.contains('garage-mode');
   const hasRealOpponent = !inGarage && onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
@@ -2114,6 +2145,29 @@ function onlineUpdateOpponentCars(dt) {
 
     if (!entry) {
       const root = vehicle.clone(true);
+      // Соперник чуть дальше по глубине, поэтому уменьшаем его масштаб,
+      // чтобы визуально он не казался крупнее машины игрока.
+      root.scale.multiplyScalar(0.88);
+
+      const sourceObjects = [];
+      const cloneObjects = [];
+      vehicle.traverse(object => sourceObjects.push(object));
+      root.traverse(object => cloneObjects.push(object));
+      const cloneBySource = new Map(
+        sourceObjects.map((object, index) => [object, cloneObjects[index]]).filter(([, clone]) => Boolean(clone))
+      );
+      const cloneWheelSet = nodes => nodes.map(wheel => {
+        const node = cloneBySource.get(wheel.node);
+        if (!node) return null;
+        const baseQuaternion = wheel.baseQuaternion.clone();
+        node.quaternion.copy(baseQuaternion);
+        return {
+          node,
+          baseQuaternion,
+          spinAxisParent: wheel.spinAxisParent.clone(),
+          radius: wheel.radius
+        };
+      }).filter(Boolean);
 
       root.traverse(object => {
         if (!object.isMesh) return;
@@ -2131,11 +2185,21 @@ function onlineUpdateOpponentCars(dt) {
 
       root.name = "ALLCOINS opponent " + (state.name || userId);
       scene.add(root);
-      entry = { root, initialized: false };
+      entry = {
+        root,
+        initialized: false,
+        frontWheelNodes: cloneWheelSet(frontWheelNodes),
+        rearWheelNodes: cloneWheelSet(rearWheelNodes),
+        wheelRadius: wheelRadiusWorld || 0.34,
+        frontWheelAngle: 0,
+        rearWheelAngle: 0
+      };
       onlineRemoteCars.set(userId, entry);
     }
 
-    const delta = Math.max(-80, Math.min(80, remoteDistance - distance));
+    // Без искусственного ограничения в 80 метров: соперник действительно
+    // уезжает вперёд или отстаёт и естественно выходит за границу камеры.
+    const delta = remoteDistance - distance;
     const targetX = carAnchor + delta * WORLD_UNITS_PER_METER;
     const targetY = vehicle.position.y;
     const targetZ = acOnlinePlayerBaseZ - acOnlineLaneOffset * 2;
@@ -2146,7 +2210,15 @@ function onlineUpdateOpponentCars(dt) {
     root.position.x += (targetX - root.position.x) * alpha;
     root.position.y += (targetY - root.position.y) * alpha;
     root.position.z += (targetZ - root.position.z) * alpha;
-    root.visible = Math.abs(delta) <= 80;
+
+    // Вращаем колёса клона от реальной/тестовой скорости соперника.
+    const opponentSpeedKmh = Math.max(0, Math.min(400, Number(state.speedKmh) || 0));
+    const wheelRate = (opponentSpeedKmh / 3.6) *
+      (worldUnitsPerRealMeter || 1) / Math.max(0.12, entry.wheelRadius || 0.34);
+    entry.frontWheelAngle += wheelRate * dt;
+    entry.rearWheelAngle += wheelRate * dt;
+    spinWheelSet(entry.frontWheelNodes, entry.frontWheelAngle);
+    spinWheelSet(entry.rearWheelNodes, entry.rearWheelAngle);
     entry.initialized = true;
   }
 
@@ -5110,7 +5182,7 @@ function animate(now){
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
     distance+=signedSpeed/3.6*dt;
-    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';const raceFill=document.getElementById('raceProgressFill');if(raceFill)raceFill.style.width=(Math.max(0,Math.min(100,distance/RACE_DISTANCE_METERS*100)))+'%';
+    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';
     const scroll=(signedSpeed/3.6)*WORLD_UNITS_PER_METER*dt;
     acAdvanceRoadSurface(scroll);
     // Центральная разметка исправлена: при движении вперёд она уходит вправо по экрану,
@@ -5215,6 +5287,7 @@ if(distance>=RACE_DISTANCE_METERS){
   for(let i=smokeParticles.length-1;i>=0;i--){const p=smokeParticles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.scale.multiplyScalar(1+dt*.55);p.mesh.material.opacity=Math.max(0,p.baseOpacity*(p.life/p.max));if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();smokeParticles.splice(i,1);}}
   onlineUpdateTestBot();
   onlineUpdateOpponentCars(dt);
+  onlineUpdateRaceProgress();
   renderer.render(scene,camera);
 }
 
