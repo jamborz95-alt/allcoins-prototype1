@@ -3865,9 +3865,10 @@ for (const x of [-10.8, -4.6, 1.6]) {
 }
 
 
-/* ALLCOINS WALL BRANDING + TOOL DISPLAY V2 · PORTRAIT FIT
-   Настенный логотип и декоративные панели с гаечными ключами.
-   Только оформление гаража: модель автомобиля и физика не меняются. */
+/* ALLCOINS WALL BRANDING + TOOL DISPLAY V3 · MOBILE VIEWPORT FIX
+   Таблички перенесены в реальную область обзора портретной камеры.
+   Они вынесены перед стойками, чтобы стойки не перекрывали надписи.
+   Только декорации гаража: модель автомобиля и физика не меняются. */
 function acGarageRoundedRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width / 2, height / 2);
   ctx.beginPath();
@@ -3957,81 +3958,10 @@ const acGarageLogoTexture = acGarageCanvasTexture(1200, 320, (ctx, w, h) => {
   ctx.fillText("ALLCOINS", 330, 145);
   ctx.shadowBlur = 0;
 
-  // Пара хромированных ключей находится прямо на основном знаке,
-  // чтобы их было видно и на узком вертикальном экране телефона.
-  acGaragePaintWrench(ctx, 1090, 158, 1.18, -.72);
-  acGaragePaintWrench(ctx, 1090, 158, 1.18, .72);
-
-  ctx.fillStyle = "#e4b95f";
-  ctx.font = "800 38px Arial, sans-serif";
-  ctx.letterSpacing = "9px";
-  ctx.fillText("RACING GARAGE", 344, 238);
-  ctx.fillStyle = "rgba(238,218,174,.55)";
-  ctx.fillRect(344, 268, 680, 3);
-  ctx.fillStyle = "#f2d58f";
-  ctx.beginPath();
-  ctx.arc(1048, 269, 5, 0, Math.PI * 2);
-  ctx.fill();
+  // Хромированные ключи встроены в знак ALLCOINS.
+  acGaragePaintWrench(ctx, 790, 170, 1.05, -.48);
+  acGaragePaintWrench(ctx, 1005, 170, 1.05, .48);
 });
-
-function acGaragePaintWrench(ctx, x, y, scale, angle) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.scale(scale, scale);
-
-  const metal = ctx.createLinearGradient(-20, -55, 20, 48);
-  metal.addColorStop(0, "#f1f5f8");
-  metal.addColorStop(.25, "#aebdca");
-  metal.addColorStop(.55, "#526477");
-  metal.addColorStop(.82, "#d5dee6");
-  metal.addColorStop(1, "#75879a");
-
-  ctx.shadowColor = "rgba(0,0,0,.65)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 5;
-  ctx.beginPath();
-  ctx.moveTo(-7, 43);
-  ctx.lineTo(-7, -22);
-  ctx.lineTo(-17, -34);
-  ctx.lineTo(-17, -47);
-  ctx.lineTo(-9, -56);
-  ctx.lineTo(-2, -48);
-  ctx.lineTo(-7, -42);
-  ctx.lineTo(7, -42);
-  ctx.lineTo(2, -48);
-  ctx.lineTo(9, -56);
-  ctx.lineTo(17, -47);
-  ctx.lineTo(17, -34);
-  ctx.lineTo(7, -22);
-  ctx.lineTo(7, 43);
-  ctx.quadraticCurveTo(0, 52, -7, 43);
-  ctx.closePath();
-  ctx.fillStyle = metal;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = "#e8eef3";
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(0, 34, 4.2, 0, Math.PI * 2);
-  ctx.fillStyle = "#263647";
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#dce6ed";
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(-4, -33);
-  ctx.lineTo(-10, -42);
-  ctx.moveTo(4, -33);
-  ctx.lineTo(10, -42);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(255,255,255,.72)";
-  ctx.stroke();
-  ctx.restore();
-}
 
 function acGarageMakeToolTexture(label) {
   return acGarageCanvasTexture(900, 320, (ctx, w, h) => {
@@ -4048,7 +3978,7 @@ function acGarageMakeToolTexture(label) {
     ctx.stroke();
 
     ctx.fillStyle = "#f1d18b";
-    ctx.font = "800 27px Arial, sans-serif";
+    ctx.font = "800 34px Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, w / 2, 48);
@@ -4071,32 +4001,36 @@ function acGarageMakeToolTexture(label) {
 }
 
 function acGarageAddWallDisplay(x, y, width, height, texture, isLogo = false) {
-  const z = -16.78;
+  // Передняя сторона таблички находится перед металлическими стойками.
+  const z = -15.82;
   acGarageAddBox(width + .20, height + .20, .20, x, y, z, acGarageBeamMaterial);
   acGarageAddBox(width + .26, .055, .24, x, y + height / 2 + .13, z + .015, acGarageBrandGold);
   acGarageAddBox(width + .26, .055, .24, x, y - height / 2 - .13, z + .015, acGarageBrandGold);
 
   const material = new THREE.MeshBasicMaterial({
     map: texture,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    toneMapped: false
   });
   const face = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
   face.position.set(x, y, z + .112);
   acGarageWorld.add(face);
 
   if (isLogo) {
-    const glow = new THREE.PointLight(0xe9bb65, .72, 10, 2);
-    glow.position.set(x, y - .15, z + 1.15);
+    const glow = new THREE.PointLight(0xe9bb65, .8, 9, 2);
+    glow.position.set(x, y - .05, z + .9);
     acGarageWorld.add(glow);
   }
 }
 
-const acGarageLeftToolsTexture = acGarageMakeToolTexture("НАБОР ГАЕЧНЫХ КЛЮЧЕЙ");
-const acGarageRightToolsTexture = acGarageMakeToolTexture("ИНСТРУМЕНТАЛЬНАЯ СТЕНА");
-acGarageAddWallDisplay(-11.05, 5.28, 4.25, 1.55, acGarageLeftToolsTexture);
-acGarageAddWallDisplay(-4.60, 5.28, 5.80, 1.55, acGarageLogoTexture, true);
-acGarageAddWallDisplay(1.85, 5.28, 4.25, 1.55, acGarageRightToolsTexture);
+const acGarageLeftToolsTexture = acGarageMakeToolTexture("ГАЕЧНЫЕ КЛЮЧИ");
+const acGarageRightToolsTexture = acGarageMakeToolTexture("ИНСТРУМЕНТЫ");
 
+/* Основной логотип расположен по центру видимой области телефона.
+   Панели с ключами расположены ниже, в пределах того же кадра. */
+acGarageAddWallDisplay(-4.6, 3.72, 6.55, 1.48, acGarageLogoTexture, true);
+acGarageAddWallDisplay(-6.25, 1.72, 3.05, 1.02, acGarageLeftToolsTexture);
+acGarageAddWallDisplay(-2.95, 1.72, 3.05, 1.02, acGarageRightToolsTexture);
 
 function setGarageMode(enabled) {
   const active = Boolean(enabled);
