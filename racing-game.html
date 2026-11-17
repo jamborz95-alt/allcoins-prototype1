@@ -1886,8 +1886,9 @@ function onlineClearOpponentCars() {
    Физика, двигатель, коробка передач и управление не изменяются. */
 // Полоса игрока расположена ближе к камере; вторая полоса остаётся для соперников.
 // Положение ближней полосы немного сдвинуто к зрителю, не выходя за пределы асфальта.
-const acOnlineLaneOffset = 5.2;
-const AC_PLAYER_LANE_Z = 5.2;
+// Сдвиг ближней полосы к камере заметнее; обе полосы остаются симметричными.
+const acOnlineLaneOffset = 6.8;
+const AC_PLAYER_LANE_Z = 6.8;
 let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
