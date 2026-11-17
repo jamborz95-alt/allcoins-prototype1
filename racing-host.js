@@ -12,7 +12,9 @@
   // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
-  const MODEL_CACHE_KEY = "v24-vaz-2107-amvera-glb-v1";
+  const MODEL_CACHE_KEY = RACING_AMVERA_API_BASE
+    ? "v24-vaz-2107-amvera-glb-v1"
+    : "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
   let authenticationPromise = null;
@@ -354,7 +356,7 @@
         setStatus("Загружаем 3D-модель автомобиля…", false);
         setModelProgress(
           total ? "Загрузка автомобиля · " + (start / 1048576).toFixed(1) + " / " + (total / 1048576).toFixed(1) + " МБ" :
-            "Подключаемся к локальной базе автомобиля…",
+            useAmveraAsset ? "Подключаемся к облачному хранилищу Amvera…" : "Подключаемся к локальной базе автомобиля…",
           total ? (start / total) * 100 : 0
         );
 
@@ -374,7 +376,9 @@
             });
           } catch (error) {
             if (error && error.name === "AbortError") {
-              throw new Error("ПК не передал файл автомобиля за 30 секунд. Проверь работу Engine и туннеля.");
+              throw new Error(useAmveraAsset
+                ? "Amvera не передала файл автомобиля за 30 секунд. Проверь доступность приложения и хранилища."
+                : "ПК не передал файл автомобиля за 30 секунд. Проверь работу Engine и туннеля.");
             }
             if (attempt === 5) throw new Error("Сеть прервала загрузку 3D-модели.");
             await new Promise(resolve => setTimeout(resolve, Math.min(10000, 1000 * 2 ** (attempt - 1))));
