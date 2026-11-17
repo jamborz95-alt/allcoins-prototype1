@@ -3865,7 +3865,7 @@ for (const x of [-10.8, -4.6, 1.6]) {
 }
 
 
-/* ALLCOINS WALL BRANDING + TOOL DISPLAY V1
+/* ALLCOINS WALL BRANDING + TOOL DISPLAY V2 · PORTRAIT FIT
    Настенный логотип и декоративные панели с гаечными ключами.
    Только оформление гаража: модель автомобиля и физика не меняются. */
 function acGarageRoundedRect(ctx, x, y, width, height, radius) {
@@ -3956,6 +3956,11 @@ const acGarageLogoTexture = acGarageCanvasTexture(1200, 320, (ctx, w, h) => {
   ctx.fillStyle = "#fff0c1";
   ctx.fillText("ALLCOINS", 330, 145);
   ctx.shadowBlur = 0;
+
+  // Пара хромированных ключей находится прямо на основном знаке,
+  // чтобы их было видно и на узком вертикальном экране телефона.
+  acGaragePaintWrench(ctx, 1090, 158, 1.18, -.72);
+  acGaragePaintWrench(ctx, 1090, 158, 1.18, .72);
 
   ctx.fillStyle = "#e4b95f";
   ctx.font = "800 38px Arial, sans-serif";
@@ -4089,7 +4094,7 @@ function acGarageAddWallDisplay(x, y, width, height, texture, isLogo = false) {
 const acGarageLeftToolsTexture = acGarageMakeToolTexture("НАБОР ГАЕЧНЫХ КЛЮЧЕЙ");
 const acGarageRightToolsTexture = acGarageMakeToolTexture("ИНСТРУМЕНТАЛЬНАЯ СТЕНА");
 acGarageAddWallDisplay(-11.05, 5.28, 4.25, 1.55, acGarageLeftToolsTexture);
-acGarageAddWallDisplay(-4.60, 5.28, 7.65, 1.72, acGarageLogoTexture, true);
+acGarageAddWallDisplay(-4.60, 5.28, 5.80, 1.55, acGarageLogoTexture, true);
 acGarageAddWallDisplay(1.85, 5.28, 4.25, 1.55, acGarageRightToolsTexture);
 
 
