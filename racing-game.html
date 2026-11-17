@@ -1949,9 +1949,16 @@ const acOnlineRaceCameraTarget = new THREE.Vector3(0, 0.2, 0);
 
 function acOnlineSetCameraMode(mode) {
   if (acOnlineCameraMode === mode) return;
-  const online = mode === 'online';
-  camera.position.copy(online ? acOnlineRaceCameraPosition : acOnlineSoloCameraPosition);
-  camera.lookAt(online ? acOnlineRaceCameraTarget : acOnlineSoloCameraTarget);
+  if (mode === 'garage') {
+    // The garage car is anchored at carAnchor (-4.6), so center the
+    // narrow portrait viewport on the car rather than the track origin.
+    camera.position.set(carAnchor, 4.2, 28);
+    camera.lookAt(carAnchor, 0.2, 0);
+  } else {
+    const online = mode === 'online';
+    camera.position.copy(online ? acOnlineRaceCameraPosition : acOnlineSoloCameraPosition);
+    camera.lookAt(online ? acOnlineRaceCameraTarget : acOnlineSoloCameraTarget);
+  }
   camera.updateMatrixWorld(true);
   acOnlineCameraMode = mode;
 }
@@ -1978,13 +1985,12 @@ function acOnlineApplyLaneLayout(enabled) {
 }
 
 function onlineUpdateOpponentCars(dt) {
-  if (!vehicle) return;
-
-  const hasRealOpponent = onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
+  const inGarage = document.body.classList.contains('garage-mode');
+  const hasRealOpponent = !inGarage && onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
   acOnlineApplyLaneLayout(hasRealOpponent);
-  acOnlineSetCameraMode(hasRealOpponent ? 'online' : 'solo');
+  acOnlineSetCameraMode(inGarage ? 'garage' : (hasRealOpponent ? 'online' : 'solo'));
 
-  if (!hasRealOpponent) {
+  if (!vehicle || inGarage || !hasRealOpponent) {
     onlineClearOpponentCars();
     return;
   }
@@ -3735,6 +3741,8 @@ function setGarageMode(enabled) {
   document.body.classList.toggle("garage-mode", active);
   document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
+  acOnlineSetCameraMode(active ? 'garage' : 'solo');
+  resize();
   acGarageWorld.visible = active;
   const trackVisible = !active;
   road.visible = trackVisible;
@@ -4385,7 +4393,19 @@ function emitRearTireSmoke(){
 
 let last=performance.now();
 let runElapsed=0;
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);const aspect=w/Math.max(1,h),viewH=10.6;camera.left=-viewH*aspect/2;camera.right=viewH*aspect/2;camera.top=viewH/2;camera.bottom=-viewH/2;camera.updateProjectionMatrix();}
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  const aspect=w/Math.max(1,h);
+  // Give the portrait garage a little extra horizontal room so the full
+  // side profile of the VAZ-2107 fits on a phone; keep race framing intact.
+  const viewH=document.body.classList.contains('garage-mode') && h>w ? 13.8 : 10.6;
+  camera.left=-viewH*aspect/2;
+  camera.right=viewH*aspect/2;
+  camera.top=viewH/2;
+  camera.bottom=-viewH/2;
+  camera.updateProjectionMatrix();
+}
 addEventListener('resize',resize);resize();
 const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
 function animate(now){
