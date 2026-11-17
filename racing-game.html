@@ -1894,9 +1894,9 @@ let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
 const acOnlineSoloCameraPosition = new THREE.Vector3(0, 4.2, 28);
-const acOnlineSoloCameraTarget = new THREE.Vector3(0, 2.2, 0);
-const acOnlineRaceCameraPosition = new THREE.Vector3(0, 9.4, 28);
-const acOnlineRaceCameraTarget = new THREE.Vector3(0, 2.0, 0);
+const acOnlineSoloCameraTarget = new THREE.Vector3(0, 0.2, 0);
+const acOnlineRaceCameraPosition = new THREE.Vector3(0, 4.2, 28);
+const acOnlineRaceCameraTarget = new THREE.Vector3(0, 0.2, 0);
 
 function acOnlineSetCameraMode(mode) {
   if (acOnlineCameraMode === mode) return;
@@ -2327,7 +2327,8 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1423);
 scene.fog = new THREE.Fog(0x101b2c, 78, 218);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
-camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
+// Камера смотрит почти параллельно полотну, как на референсе.
+camera.position.set(0,4.2,28); camera.lookAt(0,0.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
@@ -2551,7 +2552,7 @@ const roadMat = new THREE.MeshStandardMaterial({
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
 // Полотно расширено, чтобы автомобиль на Z=10 полностью оставался на асфальте.
-const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 24), roadMat);
+const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 25.6), roadMat);
 road.rotation.x = -Math.PI / 2;
 road.position.y = -.12;
 road.receiveShadow = true;
@@ -2562,7 +2563,7 @@ const shoulderMat = new THREE.MeshStandardMaterial({
   roughness: .96,
   metalness: .01
 });
-const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900, 29), shoulderMat);
+const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900, 34), shoulderMat);
 shoulder.rotation.x = -Math.PI / 2;
 shoulder.position.set(0, -.19, -.2);
 scene.add(shoulder);
@@ -2620,12 +2621,11 @@ const stripeMat = new THREE.MeshStandardMaterial({
   emissiveIntensity: .025
 });
 const laneMarks = [];
-for (let i = 0; i < 42; i++) {
-  const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
-  mark.position.set(-126 + i * 6.2, -.085, 0);
-  scene.add(mark);
-  laneMarks.push(mark);
-}
+// Сплошная центральная линия разделяет две полосы, как на присланном примере.
+const centerLaneLine = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .12), stripeMat);
+centerLaneLine.position.set(0, -.085, 0);
+scene.add(centerLaneLine);
+laneMarks.push(centerLaneLine);
 
 // Центральный пунктир движется вместе с остальным миром: при ходе вперёд — влево, при заднем ходе — вправо.
 function acAdvanceCentralMarkings(scroll) {
@@ -2660,7 +2660,7 @@ const edgeMat = new THREE.MeshStandardMaterial({
   emissive: 0x151713,
   emissiveIntensity: .02
 });
-for (const z of [-8.94, 8.94]) {
+for (const z of [-12.72, 12.72]) {
   const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
   edge.position.set(0, -.088, z);
   scene.add(edge);
@@ -2994,7 +2994,7 @@ acFenceBarMesh.instanceMatrix.needsUpdate = true;
 acFenceBraceMesh.castShadow = acFenceBarMesh.castShadow = true;
 acCityFence.add(acFenceBraceMesh, acFenceBarMesh);
 scene.add(acCityFence);
-acCityFence.visible = false;
+acCityFence.visible = true;
 
 // Полоса живых кустов между металлическим забором и жилыми фасадами.
 const acCityShrubs = new THREE.Group();
@@ -3018,7 +3018,7 @@ for(let cluster=0;cluster<60;cluster++){
 }
 acShrubInstances.instanceMatrix.needsUpdate=true;if(acShrubInstances.instanceColor)acShrubInstances.instanceColor.needsUpdate=true;
 acShrubInstances.castShadow=true;acShrubInstances.receiveShadow=true;acCityShrubs.add(acShrubInstances);scene.add(acCityShrubs);
-acCityShrubs.visible = false;
+acCityShrubs.visible = true;
 
 // Дальний городской силуэт: высотные корпуса и редкие окна создают глубину улицы.
 const distantHills = new THREE.Group();
@@ -3074,7 +3074,7 @@ if (farLitMesh) distantHills.add(farLitMesh);
 scene.add(distantHills);
 distantHills.visible = false;
 
-const carAnchor = -4.2;
+const carAnchor = -4.6;
 // Finish marker belongs to the track and advances in exact proportion to race distance.
 const WORLD_UNITS_PER_METER = .22;
 const RACE_DISTANCE_METERS = 1000;
@@ -3096,7 +3096,11 @@ scene.add(finishLine);
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
   asphaltRepeatX: roadMat.map.repeat.x,
-  asphaltTone: "neutral-road-gray",
+  asphaltTone: "blue-violet-wet-racing-asphalt",
+  asphaltWidth: 25.6,
+  roadsideTyreWalls: 2,
+  checkeredEdgeCurbs: true,
+  continuousCenterDivider: true,
   asphaltWetGloss: roadMat.roughness < .5,
   asphaltSkidArcs: 0,
   asphaltLongitudinalWear: true,
@@ -3193,9 +3197,10 @@ acV5WarmBodyFill.position.set(-7.0, 2.8, 5.8);
 scene.add(acV5WarmBodyFill);
 
 // Умеренное усиление отражающего вида дорожного покрытия.
-roadMat.roughness = Math.max(roadMat.roughness, 0.52);
-roadMat.metalness = Math.min(roadMat.metalness, 0.04);
-roadMat.bumpScale = Math.min(roadMat.bumpScale, 0.035);
+roadMat.color.set(0xb9bbef);
+roadMat.roughness = 0.44;
+roadMat.metalness = 0.035;
+roadMat.bumpScale = 0.028;
 
 // Световые блики на мокром асфальте. InstancedMesh ограничивает число draw calls для Android.
 const acV5WetGeometry = new THREE.PlaneGeometry(1, 1);
