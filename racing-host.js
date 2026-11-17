@@ -491,8 +491,23 @@
   }
 
   async function handleRacingAction(data) {
-    await ensureTelegramAuthentication();
     const action = String(data.action || "");
+
+    // Paint purchases use the main ALLCOINS wallet API, not the racing-room server.
+    if (action === "paint:profile") {
+      if (!window.allcoinsRacingPaintApi || typeof window.allcoinsRacingPaintApi.profile !== "function") {
+        throw new Error("Сервис гаража ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingPaintApi.profile();
+    }
+    if (action === "paint:buy") {
+      if (!window.allcoinsRacingPaintApi || typeof window.allcoinsRacingPaintApi.buy !== "function") {
+        throw new Error("Сервис покупки красок ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingPaintApi.buy(data.paintId);
+    }
+
+    await ensureTelegramAuthentication();
     let result;
 
     switch (action) {
