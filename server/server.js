@@ -3893,7 +3893,11 @@ async function startServer() {
       console.log(`ALLCOINS server started on port ${port}`);
     });
   } catch (error) {
-    console.error("Server startup failed:", error.message);
+    console.error("Server startup failed:", error);
+    console.error("Error name:", error?.name);
+    console.error("Error code:", error?.code);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
     process.exit(1);
   }
 }
