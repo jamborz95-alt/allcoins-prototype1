@@ -693,7 +693,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261117-garage-controls-lower-v46", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261117-garage-bottom-dock-v47", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
