@@ -2621,11 +2621,13 @@ const stripeMat = new THREE.MeshStandardMaterial({
   emissiveIntensity: .025
 });
 const laneMarks = [];
-// Сплошная центральная линия разделяет две полосы, как на присланном примере.
-const centerLaneLine = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .12), stripeMat);
-centerLaneLine.position.set(0, -.085, 0);
-scene.add(centerLaneLine);
-laneMarks.push(centerLaneLine);
+// Короткая прерывистая разметка центральной линии, как на референсе.
+for (let i = 0; i < 42; i++) {
+  const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
+  mark.position.set(-126 + i * 6.2, -.085, 0);
+  scene.add(mark);
+  laneMarks.push(mark);
+}
 
 // Центральный пунктир движется вместе с остальным миром: при ходе вперёд — влево, при заднем ходе — вправо.
 function acAdvanceCentralMarkings(scroll) {
@@ -3051,28 +3053,6 @@ acTrackCurbMesh.instanceMatrix.needsUpdate = true;
 if (acTrackCurbMesh.instanceColor) acTrackCurbMesh.instanceColor.needsUpdate = true;
 scene.add(acTrackCurbMesh);
 
-const acTrackTyreMaterial = new THREE.MeshStandardMaterial({
-  color: 0x171b23, roughness: .96, metalness: .015
-});
-const acTrackTyreGeometry = new THREE.TorusGeometry(.36, .145, 8, 14);
-function acCreateTrackTyreWall(z, count, yOffset = .34) {
-  const wall = new THREE.InstancedMesh(acTrackTyreGeometry, acTrackTyreMaterial, count);
-  wall.frustumCulled = false;
-  for (let i = 0; i < count; i++) {
-    const x = -130 + i * (260 / (count - 1));
-    acTrackDummy.position.set(x, yOffset, z);
-    acTrackDummy.rotation.set(0, 0, 0);
-    const scale = .92 + ((i * 17) % 9) * .018;
-    acTrackDummy.scale.set(scale, scale, 1);
-    acTrackDummy.updateMatrix();
-    wall.setMatrixAt(i, acTrackDummy.matrix);
-  }
-  wall.instanceMatrix.needsUpdate = true;
-  scene.add(wall);
-  return wall;
-}
-const acFarTyreWall = acCreateTrackTyreWall(-13.85, 262, .34);
-const acNearTyreWall = acCreateTrackTyreWall(16.2, 262, .34);
 
 // Silver guardrail and support posts on the viewer-facing side.
 const acNearGuardrailMaterial = new THREE.MeshStandardMaterial({
@@ -3284,9 +3264,10 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltRepeatX: roadMat.map.repeat.x,
   asphaltTone: "blue-violet-wet-racing-asphalt",
   asphaltWidth: 25.6,
-  roadsideTyreWalls: 2,
+  roadsideTyreWalls: 0,
   checkeredEdgeCurbs: true,
-  continuousCenterDivider: true,
+  dashedCenterDivider: true,
+  continuousCenterDivider: false,
   asphaltWetGloss: roadMat.roughness < .5,
   asphaltSkidArcs: 0,
   asphaltLongitudinalWear: true,
