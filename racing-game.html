@@ -1570,6 +1570,8 @@ async function onlineRefreshRooms() {
 }
 
 function onlineBeginRace() {
+  setGarageMode(false);
+  $("onlinePanel").hidden = true;
   onlineMode = true;
   onlineRaceStarted = true;
   distance = 0;
@@ -1880,6 +1882,8 @@ async function onlineLeaveRoom() {
   onlineRemoteStates.clear();
   onlineClearOpponentCars();
   $("onlineRoom").hidden = true;
+  $("onlinePanel").hidden = true;
+  setGarageMode(true);
   onlineSetStatus("Ты покинул комнату.");
   void onlineRefreshRooms();
 }
@@ -2039,6 +2043,58 @@ function onlineUpdateOpponentCars(dt) {
     if (!active.has(userId)) onlineRemoveOpponentCar(userId);
   }
 }
+
+
+const garageTabContent = {
+  shop: {
+    title: "Магазин автомобилей",
+    text: "Здесь будет каталог ALLCOINS Racing: выбор автомобилей, их характеристики и покупка за AC. Сейчас в гараже доступна ВАЗ-2107."
+  },
+  upgrades: {
+    title: "Улучшения",
+    text: "Здесь будут улучшения двигателя, коробки передач, подвески и других характеристик автомобиля."
+  },
+  tuning: {
+    title: "Тюнинг",
+    text: "Здесь будут настройки внешнего вида: цвет кузова, колёсные диски, посадка подвески и индивидуальные детали."
+  }
+};
+document.querySelectorAll("[data-garage-tab]").forEach(button => {
+  button.addEventListener("click", () => {
+    const content = garageTabContent[button.dataset.garageTab];
+    if (!content) return;
+    const panel = $("garageTabPanel");
+    const alreadyOpen = !panel.hidden && button.classList.contains("active");
+    document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
+    if (alreadyOpen) {
+      panel.hidden = true;
+      return;
+    }
+    button.classList.add("active");
+    $("garageTabTitle").textContent = content.title;
+    $("garageTabDescription").textContent = content.text;
+    panel.hidden = false;
+  });
+});
+$("garageTabClose").addEventListener("click", () => {
+  $("garageTabPanel").hidden = true;
+  document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
+});
+$("garageCreateRoom").addEventListener("click", () => {
+  $("garageTabPanel").hidden = true;
+  $("onlinePanel").hidden = false;
+  $("onlineMaxPlayers").value = "5";
+  $("onlineStatus").textContent = "Создаём комнату ALLCOINS Racing…";
+  void onlineRefreshRooms();
+  void onlineCreateRoom();
+});
+$("garageJoinRoom").addEventListener("click", () => {
+  $("garageTabPanel").hidden = true;
+  $("onlinePanel").hidden = false;
+  $("onlineStatus").textContent = "Введи код комнаты или выбери открытую комнату из списка.";
+  void onlineRefreshRooms();
+  window.setTimeout(() => $("onlineCode").focus(), 80);
+});
 
 $("onlineToggle").addEventListener("click", () => {
   $("onlinePanel").hidden = false;
@@ -4109,22 +4165,18 @@ function attachVehicle(root,label='сохранённая модель'){
   acRacingApplyRearLowRideBodyReceiverPolicy();
     acRacingApplyLowRideAmbientOcclusionPolicy();
   acRacingApplyRearDetailsShadowPolicy();
-  setMessage('ВАЗ-2107 загружена',label+'. Мешей: '+meshAudit.length+'. Отдельно распознано колёс: '+wheelNodes.length+' (задняя ось: '+rearWheelNodes.length+', передняя: '+frontWheelNodes.length+'). Фары включаются кнопкой «ФАРЫ».',false);
-  const start=document.createElement('button');start.className='small-btn';start.textContent='СТАРТ';start.style.marginLeft='8px';start.addEventListener('click',()=>{
-    if(onlineMode&&!onlineRaceStarted){
-      setMessage('ОЖИДАНИЕ ОНЛАЙН-СТАРТА','Создатель комнаты запустит гонку для всех участников.',true);
-      return;
-    }
-    raceStarted=true;
-    hideMessage();
-  });
-  if(onlineRaceStarted){raceStarted=true;hideMessage();}$('message').appendChild(start);
+  $("garageCarStatus").textContent = "ВАЗ-2107 ГОТОВА · ГАРАЖ";
+  $("garageCarStatus").classList.remove("error");
+  hideMessage();
+  if(onlineRaceStarted){raceStarted=true;setGarageMode(false);}
   console.info('ALLCOINS Racing V5 · GLB mesh audit',label,'dimensions',actualSize.toArray(),'independent wheel meshes',wheelNodes.length,'front',frontWheelNodes.length,'rear',rearWheelNodes.length,'named exhaust',Boolean(namedTail));
   console.table(meshAudit);
 }
 
 function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
 function requestSavedModel(){
+  $("garageCarStatus").textContent = "ЗАГРУЖАЕМ ВАЗ-2107 ИЗ AMVERA…";
+  $("garageCarStatus").classList.remove("error");
   if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelRequestSent = true;
   setMessage('Загрузка ВАЗ-2107','3D-сцена запущена. Отправляю запрос на загрузку автомобиля…',true);
   try {
@@ -4146,10 +4198,20 @@ window.addEventListener('message',async event=>{
     setMessage('Загрузка ВАЗ-2107','Mini App подтвердил запрос. Получаю GLB из облачного хранилища Amvera…',true);
     return;
   }
-  if(data.type==='allcoins:car-model-error'){setMessage('Модель не получена',String(data.message||'Не удалось получить GLB из выбранной сцены.'),true);return;}
+  if(data.type==='allcoins:car-model-error'){
+    $("garageCarStatus").textContent="НЕ УДАЛОСЬ ЗАГРУЗИТЬ ВАЗ-2107";
+    $("garageCarStatus").classList.add("error");
+    setMessage("Модель не получена",String(data.message||"Не удалось получить GLB из выбранной сцены."),true);
+    return;
+  }
   if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
     try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из Amvera PostgreSQL');}
-    catch(e){console.error(e);setMessage('Ошибка чтения GLB',e.message||'Файл модели не удалось открыть.',true);}
+    catch(e){
+       console.error(e);
+       $("garageCarStatus").textContent="ОШИБКА ОТКРЫТИЯ МОДЕЛИ";
+       $("garageCarStatus").classList.add("error");
+       setMessage("Ошибка чтения GLB",e.message||"Файл модели не удалось открыть.",true);
+     }
   }
 });
 $('chooseModel').addEventListener('click',()=>$('modelPicker').click());
@@ -4605,6 +4667,7 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 });
 
 updateRpmTachometer();
+setGarageMode(true);
 
 requestAnimationFrame(animate);requestSavedModel();
 </script>
