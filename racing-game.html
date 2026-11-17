@@ -3644,12 +3644,12 @@ window.addEventListener('message',async event=>{
   const data=event.data||{};
   if(data.type==='allcoins:car-model-loading'){
     if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelAckReceived = true;
-    setMessage('Загрузка ВАЗ-2107','Mini App подтвердил запрос. Получаю сохранённую модель из локальной базы…',true);
+    setMessage('Загрузка ВАЗ-2107','Mini App подтвердил запрос. Получаю GLB из облачного хранилища Amvera…',true);
     return;
   }
   if(data.type==='allcoins:car-model-error'){setMessage('Модель не получена',String(data.message||'Не удалось получить GLB из выбранной сцены.'),true);return;}
   if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
-    try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из локальной базы');}
+    try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из Amvera PostgreSQL');}
     catch(e){console.error(e);setMessage('Ошибка чтения GLB',e.message||'Файл модели не удалось открыть.',true);}
   }
 });
