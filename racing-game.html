@@ -1887,8 +1887,9 @@ function onlineClearOpponentCars() {
 // Полоса игрока расположена ближе к камере; вторая полоса остаётся для соперников.
 // Положение ближней полосы немного сдвинуто к зрителю, не выходя за пределы асфальта.
 // Сдвиг ближней полосы к камере заметнее; обе полосы остаются симметричными.
-const acOnlineLaneOffset = 6.8;
-const AC_PLAYER_LANE_Z = 6.8;
+// Машина игрока расположена значительно ближе к камере; соперник — симметрично на дальней стороне.
+const acOnlineLaneOffset = 10.0;
+const AC_PLAYER_LANE_Z = 10.0;
 let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
@@ -2549,7 +2550,8 @@ const roadMat = new THREE.MeshStandardMaterial({
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
-const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 19.2), roadMat);
+// Полотно расширено, чтобы автомобиль на Z=10 полностью оставался на асфальте.
+const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 24), roadMat);
 road.rotation.x = -Math.PI / 2;
 road.position.y = -.12;
 road.receiveShadow = true;
@@ -2560,7 +2562,7 @@ const shoulderMat = new THREE.MeshStandardMaterial({
   roughness: .96,
   metalness: .01
 });
-const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900, 25), shoulderMat);
+const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900, 29), shoulderMat);
 shoulder.rotation.x = -Math.PI / 2;
 shoulder.position.set(0, -.19, -.2);
 scene.add(shoulder);
