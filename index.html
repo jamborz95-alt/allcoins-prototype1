@@ -11336,16 +11336,36 @@ function markOnlineLottoNumber(ticketId, number, buttonElement) {
   const key = roomId + ":" + String(ticketId) + ":" + value;
   if (onlineLottoPendingMarks.has(key)) return;
 
+  // Мгновенно показываем отметку на экране, не ожидая ответа сервера.
   onlineLottoPendingMarks.add(key);
   if (buttonElement) {
     buttonElement.disabled = true;
-    buttonElement.classList.add("lotto-mark-pending");
+    buttonElement.classList.add("lotto-marked");
+    buttonElement.classList.remove("lotto-mark-pending");
     buttonElement.setAttribute("aria-busy", "true");
   }
-  onlineLottoMarkQueue.push({ roomId, ticketId: String(ticketId), number: value, key });
-  void processOnlineLottoMarkQueue();
-}
 
+  // Каждый клик отправляется отдельно: медленный запрос не блокирует следующие числа.
+  void (async () => {
+    let markError = "";
+    try {
+      const result = await apiRequest("/api/lotto/number/mark", {
+        roomId,
+        ticketId: String(ticketId),
+        number: value
+      });
+      if (result.won) setOnlineLottoStatus("onlineLottoPlayStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
+    } catch (error) {
+      markError = String(error.message || error).slice(0, 180);
+    } finally {
+      onlineLottoPendingMarks.delete(key);
+      if (String(onlineLottoRoomId) === roomId) {
+        await loadOnlineLottoState(true);
+        if (markError) setOnlineLottoStatus("onlineLottoPlayStatus", markError);
+      }
+    }
+  })();
+}
 async function processOnlineLottoMarkQueue() {
   if (onlineLottoMarkQueueRunning) return;
   onlineLottoMarkQueueRunning = true;
