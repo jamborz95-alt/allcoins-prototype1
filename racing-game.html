@@ -1197,6 +1197,13 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .garage-tab-panel h2{margin:0 34px 9px 0;color:#f3cb7b;font-size:19px}
 .garage-tab-panel p{margin:0;color:#c6d0dc;font-size:13px;line-height:1.55}
 .garage-panel-close{position:absolute;right:10px;top:9px;width:32px;height:32px;border:1px solid #ffffff25;border-radius:9px;background:#253142;color:#fff;font-size:19px}
+ .garage-paint-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+ .garage-paint-options[hidden],.garage-paint-selected[hidden]{display:none!important}
+ .garage-paint-swatch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:54px;padding:7px 3px;border:1px solid #ffffff24;border-radius:10px;background:#172232;color:#e9edf3;font-size:10px;font-weight:750}
+ .garage-paint-swatch:before{content:"";width:25px;height:25px;border-radius:50%;background:var(--paint-color);border:2px solid #ffffff9c;box-shadow:inset 0 0 0 1px #0005,0 2px 6px #0008}
+ .garage-paint-swatch.selected{border-color:#f3cb7b;box-shadow:0 0 0 1px #f3cb7b66;background:#263246}
+ .garage-paint-swatch.selected:before{outline:2px solid #f3cb7b;outline-offset:2px}
+ .garage-paint-selected{margin-top:10px;color:#f3cb7b;font-size:11px;font-weight:800;text-align:center}
 @media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
 </style>
@@ -1210,6 +1217,17 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <section class="garage-tab-panel" id="garageTabPanel" hidden>
 <button class="garage-panel-close" id="garageTabClose" type="button" aria-label="Закрыть">×</button>
 <h2 id="garageTabTitle">Магазин</h2><p id="garageTabDescription"></p>
+<div class="garage-paint-options" id="garagePaintOptions" hidden>
+<button class="garage-paint-swatch" type="button" data-car-paint="#f1eee5" data-paint-name="Белый" style="--paint-color:#f1eee5">БЕЛЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#171a20" data-paint-name="Чёрный" style="--paint-color:#171a20">ЧЁРНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#aeb7c2" data-paint-name="Серебристый" style="--paint-color:#aeb7c2">СЕРЕБРО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#515963" data-paint-name="Графит" style="--paint-color:#515963">ГРАФИТ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#bd252d" data-paint-name="Красный" style="--paint-color:#bd252d">КРАСНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#174d91" data-paint-name="Синий" style="--paint-color:#174d91">СИНИЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#23543c" data-paint-name="Зелёный" style="--paint-color:#23543c">ЗЕЛЁНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#6b2037" data-paint-name="Бордовый" style="--paint-color:#6b2037">БОРДО</button>
+</div>
+<div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 </section>
 <div class="garage-controls">
 <div class="garage-topbar">
@@ -2063,8 +2081,8 @@ const garageTabContent = {
     text: "Здесь будут улучшения двигателя, коробки передач, подвески и других характеристик автомобиля."
   },
   tuning: {
-    title: "Тюнинг",
-    text: "Здесь будут настройки внешнего вида: цвет кузова, колёсные диски, посадка подвески и индивидуальные детали."
+    title: "Тюнинг · Цвет кузова",
+    text: "Выбери цвет кузова ВАЗ-2107. Цвет применяется сразу и сохраняется на этом устройстве."
   }
 };
 document.querySelectorAll("[data-garage-tab]").forEach(button => {
@@ -2081,11 +2099,30 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     button.classList.add("active");
     $("garageTabTitle").textContent = content.title;
     $("garageTabDescription").textContent = content.text;
+    const paintMode = button.dataset.garageTab === "tuning";
+    $("garagePaintOptions").hidden = !paintMode;
+    $("garagePaintSelected").hidden = !paintMode;
+    if (paintMode) {
+      const currentPaint = acGarageSelectedPaint;
+      const selected = currentPaint && [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === currentPaint.toLowerCase());
+      document.querySelectorAll("[data-car-paint]").forEach(item => item.classList.toggle("selected", item === selected));
+      $("garagePaintSelected").textContent = selected ? "Выбран цвет: " + selected.dataset.paintName : "Выбери цвет кузова";
+    }
     panel.hidden = false;
+  });
+});
+document.querySelectorAll("[data-car-paint]").forEach(button => {
+  button.addEventListener("click", () => {
+    const color = button.dataset.carPaint;
+    if (!acGarageApplyBodyPaint(color)) return;
+    document.querySelectorAll("[data-car-paint]").forEach(item => item.classList.toggle("selected", item === button));
+    $("garagePaintSelected").textContent = "Выбран цвет: " + button.dataset.paintName;
   });
 });
 $("garageTabClose").addEventListener("click", () => {
   $("garageTabPanel").hidden = true;
+  $("garagePaintOptions").hidden = true;
+  $("garagePaintSelected").hidden = true;
   document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
 });
 $("garageCreateRoom").addEventListener("click", () => {
@@ -3553,6 +3590,32 @@ function acV5UpdateWetReflections(scroll) {
   acV5WetWarm.instanceMatrix.needsUpdate = true;
 }
 
+// Выбранный цвет хранится на устройстве и применяется только к мешу кузова Car_CarBody_0.
+let acGarageSelectedPaint = null;
+try {
+  const savedPaint = window.localStorage.getItem("allcoins-vaz2107-body-paint");
+  if (savedPaint && /^#[0-9a-f]{6}$/i.test(savedPaint)) acGarageSelectedPaint = savedPaint;
+} catch (_) {}
+function acGarageApplyBodyPaint(color) {
+  const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
+  if (!match) return false;
+  acGarageSelectedPaint = "#" + match[1].toLowerCase();
+  try { window.localStorage.setItem("allcoins-vaz2107-body-paint", acGarageSelectedPaint); } catch (_) {}
+  if (!vehicle) return true;
+  let changed = 0;
+  vehicle.traverse(object => {
+    if (!object.isMesh || object.name !== "Car_CarBody_0" || !object.material) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material || !material.color) continue;
+      material.color.set(acGarageSelectedPaint);
+      material.needsUpdate = true;
+      changed++;
+    }
+  });
+  return changed > 0;
+}
+
 // Осветляем только материал кузова ВАЗ-2107. Материалы колёс, стёкол и шин не трогаем.
 function acV5EnhanceCarBody(root) {
   if (!root || root.userData.acV5BodyEnhanced) return 0;
@@ -4463,7 +4526,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
   root.position.y+=-box.min.y+.025;
   root.position.z+=-(box.min.z+box.max.z)/2 + AC_PLAYER_LANE_Z;
-  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
   wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
