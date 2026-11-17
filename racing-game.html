@@ -1181,22 +1181,23 @@ body.garage-mode .meter,body.garage-mode #message{display:none!important}
 #garageScreen{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;
 justify-content:space-between;padding:max(10px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));pointer-events:none}
 #garageScreen.hidden{display:none!important}
-.garage-topbar{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 70px);transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;width:min(380px,calc(100% - 28px));margin:0;padding:5px;
-border:1px solid #e8be6955;border-radius:16px;background:rgba(8,15,25,.9);box-shadow:0 12px 36px #0008;backdrop-filter:blur(12px);pointer-events:auto}
+.garage-controls{display:flex;flex-direction:column;align-items:center;gap:7px;width:min(620px,100%);margin:0 auto;pointer-events:auto}
+.garage-topbar{position:static;display:flex;align-items:center;justify-content:center;gap:4px;width:min(360px,100%);margin:0 auto;padding:4px;
+border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-shadow:0 8px 24px #0008;backdrop-filter:blur(12px);pointer-events:auto}
 .garage-brand{display:none}
 .garage-tab{min-height:34px;flex:1 1 0;max-width:none;padding:6px 4px;border:1px solid #e9b94f55;border-radius:9px;background:linear-gradient(145deg,#34404f,#151d29);color:#f5f7fa;font-size:clamp(10px,2.3vw,11px);font-weight:850;white-space:nowrap;letter-spacing:.01em}
 .garage-tab.active{color:#17202c;background:linear-gradient(145deg,#ffe4a4,#dba94b)}
 .garage-car-status{align-self:center;margin-top:12px;padding:7px 14px;border-radius:999px;color:#e8edf4;background:#080f25bb;border:1px solid #d8b36a55;font-size:12px;font-weight:750;letter-spacing:.06em;text-align:center}
 .garage-car-status.error{color:#ffaaa4;border-color:#ff746b88}
-.garage-bottom{display:flex;justify-content:center;gap:12px;width:min(620px,100%);margin:0 auto;pointer-events:auto}
+.garage-bottom{display:flex;justify-content:center;gap:8px;width:100%;margin:0 auto;pointer-events:auto}
 .garage-action{flex:1;min-height:52px;padding:10px 12px;border-radius:14px;border:1px solid #ffe0a2;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#1a1c22;font-weight:950;font-size:clamp(12px,2vw,16px)}
 .garage-action.secondary{color:#f7f8fb;background:linear-gradient(145deg,#35465a,#172333);border-color:#94a7bd}
-.garage-tab-panel{position:absolute;top:auto;bottom:calc(env(safe-area-inset-bottom) + 122px);left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));padding:16px 18px 18px;border:1px solid #e9b94f77;border-radius:14px;color:#f4f6fa;background:rgba(10,17,27,.96);box-shadow:0 18px 48px #000b;pointer-events:auto}
+.garage-tab-panel{position:absolute;top:auto;bottom:calc(env(safe-area-inset-bottom) + 132px);left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));padding:16px 18px 18px;border:1px solid #e9b94f77;border-radius:14px;color:#f4f6fa;background:rgba(10,17,27,.96);box-shadow:0 18px 48px #000b;pointer-events:auto}
 .garage-tab-panel[hidden]{display:none!important}
 .garage-tab-panel h2{margin:0 34px 9px 0;color:#f3cb7b;font-size:19px}
 .garage-tab-panel p{margin:0;color:#c6d0dc;font-size:13px;line-height:1.55}
 .garage-panel-close{position:absolute;right:10px;top:9px;width:32px;height:32px;border:1px solid #ffffff25;border-radius:9px;background:#253142;color:#fff;font-size:19px}
-@media(max-width:520px){.garage-topbar{width:min(340px,calc(100vw - 32px));gap:4px;padding:4px}.garage-tab{min-height:32px;padding:5px 3px;font-size:10px}.garage-action{min-height:48px;padding:9px 7px;font-size:12px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 118px)}}
+@media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
 </style>
 </head>
@@ -1204,21 +1205,22 @@ border:1px solid #e8be6955;border-radius:16px;background:rgba(8,15,25,.9);box-sh
 <div id="stage"><canvas id="view"></canvas></div>
 <div id="garageScreen">
 <div>
-<div class="garage-topbar">
-<div class="garage-brand">ALLCOINS · ГАРАЖ</div>
-<button class="garage-tab" type="button" data-garage-tab="shop">МАГАЗИН</button>
-<button class="garage-tab" type="button" data-garage-tab="upgrades">УЛУЧШЕНИЯ</button>
-<button class="garage-tab" type="button" data-garage-tab="tuning">ТЮНИНГ</button>
-</div>
 <div class="garage-car-status" id="garageCarStatus">ЗАГРУЖАЕМ ВАЗ-2107 ИЗ ОБЛАКА…</div>
 </div>
 <section class="garage-tab-panel" id="garageTabPanel" hidden>
 <button class="garage-panel-close" id="garageTabClose" type="button" aria-label="Закрыть">×</button>
 <h2 id="garageTabTitle">Магазин</h2><p id="garageTabDescription"></p>
 </section>
+<div class="garage-controls">
+<div class="garage-topbar">
+<button class="garage-tab" type="button" data-garage-tab="shop">МАГАЗИН</button>
+<button class="garage-tab" type="button" data-garage-tab="upgrades">УЛУЧШЕНИЯ</button>
+<button class="garage-tab" type="button" data-garage-tab="tuning">ТЮНИНГ</button>
+</div>
 <div class="garage-bottom">
 <button class="garage-action" type="button" id="garageCreateRoom">СОЗДАТЬ КОМНАТУ</button>
 <button class="garage-action secondary" type="button" id="garageJoinRoom">ПРИСОЕДИНИТЬСЯ</button>
+</div>
 </div>
 </div>
 <div class="hud">
