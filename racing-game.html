@@ -1502,7 +1502,7 @@ function onlineUpdateTestBot() {
   const targetSeconds = Math.max(1, onlineTestBotTargetMs / 1000);
   const speedKmh = t >= 1
     ? 0
-    : Math.min(260, (totalDistance / targetSeconds) * 3.6 * 1.12 * Math.pow(Math.max(t, 0.001), 0.12));
+    : Math.min(260, (totalDistance / targetSeconds) * 3.6 * 1.12 * Math.pow(t, 0.12));
   const botGear = t < .08 ? 1 : t < .25 ? 2 : t < .48 ? 3 : t < .72 ? 4 : 5;
 
   onlineRemoteStates.set(ONLINE_TEST_BOT_ID, {
