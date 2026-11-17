@@ -42,7 +42,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .online-player{padding:8px 10px;border-radius:8px;background:#ffffff0c;color:#dce5ef;font-size:12px}
 .meter{position:fixed;left:50%;bottom:clamp(92px,15vh,126px);transform:translateX(-50%);width:min(300px,50vw);height:5px;background:#111a;border-radius:9px;overflow:hidden;pointer-events:none}.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#57bd8e,#e8bd55,#dc6656)}
 #rotateHint{display:none;position:fixed;inset:0;background:#0b1018ed;z-index:20;place-items:center;text-align:center;padding:25px;font-weight:700}#rotateHint span{display:block;color:var(--gold);font-size:32px;margin-bottom:12px}
-@media(orientation:portrait){#rotateHint{display:grid}.hud{opacity:.28}}
+@media(orientation:portrait){body.race-mode #rotateHint{display:grid}body.race-mode .hud{opacity:.28}}
 @media(max-width:640px){.top{align-items:flex-start}.stats{gap:8px;padding:7px}.metric{min-width:43px}.metric strong{font-size:18px}.brand{min-width:105px}.actions{flex-direction:column}.bottom{align-items:flex-end}.pedals{gap:7px}.pedal{width:76px;height:75px;font-size:13px}.gearbox{gap:5px;padding:6px}.gear{min-width:36px;height:38px}.gear-label{display:none}}
 
 /* ALLCOINS RACING RWD + SUSPENSION V3 */
@@ -3733,6 +3733,7 @@ acGarageWorld.visible = true;
 function setGarageMode(enabled) {
   const active = Boolean(enabled);
   document.body.classList.toggle("garage-mode", active);
+  document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
   acGarageWorld.visible = active;
   const trackVisible = !active;
