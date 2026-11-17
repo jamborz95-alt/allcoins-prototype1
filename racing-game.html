@@ -1024,6 +1024,77 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
  #gas{right:12px!important;width:70px!important;height:68px!important}
 }
 </style>
+
+<style id="allcoins-racing-compact-controls-v29">
+/* V29: компактная нижняя консоль — больше свободного обзора дороги и автомобиля. */
+#dashboardBackplate{
+  width:min(680px,76vw)!important;
+  height:clamp(104px,18vh,132px)!important;
+  border-radius:15px 15px 0 0!important;
+}
+.tachometer,.speedometer{
+  width:clamp(96px,17vh,124px)!important;
+  height:clamp(96px,17vh,124px)!important;
+  bottom:calc(5px + env(safe-area-inset-bottom))!important;
+}
+.tachometer{left:calc(50% - 132px)!important}
+.speedometer{left:calc(50% + 8px)!important}
+#gearNow{
+  left:calc(50% + 140px)!important;
+  bottom:calc(25px + env(safe-area-inset-bottom))!important;
+  width:32px!important;min-width:32px!important;height:32px!important;
+  font-size:16px!important;
+}
+#gearUp,#gearDown{
+  left:clamp(9px,1.2vw,18px)!important;
+  width:clamp(42px,4.5vw,54px)!important;
+  height:clamp(44px,8vh,56px)!important;
+  border-radius:11px!important;
+  font-size:27px!important;
+}
+#gearUp{bottom:calc(82px + env(safe-area-inset-bottom))!important}
+#gearDown{bottom:calc(14px + env(safe-area-inset-bottom))!important}
+#brake{
+  left:auto!important;right:clamp(88px,13vw,132px)!important;
+  width:clamp(58px,6.5vw,78px)!important;
+  height:clamp(64px,12vh,84px)!important;
+}
+#gas{
+  right:clamp(10px,1.2vw,20px)!important;
+  width:clamp(58px,6.5vw,78px)!important;
+  height:clamp(64px,12vh,84px)!important;
+}
+@media(max-width:700px){
+  .tachometer,.speedometer{width:clamp(94px,22vh,112px)!important;height:clamp(94px,22vh,112px)!important}
+  .tachometer{left:calc(50% - 122px)!important}
+  .speedometer{left:calc(50% + 8px)!important}
+  #gearNow{left:calc(50% + 124px)!important}
+}
+@media(max-height:440px) and (orientation:landscape){
+  #dashboardBackplate{width:min(620px,78vw)!important;height:96px!important}
+  .tachometer,.speedometer{
+    width:clamp(88px,24vh,100px)!important;
+    height:clamp(88px,24vh,100px)!important;
+    bottom:calc(3px + env(safe-area-inset-bottom))!important;
+  }
+  .tachometer{left:calc(50% - 112px)!important}
+  .speedometer{left:calc(50% + 8px)!important}
+  #gearNow{
+    left:calc(50% + 114px)!important;
+    bottom:calc(21px + env(safe-area-inset-bottom))!important;
+    width:28px!important;min-width:28px!important;height:28px!important;
+  }
+  #gearNow:before{font-size:7px!important}
+  #gearUp,#gearDown{left:8px!important;width:40px!important;height:40px!important}
+  #gearUp{bottom:53px!important}
+  #gearDown{bottom:7px!important}
+  #brake{
+    right:78px!important;width:52px!important;height:58px!important;
+  }
+  #gas{right:8px!important;width:52px!important;height:58px!important}
+}
+</style>
+
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
