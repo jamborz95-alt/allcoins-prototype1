@@ -3020,6 +3020,192 @@ acShrubInstances.instanceMatrix.needsUpdate=true;if(acShrubInstances.instanceCol
 acShrubInstances.castShadow=true;acShrubInstances.receiveShadow=true;acCityShrubs.add(acShrubInstances);scene.add(acCityShrubs);
 acCityShrubs.visible = true;
 
+/* ALLCOINS RACING · TRACKSIDE REFERENCE MATCH
+   Декоративное окружение дороги; физика, двигатель, коробка и управление не затрагиваются. */
+const acTrackCurbMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: .72, metalness: .08
+});
+const acTrackCurbGeometry = new THREE.BoxGeometry(1.18, .12, .38);
+const acTrackCurbCountPerSide = 222;
+const acTrackCurbMesh = new THREE.InstancedMesh(
+  acTrackCurbGeometry, acTrackCurbMaterial, acTrackCurbCountPerSide * 2
+);
+const acTrackDummy = new THREE.Object3D();
+let acTrackCurbIndex = 0;
+for (const side of [-1, 1]) {
+  for (let i = 0; i < acTrackCurbCountPerSide; i++) {
+    const x = -130 + i * (260 / (acTrackCurbCountPerSide - 1));
+    acTrackDummy.position.set(x, -.045, side * 12.52);
+    acTrackDummy.rotation.set(0, 0, 0);
+    acTrackDummy.scale.set(1, 1, 1);
+    acTrackDummy.updateMatrix();
+    acTrackCurbMesh.setMatrixAt(acTrackCurbIndex, acTrackDummy.matrix);
+    acTrackCurbMesh.setColorAt(
+      acTrackCurbIndex,
+      new THREE.Color(i % 2 === 0 ? 0xd9deea : 0x303a56)
+    );
+    acTrackCurbIndex++;
+  }
+}
+acTrackCurbMesh.instanceMatrix.needsUpdate = true;
+if (acTrackCurbMesh.instanceColor) acTrackCurbMesh.instanceColor.needsUpdate = true;
+scene.add(acTrackCurbMesh);
+
+const acTrackTyreMaterial = new THREE.MeshStandardMaterial({
+  color: 0x171b23, roughness: .96, metalness: .015
+});
+const acTrackTyreGeometry = new THREE.TorusGeometry(.36, .145, 8, 14);
+function acCreateTrackTyreWall(z, count, yOffset = .34) {
+  const wall = new THREE.InstancedMesh(acTrackTyreGeometry, acTrackTyreMaterial, count);
+  wall.frustumCulled = false;
+  for (let i = 0; i < count; i++) {
+    const x = -130 + i * (260 / (count - 1));
+    acTrackDummy.position.set(x, yOffset, z);
+    acTrackDummy.rotation.set(0, 0, 0);
+    const scale = .92 + ((i * 17) % 9) * .018;
+    acTrackDummy.scale.set(scale, scale, 1);
+    acTrackDummy.updateMatrix();
+    wall.setMatrixAt(i, acTrackDummy.matrix);
+  }
+  wall.instanceMatrix.needsUpdate = true;
+  scene.add(wall);
+  return wall;
+}
+const acFarTyreWall = acCreateTrackTyreWall(-13.85, 262, .34);
+const acNearTyreWall = acCreateTrackTyreWall(16.2, 262, .34);
+
+// Silver guardrail and support posts on the viewer-facing side.
+const acNearGuardrailMaterial = new THREE.MeshStandardMaterial({
+  color: 0x9aa6b8, roughness: .34, metalness: .78
+});
+const acNearGuardrail = new THREE.Group();
+for (const y of [.12, .48]) {
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(900, .105, .20), acNearGuardrailMaterial);
+  rail.position.set(0, y, 14.45);
+  rail.castShadow = true;
+  rail.receiveShadow = true;
+  acNearGuardrail.add(rail);
+}
+const acGuardPostGeometry = new THREE.BoxGeometry(.13, .72, .18);
+const acGuardPosts = new THREE.InstancedMesh(acGuardPostGeometry, acNearGuardrailMaterial, 132);
+for (let i = 0; i < 132; i++) {
+  acTrackDummy.position.set(-130 + i * (260 / 131), .28, 14.45);
+  acTrackDummy.rotation.set(0, 0, 0);
+  acTrackDummy.scale.set(1, 1, 1);
+  acTrackDummy.updateMatrix();
+  acGuardPosts.setMatrixAt(i, acTrackDummy.matrix);
+}
+acGuardPosts.instanceMatrix.needsUpdate = true;
+acNearGuardrail.add(acGuardPosts);
+scene.add(acNearGuardrail);
+
+// Grass strip and a winter tree line behind the far-side fence.
+const acTrackGrass = new THREE.Mesh(
+  new THREE.PlaneGeometry(900, 12),
+  new THREE.MeshStandardMaterial({ color: 0x313d3c, roughness: .99, metalness: 0 })
+);
+acTrackGrass.rotation.x = -Math.PI / 2;
+acTrackGrass.position.set(0, -.17, -23.8);
+scene.add(acTrackGrass);
+
+const acTrackTreeCount = 88;
+const acTrackTreeTrunkMaterial = new THREE.MeshStandardMaterial({
+  color: 0x252b31, roughness: .98, metalness: 0
+});
+const acTrackTreeMaterial = new THREE.MeshStandardMaterial({
+  color: 0x263846, roughness: .98, metalness: 0
+});
+const acTrackTreeSnowMaterial = new THREE.MeshStandardMaterial({
+  color: 0x8793a0, roughness: .96, metalness: 0
+});
+const acTrackTreeTrunks = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(.075, .13, 1.15, 6),
+  acTrackTreeTrunkMaterial, acTrackTreeCount
+);
+const acTrackTreeLower = new THREE.InstancedMesh(
+  new THREE.ConeGeometry(.92, 2.65, 7),
+  acTrackTreeMaterial, acTrackTreeCount
+);
+const acTrackTreeUpper = new THREE.InstancedMesh(
+  new THREE.ConeGeometry(.67, 2.15, 7),
+  acTrackTreeMaterial, acTrackTreeCount
+);
+const acTrackTreeSnow = new THREE.InstancedMesh(
+  new THREE.ConeGeometry(.37, .78, 7),
+  acTrackTreeSnowMaterial, acTrackTreeCount
+);
+const acTrackTreeRandom = acSeededRandom(20261117);
+for (let i = 0; i < acTrackTreeCount; i++) {
+  const x = -130 + i * (260 / (acTrackTreeCount - 1));
+  const z = -25.3 - acTrackTreeRandom() * 2.2;
+  const h = 2.8 + acTrackTreeRandom() * 1.35;
+  const scale = .82 + acTrackTreeRandom() * .42;
+
+  acTrackDummy.position.set(x, .52, z);
+  acTrackDummy.scale.set(scale, .9 + h / 3.5, scale);
+  acTrackDummy.updateMatrix();
+  acTrackTreeTrunks.setMatrixAt(i, acTrackDummy.matrix);
+
+  acTrackDummy.position.set(x, 1.28, z);
+  acTrackDummy.scale.set(scale, h / 3.0, scale);
+  acTrackDummy.updateMatrix();
+  acTrackTreeLower.setMatrixAt(i, acTrackDummy.matrix);
+
+  acTrackDummy.position.set(x, 2.55, z);
+  acTrackDummy.scale.set(scale * .76, h / 3.1, scale * .76);
+  acTrackDummy.updateMatrix();
+  acTrackTreeUpper.setMatrixAt(i, acTrackDummy.matrix);
+
+  acTrackDummy.position.set(x, 3.30, z + .015);
+  acTrackDummy.scale.set(scale * .72, 1, scale * .72);
+  acTrackDummy.updateMatrix();
+  acTrackTreeSnow.setMatrixAt(i, acTrackDummy.matrix);
+}
+for (const mesh of [acTrackTreeTrunks, acTrackTreeLower, acTrackTreeUpper, acTrackTreeSnow]) {
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+}
+
+// Low illuminated service buildings in the distance.
+const acTrackHouseGroup = new THREE.Group();
+const acTrackHouseMaterials = [
+  new THREE.MeshStandardMaterial({ color: 0x344456, roughness: .92, metalness: .04 }),
+  new THREE.MeshStandardMaterial({ color: 0x3c4b5a, roughness: .92, metalness: .04 }),
+  new THREE.MeshStandardMaterial({ color: 0x29394b, roughness: .92, metalness: .04 })
+];
+const acTrackHouseWindow = new THREE.MeshStandardMaterial({
+  color: 0xffd49a, emissive: 0xffa94a, emissiveIntensity: .65,
+  roughness: .5, metalness: .02
+});
+const acTrackHouseWindowGeometry = new THREE.BoxGeometry(.52, .44, .055);
+for (let i = 0; i < 17; i++) {
+  const x = -128 + i * 16;
+  const width = 7.2 + (i % 3) * .8;
+  const height = 2.5 + (i % 4) * .55;
+  const depth = 3.8;
+  const building = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    acTrackHouseMaterials[i % acTrackHouseMaterials.length]
+  );
+  building.position.set(x, height / 2, -34.5);
+  building.receiveShadow = true;
+  acTrackHouseGroup.add(building);
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 4; col++) {
+      const windowMesh = new THREE.Mesh(acTrackHouseWindowGeometry, acTrackHouseWindow);
+      windowMesh.position.set(
+        x - width * .34 + col * (width * .22),
+        .78 + row * .92,
+        -32.54
+      );
+      acTrackHouseGroup.add(windowMesh);
+    }
+  }
+}
+scene.add(acTrackHouseGroup);
+
+
 // Дальний городской силуэт: высотные корпуса и редкие окна создают глубину улицы.
 const distantHills = new THREE.Group();
 const farCityTowerCount = 16;
