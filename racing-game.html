@@ -1190,6 +1190,10 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .garage-car-status{align-self:center;margin-top:62px;padding:7px 14px;border-radius:999px;color:#e8edf4;background:#080f25bb;border:1px solid #d8b36a55;font-size:12px;font-weight:750;letter-spacing:.06em;text-align:center}
 .garage-car-status.error{color:#ffaaa4;border-color:#ff746b88}
 .garage-bottom{display:flex;justify-content:center;gap:8px;width:100%;margin:0 auto;pointer-events:auto}
+ .garage-test-bot{width:min(330px,100%);min-height:36px;padding:7px 12px;border:1px solid #e9b94f88;border-radius:10px;background:linear-gradient(145deg,#26394a,#111d2b);color:#f3cb7b;font-size:11px;font-weight:900;letter-spacing:.04em;box-shadow:0 6px 18px #0006}
+ .garage-test-bot:disabled{opacity:.42;filter:grayscale(.65)}
+ .garage-test-bot:active:not(:disabled){transform:translateY(1px);background:linear-gradient(145deg,#344d62,#18283a)}
+
 .garage-action{flex:1;min-height:52px;padding:10px 12px;border-radius:14px;border:1px solid #ffe0a2;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#1a1c22;font-weight:950;font-size:clamp(12px,2vw,16px)}
 .garage-action.secondary{color:#f7f8fb;background:linear-gradient(145deg,#35465a,#172333);border-color:#94a7bd}
 .garage-tab-panel{position:absolute;top:auto;bottom:calc(env(safe-area-inset-bottom) + 132px);left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));padding:16px 18px 18px;border:1px solid #e9b94f77;border-radius:14px;color:#f4f6fa;background:rgba(10,17,27,.96);box-shadow:0 18px 48px #000b;pointer-events:auto}
@@ -1209,7 +1213,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .garage-paint-apply{display:block;width:100%;min-height:42px;margin-top:12px;padding:9px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:13px;font-weight:950;letter-spacing:.04em}
   .garage-paint-apply[hidden]{display:none!important}
   .garage-paint-apply:disabled{opacity:.45;filter:grayscale(.55)}
-@media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
+@media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-test-bot{min-height:34px;font-size:10px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
 </style>
 </head>
@@ -1245,6 +1249,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <button class="garage-action" type="button" id="garageCreateRoom">СОЗДАТЬ КОМНАТУ</button>
 <button class="garage-action secondary" type="button" id="garageJoinRoom">ПРИСОЕДИНИТЬСЯ</button>
 </div>
+<button class="garage-test-bot" id="garageTestBot" type="button" disabled>ТЕСТ С БОТОМ · БЕЗ AC</button>
 </div>
 </div>
 <div class="hud">
@@ -1439,6 +1444,11 @@ let onlineLastStateAt = 0;
 const onlineRemoteStates = new Map();
 const onlineRemoteCars = new Map();
 const onlinePendingRequests = new Map();
+const ONLINE_TEST_BOT_ID = "__allcoins_test_bot__";
+let onlineTestBotActive = false;
+let onlineTestBotRunning = false;
+let onlineTestBotTargetMs = 22000;
+
 
 function onlineSetStatus(message) {
   const el = $("onlineStatus");
@@ -1483,6 +1493,70 @@ window.addEventListener("message", event => {
 });
 
 /* ALLCOINS RACE RESULTS UI 2026-11-12 */
+function onlineUpdateTestBot() {
+  if (!onlineTestBotActive || !onlineTestBotRunning) return;
+  const totalDistance = Number(RACE_DISTANCE_METERS) || 1000;
+  const t = Math.max(0, Math.min(1, (elapsed * 1000) / onlineTestBotTargetMs));
+  const curve = t >= 1 ? 1 : Math.pow(t, 1.12);
+  const botDistance = totalDistance * curve;
+  const targetSeconds = Math.max(1, onlineTestBotTargetMs / 1000);
+  const speedKmh = t >= 1
+    ? 0
+    : Math.min(260, (totalDistance / targetSeconds) * 3.6 * 1.12 * Math.pow(Math.max(t, 0.001), 0.12));
+  const botGear = t < .08 ? 1 : t < .25 ? 2 : t < .48 ? 3 : t < .72 ? 4 : 5;
+
+  onlineRemoteStates.set(ONLINE_TEST_BOT_ID, {
+    userId: ONLINE_TEST_BOT_ID,
+    name: "ТЕСТ-БОТ",
+    distanceM: botDistance,
+    speedKmh,
+    gear: botGear,
+    progress: curve,
+    updatedAt: Date.now(),
+    fresh: true
+  });
+}
+
+function onlineStartTestBotRace() {
+  if (!vehicle) {
+    onlineSetStatus("ВАЗ-2107 ещё загружается. Запусти тест после появления машины.");
+    const status = $("garageCarStatus");
+    if (status) status.textContent = "ЗАГРУЗКА ВАЗ-2107…";
+    return;
+  }
+  if (onlineRoomCode || onlineSocket) {
+    onlineSetStatus("Сначала выйди из настоящей онлайн-комнаты, чтобы запустить тестовый заезд.");
+    $("onlinePanel").hidden = false;
+    return;
+  }
+
+  onlineTestBotActive = true;
+  onlineTestBotRunning = false;
+  onlineTestBotTargetMs = 22000;
+  onlineMode = true;
+  onlineRaceStarted = false;
+  onlineRemoteStates.clear();
+  onlineClearOpponentCars();
+
+  distance = 0;
+  elapsed = 0;
+  speed = 0;
+  rpm = 900;
+  gear = 1;
+  finished = false;
+  paused = false;
+  throttle = false;
+  braking = false;
+  raceStarted = false;
+  setGarageMode(false);
+  $("onlinePanel").hidden = true;
+  onlineSetStatus("Тестовый бот готовится к старту.");
+  onlinePrepareCountdown({
+    startedAtMs: Date.now() + 3000,
+    serverTimeMs: Date.now()
+  });
+}
+
 /* ALLCOINS READY COUNTDOWN 2026-11-12 */
 function onlineRenderPlayers(players) {
   const list = $("onlinePlayerList");
@@ -1600,6 +1674,7 @@ function onlineBeginRace() {
   $("onlinePanel").hidden = true;
   onlineMode = true;
   onlineRaceStarted = true;
+  onlineTestBotRunning = Boolean(onlineTestBotActive);
   distance = 0;
   elapsed = 0;
   speed = 0;
@@ -1612,7 +1687,9 @@ function onlineBeginRace() {
   updateGear();
 
   if (vehicle) hideMessage();
-  onlineSetStatus("ЗАЕЗД НАЧАЛСЯ! Удачной гонки.");
+  onlineSetStatus(onlineTestBotActive
+    ? "ТЕСТОВЫЙ ЗАЕЗД · Бот на соседней полосе. Удачи!"
+    : "ЗАЕЗД НАЧАЛСЯ! Удачной гонки.");
 }
 
 /* ALLCOINS READY COUNTDOWN 2026-11-12 */
@@ -1904,6 +1981,8 @@ async function onlineLeaveRoom() {
   onlineRoomCode = "";
   onlineMode = false;
   onlineRaceStarted = false;
+  onlineTestBotActive = false;
+  onlineTestBotRunning = false;
   onlineIsHost = false;
   onlineRemoteStates.clear();
   onlineClearOpponentCars();
@@ -2227,6 +2306,10 @@ $("garageJoinRoom").addEventListener("click", () => {
   $("onlineStatus").textContent = "Введи код комнаты или выбери открытую комнату из списка.";
   void onlineRefreshRooms();
   window.setTimeout(() => $("onlineCode").focus(), 80);
+});
+$("garageTestBot").addEventListener("click", () => {
+  if ($("garageTestBot").disabled) return;
+  onlineStartTestBotRace();
 });
 
 $("onlineToggle").addEventListener("click", () => {
@@ -4676,7 +4759,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
   root.position.y+=-box.min.y+.025;
   root.position.z+=-(box.min.z+box.max.z)/2 + AC_PLAYER_LANE_Z;
-  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
   wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
@@ -5091,7 +5174,18 @@ function animate(now){
     onlineSendState(now);
     /* ALLCOINS CLIENT FINISH SYNC 2026-11-12 */
 if(distance>=RACE_DISTANCE_METERS){
-      if(onlineMode){
+      let finishDetails = 'Дистанция '+RACE_DISTANCE_METERS+' м пройдена за '+clockText(elapsed)+'.';
+      if (onlineTestBotActive) {
+        onlineUpdateTestBot();
+        onlineTestBotRunning = false;
+        const playerTimeMs = Math.round(elapsed * 1000);
+        const botTimeMs = onlineTestBotTargetMs;
+        const outcome = playerTimeMs <= botTimeMs ? 'ТЫ ОПЕРЕДИЛ ТЕСТ-БОТА!' : 'ТЕСТ-БОТ ФИНИШИРОВАЛ ПЕРВЫМ.';
+        finishDetails += ' Тест-бот: '+(botTimeMs/1000).toFixed(2)+' с. '+outcome+' Это тренировочный результат, без ставок и списания AC.';
+        onlineSetStatus(outcome+' Твой результат: '+(playerTimeMs/1000).toFixed(2)+' с · Бот: '+(botTimeMs/1000).toFixed(2)+' с.');
+        onlineMode = false;
+        onlineRemoteStates.delete(ONLINE_TEST_BOT_ID);
+      } else if(onlineMode){
         if(onlineRaceStarted) onlineSendState(now,true);
         if(onlineSocket&&onlineSocket.readyState===WebSocket.OPEN){
           onlineSocket.send(JSON.stringify({type:'finish',distanceM:distance}));
@@ -5102,13 +5196,24 @@ if(distance>=RACE_DISTANCE_METERS){
       }
       onlineRaceStarted=false;
       finished=true;speed=0;throttle=false;braking=false;
-      setMessage('ФИНИШ!','Дистанция '+RACE_DISTANCE_METERS+' м пройдена за '+clockText(elapsed)+'. Нажми «НОВЫЙ ЗАЕЗД», чтобы повторить.',false);
-      const restart=document.createElement('button');restart.className='small-btn';restart.style.marginLeft='8px';restart.textContent='НОВЫЙ ЗАЕЗД';
-      restart.onclick=()=>{distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);};
+      setMessage('ФИНИШ!',finishDetails+' Нажми «НОВЫЙ ЗАЕЗД», чтобы повторить.',false);
+      const restart=document.createElement('button');restart.className='small-btn';restart.style.marginLeft='8px';restart.textContent=onlineTestBotActive?'ПОВТОРИТЬ ТЕСТ':'НОВЫЙ ЗАЕЗД';
+      restart.onclick=()=>{
+        if(onlineTestBotActive){
+          onlineTestBotActive=false;
+          onlineTestBotRunning=false;
+          onlineRemoteStates.delete(ONLINE_TEST_BOT_ID);
+          onlineClearOpponentCars();
+          onlineStartTestBotRace();
+          return;
+        }
+        distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);
+      };
       $('message').appendChild(restart);
     }
   }
   for(let i=smokeParticles.length-1;i>=0;i--){const p=smokeParticles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.scale.multiplyScalar(1+dt*.55);p.mesh.material.opacity=Math.max(0,p.baseOpacity*(p.life/p.max));if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();smokeParticles.splice(i,1);}}
+  onlineUpdateTestBot();
   onlineUpdateOpponentCars(dt);
   renderer.render(scene,camera);
 }
