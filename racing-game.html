@@ -1223,13 +1223,13 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <h2 id="garageTabTitle">Магазин</h2><p id="garageTabDescription"></p>
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
 <button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-name="Белый" style="--paint-color:#ffffff">БЕЛЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#080a0d" data-paint-name="Чёрный" style="--paint-color:#080a0d">ЧЁРНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#aeb7c2" data-paint-name="Серебристый" style="--paint-color:#aeb7c2">СЕРЕБРО</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#515963" data-paint-name="Графит" style="--paint-color:#515963">ГРАФИТ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#bd252d" data-paint-name="Красный" style="--paint-color:#bd252d">КРАСНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#174d91" data-paint-name="Синий" style="--paint-color:#174d91">СИНИЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#23543c" data-paint-name="Зелёный" style="--paint-color:#23543c">ЗЕЛЁНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#6b2037" data-paint-name="Бордовый" style="--paint-color:#6b2037">БОРДО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#000000" data-paint-name="Чёрный" style="--paint-color:#000000">ЧЁРНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#c0c0c0" data-paint-name="Серебристый" style="--paint-color:#c0c0c0">СЕРЕБРО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#3a4148" data-paint-name="Графит" style="--paint-color:#3a4148">ГРАФИТ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#e31b23" data-paint-name="Красный" style="--paint-color:#e31b23">КРАСНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#0057b8" data-paint-name="Синий" style="--paint-color:#0057b8">СИНИЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#00843d" data-paint-name="Зелёный" style="--paint-color:#00843d">ЗЕЛЁНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#800020" data-paint-name="Бордовый" style="--paint-color:#800020">БОРДО</button>
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
@@ -3614,9 +3614,17 @@ function acV5UpdateWetReflections(scroll) {
 // Активный цвет сохраняется на устройстве. Базовая цветовая карта кузова отключается,
 // чтобы белый и чёрный оттенки отображались точно; карты нормалей и отражений сохраняются.
 let acGarageSelectedPaint = null;
+const acGarageLegacyPaintMap = {
+  "#f1eee5":"#ffffff", "#171a20":"#000000", "#080a0d":"#000000",
+  "#aeb7c2":"#c0c0c0", "#515963":"#3a4148", "#bd252d":"#e31b23",
+  "#174d91":"#0057b8", "#23543c":"#00843d", "#6b2037":"#800020"
+};
 try {
   const savedPaint = window.localStorage.getItem("allcoins-vaz2107-body-paint");
-  if (savedPaint && /^#[0-9a-f]{6}$/i.test(savedPaint)) acGarageSelectedPaint = savedPaint;
+  if (savedPaint && /^#[0-9a-f]{6}$/i.test(savedPaint)) {
+    acGarageSelectedPaint = acGarageLegacyPaintMap[savedPaint.toLowerCase()] || savedPaint.toLowerCase();
+    window.localStorage.setItem("allcoins-vaz2107-body-paint", acGarageSelectedPaint);
+  }
 } catch (_) {}
 function acGarageApplyBodyPaint(color) {
   const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
@@ -3643,8 +3651,8 @@ function acGarageApplyBodyPaint(color) {
       material.color.set(paint);
       if (material.emissive) material.emissive.set(0x000000);
       if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
-      if ("roughness" in material) material.roughness = 0.32;
-      if ("metalness" in material) material.metalness = 0.28;
+      if ("roughness" in material) material.roughness = 0.42;
+      if ("metalness" in material) material.metalness = 0.08;
       material.needsUpdate = true;
       changed++;
     }
