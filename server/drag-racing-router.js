@@ -7,6 +7,16 @@ const MAX_FINISH_TIME_DRIFT_MS = 2500;
 const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, sprint: 4000 });
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
+const BODY_PAINTS = Object.freeze({
+  white: { price: 2000, color: "#ffffff" },
+  black: { price: 2000, color: "#000000" },
+  silver: { price: 2000, color: "#c0c0c0" },
+  graphite: { price: 2000, color: "#3a4148" },
+  red: { price: 2000, color: "#e31b23" },
+  blue: { price: 2000, color: "#0057b8" },
+  green: { price: 2000, color: "#00843d" },
+  burgundy: { price: 2000, color: "#800020" }
+});
 const CARS = Object.freeze({
   "2107": { price: 0, power: 72 },
   "2101": { price: 2500, power: 58 },
@@ -341,6 +351,12 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     );
     await pool.query("CREATE INDEX IF NOT EXISTS drag_racing_rooms_status_idx ON drag_racing_rooms (status, created_at DESC)");
     await pool.query("CREATE INDEX IF NOT EXISTS drag_racing_room_players_presence_idx ON drag_racing_room_players (room_id, last_seen_at DESC)");
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_paints (" +
+      "telegram_id BIGINT NOT NULL, paint_id TEXT NOT NULL, " +
+      "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "PRIMARY KEY (telegram_id, paint_id))"
+    );
   };
 
   router.post("/profile", async (req, res) => {
@@ -360,6 +376,108 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       console.error("Load Drag Racing profile:", error.message || error);
       return res.status(error instanceof DragRacingError ? error.status : 500).json({
         ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось загрузить гараж."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/paint/profile", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const owned = await client.query(
+        "SELECT paint_id FROM drag_racing_player_paints WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+        [user.id]
+      );
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        balance: Number(balance),
+        paintPrice: 2000,
+        ownedPaints: owned.rows.map(row => String(row.paint_id))
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Load Drag Racing paint profile:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось загрузить краски гаража."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/paint/buy", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const paintId = String(req.body?.paintId || "");
+    if (!Object.hasOwn(BODY_PAINTS, paintId)) {
+      return res.status(400).json({ ok: false, error: "Такого цвета нет в каталоге." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const alreadyOwned = await client.query(
+        "SELECT 1 FROM drag_racing_player_paints WHERE telegram_id = $1::BIGINT AND paint_id = $2",
+        [user.id, paintId]
+      );
+      if (alreadyOwned.rowCount > 0) {
+        const owned = await client.query(
+          "SELECT paint_id FROM drag_racing_player_paints WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+          [user.id]
+        );
+        await client.query("COMMIT"); open = false;
+        return res.json({
+          ok: true,
+          purchased: false,
+          alreadyOwned: true,
+          paintId,
+          balance: Number(balance),
+          ownedPaints: owned.rows.map(row => String(row.paint_id))
+        });
+      }
+
+      const price = BigInt(BODY_PAINTS[paintId].price);
+      if (balance < price) {
+        throw new DragRacingError(400, "Недостаточно AC. Для покупки краски нужно 2 000 AC.");
+      }
+      const debit = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
+        [price.toString(), user.id]
+      );
+      if (!debit.rows.length) {
+        throw new DragRacingError(400, "Недостаточно AC. Для покупки краски нужно 2 000 AC.");
+      }
+      await client.query(
+        "INSERT INTO drag_racing_player_paints (telegram_id, paint_id) VALUES ($1::BIGINT, $2) ON CONFLICT DO NOTHING",
+        [user.id, paintId]
+      );
+      const owned = await client.query(
+        "SELECT paint_id FROM drag_racing_player_paints WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+        [user.id]
+      );
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        purchased: true,
+        alreadyOwned: false,
+        paintId,
+        price: Number(price),
+        balance: Number(debit.rows[0].balance),
+        ownedPaints: owned.rows.map(row => String(row.paint_id))
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Buy Drag Racing body paint:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось купить краску."
       });
     } finally { client.release(); }
   });
