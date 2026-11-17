@@ -5362,6 +5362,22 @@ const responseText = await response.text();
   return result;
 }
 
+// Bridge for Drag Racing paint purchases: authoritative balance and owned paints live on the ALLCOINS API.
+window.allcoinsRacingPaintApi = Object.freeze({
+  async profile() {
+    const result = await apiRequest("/api/drag-racing/garage/paint/profile", {});
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async buy(paintId) {
+    const result = await apiRequest("/api/drag-racing/garage/paint/buy", { paintId: String(paintId || "") });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  }
+});
+
 const ALLCOINS_AI_STORAGE_KEY = "allcoinsAIHistoryV2";
 let allcoinsAIHistory = [];
 let allcoinsAISending = false;
