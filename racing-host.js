@@ -381,7 +381,11 @@
                 ? "Amvera не передала файл автомобиля за 30 секунд. Проверь доступность приложения и хранилища."
                 : "ПК не передал файл автомобиля за 30 секунд. Проверь работу Engine и туннеля.");
             }
-            if (attempt === 5) throw new Error("Сеть прервала загрузку 3D-модели.");
+            if (attempt === 5) {
+              throw new Error(useAmveraAsset
+                ? "Не удалось связаться с хранилищем Amvera. Проверь доступность адреса модели и настройки CORS."
+                : "Сеть прервала загрузку 3D-модели.");
+            }
             await new Promise(resolve => setTimeout(resolve, Math.min(10000, 1000 * 2 ** (attempt - 1))));
             continue;
           } finally {
@@ -676,15 +680,8 @@
     createOverlay();
     setStatus("Загружаем игровую сцену Telegram Mini App…", false);
 
-    // The game scene is independent from the PC tunnel. Start Telegram
-    // authentication in parallel, but never let an offline tunnel blank the game.
-    void ensureTelegramAuthentication().then(() => {
-      setStatus("Telegram подключён. Автомобиль будет загружен из Amvera…", false);
-    }).catch(error => {
-      console.error("ALLCOINS Racing Telegram authentication failed:", error);
-      setStatus("Не удалось подключить сервер онлайн-комнат. Загрузка 3D-модели из Amvera продолжается независимо.", true);
-    });
-
+    // Do not connect to the PC tunnel on single-player launch.
+    // Telegram authentication is requested only when the player opens online rooms.
     try {
       const sceneUrl = new URL("./racing-game.html?v=20261115-clean-track-v1", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
