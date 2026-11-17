@@ -2219,8 +2219,18 @@
   #lottoGame .lotto-play-tickets .lotto-ticket-title { margin:0 0 4px; font-size:11px; }
   #lottoGame .lotto-play-tickets .lotto-ticket-grid { gap:1px; padding:1px; }
   #lottoGame .lotto-play-tickets .lotto-number {
-    aspect-ratio:1.5 / 1; font-size:clamp(11px,3.1vw,15px) !important;
+    aspect-ratio:auto !important;
+    min-height:clamp(30px,8.5vw,38px) !important;
+    font-size:clamp(11px,3.1vw,15px) !important;
     -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation; user-select:none; -webkit-user-select:none;
+  }
+  #lottoGame .lotto-play-tickets button.lotto-number:active {
+    transform:scale(.94);
+  }
+  #lottoGame .lotto-play-tickets .lotto-number.lotto-mark-pending {
+    background:#f5d37f !important; color:#42250f !important;
+    border:2px solid #b7812f !important;
   }
   #lottoGame .lotto-play-tickets .lotto-number:focus,
   #lottoGame .lotto-play-tickets .lotto-number:focus-visible { outline:none !important; }
@@ -10571,6 +10581,9 @@ let onlineLottoLobbyRoomsCache = [];
 let onlineLottoStateTimer = null;
 let onlineLottoLobbyTimer = null;
 let onlineLottoActionBusy = false;
+let onlineLottoMarkQueue = [];
+let onlineLottoMarkQueueRunning = false;
+const onlineLottoPendingMarks = new Set();
 
 // Голосовое объявление выпавших чисел: по умолчанию включено.
 let lottoVoiceEnabled = true;
@@ -11230,18 +11243,23 @@ function renderOnlineLottoRoom(room, tickets) {
           return;
         }
 
-        const isMarked = marked.has(Number(number));
-        // Онлайн-игрок нажимает совпадения сам; автоматический режим не ждёт нажатий.
+        const value = Number(number);
+        const isMarked = marked.has(value);
+        const markKey = String(onlineLottoRoomId) + ":" + String(ticket.id) + ":" + value;
+        const isPending = onlineLottoPendingMarks.has(markKey);
+        const isDrawn = drawnNumbersForTickets.has(value);
+        // Активны только уже выпавшие числа. Ожидающие отправки отметки не теряются.
         const canManualMark = room.status === "playing" &&
-          room.autoPlay !== true && !onlineLottoActionBusy && !isMarked;
+          room.autoPlay !== true && isDrawn && !isMarked && !isPending;
         const cell = document.createElement(canManualMark ? "button" : "div");
         if (canManualMark) {
           cell.type = "button";
-          cell.setAttribute("aria-label", "Отметить выпавшее число " + Number(number));
-          cell.onclick = () => markOnlineLottoNumber(ticket.id, Number(number));
+          cell.setAttribute("aria-label", "Отметить выпавшее число " + value);
+          cell.onclick = (event) => markOnlineLottoNumber(ticket.id, value, event.currentTarget);
         }
         cell.className = "lotto-number";
         if (isMarked) cell.classList.add("lotto-marked");
+        if (isPending && !isMarked) cell.classList.add("lotto-mark-pending");
         cell.textContent = String(number);
         grid.appendChild(cell);
       });
@@ -11307,23 +11325,55 @@ async function addOnlineLottoTestBot() {
   }
 }
 
-async function markOnlineLottoNumber(ticketId, number) {
-  if (!onlineLottoRoomId || onlineLottoActionBusy) return;
-  onlineLottoActionBusy = true;
-  let markError = "";
+function markOnlineLottoNumber(ticketId, number, buttonElement) {
+  const roomId = String(onlineLottoRoomId || "");
+  const room = onlineLottoRoomCache;
+  const value = Number(number);
+  if (!roomId || !room || String(room.id) !== roomId || room.status !== "playing" || room.autoPlay === true) return;
+  const drawn = new Set((room.drawnNumbers || []).map(Number));
+  if (!drawn.has(value)) return;
+
+  const key = roomId + ":" + String(ticketId) + ":" + value;
+  if (onlineLottoPendingMarks.has(key)) return;
+
+  onlineLottoPendingMarks.add(key);
+  if (buttonElement) {
+    buttonElement.disabled = true;
+    buttonElement.classList.add("lotto-mark-pending");
+    buttonElement.setAttribute("aria-busy", "true");
+  }
+  onlineLottoMarkQueue.push({ roomId, ticketId: String(ticketId), number: value, key });
+  void processOnlineLottoMarkQueue();
+}
+
+async function processOnlineLottoMarkQueue() {
+  if (onlineLottoMarkQueueRunning) return;
+  onlineLottoMarkQueueRunning = true;
   try {
-    const result = await apiRequest("/api/lotto/number/mark", {
-      roomId: onlineLottoRoomId,
-      ticketId: String(ticketId),
-      number: number
-    });
-    if (result.won) setOnlineLottoStatus("onlineLottoPlayStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
-  } catch (error) {
-    markError = String(error.message || error).slice(0, 180);
+    while (onlineLottoMarkQueue.length) {
+      const action = onlineLottoMarkQueue.shift();
+      let markError = "";
+      try {
+        if (String(onlineLottoRoomId) !== action.roomId) continue;
+        const result = await apiRequest("/api/lotto/number/mark", {
+          roomId: action.roomId,
+          ticketId: action.ticketId,
+          number: action.number
+        });
+        if (result.won) setOnlineLottoStatus("onlineLottoPlayStatus", "🎉 Все числа билета отмечены! Проверяем выигрыш…");
+      } catch (error) {
+        markError = String(error.message || error).slice(0, 180);
+      } finally {
+        onlineLottoPendingMarks.delete(action.key);
+        if (String(onlineLottoRoomId) === action.roomId) {
+          await loadOnlineLottoState(true);
+          if (markError) setOnlineLottoStatus("onlineLottoPlayStatus", markError);
+        }
+      }
+    }
   } finally {
-    onlineLottoActionBusy = false;
-    await loadOnlineLottoState(true);
-    if (markError) setOnlineLottoStatus("onlineLottoPlayStatus", markError);
+    onlineLottoMarkQueueRunning = false;
+    if (onlineLottoMarkQueue.length) void processOnlineLottoMarkQueue();
   }
 }
 
