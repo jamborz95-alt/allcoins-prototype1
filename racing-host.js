@@ -3,11 +3,16 @@
 
   // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
   const RACING_API_BASE = "https://pharmaceuticals-coordinator-brochure-becomes.trycloudflare.com";
-  const CHUNK_SIZE = 16 * 1024 * 1024;
-  // Bump this key whenever the saved VAZ-2107 GLB is replaced.
+  const CHUNK_SIZE = 4 * 1024 * 1024;
+  // Set by the allcoins-racing-amvera-api meta tag in index.html.
+  // The multiplayer-room API remains on RACING_API_BASE; only the GLB source moves to Amvera.
+  const RACING_AMVERA_API_BASE = String(
+    document.querySelector('meta[name="allcoins-racing-amvera-api"]')?.content || ""
+  ).trim().replace(/\\/+$/, "");
+  // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
-  const MODEL_CACHE_KEY = "v24-vaz-2107-glb-63426260-v1";
+  const MODEL_CACHE_KEY = "v24-vaz-2107-amvera-glb-v1";
 
   let engineToken = "";
   let authenticationPromise = null;
@@ -332,6 +337,14 @@
       const chunks = [];
       let total = null;
       let fileName = "vaz-2107.glb";
+      const useAmveraAsset = Boolean(RACING_AMVERA_API_BASE);
+      const assetUrl = useAmveraAsset
+        ? RACING_AMVERA_API_BASE + "/api/racing/vaz-2107.glb"
+        : apiUrl("/api/racing/shared-model-asset");
+
+      if (!useAmveraAsset) {
+        console.warn("ALLCOINS Racing: Amvera model URL is not configured; retaining the legacy PC-tunnel model source.");
+      }
 
       let start = 0;
       while (total === null || start < total) {
@@ -349,13 +362,14 @@
           const modelController = new AbortController();
           const modelTimeout = setTimeout(() => modelController.abort(), 30000);
           try {
-            response = await fetch(apiUrl("/api/racing/shared-model-asset"), {
+            const modelHeaders = { Range: "bytes=" + start + "-" + end };
+            // The fixed VAZ-2107 game asset is read-only/public; Amvera does not need a PC tunnel token.
+            // Keep the bearer token only for backward compatibility with the legacy tunnel endpoint.
+            if (!useAmveraAsset) modelHeaders.Authorization = "Bearer " + engineToken;
+            response = await fetch(assetUrl, {
               method: "GET",
-              headers: {
-                Authorization: "Bearer " + engineToken,
-                Range: "bytes=" + start + "-" + end
-              },
-              cache: "no-store",
+              headers: modelHeaders,
+              cache: useAmveraAsset ? "default" : "no-store",
               signal: modelController.signal
             });
           } catch (error) {
@@ -659,10 +673,10 @@
     // The game scene is independent from the PC tunnel. Start Telegram
     // authentication in parallel, but never let an offline tunnel blank the game.
     void ensureTelegramAuthentication().then(() => {
-      setStatus("Telegram подключён. Загружаем автомобиль…", false);
+      setStatus("Telegram подключён. Автомобиль будет загружен из Amvera…", false);
     }).catch(error => {
       console.error("ALLCOINS Racing Telegram authentication failed:", error);
-      setStatus("Игровая сцена открывается. Связь с ПК для 3D-модели пока недоступна.", true);
+      setStatus("Не удалось подключить сервер онлайн-комнат. Загрузка 3D-модели из Amvera продолжается независимо.", true);
     });
 
     try {
