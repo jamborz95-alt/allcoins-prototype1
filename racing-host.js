@@ -572,11 +572,12 @@
     const data = event.data || {};
 
     if (data.type === "allcoins:request-car-model") {
-      setStatus("Запрос ВАЗ-2107 получен. Проверяем связь с локальной базой…", false);
+      setStatus("Запрос ВАЗ-2107 получен. Подключаемся к хранилищу Amvera…", false);
       // Send a visible acknowledgement before any PC/network request starts.
       event.source.postMessage({ type: "allcoins:car-model-loading" }, event.origin);
       try {
-        await ensureTelegramAuthentication();
+        // The VAZ-2107 GLB is a public read-only asset on Amvera.
+        // Do not block its delivery on Telegram room-server/PC-tunnel authentication.
         await sendCarModel(event.source, event.origin);
         setStatus("3D-модель передана в игровую сцену", false);
       } catch (error) {
