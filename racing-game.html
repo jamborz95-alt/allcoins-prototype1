@@ -2178,7 +2178,7 @@ camera.position.set(0,4.2,28); camera.lookAt(0,2.2,0);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
-  window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из локальной базы…");
+  window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
