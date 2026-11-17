@@ -14,7 +14,7 @@
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
   const MODEL_CACHE_KEY = RACING_AMVERA_API_BASE
-    ? "v24-vaz-2107-amvera-glb-v1"
+    ? "v24-vaz-2107-amvera-glb-v2"
     : "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
@@ -272,6 +272,16 @@
     });
   }
 
+  function isValidGlbBuffer(buffer) {
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 20 || buffer.byteLength > 104857600) {
+      return false;
+    }
+    const header = new DataView(buffer, 0, 12);
+    return header.getUint32(0, true) === 0x46546c67 &&
+      header.getUint32(4, true) === 2 &&
+      header.getUint32(8, true) === buffer.byteLength;
+  }
+
   async function readCachedModel() {
     const db = await openModelCache();
     try {
@@ -282,12 +292,7 @@
         request.onsuccess = () => { value = request.result || null; };
         request.onerror = () => reject(request.error || new Error("Не удалось прочитать кэш модели"));
         transaction.oncomplete = () => {
-          if (value && value.buffer instanceof ArrayBuffer && value.buffer.byteLength >= 4) {
-            const magic = new TextDecoder().decode(new Uint8Array(value.buffer, 0, 4));
-            resolve(magic === "glTF" ? value : null);
-          } else {
-            resolve(null);
-          }
+          resolve(value && isValidGlbBuffer(value.buffer) ? value : null);
         };
         transaction.onerror = () => reject(transaction.error || new Error("Ошибка чтения кэша модели"));
         transaction.onabort = () => reject(transaction.error || new Error("Чтение кэша модели отменено"));
@@ -372,7 +377,7 @@
             response = await fetch(assetUrl, {
               method: "GET",
               headers: modelHeaders,
-              cache: useAmveraAsset ? "default" : "no-store",
+              cache: "no-store",
               signal: modelController.signal
             });
           } catch (error) {
@@ -417,8 +422,8 @@
           if (!range || Number(range[1]) !== start) throw new Error("Сервер вернул неверный диапазон GLB.");
           rangeEnd = Number(range[2]);
           total = Number(range[3]);
-          if (!Number.isSafeInteger(total) || total <= 0 || !Number.isSafeInteger(rangeEnd) ||
-              rangeEnd < start || rangeEnd >= total) {
+          if (!Number.isSafeInteger(total) || total < 20 || total > 104857600 ||
+              !Number.isSafeInteger(rangeEnd) || rangeEnd < start || rangeEnd >= total) {
             throw new Error("Сервер вернул неверный размер GLB.");
           }
         } else if (response.status === 200) {
@@ -430,7 +435,9 @@
 
         const buffer = await readModelResponse(response, start, total);
         if (response.status === 200) {
-          if (!buffer.byteLength) throw new Error("Сервер вернул пустую 3D-модель.");
+          if (!isValidGlbBuffer(buffer)) {
+            throw new Error("Amvera вернула файл, который не прошёл проверку заголовка GLB 2.0.");
+          }
           const model = { buffer, fileName };
           setModelProgress("Сохранение 3D-модели на устройстве…", 100);
           await writeCachedModel(model);
@@ -453,6 +460,9 @@
         offset += chunk.byteLength;
       }
       if (offset !== total) throw new Error("Получен неполный файл GLB.");
+      if (!isValidGlbBuffer(combined.buffer)) {
+        throw new Error("Собранный файл из Amvera не прошёл проверку GLB 2.0.");
+      }
       const model = { buffer: combined.buffer, fileName };
       await writeCachedModel(model);
       setModelProgress("Модель загружена и сохранена на устройстве", 100);
