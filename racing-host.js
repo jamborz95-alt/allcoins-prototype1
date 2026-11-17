@@ -7,7 +7,8 @@
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
   // The multiplayer-room API remains on RACING_API_BASE; only the GLB source moves to Amvera.
   const RACING_AMVERA_API_BASE = String(
-    document.querySelector('meta[name="allcoins-racing-amvera-api"]')?.content || ""
+    document.querySelector('meta[name="allcoins-racing-amvera-api"]')?.content ||
+      "https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
   ).trim().replace(/\/+$/, "");
   // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
@@ -572,7 +573,7 @@
     const data = event.data || {};
 
     if (data.type === "allcoins:request-car-model") {
-      setStatus("Запрос ВАЗ-2107 получен. Подключаемся к хранилищу Amvera…", false);
+      setStatus("Запрос ВАЗ-2107 получен. Подключаемся к Amvera…", false);
       // Send a visible acknowledgement before any PC/network request starts.
       event.source.postMessage({ type: "allcoins:car-model-loading" }, event.origin);
       try {
