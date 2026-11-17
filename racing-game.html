@@ -1201,6 +1201,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
  .garage-paint-options[hidden],.garage-paint-selected[hidden]{display:none!important}
  .garage-paint-swatch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:54px;padding:7px 3px;border:1px solid #ffffff24;border-radius:10px;background:#172232;color:#e9edf3;font-size:10px;font-weight:750}
  .garage-paint-swatch:before{content:"";width:25px;height:25px;border-radius:50%;background:var(--paint-color);border:2px solid #ffffff9c;box-shadow:inset 0 0 0 1px #0005,0 2px 6px #0008}
+  .garage-paint-swatch:after{content:attr(data-price-label);font-size:9px;line-height:1;color:#f3cb7b;white-space:nowrap}
  .garage-paint-swatch.selected{border-color:#f3cb7b;box-shadow:0 0 0 1px #f3cb7b66;background:#263246}
  .garage-paint-swatch.selected:before{outline:2px solid #f3cb7b;outline-offset:2px}
  .garage-paint-selected{margin-top:10px;color:#f3cb7b;font-size:11px;font-weight:800;text-align:center}
@@ -1222,14 +1223,14 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <button class="garage-panel-close" id="garageTabClose" type="button" aria-label="Закрыть">×</button>
 <h2 id="garageTabTitle">Магазин</h2><p id="garageTabDescription"></p>
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
-<button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-name="Белый" style="--paint-color:#ffffff">БЕЛЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#000000" data-paint-name="Чёрный" style="--paint-color:#000000">ЧЁРНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#c0c0c0" data-paint-name="Серебристый" style="--paint-color:#c0c0c0">СЕРЕБРО</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#3a4148" data-paint-name="Графит" style="--paint-color:#3a4148">ГРАФИТ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#e31b23" data-paint-name="Красный" style="--paint-color:#e31b23">КРАСНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#0057b8" data-paint-name="Синий" style="--paint-color:#0057b8">СИНИЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#00843d" data-paint-name="Зелёный" style="--paint-color:#00843d">ЗЕЛЁНЫЙ</button>
-<button class="garage-paint-swatch" type="button" data-car-paint="#800020" data-paint-name="Бордовый" style="--paint-color:#800020">БОРДО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#000000" data-paint-id="black" data-paint-name="Чёрный" data-price-label="2 000 AC" style="--paint-color:#000000">ЧЁРНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#c0c0c0" data-paint-id="silver" data-paint-name="Серебристый" data-price-label="2 000 AC" style="--paint-color:#c0c0c0">СЕРЕБРО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#3a4148" data-paint-id="graphite" data-paint-name="Графит" data-price-label="2 000 AC" style="--paint-color:#3a4148">ГРАФИТ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#e31b23" data-paint-id="red" data-paint-name="Красный" data-price-label="2 000 AC" style="--paint-color:#e31b23">КРАСНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#0057b8" data-paint-id="blue" data-paint-name="Синий" data-price-label="2 000 AC" style="--paint-color:#0057b8">СИНИЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#00843d" data-paint-id="green" data-paint-name="Зелёный" data-price-label="2 000 AC" style="--paint-color:#00843d">ЗЕЛЁНЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#800020" data-paint-id="burgundy" data-paint-name="Бордовый" data-price-label="2 000 AC" style="--paint-color:#800020">БОРДО</button>
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
@@ -2087,7 +2088,7 @@ const garageTabContent = {
   },
   tuning: {
     title: "Тюнинг · Цвет кузова",
-    text: "Выбери цвет кузова, затем нажми «Применить». Выбранная краска сохранится на этом устройстве."
+    text: "Каждый новый цвет стоит 2 000 AC. Купленная краска остаётся в гараже навсегда."
   }
 };
 document.querySelectorAll("[data-garage-tab]").forEach(button => {
@@ -2112,32 +2113,98 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
       const currentPaint = acGaragePendingPaint || acGarageSelectedPaint;
       const selected = currentPaint && [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === currentPaint.toLowerCase());
       document.querySelectorAll("[data-car-paint]").forEach(item => item.classList.toggle("selected", item === selected));
-      $("garagePaintSelected").textContent = selected ? (acGaragePendingPaint ? "Выбран цвет: " : "Применён цвет: ") + selected.dataset.paintName : "Выбери цвет кузова";
-      $("garagePaintApply").hidden = !acGaragePendingPaint;
+      acGarageRefreshPaintUi();
+      void acGarageLoadPaintProfile();
     }
     panel.hidden = false;
   });
 });
 let acGaragePendingPaint = null;
+let acGaragePendingPaintId = null;
+let acGarageOwnedPaints = new Set();
+let acGaragePaintProfileReady = false;
+let acGaragePaintProfilePromise = null;
+
+function acGarageRefreshPaintUi() {
+  const selectedSwatch = acGaragePendingPaintId
+    ? [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.paintId === acGaragePendingPaintId)
+    : null;
+  document.querySelectorAll("[data-car-paint]").forEach(item => {
+    const owned = acGarageOwnedPaints.has(item.dataset.paintId);
+    item.classList.toggle("owned", owned);
+    item.dataset.priceLabel = owned ? "КУПЛЕНО" : "2 000 AC";
+    item.classList.toggle("selected", item === selectedSwatch);
+  });
+
+  if (!selectedSwatch) {
+    const activeSwatch = acGarageSelectedPaint
+      ? [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === acGarageSelectedPaint.toLowerCase())
+      : null;
+    $("garagePaintSelected").textContent = activeSwatch
+      ? "Применён цвет: " + activeSwatch.dataset.paintName
+      : "Выбери цвет кузова";
+    $("garagePaintApply").hidden = true;
+    return;
+  }
+
+  const owned = acGarageOwnedPaints.has(acGaragePendingPaintId);
+  $("garagePaintSelected").textContent = !acGaragePaintProfileReady
+    ? "Проверяем баланс и гараж…"
+    : (owned ? "Цвет уже куплен: " : "Цена краски: 2 000 AC · ") + selectedSwatch.dataset.paintName;
+  $("garagePaintApply").textContent = !acGaragePaintProfileReady
+    ? "ПРОВЕРКА…"
+    : (owned ? "ПРИМЕНИТЬ" : "КУПИТЬ ЗА 2 000 AC");
+  $("garagePaintApply").disabled = !acGaragePaintProfileReady;
+  $("garagePaintApply").hidden = false;
+}
+
 document.querySelectorAll("[data-car-paint]").forEach(button => {
   button.addEventListener("click", () => {
     acGaragePendingPaint = button.dataset.carPaint;
-    document.querySelectorAll("[data-car-paint]").forEach(item => item.classList.toggle("selected", item === button));
-    $("garagePaintSelected").textContent = "Выбран цвет: " + button.dataset.paintName;
-    $("garagePaintApply").hidden = false;
-    $("garagePaintApply").disabled = false;
+    acGaragePendingPaintId = button.dataset.paintId;
+    acGarageRefreshPaintUi();
+    if (!acGaragePaintProfileReady) void acGarageLoadPaintProfile();
   });
 });
-$("garagePaintApply").addEventListener("click", () => {
-  if (!acGaragePendingPaint) return;
-  const selectedSwatch = [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === acGaragePendingPaint.toLowerCase());
+
+$("garagePaintApply").addEventListener("click", async () => {
+  if (!acGaragePendingPaint || !acGaragePendingPaintId) return;
+  if (!acGaragePaintProfileReady) {
+    await acGarageLoadPaintProfile();
+    if (!acGaragePaintProfileReady) return;
+  }
+
+  const selectedSwatch = [...document.querySelectorAll("[data-car-paint]")]
+    .find(item => item.dataset.paintId === acGaragePendingPaintId);
+  if (!selectedSwatch) return;
+
+  if (!acGarageOwnedPaints.has(acGaragePendingPaintId)) {
+    const applyButton = $("garagePaintApply");
+    applyButton.disabled = true;
+    applyButton.textContent = "ПОКУПАЕМ…";
+    try {
+      const result = await onlineHostRequest("paint:buy", { paintId: acGaragePendingPaintId });
+      if (!result || result.ok !== true) throw new Error(result?.error || "Покупка краски не подтверждена сервером.");
+      acGarageOwnedPaints = new Set(Array.isArray(result.ownedPaints) ? result.ownedPaints : [...acGarageOwnedPaints, acGaragePendingPaintId]);
+    } catch (error) {
+      $("garagePaintSelected").textContent = error.message || "Не удалось купить краску.";
+      applyButton.disabled = false;
+      applyButton.textContent = "КУПИТЬ ЗА 2 000 AC";
+      return;
+    }
+  }
+
   if (!acGarageApplyBodyPaint(acGaragePendingPaint)) {
-    $("garagePaintSelected").textContent = "Не удалось изменить материал кузова. Попробуй ещё раз.";
+    $("garagePaintSelected").textContent = "Краска куплена, но не удалось применить её к кузову. Нажми «Применить» ещё раз.";
+    acGarageRefreshPaintUi();
     return;
   }
-  $("garagePaintSelected").textContent = selectedSwatch ? "Применён цвет: " + selectedSwatch.dataset.paintName : "Цвет применён";
+
+  $("garagePaintSelected").textContent = "Куплен и применён цвет: " + selectedSwatch.dataset.paintName;
   $("garagePaintApply").hidden = true;
   acGaragePendingPaint = null;
+  acGaragePendingPaintId = null;
+  acGarageRefreshPaintUi();
 });
 $("garageTabClose").addEventListener("click", () => {
   $("garageTabPanel").hidden = true;
@@ -3611,9 +3678,10 @@ function acV5UpdateWetReflections(scroll) {
   acV5WetWarm.instanceMatrix.needsUpdate = true;
 }
 
-// Активный цвет сохраняется на устройстве. Базовая цветовая карта кузова отключается,
-// чтобы белый и чёрный оттенки отображались точно; карты нормалей и отражений сохраняются.
+// Применённая ранее краска восстанавливается только после проверки серверной покупки.
+// Базовая цветовая карта кузова отключается, чтобы точный цвет палитры не искажался.
 let acGarageSelectedPaint = null;
+let acGarageStoredPaint = null;
 const acGarageLegacyPaintMap = {
   "#f1eee5":"#ffffff", "#171a20":"#000000", "#080a0d":"#000000",
   "#aeb7c2":"#c0c0c0", "#515963":"#3a4148", "#bd252d":"#e31b23",
@@ -3622,10 +3690,45 @@ const acGarageLegacyPaintMap = {
 try {
   const savedPaint = window.localStorage.getItem("allcoins-vaz2107-body-paint");
   if (savedPaint && /^#[0-9a-f]{6}$/i.test(savedPaint)) {
-    acGarageSelectedPaint = acGarageLegacyPaintMap[savedPaint.toLowerCase()] || savedPaint.toLowerCase();
-    window.localStorage.setItem("allcoins-vaz2107-body-paint", acGarageSelectedPaint);
+    acGarageStoredPaint = acGarageLegacyPaintMap[savedPaint.toLowerCase()] || savedPaint.toLowerCase();
   }
 } catch (_) {}
+async function acGarageLoadPaintProfile() {
+  if (acGaragePaintProfileReady) return true;
+  if (acGaragePaintProfilePromise) return acGaragePaintProfilePromise;
+  acGaragePaintProfilePromise = (async () => {
+    try {
+      const result = await onlineHostRequest("paint:profile");
+      acGarageOwnedPaints = new Set(Array.isArray(result.ownedPaints) ? result.ownedPaints : []);
+      acGaragePaintProfileReady = true;
+      const storedSwatch = acGarageStoredPaint
+        ? [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === acGarageStoredPaint.toLowerCase())
+        : null;
+      if (storedSwatch && acGarageOwnedPaints.has(storedSwatch.dataset.paintId)) {
+        acGarageSelectedPaint = acGarageStoredPaint;
+        if (vehicle) acGarageApplyBodyPaint(acGarageSelectedPaint);
+      } else {
+        acGarageSelectedPaint = null;
+        try { window.localStorage.removeItem("allcoins-vaz2107-body-paint"); } catch (_) {}
+      }
+      acGarageRefreshPaintUi();
+      return true;
+    } catch (error) {
+      acGaragePaintProfileReady = false;
+      if (acGaragePendingPaintId) {
+        $("garagePaintSelected").textContent = error.message || "Не удалось проверить покупки краски.";
+        $("garagePaintApply").disabled = true;
+        $("garagePaintApply").hidden = false;
+        $("garagePaintApply").textContent = "ПОВТОРИТЬ ПРОВЕРКУ";
+      }
+      console.warn("ALLCOINS Racing: paint inventory load failed:", error);
+      return false;
+    } finally {
+      acGaragePaintProfilePromise = null;
+    }
+  })();
+  return acGaragePaintProfilePromise;
+}
 function acGarageApplyBodyPaint(color) {
   const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
   if (!match) return false;
@@ -5166,7 +5269,7 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 updateRpmTachometer();
 setGarageMode(true);
 
-requestAnimationFrame(animate);requestSavedModel();
+requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();
 </script>
 </body>
 </html>
