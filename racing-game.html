@@ -2439,7 +2439,7 @@ function acCreateAsphaltMaps() {
 
   const colorMap = new THREE.CanvasTexture(asphaltCanvas);
   colorMap.wrapS = colorMap.wrapT = THREE.RepeatWrapping;
-  colorMap.repeat.set(100, 2);
+  colorMap.repeat.set(100, 2.13);
   colorMap.encoding = THREE.sRGBEncoding;
   const roughnessMap = new THREE.CanvasTexture(roughCanvas);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
@@ -2545,7 +2545,8 @@ const roadMat = new THREE.MeshStandardMaterial({
   roughness: .68,
   metalness: .012
 });
-const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 18), roadMat);
+// Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
+const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 19.2), roadMat);
 road.rotation.x = -Math.PI / 2;
 road.position.y = -.12;
 road.receiveShadow = true;
@@ -2654,7 +2655,7 @@ const edgeMat = new THREE.MeshStandardMaterial({
   emissive: 0x151713,
   emissiveIntensity: .02
 });
-for (const z of [-8.34, 8.34]) {
+for (const z of [-8.94, 8.94]) {
   const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
   edge.position.set(0, -.088, z);
   scene.add(edge);
