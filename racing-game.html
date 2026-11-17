@@ -2707,10 +2707,12 @@ const edgeMat = new THREE.MeshStandardMaterial({
   emissive: 0x151713,
   emissiveIntensity: .02
 });
+const acRoadEdgeMeshes = [];
 for (const z of [-12.72, 12.72]) {
   const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
   edge.position.set(0, -.088, z);
   scene.add(edge);
+  acRoadEdgeMeshes.push(edge);
 }
 
 // Асфальт и разметка используют один знак скорости: вперёд — полотно визуально уходит назад, задний ход — наоборот.
@@ -3581,6 +3583,128 @@ const acRain=new THREE.LineSegments(
 acRain.frustumCulled=false;
 scene.add(acRain);
 acRain.visible = false;
+
+
+/* ALLCOINS RACING GARAGE ENVIRONMENT */
+const acGarageWorld = new THREE.Group();
+const acGarageFloorMaterial = new THREE.MeshStandardMaterial({
+  color: 0x343c47, roughness: .58, metalness: .22
+});
+const acGarageFloor = new THREE.Mesh(new THREE.PlaneGeometry(100, 72), acGarageFloorMaterial);
+acGarageFloor.rotation.x = -Math.PI / 2;
+acGarageFloor.position.set(-4.6, -.205, 3);
+acGarageFloor.receiveShadow = true;
+acGarageWorld.add(acGarageFloor);
+
+const acGarageBackWall = new THREE.Mesh(
+  new THREE.BoxGeometry(74, 12, .7),
+  new THREE.MeshStandardMaterial({ color: 0x182331, roughness: .82, metalness: .16 })
+);
+acGarageBackWall.position.set(-4.6, 5.7, -17.5);
+acGarageBackWall.receiveShadow = true;
+acGarageWorld.add(acGarageBackWall);
+
+const acGarageSideMaterial = new THREE.MeshStandardMaterial({
+  color: 0x243243, roughness: .78, metalness: .18
+});
+for (const x of [-42, 33]) {
+  const sideWall = new THREE.Mesh(new THREE.BoxGeometry(.65, 11, 48), acGarageSideMaterial);
+  sideWall.position.set(x, 5.1, 5);
+  acGarageWorld.add(sideWall);
+}
+
+const acGarageDoorMaterial = new THREE.MeshStandardMaterial({
+  color: 0x344454, roughness: .52, metalness: .48
+});
+const acGarageRibMaterial = new THREE.MeshStandardMaterial({
+  color: 0x718092, roughness: .44, metalness: .68
+});
+for (const x of [-19, -4.6, 9.8]) {
+  const door = new THREE.Mesh(new THREE.BoxGeometry(12.6, 7.4, .12), acGarageDoorMaterial);
+  door.position.set(x, 4.0, -17.04);
+  acGarageWorld.add(door);
+  for (let row = 0; row < 13; row++) {
+    const rib = new THREE.Mesh(new THREE.BoxGeometry(12.3, .035, .055), acGarageRibMaterial);
+    rib.position.set(x, .62 + row * .56, -16.94);
+    acGarageWorld.add(rib);
+  }
+}
+const acGaragePillarMaterial = new THREE.MeshStandardMaterial({
+  color: 0x66717b, roughness: .46, metalness: .62
+});
+for (const x of [-26, -11.8, 2.6, 17]) {
+  const pillar = new THREE.Mesh(new THREE.BoxGeometry(.32, 8.3, .62), acGaragePillarMaterial);
+  pillar.position.set(x, 4.15, -16.35);
+  acGarageWorld.add(pillar);
+}
+const acGarageLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffedc9, toneMapped: false });
+const acGarageLightGlow = new THREE.MeshBasicMaterial({
+  color: 0xffd48e, transparent: true, opacity: .14,
+  blending: THREE.AdditiveBlending, depthWrite: false
+});
+for (const x of [-18, -4.6, 9]) {
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(8.2, .08, .40), acGarageLightMaterial);
+  bar.position.set(x, 8.7, 2.5);
+  acGarageWorld.add(bar);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 1.15), acGarageLightGlow);
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.set(x, 8.62, 2.5);
+  acGarageWorld.add(glow);
+  const lamp = new THREE.PointLight(0xffd8a6, 2.0, 25, 2);
+  lamp.position.set(x, 7.8, 3.2);
+  acGarageWorld.add(lamp);
+}
+const acGarageFloorLineMaterial = new THREE.MeshStandardMaterial({
+  color: 0xc39b4e, roughness: .72, metalness: .12,
+  emissive: 0x4a3211, emissiveIntensity: .18
+});
+for (const z of [-10, 19]) {
+  const guide = new THREE.Mesh(new THREE.BoxGeometry(52, .025, .10), acGarageFloorLineMaterial);
+  guide.position.set(-4.6, -.185, z);
+  acGarageWorld.add(guide);
+}
+for (const x of [-30, 21]) {
+  const guide = new THREE.Mesh(new THREE.BoxGeometry(.10, .025, 29), acGarageFloorLineMaterial);
+  guide.position.set(x, -.185, 4.5);
+  acGarageWorld.add(guide);
+}
+const acGaragePointLight = new THREE.PointLight(0xe2efff, 1.1, 28, 2);
+acGaragePointLight.position.set(-5, 4.7, 13);
+acGarageWorld.add(acGaragePointLight);
+scene.add(acGarageWorld);
+acGarageWorld.visible = true;
+
+function setGarageMode(enabled) {
+  const active = Boolean(enabled);
+  document.body.classList.toggle("garage-mode", active);
+  $("garageScreen").classList.toggle("hidden", !active);
+  acGarageWorld.visible = active;
+  const trackVisible = !active;
+  road.visible = trackVisible;
+  shoulder.visible = trackVisible;
+  for (const mark of laneMarks) mark.visible = trackVisible;
+  for (const edge of acRoadEdgeMeshes) edge.visible = trackVisible;
+  acTrackCurbMesh.visible = trackVisible;
+  acNearGuardrail.visible = trackVisible;
+  acCityFence.visible = trackVisible;
+  acCityShrubs.visible = trackVisible;
+  acTrackGrass.visible = trackVisible;
+  acTrackTreeTrunks.visible = trackVisible;
+  acTrackTreeLower.visible = trackVisible;
+  acTrackTreeUpper.visible = trackVisible;
+  acTrackTreeSnow.visible = trackVisible;
+  acTrackHouseGroup.visible = trackVisible;
+  finishLine.visible = trackVisible;
+  acV5WetBlue.visible = trackVisible;
+  acV5WetWarm.visible = trackVisible;
+  acRain.visible = trackVisible;
+  for (const record of acLampRecords) {
+    record.bulb.visible = trackVisible;
+    record.light.visible = trackVisible;
+    record.halo.visible = trackVisible;
+  }
+}
+
 
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,scroll){
