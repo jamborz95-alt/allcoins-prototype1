@@ -1187,7 +1187,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .garage-brand{display:none}
 .garage-tab{min-height:34px;flex:1 1 0;max-width:none;padding:6px 4px;border:1px solid #e9b94f55;border-radius:9px;background:linear-gradient(145deg,#34404f,#151d29);color:#f5f7fa;font-size:clamp(10px,2.3vw,11px);font-weight:850;white-space:nowrap;letter-spacing:.01em}
 .garage-tab.active{color:#17202c;background:linear-gradient(145deg,#ffe4a4,#dba94b)}
-.garage-car-status{align-self:center;margin-top:12px;padding:7px 14px;border-radius:999px;color:#e8edf4;background:#080f25bb;border:1px solid #d8b36a55;font-size:12px;font-weight:750;letter-spacing:.06em;text-align:center}
+.garage-car-status{align-self:center;margin-top:27px;padding:7px 14px;border-radius:999px;color:#e8edf4;background:#080f25bb;border:1px solid #d8b36a55;font-size:12px;font-weight:750;letter-spacing:.06em;text-align:center}
 .garage-car-status.error{color:#ffaaa4;border-color:#ff746b88}
 .garage-bottom{display:flex;justify-content:center;gap:8px;width:100%;margin:0 auto;pointer-events:auto}
 .garage-action{flex:1;min-height:52px;padding:10px 12px;border-radius:14px;border:1px solid #ffe0a2;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#1a1c22;font-weight:950;font-size:clamp(12px,2vw,16px)}
@@ -1205,7 +1205,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div id="stage"><canvas id="view"></canvas></div>
 <div id="garageScreen">
 <div>
-<div class="garage-car-status" id="garageCarStatus">ЗАГРУЖАЕМ ВАЗ-2107 ИЗ ОБЛАКА…</div>
+<div class="garage-car-status" id="garageCarStatus">ВАЗ-2107</div>
 </div>
 <section class="garage-tab-panel" id="garageTabPanel" hidden>
 <button class="garage-panel-close" id="garageTabClose" type="button" aria-label="Закрыть">×</button>
@@ -4540,7 +4540,7 @@ function attachVehicle(root,label='сохранённая модель'){
   acRacingApplyRearLowRideBodyReceiverPolicy();
     acRacingApplyLowRideAmbientOcclusionPolicy();
   acRacingApplyRearDetailsShadowPolicy();
-  $("garageCarStatus").textContent = "ВАЗ-2107 ГОТОВА · ГАРАЖ";
+  $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
   hideMessage();
   if(onlineRaceStarted){raceStarted=true;setGarageMode(false);}
@@ -4550,7 +4550,7 @@ function attachVehicle(root,label='сохранённая модель'){
 
 function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
 function requestSavedModel(){
-  $("garageCarStatus").textContent = "ЗАГРУЖАЕМ ВАЗ-2107 ИЗ AMVERA…";
+  $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
   if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelRequestSent = true;
   setMessage('Загрузка ВАЗ-2107','3D-сцена запущена. Отправляю запрос на загрузку автомобиля…',true);
