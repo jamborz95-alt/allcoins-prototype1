@@ -121,6 +121,11 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.doesNotMatch(page, /material\.map\s*=\s*null/);
   assert.match(page, /function acGarageSeparateBumpersFromBody\(root\)/);
   assert.match(page, /ALLCOINS_VAZ2107_UnpaintedBumpers/);
+  assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
+  assert.match(page, /metalness >= \.45 && neutralSilver/);
+  assert.match(page, /steelMaterialIndexes\.has\(materialIndex\)/);
+  assert.match(page, /Only steel\/chrome material faces are kept factory-coloured/);
+
   assert.match(page, /const endZone = Math\.max\(size\.x \* \.04, \.05\)/);
   assert.match(page, /const bumperTop = bounds\.min\.y \+ size\.y \* \.34/);
   assert.match(page, /withinFrontCap = \[pointA, pointB, pointC\]\.every/);
