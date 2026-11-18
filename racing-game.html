@@ -6195,8 +6195,8 @@ function acGarageSeparateBumpersFromBody(root) {
 
     // The VAZ body is aligned along world X. Keep only the narrow, low terminal caps
     // as bumpers; a broad end/height box also captures painted fenders and quarter panels.
-    const endZone = Math.max(size.x * .05, .06);
-    const bumperTop = bounds.min.y + size.y * .38;
+    const endZone = Math.max(size.x * .04, .05);
+    const bumperTop = bounds.min.y + size.y * .34;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
