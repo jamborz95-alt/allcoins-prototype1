@@ -173,9 +173,9 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.ok(page.includes('const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim'));
   assert.ok(page.includes('rear body panel'));
   assert.match(page, /const frontEndZone = Math.max\(size\.x \* \.055, \.08\)/);
-  assert.match(page, /const rearEndZone = Math.max\(size\.x \* \.04, \.05\)/);
+  assert.match(page, /const rearEndZone = Math.max\(size\.x \* \.035, \.045\)/);
   assert.match(page, /const frontSteelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
-  assert.match(page, /const rearSteelTrimTop = bounds\.min\.y \+ size\.y \* \.30/);
+  assert.match(page, /const rearSteelTrimTop = bounds\.min\.y \+ size\.y \* \.26/);
   assert.match(page, /withinFrontCap = \[pointA, pointB, pointC\]\.every/);
   assert.match(page, /withinRearCap = \[pointA, pointB, pointC\]\.every/);
   assert.doesNotMatch(page, /const withinSteelTrimBand =|const endZone =|const steelTrimTop =/);
