@@ -692,6 +692,43 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   .garage-car-shop-visual{min-height:148px}
   .garage-2107-art{max-height:138px}
 }
+ 
+.garage-rim-section{width:min(900px,100%);margin:18px auto 0;padding:14px;border:1px solid #8ba6c455;border-radius:15px;background:linear-gradient(145deg,#152338eF,#0c1522ef)}
+.garage-rim-section[hidden]{display:none!important}
+.garage-rim-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}
+.garage-rim-heading h3{margin:0;color:#f4d28b;font-size:15px;letter-spacing:.08em}
+.garage-rim-heading p{margin:4px 0 0;color:#aebed0;font-size:10px;line-height:1.4}
+.garage-rim-current{flex:none;padding:5px 8px;border:1px solid #e9b94f66;border-radius:99px;color:#f2d18a;font-size:9px;font-weight:900}
+.garage-rim-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.garage-rim-card{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;min-height:104px;padding:8px 4px;border:1px solid #ffffff24;border-radius:11px;background:linear-gradient(145deg,#233348,#111b29);color:#f4f7fa}
+.garage-rim-card.selected{border-color:#f3cc78;box-shadow:0 0 0 1px #f3cc7855,0 0 15px #e9b94f25;background:linear-gradient(145deg,#35445a,#182638)}
+.garage-rim-card.owned:after{content:"КУПЛЕНО";color:#8de3b1;font-size:8px;font-weight:900}
+.garage-rim-card strong{font-size:10px;letter-spacing:.035em;white-space:nowrap}
+.garage-rim-card small{font-size:9px;color:#d6bd84;white-space:nowrap}
+.garage-rim-icon{position:relative;display:block;width:46px;height:46px;border-radius:50%;border:5px solid #111821;background:radial-gradient(circle,#1b2836 0 19%,#93a2b1 20% 24%,#37485a 25% 38%,#c8d2dc 40% 47%,#26384a 49% 100%);box-shadow:inset 0 0 0 2px #dce5ed,0 3px 7px #0008}
+.garage-rim-icon:before{content:"";position:absolute;inset:5px;border-radius:50%;border:2px solid #dbe5ee}
+.garage-rim-icon:after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%);background:#e3eaf1;border:2px solid #596b7d;z-index:2}
+.garage-rim-icon i{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,#dce5ed 0deg 4deg,transparent 4deg 45deg);mask:radial-gradient(circle,transparent 0 25%,#000 28% 65%,transparent 68%)}
+.rim-icon-stock{background:radial-gradient(circle,#263441 0 20%,#b5c1cb 21% 25%,#586a7a 27% 43%,#c5ced7 45% 54%,#18212c 57% 100%)}
+.rim-icon-stock i{background:repeating-conic-gradient(#aab7c4 0deg 14deg,#283847 14deg 28deg);mask:radial-gradient(circle,transparent 0 27%,#000 29% 66%,transparent 68%)}
+.rim-icon-sport i{background:repeating-conic-gradient(from 10deg,#edf3f8 0deg 21deg,#1b2a3b 21deg 72deg);mask:radial-gradient(circle,transparent 0 22%,#000 25% 70%,transparent 73%)}
+.rim-icon-mesh i{background:repeating-conic-gradient(#e5edf5 0deg 5deg,#273b50 5deg 18deg);mask:radial-gradient(circle,transparent 0 20%,#000 22% 72%,transparent 74%)}
+.rim-icon-turbine i{background:repeating-conic-gradient(from 12deg,#d3e0ec 0deg 18deg,#29394a 18deg 51deg);mask:radial-gradient(circle,transparent 0 20%,#000 22% 72%,transparent 74%)}
+.rim-icon-classic i{background:radial-gradient(circle at 50% 50%,transparent 0 33%,#dbe4ed 34% 39%,transparent 40%),repeating-conic-gradient(#cad5df 0deg 3deg,transparent 3deg 45deg);mask:radial-gradient(circle,transparent 0 25%,#000 27% 70%,transparent 73%)}
+.garage-rim-status{margin-top:10px;min-height:16px;color:#aebed0;font-size:10px;line-height:1.4;text-align:center}
+.garage-rim-status.error{color:#ffaaa4}
+.garage-rim-status.success{color:#8de3b1}
+.garage-rim-apply{display:block;width:min(900px,100%);min-height:46px;margin:8px auto 0;padding:9px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:12px;font-weight:950}
+.garage-rim-apply:disabled{opacity:.45;filter:grayscale(.5)}
+@media(max-width:520px){
+ .garage-rim-section{padding:10px;margin-top:13px}
+ .garage-rim-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .garage-rim-card{min-height:96px;padding:6px 2px}
+ .garage-rim-card strong{font-size:9px}
+ .garage-rim-card small{font-size:8px}
+ .garage-rim-icon{width:40px;height:40px}
+ .garage-rim-heading h3{font-size:13px}
+}
 </style>
 
 <style id="allcoins-racing-dashboard-v26">
@@ -1543,6 +1580,22 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   margin:3px auto 12px;
   border-radius:18px;
 }
+.garage-tab-panel.tuning-fullscreen .garage-rim-section{
+  flex:none;
+  width:min(900px,100%);
+  margin:14px auto 0;
+}
+.garage-tab-panel.tuning-fullscreen .garage-rim-options{
+  width:100%;
+}
+.garage-tab-panel.tuning-fullscreen .garage-rim-apply{
+  width:100%;
+}
+@media(max-width:520px){
+  .garage-tab-panel.tuning-fullscreen .garage-rim-section{margin-top:10px}
+  .garage-tab-panel.tuning-fullscreen .garage-rim-heading{gap:5px}
+  .garage-tab-panel.tuning-fullscreen .garage-rim-heading p{font-size:9px}
+}
 .garage-tab-panel.tuning-fullscreen .garage-paint-options{
   flex:none;
   width:min(900px,100%);
@@ -1650,6 +1703,39 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
+<div class="garage-rim-section" id="garageRimSection" hidden>
+  <div class="garage-rim-heading">
+    <div>
+      <h3>ДИСКИ ВАЗ-2107</h3>
+      <p>Выбирай дизайн — колёса на 3D-модели меняются сразу. Покупка только после подтверждения.</p>
+    </div>
+    <span class="garage-rim-current" id="garageRimCurrent">ЗАВОДСКИЕ</span>
+  </div>
+  <div class="garage-rim-options" id="garageRimOptions">
+    <button class="garage-rim-card" type="button" data-rim-style="stock">
+      <span class="garage-rim-icon rim-icon-stock"><i></i></span>
+      <strong>ЗАВОДСКИЕ</strong><small>В комплекте</small>
+    </button>
+    <button class="garage-rim-card" type="button" data-rim-style="sport5">
+      <span class="garage-rim-icon rim-icon-sport"><i></i></span>
+      <strong>SPORT 5</strong><small>5 000 AC</small>
+    </button>
+    <button class="garage-rim-card" type="button" data-rim-style="mesh10">
+      <span class="garage-rim-icon rim-icon-mesh"><i></i></span>
+      <strong>MESH 10</strong><small>7 000 AC</small>
+    </button>
+    <button class="garage-rim-card" type="button" data-rim-style="turbine">
+      <span class="garage-rim-icon rim-icon-turbine"><i></i></span>
+      <strong>TURBINE</strong><small>6 500 AC</small>
+    </button>
+    <button class="garage-rim-card" type="button" data-rim-style="classic8">
+      <span class="garage-rim-icon rim-icon-classic"><i></i></span>
+      <strong>CLASSIC 8</strong><small>4 500 AC</small>
+    </button>
+  </div>
+  <div class="garage-rim-status" id="garageRimStatus">Загружаем каталог дисков…</div>
+  <button class="garage-rim-apply" id="garageRimApply" type="button" disabled>ВЫБЕРИ ДИСКИ</button>
+</div>
 <div class="garage-parts-status" id="garagePartsStatus" hidden></div>
 <div class="garage-parts-list" id="garagePartsList" hidden></div>
 </section>
@@ -3034,7 +3120,7 @@ const garageTabContent = {
   },
   tuning: {
     title: "Тюнинг · Цвет кузова",
-    text: "Каждый новый цвет стоит 2 000 AC. Купленная краска остаётся в гараже навсегда."
+    text: "Меняй цвет кузова и выбирай разные литые диски. Все изменения видны на 3D-модели до покупки."
   }
 };
 document.querySelectorAll("[data-garage-tab]").forEach(button => {
@@ -3045,7 +3131,10 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const alreadyOpen = !panel.hidden && button.classList.contains("active");
     document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
     if (alreadyOpen) {
-      if (panel.classList.contains("tuning-fullscreen")) acGarageClearBodyPaintPreview();
+      if (panel.classList.contains("tuning-fullscreen")) {
+        acGarageClearBodyPaintPreview();
+        acGarageRestoreSelectedRims();
+      }
       acGarageMoveCarPreview("shop");
       panel.classList.remove("shop-fullscreen", "tuning-fullscreen");
       $("garageScreen").classList.remove("shop-screen-open", "tuning-screen-open");
@@ -3061,7 +3150,10 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const paintMode = button.dataset.garageTab === "tuning";
     const partsMode = button.dataset.garageTab === "upgrades";
     const wasPaintMode = panel.classList.contains("tuning-fullscreen");
-    if (wasPaintMode && !paintMode) acGarageClearBodyPaintPreview();
+    if (wasPaintMode && !paintMode) {
+      acGarageClearBodyPaintPreview();
+      acGarageRestoreSelectedRims();
+    }
     panel.classList.toggle("shop-fullscreen", shopMode);
     panel.classList.toggle("tuning-fullscreen", paintMode);
     $("garageScreen").classList.toggle("shop-screen-open", shopMode);
@@ -3076,6 +3168,11 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     $("garagePaintOptions").hidden = !paintMode;
     $("garagePaintSelected").hidden = !paintMode;
     $("garagePaintApply").hidden = !paintMode || !acGaragePendingPaint;
+    $("garageRimSection").hidden = !paintMode;
+    if (paintMode) {
+      acGarageRefreshRimUi();
+      void acGarageLoadRimProfile();
+    }
     $("garagePartsList").hidden = !partsMode;
     $("garagePartsStatus").hidden = !partsMode;
     if (partsMode) {
@@ -3102,6 +3199,287 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     }
   });
 });
+const AC_GARAGE_RIM_STYLES = Object.freeze({
+  stock: { name:"Заводские", price:0, kind:"stock" },
+  sport5: { name:"Sport 5 Spoke", price:5000, kind:"spoke", count:5, width:.15, twist:.08, face:0x202b38, metal:0xe0e8ef, accent:0x8fb4d4 },
+  mesh10: { name:"Mesh Multi-Spoke", price:7000, kind:"spoke", count:10, width:.060, twist:.02, face:0x111b27, metal:0xc7d4df, accent:0x7d96ac },
+  turbine: { name:"Turbo Turbine", price:6500, kind:"turbine", count:7, width:.205, twist:.36, face:0x172333, metal:0xb5c6d6, accent:0x6da7d8 },
+  classic8: { name:"Classic 8 Hole", price:4500, kind:"holes", count:8, width:.105, twist:0, face:0x293746, metal:0xd1dce6, accent:0x98aaba }
+});
+
+let acGarageOwnedRims = new Set(["stock"]);
+let acGarageSelectedRimId = "stock";
+let acGaragePendingRimId = null;
+let acGarageRimProfileReady = false;
+let acGarageRimProfilePromise = null;
+let acGarageRimBusy = false;
+let acGarageRimStatusText = "";
+
+function acGarageRimStatus(message, mode="") {
+  const node = $("garageRimStatus");
+  if (!node) return;
+  node.textContent = message || "";
+  node.classList.toggle("error", mode === "error");
+  node.classList.toggle("success", mode === "success");
+}
+
+function acGarageDisposeRimOverlay(overlay) {
+  if (!overlay) return;
+  overlay.traverse(object => {
+    if (object.geometry) object.geometry.dispose();
+    if (object.material) {
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) material?.dispose?.();
+    }
+  });
+  if (overlay.parent) overlay.parent.remove(overlay);
+}
+
+function acGarageBuildRimFace(style, radius, depth, side) {
+  const face = new THREE.Group();
+  face.position.y = side * (depth * .45);
+  const faceDepth = Math.max(radius * .055, .009);
+  const dark = new THREE.MeshStandardMaterial({
+    color: style.face, metalness:.68, roughness:.34, side:THREE.DoubleSide
+  });
+  const metal = new THREE.MeshStandardMaterial({
+    color: style.metal, metalness:.9, roughness:.22, side:THREE.DoubleSide
+  });
+  const accent = new THREE.MeshStandardMaterial({
+    color: style.accent, metalness:.84, roughness:.25, side:THREE.DoubleSide
+  });
+  const black = new THREE.MeshStandardMaterial({
+    color:0x090f16, metalness:.35, roughness:.5, side:THREE.DoubleSide
+  });
+
+  const dish = new THREE.Mesh(new THREE.CylinderGeometry(radius*.73,radius*.73,faceDepth,48),dark);
+  face.add(dish);
+
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(radius*.82,radius*.034,10,56),metal);
+  lip.rotation.x = Math.PI/2;
+  lip.position.y = side * faceDepth*.14;
+  face.add(lip);
+
+  const innerRing = new THREE.Mesh(new THREE.TorusGeometry(radius*.55,radius*.018,8,48),accent);
+  innerRing.rotation.x = Math.PI/2;
+  innerRing.position.y = side * faceDepth*.22;
+  face.add(innerRing);
+
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius*.205,radius*.205,faceDepth*1.35,32),accent);
+  hub.position.y = side * faceDepth*.28;
+  face.add(hub);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(radius*.105,radius*.105,faceDepth*1.5,24),dark);
+  cap.position.y = side * faceDepth*.32;
+  face.add(cap);
+
+  if (style.kind === "holes") {
+    for (let i=0;i<style.count;i++) {
+      const angle = Math.PI*2*i/style.count;
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(radius*.055,radius*.055,faceDepth*.36,16),black);
+      hole.position.set(Math.cos(angle)*radius*.60,side*faceDepth*.39,Math.sin(angle)*radius*.60);
+      face.add(hole);
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(radius*.023,radius*.023,faceDepth*.48,12),metal);
+      bolt.position.set(Math.cos(angle)*radius*.28,side*faceDepth*.42,Math.sin(angle)*radius*.28);
+      face.add(bolt);
+    }
+  } else {
+    const count = style.count;
+    for (let i=0;i<count;i++) {
+      const angle = Math.PI*2*i/count;
+      const length = radius*(style.kind === "turbine" ? .56 : .59);
+      const spoke = new THREE.Mesh(
+        new THREE.BoxGeometry(length,faceDepth*.56,radius*style.width),
+        metal
+      );
+      spoke.position.set(Math.cos(angle)*radius*.43,side*faceDepth*.22,Math.sin(angle)*radius*.43);
+      spoke.rotation.y = -angle + (i%2 ? style.twist : -style.twist);
+      face.add(spoke);
+
+      if (style.kind === "turbine") {
+        const vaneEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(length*.82,faceDepth*.32,radius*.025),
+          accent
+        );
+        vaneEdge.position.copy(spoke.position);
+        vaneEdge.position.y += side*faceDepth*.20;
+        vaneEdge.rotation.copy(spoke.rotation);
+        face.add(vaneEdge);
+      }
+    }
+    for(let i=0;i<5;i++){
+      const angle=Math.PI*2*i/5;
+      const bolt=new THREE.Mesh(new THREE.CylinderGeometry(radius*.022,radius*.022,faceDepth*.5,10),accent);
+      bolt.position.set(Math.cos(angle)*radius*.29,side*faceDepth*.44,Math.sin(angle)*radius*.29);
+      face.add(bolt);
+    }
+  }
+  return face;
+}
+
+function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
+  const style = AC_GARAGE_RIM_STYLES[rimId];
+  if (!style) return false;
+  if (!vehicle || !Array.isArray(wheelNodes) || !wheelNodes.length) {
+    acGarageRimStatusText = "3D-модель ещё загружается. Диски применятся после загрузки.";
+    if (refresh) acGarageRefreshLoadedCarPreview();
+    return false;
+  }
+
+  let applied = 0;
+  for (const wheel of wheelNodes) {
+    if (!wheel?.node) continue;
+    const previous = wheel.node.userData?.acGarageRimOverlay;
+    if (previous) {
+      acGarageDisposeRimOverlay(previous);
+      delete wheel.node.userData.acGarageRimOverlay;
+    }
+    if (rimId === "stock") { applied++; continue; }
+
+    const sourceMesh = wheel.node.children.find(object => object.isMesh && object.geometry);
+    if (!sourceMesh) continue;
+    const geometry = sourceMesh.geometry;
+    if (!geometry.boundingBox) geometry.computeBoundingBox();
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    const dimensions = [size.x,size.y,size.z];
+    let axisIndex = dimensions.indexOf(Math.min(...dimensions));
+    const radialDimensions = dimensions.filter((value,index)=>index!==axisIndex);
+    const radius = Math.max(...radialDimensions)*.5*.84;
+    if (!Number.isFinite(radius) || radius < .04) continue;
+    const axis = new THREE.Vector3();
+    axis.setComponent(axisIndex,1);
+    const alignment = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),axis);
+    const thickness = dimensions[axisIndex];
+    const depth = Math.max(radius*.13,thickness*.075,.018);
+
+    const overlay = new THREE.Group();
+    overlay.name = "ALLCOINS VAZ-2107 Rim Style " + rimId;
+    overlay.quaternion.copy(alignment);
+    const offset = thickness*.5 + depth*.34;
+    overlay.add(acGarageBuildRimFace(style,radius,depth,1));
+    const farFace = acGarageBuildRimFace(style,radius,depth,-1);
+    farFace.position.y = -offset;
+    overlay.add(farFace);
+    // Shift the near face outward from the tire; the rear face mirrors it.
+    overlay.children[0].position.y = offset;
+    overlay.traverse(object => {
+      if (object.isMesh) {
+        object.castShadow = false;
+        object.receiveShadow = false;
+      }
+    });
+    wheel.node.add(overlay);
+    wheel.node.userData.acGarageRimOverlay = overlay;
+    applied++;
+  }
+
+  if (refresh && typeof acGarageRefreshLoadedCarPreview === "function") {
+    acGarageRefreshLoadedCarPreview();
+  }
+  return applied > 0;
+}
+
+async function acGarageLoadRimProfile({silent=false}={}) {
+  if (acGarageRimProfileReady) {
+    acGarageRefreshRimUi();
+    return true;
+  }
+  if (acGarageRimProfilePromise) return acGarageRimProfilePromise;
+  if (!silent) acGarageRimStatus("ЗАГРУЖАЕМ КАТАЛОГ И ПРОВЕРЯЕМ ПОКУПКИ…");
+  acGarageRimProfilePromise = (async () => {
+    try {
+      const result = await onlineHostRequest("rims:profile");
+      acGarageOwnedRims = new Set(Array.isArray(result.ownedRims) ? result.ownedRims : ["stock"]);
+      acGarageOwnedRims.add("stock");
+      acGarageSelectedRimId = AC_GARAGE_RIM_STYLES[result.selectedRimId] ? result.selectedRimId : "stock";
+      acGarageRimProfileReady = true;
+      const active = document.body.classList.contains("tuning-preview-mode") && acGaragePendingRimId
+        ? acGaragePendingRimId : acGarageSelectedRimId;
+      acGarageApplyRimStyle(active);
+      acGarageRefreshRimUi();
+      if (!acGarageRimStatusText) acGarageRimStatus("Выбери комплект дисков. Изменение сразу видно на машине.");
+      return true;
+    } catch (error) {
+      acGarageRimProfileReady = false;
+      acGarageRimStatus(error.message || "Не удалось загрузить каталог дисков.", "error");
+      return false;
+    } finally {
+      acGarageRimProfilePromise = null;
+    }
+  })();
+  return acGarageRimProfilePromise;
+}
+
+function acGarageRefreshRimUi() {
+  const pending = acGaragePendingRimId || acGarageSelectedRimId;
+  for (const button of document.querySelectorAll("[data-rim-style]")) {
+    const id = button.dataset.rimStyle;
+    const style = AC_GARAGE_RIM_STYLES[id];
+    if (!style) continue;
+    button.classList.toggle("selected",id===pending);
+    button.classList.toggle("owned",acGarageOwnedRims.has(id));
+    const small=button.querySelector("small");
+    if (small) small.textContent = acGarageOwnedRims.has(id) ? (id==="stock"?"В комплекте":"КУПЛЕНО") : (style.price.toLocaleString("ru-RU")+" AC");
+  }
+  const name = AC_GARAGE_RIM_STYLES[pending]?.name || "Заводские";
+  $("garageRimCurrent").textContent = name.toUpperCase();
+  const action = $("garageRimApply");
+  if (!action) return;
+  const owned = acGarageOwnedRims.has(pending);
+  const installed = pending === acGarageSelectedRimId;
+  action.disabled = !acGarageRimProfileReady || acGarageRimBusy || (!owned && pending==="stock") || installed;
+  action.textContent = !acGarageRimProfileReady ? "ПРОВЕРКА ДИСКОВ…" :
+    (installed ? "УСТАНОВЛЕНО ✓" : (owned ? "УСТАНОВИТЬ ДИСКИ" : "КУПИТЬ ЗА "+AC_GARAGE_RIM_STYLES[pending].price.toLocaleString("ru-RU")+" AC"));
+}
+
+document.querySelectorAll("[data-rim-style]").forEach(button => {
+  button.addEventListener("click", () => {
+    const id=button.dataset.rimStyle;
+    if(!AC_GARAGE_RIM_STYLES[id])return;
+    acGaragePendingRimId=id;
+    acGarageRimStatusText="";
+    if(document.body.classList.contains("tuning-preview-mode")) {
+      acGarageApplyRimStyle(id);
+      acGarageRimStatus("Предпросмотр: "+AC_GARAGE_RIM_STYLES[id].name+". AC пока не списаны.");
+    }
+    acGarageRefreshRimUi();
+    if(!acGarageRimProfileReady) void acGarageLoadRimProfile();
+  });
+});
+
+$("garageRimApply").addEventListener("click", async () => {
+  const id=acGaragePendingRimId || acGarageSelectedRimId;
+  const style=AC_GARAGE_RIM_STYLES[id];
+  if(!style || acGarageRimBusy)return;
+  if(!acGarageRimProfileReady && !(await acGarageLoadRimProfile()))return;
+  acGarageRimBusy=true;
+  acGarageRefreshRimUi();
+  acGarageRimStatus("ПОДТВЕРЖДАЕМ ВЫБОР ДИСКОВ…");
+  try {
+    const result = id==="stock" || acGarageOwnedRims.has(id)
+      ? await onlineHostRequest("rims:select",{rimId:id})
+      : await onlineHostRequest("rims:buy",{rimId:id});
+    if(!result || result.ok!==true)throw new Error(result?.error||"Сервер не подтвердил установку дисков.");
+    acGarageOwnedRims = new Set(Array.isArray(result.ownedRims)?result.ownedRims:["stock"]);
+    acGarageOwnedRims.add("stock");
+    acGarageSelectedRimId = AC_GARAGE_RIM_STYLES[result.selectedRimId] ? result.selectedRimId : id;
+    acGaragePendingRimId = acGarageSelectedRimId;
+    acGarageApplyRimStyle(acGarageSelectedRimId);
+    acGarageRimStatus(result.purchased ? "Диски "+style.name+" куплены и установлены!" : "Диски "+style.name+" установлены.", "success");
+    acGarageRimStatusText="";
+  } catch(error) {
+    acGarageRimStatus(error.message||"Не удалось установить диски.","error");
+  } finally {
+    acGarageRimBusy=false;
+    acGarageRefreshRimUi();
+  }
+});
+
+function acGarageRestoreSelectedRims() {
+  acGaragePendingRimId=null;
+  acGarageApplyRimStyle(acGarageSelectedRimId);
+  acGarageRefreshRimUi();
+}
+
 let acGaragePendingPaint = null;
 let acGaragePendingPaintId = null;
 let acGarageOwnedPaints = new Set();
@@ -3191,7 +3569,10 @@ $("garagePaintApply").addEventListener("click", async () => {
   acGarageRefreshPaintUi();
 });
 $("garageTabClose").addEventListener("click", () => {
-  if ($("garageTabPanel").classList.contains("tuning-fullscreen")) acGarageClearBodyPaintPreview();
+  if ($("garageTabPanel").classList.contains("tuning-fullscreen")) {
+    acGarageClearBodyPaintPreview();
+    acGarageRestoreSelectedRims();
+  }
   acGarageMoveCarPreview("shop");
   $("garageTabPanel").classList.remove("shop-fullscreen", "tuning-fullscreen");
   $("garageScreen").classList.remove("shop-screen-open", "tuning-screen-open");
@@ -6021,6 +6402,9 @@ function attachVehicle(root,label='сохранённая модель'){
   if (acGaragePendingPaint && document.body.classList.contains("tuning-preview-mode")) {
     acGaragePreviewBodyPaint(acGaragePendingPaint);
   }
+  const rimToApply = document.body.classList.contains("tuning-preview-mode") && acGaragePendingRimId
+    ? acGaragePendingRimId : acGarageSelectedRimId;
+  acGarageApplyRimStyle(rimToApply,{refresh:false});
   acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
