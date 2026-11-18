@@ -672,6 +672,26 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
   }
 }
 
+
+/* Витрина ВАЗ-2107: сохраняем показ карточки на мобильном экране и отделяем её от кнопок гаража. */
+.garage-tab-panel{
+  bottom:calc(env(safe-area-inset-bottom) + 174px);
+  max-height:min(68vh,430px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#b98b3d #111a27;
+}
+@media(max-width:520px){
+  .garage-tab-panel{
+    width:calc(100vw - 24px);
+    padding:15px 16px 17px;
+  }
+  .garage-car-shop-visual{min-height:148px}
+  .garage-2107-art{max-height:138px}
+}
 </style>
 
 <style id="allcoins-racing-dashboard-v26">
@@ -2488,7 +2508,16 @@ async function acGarageLoadCarShopProfile({silent=false}={}) {
       return true;
     } catch (error) {
       racingGarageProfileLoaded = false;
-      if (!silent) acGarageShopStatus(error.message || "Не удалось загрузить автосалон. Открой магазин ещё раз.", "error");
+      if (!silent) {
+        const message = String(error?.message || "");
+        const needsTelegram = /HTTP\\s*401|401|Telegram|initData|авторизац/i.test(message);
+        acGarageShopStatus(
+          needsTelegram
+            ? "Витрина ВАЗ-2107 доступна. Для покупки за 50 000 AC или получения за видео открой Драг-рейсинг через ALLCOINS в Telegram."
+            : (message || "Не удалось загрузить гараж. Повтори попытку позже."),
+          needsTelegram ? "" : "error"
+        );
+      }
       return false;
     } finally {
       racingGarageProfilePromise = null;
