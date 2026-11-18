@@ -113,14 +113,10 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 });
 
 
-test("VAZ-2107 white paint recolours the PNG texture while preserving its shading", () => {
-  assert.match(page, /function acGaragePreparePaintMaterial\(material\)/);
+test("VAZ-2107 body paint retains the original PNG texture tinting", () => {
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.match(page, /#include <map_fragment>/);
-  assert.match(page, /sampledDiffuseColor\.rgb/);
-  assert.match(page, /acGaragePaintShade = mix\(0\.50, 1\.08/);
-  assert.match(page, /diffuseColor\.rgb = diffuse\.rgb \* acGaragePaintShade/);
   assert.match(page, /material\.color\.set\(paint\)/);
   assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.match(page, /allcoins-vaz2107-png-paint-v2/);
+  assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-png-paint-v2/);
+  assert.doesNotMatch(page, /material\.map\s*=\s*null/);
 });
