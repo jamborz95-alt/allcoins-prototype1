@@ -166,11 +166,12 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
   assert.match(page, /metalness >= \.45 && neutralSilver/);
   assert.match(page, /steelMaterialIndexes\.has\(materialIndex\)/);
-  assert.ok(page.includes('const isLowerFrontGrille = withinFrontCap && belowBumperLine'));
-  assert.ok(page.includes('const isRearBumperFallback = !steelMaterialIndexes.size && withinRearCap && belowBumperLine'));
-  assert.ok(page.includes('const keepFactorySteel = isSteelMaterial || isLowerFrontGrille || isRearBumperFallback'));
-  assert.ok(page.includes('Keep steel/chrome trim and the lower front grille factory-coloured.'));
-  assert.match(page, /Only steel\/chrome material faces are kept factory-coloured/);
+  assert.ok(page.includes('const withinSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= steelTrimTop)'));
+  assert.ok(page.includes('const isFrontRearSteelTrim = (withinFrontCap || withinRearCap) && withinSteelTrimBand'));
+  assert.ok(page.includes('const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim'));
+  assert.ok(page.includes('front lower grille and front/rear steel bumper trim factory-coloured.'));
+  assert.match(page, /const endZone = Math.max\(size\.x \* \.055, \.08\)/);
+  assert.match(page, /const steelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
 
   assert.match(page, /const endZone = Math\.max\(size\.x \* \.04, \.05\)/);
   assert.match(page, /const bumperTop = bounds\.min\.y \+ size\.y \* \.34/);
