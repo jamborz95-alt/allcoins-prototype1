@@ -1280,6 +1280,177 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 @media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-test-bot{min-height:34px;font-size:10px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
 </style>
+<style id="allcoins-fullscreen-car-shop">
+/* ALLCOINS · Полноэкранный автосалон на телефоне и ПК */
+#garageScreen.shop-screen-open > div:first-child,
+#garageScreen.shop-screen-open > .garage-controls{
+  display:none!important;
+}
+.garage-tab-panel.shop-fullscreen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:120!important;
+  display:flex!important;
+  flex-direction:column;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  max-height:100vh!important;
+  max-height:100dvh!important;
+  margin:0!important;
+  padding:
+    calc(env(safe-area-inset-top,0px) + 18px)
+    clamp(16px,4vw,48px)
+    calc(env(safe-area-inset-bottom,0px) + 22px)!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border:0!important;
+  border-radius:0!important;
+  transform:none!important;
+  background:
+    radial-gradient(ellipse at 50% 32%,#263d57 0%,#111d2d 48%,#080e18 100%)!important;
+  box-shadow:none!important;
+}
+.garage-tab-panel.shop-fullscreen h2{
+  flex:none;
+  margin:4px 56px 10px 0!important;
+  color:#f5d58e!important;
+  font-size:clamp(25px,4vw,38px)!important;
+  letter-spacing:.02em;
+}
+.garage-tab-panel.shop-fullscreen > p{
+  flex:none;
+  max-width:900px;
+  margin:0 0 18px!important;
+  font-size:clamp(14px,2vw,17px)!important;
+  line-height:1.55!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-panel-close{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top,0px) + 14px)!important;
+  right:clamp(14px,3vw,34px)!important;
+  width:46px!important;
+  height:46px!important;
+  z-index:5;
+  font-size:27px!important;
+  border-radius:13px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-car-shop{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.35fr) minmax(280px,.9fr);
+  align-items:stretch;
+  gap:clamp(18px,3vw,38px);
+  width:min(1180px,100%);
+  margin:0 auto!important;
+  flex:1 0 auto;
+}
+.garage-tab-panel.shop-fullscreen .garage-car-shop-visual{
+  min-height:clamp(330px,58vh,680px)!important;
+  height:100%;
+  border-radius:20px!important;
+  padding:14px 16px 12px!important;
+  background:radial-gradient(ellipse at 50% 54%,#405a77 0%,#1b2c42 62%,#0c1522 100%)!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-car-shop-details{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:12px 4px!important;
+  min-width:0;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-kicker{
+  font-size:12px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-car-shop-details h3{
+  margin:8px 0 12px!important;
+  font-size:clamp(30px,4vw,46px)!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-car-shop-details p{
+  font-size:clamp(14px,1.7vw,17px)!important;
+  line-height:1.6!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-price{
+  margin:18px 0 8px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-price strong{
+  font-size:clamp(36px,4.5vw,52px)!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-price span{
+  font-size:17px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-status{
+  font-size:13px!important;
+  min-height:22px;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-buy,
+.garage-tab-panel.shop-fullscreen .garage-shop-ad{
+  min-height:54px!important;
+  margin-top:11px!important;
+  font-size:14px!important;
+  border-radius:13px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-note{
+  margin-top:11px!important;
+  font-size:11px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-tag{
+  font-size:11px!important;
+  padding:7px 10px!important;
+}
+.garage-tab-panel.shop-fullscreen .garage-shop-caption{
+  font-size:11px!important;
+}
+@media(max-width:700px){
+  .garage-tab-panel.shop-fullscreen{
+    padding:
+      calc(env(safe-area-inset-top,0px) + 14px)
+      14px
+      calc(env(safe-area-inset-bottom,0px) + 18px)!important;
+  }
+  .garage-tab-panel.shop-fullscreen h2{
+    margin:5px 54px 8px 0!important;
+    font-size:24px!important;
+  }
+  .garage-tab-panel.shop-fullscreen > p{
+    margin-bottom:12px!important;
+    font-size:13px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-car-shop{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-car-shop-visual{
+    min-height:38vh!important;
+    height:38vh;
+    max-height:440px;
+    border-radius:16px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-car-shop-details{
+    padding:2px 2px 8px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-car-shop-details h3{
+    font-size:28px!important;
+    margin:5px 0 7px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-car-shop-details p{
+    font-size:13px!important;
+    line-height:1.45!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-shop-price{
+    margin:10px 0 4px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-shop-price strong{
+    font-size:34px!important;
+  }
+  .garage-tab-panel.shop-fullscreen .garage-shop-buy,
+  .garage-tab-panel.shop-fullscreen .garage-shop-ad{
+    min-height:48px!important;
+    font-size:12px!important;
+  }
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -2718,6 +2889,8 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const alreadyOpen = !panel.hidden && button.classList.contains("active");
     document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
     if (alreadyOpen) {
+      panel.classList.remove("shop-fullscreen");
+      $("garageScreen").classList.remove("shop-screen-open");
       panel.hidden = true;
       return;
     }
@@ -2727,6 +2900,8 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const shopMode = button.dataset.garageTab === "shop";
     const paintMode = button.dataset.garageTab === "tuning";
     const partsMode = button.dataset.garageTab === "upgrades";
+    panel.classList.toggle("shop-fullscreen", shopMode);
+    $("garageScreen").classList.toggle("shop-screen-open", shopMode);
     $("garageCarShop").hidden = !shopMode;
     if (shopMode) {
       acGarageRefreshCarShopUi();
@@ -2840,6 +3015,8 @@ $("garagePaintApply").addEventListener("click", async () => {
   acGarageRefreshPaintUi();
 });
 $("garageTabClose").addEventListener("click", () => {
+  $("garageTabPanel").classList.remove("shop-fullscreen");
+  $("garageScreen").classList.remove("shop-screen-open");
   $("garageTabPanel").hidden = true;
   $("garagePaintOptions").hidden = true;
   $("garagePaintSelected").hidden = true;
