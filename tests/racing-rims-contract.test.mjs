@@ -27,6 +27,17 @@ test("VAZ-2107 tuning exposes all four paid rim styles with server-matching pric
   assert.match(page, /data-rim-style="stock"/);
 });
 
+test("alloy wheel faces use detailed beveled metal geometry", () => {
+  assert.match(page, /function acGarageBuildRimFace\\(style, radius, depth, side\\)/);
+  assert.match(page, /new THREE\\.ExtrudeGeometry\\(makeSpokeShape\\(1\\)/);
+  assert.match(page, /bevelEnabled: true/);
+  assert.match(page, /bevelSegments: 3/);
+  assert.match(page, /new THREE\\.TorusGeometry\\(radial, tube, 12, 72\\)/);
+  assert.match(page, /Five recessed lug seats and bright lug nuts/);
+  assert.match(page, /style.kind === "holes"/);
+  assert.match(page, /sweep:\\.15/);
+});
+
 test("rim selection previews on the loaded 3D car without charging before confirmation", () => {
   assert.match(page, /const acGarageRimOverlayByNode = new WeakMap\\(\\)/);
   assert.match(page, /function acGarageApplyRimStyle\\(rimId/);
