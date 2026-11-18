@@ -5414,6 +5414,21 @@ window.allcoinsRacingPartsApi = Object.freeze({
   }
 });
 
+window.allcoinsRacingSuspensionApi = Object.freeze({
+  async profile() {
+    const result = await apiRequest("/api/drag-racing/garage/suspension/profile", {});
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async buy() {
+    const result = await apiRequest("/api/drag-racing/garage/suspension/buy", {});
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  }
+});
+
 window.allcoinsRacingGarageApi = Object.freeze({
   async profile() {
     const result = await apiRequest("/api/drag-racing/profile", {});
@@ -14234,6 +14249,6 @@ $("refreshDurakRooms").onclick = async () => {
   }
 </style>
 
-<script src="./racing-host.js?v=20261118-vaz2107-oem-alloy-v53-dark-openings"></script>
+<script src="./racing-host.js?v=20261118-vaz2107-oem-alloy-v54-air-suspension"></script>
 </body>
 </html>
