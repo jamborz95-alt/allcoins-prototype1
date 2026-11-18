@@ -1545,7 +1545,7 @@ function onlineUpdateTestBot() {
   });
 }
 
-function onlineStartTestBotRace() {
+async function onlineStartTestBotRace() {
   if (!vehicle) {
     onlineSetStatus("ВАЗ-2107 ещё загружается. Запусти тест после появления машины.");
     const status = $("garageCarStatus");
@@ -1558,6 +1558,7 @@ function onlineStartTestBotRace() {
     return;
   }
 
+  if (!racingPartsProfileLoaded) await acGarageLoadPartsProfile({silent:true});
   onlineTestBotActive = true;
   onlineTestBotRunning = false;
   onlineTestBotTargetMs = 22000;
@@ -1571,6 +1572,7 @@ function onlineStartTestBotRace() {
   speed = 0;
   rpm = 900;
   gear = 1;
+  shiftCutRemaining = 0;
   finished = false;
   paused = false;
   throttle = false;
@@ -1697,7 +1699,8 @@ async function onlineRefreshRooms() {
   }
 }
 
-function onlineBeginRace() {
+async function onlineBeginRace() {
+  if (!racingPartsProfileLoaded) await acGarageLoadPartsProfile({silent:true});
   setGarageMode(false);
   $("onlinePanel").hidden = true;
   onlineMode = true;
@@ -1708,6 +1711,7 @@ function onlineBeginRace() {
   speed = 0;
   rpm = 900;
   gear = 1;
+  shiftCutRemaining = 0;
   finished = false;
   paused = false;
   raceStarted = Boolean(vehicle);
@@ -5131,13 +5135,22 @@ $('chooseModel').addEventListener('click',()=>$('modelPicker').click());
 $('modelPicker').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;setMessage('Импорт GLB',`Читаю ${file.name}…`,false);try{await loadGlbBuffer(await file.arrayBuffer(),file.name);}catch(err){setMessage('Ошибка импорта',err.message||'Не удалось открыть файл GLB.',true);}finally{e.target.value='';}});
 
 /* ALLCOINS RACING RWD + SUSPENSION V3 */
-let speed=0,rpm=900,gear=1,distance=0,elapsed=0,raceStarted=false,paused=false,finished=false,throttle=false,braking=false,burnout=0;
+let speed=0,rpm=900,gear=1,distance=0,elapsed=0,raceStarted=false,paused=false,finished=false,throttle=false,braking=false,burnout=0,shiftCutRemaining=0;
 let rearSlip=0, suspensionMode=1, suspensionOffset=0, suspensionVelocity=0, chassisPitch=0, wheelRadiusWorld=.34, worldUnitsPerRealMeter=1, rearSmokeCooldown=0;
 const gearTopSpeed=[0,42,78,118,158,210];
 const gearRatios=[0,3.67,2.10,1.36,1.00,.82];
 const finalDrive=3.90;
 const accelerationByGear=[0,17,12.5,9.5,7.2,5.5];
 const reverseGearRatio=3.20, reverseTopSpeed=24;
+function raceGearRatio(gearNumber) {
+  if (gearNumber === -1) return reverseGearRatio;
+  const level = racingPartLevel("gearbox");
+  const base = gearRatios[gearNumber] || gearRatios[1];
+  return base * (gearNumber === 5 ? (1 - level * .018) : (1 + level * .01));
+}
+function raceFinalDriveRatio() {
+  return finalDrive * (1 + racingPartLevel("gearbox") * .005);
+}
 const rideModes=[
   /* ALLCOINS Racing V19 · smooth suspension no artificial bounce */
   /* ALLCOINS Racing V18 · low-ride clearance adjustment */
@@ -5176,13 +5189,15 @@ function shift(delta){
     next=Math.max(1,Math.min(5,gear+delta));
   }
   if(next===gear)return;
-  const oldRatio=gear===-1?reverseGearRatio:gearRatios[gear];
-  const newRatio=next===-1?reverseGearRatio:gearRatios[next];
+  const oldRatio=raceGearRatio(gear);
+  const newRatio=raceGearRatio(next);
   const requestedRpm=rpm*(newRatio/oldRatio);
   // Передачи 1–5 разрешено менять на ходу и под газом.
   // Обороты ограничиваются безопасным диапазоном, а задний ход по-прежнему
   // включается только после остановки.
   gear=next;rearSlip=0;burnout=0;
+  // Спортивное сцепление сокращает возврат полной тяги после смены передачи.
+  shiftCutRemaining=Math.max(.085,.22-racingPartLevel("clutch")*.045);
   // Сохраняем состояние акселератора: отдельный палец может держать газ,
   // пока второй нажимает металлический лепесток переключения.
   throttle = throttleWasHeld;
@@ -5316,7 +5331,18 @@ function animate(now){
   requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000||0);last=now;let frameWorldDelta=0;updateEngineAudio();rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
   if(!paused&&raceStarted&&!finished&&vehicle){
     elapsed+=dt;
-    const top=gear===-1?reverseTopSpeed:gearTopSpeed[gear];
+    const ecuLevel=racingPartLevel("ecu");
+    const turboLevel=racingPartLevel("turbo");
+    const intakeLevel=racingPartLevel("intake");
+    const exhaustLevel=racingPartLevel("exhaust");
+    const gearboxLevel=racingPartLevel("gearbox");
+    const diffLevel=racingPartLevel("diff");
+    const tireLevel=racingPartLevel("tires");
+    const clutchLevel=racingPartLevel("clutch");
+    const top=gear===-1?reverseTopSpeed:gearTopSpeed[gear]*(1+turboLevel*.03+gearboxLevel*.01);
+    const shiftCutWindow=Math.max(.085,.22-clutchLevel*.045);
+    shiftCutRemaining=Math.max(0,shiftCutRemaining-dt);
+    const shiftPowerFactor=shiftCutRemaining>0?1-.5*(shiftCutRemaining/shiftCutWindow):1;
     const burnoutActive=gear>0&&throttle&&braking&&speed<14;
     let targetRpm=900;
     if(burnoutActive){
@@ -5327,23 +5353,30 @@ function animate(now){
       if(rearSlip>.32&&Math.random()<.94)emitRearTireSmoke();
     }else{
       burnout=Math.max(0,burnout-dt*2.4);
-      const slipTarget=throttle?(gear===-1?.035:(gear===1&&speed<24?.19:speed<45?.075:.025)):0;
+      const baseSlip=gear===-1?.035:(gear===1&&speed<24?.19:speed<45?.075:.025);
+      const slipReduction=Math.min(.45,diffLevel*.08+tireLevel*.05);
+      const slipTarget=throttle?baseSlip*(1-slipReduction):0;
       rearSlip+=(slipTarget-rearSlip)*Math.min(1,dt*(slipTarget>rearSlip?3.8:2.2));
       if(throttle){
         const speedRatio=Math.min(1,speed/Math.max(1,top));
         const torque=torqueCurve(rpm);
-        const traction=Math.max(.68,1-rearSlip*.34);
+        const intakeFactor=rpm<4000?1+intakeLevel*.02:1;
+        const exhaustFactor=rpm>=4000?1+exhaustLevel*.02:1;
+        const engineUpgradeFactor=(1+ecuLevel*.03)*(1+turboLevel*.02)*intakeFactor*exhaustFactor;
+        const traction=Math.min(1.15,Math.max(.68,1-rearSlip*.34+diffLevel*.018+tireLevel*.012));
         const engineAcceleration=gear===-1?accelerationByGear[1]*.52:accelerationByGear[gear];
-        const accel=engineAcceleration*torque*traction*(1-speedRatio*.24);
+        const gearboxAcceleration=gear>0&&gear<5?1+gearboxLevel*.02:1;
+        const accel=engineAcceleration*torque*traction*engineUpgradeFactor*gearboxAcceleration*shiftPowerFactor*(1-speedRatio*.24);
         if(speed<top)speed=Math.min(top,speed+accel*dt);
         else speed=Math.max(top,speed-dt*1.8);
       }else{
-        const coast=braking?31:2.8;
+        const tireBrakeFactor=1+tireLevel*.03;
+        const coast=braking?31*tireBrakeFactor:2.8;
         speed=Math.max(0,speed-dt*coast);
       }
-      if(braking)speed=Math.max(0,speed-dt*(throttle?10:18));
+      if(braking)speed=Math.max(0,speed-dt*(throttle?10:18)*(1+tireLevel*.03));
       const wheelRpm=(speed/3.6)/(2*Math.PI*Math.max(.18,wheelRadiusWorld/Math.max(.3,worldUnitsPerRealMeter)))*60;
-      const coupledRpm=wheelRpm*(gear===-1?reverseGearRatio:gearRatios[gear])*finalDrive;
+      const coupledRpm=wheelRpm*raceGearRatio(gear)*raceFinalDriveRatio();
       targetRpm=throttle?Math.max(1150,Math.min(6800,coupledRpm||1750+burnout*300)):Math.max(850,Math.min(6800,coupledRpm||900));
       if(throttle&&rearSlip>.30&&Math.random()<Math.min(.7,rearSlip*.45))emitRearTireSmoke();
       if(braking&&speed>58&&Math.random()<.018)addSmoke(rearWheelPoint,'tire');
@@ -5392,7 +5425,7 @@ function animate(now){
     const roadWheelRate=(signedSpeed/3.6)*worldUnitsPerRealMeter/Math.max(.12,wheelRadiusWorld);
     const freeWheelAngle=roadWheelRate*dt;
     wheelSpinAngle+=freeWheelAngle;
-    const drivenWheelRate=burnoutActive?Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(gearRatios[gear]*finalDrive)*.92):roadWheelRate*(1+rearSlip*3.3);
+    const drivenWheelRate=burnoutActive?Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(raceGearRatio(gear)*raceFinalDriveRatio())*.92):roadWheelRate*(1+rearSlip*3.3);
     rearWheelSpinAngle+=drivenWheelRate*dt;
     spinWheelSet(frontWheelNodes,wheelSpinAngle);
     spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
@@ -5602,7 +5635,7 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 updateRpmTachometer();
 setGarageMode(true);
 
-requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();
+requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});
 </script>
 </body>
 </html>
