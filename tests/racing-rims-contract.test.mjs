@@ -115,7 +115,7 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 
 test("VAZ-2107 exposes exactly seven requested body colours with matching server catalogue", () => {
   const paints = {
-    white: { color: "#f4f3ef", finish: "СОЛИД" },
+    white: { color: "#ffffff", finish: "СОЛИД" },
     black: { color: "#151719", finish: "СОЛИД" },
     green: { color: "#176b40", finish: "СОЛИД" },
     blue: { color: "#174f9c", finish: "СОЛИД" },
@@ -143,6 +143,18 @@ test("VAZ-2107 exposes exactly seven requested body colours with matching server
   assert.match(page, /metallicFactoryPaints = new Set\(\["#74887e"\]\)/);
 });
   
+test("VAZ-2107 white paint neutralizes the original body texture and restores it for other colours", () => {
+  assert.match(page, /const acGaragePaintOriginalMaps = new WeakMap\(\)/);
+  assert.match(page, /const acGarageWhitePaintTextureCache = new WeakMap\(\)/);
+  assert.match(page, /function acGarageGetWhitePaintTexture\(sourceTexture\)/);
+  assert.match(page, /context\.getImageData\(0, 0, width, height\)/);
+  assert.match(page, /const neutral = Math\.round\(188 \+ 67 \* luminance\)/);
+  assert.match(page, /const isWhitePaint = String\(paint\)\.toLowerCase\(\) === "#ffffff"/);
+  assert.match(page, /material\.map = neutralTexture/);
+  assert.match(page, /material\.map = originalMap/);
+  assert.match(page, /data-paint-id="white"[^>]*data-car-paint="#ffffff"/);
+});
+
 test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
   assert.match(page, /material\.color\.set\(paint\)/);
