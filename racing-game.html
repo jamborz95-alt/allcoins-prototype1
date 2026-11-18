@@ -3629,7 +3629,7 @@ function acGarageRefreshAirSuspensionUi() {
   const buy=$("garageSuspensionBuy");
   const control=$("suspension");
   if(control){
-    control.textContent="ПНЕВМА · "+rideModes[suspensionMode].label;
+    control.textContent=acGarageAirSuspensionOwned?"ПНЕВМА · "+rideModes[suspensionMode].label:"ПНЕВМА · ЗАКРЫТА";
     control.disabled=!acGarageAirSuspensionProfileReady||!acGarageAirSuspensionOwned;
   }
   if(!status||!buy)return;
@@ -6816,7 +6816,7 @@ function acRacingApplyRearLowRideShadowPolicy(){
 function setSuspension(mode){
   suspensionMode=(mode+rideModes.length)%rideModes.length;
   suspensionVelocity=0;
-  $('suspension').textContent='ПНЕВМА · '+rideModes[suspensionMode].label;
+  $('suspension').textContent=acGarageAirSuspensionOwned?'ПНЕВМА · '+rideModes[suspensionMode].label:'ПНЕВМА · ЗАКРЫТА';
   $('suspension').disabled=!acGarageAirSuspensionProfileReady||!acGarageAirSuspensionOwned;
   console.info('ALLCOINS Racing V10 · suspension selected',{
     mode:rideModes[suspensionMode].label,
@@ -6832,6 +6832,7 @@ function setSuspension(mode){
 }
 $('suspension').addEventListener('click',()=>{if(acGarageAirSuspensionProfileReady&&acGarageAirSuspensionOwned)setSuspension(suspensionMode+1);});
 setSuspension(1);
+void acGarageLoadAirSuspensionProfile({silent:true});
 function bindHold(id,setter){
   const el=$(id);
   const activePointers=new Set();
