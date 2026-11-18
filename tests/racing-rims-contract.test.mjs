@@ -106,3 +106,16 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
   assert.match(appShell, /\/api\/drag-racing\/garage\/suspension\/profile/);
   assert.match(appShell, /\/api\/drag-racing\/garage\/suspension\/buy/);
 });
+
+
+test("VAZ-2107 white paint recolours the PNG texture while preserving its shading", () => {
+  assert.match(page, /function acGaragePreparePaintMaterial\(material\)/);
+  assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
+  assert.match(page, /#include <map_fragment>/);
+  assert.match(page, /sampledDiffuseColor\.rgb/);
+  assert.match(page, /acGaragePaintShade = mix\(0\.50, 1\.08/);
+  assert.match(page, /diffuseColor\.rgb = diffuse\.rgb \* acGaragePaintShade/);
+  assert.match(page, /material\.color\.set\(paint\)/);
+  assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
+  assert.match(page, /allcoins-vaz2107-png-paint-v2/);
+});
