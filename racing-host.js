@@ -536,6 +536,18 @@
       }
       return await window.allcoinsRacingPartsApi.buy(data.partId);
     }
+    if (action === "suspension:profile") {
+      if (!window.allcoinsRacingSuspensionApi || typeof window.allcoinsRacingSuspensionApi.profile !== "function") {
+        throw new Error("Сервис пневмоподвески ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingSuspensionApi.profile();
+    }
+    if (action === "suspension:buy") {
+      if (!window.allcoinsRacingSuspensionApi || typeof window.allcoinsRacingSuspensionApi.buy !== "function") {
+        throw new Error("Покупка пневмоподвески ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingSuspensionApi.buy();
+    }
     if (action === "garage:profile") {
       if (!window.allcoinsRacingGarageApi || typeof window.allcoinsRacingGarageApi.profile !== "function") {
         throw new Error("Автосалон ALLCOINS ещё не подключён.");
