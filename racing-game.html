@@ -6193,9 +6193,10 @@ function acGarageSeparateBumpersFromBody(root) {
     const size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
 
-    // The VAZ body is aligned along world X. Bumpers occupy the low strips at both ends.
-    const endZone = Math.max(size.x * .075, .10);
-    const bumperTop = bounds.min.y + size.y * .58;
+    // The VAZ body is aligned along world X. Keep only the narrow, low terminal caps
+    // as bumpers; a broad end/height box also captures painted fenders and quarter panels.
+    const endZone = Math.max(size.x * .05, .06);
+    const bumperTop = bounds.min.y + size.y * .38;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
@@ -6226,12 +6227,13 @@ function acGarageSeparateBumpersFromBody(root) {
       object.localToWorld(pointB);
       object.localToWorld(pointC);
 
-      const centerX = (pointA.x + pointB.x + pointC.x) / 3;
-      const centerY = (pointA.y + pointB.y + pointC.y) / 3;
-      const atFrontOrRear = centerX <= bounds.min.x + endZone || centerX >= bounds.max.x - endZone;
-      const belowBumperLine = centerY <= bumperTop;
+      const withinFrontCap = [pointA, pointB, pointC].every(point => point.x <= bounds.min.x + endZone);
+      const withinRearCap = [pointA, pointB, pointC].every(point => point.x >= bounds.max.x - endZone);
+      const belowBumperLine = [pointA, pointB, pointC].every(point => point.y <= bumperTop);
       const entry = { a, b, c, materialIndex: materialForElement(at) };
-      if (atFrontOrRear && belowBumperLine) bumperTriangles.push(entry);
+      // Require the whole triangle to lie inside a bumper cap. This prevents
+      // triangles crossing into the painted front/rear body panels from being removed.
+      if ((withinFrontCap || withinRearCap) && belowBumperLine) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
     }
 
