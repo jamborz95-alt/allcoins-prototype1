@@ -17,6 +17,18 @@ const BODY_PAINTS = Object.freeze({
   green: { price: 2000, color: "#00843d" },
   burgundy: { price: 2000, color: "#800020" }
 });
+
+// Three permanent upgrade stages per part; the server owns the price list.
+const RACING_PARTS = Object.freeze({
+  ecu: [3000, 6000, 12000],
+  turbo: [5000, 10000, 20000],
+  intake: [2500, 5000, 9000],
+  exhaust: [2500, 5000, 9000],
+  gearbox: [6000, 12000, 24000],
+  clutch: [3500, 7000, 14000],
+  diff: [4500, 9000, 18000],
+  tires: [3000, 6000, 12000]
+});
 const CARS = Object.freeze({
   "2107": { price: 0, power: 72 },
   "2101": { price: 2500, power: 58 },
@@ -357,6 +369,14 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "PRIMARY KEY (telegram_id, paint_id))"
     );
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_parts (" +
+      "telegram_id BIGINT NOT NULL, part_id TEXT NOT NULL, " +
+      "level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1 AND level <= 3), " +
+      "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "PRIMARY KEY (telegram_id, part_id))"
+    );
   };
 
   router.post("/profile", async (req, res) => {
@@ -478,6 +498,107 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       return res.status(status).json({
         ok: false,
         error: error instanceof DragRacingError ? error.message : "Не удалось купить краску."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/parts/profile", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const owned = await client.query(
+        "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
+        [user.id]
+      );
+      const ownedParts = Object.fromEntries(owned.rows.map(row => [
+        String(row.part_id), Math.max(1, Math.min(3, Number(row.level) || 1))
+      ]));
+      await client.query("COMMIT"); open = false;
+      return res.json({ ok: true, balance: Number(balance), ownedParts, maxLevel: 3 });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Load Drag Racing parts:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось загрузить запчасти гаража."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/parts/buy", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const partId = String(req.body?.partId || "");
+    if (!Object.hasOwn(RACING_PARTS, partId)) {
+      return res.status(400).json({ ok: false, error: "Такой детали нет в каталоге." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      // Lock the player's wallet so simultaneous purchases cannot spend the same balance.
+      const balance = await lockPlayerBalance(client, user);
+      const currentResult = await client.query(
+        "SELECT level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT AND part_id = $2 FOR UPDATE",
+        [user.id, partId]
+      );
+      const currentLevel = Math.max(0, Math.min(3, Number(currentResult.rows[0]?.level) || 0));
+      if (currentLevel >= 3) {
+        const owned = await client.query(
+          "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
+          [user.id]
+        );
+        const ownedParts = Object.fromEntries(owned.rows.map(row => [String(row.part_id), Number(row.level)]));
+        await client.query("COMMIT"); open = false;
+        return res.json({ ok: true, purchased: false, alreadyMax: true, partId, level: 3, balance: Number(balance), ownedParts });
+      }
+
+      const nextLevel = currentLevel + 1;
+      const price = BigInt(RACING_PARTS[partId][currentLevel]);
+      if (balance < price) {
+        throw new DragRacingError(400, "Недостаточно AC. Для следующего уровня детали нужно " + price.toString() + " AC.");
+      }
+      const debit = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
+        [price.toString(), user.id]
+      );
+      if (!debit.rows.length) throw new DragRacingError(400, "Недостаточно AC для покупки этой детали.");
+
+      if (currentLevel > 0) {
+        await client.query(
+          "UPDATE drag_racing_player_parts SET level = $3, purchased_at = NOW(), updated_at = NOW() " +
+          "WHERE telegram_id = $1::BIGINT AND part_id = $2",
+          [user.id, partId, nextLevel]
+        );
+      } else {
+        await client.query(
+          "INSERT INTO drag_racing_player_parts (telegram_id, part_id, level) VALUES ($1::BIGINT, $2, $3)",
+          [user.id, partId, nextLevel]
+        );
+      }
+
+      const owned = await client.query(
+        "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
+        [user.id]
+      );
+      const ownedParts = Object.fromEntries(owned.rows.map(row => [String(row.part_id), Number(row.level)]));
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true, purchased: true, partId, level: nextLevel,
+        price: Number(price), balance: Number(debit.rows[0].balance), ownedParts
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Buy Drag Racing part:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось купить запчасть."
       });
     } finally { client.release(); }
   });
