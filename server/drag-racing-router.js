@@ -30,7 +30,7 @@ const RACING_PARTS = Object.freeze({
   tires: [3000, 6000, 12000]
 });
 const CARS = Object.freeze({
-  "2107": { price: 0, power: 72 },
+  "2107": { price: 50000, power: 72 },
   "2101": { price: 2500, power: 58 },
   "2105": { price: 3500, power: 64 },
   "2104": { price: 4500, power: 75 },
@@ -144,10 +144,9 @@ async function ensureProfile(client, telegramId) {
     "INSERT INTO drag_racing_player_profiles (telegram_id) VALUES ($1::BIGINT) ON CONFLICT (telegram_id) DO NOTHING",
     [String(telegramId)]
   );
-  // Both classic VAZ-2107 and VAZ-2110 are free starter cars.
-  // Preserve the player's current selection and every previously owned vehicle.
+  // VAZ-2110 remains the free starter car. VAZ-2107 is bought or earned via rewarded ad.
   await client.query(
-    "INSERT INTO drag_racing_player_cars (telegram_id, car_id, upgrades) VALUES ($1::BIGINT, '2107', '{}'::jsonb), ($1::BIGINT, '2110', '{}'::jsonb) ON CONFLICT (telegram_id, car_id) DO NOTHING",
+    "INSERT INTO drag_racing_player_cars (telegram_id, car_id, upgrades) VALUES ($1::BIGINT, '2110', '{}'::jsonb) ON CONFLICT (telegram_id, car_id) DO NOTHING",
     [String(telegramId)]
   );
 }
@@ -377,6 +376,43 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "PRIMARY KEY (telegram_id, part_id))"
     );
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_car_rewards (" +
+      "telegram_id BIGINT NOT NULL, car_id TEXT NOT NULL, source TEXT NOT NULL, " +
+      "granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "PRIMARY KEY (telegram_id, car_id))"
+    );
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_migrations (" +
+      "migration_key TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
+    );
+    await pool.query("ALTER TABLE drag_racing_player_profiles ALTER COLUMN selected_car_id SET DEFAULT '2110'");
+
+    // VAZ-2107 was previously inserted as a free starter car for every account.
+    // Apply this conversion once: keep the free VAZ-2110 and move players off 2107.
+    const migrationClient = await pool.connect();
+    try {
+      await migrationClient.query("BEGIN");
+      const migration = await migrationClient.query(
+        "INSERT INTO drag_racing_migrations (migration_key) VALUES ('2107-paid-shop-v1') " +
+        "ON CONFLICT DO NOTHING RETURNING migration_key"
+      );
+      if (migration.rowCount > 0) {
+        await migrationClient.query(
+          "UPDATE drag_racing_player_profiles SET selected_car_id = '2110', updated_at = NOW() " +
+          "WHERE selected_car_id = '2107'"
+        );
+        await migrationClient.query(
+          "DELETE FROM drag_racing_player_cars WHERE car_id = '2107'"
+        );
+      }
+      await migrationClient.query("COMMIT");
+    } catch (error) {
+      try { await migrationClient.query("ROLLBACK"); } catch (_) {}
+      throw error;
+    } finally {
+      migrationClient.release();
+    }
   };
 
   router.post("/profile", async (req, res) => {
@@ -638,6 +674,70 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       const status = error instanceof DragRacingError ? error.status : 500;
       console.error("Buy Drag Racing car:", error.message || error);
       return res.status(status).json({ ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось купить автомобиль." });
+    } finally { client.release(); }
+  });
+
+
+  router.post("/garage/rewarded-car/claim", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+
+    // This endpoint only grants the single VAZ-2107 rewarded placement.
+    const carId = String(req.body?.carId || "");
+    if (carId !== "2107") {
+      return res.status(400).json({ ok: false, error: "Эту машину нельзя получить через рекламную награду." });
+    }
+
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      await lockPlayerBalance(client, user);
+      const profile = await readProfile(client, user.id);
+      const balance = await readBalance(client, user.id);
+
+      if (profile.ownedCars.includes("2107")) {
+        await client.query("COMMIT"); open = false;
+        return res.json({ ok: true, alreadyOwned: true, balance, profile });
+      }
+
+      const reward = await client.query(
+        "INSERT INTO drag_racing_player_car_rewards (telegram_id, car_id, source) " +
+        "VALUES ($1::BIGINT, '2107', 'adsgram') ON CONFLICT DO NOTHING RETURNING car_id",
+        [user.id]
+      );
+      if (!reward.rows.length) {
+        throw new DragRacingError(409, "Награда за рекламный просмотр уже использована для этой машины.");
+      }
+
+      await client.query(
+        "INSERT INTO drag_racing_player_cars (telegram_id, car_id, upgrades) " +
+        "VALUES ($1::BIGINT, '2107', '{}'::jsonb) ON CONFLICT DO NOTHING",
+        [user.id]
+      );
+      await client.query(
+        "UPDATE drag_racing_player_profiles SET selected_car_id = '2107', updated_at = NOW() WHERE telegram_id = $1::BIGINT",
+        [user.id]
+      );
+      const updatedProfile = await readProfile(client, user.id);
+      const updatedBalance = await readBalance(client, user.id);
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        granted: true,
+        rewardSource: "adsgram",
+        carId: "2107",
+        balance: updatedBalance,
+        profile: updatedProfile
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Claim rewarded VAZ-2107:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось выдать награду за просмотр."
+      });
     } finally { client.release(); }
   });
 
