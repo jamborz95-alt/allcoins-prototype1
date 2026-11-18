@@ -1280,6 +1280,10 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
  .garage-paint-swatch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:54px;padding:7px 3px;border:1px solid #ffffff24;border-radius:10px;background:#172232;color:#e9edf3;font-size:10px;font-weight:750}
  .garage-paint-swatch:before{content:"";width:25px;height:25px;border-radius:50%;background:var(--paint-color);border:2px solid #ffffff9c;box-shadow:inset 0 0 0 1px #0005,0 2px 6px #0008}
   .garage-paint-swatch:after{content:attr(data-price-label);font-size:9px;line-height:1;color:#f3cb7b;white-space:nowrap}
+ .garage-paint-divider{grid-column:1/-1;margin:8px 0 0;padding:9px 4px 6px;border-top:1px solid #d8b66a55;color:#f3cb7b;font-size:11px;font-weight:950;letter-spacing:.09em;text-align:center}
+ .garage-paint-note{grid-column:1/-1;margin:-3px 0 2px;color:#9eafc2;font-size:9px;line-height:1.35;text-align:center}
+ .garage-paint-swatch.garage-paint-oem{min-height:70px;gap:5px;font-size:9px;line-height:1.15;text-align:center;overflow-wrap:anywhere}
+ .garage-paint-code{display:block;color:#9eafc2;font-size:8px;font-weight:750;letter-spacing:.025em}
  .garage-paint-swatch.selected{border-color:#f3cb7b;box-shadow:0 0 0 1px #f3cb7b66;background:#263246}
  .garage-paint-swatch.selected:before{outline:2px solid #f3cb7b;outline-offset:2px}
  .garage-paint-selected{margin-top:10px;color:#f3cb7b;font-size:11px;font-weight:800;text-align:center}
@@ -1723,6 +1727,26 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <button class="garage-paint-swatch" type="button" data-car-paint="#11a6a0" data-paint-id="turquoise" data-paint-name="Бирюзовый" data-price-label="2 000 AC" style="--paint-color:#11a6a0">БИРЮЗОВЫЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#7442a8" data-paint-id="violet" data-paint-name="Фиолетовый" data-price-label="2 000 AC" style="--paint-color:#7442a8">ФИОЛЕТОВЫЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#a56a35" data-paint-id="bronze" data-paint-name="Бронзовый" data-price-label="2 000 AC" style="--paint-color:#a56a35">БРОНЗОВЫЙ</button>
+  <div class="garage-paint-divider">ЗАВОДСКИЕ ЦВЕТА ВАЗ-2107</div>
+  <div class="garage-paint-note">Названия и коды заводской палитры · оттенки на экране приблизительные</div>
+  <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#7b3f32" data-paint-id="vaz106" data-paint-name="Красный перец · 106" data-paint-code="106" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#7b3f32">КРАСНЫЙ ПЕРЕЦ<span class="garage-paint-code">КОД 106 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#38243f" data-paint-id="vaz107" data-paint-name="Баклажан · 107" data-paint-code="107" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#38243f">БАКЛАЖАН<span class="garage-paint-code">КОД 107 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#9c2032" data-paint-id="vaz110" data-paint-name="Рубин · 110" data-paint-code="110" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#9c2032">РУБИН<span class="garage-paint-code">КОД 110 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#ce2736" data-paint-id="vaz118" data-paint-name="Кармен · 118" data-paint-code="118" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#ce2736">КАРМЕН<span class="garage-paint-code">КОД 118 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#5b1c2b" data-paint-id="vaz127" data-paint-name="Вишня · 127" data-paint-code="127" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#5b1c2b">ВИШНЯ<span class="garage-paint-code">КОД 127 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#b92a3c" data-paint-id="vaz128" data-paint-name="Искра · 128" data-paint-code="128" data-paint-finish="МЕТАЛЛИК" data-price-label="2 000 AC" style="--paint-color:#b92a3c">ИСКРА<span class="garage-paint-code">КОД 128 · МЕТАЛЛИК</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#702537" data-paint-id="vaz140" data-paint-name="Яшма · 140" data-paint-code="140" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#702537">ЯШМА<span class="garage-paint-code">КОД 140 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#7d2331" data-paint-id="vaz182" data-paint-name="Романс · 182" data-paint-code="182" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#7d2331">РОМАНС<span class="garage-paint-code">КОД 182 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#e4c32d" data-paint-id="vaz223" data-paint-name="Нарцисс · 223" data-paint-code="223" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#e4c32d">НАРЦИСС<span class="garage-paint-code">КОД 223 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#d7bd9d" data-paint-id="vaz228" data-paint-name="Чайная роза · 228" data-paint-code="228" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#d7bd9d">ЧАЙНАЯ РОЗА<span class="garage-paint-code">КОД 228 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#1e4936" data-paint-id="vaz304" data-paint-name="Наутилус · 304" data-paint-code="304" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#1e4936">НАУТИЛУС<span class="garage-paint-code">КОД 304 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#24535a" data-paint-id="vaz377" data-paint-name="Мурена · 377" data-paint-code="377" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#24535a">МУРЕНА<span class="garage-paint-code">КОД 377 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#718078" data-paint-id="vaz404" data-paint-name="Петергоф · 404" data-paint-code="404" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#718078">ПЕТЕРГОФ<span class="garage-paint-code">КОД 404 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#1d4852" data-paint-id="vaz420" data-paint-name="Балтика · 420" data-paint-code="420" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#1d4852">БАЛТИКА<span class="garage-paint-code">КОД 420 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#172d59" data-paint-id="vaz441" data-paint-name="Индиго · 441" data-paint-code="441" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#172d59">ИНДИГО<span class="garage-paint-code">КОД 441 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#1b4267" data-paint-id="vaz449" data-paint-name="Океан · 449" data-paint-code="449" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#1b4267">ОКЕАН<span class="garage-paint-code">КОД 449 · СОЛИД</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#4e627b" data-paint-id="vaz605" data-paint-name="Престиж · 605" data-paint-code="605" data-paint-finish="МЕТАЛЛИК" data-price-label="2 000 AC" style="--paint-color:#4e627b">ПРЕСТИЖ<span class="garage-paint-code">КОД 605 · МЕТАЛЛИК</span></button>
+<button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#52402f" data-paint-id="vaz791" data-paint-name="Солярис · 791" data-paint-code="791" data-paint-finish="МЕТАЛЛИК" data-price-label="2 000 AC" style="--paint-color:#52402f">СОЛЯРИС<span class="garage-paint-code">КОД 791 · МЕТАЛЛИК</span></button>
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
@@ -5324,8 +5348,10 @@ function acGarageSetBodyPaintMaterial(material, paint) {
   material.color.set(paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
-  if ("roughness" in material) material.roughness = 0.42;
-  if ("metalness" in material) material.metalness = 0.08;
+  const metallicFactoryPaints = new Set(["#b92a3c", "#4e627b", "#52402f"]);
+  const hasMetallicFinish = metallicFactoryPaints.has(String(paint).toLowerCase());
+  if ("metalness" in material) material.metalness = hasMetallicFinish ? 0.32 : 0.08;
+  if ("roughness" in material) material.roughness = hasMetallicFinish ? 0.3 : 0.42;
   material.needsUpdate = true;
   return true;
 }
