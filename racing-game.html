@@ -6255,11 +6255,13 @@ function acGarageSeparateBumpersFromBody(root) {
     const size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
 
-    // The VAZ body is aligned along world X. The narrow low bands at both ends
-    // contain the front and rear steel bumper trim. Keep these faces on the original
-    // material even when the GLB assigns them the same material slot as the body shell.
-    const endZone = Math.max(size.x * .055, .08);
-    const steelTrimTop = bounds.min.y + size.y * .38;
+    // The VAZ body is aligned along world X. Preserve the wider front lower grille/
+    // bumper strip, but use a tighter and lower region at the rear so the rear body panel
+    // and the small painted section above/around the rear bumper remain paintable.
+    const frontEndZone = Math.max(size.x * .055, .08);
+    const rearEndZone = Math.max(size.x * .04, .05);
+    const frontSteelTrimTop = bounds.min.y + size.y * .38;
+    const rearSteelTrimTop = bounds.min.y + size.y * .30;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
@@ -6311,16 +6313,19 @@ function acGarageSeparateBumpersFromBody(root) {
       object.localToWorld(pointB);
       object.localToWorld(pointC);
 
-      const withinFrontCap = [pointA, pointB, pointC].every(point => point.x <= bounds.min.x + endZone);
-      const withinRearCap = [pointA, pointB, pointC].every(point => point.x >= bounds.max.x - endZone);
-      const withinSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= steelTrimTop);
+      const withinFrontCap = [pointA, pointB, pointC].every(point => point.x <= bounds.min.x + frontEndZone);
+      const withinRearCap = [pointA, pointB, pointC].every(point => point.x >= bounds.max.x - rearEndZone);
+      const withinFrontSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= frontSteelTrimTop);
+      const withinRearSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= rearSteelTrimTop);
       const materialIndex = materialForElement(at);
       const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
       // Preserve named/PBR steel materials wherever they occur.
-      // Keep the complete low steel trim at BOTH the front and rear ends,
-      // including the lower front grille, even when it shares the body material slot.
-      const isFrontRearSteelTrim = (withinFrontCap || withinRearCap) && withinSteelTrimBand;
+      // Keep the front lower grille and steel bumper band; at the rear, protect
+      // only the narrower bottom strip so adjacent rear bodywork receives paint.
+      const isFrontRearSteelTrim =
+        (withinFrontCap && withinFrontSteelTrimBand) ||
+        (withinRearCap && withinRearSteelTrimBand);
       const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim;
       if (keepFactorySteel) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
