@@ -143,14 +143,19 @@ test("VAZ-2107 exposes exactly seven requested body colours with matching server
   assert.match(page, /metallicFactoryPaints = new Set\(\["#74887e"\]\)/);
 });
   
-test("VAZ-2107 white and black paints neutralize original body texture colours", () => {
+test("VAZ-2107 paint colours neutralize factory texture and black uses a solid base", () => {
   assert.match(page, /const acGaragePaintOriginalMaps = new WeakMap\(\)/);
   assert.match(page, /const acGarageWhitePaintTextureCache = new WeakMap\(\)/);
   assert.match(page, /const acGaragePaintOriginalVertexColors = new WeakMap\(\)/);
   assert.match(page, /const isBlackPaint = selectedPaint === "#08090b"/);
   assert.match(page, /if \(isBlackPaint\) \{[\s\S]*?material\.map = null;[\s\S]*?material\.vertexColors = false;/);
-  assert.match(page, /material\.color\.set\(isBlackPaint \? "#08090b" : paint\)/);
+  assert.match(page, /material\.color\.set\(paint\)/);
   assert.match(page, /isBlackPaint \? 0\.48 : 0\.42/);
+  assert.match(page, /function acGarageGetNeutralBodyPaintTexture\(sourceTexture\)/);
+  assert.match(page, /const acGarageNeutralBodyPaintTextureCache = new WeakMap\(\)/);
+  assert.match(page, /const neutral = Math\.round\(190 \+ 65 \* luminance\)/);
+  assert.match(page, /acGarageGetNeutralBodyPaintTexture\(originalMap\)/);
+  assert.match(page, /material\.vertexColors = false/);
   assert.match(page, /function acGarageGetWhitePaintTexture\(sourceTexture\)/);
   assert.match(page, /context\.getImageData\(0, 0, width, height\)/);
   assert.match(page, /const neutral = Math\.round\(188 \+ 67 \* luminance\)/);
