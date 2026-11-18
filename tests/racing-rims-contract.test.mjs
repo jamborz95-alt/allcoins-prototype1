@@ -113,32 +113,13 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 });
 
 
-test("VAZ-2107 white and coloured paints replace the factory hue while preserving PNG shading", () => {
-  assert.match(page, /function acGaragePreparePaintMaterial\(material\)/);
+test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.match(page, /#include <map_fragment>/);
-  assert.match(page, /sampledDiffuseColor\.rgb/);
-  assert.match(page, /acGaragePaintShade = mix\(0\.58, 1\.12/);
-  assert.match(page, /diffuseColor\.rgb = diffuse\.rgb \* acGaragePaintShade/);
   assert.match(page, /material\.color\.set\(paint\)/);
-  assert.match(page, /allcoins-vaz2107-body-paint-v3/);
+  assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
+  assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-body-paint-v3/);
   assert.doesNotMatch(page, /material\.map\s*=\s*null/);
   assert.match(page, /function acGarageSeparateBumpersFromBody\(root\)/);
-  assert.match(page, /object\.name !== "Car_CarBody_0"/);
-  assert.match(page, /const endZone = Math\.max\(size\.x \* \.075, \.10\)/);
-  assert.match(page, /const bumperTop = bounds\.min\.y \+ size\.y \* \.58/);
   assert.match(page, /ALLCOINS_VAZ2107_UnpaintedBumpers/);
-  assert.match(page, /acGarageSeparateBumpersFromBody\(vehicle\);if\(acGarageSelectedPaint\)acGarageApplyBodyPaint/);
 
-  const addedColours = {
-    white: "#ffffff", yellow: "#f2c230", orange: "#ef6c25",
-    skyblue: "#48a8e8", turquoise: "#11a6a0",
-    violet: "#7442a8", bronze: "#a56a35"
-  };
-  for (const [id, colour] of Object.entries(addedColours)) {
-    assert.match(page, new RegExp('data-car-paint="' + colour + '"[^>]*data-paint-id="' + id + '"'));
-    assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + colour + '" \\}'));
-  }
-  assert.equal((page.match(/class="garage-paint-swatch"/g) || []).length, 14,
-    "The VAZ paint palette should contain fourteen colours.");
 });
