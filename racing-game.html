@@ -6317,13 +6317,14 @@ function acGarageSeparateBumpersFromBody(root) {
       const isFrontOrRearEnd = withinFrontCap || withinRearCap;
       const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
-      // If the GLB identifies a steel/chrome material slot, keep every face
-      // using that slot in its original finish (including the small bumper edges
-      // that extend beyond the spatial end-zone). Paint all other body surfaces.
-      // Use the spatial bumper fallback only when the model has no steel material slot.
-      const keepFactorySteel = steelMaterialIndexes.size
-        ? isSteelMaterial
-        : (isFrontOrRearEnd && belowBumperLine);
+      // Preserve named/PBR steel materials wherever they occur.
+      // The lower grille sits in the narrow front-end cap below the bumper line;
+      // it shares the body material in this GLB, so its position must protect it
+      // even when the model also contains separate steel material slots.
+      // Keep the rear low cap as a fallback only for models without steel slots.
+      const isLowerFrontGrille = withinFrontCap && belowBumperLine;
+      const isRearBumperFallback = !steelMaterialIndexes.size && withinRearCap && belowBumperLine;
+      const keepFactorySteel = isSteelMaterial || isLowerFrontGrille || isRearBumperFallback;
       if (keepFactorySteel) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
     }
