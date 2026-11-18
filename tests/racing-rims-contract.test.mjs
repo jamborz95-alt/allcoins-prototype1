@@ -189,3 +189,16 @@ test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edg
   assert.ok(page.includes("min.x is the REAR"))
   assert.doesNotMatch(page, /steelMaterialIndexes|steelNamePattern|metalness >=/);
 });
+
+
+test("VAZ-2107 acceleration uses progressive launch, gear torque and road resistance", () => {
+  assert.match(page, /const accelerationByGear=\[0,12,8\.8,6\.2,4\.8,3\.9\]/);
+  assert.match(page, /function raceRoadLoadDeceleration\(speedKmh\)/);
+  assert.match(page, /return \.18\+v\*\.003\+v\*v\*\.00003/);
+  assert.match(page, /const launchFactor=Math\.min\(1,\.80\+speed\*\.02\)/);
+  assert.match(page, /const engineForce=.*launchFactor/);
+  assert.match(page, /const accel=Math\.max\(0,engineForce-roadLoad\)/);
+  assert.match(page, /const coast=braking\?34\*tireBrakeFactor:raceRoadLoadDeceleration\(speed\)/);
+  assert.match(page, /if\(braking\)speed=Math\.max\(0,speed-dt\*14\*/);
+  assert.match(page, /gear===-1\?accelerationByGear\[1\]\*\.52:accelerationByGear\[gear\]/);
+});
