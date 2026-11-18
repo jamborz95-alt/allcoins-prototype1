@@ -42,7 +42,7 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /Four lug seats and four bright hexagonal wheel bolts/);
   assert.match(page, /const spokeCount = Math\.max\(5, Math\.min\(12, style\.count \|\| 5\)\)/);
   assert.match(page, /metalness: \.88, roughness: \.235/);
-  assert.match(page, /const radius = Math\.max\(\.\.\.radialDimensions\)\*\.5\*\.96/);
+  assert.match(page, /const radius = Math\.max\(\.\.\.radialDimensions\)\*\.5\*\.92/);
   assert.match(page, /addMachinedRing\(radius \* \.905/);
   assert.match(page, /outerFactor = \.875/);
   assert.doesNotMatch(page, /openingShadowMaterial|openingBacking|recessMaterial/);
