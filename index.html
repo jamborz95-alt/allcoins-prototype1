@@ -5378,6 +5378,27 @@ window.allcoinsRacingPaintApi = Object.freeze({
   }
 });
 
+window.allcoinsRacingRimsApi = Object.freeze({
+  async profile() {
+    const result = await apiRequest("/api/drag-racing/garage/rims/profile", {});
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async select(rimId) {
+    const result = await apiRequest("/api/drag-racing/garage/rims/select", { rimId: String(rimId || "stock") });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async buy(rimId) {
+    const result = await apiRequest("/api/drag-racing/garage/rims/buy", { rimId: String(rimId || "") });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  }
+});
+
 window.allcoinsRacingPartsApi = Object.freeze({
   async profile() {
     const result = await apiRequest("/api/drag-racing/garage/parts/profile", {});
