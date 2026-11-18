@@ -7,10 +7,10 @@ const bridge = readFileSync(new URL("../racing-host.js", import.meta.url), "utf8
 const router = readFileSync(new URL("../server/drag-racing-router.js", import.meta.url), "utf8");
 
 const rims = {
-  sport5: { price: 5000, label: "ШТАМПОВКА SPORT 8" },
-  mesh10: { price: 7000, label: "ШТАМПОВКА MESH 10" },
-  turbine: { price: 6500, label: "ШТАМПОВКА TURBO 8" },
-  classic8: { price: 4500, label: "ШТАМПОВКА CLASSIC 8" }
+  sport5: { price: 5000, label: "OEM CLASSIC 5" },
+  mesh10: { price: 7000, label: "OEM CLASSIC 10" },
+  turbine: { price: 6500, label: "OEM TURBO 6" },
+  classic8: { price: 4500, label: "OEM SPLIT 5" }
 };
 
 test("VAZ-2107 tuning exposes all four paid rim styles with server-matching prices", () => {
@@ -27,20 +27,20 @@ test("VAZ-2107 tuning exposes all four paid rim styles with server-matching pric
   assert.match(page, /data-rim-style="stock"/);
 });
 
-test("all tuning rims use detailed factory-style pressed steel geometry", () => {
+test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /function acGarageBuildRimFace\\(style, radius, depth, side\\)/);
-  assert.match(page, /kind:"stamped"/);
-  assert.match(page, /const plateShape = new THREE\\.Shape\\(\\)/);
-  assert.match(page, /plateShape\\.holes\\.push\\(hole\\)/);
-  assert.match(page, /Rounded capsule punch[\\s\\S]{0,180}factory ventilation slots/);
-  assert.match(page, /new THREE\\.ExtrudeGeometry\\(plateShape/);
+  assert.match(page, /kind:"cast"/);
+  assert.match(page, /function makeSpokeShape/);
+  assert.match(page, /new THREE\\.ExtrudeGeometry\\(makeSpokeShape\\(1\\)/);
   assert.match(page, /bevelEnabled: true/);
-  assert.match(page, /bevelSegments: 3/);
-  assert.match(page, /function makeStampRibShape/);
+  assert.match(page, /bevelSegments: 4/);
+  assert.match(page, /Narrow polished ridge follows the cast spoke/);
+  assert.match(page, /OEM-style split spoke/);
   assert.match(page, /new THREE\\.TorusGeometry\\(radial, tube, 12, 96\\)/);
-  assert.match(page, /Four genuine bolt holes on the classic VAZ four-stud pattern/);
-  assert.match(page, /for \\(let i = 0; i < 4; i\\+\\+\\)/);
-  assert.doesNotMatch(page, /makeSpokeShape|ExtrudeGeometry\\(makeSpokeShape/);
+  assert.match(page, /Four lug seats and four bright hexagonal wheel bolts/);
+  assert.match(page, /const spokeCount = Math\\.max\\(5, Math\\.min\\(12, style\\.count \\|\\| 5\\)\\)/);
+  assert.match(page, /metalness: \.88, roughness: \.235/);
+  assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
 test("rim selection previews on the loaded 3D car without charging before confirmation", () => {
