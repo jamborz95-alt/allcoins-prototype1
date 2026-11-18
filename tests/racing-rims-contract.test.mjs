@@ -35,7 +35,7 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /bevelEnabled: true/);
   assert.match(page, /bevelSegments: 4/);
   assert.match(page, /Narrow polished ridge follows the cast spoke/);
-  assert.match(page, /OEM-style split spoke/);
+  assert.match(page, /OEM split-spoke casting/);
   assert.match(page, /new THREE\\.TorusGeometry\\(radial, tube, 12, 96\\)/);
   assert.match(page, /Four lug seats and four bright hexagonal wheel bolts/);
   assert.match(page, /const spokeCount = Math\\.max\\(5, Math\\.min\\(12, style\\.count \\|\\| 5\\)\\)/);
