@@ -113,10 +113,26 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 });
 
 
-test("VAZ-2107 body paint retains the original PNG texture tinting", () => {
+test("VAZ-2107 white and coloured paints replace the factory hue while preserving PNG shading", () => {
+  assert.match(page, /function acGaragePreparePaintMaterial\(material\)/);
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
+  assert.match(page, /#include <map_fragment>/);
+  assert.match(page, /sampledDiffuseColor\.rgb/);
+  assert.match(page, /acGaragePaintShade = mix\(0\.58, 1\.12/);
+  assert.match(page, /diffuseColor\.rgb = diffuse\.rgb \* acGaragePaintShade/);
   assert.match(page, /material\.color\.set\(paint\)/);
-  assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-png-paint-v2/);
+  assert.match(page, /allcoins-vaz2107-body-paint-v3/);
   assert.doesNotMatch(page, /material\.map\s*=\s*null/);
+
+  const addedColours = {
+    white: "#ffffff", yellow: "#f2c230", orange: "#ef6c25",
+    skyblue: "#48a8e8", turquoise: "#11a6a0",
+    violet: "#7442a8", bronze: "#a56a35"
+  };
+  for (const [id, colour] of Object.entries(addedColours)) {
+    assert.match(page, new RegExp('data-paint-id="' + id + '"[^>]*data-car-paint="' + colour + '"'));
+    assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + colour + '" \\}'));
+  }
+  assert.equal((page.match(/class="garage-paint-swatch"/g) || []).length, 14,
+    "The VAZ paint palette should contain fourteen colours.");
 });
