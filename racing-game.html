@@ -1689,7 +1689,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 
 <div class="garage-paint-car-visual" id="garagePaintCarVisual" hidden>
   <span class="garage-shop-tag">ALLCOINS · LIVE COLOR PREVIEW</span>
-  <div class="garage-paint-preview-caption">ЦВЕТ КУЗОВА МЕНЯЕТСЯ ПРИ ВЫБОРЕ · ДО ПОКУПКИ</div>
+  <div class="garage-paint-preview-caption">КУЗОВ И ДИСКИ · ПРЕДПРОСМОТР ДО ПОКУПКИ</div>
 </div>
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
 <button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ</button>
@@ -3214,6 +3214,7 @@ let acGarageRimProfileReady = false;
 let acGarageRimProfilePromise = null;
 let acGarageRimBusy = false;
 let acGarageRimStatusText = "";
+const acGarageRimOverlayByNode = new WeakMap();
 
 function acGarageRimStatus(message, mode="") {
   const node = $("garageRimStatus");
@@ -3328,10 +3329,10 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
   let applied = 0;
   for (const wheel of wheelNodes) {
     if (!wheel?.node) continue;
-    const previous = wheel.node.userData?.acGarageRimOverlay;
+    const previous = acGarageRimOverlayByNode.get(wheel.node);
     if (previous) {
       acGarageDisposeRimOverlay(previous);
-      delete wheel.node.userData.acGarageRimOverlay;
+      acGarageRimOverlayByNode.delete(wheel.node);
     }
     if (rimId === "stock") { applied++; continue; }
 
@@ -3368,7 +3369,7 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
       }
     });
     wheel.node.add(overlay);
-    wheel.node.userData.acGarageRimOverlay = overlay;
+    acGarageRimOverlayByNode.set(wheel.node,overlay);
     applied++;
   }
 
