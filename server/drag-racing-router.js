@@ -8,7 +8,7 @@ const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, sprint: 4000 });
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const BODY_PAINTS = Object.freeze({
-  white: { price: 2000, color: "#f4f3ef" },
+  white: { price: 2000, color: "#ffffff" },
   black: { price: 2000, color: "#151719" },
   green: { price: 2000, color: "#176b40" },
   blue: { price: 2000, color: "#174f9c" },
