@@ -506,6 +506,24 @@
       }
       return await window.allcoinsRacingPaintApi.buy(data.paintId);
     }
+    if (action === "rims:profile") {
+      if (!window.allcoinsRacingRimsApi || typeof window.allcoinsRacingRimsApi.profile !== "function") {
+        throw new Error("Сервис дисков ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingRimsApi.profile();
+    }
+    if (action === "rims:select") {
+      if (!window.allcoinsRacingRimsApi || typeof window.allcoinsRacingRimsApi.select !== "function") {
+        throw new Error("Установка дисков ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingRimsApi.select(data.rimId);
+    }
+    if (action === "rims:buy") {
+      if (!window.allcoinsRacingRimsApi || typeof window.allcoinsRacingRimsApi.buy !== "function") {
+        throw new Error("Покупка дисков ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingRimsApi.buy(data.rimId);
+    }
     if (action === "parts:profile") {
       if (!window.allcoinsRacingPartsApi || typeof window.allcoinsRacingPartsApi.profile !== "function") {
         throw new Error("Сервис запчастей ALLCOINS ещё не готов.");
