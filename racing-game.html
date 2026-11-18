@@ -1237,6 +1237,11 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .garage-car-shop{display:grid;grid-template-columns:1fr;gap:12px;margin-top:13px}
 .garage-car-shop[hidden]{display:none!important}
 .garage-car-shop-visual{position:relative;min-height:142px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;padding:8px 10px 6px;border:1px solid #8ba6c455;border-radius:12px;background:radial-gradient(ellipse at 52% 55%,#31455e 0%,#172437 58%,#0c1522 100%)}
+.garage-car-3d-preview{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;outline:none;touch-action:pan-y}
+.garage-shop-tag,.garage-shop-caption{position:relative;z-index:2}
+.garage-shop-caption{padding:3px 6px;background:linear-gradient(90deg,transparent,#0b1525b8,transparent)}
+.garage-car-preview-loading{position:absolute;z-index:1;left:10px;right:10px;top:50%;transform:translateY(-50%);color:#b8c9dd;text-align:center;font-size:10px;font-weight:850;letter-spacing:.08em;text-shadow:0 2px 8px #000}
+.garage-car-preview-loading[hidden]{display:none!important}
 .garage-shop-tag{position:relative;z-index:1;align-self:flex-start;padding:4px 7px;border:1px solid #e9b94f66;border-radius:99px;background:#0a1420a8;color:#f3d08b;font-size:9px;font-weight:900;letter-spacing:.09em}
 .garage-2107-art{display:block;width:100%;height:auto;max-height:130px;filter:drop-shadow(0 8px 9px #0008)}
 .garage-shop-caption{color:#aebed0;font-size:9px;text-align:center}
@@ -1289,32 +1294,10 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div class="garage-car-shop" id="garageCarShop" hidden>
   <div class="garage-car-shop-visual" aria-label="Изображение ВАЗ-2107">
     <span class="garage-shop-tag">ALLCOINS · CLASSIC RWD</span>
-    <svg class="garage-2107-art" viewBox="0 0 560 190" role="img" aria-label="ВАЗ-2107, вид сбоку">
-      <defs>
-        <linearGradient id="ac2107paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset=".42" stop-color="#aebbc8"/><stop offset="1" stop-color="#566273"/></linearGradient>
-        <linearGradient id="ac2107glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9d8f2"/><stop offset="1" stop-color="#1e344c"/></linearGradient>
-        <linearGradient id="ac2107chrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#9eabb8"/><stop offset="1" stop-color="#e9eff5"/></linearGradient>
-      </defs>
-      <ellipse cx="280" cy="153" rx="224" ry="13" fill="#02070d" opacity=".55"/>
-      <path d="M48 119 L59 94 Q65 84 88 81 L157 75 L202 35 Q211 26 229 25 L330 25 Q344 26 356 39 L397 78 L480 87 Q500 90 508 108 L514 127 L507 139 L477 143 L82 143 L51 137Z" fill="url(#ac2107paint)" stroke="#e7edf4" stroke-width="3"/>
-      <path d="M170 75 L209 38 Q215 33 229 33 L267 33 L267 76Z" fill="url(#ac2107glass)" stroke="#26394c" stroke-width="3"/>
-      <path d="M276 33 L328 33 Q339 34 348 45 L377 76 L276 76Z" fill="url(#ac2107glass)" stroke="#26394c" stroke-width="3"/>
-      <path d="M268 33 L268 127 M387 78 L382 128" fill="none" stroke="#758292" stroke-width="3"/>
-      <path d="M204 28 L350 28" stroke="#f9fbff" stroke-width="4" opacity=".7"/>
-      <path d="M77 91 L146 86 M405 86 L482 96" stroke="#f8fbff" stroke-width="3" opacity=".7"/>
-      <path d="M50 119 L77 119 L77 130 L49 130Z" fill="#eaf2fb" stroke="#718094" stroke-width="2"/>
-      <path d="M494 104 L512 108 L516 122 L494 119Z" fill="#c83d37" stroke="#71302d" stroke-width="2"/>
-      <path d="M88 137 L480 137" stroke="#202c39" stroke-width="5"/>
-      <path d="M89 143 L476 143" stroke="url(#ac2107chrome)" stroke-width="5"/>
-      <rect x="113" y="90" width="39" height="4" rx="2" fill="#e4edf7"/><rect x="419" y="93" width="42" height="4" rx="2" fill="#e4edf7"/>
-      <path d="M165 82 L171 131 M270 80 L270 129 M380 81 L382 129" stroke="#6b7785" stroke-width="2"/>
-      <path d="M112 110 L144 110 M424 111 L457 111" stroke="#718091" stroke-width="2"/>
-      <rect x="232" y="116" width="27" height="4" rx="2" fill="#dbe4ee"/><rect x="294" y="116" width="27" height="4" rx="2" fill="#dbe4ee"/>
-      <g transform="translate(151 137)"><circle r="31" fill="#111925" stroke="#aeb8c6" stroke-width="4"/><circle r="22" fill="#687587" stroke="#e0e6ee" stroke-width="3"/><circle r="13" fill="#1b2634" stroke="#c3ccd8" stroke-width="3"/><circle r="4" fill="#e6edf4"/><path d="M0 -19 V-9 M19 0 H9 M0 19 V9 M-19 0 H-9" stroke="#d9e0e9" stroke-width="3"/></g>
-      <g transform="translate(421 137)"><circle r="31" fill="#111925" stroke="#aeb8c6" stroke-width="4"/><circle r="22" fill="#687587" stroke="#e0e6ee" stroke-width="3"/><circle r="13" fill="#1b2634" stroke="#c3ccd8" stroke-width="3"/><circle r="4" fill="#e6edf4"/><path d="M0 -19 V-9 M19 0 H9 M0 19 V9 M-19 0 H-9" stroke="#d9e0e9" stroke-width="3"/></g>
-      <path d="M62 128 L89 128 M486 128 L511 128" stroke="#d9e1e9" stroke-width="5"/>
-    </svg>
-    <div class="garage-shop-caption">В гараже также отображается загруженная 3D-модель автомобиля</div>
+    <canvas id="garageCar3dPreview" class="garage-car-3d-preview" aria-label="Загруженная трёхмерная модель ВАЗ-2107"></canvas>
+    <div class="garage-car-preview-loading" id="garageCarPreviewLoading">ОЖИДАНИЕ ЗАГРУЖЕННОЙ 3D-МОДЕЛИ…</div>
+
+    <div class="garage-shop-caption">ЗАГРУЖЕННАЯ 3D-МОДЕЛЬ ВАЗ-2107</div>
   </div>
   <div class="garage-car-shop-details">
     <div class="garage-shop-kicker">КЛАССИКА · ЗАДНИЙ ПРИВОД</div>
@@ -2641,6 +2624,7 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
       void acGarageLoadPaintProfile();
     }
     panel.hidden = false;
+    if (shopMode) requestAnimationFrame(() => acGarageBuildLoadedCarPreview());
   });
 });
 let acGaragePendingPaint = null;
@@ -4297,6 +4281,7 @@ function acGarageApplyBodyPaint(color) {
   if (!changed) return false;
   acGarageSelectedPaint = paint;
   try { window.localStorage.setItem("allcoins-vaz2107-body-paint", paint); } catch (_) {}
+  if (typeof acGarageRefreshLoadedCarPreview === "function") acGarageRefreshLoadedCarPreview();
   return true;
 }
 
@@ -5209,6 +5194,160 @@ function acRacingExtractWheelIslands(source,vehicleLength){
   return {wheels:created,components:components.length,removedComponents:removed.size,rimPairs:usedRims.size};
 }
 
+
+// Отдельная витрина показывает именно загруженную GLB-модель, а не нарисованную картинку.
+let acGaragePreviewRenderer = null;
+let acGaragePreviewScene = null;
+let acGaragePreviewCamera = null;
+let acGaragePreviewCar = null;
+let acGaragePreviewObserver = null;
+let acGaragePreviewSource = null;
+
+function acGarageBuildLoadedCarPreview() {
+  const canvas = $("garageCar3dPreview");
+  const status = $("garageCarPreviewLoading");
+  if (!canvas) return;
+  if (!vehicle) {
+    if (status) {
+      status.hidden = false;
+      status.textContent = "ОЖИДАНИЕ ЗАГРУЖЕННОЙ 3D-МОДЕЛИ…";
+    }
+    return;
+  }
+
+  const container = canvas.parentElement || canvas;
+  const rect = container.getBoundingClientRect();
+  if (!acGaragePreviewObserver && window.ResizeObserver) {
+    acGaragePreviewObserver = new ResizeObserver(() => {
+      const visibleRect = container.getBoundingClientRect();
+      if (visibleRect.width > 20 && visibleRect.height > 20) {
+        acGarageBuildLoadedCarPreview();
+      }
+    });
+    acGaragePreviewObserver.observe(container);
+  }
+  if (rect.width < 20 || rect.height < 20) {
+    if (status) {
+      status.hidden = false;
+      status.textContent = "3D-МОДЕЛЬ БУДЕТ ПОКАЗАНА ПРИ ОТКРЫТИИ МАГАЗИНА";
+    }
+    return;
+  }
+
+  try {
+    if (acGaragePreviewCar && acGaragePreviewScene) {
+      acGaragePreviewScene.remove(acGaragePreviewCar);
+      acGaragePreviewCar.traverse(object => {
+        if (!object.isMesh || !object.material) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) material?.dispose?.();
+      });
+      acGaragePreviewCar = null;
+    }
+
+    const previewCar = vehicle.clone(true);
+    previewCar.position.set(0, 0, 0);
+    previewCar.rotation.copy(vehicle.rotation);
+    previewCar.scale.copy(vehicle.scale);
+    previewCar.traverse(object => {
+      if (!object.isMesh) return;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      if (Array.isArray(object.material)) {
+        object.material = object.material.map(material => material?.clone ? material.clone() : material);
+      } else if (object.material?.clone) {
+        object.material = object.material.clone();
+      }
+    });
+
+    previewCar.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(previewCar);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    if (!Number.isFinite(size.x) || size.x < 0.1 || !Number.isFinite(size.y) || size.y < 0.1) {
+      throw new Error("Размеры загруженной модели ВАЗ-2107 не определены.");
+    }
+    previewCar.position.x -= center.x;
+    previewCar.position.y -= bounds.min.y;
+    previewCar.position.z -= center.z;
+    previewCar.updateMatrixWorld(true);
+
+    if (!acGaragePreviewScene) {
+      acGaragePreviewScene = new THREE.Scene();
+      acGaragePreviewScene.background = null;
+      acGaragePreviewScene.add(new THREE.HemisphereLight(0xd8e9ff, 0x253044, 1.55));
+      const key = new THREE.DirectionalLight(0xffffff, 2.15);
+      key.position.set(-4, 7, 8);
+      acGaragePreviewScene.add(key);
+      const fill = new THREE.DirectionalLight(0x8abfff, 1.05);
+      fill.position.set(5, 3, -5);
+      acGaragePreviewScene.add(fill);
+      acGaragePreviewCamera = new THREE.OrthographicCamera(-3, 3, 2, -2, 0.05, 500);
+    }
+
+    if (!acGaragePreviewRenderer) {
+      acGaragePreviewRenderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: "low-power"
+      });
+      acGaragePreviewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      acGaragePreviewRenderer.setClearColor(0x000000, 0);
+      acGaragePreviewRenderer.outputEncoding = THREE.sRGBEncoding;
+      acGaragePreviewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      acGaragePreviewRenderer.toneMappingExposure = 1.12;
+      acGaragePreviewRenderer.shadowMap.enabled = false;
+    }
+
+    acGaragePreviewCar = previewCar;
+    acGaragePreviewSource = vehicle;
+    acGaragePreviewScene.add(previewCar);
+    acGarageRenderLoadedCarPreview();
+  } catch (error) {
+    console.error("ALLCOINS showroom 3D preview:", error);
+    if (status) {
+      status.hidden = false;
+      status.textContent = "НЕ УДАЛОСЬ ПОКАЗАТЬ ЗАГРУЖЕННУЮ 3D-МОДЕЛЬ";
+    }
+  }
+}
+
+function acGarageRenderLoadedCarPreview() {
+  if (!acGaragePreviewRenderer || !acGaragePreviewCar || !acGaragePreviewCamera || !acGaragePreviewScene) return;
+  const canvas = $("garageCar3dPreview");
+  const status = $("garageCarPreviewLoading");
+  if (!canvas) return;
+  const rect = (canvas.parentElement || canvas).getBoundingClientRect();
+  const width = Math.floor(rect.width);
+  const height = Math.floor(rect.height);
+  if (width < 20 || height < 20) return;
+
+  const box = new THREE.Box3().setFromObject(acGaragePreviewCar);
+  const size = box.getSize(new THREE.Vector3());
+  const aspect = width / height;
+  const halfHeight = Math.max(size.y * 0.88, (size.x / Math.max(0.5, aspect)) * 0.57, 0.8);
+  const halfWidth = halfHeight * aspect;
+
+  acGaragePreviewCamera.left = -halfWidth;
+  acGaragePreviewCamera.right = halfWidth;
+  acGaragePreviewCamera.top = halfHeight;
+  acGaragePreviewCamera.bottom = -halfHeight;
+  acGaragePreviewCamera.near = 0.05;
+  acGaragePreviewCamera.far = 500;
+  acGaragePreviewCamera.position.set(0, size.y * 0.95 + 1.35, Math.max(8, size.z + size.x * 1.35));
+  acGaragePreviewCamera.lookAt(0, size.y * 0.43, 0);
+  acGaragePreviewCamera.updateProjectionMatrix();
+
+  acGaragePreviewRenderer.setSize(width, height, false);
+  acGaragePreviewRenderer.render(acGaragePreviewScene, acGaragePreviewCamera);
+  if (status) status.hidden = true;
+}
+
+function acGarageRefreshLoadedCarPreview() {
+  acGarageBuildLoadedCarPreview();
+}
+
 function attachVehicle(root,label='сохранённая модель'){
   onlineClearOpponentCars();
   if(vehicle){scene.remove(vehicle);vehicle.traverse(o=>{if(o.geometry)o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.();});}
@@ -5301,6 +5440,7 @@ function attachVehicle(root,label='сохранённая модель'){
   acRacingApplyRearLowRideBodyReceiverPolicy();
     acRacingApplyLowRideAmbientOcclusionPolicy();
   acRacingApplyRearDetailsShadowPolicy();
+  acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
   hideMessage();
