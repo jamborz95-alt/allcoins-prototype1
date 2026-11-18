@@ -202,3 +202,23 @@ test("VAZ-2107 acceleration uses progressive launch, gear torque and road resist
   assert.match(page, /if\(braking\)speed=Math\.max\(0,speed-dt\*14\*/);
   assert.match(page, /gear===-1\?accelerationByGear\[1\]\*\.52:accelerationByGear\[gear\]/);
 });
+
+
+test("VAZ-2107 engine revs quickly at launch and couples RPM to road speed", () => {
+  assert.match(page, /const launchClutchBlend=throttle\?Math\.max\(0,1-Math\.min\(1,speed\/30\)\):0/);
+  assert.match(page, /const freeEngineRpm=2750\+Math\.min\(1500,speed\*42\)/);
+  assert.match(page, /coupledEngineRpm\+\(freeEngineRpm-coupledEngineRpm\)\*launchClutchBlend/);
+  assert.match(page, /dt\*\(burnoutActive\?8\.5:throttle\?11\.5:6\.2\)/);
+  assert.match(page, /const torque=torqueCurve\(rpm\)/);
+  assert.match(page, /engineForce=.*torque.*launchFactor/);
+});
+
+test("asphalt texture and its relief move left in proportion to speed and distance", () => {
+  assert.match(page, /function acAdvanceRoadSurface\(scroll\)/);
+  assert.match(page, /const textureDelta = scroll \* repeatX \/ roadWidth/);
+  assert.match(page, /texture\.offset\.x = \(\(texture\.offset\.x \+ textureDelta\) % 1 \+ 1\) % 1/);
+  assert.match(page, /road\.userData\.lastLeftwardScroll = scroll > 0 \? scroll : 0/);
+  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*WORLD_UNITS_PER_METER\*dt/);
+  assert.match(page, /acAdvanceRoadSurface\(scroll\)/);
+  assert.match(page, /acAdvanceCentralMarkings\(scroll\)/);
+});
