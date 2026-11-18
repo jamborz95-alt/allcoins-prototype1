@@ -166,7 +166,9 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
   assert.match(page, /metalness >= \.45 && neutralSilver/);
   assert.match(page, /steelMaterialIndexes\.has\(materialIndex\)/);
-  assert.match(page, /steelMaterialIndexes\.size\s*\?\s*isSteelMaterial\s*:/);
+  assert.match(page, /const isLowerFrontGrille = withinFrontCap && belowBumperLine/);
+  assert.match(page, /const isRearBumperFallback = !steelMaterialIndexes\\.size && withinRearCap && belowBumperLine/);
+  assert.match(page, /const keepFactorySteel = isSteelMaterial \\|\\| isLowerFrontGrille \\|\\| isRearBumperFallback/);
   assert.match(page, /isFrontOrRearEnd && belowBumperLine/);
   assert.match(page, /keep every face[\s\S]*steel material slot/);
   assert.match(page, /Only steel\/chrome material faces are kept factory-coloured/);
