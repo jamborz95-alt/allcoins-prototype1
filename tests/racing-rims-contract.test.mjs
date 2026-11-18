@@ -184,5 +184,8 @@ test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edg
   assert.ok(page.includes("const frontSteelTrimTop = bounds.min.y + size.y * .38"));
   assert.ok(page.includes("const withinRearCap = points.every"));
   assert.ok(page.includes("const withinRearSteelTrimBand = points.every"));
+  assert.ok(page.includes("const withinFrontCap = points.every(point => point.x >= bounds.max.x - frontEndZone)"));
+  assert.ok(page.includes("const withinRearCap = points.every(point => point.x <= bounds.min.x + rearEndZone)"));
+  assert.ok(page.includes("min.x is the REAR"))
   assert.doesNotMatch(page, /steelMaterialIndexes|steelNamePattern|metalness >=/);
 });
