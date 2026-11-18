@@ -720,7 +720,24 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .garage-rim-status.success{color:#8de3b1}
 .garage-rim-apply{display:block;width:min(900px,100%);min-height:46px;margin:8px auto 0;padding:9px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:12px;font-weight:950}
 .garage-rim-apply:disabled{opacity:.45;filter:grayscale(.5)}
+.garage-suspension-section{width:min(900px,100%);margin:13px auto 0;padding:14px;border:1px solid #8ba6c455;border-radius:15px;background:linear-gradient(145deg,#19283b,#0b1420)}
+.garage-suspension-section[hidden]{display:none!important}
+.garage-suspension-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.garage-suspension-heading h3{margin:0;color:#f4d28b;font-size:14px;letter-spacing:.06em}
+.garage-suspension-heading p{margin:5px 0 0;color:#aebed0;font-size:10px;line-height:1.45}
+.garage-suspension-price{flex:none;padding:6px 9px;border:1px solid #e9b94f66;border-radius:99px;color:#f2d18a;font-size:10px;font-weight:950;white-space:nowrap}
+.garage-suspension-status{margin:10px 0;color:#b8c6d5;font-size:10px;line-height:1.4;text-align:center}
+.garage-suspension-status.success{color:#8de3b1}
+.garage-suspension-status.error{color:#ffaaa4}
+.garage-suspension-buy{display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:12px;font-weight:950}
+.garage-suspension-buy[hidden]{display:none!important}
+.garage-suspension-buy:disabled{opacity:.5;filter:grayscale(.55)}
 @media(max-width:520px){
+ .garage-suspension-section{padding:11px;margin-top:10px}
+ .garage-suspension-heading h3{font-size:12px}
+ .garage-suspension-heading p{font-size:9px}
+ .garage-suspension-buy{min-height:42px}
+
  .garage-rim-section{padding:10px;margin-top:13px}
  .garage-rim-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
  .garage-rim-card{min-height:96px;padding:6px 2px}
@@ -1736,6 +1753,17 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   <div class="garage-rim-status" id="garageRimStatus">Загружаем каталог дисков…</div>
   <button class="garage-rim-apply" id="garageRimApply" type="button" disabled>ВЫБЕРИ ДИСКИ</button>
 </div>
+<div class="garage-suspension-section" id="garageSuspensionSection" hidden>
+  <div class="garage-suspension-heading">
+    <div>
+      <h3>ПНЕВМАТИЧЕСКАЯ ПОДВЕСКА</h3>
+      <p>Регулировка дорожного просвета прямо во время заезда: низкая, средняя и высокая посадка кузова.</p>
+    </div>
+    <span class="garage-suspension-price">3 000 AC</span>
+  </div>
+  <div class="garage-suspension-status" id="garageSuspensionStatus">Проверяем наличие пневмоподвески…</div>
+  <button class="garage-suspension-buy" id="garageSuspensionBuy" type="button" disabled>ПРОВЕРКА…</button>
+</div>
 <div class="garage-parts-status" id="garagePartsStatus" hidden></div>
 <div class="garage-parts-list" id="garagePartsList" hidden></div>
 </section>
@@ -1761,7 +1789,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <div class="metric"><strong id="distance">0</strong><small>МЕТРЫ</small></div>
       <div class="metric"><strong id="timer">00:00</strong><small>ВРЕМЯ</small></div>
     </div>
-    <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Переключить высоту подвески">ПОДВЕСКА · СРЕДНЯЯ</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
+    <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Купить пневмоподвеску в разделе Тюнинг" disabled>ПНЕВМА · ЗАКРЫТА</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
   </div>
   <div id="raceProgress" aria-label="Расположение машин на дистанции">
   <div class="race-progress-row">
@@ -3169,9 +3197,12 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     $("garagePaintSelected").hidden = !paintMode;
     $("garagePaintApply").hidden = !paintMode || !acGaragePendingPaint;
     $("garageRimSection").hidden = !paintMode;
+    $("garageSuspensionSection").hidden = !paintMode;
     if (paintMode) {
       acGarageRefreshRimUi();
       void acGarageLoadRimProfile();
+      acGarageRefreshAirSuspensionUi();
+      void acGarageLoadAirSuspensionProfile();
     }
     $("garagePartsList").hidden = !partsMode;
     $("garagePartsStatus").hidden = !partsMode;
@@ -3593,6 +3624,89 @@ function acGarageRestoreSelectedRims() {
   acGarageRefreshRimUi();
 }
 
+function acGarageRefreshAirSuspensionUi() {
+  const status=$("garageSuspensionStatus");
+  const buy=$("garageSuspensionBuy");
+  const control=$("suspension");
+  if(control){
+    control.textContent="ПНЕВМА · "+rideModes[suspensionMode].label;
+    control.disabled=!acGarageAirSuspensionProfileReady||!acGarageAirSuspensionOwned;
+  }
+  if(!status||!buy)return;
+  status.classList.remove("error","success");
+  if(!acGarageAirSuspensionProfileReady){
+    status.textContent="Проверяем покупку пневмоподвески…";
+    buy.hidden=false;
+    buy.disabled=true;
+    buy.textContent="ПРОВЕРКА…";
+    return;
+  }
+  if(acGarageAirSuspensionOwned){
+    status.textContent="ПНЕВМОПОДВЕСКА УСТАНОВЛЕНА · высота меняется кнопкой «ПНЕВМА» во время заезда.";
+    status.classList.add("success");
+    buy.hidden=true;
+    buy.disabled=true;
+  }else{
+    status.textContent="Открой три режима высоты кузова: низкий, средний и высокий. Покупка навсегда сохраняется в гараже.";
+    buy.hidden=false;
+    buy.disabled=acGarageAirSuspensionBusy;
+    buy.textContent=acGarageAirSuspensionBusy?"ПОКУПАЕМ…":"КУПИТЬ ПНЕВМУ ЗА 3 000 AC";
+  }
+}
+
+async function acGarageLoadAirSuspensionProfile({silent=false}={}) {
+  if(acGarageAirSuspensionProfileReady){acGarageRefreshAirSuspensionUi();return true;}
+  if(acGarageAirSuspensionPromise)return acGarageAirSuspensionPromise;
+  if(!silent){
+    const status=$("garageSuspensionStatus");
+    if(status)status.textContent="ПРОВЕРЯЕМ ГАРАЖ И БАЛАНС ALLCOINS…";
+  }
+  acGarageAirSuspensionPromise=(async()=>{
+    try{
+      const result=await onlineHostRequest("suspension:profile");
+      acGarageAirSuspensionOwned=Boolean(result.hasAirSuspension);
+      acGarageAirSuspensionProfileReady=true;
+      acGarageRefreshAirSuspensionUi();
+      return true;
+    }catch(error){
+      acGarageAirSuspensionProfileReady=false;
+      const status=$("garageSuspensionStatus");
+      if(status){status.textContent=error.message||"Не удалось проверить пневмоподвеску.";status.classList.add("error");}
+      const buy=$("garageSuspensionBuy");
+      if(buy){buy.hidden=false;buy.disabled=false;buy.textContent="ПОВТОРИТЬ ПРОВЕРКУ";}
+      console.warn("ALLCOINS Racing: air suspension profile failed:",error);
+      return false;
+    }finally{acGarageAirSuspensionPromise=null;}
+  })();
+  return acGarageAirSuspensionPromise;
+}
+
+async function acGarageBuyAirSuspension() {
+  if(acGarageAirSuspensionBusy)return;
+  if(!acGarageAirSuspensionProfileReady&&!(await acGarageLoadAirSuspensionProfile()))return;
+  if(acGarageAirSuspensionOwned)return;
+  acGarageAirSuspensionBusy=true;
+  acGarageRefreshAirSuspensionUi();
+  try{
+    const result=await onlineHostRequest("suspension:buy");
+    if(!result||result.ok!==true||!result.hasAirSuspension)throw new Error(result?.error||"Сервер не подтвердил покупку пневмоподвески.");
+    acGarageAirSuspensionOwned=true;
+    acGarageAirSuspensionProfileReady=true;
+    const status=$("garageSuspensionStatus");
+    if(status){status.textContent="ПНЕВМОПОДВЕСКА КУПЛЕНА И УСТАНОВЛЕНА! Теперь переключай высоту кнопкой «ПНЕВМА».";status.classList.add("success");}
+  }catch(error){
+    const status=$("garageSuspensionStatus");
+    if(status){status.textContent=error.message||"Не удалось купить пневмоподвеску.";status.classList.add("error");}
+  }finally{
+    acGarageAirSuspensionBusy=false;
+    acGarageRefreshAirSuspensionUi();
+  }
+}
+$("garageSuspensionBuy").addEventListener("click",()=>{
+  if(!acGarageAirSuspensionProfileReady){void acGarageLoadAirSuspensionProfile();return;}
+  void acGarageBuyAirSuspension();
+});
+
 let acGaragePendingPaint = null;
 let acGaragePendingPaintId = null;
 let acGarageOwnedPaints = new Set();
@@ -3695,6 +3809,7 @@ $("garageTabClose").addEventListener("click", () => {
   $("garagePaintOptions").hidden = true;
   $("garagePaintSelected").hidden = true;
   $("garagePaintApply").hidden = true;
+  $("garageSuspensionSection").hidden = true;
   document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
 });
 $("garageCreateRoom").addEventListener("click", () => {
@@ -6576,6 +6691,7 @@ $('modelPicker').addEventListener('change',async e=>{const file=e.target.files?.
 /* ALLCOINS RACING RWD + SUSPENSION V3 */
 let speed=0,rpm=900,gear=1,distance=0,elapsed=0,raceStarted=false,paused=false,finished=false,throttle=false,braking=false,burnout=0,shiftCutRemaining=0;
 let rearSlip=0, suspensionMode=1, suspensionOffset=0, suspensionVelocity=0, chassisPitch=0, wheelRadiusWorld=.34, worldUnitsPerRealMeter=1, rearSmokeCooldown=0;
+let acGarageAirSuspensionOwned=false, acGarageAirSuspensionProfileReady=false, acGarageAirSuspensionBusy=false, acGarageAirSuspensionPromise=null;
 const gearTopSpeed=[0,42,78,118,158,210];
 const gearRatios=[0,3.67,2.10,1.36,1.00,.82];
 const finalDrive=3.90;
@@ -6700,7 +6816,8 @@ function acRacingApplyRearLowRideShadowPolicy(){
 function setSuspension(mode){
   suspensionMode=(mode+rideModes.length)%rideModes.length;
   suspensionVelocity=0;
-  $('suspension').textContent='ПОДВЕСКА · '+rideModes[suspensionMode].label;
+  $('suspension').textContent='ПНЕВМА · '+rideModes[suspensionMode].label;
+  $('suspension').disabled=!acGarageAirSuspensionProfileReady||!acGarageAirSuspensionOwned;
   console.info('ALLCOINS Racing V10 · suspension selected',{
     mode:rideModes[suspensionMode].label,
     targetWorldOffset:rideModes[suspensionMode].offset,
@@ -6713,7 +6830,7 @@ function setSuspension(mode){
   acRacingApplyLowRideAmbientOcclusionPolicy();
   acRacingApplyRearDetailsShadowPolicy();
 }
-$('suspension').addEventListener('click',()=>setSuspension(suspensionMode+1));
+$('suspension').addEventListener('click',()=>{if(acGarageAirSuspensionProfileReady&&acGarageAirSuspensionOwned)setSuspension(suspensionMode+1);});
 setSuspension(1);
 function bindHold(id,setter){
   const el=$(id);
