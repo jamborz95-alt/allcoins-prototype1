@@ -3454,7 +3454,7 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
     const dimensions = [size.x,size.y,size.z];
     let axisIndex = dimensions.indexOf(Math.min(...dimensions));
     const radialDimensions = dimensions.filter((value,index)=>index!==axisIndex);
-    const radius = Math.max(...radialDimensions)*.5*.92;
+    const radius = Math.max(...radialDimensions)*.5*.828;
     if (!Number.isFinite(radius) || radius < .04) continue;
     const axis = new THREE.Vector3();
     axis.setComponent(axisIndex,1);
