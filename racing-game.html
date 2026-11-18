@@ -6287,6 +6287,11 @@ function acGarageSeparateBumpersFromBody(root) {
       object.userData.acGarageBumperTriangleCount = bumperTriangles.length;
       object.userData.acGaragePaintedBodyTriangleCount = bodyTriangles.length;
       separated++;
+      console.info("ALLCOINS Racing: steel bumper face split", {
+        steelMaterialIndexes: [...steelMaterialIndexes],
+        unpaintedSteelTriangles: bumperTriangles.length,
+        paintableBodyTriangles: bodyTriangles.length
+      });
     } catch (error) {
       bodyGeometry?.dispose?.();
       bumperGeometry?.dispose?.();
@@ -6295,10 +6300,7 @@ function acGarageSeparateBumpersFromBody(root) {
   });
 
   if (separated) {
-    console.info("ALLCOINS Racing: only steel bumper faces retain factory colours", {
-      separated,
-      steelMaterialIndexes: [...steelMaterialIndexes]
-    });
+    console.info("ALLCOINS Racing: only steel bumper faces retain factory colours", { separated });
   }
   return separated;
 }
