@@ -6291,8 +6291,9 @@ function acRacingBuildGeometryPart(sourceGeometry, triangles, offset=null){
   return out;
 }
 
-// Keep steel/chrome trim, front lower grille and front/rear steel bumper trim factory-coloured.
-// Painted bumper covers, fenders and body panels remain in the paintable geometry.
+// Keep only the actual front/rear bumper edge strips factory-coloured.
+// Do not classify an entire material slot as steel: the GLB reuses metallic
+// silver materials on painted rear body polygons, which leaves visible patches.
 function acGarageSeparateBumpersFromBody(root) {
   if (!root) return 0;
   root.updateMatrixWorld(true);
@@ -6315,35 +6316,16 @@ function acGarageSeparateBumpersFromBody(root) {
     const size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
 
-    // The VAZ body is aligned along world X. Preserve the front lower grille/
-    // steel bumper strip. The entire rear end remains paintable; rear steel parts
-    // with their own named/PBR steel material are still preserved below.
+    // The front lower grille uses the established front band. At the rear,
+    // retain only the very bottom bumper edge; all rear body panels above it
+    // remain in the paintable geometry.
     const frontEndZone = Math.max(size.x * .055, .08);
     const frontSteelTrimTop = bounds.min.y + size.y * .38;
+    const rearEndZone = Math.max(size.x * .025, .035);
+    const rearSteelTrimTop = bounds.min.y + size.y * .12;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const steelMaterialIndexes = new Set();
-    const steelNamePattern = /chrome|steel|stainless|metal|alumin|alloy|хром|сталь|металл/i;
-    materials.forEach((material, materialIndex) => {
-      if (!material) return;
-      const materialName = [material.name, material.userData?.name, material.userData?.originalName]
-        .filter(Boolean).join(" ");
-      const metalness = Number(material.metalness);
-      const color = material.color;
-      let neutralSilver = false;
-      if (color && typeof color.getRGB === "function") {
-        const rgb = color.getRGB(new THREE.Vector3());
-        const brightest = Math.max(rgb.x, rgb.y, rgb.z);
-        const darkest = Math.min(rgb.x, rgb.y, rgb.z);
-        neutralSilver = brightest >= .22 && (brightest - darkest) <= .24;
-      }
-      // Prefer explicit material names; otherwise recognize a neutral PBR metal finish.
-      if (steelNamePattern.test(materialName) || (Number.isFinite(metalness) && metalness >= .45 && neutralSilver)) {
-        steelMaterialIndexes.add(materialIndex);
-      }
-    });
     const materialForElement = elementStart => {
       for (const group of groups) {
         if (elementStart >= group.start && elementStart < group.start + group.count) {
@@ -6371,16 +6353,19 @@ function acGarageSeparateBumpersFromBody(root) {
       object.localToWorld(pointB);
       object.localToWorld(pointC);
 
-      const withinFrontCap = [pointA, pointB, pointC].every(point => point.x <= bounds.min.x + frontEndZone);
-      const withinFrontSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= frontSteelTrimTop);
+      const points = [pointA, pointB, pointC];
+      const withinFrontCap = points.every(point => point.x <= bounds.min.x + frontEndZone);
+      const withinFrontSteelTrimBand = points.every(point => point.y <= frontSteelTrimTop);
+      const withinRearCap = points.every(point => point.x >= bounds.max.x - rearEndZone);
+      const withinRearSteelTrimBand = points.every(point => point.y <= rearSteelTrimTop);
       const materialIndex = materialForElement(at);
-      const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
-      // Preserve named/PBR steel materials wherever they occur.
-      // Only the front lower grille/steel bumper band is position-protected;
-      // do not leave any unpainted geometric strip on the rear body.
-      const isFrontRearSteelTrim = withinFrontCap && withinFrontSteelTrimBand;
-      const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim;
+      // Protect only the physical bumper/grille edge polygons by position.
+      // Material-name/metalness checks are deliberately excluded because GLB
+      // body panels can share those materials and must still receive paint.
+      const isFrontSteelTrim = withinFrontCap && withinFrontSteelTrimBand;
+      const isRearSteelTrim = withinRearCap && withinRearSteelTrimBand;
+      const keepFactorySteel = isFrontSteelTrim || isRearSteelTrim;
       if (keepFactorySteel) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
     }
@@ -6411,7 +6396,6 @@ function acGarageSeparateBumpersFromBody(root) {
       object.userData.acGaragePaintedBodyTriangleCount = bodyTriangles.length;
       separated++;
       console.info("ALLCOINS Racing: steel bumper face split", {
-        steelMaterialIndexes: [...steelMaterialIndexes],
         unpaintedSteelTriangles: bumperTriangles.length,
         paintableBodyTriangles: bodyTriangles.length
       });
@@ -6423,7 +6407,7 @@ function acGarageSeparateBumpersFromBody(root) {
   });
 
   if (separated) {
-    console.info("ALLCOINS Racing: only steel bumper faces retain factory colours", { separated });
+    console.info("ALLCOINS Racing: only narrow bumper/grille edge polygons retain factory colours", { separated });
   }
   return separated;
 }
