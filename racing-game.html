@@ -3289,11 +3289,11 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   addMachinedRing(radius * .705, radius * .012, alloyMaterial, .34);
   addMachinedRing(radius * .315, radius * .012, machinedMaterial, .56);
 
-  function makeSpokeShape(widthScale = 1, tangentialShift = 0) {
+  function makeSpokeShape(widthScale = 1, tangentialShift = 0, innerFactor = .205, outerFactor = .775) {
     const rootHalf = radius * (style.width || .13) * .5 * widthScale;
     const tipHalf = radius * (style.tipWidth || .095) * .5 * widthScale;
-    const innerRadius = radius * .205;
-    const outerRadius = radius * .775;
+    const innerRadius = radius * innerFactor;
+    const outerRadius = radius * outerFactor;
     const length = outerRadius - innerRadius;
     const sweep = radius * (style.sweep || 0);
     const shape = new THREE.Shape();
@@ -3330,65 +3330,41 @@ function acGarageBuildRimFace(style, radius, depth, side) {
     const spokeGroup = new THREE.Group();
     spokeGroup.rotation.y = angle;
 
-    const mainGeometry = new THREE.ExtrudeGeometry(makeSpokeShape(1), {
-      depth: faceDepth * .62,
-      steps: 1,
-      bevelEnabled: true,
-      bevelSegments: 4,
-      bevelSize: Math.min(radius * .012, faceDepth * .14),
-      bevelThickness: faceDepth * .16,
-      curveSegments: 14
-    });
-    mainGeometry.rotateX(-side * Math.PI / 2);
-    const mainSpoke = new THREE.Mesh(mainGeometry, alloyMaterial);
-    mainSpoke.position.y = side * faceDepth * .12;
-    mainSpoke.castShadow = false;
-    mainSpoke.receiveShadow = false;
-    spokeGroup.add(mainSpoke);
-
-    // Narrow polished ridge follows the cast spoke and catches reflections.
-    const ridgeGeometry = new THREE.ExtrudeGeometry(makeSpokeShape(.22), {
-      depth: faceDepth * .13,
-      steps: 1,
-      bevelEnabled: true,
-      bevelSegments: 3,
-      bevelSize: Math.min(radius * .0038, faceDepth * .045),
-      bevelThickness: faceDepth * .055,
-      curveSegments: 12
-    });
-    ridgeGeometry.rotateX(-side * Math.PI / 2);
-    const ridge = new THREE.Mesh(ridgeGeometry, accentMaterial);
-    ridge.position.y = side * faceDepth * .53;
-    ridge.castShadow = false;
-    ridge.receiveShadow = false;
-    spokeGroup.add(ridge);
+    function addSpokeMesh(shape, material, depthFactor, yFactor, bevelFactor) {
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: faceDepth * depthFactor,
+        steps: 1,
+        bevelEnabled: true,
+        bevelSegments: 4,
+        bevelSize: Math.min(radius * bevelFactor, faceDepth * .14),
+        bevelThickness: faceDepth * .14,
+        curveSegments: 14
+      });
+      geometry.rotateX(-side * Math.PI / 2);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.y = side * faceDepth * yFactor;
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      spokeGroup.add(mesh);
+      return mesh;
+    }
 
     if (style.split) {
-      // OEM-style split spoke: two rounded cast branches emerging from one broad root.
+      // A short broad root divides into two separate polished branches like an OEM split-spoke casting.
+      addSpokeMesh(makeSpokeShape(1, 0, .205, .47), alloyMaterial, .62, .12, .012);
       for (const direction of [-1, 1]) {
-        const branchGeometry = new THREE.ExtrudeGeometry(
-          makeSpokeShape(.34, direction * radius * .035),
-          {
-            depth: faceDepth * .24,
-            steps: 1,
-            bevelEnabled: true,
-            bevelSegments: 3,
-            bevelSize: Math.min(radius * .005, faceDepth * .065),
-            bevelThickness: faceDepth * .075,
-            curveSegments: 12
-          }
-        );
-        branchGeometry.rotateX(-side * Math.PI / 2);
-        const branch = new THREE.Mesh(branchGeometry, machinedMaterial);
-        branch.position.y = side * faceDepth * .61;
-        branch.castShadow = false;
-        branch.receiveShadow = false;
-        spokeGroup.add(branch);
+        const branchShape = makeSpokeShape(.34, direction * radius * .035, .39, .775);
+        addSpokeMesh(branchShape, machinedMaterial, .31, .43, .006);
+        const highlightShape = makeSpokeShape(.11, direction * radius * .035, .43, .735);
+        addSpokeMesh(highlightShape, accentMaterial, .10, .69, .0028);
       }
+    } else {
+      addSpokeMesh(makeSpokeShape(1), alloyMaterial, .62, .12, .012);
+      // Narrow polished ridge follows the cast spoke and catches reflections.
+      addSpokeMesh(makeSpokeShape(.22), accentMaterial, .13, .53, .0038);
     }
     face.add(spokeGroup);
   }
-
   const spokeCount = Math.max(5, Math.min(12, style.count || 5));
   for (let i = 0; i < spokeCount; i++) {
     addCastSpoke(Math.PI * 2 * i / spokeCount);
