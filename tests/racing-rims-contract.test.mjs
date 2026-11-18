@@ -154,7 +154,7 @@ test("VAZ-2107 white and black paints neutralize original body texture colours",
   assert.match(page, /function acGarageGetWhitePaintTexture\(sourceTexture\)/);
   assert.match(page, /context\.getImageData\(0, 0, width, height\)/);
   assert.match(page, /const neutral = Math\.round\(188 \+ 67 \* luminance\)/);
-  assert.match(page, /const isWhitePaint = String\(paint\)\.toLowerCase\(\) === "#ffffff"/);
+  assert.match(page, /const isWhitePaint = selectedPaint === "#ffffff"/);
   assert.match(page, /material\.map = neutralTexture/);
   assert.match(page, /material\.map = originalMap/);
   assert.match(page, /data-paint-id="white"[^>]*data-car-paint="#ffffff"/);
