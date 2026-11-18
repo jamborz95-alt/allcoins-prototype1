@@ -3284,37 +3284,9 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   const accentMaterial = new THREE.MeshStandardMaterial({
     color: style.accent, metalness: .9, roughness: .205
   });
-  const recessMaterial = new THREE.MeshStandardMaterial({
-    color: 0x080d12, metalness: .55, roughness: .46
-  });
-
-  // Matte-black backing sits behind the spokes so every opening reads as a deep cavity.
-  const openingShadowMaterial = new THREE.MeshStandardMaterial({
-    color: 0x05080b, metalness: .16, roughness: .9
-  });
-
-  // Deep wheel barrel and dark recessed centre make the gaps between spokes read as depth.
-  const barrel = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .79, radius * .79, faceDepth * .82, 96),
-    barrelMaterial
-  );
-  barrel.position.y = side * faceDepth * .04;
-  face.add(barrel);
-
-  const innerDish = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .675, radius * .675, faceDepth * .20, 96),
-    recessMaterial
-  );
-  innerDish.position.y = side * faceDepth * .20;
-  face.add(innerDish);
-
-  // Black recessed well visible through the spoke openings (kept behind the cast spokes).
-  const openingBacking = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .785, radius * .785, faceDepth * .035, 96),
-    openingShadowMaterial
-  );
-  openingBacking.position.y = side * faceDepth * .49;
-  face.add(openingBacking);
+  // No solid disc or black backing is placed behind the spokes: these are real open gaps.
+  // A narrow inner alloy ring gives the wheel barrel depth without blocking the openings.
+  addMachinedRing(radius * .805, radius * .018, alloyMaterial, .22);
 
   function addMachinedRing(radial, tube, material, yFactor) {
     const ring = new THREE.Mesh(
@@ -3328,12 +3300,12 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   }
 
   // Rolled outer lip, two polished steps and the inner bead of the casting.
-  addMachinedRing(radius * .825, radius * .026, machinedMaterial, .37);
-  addMachinedRing(radius * .782, radius * .009, accentMaterial, .42);
-  addMachinedRing(radius * .705, radius * .012, alloyMaterial, .34);
+  addMachinedRing(radius * .905, radius * .024, machinedMaterial, .37);
+  addMachinedRing(radius * .866, radius * .009, accentMaterial, .42);
+  addMachinedRing(radius * .785, radius * .012, alloyMaterial, .34);
   addMachinedRing(radius * .315, radius * .012, machinedMaterial, .56);
 
-  function makeSpokeShape(widthScale = 1, tangentialShift = 0, innerFactor = .205, outerFactor = .775) {
+  function makeSpokeShape(widthScale = 1, tangentialShift = 0, innerFactor = .205, outerFactor = .875) {
     const rootHalf = radius * (style.width || .13) * .5 * widthScale;
     const tipHalf = radius * (style.tipWidth || .095) * .5 * widthScale;
     const innerRadius = radius * innerFactor;
@@ -3397,9 +3369,9 @@ function acGarageBuildRimFace(style, radius, depth, side) {
       // A short broad root divides into two separate polished branches like an OEM split-spoke casting.
       addSpokeMesh(makeSpokeShape(1, 0, .205, .47), alloyMaterial, .62, .12, .012);
       for (const direction of [-1, 1]) {
-        const branchShape = makeSpokeShape(.34, direction * radius * .035, .39, .775);
+        const branchShape = makeSpokeShape(.34, direction * radius * .035, .39, .865);
         addSpokeMesh(branchShape, machinedMaterial, .31, .43, .006);
-        const highlightShape = makeSpokeShape(.11, direction * radius * .035, .43, .735);
+        const highlightShape = makeSpokeShape(.11, direction * radius * .035, .43, .825);
         addSpokeMesh(highlightShape, accentMaterial, .10, .69, .0028);
       }
     } else {
@@ -3477,6 +3449,8 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
       acGarageDisposeRimOverlay(previous);
       acGarageRimOverlayByNode.delete(wheel.node);
     }
+    // Open spokes must reveal the tyre interior, not the factory solid rim face.
+    if (wheel.originalRimMesh) wheel.originalRimMesh.visible = rimId === "stock";
     if (rimId === "stock") { applied++; continue; }
 
     const sourceMesh = wheel.node.children.find(object => object.isMesh && object.geometry);
@@ -3487,7 +3461,7 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
     const dimensions = [size.x,size.y,size.z];
     let axisIndex = dimensions.indexOf(Math.min(...dimensions));
     const radialDimensions = dimensions.filter((value,index)=>index!==axisIndex);
-    const radius = Math.max(...radialDimensions)*.5*.84;
+    const radius = Math.max(...radialDimensions)*.5*.96;
     if (!Number.isFinite(radius) || radius < .04) continue;
     const axis = new THREE.Vector3();
     axis.setComponent(axisIndex,1);
@@ -6354,20 +6328,24 @@ function acRacingExtractWheelIslands(source,vehicleLength){
   if(bodyTriangles.length<100)return null;
   const wheelParts=[];
   for(const wheel of wheels){
-    const partTriangles=wheel.triangles.slice();
-    const rims=pairedRims.get(wheel)||[];
-    for(const rim of rims)partTriangles.push(...rim.triangles);
-    partTriangles.sort((a,b)=>a.triangleIndex-b.triangleIndex);
-    wheelParts.push({wheel,partTriangles,rims});
+    wheelParts.push({wheel,rims:pairedRims.get(wheel)||[]});
   }
   const sourceGeometry=source.geometry;
   const bodyGeometry=acRacingBuildGeometryPart(sourceGeometry,bodyTriangles,null);
   const wheelGeometries=[];
+  const originalRimGeometries=[];
   try{
-    for(const part of wheelParts)wheelGeometries.push(acRacingBuildGeometryPart(sourceGeometry,part.partTriangles,part.wheel.localCenter));
+    for(const part of wheelParts){
+      wheelGeometries.push(acRacingBuildGeometryPart(sourceGeometry,part.wheel.triangles,part.wheel.localCenter));
+      const rimTriangles=part.rims.flatMap(rim=>rim.triangles);
+      originalRimGeometries.push(rimTriangles.length
+        ? acRacingBuildGeometryPart(sourceGeometry,rimTriangles,part.wheel.localCenter)
+        : null);
+    }
   }catch(error){
     bodyGeometry.dispose();
     for(const geometry of wheelGeometries)geometry.dispose();
+    for(const geometry of originalRimGeometries)geometry?.dispose();
     throw error;
   }
   const created=[];
@@ -6383,10 +6361,19 @@ function acRacingExtractWheelIslands(source,vehicleLength){
       wheelMesh.castShadow=true;
       wheelMesh.receiveShadow=true;
       pivot.add(wheelMesh);
+      let originalRimMesh=null;
+      if(originalRimGeometries[i]){
+        originalRimMesh=new THREE.Mesh(originalRimGeometries[i],source.material);
+        originalRimMesh.name='ALLCOINS_OriginalRimGeometry_'+(i+1);
+        originalRimMesh.castShadow=true;
+        originalRimMesh.receiveShadow=true;
+        pivot.add(originalRimMesh);
+      }
       source.add(pivot);
       const axis=wheel.thinLocalAxis===0?new THREE.Vector3(1,0,0):(wheel.thinLocalAxis===1?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1));
       created.push({
         node:pivot,
+        originalRimMesh,
         baseQuaternion:pivot.quaternion.clone(),
         spinAxisParent:axis,
         centerWorld:wheel.centerWorld.clone(),
@@ -6404,6 +6391,7 @@ function acRacingExtractWheelIslands(source,vehicleLength){
     source.geometry=sourceGeometry;
     bodyGeometry.dispose();
     for(const geometry of wheelGeometries)geometry.dispose();
+    for(const geometry of originalRimGeometries)geometry?.dispose();
     throw error;
   }
   return {wheels:created,components:components.length,removedComponents:removed.size,rimPairs:usedRims.size};
