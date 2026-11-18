@@ -1716,7 +1716,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div class="garage-paint-divider">ЦВЕТА КУЗОВА ВАЗ-2107</div>
   <div class="garage-paint-note">7 цветов · «Сочи» — серо-сине-зелёный металлик, код 360</div>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ<span class="garage-paint-code">СОЛИД</span></button>
-  <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#151719" data-paint-id="black" data-paint-name="Чёрный" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#151719">ЧЁРНЫЙ<span class="garage-paint-code">СОЛИД</span></button>
+  <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#08090b" data-paint-id="black" data-paint-name="Чёрный" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#08090b">ЧЁРНЫЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#176b40" data-paint-id="green" data-paint-name="Зелёный" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#176b40">ЗЕЛЁНЫЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#174f9c" data-paint-id="blue" data-paint-name="Синий" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#174f9c">СИНИЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#74887e" data-paint-id="sochi" data-paint-name="Сочи · 360" data-paint-code="360" data-paint-finish="МЕТАЛЛИК" data-price-label="2 000 AC" style="--paint-color:#74887e">СОЧИ<span class="garage-paint-code">КОД 360 · МЕТАЛЛИК</span></button>
@@ -5313,11 +5313,11 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
-// Preserve the original body texture for each paint choice. White and black
-// use neutralized texture copies so the previous factory/body colour cannot bleed through.
+// Preserve the original body texture and vertex-colour state so every paint can be
+// switched cleanly. Deep black intentionally removes the old diffuse colour layer.
 const acGaragePaintOriginalMaps = new WeakMap();
+const acGaragePaintOriginalVertexColors = new WeakMap();
 const acGarageWhitePaintTextureCache = new WeakMap();
-const acGarageBlackPaintTextureCache = new WeakMap();
 
 function acGarageGetWhitePaintTexture(sourceTexture) {
   if (!sourceTexture?.image) return null;
@@ -5366,81 +5366,40 @@ function acGarageGetWhitePaintTexture(sourceTexture) {
   }
 }
 
-function acGarageGetBlackPaintTexture(sourceTexture) {
-  if (!sourceTexture?.image) return null;
-  const cached = acGarageBlackPaintTextureCache.get(sourceTexture);
-  if (cached) return cached;
-
-  try {
-    const image = sourceTexture.image;
-    const width = Number(image.naturalWidth || image.videoWidth || image.width || image.displayWidth);
-    const height = Number(image.naturalHeight || image.videoHeight || image.height || image.displayHeight);
-    if (!width || !height) return null;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return null;
-    context.drawImage(image, 0, 0, width, height);
-
-    const pixels = context.getImageData(0, 0, width, height);
-    const data = pixels.data;
-    for (let index = 0; index < data.length; index += 4) {
-      if (data[index + 3] === 0) continue;
-      const luminance = (
-        data[index] * 0.2126 +
-        data[index + 1] * 0.7152 +
-        data[index + 2] * 0.0722
-      ) / 255;
-      // Keep subtle panel shading, but remove the original paint hue completely.
-      // The restricted neutral range makes the selected black stay uniformly black.
-      const neutral = Math.round(205 + 50 * luminance);
-      data[index] = neutral;
-      data[index + 1] = neutral;
-      data[index + 2] = neutral;
-    }
-    context.putImageData(pixels, 0, 0);
-
-    const neutralTexture = sourceTexture.clone();
-    neutralTexture.image = canvas;
-    neutralTexture.needsUpdate = true;
-    acGarageBlackPaintTextureCache.set(sourceTexture, neutralTexture);
-    return neutralTexture;
-  } catch (error) {
-    console.warn("ALLCOINS Racing: не удалось нейтрализовать исходную текстуру для чёрной краски.", error);
-    return null;
-  }
-}
-
 function acGarageSetBodyPaintMaterial(material, paint) {
   if (!material?.color) return false;
   if (!acGaragePaintOriginalMaps.has(material)) {
     acGaragePaintOriginalMaps.set(material, material.map || null);
+    acGaragePaintOriginalVertexColors.set(material, Boolean(material.vertexColors));
   }
   const originalMap = acGaragePaintOriginalMaps.get(material);
+  const originalVertexColors = acGaragePaintOriginalVertexColors.get(material);
   const selectedPaint = String(paint).toLowerCase();
   const isWhitePaint = selectedPaint === "#ffffff";
-  const isBlackPaint = selectedPaint === "#151719";
+  const isBlackPaint = selectedPaint === "#08090b";
 
-  if (originalMap && isWhitePaint) {
+  if (isBlackPaint) {
+    // Solid deep-black base coat: remove the old painted diffuse map and vertex tint,
+    // while retaining normal/roughness maps so body contours and reflections remain visible.
+    material.map = null;
+    material.vertexColors = false;
+  } else if (originalMap && isWhitePaint) {
     const neutralTexture = acGarageGetWhitePaintTexture(originalMap);
     material.map = neutralTexture || originalMap;
-  } else if (originalMap && isBlackPaint) {
-    const neutralTexture = acGarageGetBlackPaintTexture(originalMap);
-    material.map = neutralTexture || originalMap;
+    material.vertexColors = originalVertexColors;
   } else {
-    // Other colours restore the exact original map before applying their tint.
+    // Other colours restore the exact original map and vertex-colour state.
     material.map = originalMap;
+    material.vertexColors = originalVertexColors;
   }
 
-  material.color.set(paint);
+  material.color.set(isBlackPaint ? "#08090b" : paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
   const metallicFactoryPaints = new Set(["#74887e"]);
   const hasMetallicFinish = metallicFactoryPaints.has(String(paint).toLowerCase());
-  if ("metalness" in material) material.metalness = hasMetallicFinish ? 0.32 : 0.08;
-  if ("roughness" in material) material.roughness = hasMetallicFinish ? 0.3 : 0.42;
+  if ("metalness" in material) material.metalness = hasMetallicFinish ? 0.32 : (isBlackPaint ? 0.035 : 0.08);
+  if ("roughness" in material) material.roughness = hasMetallicFinish ? 0.3 : (isBlackPaint ? 0.48 : 0.42);
   material.needsUpdate = true;
   return true;
 }
