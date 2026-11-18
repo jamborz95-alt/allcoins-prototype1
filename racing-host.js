@@ -518,6 +518,24 @@
       }
       return await window.allcoinsRacingPartsApi.buy(data.partId);
     }
+    if (action === "garage:profile") {
+      if (!window.allcoinsRacingGarageApi || typeof window.allcoinsRacingGarageApi.profile !== "function") {
+        throw new Error("Автосалон ALLCOINS ещё не подключён.");
+      }
+      return await window.allcoinsRacingGarageApi.profile();
+    }
+    if (action === "garage:buy") {
+      if (!window.allcoinsRacingGarageApi || typeof window.allcoinsRacingGarageApi.buyCar !== "function") {
+        throw new Error("Покупка автомобиля ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingGarageApi.buyCar(data.carId);
+    }
+    if (action === "garage:claim-ad") {
+      if (!window.allcoinsRacingGarageApi || typeof window.allcoinsRacingGarageApi.claimRewardedCar !== "function") {
+        throw new Error("Награда за рекламу ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingGarageApi.claimRewardedCar(data.carId);
+    }
 
     await ensureTelegramAuthentication();
     let result;
