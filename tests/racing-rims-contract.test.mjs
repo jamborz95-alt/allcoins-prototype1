@@ -173,10 +173,10 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.match(page, /const endZone = Math.max\(size\.x \* \.055, \.08\)/);
   assert.match(page, /const steelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
 
-  assert.match(page, /const endZone = Math\.max\(size\.x \* \.04, \.05\)/);
-  assert.match(page, /const bumperTop = bounds\.min\.y \+ size\.y \* \.34/);
+  assert.match(page, /const endZone = Math\.max\(size\.x \* \.055, \.08\)/);
+  assert.match(page, /const steelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
   assert.match(page, /withinFrontCap = \[pointA, pointB, pointC\]\.every/);
   assert.match(page, /withinRearCap = \[pointA, pointB, pointC\]\.every/);
-  assert.match(page, /belowBumperLine = \[pointA, pointB, pointC\]\.every/);
+  assert.match(page, /withinSteelTrimBand = \[pointA, pointB, pointC\]\.every/);
 
 });
