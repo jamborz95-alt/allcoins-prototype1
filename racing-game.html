@@ -5341,6 +5341,53 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
+// Recolour only the body paint, using the PNG's luminance as a shading mask.
+function acGaragePreparePaintMaterial(material) {
+  if (!material || !material.color) return false;
+  material.userData = material.userData || {};
+  if (!material.userData.acGaragePaintShaderV2) {
+    const originalOnBeforeCompile = material.onBeforeCompile;
+    const originalProgramCacheKey = material.customProgramCacheKey;
+    material.onBeforeCompile = function(shader, renderer) {
+      if (typeof originalOnBeforeCompile === "function") {
+        originalOnBeforeCompile.call(this, shader, renderer);
+      }
+      const mapChunk = "#include <map_fragment>";
+      if (!shader.fragmentShader.includes(mapChunk)) return;
+      shader.fragmentShader = shader.fragmentShader.replace(mapChunk, `${mapChunk}
+#ifdef USE_MAP
+      float acGaragePaintSourceLuma = dot(sampledDiffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+#else
+      float acGaragePaintSourceLuma = 1.0;
+#endif
+      // Lift dark factory paint toward the selected colour but retain texture shadows.
+      float acGaragePaintShade = mix(0.50, 1.08, sqrt(clamp(acGaragePaintSourceLuma, 0.0, 1.0)));
+      diffuseColor.rgb = diffuse.rgb * acGaragePaintShade;`);
+    };
+    material.customProgramCacheKey = function() {
+      const baseKey = typeof originalProgramCacheKey === "function"
+        ? originalProgramCacheKey.call(this) : "";
+      return baseKey + "|allcoins-vaz2107-png-paint-v2";
+    };
+    material.userData.acGaragePaintShaderV2 = true;
+    material.needsUpdate = true;
+  }
+  return true;
+}
+
+function acGarageSetBodyPaintMaterial(material, paint) {
+  if (!acGaragePreparePaintMaterial(material)) return false;
+  // Shader uses the source PNG luminance as a mask; white is now a real white repaint,
+  // not a neutral tint that leaves the factory colour untouched.
+  material.color.set(paint);
+  if (material.emissive) material.emissive.set(0x000000);
+  if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
+  if ("roughness" in material) material.roughness = 0.42;
+  if ("metalness" in material) material.metalness = 0.08;
+  material.needsUpdate = true;
+  return true;
+}
+
 function acGaragePreviewBodyPaint(color) {
   const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
   if (!match || !vehicle) return false;
@@ -5358,7 +5405,7 @@ function acGaragePreviewBodyPaint(color) {
     }
 
     const materials = Array.isArray(object.material) ? object.material : [object.material];
-    // Keep the currently applied/purchased color so leaving tuning can undo an unbought preview.
+    // Keep the currently applied/purchased colour so leaving tuning can undo an unbought preview.
     if (!object.userData.acGaragePaintPreviewBase) {
       object.userData.acGaragePaintPreviewBase = materials.map(material =>
         material?.clone ? material.clone() : material
@@ -5367,16 +5414,7 @@ function acGaragePreviewBodyPaint(color) {
     }
 
     for (const material of materials) {
-      if (!material?.color) continue;
-      // Сохраняем исходную PNG-текстуру кузова: выбранный оттенок умножается на неё,
-      // поэтому остаются видны детали поверхности, заводская фактура и световые блики.
-      material.color.set(paint);
-      if (material.emissive) material.emissive.set(0x000000);
-      if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
-      if ("roughness" in material) material.roughness = 0.42;
-      if ("metalness" in material) material.metalness = 0.08;
-      material.needsUpdate = true;
-      changed++;
+      if (acGarageSetBodyPaintMaterial(material, paint)) changed++;
     }
   });
 
@@ -5450,16 +5488,7 @@ function acGarageApplyBodyPaint(color) {
     }
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
-      if (!material || !material.color) continue;
-      // Сохраняем исходную PNG-текстуру кузова: выбранный оттенок умножается на неё,
-      // поэтому остаются видны детали поверхности, заводская фактура и световые блики.
-      material.color.set(paint);
-      if (material.emissive) material.emissive.set(0x000000);
-      if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
-      if ("roughness" in material) material.roughness = 0.42;
-      if ("metalness" in material) material.metalness = 0.08;
-      material.needsUpdate = true;
-      changed++;
+      if (acGarageSetBodyPaintMaterial(material, paint)) changed++;
     }
   });
   if (!changed) return false;
