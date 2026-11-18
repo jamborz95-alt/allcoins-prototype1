@@ -1707,7 +1707,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   <div class="garage-rim-heading">
     <div>
       <h3>ДИСКИ ВАЗ-2107</h3>
-      <p>Выбирай дизайн — колёса на 3D-модели меняются сразу. Покупка только после подтверждения.</p>
+      <p>Штампованная сталь: глубокая чаша, круглые закатанные края, вырубленные отверстия и крепление ВАЗ на 4 болта. Покупка только после подтверждения.</p>
     </div>
     <span class="garage-rim-current" id="garageRimCurrent">ЗАВОДСКИЕ</span>
   </div>
@@ -1718,19 +1718,19 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
     </button>
     <button class="garage-rim-card" type="button" data-rim-style="sport5">
       <span class="garage-rim-icon rim-icon-sport"><i></i></span>
-      <strong>SPORT 5</strong><small>5 000 AC</small>
+      <strong>ШТАМПОВКА SPORT 8</strong><small>5 000 AC</small>
     </button>
     <button class="garage-rim-card" type="button" data-rim-style="mesh10">
       <span class="garage-rim-icon rim-icon-mesh"><i></i></span>
-      <strong>MESH 10</strong><small>7 000 AC</small>
+      <strong>ШТАМПОВКА MESH 10</strong><small>7 000 AC</small>
     </button>
     <button class="garage-rim-card" type="button" data-rim-style="turbine">
       <span class="garage-rim-icon rim-icon-turbine"><i></i></span>
-      <strong>TURBINE</strong><small>6 500 AC</small>
+      <strong>ШТАМПОВКА TURBO 8</strong><small>6 500 AC</small>
     </button>
     <button class="garage-rim-card" type="button" data-rim-style="classic8">
       <span class="garage-rim-icon rim-icon-classic"><i></i></span>
-      <strong>CLASSIC 8</strong><small>4 500 AC</small>
+      <strong>ШТАМПОВКА CLASSIC 8</strong><small>4 500 AC</small>
     </button>
   </div>
   <div class="garage-rim-status" id="garageRimStatus">Загружаем каталог дисков…</div>
@@ -3201,10 +3201,10 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
 });
 const AC_GARAGE_RIM_STYLES = Object.freeze({
   stock: { name:"Заводские", price:0, kind:"stock" },
-  sport5: { name:"Sport 5 Spoke", price:5000, kind:"spoke", count:5, width:.18, sweep:.035, face:0x202b38, metal:0xe0e8ef, accent:0x8fb4d4 },
-  mesh10: { name:"Mesh 10 Spoke", price:7000, kind:"spoke", count:10, width:.085, sweep:.018, face:0x111b27, metal:0xc7d4df, accent:0x7d96ac },
-  turbine: { name:"Turbo Turbine", price:6500, kind:"turbine", count:7, width:.17, sweep:.15, face:0x172333, metal:0xb5c6d6, accent:0x6da7d8 },
-  classic8: { name:"Classic 8 Hole", price:4500, kind:"holes", count:8, width:.105, sweep:0, face:0x293746, metal:0xd1dce6, accent:0x98aaba }
+  sport5: { name:"Штамповка SPORT 8", price:5000, kind:"stamped", ventCount:8, ventLength:.105, ventWidth:.036, ridgeCount:8, ridgeWidth:.016, face:0x242a30, metal:0xbfc7cd, accent:0xe0e5e9 },
+  mesh10: { name:"Штамповка MESH 10", price:7000, kind:"stamped", ventCount:10, ventLength:.082, ventWidth:.032, ridgeCount:10, ridgeWidth:.013, face:0x171d23, metal:0xaeb8c0, accent:0xd5dce1 },
+  turbine: { name:"Штамповка TURBO 8", price:6500, kind:"stamped", ventCount:8, ventLength:.115, ventWidth:.041, ridgeCount:8, ridgeWidth:.018, face:0x20272d, metal:0xaab4bc, accent:0xdfe5e9 },
+  classic8: { name:"Штамповка CLASSIC 8", price:4500, kind:"stamped", ventCount:8, ventLength:.095, ventWidth:.038, ridgeCount:8, ridgeWidth:.014, face:0x252b30, metal:0xc8ced3, accent:0xaeb8bf }
 });
 
 let acGarageOwnedRims = new Set(["stock"]);
@@ -3240,34 +3240,34 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   const face = new THREE.Group();
   const faceDepth = Math.max(radius * .075, .012);
 
-  // Dark inner barrel gives the spokes real depth instead of a flat painted disc.
+  // Pressed-steel finishes: satin painted steel, darker inner barrel and rolled bright edges.
   const barrelMaterial = new THREE.MeshStandardMaterial({
-    color: style.face, metalness: .82, roughness: .31
+    color: style.face, metalness: .62, roughness: .37
   });
-  const machinedMetal = new THREE.MeshStandardMaterial({
-    color: style.metal, metalness: .96, roughness: .19
+  const steelMaterial = new THREE.MeshStandardMaterial({
+    color: style.metal, metalness: .72, roughness: .29
   });
-  const brightMetal = new THREE.MeshStandardMaterial({
-    color: 0xe8eef4, metalness: .98, roughness: .16
+  const rolledEdgeMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd9dfe3, metalness: .88, roughness: .22
   });
-  const accentMetal = new THREE.MeshStandardMaterial({
-    color: style.accent, metalness: .9, roughness: .22
+  const embossMaterial = new THREE.MeshStandardMaterial({
+    color: style.accent, metalness: .76, roughness: .27
   });
   const recessMaterial = new THREE.MeshStandardMaterial({
-    color: 0x070c12, metalness: .58, roughness: .42
+    color: 0x080c10, metalness: .38, roughness: .53
   });
 
-  // Deep inner barrel and a stepped, machined outer lip.
+  // The steel wheel barrel remains visible through the punched ventilation slots.
   const barrel = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .755, radius * .755, faceDepth * .74, 64),
+    new THREE.CylinderGeometry(radius * .805, radius * .805, faceDepth * .72, 96),
     barrelMaterial
   );
-  barrel.position.y = side * faceDepth * .08;
+  barrel.position.y = side * faceDepth * .015;
   face.add(barrel);
 
-  function addRimRing(radial, tube, material, yFactor = .34) {
+  function addStampedRing(radial, tube, material, yFactor) {
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(radial, tube, 12, 72),
+      new THREE.TorusGeometry(radial, tube, 12, 96),
       material
     );
     ring.rotation.x = Math.PI / 2;
@@ -3276,170 +3276,155 @@ function acGarageBuildRimFace(style, radius, depth, side) {
     return ring;
   }
 
-  addRimRing(radius * .835, radius * .031, brightMetal, .35);
-  addRimRing(radius * .785, radius * .012, machinedMetal, .39);
-  addRimRing(radius * .685, radius * .014, accentMetal, .37);
+  // A real pressed dish: a perforated steel plate with a small bevel around its edge.
+  const plateShape = new THREE.Shape();
+  plateShape.absarc(0, 0, radius * .795, 0, Math.PI * 2, false);
 
-  // Dark bowl makes the gaps between spokes look recessed.
-  const centerBowl = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .69, radius * .69, faceDepth * .24, 64),
-    recessMaterial
-  );
-  centerBowl.position.y = side * faceDepth * .24;
-  face.add(centerBowl);
+  function addVentPunch(angle) {
+    const radialX = Math.cos(angle);
+    const radialZ = Math.sin(angle);
+    const tangentX = -radialZ;
+    const tangentZ = radialX;
+    const centerRadius = radius * .555;
+    const cx = radialX * centerRadius;
+    const cz = radialZ * centerRadius;
+    const halfWidth = radius * (style.ventWidth || .036);
+    const halfLength = radius * (style.ventLength || .10);
+    const straight = Math.max(radius * .012, halfLength - halfWidth);
+    const plusX = cx + radialX * straight;
+    const plusZ = cz + radialZ * straight;
+    const minusX = cx - radialX * straight;
+    const minusZ = cz - radialZ * straight;
+    const hole = new THREE.Path();
 
-  const hubBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .255, radius * .255, faceDepth * .66, 48),
-    machinedMetal
-  );
-  hubBase.position.y = side * faceDepth * .39;
-  face.add(hubBase);
+    // Rounded capsule punch, oriented along the radius like factory ventilation slots.
+    hole.moveTo(plusX + tangentX * halfWidth, plusZ + tangentZ * halfWidth);
+    hole.quadraticCurveTo(
+      plusX + radialX * halfWidth, plusZ + radialZ * halfWidth,
+      plusX - tangentX * halfWidth, plusZ - tangentZ * halfWidth
+    );
+    hole.lineTo(minusX - tangentX * halfWidth, minusZ - tangentZ * halfWidth);
+    hole.quadraticCurveTo(
+      minusX - radialX * halfWidth, minusZ - radialZ * halfWidth,
+      minusX + tangentX * halfWidth, minusZ + tangentZ * halfWidth
+    );
+    hole.closePath();
+    plateShape.holes.push(hole);
+  }
 
-  addRimRing(radius * .235, radius * .013, brightMetal, .72);
-  addRimRing(radius * .145, radius * .009, accentMetal, .76);
+  const ventCount = Math.max(6, Math.min(12, style.ventCount || 8));
+  for (let i = 0; i < ventCount; i++) addVentPunch(Math.PI * 2 * i / ventCount);
 
-  const centerCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * .132, radius * .145, faceDepth * .22, 40),
-    barrelMaterial
-  );
-  centerCap.position.y = side * faceDepth * .70;
-  face.add(centerCap);
+  // Four genuine bolt holes on the classic VAZ four-stud pattern.
+  const boltCircle = radius * .245;
+  const boltHoleRadius = radius * .032;
+  for (let i = 0; i < 4; i++) {
+    const angle = Math.PI * 2 * i / 4 + Math.PI / 4;
+    const hole = new THREE.Path();
+    hole.absarc(Math.cos(angle) * boltCircle, Math.sin(angle) * boltCircle,
+      boltHoleRadius, 0, Math.PI * 2, true);
+    hole.closePath();
+    plateShape.holes.push(hole);
+  }
 
-  const capHighlight = new THREE.Mesh(
-    new THREE.TorusGeometry(radius * .105, radius * .008, 8, 40),
-    brightMetal
-  );
-  capHighlight.rotation.x = Math.PI / 2;
-  capHighlight.position.y = side * faceDepth * .83;
-  face.add(capHighlight);
+  const plateGeometry = new THREE.ExtrudeGeometry(plateShape, {
+    depth: faceDepth * .22,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    bevelSize: Math.min(radius * .006, faceDepth * .055),
+    bevelThickness: faceDepth * .035,
+    curveSegments: 16
+  });
+  plateGeometry.rotateX(-side * Math.PI / 2);
+  const pressedPlate = new THREE.Mesh(plateGeometry, steelMaterial);
+  pressedPlate.position.y = side * faceDepth * .20;
+  pressedPlate.castShadow = false;
+  pressedPlate.receiveShadow = false;
+  face.add(pressedPlate);
 
-  function makeSpokeShape(widthScale = 1) {
-    const rootHalf = radius * (style.width || .14) * .5 * widthScale;
-    const tipHalf = rootHalf * (style.kind === "turbine" ? .48 : .55);
-    const innerRadius = radius * .205;
-    const outerRadius = radius * .785;
-    const length = outerRadius - innerRadius;
-    const sweep = radius * (style.sweep || 0);
+  // Rolled outer flange and concentric stamped steps catch light without looking like alloy spokes.
+  addStampedRing(radius * .805, radius * .021, rolledEdgeMaterial, .37);
+  addStampedRing(radius * .765, radius * .008, embossMaterial, .39);
+  addStampedRing(radius * .685, radius * .010, rolledEdgeMaterial, .34);
+  addStampedRing(radius * .335, radius * .012, embossMaterial, .46);
+
+  // Shallow narrow beads are pressed into the steel between the ventilation slots.
+  function makeStampRibShape() {
+    const width = radius * (style.ridgeWidth || .015);
+    const inner = radius * .325;
+    const outer = radius * .675;
+    const length = outer - inner;
+    const sweep = radius * (style.ridgeSweep || .006);
     const shape = new THREE.Shape();
-
-    shape.moveTo(-rootHalf, innerRadius);
-    shape.quadraticCurveTo(
-      -rootHalf * .94 + sweep * .12,
-      innerRadius + length * .30,
-      -tipHalf + sweep * .76,
-      outerRadius - length * .15
-    );
-    shape.quadraticCurveTo(
-      -tipHalf * .52 + sweep,
-      outerRadius + radius * .012,
-      sweep + tipHalf * .30,
-      outerRadius
-    );
-    shape.quadraticCurveTo(
-      tipHalf + sweep * .93,
-      outerRadius - length * .17,
-      rootHalf + sweep * .14,
-      innerRadius + length * .31
-    );
-    shape.quadraticCurveTo(
-      rootHalf * .88,
-      innerRadius + length * .08,
-      -rootHalf,
-      innerRadius
-    );
+    shape.moveTo(-width, inner);
+    shape.quadraticCurveTo(-width * .75 + sweep * .15, inner + length * .45,
+      -width * .45 + sweep, outer);
+    shape.quadraticCurveTo(sweep + width * .25, outer + radius * .012,
+      width + sweep * .4, outer - length * .08);
+    shape.quadraticCurveTo(width * .75, inner + length * .40, -width, inner);
     shape.closePath();
     return shape;
   }
 
-  function addSpoke(angle) {
-    const spokePivot = new THREE.Group();
-    spokePivot.rotation.y = angle;
-
-    const spokeGeometry = new THREE.ExtrudeGeometry(makeSpokeShape(1), {
-      depth: faceDepth * .58,
-      steps: 1,
-      bevelEnabled: true,
-      bevelSegments: 3,
-      bevelSize: Math.min(radius * .014, faceDepth * .13),
-      bevelThickness: faceDepth * .16,
-      curveSegments: 10
-    });
-    spokeGeometry.rotateX(-side * Math.PI / 2);
-
-    const spoke = new THREE.Mesh(spokeGeometry, machinedMetal);
-    spoke.position.y = side * faceDepth * .12;
-    spoke.castShadow = false;
-    spoke.receiveShadow = false;
-    spokePivot.add(spoke);
-
-    // A slim raised center rib catches light like a machined alloy spoke.
-    const ribGeometry = new THREE.ExtrudeGeometry(makeSpokeShape(.19), {
-      depth: faceDepth * .19,
+  const ridgeCount = Math.max(6, Math.min(12, style.ridgeCount || ventCount));
+  for (let i = 0; i < ridgeCount; i++) {
+    const ridge = new THREE.Group();
+    ridge.rotation.y = Math.PI * 2 * i / ridgeCount + Math.PI / ridgeCount;
+    const ridgeGeometry = new THREE.ExtrudeGeometry(makeStampRibShape(), {
+      depth: faceDepth * .075,
       steps: 1,
       bevelEnabled: true,
       bevelSegments: 2,
-      bevelSize: Math.min(radius * .0045, faceDepth * .045),
-      bevelThickness: faceDepth * .055,
+      bevelSize: Math.min(radius * .0035, faceDepth * .025),
+      bevelThickness: faceDepth * .025,
       curveSegments: 8
     });
-    ribGeometry.rotateX(-side * Math.PI / 2);
-    const rib = new THREE.Mesh(ribGeometry, accentMetal);
-    rib.position.y = side * faceDepth * .49;
-    rib.castShadow = false;
-    rib.receiveShadow = false;
-    spokePivot.add(rib);
-
-    face.add(spokePivot);
+    ridgeGeometry.rotateX(-side * Math.PI / 2);
+    const bead = new THREE.Mesh(ridgeGeometry, embossMaterial);
+    bead.position.y = side * faceDepth * .40;
+    bead.castShadow = false;
+    bead.receiveShadow = false;
+    ridge.add(bead);
+    face.add(ridge);
   }
 
-  if (style.kind === "holes") {
-    // Classic eight-hole face with recessed pockets and machined pocket edges.
-    for (let i = 0; i < style.count; i++) {
-      const angle = Math.PI * 2 * i / style.count;
-      const x = Math.cos(angle) * radius * .555;
-      const z = Math.sin(angle) * radius * .555;
-      const holeRadius = radius * .057;
+  // The centre is a stamped, stepped hub rather than a large alloy-wheel centre cap.
+  const dishHub = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * .205, radius * .315, faceDepth * .25, 64),
+    steelMaterial
+  );
+  dishHub.position.y = side * faceDepth * .34;
+  face.add(dishHub);
+  addStampedRing(radius * .205, radius * .009, rolledEdgeMaterial, .52);
 
-      const pocket = new THREE.Mesh(
-        new THREE.CylinderGeometry(holeRadius, holeRadius, faceDepth * .20, 24),
-        recessMaterial
-      );
-      pocket.position.set(x, side * faceDepth * .43, z);
-      face.add(pocket);
+  const centerCap = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * .125, radius * .145, faceDepth * .16, 48),
+    barrelMaterial
+  );
+  centerCap.position.y = side * faceDepth * .49;
+  face.add(centerCap);
+  addStampedRing(radius * .132, radius * .006, rolledEdgeMaterial, .57);
 
-      const pocketLip = new THREE.Mesh(
-        new THREE.TorusGeometry(holeRadius * 1.04, radius * .008, 8, 24),
-        brightMetal
-      );
-      pocketLip.rotation.x = Math.PI / 2;
-      pocketLip.position.set(x, side * faceDepth * .55, z);
-      face.add(pocketLip);
-    }
-  } else {
-    for (let i = 0; i < style.count; i++) {
-      addSpoke(Math.PI * 2 * i / style.count);
-    }
-  }
-
-  // Five recessed lug seats and bright lug nuts around the center cap.
-  for (let i = 0; i < 5; i++) {
-    const angle = Math.PI * 2 * i / 5 + Math.PI / 5;
-    const x = Math.cos(angle) * radius * .292;
-    const z = Math.sin(angle) * radius * .292;
-
+  // Four recessed fasteners, matching the original VAZ hub layout.
+  for (let i = 0; i < 4; i++) {
+    const angle = Math.PI * 2 * i / 4 + Math.PI / 4;
+    const x = Math.cos(angle) * boltCircle;
+    const z = Math.sin(angle) * boltCircle;
     const seat = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * .034, radius * .034, faceDepth * .13, 18),
+      new THREE.CylinderGeometry(boltHoleRadius * .86, boltHoleRadius * .86, faceDepth * .09, 24),
       recessMaterial
     );
-    seat.position.set(x, side * faceDepth * .57, z);
+    seat.position.set(x, side * faceDepth * .39, z);
     face.add(seat);
 
-    const nut = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * .021, radius * .024, faceDepth * .16, 6),
-      brightMetal
+    const lip = new THREE.Mesh(
+      new THREE.TorusGeometry(boltHoleRadius * 1.02, radius * .004, 8, 24),
+      rolledEdgeMaterial
     );
-    nut.position.set(x, side * faceDepth * .66, z);
-    face.add(nut);
+    lip.rotation.x = Math.PI / 2;
+    lip.position.set(x, side * faceDepth * .48, z);
+    face.add(lip);
   }
 
   face.traverse(object => {
