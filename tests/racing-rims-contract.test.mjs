@@ -116,7 +116,7 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 test("VAZ-2107 exposes exactly seven requested body colours with matching server catalogue", () => {
   const paints = {
     white: { color: "#ffffff", finish: "СОЛИД" },
-    black: { color: "#151719", finish: "СОЛИД" },
+    black: { color: "#08090b", finish: "СОЛИД" },
     green: { color: "#176b40", finish: "СОЛИД" },
     blue: { color: "#174f9c", finish: "СОЛИД" },
     sochi: { color: "#74887e", finish: "МЕТАЛЛИК", code: "360" },
@@ -146,11 +146,11 @@ test("VAZ-2107 exposes exactly seven requested body colours with matching server
 test("VAZ-2107 white and black paints neutralize original body texture colours", () => {
   assert.match(page, /const acGaragePaintOriginalMaps = new WeakMap\(\)/);
   assert.match(page, /const acGarageWhitePaintTextureCache = new WeakMap\(\)/);
-  assert.match(page, /const acGarageBlackPaintTextureCache = new WeakMap\(\)/);
-  assert.match(page, /function acGarageGetBlackPaintTexture\(sourceTexture\)/);
-  assert.match(page, /const neutral = Math\.round\(205 \+ 50 \* luminance\)/);
-  assert.match(page, /const isBlackPaint = selectedPaint === "#151719"/);
-  assert.match(page, /acGarageGetBlackPaintTexture\(originalMap\)/);
+  assert.match(page, /const acGaragePaintOriginalVertexColors = new WeakMap\(\)/);
+  assert.match(page, /const isBlackPaint = selectedPaint === "#08090b"/);
+  assert.match(page, /if \(isBlackPaint\) \{[\s\S]*?material\.map = null;[\s\S]*?material\.vertexColors = false;/);
+  assert.match(page, /material\.color\.set\(isBlackPaint \? "#08090b" : paint\)/);
+  assert.match(page, /isBlackPaint \? 0\.48 : 0\.42/);
   assert.match(page, /function acGarageGetWhitePaintTexture\(sourceTexture\)/);
   assert.match(page, /context\.getImageData\(0, 0, width, height\)/);
   assert.match(page, /const neutral = Math\.round\(188 \+ 67 \* luminance\)/);
@@ -165,7 +165,7 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.match(page, /material\.color\.set\(paint\)/);
   assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
   assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-body-paint-v3/);
-  assert.doesNotMatch(page, /material\.map\s*=\s*null/);
+  assert.match(page, /material\.map\s*=\s*null/);
   assert.match(page, /function acGarageSeparateBumpersFromBody\(root\)/);
   assert.match(page, /ALLCOINS_VAZ2107_UnpaintedBumpers/);
   assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
