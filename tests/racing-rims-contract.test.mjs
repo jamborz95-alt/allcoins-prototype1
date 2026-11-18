@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const page = readFileSync(new URL("../racing-game.html", import.meta.url), "utf8");
 const bridge = readFileSync(new URL("../racing-host.js", import.meta.url), "utf8");
 const router = readFileSync(new URL("../server/drag-racing-router.js", import.meta.url), "utf8");
+const appShell = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 const rims = {
   sport5: { price: 5000, label: "OEM CLASSIC 5" },
@@ -75,4 +76,33 @@ test("ALLCOINS Racing host bridge forwards profile, selection and purchase actio
   assert.match(bridge, /allcoinsRacingRimsApi\.select\(data\.rimId\)/);
   assert.match(bridge, /action === "rims:buy"/);
   assert.match(bridge, /allcoinsRacingRimsApi\.buy\(data\.rimId\)/);
+});
+
+
+test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
+  assert.match(page, /id="garageSuspensionSection" hidden/);
+  assert.match(page, /id="garageSuspensionStatus"/);
+  assert.match(page, /id="garageSuspensionBuy"/);
+  assert.match(page, /ПНЕВМОПОДВЕСКА/);
+  assert.match(page, /3 000 AC/);
+  assert.match(page, /const rideModes=\[/);
+  assert.match(page, /label:'НИЗКАЯ'/);
+  assert.match(page, /label:'СРЕДНЯЯ'/);
+  assert.match(page, /label:'ВЫСОКАЯ'/);
+  assert.match(page, /if\(acGarageAirSuspensionProfileReady&&acGarageAirSuspensionOwned\)setSuspension\(suspensionMode\+1\)/);
+  assert.match(page, /async function acGarageLoadAirSuspensionProfile/);
+  assert.match(page, /onlineHostRequest\("suspension:profile"\)/);
+  assert.match(page, /onlineHostRequest\("suspension:buy"\)/);
+  assert.match(router, /CREATE TABLE IF NOT EXISTS drag_racing_player_air_suspensions/);
+  assert.match(router, /router\.post\("\/garage\/suspension\/profile"/);
+  assert.match(router, /router\.post\("\/garage\/suspension\/buy"/);
+  assert.match(router, /const price = 3000n/);
+  assert.match(router, /UPDATE players SET balance = balance - \$1::BIGINT/);
+  assert.match(bridge, /action === "suspension:profile"/);
+  assert.match(bridge, /allcoinsRacingSuspensionApi\.profile\(\)/);
+  assert.match(bridge, /action === "suspension:buy"/);
+  assert.match(bridge, /allcoinsRacingSuspensionApi\.buy\(\)/);
+  assert.match(appShell, /window\.allcoinsRacingSuspensionApi = Object\.freeze/);
+  assert.match(appShell, /\/api\/drag-racing\/garage\/suspension\/profile/);
+  assert.match(appShell, /\/api\/drag-racing\/garage\/suspension\/buy/);
 });
