@@ -3257,6 +3257,11 @@ function acGarageBuildRimFace(style, radius, depth, side) {
     color: 0x080d12, metalness: .55, roughness: .46
   });
 
+  // Matte-black backing sits behind the spokes so every opening reads as a deep cavity.
+  const openingShadowMaterial = new THREE.MeshStandardMaterial({
+    color: 0x05080b, metalness: .16, roughness: .9
+  });
+
   // Deep wheel barrel and dark recessed centre make the gaps between spokes read as depth.
   const barrel = new THREE.Mesh(
     new THREE.CylinderGeometry(radius * .79, radius * .79, faceDepth * .82, 96),
@@ -3271,6 +3276,14 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   );
   innerDish.position.y = side * faceDepth * .20;
   face.add(innerDish);
+
+  // Black recessed well visible through the spoke openings (kept behind the cast spokes).
+  const openingBacking = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * .785, radius * .785, faceDepth * .035, 96),
+    openingShadowMaterial
+  );
+  openingBacking.position.y = side * faceDepth * .49;
+  face.add(openingBacking);
 
   function addMachinedRing(radial, tube, material, yFactor) {
     const ring = new THREE.Mesh(
