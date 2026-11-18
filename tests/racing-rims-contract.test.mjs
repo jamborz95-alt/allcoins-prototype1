@@ -142,8 +142,13 @@ test("VAZ-2107 has a dedicated factory paint palette with server-matching codes"
     assert.ok(button[0].includes('data-paint-finish="' + paint.finish + '"'));
     assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + paint.color + '" \\}'));
   }
-  assert.equal((page.match(/class="garage-paint-swatch/g) || []).length, 32,
-    "The existing 14 colours plus 18 VAZ-2107 factory colours should be visible.");
+  const paletteMarkup = page.match(/<div class="garage-paint-options" id="garagePaintOptions" hidden>([\\s\\S]*?)<\\/div>/)?.[1] || "";
+  assert.equal((paletteMarkup.match(/class="garage-paint-swatch/g) || []).length, 18,
+    "Only the eighteen VAZ-2107 factory colours should be visible.");
+  for (const oldId of ["white","black","silver","graphite","red","blue","green","burgundy","yellow","orange","skyblue","turquoise","violet","bronze"]) {
+    assert.doesNotMatch(paletteMarkup, new RegExp('data-paint-id="' + oldId + '"'));
+    assert.doesNotMatch(router, new RegExp('^\\s*' + oldId + ':', 'm'));
+  }
   assert.match(page, /metallicFactoryPaints = new Set/);
   assert.match(page, /hasMetallicFinish \? 0\.32 : 0\.08/);
 });
