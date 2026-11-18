@@ -166,17 +166,18 @@ test("VAZ-2107 body paint uses the original material tint without a PNG paint sh
   assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
   assert.match(page, /metalness >= \.45 && neutralSilver/);
   assert.match(page, /steelMaterialIndexes\.has\(materialIndex\)/);
-  assert.ok(page.includes('const withinSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= steelTrimTop)'));
-  assert.ok(page.includes('const isFrontRearSteelTrim = (withinFrontCap || withinRearCap) && withinSteelTrimBand'));
+  assert.ok(page.includes('const withinFrontSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= frontSteelTrimTop)'));
+  assert.ok(page.includes('const withinRearSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= rearSteelTrimTop)'));
+  assert.ok(page.includes('(withinFrontCap && withinFrontSteelTrimBand)'));
+  assert.ok(page.includes('(withinRearCap && withinRearSteelTrimBand)'));
   assert.ok(page.includes('const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim'));
-  assert.ok(page.includes('front lower grille and front/rear steel bumper trim factory-coloured.'));
-  assert.match(page, /const endZone = Math.max\(size\.x \* \.055, \.08\)/);
-  assert.match(page, /const steelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
-
-  assert.match(page, /const endZone = Math\.max\(size\.x \* \.055, \.08\)/);
-  assert.match(page, /const steelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
+  assert.ok(page.includes('rear body panel'));
+  assert.match(page, /const frontEndZone = Math.max\(size\.x \* \.055, \.08\)/);
+  assert.match(page, /const rearEndZone = Math.max\(size\.x \* \.04, \.05\)/);
+  assert.match(page, /const frontSteelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
+  assert.match(page, /const rearSteelTrimTop = bounds\.min\.y \+ size\.y \* \.30/);
   assert.match(page, /withinFrontCap = \[pointA, pointB, pointC\]\.every/);
   assert.match(page, /withinRearCap = \[pointA, pointB, pointC\]\.every/);
-  assert.match(page, /withinSteelTrimBand = \[pointA, pointB, pointC\]\.every/);
+  assert.doesNotMatch(page, /const withinSteelTrimBand =|const endZone =|const steelTrimTop =/);
 
 });
