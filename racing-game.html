@@ -1451,6 +1451,158 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   }
 }
 </style>
+<style id="allcoins-live-tuning-preview">
+/* ALLCOINS · Полноэкранный тюнинг с живым предпросмотром цвета */
+#garageScreen.tuning-screen-open > div:first-child,
+#garageScreen.tuning-screen-open > .garage-controls{
+  display:none!important;
+}
+.garage-paint-car-visual{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:230px;
+  height:34vh;
+  max-height:430px;
+  overflow:hidden;
+  margin:4px 0 14px;
+  padding:12px;
+  border:1px solid #8ba6c477;
+  border-radius:16px;
+  background:radial-gradient(ellipse at 52% 52%,#405a77 0%,#1b2c42 62%,#0c1522 100%);
+  box-shadow:inset 0 1px 0 #ffffff1c,0 10px 26px #0006;
+}
+.garage-paint-car-visual[hidden]{display:none!important}
+.garage-paint-preview-caption{
+  position:relative;
+  z-index:2;
+  align-self:center;
+  padding:4px 9px;
+  border-radius:99px;
+  background:#091321b8;
+  color:#f3d08b;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-align:center;
+}
+.garage-tab-panel.tuning-fullscreen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:120!important;
+  display:flex!important;
+  flex-direction:column;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  max-height:100vh!important;
+  max-height:100dvh!important;
+  margin:0!important;
+  padding:
+    calc(env(safe-area-inset-top,0px) + 14px)
+    clamp(14px,4vw,42px)
+    calc(env(safe-area-inset-bottom,0px) + 18px)!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border:0!important;
+  border-radius:0!important;
+  transform:none!important;
+  background:radial-gradient(ellipse at 50% 25%,#263d57 0%,#111d2d 48%,#080e18 100%)!important;
+  box-shadow:none!important;
+}
+.garage-tab-panel.tuning-fullscreen h2{
+  flex:none;
+  margin:4px 56px 7px 0!important;
+  color:#f5d58e!important;
+  font-size:clamp(24px,4vw,36px)!important;
+}
+.garage-tab-panel.tuning-fullscreen > p{
+  flex:none;
+  margin:0 0 8px!important;
+  font-size:clamp(13px,2vw,16px)!important;
+  line-height:1.45!important;
+}
+.garage-tab-panel.tuning-fullscreen .garage-panel-close{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top,0px) + 12px)!important;
+  right:clamp(12px,3vw,32px)!important;
+  z-index:5;
+  width:44px!important;
+  height:44px!important;
+  font-size:26px!important;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-car-visual{
+  flex:none;
+  width:min(1120px,100%);
+  height:clamp(230px,38vh,430px);
+  min-height:230px;
+  max-height:430px;
+  margin:3px auto 12px;
+  border-radius:18px;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-options{
+  flex:none;
+  width:min(900px,100%);
+  margin:0 auto;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-swatch{
+  min-height:62px;
+  font-size:11px;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-swatch:before{
+  width:28px;height:28px;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-selected{
+  flex:none;
+  margin:10px auto 0;
+  color:#f5d58e;
+  font-size:12px;
+  text-align:center;
+}
+.garage-tab-panel.tuning-fullscreen .garage-paint-apply{
+  flex:none;
+  width:min(900px,100%);
+  min-height:50px;
+  margin:10px auto 0;
+  font-size:14px;
+}
+@media(max-width:520px){
+  .garage-tab-panel.tuning-fullscreen{
+    padding:
+      calc(env(safe-area-inset-top,0px) + 10px)
+      12px
+      calc(env(safe-area-inset-bottom,0px) + 14px)!important;
+  }
+  .garage-tab-panel.tuning-fullscreen h2{font-size:23px!important;margin-right:52px!important}
+  .garage-tab-panel.tuning-fullscreen > p{font-size:12px!important;margin-bottom:7px!important}
+  .garage-tab-panel.tuning-fullscreen .garage-paint-car-visual{
+    height:33vh;
+    min-height:210px;
+    max-height:300px;
+    margin-bottom:10px;
+  }
+  .garage-tab-panel.tuning-fullscreen .garage-paint-options{gap:7px}
+  .garage-tab-panel.tuning-fullscreen .garage-paint-swatch{
+    min-height:56px;
+    padding:5px 2px;
+    font-size:10px;
+  }
+  .garage-tab-panel.tuning-fullscreen .garage-paint-swatch:before{
+    width:24px;height:24px;
+  }
+  .garage-tab-panel.tuning-fullscreen .garage-paint-selected{font-size:11px;margin-top:7px}
+  .garage-tab-panel.tuning-fullscreen .garage-paint-apply{
+    min-height:46px;
+    margin-top:7px;
+    font-size:12px;
+  }
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -1482,6 +1634,10 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   </div>
 </div>
 
+<div class="garage-paint-car-visual" id="garagePaintCarVisual" hidden>
+  <span class="garage-shop-tag">ALLCOINS · LIVE COLOR PREVIEW</span>
+  <div class="garage-paint-preview-caption">ЦВЕТ КУЗОВА МЕНЯЕТСЯ ПРИ ВЫБОРЕ · ДО ПОКУПКИ</div>
+</div>
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
 <button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#000000" data-paint-id="black" data-paint-name="Чёрный" data-price-label="2 000 AC" style="--paint-color:#000000">ЧЁРНЫЙ</button>
@@ -2889,8 +3045,12 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const alreadyOpen = !panel.hidden && button.classList.contains("active");
     document.querySelectorAll("[data-garage-tab]").forEach(tab => tab.classList.remove("active"));
     if (alreadyOpen) {
-      panel.classList.remove("shop-fullscreen");
-      $("garageScreen").classList.remove("shop-screen-open");
+      if (panel.classList.contains("tuning-fullscreen")) acGarageClearBodyPaintPreview();
+      acGarageMoveCarPreview("shop");
+      panel.classList.remove("shop-fullscreen", "tuning-fullscreen");
+      $("garageScreen").classList.remove("shop-screen-open", "tuning-screen-open");
+      document.body.classList.remove("tuning-preview-mode");
+      $("garagePaintCarVisual").hidden = true;
       panel.hidden = true;
       return;
     }
@@ -2900,9 +3060,15 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const shopMode = button.dataset.garageTab === "shop";
     const paintMode = button.dataset.garageTab === "tuning";
     const partsMode = button.dataset.garageTab === "upgrades";
+    const wasPaintMode = panel.classList.contains("tuning-fullscreen");
+    if (wasPaintMode && !paintMode) acGarageClearBodyPaintPreview();
     panel.classList.toggle("shop-fullscreen", shopMode);
+    panel.classList.toggle("tuning-fullscreen", paintMode);
     $("garageScreen").classList.toggle("shop-screen-open", shopMode);
+    $("garageScreen").classList.toggle("tuning-screen-open", paintMode);
+    document.body.classList.toggle("tuning-preview-mode", paintMode);
     $("garageCarShop").hidden = !shopMode;
+    $("garagePaintCarVisual").hidden = !paintMode;
     if (shopMode) {
       acGarageRefreshCarShopUi();
       void acGarageLoadCarShopProfile();
@@ -2924,7 +3090,16 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
       void acGarageLoadPaintProfile();
     }
     panel.hidden = false;
-    if (shopMode) requestAnimationFrame(() => acGarageBuildLoadedCarPreview());
+    if (shopMode) {
+      acGarageMoveCarPreview("shop");
+      requestAnimationFrame(() => acGarageBuildLoadedCarPreview());
+    } else if (paintMode) {
+      acGarageMoveCarPreview("tuning");
+      if (acGaragePendingPaint) acGaragePreviewBodyPaint(acGaragePendingPaint);
+      requestAnimationFrame(() => acGarageBuildLoadedCarPreview());
+    } else {
+      acGarageMoveCarPreview("shop");
+    }
   });
 });
 let acGaragePendingPaint = null;
@@ -2970,6 +3145,7 @@ document.querySelectorAll("[data-car-paint]").forEach(button => {
   button.addEventListener("click", () => {
     acGaragePendingPaint = button.dataset.carPaint;
     acGaragePendingPaintId = button.dataset.paintId;
+    acGaragePreviewBodyPaint(acGaragePendingPaint);
     acGarageRefreshPaintUi();
     if (!acGaragePaintProfileReady) void acGarageLoadPaintProfile();
   });
@@ -3015,8 +3191,12 @@ $("garagePaintApply").addEventListener("click", async () => {
   acGarageRefreshPaintUi();
 });
 $("garageTabClose").addEventListener("click", () => {
-  $("garageTabPanel").classList.remove("shop-fullscreen");
-  $("garageScreen").classList.remove("shop-screen-open");
+  if ($("garageTabPanel").classList.contains("tuning-fullscreen")) acGarageClearBodyPaintPreview();
+  acGarageMoveCarPreview("shop");
+  $("garageTabPanel").classList.remove("shop-fullscreen", "tuning-fullscreen");
+  $("garageScreen").classList.remove("shop-screen-open", "tuning-screen-open");
+  document.body.classList.remove("tuning-preview-mode");
+  $("garagePaintCarVisual").hidden = true;
   $("garageTabPanel").hidden = true;
   $("garagePaintOptions").hidden = true;
   $("garagePaintSelected").hidden = true;
@@ -4531,6 +4711,9 @@ async function acGarageLoadPaintProfile() {
         acGarageSelectedPaint = null;
         try { window.localStorage.removeItem("allcoins-vaz2107-body-paint"); } catch (_) {}
       }
+      if (acGaragePendingPaint && document.body.classList.contains("tuning-preview-mode")) {
+        acGaragePreviewBodyPaint(acGaragePendingPaint);
+      }
       acGarageRefreshPaintUi();
       return true;
     } catch (error) {
@@ -4549,6 +4732,94 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
+function acGaragePreviewBodyPaint(color) {
+  const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
+  if (!match || !vehicle) return false;
+  const paint = "#" + match[1].toLowerCase();
+  let changed = 0;
+
+  vehicle.traverse(object => {
+    if (!object.isMesh || object.name !== "Car_CarBody_0" || !object.material) return;
+
+    if (!object.userData.acGaragePaintMaterialPrepared) {
+      const original = Array.isArray(object.material) ? object.material : [object.material];
+      const prepared = original.map(material => material?.clone ? material.clone() : material);
+      object.material = Array.isArray(object.material) ? prepared : prepared[0];
+      object.userData.acGaragePaintMaterialPrepared = true;
+    }
+
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    // Keep the currently applied/purchased color so leaving tuning can undo an unbought preview.
+    if (!object.userData.acGaragePaintPreviewBase) {
+      object.userData.acGaragePaintPreviewBase = materials.map(material =>
+        material?.clone ? material.clone() : material
+      );
+      object.userData.acGaragePaintPreviewWasArray = Array.isArray(object.material);
+    }
+
+    for (const material of materials) {
+      if (!material?.color) continue;
+      material.map = null;
+      material.color.set(paint);
+      if (material.emissive) material.emissive.set(0x000000);
+      if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
+      if ("roughness" in material) material.roughness = 0.42;
+      if ("metalness" in material) material.metalness = 0.08;
+      material.needsUpdate = true;
+      changed++;
+    }
+  });
+
+  if (changed && typeof acGarageRefreshLoadedCarPreview === "function") {
+    acGarageRefreshLoadedCarPreview();
+  }
+  return changed > 0;
+}
+
+function acGarageClearBodyPaintPreview() {
+  if (!vehicle) return false;
+  let restored = 0;
+
+  vehicle.traverse(object => {
+    const base = object.userData?.acGaragePaintPreviewBase;
+    if (!object.isMesh || object.name !== "Car_CarBody_0" || !Array.isArray(base)) return;
+
+    const current = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of current) {
+      if (material && !base.includes(material)) material.dispose?.();
+    }
+    object.material = object.userData.acGaragePaintPreviewWasArray ? base : base[0];
+    delete object.userData.acGaragePaintPreviewBase;
+    delete object.userData.acGaragePaintPreviewWasArray;
+    restored++;
+  });
+
+  if (restored && typeof acGarageRefreshLoadedCarPreview === "function") {
+    acGarageRefreshLoadedCarPreview();
+  }
+  return restored > 0;
+}
+
+function acGarageCommitBodyPaintPreview() {
+  if (!vehicle) return;
+  vehicle.traverse(object => {
+    const base = object.userData?.acGaragePaintPreviewBase;
+    if (!object.isMesh || object.name !== "Car_CarBody_0" || !Array.isArray(base)) return;
+    for (const material of base) material?.dispose?.();
+    delete object.userData.acGaragePaintPreviewBase;
+    delete object.userData.acGaragePaintPreviewWasArray;
+  });
+}
+
+function acGarageMoveCarPreview(targetMode) {
+  const canvas = $("garageCar3dPreview");
+  const status = $("garageCarPreviewLoading");
+  const target = targetMode === "tuning" ? $("garagePaintCarVisual") : $("garageCarShopVisual");
+  if (!canvas || !target) return;
+  if (canvas.parentElement !== target) target.appendChild(canvas);
+  if (status && status.parentElement !== target) target.appendChild(status);
+}
+
 function acGarageApplyBodyPaint(color) {
   const match = String(color || "").match(/^#?([0-9a-f]{6})$/i);
   if (!match) return false;
@@ -4583,6 +4854,7 @@ function acGarageApplyBodyPaint(color) {
   if (!changed) return false;
   acGarageSelectedPaint = paint;
   try { window.localStorage.setItem("allcoins-vaz2107-body-paint", paint); } catch (_) {}
+  acGarageCommitBodyPaintPreview();
   if (typeof acGarageRefreshLoadedCarPreview === "function") acGarageRefreshLoadedCarPreview();
   return true;
 }
@@ -5505,6 +5777,7 @@ let acGaragePreviewCamera = null;
 let acGaragePreviewCar = null;
 let acGaragePreviewObserver = null;
 let acGaragePreviewSource = null;
+let acGaragePreviewObservedContainer = null;
 
 function acGarageBuildLoadedCarPreview() {
   const canvas = $("garageCar3dPreview");
@@ -5520,13 +5793,15 @@ function acGarageBuildLoadedCarPreview() {
 
   const container = canvas.parentElement || canvas;
   const rect = container.getBoundingClientRect();
-  if (!acGaragePreviewObserver && window.ResizeObserver) {
+  if (window.ResizeObserver && acGaragePreviewObservedContainer !== container) {
+    if (acGaragePreviewObserver) acGaragePreviewObserver.disconnect();
     acGaragePreviewObserver = new ResizeObserver(() => {
       const visibleRect = container.getBoundingClientRect();
       if (visibleRect.width > 20 && visibleRect.height > 20) {
         acGarageBuildLoadedCarPreview();
       }
     });
+    acGaragePreviewObservedContainer = container;
     acGaragePreviewObserver.observe(container);
   }
   if (rect.width < 20 || rect.height < 20) {
@@ -5743,6 +6018,9 @@ function attachVehicle(root,label='сохранённая модель'){
   acRacingApplyRearLowRideBodyReceiverPolicy();
     acRacingApplyLowRideAmbientOcclusionPolicy();
   acRacingApplyRearDetailsShadowPolicy();
+  if (acGaragePendingPaint && document.body.classList.contains("tuning-preview-mode")) {
+    acGaragePreviewBodyPaint(acGaragePendingPaint);
+  }
   acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
