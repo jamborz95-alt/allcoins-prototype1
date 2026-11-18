@@ -5240,7 +5240,8 @@ function acGaragePreviewBodyPaint(color) {
 
     for (const material of materials) {
       if (!material?.color) continue;
-      material.map = null;
+      // Сохраняем исходную PNG-текстуру кузова: выбранный оттенок умножается на неё,
+      // поэтому остаются видны детали поверхности, заводская фактура и световые блики.
       material.color.set(paint);
       if (material.emissive) material.emissive.set(0x000000);
       if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
@@ -5322,7 +5323,8 @@ function acGarageApplyBodyPaint(color) {
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material || !material.color) continue;
-      material.map = null;
+      // Сохраняем исходную PNG-текстуру кузова: выбранный оттенок умножается на неё,
+      // поэтому остаются видны детали поверхности, заводская фактура и световые блики.
       material.color.set(paint);
       if (material.emissive) material.emissive.set(0x000000);
       if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
