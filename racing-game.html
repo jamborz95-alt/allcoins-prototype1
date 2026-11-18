@@ -6231,7 +6231,7 @@ function acRacingBuildGeometryPart(sourceGeometry, triangles, offset=null){
   return out;
 }
 
-// Keep only steel/chrome faces at the front/rear bumper ends factory-coloured.
+// Keep steel/chrome trim and the lower front grille factory-coloured.
 // Painted bumper covers, fenders and body panels remain in the paintable geometry.
 function acGarageSeparateBumpersFromBody(root) {
   if (!root) return 0;
@@ -6314,7 +6314,6 @@ function acGarageSeparateBumpersFromBody(root) {
       const withinRearCap = [pointA, pointB, pointC].every(point => point.x >= bounds.max.x - endZone);
       const belowBumperLine = [pointA, pointB, pointC].every(point => point.y <= bumperTop);
       const materialIndex = materialForElement(at);
-      const isFrontOrRearEnd = withinFrontCap || withinRearCap;
       const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
       // Preserve named/PBR steel materials wherever they occur.
