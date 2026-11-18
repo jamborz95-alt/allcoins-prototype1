@@ -1213,6 +1213,30 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .garage-paint-apply{display:block;width:100%;min-height:42px;margin-top:12px;padding:9px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:13px;font-weight:950;letter-spacing:.04em}
   .garage-paint-apply[hidden]{display:none!important}
   .garage-paint-apply:disabled{opacity:.45;filter:grayscale(.55)}
+
+.garage-car-shop{display:grid;grid-template-columns:1fr;gap:12px;margin-top:13px}
+.garage-car-shop[hidden]{display:none!important}
+.garage-car-shop-visual{position:relative;min-height:142px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;padding:8px 10px 6px;border:1px solid #8ba6c455;border-radius:12px;background:radial-gradient(ellipse at 52% 55%,#31455e 0%,#172437 58%,#0c1522 100%)}
+.garage-shop-tag{position:relative;z-index:1;align-self:flex-start;padding:4px 7px;border:1px solid #e9b94f66;border-radius:99px;background:#0a1420a8;color:#f3d08b;font-size:9px;font-weight:900;letter-spacing:.09em}
+.garage-2107-art{display:block;width:100%;height:auto;max-height:130px;filter:drop-shadow(0 8px 9px #0008)}
+.garage-shop-caption{color:#aebed0;font-size:9px;text-align:center}
+.garage-car-shop-details{padding:2px 1px 0}
+.garage-shop-kicker{color:#e5c17a;font-size:9px;font-weight:900;letter-spacing:.12em}
+.garage-car-shop-details h3{margin:3px 0 5px;color:#f4f6fa;font-size:21px;font-weight:950;letter-spacing:.02em}
+.garage-car-shop-details p{margin:0!important;color:#bac8d8!important;font-size:11px!important;line-height:1.45!important}
+.garage-shop-price{display:flex;align-items:baseline;gap:6px;margin:9px 0 5px;color:#f7d88e}
+.garage-shop-price strong{font-size:25px;font-weight:950;font-variant-numeric:tabular-nums}
+.garage-shop-price span{font-size:12px;font-weight:950}
+.garage-shop-status{min-height:17px;margin:3px 0 8px;color:#a9bed7;font-size:10px;line-height:1.4}
+.garage-shop-status.success{color:#8de3b1}
+.garage-shop-status.error{color:#ffaaa4}
+.garage-shop-buy,.garage-shop-ad{width:100%;min-height:39px;margin-top:7px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:950;letter-spacing:.025em}
+.garage-shop-buy{border:1px solid #ffe0a2;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21}
+.garage-shop-ad{border:1px solid #7bb5ed99;background:linear-gradient(145deg,#294c70,#162d49);color:#e6f2ff}
+.garage-shop-buy:disabled,.garage-shop-ad:disabled{opacity:.42;filter:grayscale(.45)}
+.garage-shop-note{margin-top:7px;color:#8fa1b5;font-size:9px;line-height:1.4}
+@media(min-width:540px){.garage-car-shop{grid-template-columns:1fr 1fr;align-items:center;gap:15px}.garage-car-shop-visual{min-height:205px}.garage-2107-art{max-height:176px}.garage-shop-caption{font-size:9px}}
+
 .garage-parts-status{margin-top:10px;padding:8px 10px;border:1px solid #8bb8e455;border-radius:9px;background:#102033;color:#b9d8f8;font-size:11px;line-height:1.4}
 .garage-parts-status.error{border-color:#e8756b88;color:#ffb0a8}
 .garage-parts-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:12px}
@@ -1241,6 +1265,49 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <section class="garage-tab-panel" id="garageTabPanel" hidden>
 <button class="garage-panel-close" id="garageTabClose" type="button" aria-label="Закрыть">×</button>
 <h2 id="garageTabTitle">Магазин</h2><p id="garageTabDescription"></p>
+
+<div class="garage-car-shop" id="garageCarShop" hidden>
+  <div class="garage-car-shop-visual" aria-label="Изображение ВАЗ-2107">
+    <span class="garage-shop-tag">ALLCOINS · CLASSIC RWD</span>
+    <svg class="garage-2107-art" viewBox="0 0 560 190" role="img" aria-label="ВАЗ-2107, вид сбоку">
+      <defs>
+        <linearGradient id="ac2107paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset=".42" stop-color="#aebbc8"/><stop offset="1" stop-color="#566273"/></linearGradient>
+        <linearGradient id="ac2107glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9d8f2"/><stop offset="1" stop-color="#1e344c"/></linearGradient>
+        <linearGradient id="ac2107chrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#9eabb8"/><stop offset="1" stop-color="#e9eff5"/></linearGradient>
+      </defs>
+      <ellipse cx="280" cy="153" rx="224" ry="13" fill="#02070d" opacity=".55"/>
+      <path d="M48 119 L59 94 Q65 84 88 81 L157 75 L202 35 Q211 26 229 25 L330 25 Q344 26 356 39 L397 78 L480 87 Q500 90 508 108 L514 127 L507 139 L477 143 L82 143 L51 137Z" fill="url(#ac2107paint)" stroke="#e7edf4" stroke-width="3"/>
+      <path d="M170 75 L209 38 Q215 33 229 33 L267 33 L267 76Z" fill="url(#ac2107glass)" stroke="#26394c" stroke-width="3"/>
+      <path d="M276 33 L328 33 Q339 34 348 45 L377 76 L276 76Z" fill="url(#ac2107glass)" stroke="#26394c" stroke-width="3"/>
+      <path d="M268 33 L268 127 M387 78 L382 128" fill="none" stroke="#758292" stroke-width="3"/>
+      <path d="M204 28 L350 28" stroke="#f9fbff" stroke-width="4" opacity=".7"/>
+      <path d="M77 91 L146 86 M405 86 L482 96" stroke="#f8fbff" stroke-width="3" opacity=".7"/>
+      <path d="M50 119 L77 119 L77 130 L49 130Z" fill="#eaf2fb" stroke="#718094" stroke-width="2"/>
+      <path d="M494 104 L512 108 L516 122 L494 119Z" fill="#c83d37" stroke="#71302d" stroke-width="2"/>
+      <path d="M88 137 L480 137" stroke="#202c39" stroke-width="5"/>
+      <path d="M89 143 L476 143" stroke="url(#ac2107chrome)" stroke-width="5"/>
+      <rect x="113" y="90" width="39" height="4" rx="2" fill="#e4edf7"/><rect x="419" y="93" width="42" height="4" rx="2" fill="#e4edf7"/>
+      <path d="M165 82 L171 131 M270 80 L270 129 M380 81 L382 129" stroke="#6b7785" stroke-width="2"/>
+      <path d="M112 110 L144 110 M424 111 L457 111" stroke="#718091" stroke-width="2"/>
+      <rect x="232" y="116" width="27" height="4" rx="2" fill="#dbe4ee"/><rect x="294" y="116" width="27" height="4" rx="2" fill="#dbe4ee"/>
+      <g transform="translate(151 137)"><circle r="31" fill="#111925" stroke="#aeb8c6" stroke-width="4"/><circle r="22" fill="#687587" stroke="#e0e6ee" stroke-width="3"/><circle r="13" fill="#1b2634" stroke="#c3ccd8" stroke-width="3"/><circle r="4" fill="#e6edf4"/><path d="M0 -19 V-9 M19 0 H9 M0 19 V9 M-19 0 H-9" stroke="#d9e0e9" stroke-width="3"/></g>
+      <g transform="translate(421 137)"><circle r="31" fill="#111925" stroke="#aeb8c6" stroke-width="4"/><circle r="22" fill="#687587" stroke="#e0e6ee" stroke-width="3"/><circle r="13" fill="#1b2634" stroke="#c3ccd8" stroke-width="3"/><circle r="4" fill="#e6edf4"/><path d="M0 -19 V-9 M19 0 H9 M0 19 V9 M-19 0 H-9" stroke="#d9e0e9" stroke-width="3"/></g>
+      <path d="M62 128 L89 128 M486 128 L511 128" stroke="#d9e1e9" stroke-width="5"/>
+    </svg>
+    <div class="garage-shop-caption">В гараже также отображается загруженная 3D-модель автомобиля</div>
+  </div>
+  <div class="garage-car-shop-details">
+    <div class="garage-shop-kicker">КЛАССИКА · ЗАДНИЙ ПРИВОД</div>
+    <h3>ВАЗ-2107</h3>
+    <p>Легендарный седан для драг-рейсинга. После получения автомобиль появится в твоём гараже и будет доступен для заездов.</p>
+    <div class="garage-shop-price"><strong>50 000</strong><span>AC</span></div>
+    <div class="garage-shop-status" id="garageCarShopStatus">Проверяем наличие автомобиля в гараже…</div>
+    <button class="garage-shop-buy" id="garageCarBuyAc" type="button" disabled>КУПИТЬ ЗА 50 000 AC</button>
+    <button class="garage-shop-ad" id="garageCarBuyAd" type="button" disabled>▶ ПОЛУЧИТЬ ЗА ПРОСМОТР ВИДЕО</button>
+    <div class="garage-shop-note">Рекламная награда выдаётся только после полного просмотра Rewarded-рекламы. Пропущенный просмотр не засчитывается.</div>
+  </div>
+</div>
+
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
 <button class="garage-paint-swatch" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#000000" data-paint-id="black" data-paint-name="Чёрный" data-price-label="2 000 AC" style="--paint-color:#000000">ЧЁРНЫЙ</button>
@@ -2375,10 +2442,127 @@ $("garagePartsList").addEventListener("click", event => {
   if (button && !button.disabled) void acGarageBuyPart(button.dataset.buyPart);
 });
 
+
+let racingGarageProfile = null;
+let racingGarageProfileLoaded = false;
+let racingGarageProfilePromise = null;
+let racingCarShopBusy = false;
+
+function acGarageShopStatus(message, mode="") {
+  const node = $("garageCarShopStatus");
+  if (!node) return;
+  node.textContent = message || "";
+  node.classList.toggle("success", mode === "success");
+  node.classList.toggle("error", mode === "error");
+}
+function acGarageRefreshCarShopUi() {
+  const profile = racingGarageProfile?.profile || {};
+  const owned = Array.isArray(profile.ownedCars) && profile.ownedCars.includes("2107");
+  const buy = $("garageCarBuyAc");
+  const ad = $("garageCarBuyAd");
+  if (!buy || !ad) return;
+  if (owned) {
+    buy.textContent = "ВАЗ-2107 УЖЕ В ГАРАЖЕ ✓";
+    ad.textContent = "АВТОМОБИЛЬ ПОЛУЧЕН";
+  } else {
+    buy.textContent = "КУПИТЬ ЗА 50 000 AC";
+    ad.textContent = "▶ ПОЛУЧИТЬ ЗА ПРОСМОТР ВИДЕО";
+  }
+  buy.disabled = !racingGarageProfileLoaded || racingCarShopBusy || owned;
+  ad.disabled = !racingGarageProfileLoaded || racingCarShopBusy || owned;
+}
+async function acGarageLoadCarShopProfile({silent=false}={}) {
+  if (racingGarageProfileLoaded) {
+    acGarageRefreshCarShopUi();
+    return true;
+  }
+  if (racingGarageProfilePromise) return racingGarageProfilePromise;
+  if (!silent) acGarageShopStatus("ЗАГРУЖАЕМ АВТОСАЛОН И ПРОВЕРЯЕМ ГАРАЖ…");
+  racingGarageProfilePromise = (async () => {
+    try {
+      racingGarageProfile = await onlineHostRequest("garage:profile");
+      racingGarageProfileLoaded = true;
+      acGarageRefreshCarShopUi();
+      const owned = Array.isArray(racingGarageProfile.profile?.ownedCars) && racingGarageProfile.profile.ownedCars.includes("2107");
+      acGarageShopStatus(owned ? "ВАЗ-2107 уже принадлежит тебе. Автомобиль доступен в гараже." : "Выбери один из двух способов получения ВАЗ-2107.", owned ? "success" : "");
+      return true;
+    } catch (error) {
+      racingGarageProfileLoaded = false;
+      if (!silent) acGarageShopStatus(error.message || "Не удалось загрузить автосалон. Открой магазин ещё раз.", "error");
+      return false;
+    } finally {
+      racingGarageProfilePromise = null;
+    }
+  })();
+  return racingGarageProfilePromise;
+}
+async function acGarageBuyVaz2107() {
+  if (racingCarShopBusy) return;
+  if (!racingGarageProfileLoaded && !(await acGarageLoadCarShopProfile())) return;
+  if (racingGarageProfile?.profile?.ownedCars?.includes("2107")) return;
+  racingCarShopBusy = true;
+  acGarageRefreshCarShopUi();
+  acGarageShopStatus("ПРОВЕРЯЕМ БАЛАНС И ПОКУПАЕМ ВАЗ-2107…");
+  try {
+    racingGarageProfile = await onlineHostRequest("garage:buy", {carId:"2107"});
+    racingGarageProfileLoaded = true;
+    acGarageRefreshCarShopUi();
+    acGarageShopStatus("ВАЗ-2107 куплена за 50 000 AC и добавлена в гараж!", "success");
+  } catch (error) {
+    acGarageShopStatus(error.message || "Не удалось купить ВАЗ-2107.", "error");
+  } finally {
+    racingCarShopBusy = false;
+    acGarageRefreshCarShopUi();
+  }
+}
+async function acGarageWatchRewardedAdForVaz2107() {
+  if (racingCarShopBusy) return;
+  if (!racingGarageProfileLoaded && !(await acGarageLoadCarShopProfile())) return;
+  if (racingGarageProfile?.profile?.ownedCars?.includes("2107")) return;
+  if (!window.Adsgram || typeof window.Adsgram.init !== "function") {
+    acGarageShopStatus("Рекламный сервис ещё не загрузился. Попробуй позже.", "error");
+    return;
+  }
+  racingCarShopBusy = true;
+  acGarageRefreshCarShopUi();
+  acGarageShopStatus("ЗАПУСКАЕМ ВОЗНАГРАЖДАЕМОЕ ВИДЕО…");
+  let controller = null;
+  let rewardReceived = false;
+  const onReward = () => { rewardReceived = true; };
+  try {
+    // The existing AdsGram Reward block used by the Mini App.
+    controller = window.Adsgram.init({blockId:"54021"});
+    if (!controller || typeof controller.show !== "function" || typeof controller.addEventListener !== "function") {
+      throw new Error("Не удалось подключить Rewarded-рекламу AdsGram.");
+    }
+    controller.addEventListener("onReward", onReward);
+    const result = await controller.show();
+    // A resolved Interstitial may mean the user closed it; only onReward proves Reward completion.
+    if (!rewardReceived || result?.error === true || result?.done === false) {
+      throw new Error("Просмотр не завершён. Награда не выдана.");
+    }
+    acGarageShopStatus("ПРОСМОТР ЗАВЕРШЁН. ВЫДАЁМ ВАЗ-2107…");
+    racingGarageProfile = await onlineHostRequest("garage:claim-ad", {carId:"2107"});
+    racingGarageProfileLoaded = true;
+    acGarageRefreshCarShopUi();
+    acGarageShopStatus("ВАЗ-2107 получена за просмотр рекламы и добавлена в гараж!", "success");
+  } catch (error) {
+    acGarageShopStatus(error.message || "Рекламное видео не завершено. Попробуй позже.", "error");
+  } finally {
+    if (controller && typeof controller.removeEventListener === "function") {
+      try { controller.removeEventListener("onReward", onReward); } catch (_) {}
+    }
+    racingCarShopBusy = false;
+    acGarageRefreshCarShopUi();
+  }
+}
+$("garageCarBuyAc").addEventListener("click", () => { void acGarageBuyVaz2107(); });
+$("garageCarBuyAd").addEventListener("click", () => { void acGarageWatchRewardedAdForVaz2107(); });
+
 const garageTabContent = {
   shop: {
-    title: "Магазин автомобилей",
-    text: "Здесь будет каталог ALLCOINS Racing: выбор автомобилей, их характеристики и покупка за AC. Сейчас в гараже доступна ВАЗ-2107."
+    title: "Автосалон ALLCOINS",
+    text: "Выбери ВАЗ-2107: покупка за 50 000 AC или получение за полный просмотр Rewarded-видео."
   },
   upgrades: {
     title: "Улучшения и запчасти",
@@ -2403,8 +2587,14 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     button.classList.add("active");
     $("garageTabTitle").textContent = content.title;
     $("garageTabDescription").textContent = content.text;
+    const shopMode = button.dataset.garageTab === "shop";
     const paintMode = button.dataset.garageTab === "tuning";
     const partsMode = button.dataset.garageTab === "upgrades";
+    $("garageCarShop").hidden = !shopMode;
+    if (shopMode) {
+      acGarageRefreshCarShopUi();
+      void acGarageLoadCarShopProfile();
+    }
     $("garagePaintOptions").hidden = !paintMode;
     $("garagePaintSelected").hidden = !paintMode;
     $("garagePaintApply").hidden = !paintMode || !acGaragePendingPaint;
