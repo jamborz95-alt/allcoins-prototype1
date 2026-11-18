@@ -5316,40 +5316,11 @@ async function acGarageLoadPaintProfile() {
 }
 // Recolour only the VAZ body: replace the PNG's factory hue with the selected paint,
 // while retaining the source texture's luminance, shadows and stamped body details.
-function acGaragePreparePaintMaterial(material) {
-  if (!material || !material.color) return false;
-  material.userData = material.userData || {};
-  if (!material.userData.acGaragePaintShaderV3) {
-    const originalOnBeforeCompile = material.onBeforeCompile;
-    const originalProgramCacheKey = material.customProgramCacheKey;
-    material.onBeforeCompile = function(shader, renderer) {
-      if (typeof originalOnBeforeCompile === "function") {
-        originalOnBeforeCompile.call(this, shader, renderer);
-      }
-      const mapChunk = "#include <map_fragment>";
-      if (!shader.fragmentShader.includes(mapChunk)) return;
-      shader.fragmentShader = shader.fragmentShader.replace(mapChunk, `${mapChunk}
-#ifdef USE_MAP
-      float acGaragePaintSourceLuma = dot(sampledDiffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-      float acGaragePaintShade = mix(0.58, 1.12, pow(clamp(acGaragePaintSourceLuma, 0.0, 1.0), 0.52));
-#else
-      float acGaragePaintShade = 1.0;
-#endif
-      diffuseColor.rgb = diffuse.rgb * acGaragePaintShade;`);
-    };
-    material.customProgramCacheKey = function() {
-      const baseKey = typeof originalProgramCacheKey === "function"
-        ? originalProgramCacheKey.call(this) : "";
-      return baseKey + "|allcoins-vaz2107-body-paint-v3";
-    };
-    material.userData.acGaragePaintShaderV3 = true;
-    material.needsUpdate = true;
-  }
-  return true;
-}
-
+// Recolour only the body mesh with the selected material tint. Keep its original texture.
 function acGarageSetBodyPaintMaterial(material, paint) {
-  if (!acGaragePreparePaintMaterial(material)) return false;
+  if (!material?.color) return false;
+  // Возвращаем прежнее наложение цвета на исходный материал кузова.
+  // Исходная текстура и её заводская фактура остаются подключёнными.
   material.color.set(paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
