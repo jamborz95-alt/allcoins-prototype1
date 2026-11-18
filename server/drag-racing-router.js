@@ -9,7 +9,7 @@ const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, 
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const BODY_PAINTS = Object.freeze({
   white: { price: 2000, color: "#ffffff" },
-  black: { price: 2000, color: "#151719" },
+  black: { price: 2000, color: "#08090b" },
   green: { price: 2000, color: "#176b40" },
   blue: { price: 2000, color: "#174f9c" },
   sochi: { price: 2000, color: "#74887e" },
