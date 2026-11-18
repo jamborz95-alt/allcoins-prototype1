@@ -42,8 +42,13 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /Four lug seats and four bright hexagonal wheel bolts/);
   assert.match(page, /const spokeCount = Math\.max\(5, Math\.min\(12, style\.count \|\| 5\)\)/);
   assert.match(page, /metalness: \.88, roughness: \.235/);
-  assert.match(page, /const openingShadowMaterial = new THREE\.MeshStandardMaterial\([\s\S]*?color: 0x05080b, metalness: \.16, roughness: \.9/);
-  assert.match(page, /const openingBacking = new THREE\.Mesh\([\s\S]*?new THREE\.CylinderGeometry\(radius \* \.785, radius \* \.785, faceDepth \* \.035, 96\)/);
+  assert.match(page, /const radius = Math\.max\(\.\.\.radialDimensions\)\*\.5\*\.96/);
+  assert.match(page, /addMachinedRing\(radius \* \.905/);
+  assert.match(page, /outerFactor = \.875/);
+  assert.doesNotMatch(page, /openingShadowMaterial|openingBacking|recessMaterial/);
+  assert.match(page, /const originalRimGeometries=\[\]/);
+  assert.match(page, /ALLCOINS_OriginalRimGeometry_/);
+  assert.match(page, /wheel\.originalRimMesh\.visible = rimId === "stock"/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
