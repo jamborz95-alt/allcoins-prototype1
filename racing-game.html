@@ -2510,7 +2510,7 @@ async function acGarageLoadCarShopProfile({silent=false}={}) {
       racingGarageProfileLoaded = false;
       if (!silent) {
         const message = String(error?.message || "");
-        const needsTelegram = /HTTP\\s*401|401|Telegram|initData|авторизац/i.test(message);
+        const needsTelegram = message.includes("401") || /Telegram|initData|авторизац/i.test(message);
         acGarageShopStatus(
           needsTelegram
             ? "Витрина ВАЗ-2107 доступна. Для покупки за 50 000 AC или получения за видео открой Драг-рейсинг через ALLCOINS в Telegram."
