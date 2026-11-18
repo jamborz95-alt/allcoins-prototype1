@@ -165,25 +165,23 @@ test("VAZ-2107 paint colours neutralize factory texture and black uses a solid b
   assert.match(page, /data-car-paint="#ffffff"[^>]*data-paint-id="white"/);
 });
 
-test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
-  assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.match(page, /material\.color\.set\(isBlackPaint \? "#08090b" : paint\)/);
-  assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
+test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edges", () => {
+  assert.match(page, /function acGarageSetBodyPaintMaterial\\(material, paint\\)/);
+  assert.match(page, /material\\.color\\.set\\(paint\\)/);
+  assert.match(page, /acGarageSetBodyPaintMaterial\\(material, paint\\)/);
   assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-body-paint-v3/);
-  assert.match(page, /material\.map\s*=\s*null/);
-  assert.match(page, /function acGarageSeparateBumpersFromBody\(root\)/);
+  assert.match(page, /material\\.map\\s*=\\s*null/);
+  assert.match(page, /function acGarageSeparateBumpersFromBody\\(root\\)/);
   assert.match(page, /ALLCOINS_VAZ2107_UnpaintedBumpers/);
-  assert.match(page, /steelNamePattern = \/chrome\|steel\|stainless\|metal/);
-  assert.match(page, /metalness >= \.45 && neutralSilver/);
-  assert.match(page, /steelMaterialIndexes\.has\(materialIndex\)/);
-  assert.ok(page.includes('const withinFrontSteelTrimBand = [pointA, pointB, pointC].every(point => point.y <= frontSteelTrimTop)'));
-  assert.ok(page.includes('const isFrontRearSteelTrim = withinFrontCap && withinFrontSteelTrimBand'));
-  assert.ok(page.includes('const keepFactorySteel = isSteelMaterial || isFrontRearSteelTrim'));
-  assert.ok(page.includes('do not leave any unpainted geometric strip on the rear body.'));
-  assert.match(page, /const frontEndZone = Math.max\(size\.x \* \.055, \.08\)/);
-  assert.match(page, /const frontSteelTrimTop = bounds\.min\.y \+ size\.y \* \.38/);
-  assert.match(page, /withinFrontCap = \[pointA, pointB, pointC\]\.every/);
-  assert.doesNotMatch(page, /withinRearCap|withinRearSteelTrimBand|rearEndZone|rearSteelTrimTop/);
-  assert.doesNotMatch(page, /const withinSteelTrimBand =|const endZone =|const steelTrimTop =/);
-
+  assert.ok(page.includes("const rearEndZone = Math.max(size.x * .025, .035)"));
+  assert.ok(page.includes("const rearSteelTrimTop = bounds.min.y + size.y * .12"));
+  assert.ok(page.includes("const isFrontSteelTrim = withinFrontCap && withinFrontSteelTrimBand"));
+  assert.ok(page.includes("const isRearSteelTrim = withinRearCap && withinRearSteelTrimBand"));
+  assert.ok(page.includes("const keepFactorySteel = isFrontSteelTrim || isRearSteelTrim"));
+  assert.ok(page.includes("all rear body panels above it"));
+  assert.match(page, /const frontEndZone = Math.max\\(size\\.x \\* \\.055, \\.08\\)/);
+  assert.match(page, /const frontSteelTrimTop = bounds\\.min\\.y \\+ size\\.y \\* \\.38/);
+  assert.match(page, /withinRearCap = points\\.every/);
+  assert.match(page, /withinRearSteelTrimBand = points\\.every/);
+  assert.doesNotMatch(page, /steelMaterialIndexes|steelNamePattern|metalness >= \\.45 && neutralSilver/);
 });
