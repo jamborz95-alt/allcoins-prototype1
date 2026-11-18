@@ -113,48 +113,36 @@ test("VAZ-2107 air suspension is a persistent 3000 AC tuning unlock", () => {
 });
 
 
-test("VAZ-2107 has a dedicated factory paint palette with server-matching codes", () => {
-  const factoryPaints = {
-    vaz106: { code: "106", color: "#7b3f32", finish: "СОЛИД" },
-    vaz107: { code: "107", color: "#38243f", finish: "СОЛИД" },
-    vaz110: { code: "110", color: "#9c2032", finish: "СОЛИД" },
-    vaz118: { code: "118", color: "#ce2736", finish: "СОЛИД" },
-    vaz127: { code: "127", color: "#5b1c2b", finish: "СОЛИД" },
-    vaz128: { code: "128", color: "#b92a3c", finish: "МЕТАЛЛИК" },
-    vaz140: { code: "140", color: "#702537", finish: "СОЛИД" },
-    vaz182: { code: "182", color: "#7d2331", finish: "СОЛИД" },
-    vaz223: { code: "223", color: "#e4c32d", finish: "СОЛИД" },
-    vaz228: { code: "228", color: "#d7bd9d", finish: "СОЛИД" },
-    vaz304: { code: "304", color: "#1e4936", finish: "СОЛИД" },
-    vaz377: { code: "377", color: "#24535a", finish: "СОЛИД" },
-    vaz404: { code: "404", color: "#718078", finish: "СОЛИД" },
-    vaz420: { code: "420", color: "#1d4852", finish: "СОЛИД" },
-    vaz441: { code: "441", color: "#172d59", finish: "СОЛИД" },
-    vaz449: { code: "449", color: "#1b4267", finish: "СОЛИД" },
-    vaz605: { code: "605", color: "#4e627b", finish: "МЕТАЛЛИК" },
-    vaz791: { code: "791", color: "#52402f", finish: "МЕТАЛЛИК" }
+test("VAZ-2107 exposes exactly seven requested body colours with matching server catalogue", () => {
+  const paints = {
+    white: { color: "#f4f3ef", finish: "СОЛИД" },
+    black: { color: "#151719", finish: "СОЛИД" },
+    green: { color: "#176b40", finish: "СОЛИД" },
+    blue: { color: "#174f9c", finish: "СОЛИД" },
+    sochi: { color: "#74887e", finish: "МЕТАЛЛИК", code: "360" },
+    red: { color: "#c62932", finish: "СОЛИД" },
+    yellow: { color: "#f0cf27", finish: "СОЛИД" }
   };
-  for (const [id, paint] of Object.entries(factoryPaints)) {
+  for (const [id, paint] of Object.entries(paints)) {
     const button = page.match(new RegExp('<button class="garage-paint-swatch garage-paint-oem"[^>]*data-paint-id="' + id + '"[^>]*>[\\s\\S]*?<\\/button>'));
-    assert.ok(button, "Missing VAZ-2107 factory paint " + id);
+    assert.ok(button, "Missing requested paint " + id);
     assert.ok(button[0].includes('data-car-paint="' + paint.color + '"'));
-    assert.ok(button[0].includes('data-paint-code="' + paint.code + '"'));
     assert.ok(button[0].includes('data-paint-finish="' + paint.finish + '"'));
+    if (paint.code) assert.ok(button[0].includes('data-paint-code="' + paint.code + '"'));
     assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + paint.color + '" \\}'));
   }
   const paletteStart = page.indexOf('<div class="garage-paint-options" id="garagePaintOptions" hidden>');
   const paletteEnd = page.indexOf('<div class="garage-paint-selected"', paletteStart);
   const paletteMarkup = paletteStart >= 0 && paletteEnd > paletteStart ? page.slice(paletteStart, paletteEnd) : "";
-  assert.equal((paletteMarkup.match(/class="garage-paint-swatch/g) || []).length, 18,
-    "Only the eighteen VAZ-2107 factory colours should be visible.");
-  for (const oldId of ["white","black","silver","graphite","red","blue","green","burgundy","yellow","orange","skyblue","turquoise","violet","bronze"]) {
+  assert.equal((paletteMarkup.match(/class="garage-paint-swatch/g) || []).length, 7,
+    "Only the seven requested colours should be visible.");
+  for (const oldId of ["vaz106","vaz107","vaz110","vaz118","vaz127","vaz128","vaz140","vaz182","vaz223","vaz228","vaz304","vaz377","vaz404","vaz420","vaz441","vaz449","vaz605","vaz791"]) {
     assert.doesNotMatch(paletteMarkup, new RegExp('data-paint-id="' + oldId + '"'));
     assert.doesNotMatch(router, new RegExp('^\\s*' + oldId + ':', 'm'));
   }
-  assert.match(page, /metallicFactoryPaints = new Set/);
-  assert.match(page, /hasMetallicFinish \? 0\.32 : 0\.08/);
+  assert.match(page, /metallicFactoryPaints = new Set\(\["#74887e"\]\)/);
 });
-
+  
 test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
   assert.match(page, /material\.color\.set\(paint\)/);
