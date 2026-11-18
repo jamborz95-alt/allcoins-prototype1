@@ -1715,7 +1715,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div class="garage-paint-options" id="garagePaintOptions" hidden>
 <div class="garage-paint-divider">ЦВЕТА КУЗОВА ВАЗ-2107</div>
   <div class="garage-paint-note">7 цветов · «Сочи» — серо-сине-зелёный металлик, код 360</div>
-  <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#f4f3ef" data-paint-id="white" data-paint-name="Белый" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#f4f3ef">БЕЛЫЙ<span class="garage-paint-code">СОЛИД</span></button>
+  <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#ffffff" data-paint-id="white" data-paint-name="Белый" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#ffffff">БЕЛЫЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#151719" data-paint-id="black" data-paint-name="Чёрный" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#151719">ЧЁРНЫЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#176b40" data-paint-id="green" data-paint-name="Зелёный" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#176b40">ЗЕЛЁНЫЙ<span class="garage-paint-code">СОЛИД</span></button>
   <button class="garage-paint-swatch garage-paint-oem" type="button" data-car-paint="#174f9c" data-paint-id="blue" data-paint-name="Синий" data-paint-finish="СОЛИД" data-price-label="2 000 AC" style="--paint-color:#174f9c">СИНИЙ<span class="garage-paint-code">СОЛИД</span></button>
@@ -5313,14 +5313,75 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
-// Recolour only the VAZ body: replace the PNG's factory hue with the selected paint,
-// while retaining the source texture's luminance, shadows and stamped body details.
-// Recolour only the body mesh with the selected material tint. Keep its original texture.
+// Preserve the original body texture for every paint choice. White is special:
+// remove the source texture's old paint hue while retaining its light/dark body detail.
+const acGaragePaintOriginalMaps = new WeakMap();
+const acGarageWhitePaintTextureCache = new WeakMap();
+
+function acGarageGetWhitePaintTexture(sourceTexture) {
+  if (!sourceTexture?.image) return null;
+  const cached = acGarageWhitePaintTextureCache.get(sourceTexture);
+  if (cached) return cached;
+
+  try {
+    const image = sourceTexture.image;
+    const width = Number(image.naturalWidth || image.videoWidth || image.width || image.displayWidth);
+    const height = Number(image.naturalHeight || image.videoHeight || image.height || image.displayHeight);
+    if (!width || !height) return null;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.drawImage(image, 0, 0, width, height);
+
+    const pixels = context.getImageData(0, 0, width, height);
+    const data = pixels.data;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 3] === 0) continue;
+      const luminance = (
+        data[index] * 0.2126 +
+        data[index + 1] * 0.7152 +
+        data[index + 2] * 0.0722
+      ) / 255;
+      // A bright neutral base makes the selected white visible while preserving
+      // the original texture's small variations, stamped details and reflections.
+      const neutral = Math.round(188 + 67 * luminance);
+      data[index] = neutral;
+      data[index + 1] = neutral;
+      data[index + 2] = neutral;
+    }
+    context.putImageData(pixels, 0, 0);
+
+    const neutralTexture = sourceTexture.clone();
+    neutralTexture.image = canvas;
+    neutralTexture.needsUpdate = true;
+    acGarageWhitePaintTextureCache.set(sourceTexture, neutralTexture);
+    return neutralTexture;
+  } catch (error) {
+    console.warn("ALLCOINS Racing: не удалось нейтрализовать исходную текстуру для белой краски.", error);
+    return null;
+  }
+}
+
 function acGarageSetBodyPaintMaterial(material, paint) {
   if (!material?.color) return false;
-  // Возвращаем прежнее наложение цвета на исходный материал кузова.
-  // Исходная текстура и её заводская фактура остаются подключёнными.
-  material.color.set(paint);
+  if (!acGaragePaintOriginalMaps.has(material)) {
+    acGaragePaintOriginalMaps.set(material, material.map || null);
+  }
+  const originalMap = acGaragePaintOriginalMaps.get(material);
+  const isWhitePaint = String(paint).toLowerCase() === "#ffffff";
+
+  if (isWhitePaint && originalMap) {
+    const neutralTexture = acGarageGetWhitePaintTexture(originalMap);
+    if (neutralTexture) material.map = neutralTexture;
+  } else {
+    // Switching away from white restores the exact original map.
+    material.map = originalMap;
+  }
+
+  material.color.set(isWhitePaint ? "#ffffff" : paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
   const metallicFactoryPaints = new Set(["#74887e"]);
