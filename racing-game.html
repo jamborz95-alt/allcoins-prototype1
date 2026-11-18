@@ -6198,6 +6198,110 @@ function acRacingBuildGeometryPart(sourceGeometry, triangles, offset=null){
   return out;
 }
 
+// Split the lower front/rear bumper triangles out of the painted body mesh.
+// This keeps the bumper's original material while paint changes only the metal body panels.
+function acGarageSeparateBumpersFromBody(root) {
+  if (!root) return 0;
+  root.updateMatrixWorld(true);
+  let separated = 0;
+
+  root.traverse(object => {
+    if (!object.isMesh || object.name !== "Car_CarBody_0" || !object.geometry ||
+        object.userData.acGarageBumpersSeparated) return;
+
+    const geometry = object.geometry;
+    const position = geometry.getAttribute("position");
+    if (!position || position.count < 3) return;
+
+    const index = geometry.index;
+    const elementCount = index ? index.count : position.count;
+    const triangleCount = Math.floor(elementCount / 3);
+    if (triangleCount < 2) return;
+
+    const bounds = new THREE.Box3().setFromObject(object);
+    const size = bounds.getSize(new THREE.Vector3());
+    if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
+
+    // The VAZ body is aligned along world X. Bumpers occupy the low strips at both ends.
+    const endZone = Math.max(size.x * .075, .10);
+    const bumperTop = bounds.min.y + size.y * .58;
+    const bodyTriangles = [];
+    const bumperTriangles = [];
+    const groups = geometry.groups || [];
+    const materialForElement = elementStart => {
+      for (const group of groups) {
+        if (elementStart >= group.start && elementStart < group.start + group.count) {
+          return group.materialIndex ?? 0;
+        }
+      }
+      return 0;
+    };
+    const getIndex = element => index ? index.getX(element) : element;
+    const pointA = new THREE.Vector3();
+    const pointB = new THREE.Vector3();
+    const pointC = new THREE.Vector3();
+
+    for (let triangle = 0; triangle < triangleCount; triangle++) {
+      const at = triangle * 3;
+      const a = getIndex(at);
+      const b = getIndex(at + 1);
+      const c = getIndex(at + 2);
+      if (a >= position.count || b >= position.count || c >= position.count) continue;
+
+      pointA.set(position.getX(a), position.getY(a), position.getZ(a));
+      pointB.set(position.getX(b), position.getY(b), position.getZ(b));
+      pointC.set(position.getX(c), position.getY(c), position.getZ(c));
+      object.localToWorld(pointA);
+      object.localToWorld(pointB);
+      object.localToWorld(pointC);
+
+      const centerX = (pointA.x + pointB.x + pointC.x) / 3;
+      const centerY = (pointA.y + pointB.y + pointC.y) / 3;
+      const atFrontOrRear = centerX <= bounds.min.x + endZone || centerX >= bounds.max.x - endZone;
+      const belowBumperLine = centerY <= bumperTop;
+      const entry = { a, b, c, materialIndex: materialForElement(at) };
+      if (atFrontOrRear && belowBumperLine) bumperTriangles.push(entry);
+      else bodyTriangles.push(entry);
+    }
+
+    // Fail closed: do not alter a mesh if the geometry cannot be divided safely.
+    if (bumperTriangles.length < 2 || bodyTriangles.length < 2) return;
+
+    let bodyGeometry = null;
+    let bumperGeometry = null;
+    try {
+      bodyGeometry = acRacingBuildGeometryPart(geometry, bodyTriangles, null);
+      bumperGeometry = acRacingBuildGeometryPart(geometry, bumperTriangles, null);
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const bumperMaterials = materials.map(material => material?.clone ? material.clone() : material);
+      const bumperMesh = new THREE.Mesh(
+        bumperGeometry,
+        Array.isArray(object.material) ? bumperMaterials : bumperMaterials[0]
+      );
+      bumperMesh.name = "ALLCOINS_VAZ2107_UnpaintedBumpers";
+      bumperMesh.castShadow = object.castShadow;
+      bumperMesh.receiveShadow = object.receiveShadow;
+      bumperMesh.renderOrder = object.renderOrder;
+      bumperMesh.frustumCulled = object.frustumCulled;
+      object.geometry = bodyGeometry;
+      object.add(bumperMesh);
+      object.userData.acGarageBumpersSeparated = true;
+      object.userData.acGarageBumperTriangleCount = bumperTriangles.length;
+      object.userData.acGaragePaintedBodyTriangleCount = bodyTriangles.length;
+      separated++;
+    } catch (error) {
+      bodyGeometry?.dispose?.();
+      bumperGeometry?.dispose?.();
+      console.warn("ALLCOINS Racing: bumper geometry split skipped safely", error);
+    }
+  });
+
+  if (separated) {
+    console.info("ALLCOINS Racing: front and rear bumper meshes retain factory colours", { separated });
+  }
+  return separated;
+}
+
 function acRacingReadGeometryIslands(object){
   const geometry=object.geometry;
   const position=geometry?.getAttribute('position');
@@ -6566,7 +6670,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
   root.position.y+=-box.min.y+.025;
   root.position.z+=-(box.min.z+box.max.z)/2 + AC_PLAYER_LANE_Z;
-  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
   wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
