@@ -130,7 +130,7 @@ test("VAZ-2107 white and coloured paints replace the factory hue while preservin
     violet: "#7442a8", bronze: "#a56a35"
   };
   for (const [id, colour] of Object.entries(addedColours)) {
-    assert.match(page, new RegExp('data-paint-id="' + id + '"[^>]*data-car-paint="' + colour + '"'));
+    assert.match(page, new RegExp('data-car-paint="' + colour + '"[^>]*data-paint-id="' + id + '"'));
     assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + colour + '" \\}'));
   }
   assert.equal((page.match(/class="garage-paint-swatch"/g) || []).length, 14,
