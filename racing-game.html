@@ -4479,17 +4479,22 @@ for (const z of [-12.72, 12.72]) {
   acRoadEdgeMeshes.push(edge);
 }
 
-// Асфальт и разметка используют один знак скорости: вперёд — полотно визуально уходит назад, задний ход — наоборот.
+// Асфальт движется влево по экрану строго пропорционально пройденному пути:
+// чем выше скорость машины, тем быстрее смещаются текстура, шероховатость и рельеф.
+let acRoadTextureTravel = 0;
 function acAdvanceRoadSurface(scroll) {
   if (!Number.isFinite(scroll) || scroll === 0) return;
   const roadWidth = Math.max(1, Number(road.geometry.parameters.width) || 900);
   const repeatX = Number(roadMat.map && roadMat.map.repeat.x) || 1;
+  // Положительный U-offset перемещает видимые детали текстуры в сторону -X (влево).
   const textureDelta = scroll * repeatX / roadWidth;
+  acRoadTextureTravel += textureDelta;
   for (const texture of [roadMat.map, roadMat.roughnessMap, roadMat.bumpMap]) {
     if (!texture) continue;
-    texture.offset.x = (texture.offset.x + textureDelta) % 1;
-    if (texture.offset.x < 0) texture.offset.x += 1;
+    texture.offset.x = ((texture.offset.x + textureDelta) % 1 + 1) % 1;
   }
+  road.userData.lastLeftwardScroll = scroll > 0 ? scroll : 0;
+  road.userData.textureTravel = acRoadTextureTravel;
 }
 
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
@@ -7174,11 +7179,18 @@ function animate(now){
       }
       const wheelRpm=(speed/3.6)/(2*Math.PI*Math.max(.18,wheelRadiusWorld/Math.max(.3,worldUnitsPerRealMeter)))*60;
       const coupledRpm=wheelRpm*raceGearRatio(gear)*raceFinalDriveRatio();
-      targetRpm=throttle?Math.max(1150,Math.min(6800,coupledRpm||1750+burnout*300)):Math.max(850,Math.min(6800,coupledRpm||900));
+      // Автоматическое проскальзывание сцепления при старте: двигатель быстро
+      // набирает обороты, а по мере разгона обороты всё точнее связываются со скоростью колёс.
+      const launchClutchBlend=throttle?Math.max(0,1-Math.min(1,speed/30)):0;
+      const freeEngineRpm=2750+Math.min(1500,speed*42);
+      const coupledEngineRpm=Math.max(850,Math.min(6800,coupledRpm||900));
+      targetRpm=throttle
+        ? Math.max(1150,Math.min(6800,coupledEngineRpm+(freeEngineRpm-coupledEngineRpm)*launchClutchBlend))
+        : coupledEngineRpm;
       if(throttle&&rearSlip>.30&&Math.random()<Math.min(.7,rearSlip*.45))emitRearTireSmoke();
       if(braking&&speed>58&&Math.random()<.018)addSmoke(rearWheelPoint,'tire');
     }
-    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?4.2:6.2));
+    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle?11.5:6.2));
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
     distance+=signedSpeed/3.6*dt;
