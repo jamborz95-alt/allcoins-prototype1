@@ -43,6 +43,13 @@ const CARS = Object.freeze({
   niva: { price: 50000, power: 83 },
   vesta: { price: 85000, power: 106 }
 });
+const RIM_OPTIONS = Object.freeze({
+  stock: { price: 0, name: "Заводские штампованные" },
+  sport5: { price: 5000, name: "Sport 5 Spoke" },
+  mesh10: { price: 7000, name: "Mesh Multi-Spoke" },
+  turbine: { price: 6500, name: "Turbo Turbine" },
+  classic8: { price: 4500, name: "Classic 8 Hole" }
+});
 const PARTS = Object.freeze({
   ecu: { price: 0, power: 8 },
   intake: { price: 18000, power: 5 },
@@ -369,6 +376,17 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "PRIMARY KEY (telegram_id, paint_id))"
     );
     await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_rims (" +
+      "telegram_id BIGINT NOT NULL, rim_id TEXT NOT NULL, " +
+      "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "PRIMARY KEY (telegram_id, rim_id))"
+    );
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_rim_preferences (" +
+      "telegram_id BIGINT PRIMARY KEY, rim_id TEXT NOT NULL DEFAULT 'stock', " +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
+    );
+    await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_player_parts (" +
       "telegram_id BIGINT NOT NULL, part_id TEXT NOT NULL, " +
       "level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1 AND level <= 3), " +
@@ -534,6 +552,171 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       return res.status(status).json({
         ok: false,
         error: error instanceof DragRacingError ? error.message : "Не удалось купить краску."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/rims/profile", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const [ownedResult, preferenceResult] = await Promise.all([
+        client.query(
+          "SELECT rim_id FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+          [user.id]
+        ),
+        client.query(
+          "SELECT rim_id FROM drag_racing_player_rim_preferences WHERE telegram_id = $1::BIGINT",
+          [user.id]
+        )
+      ]);
+      const ownedRims = ["stock", ...ownedResult.rows.map(row => String(row.rim_id))];
+      const requested = String(preferenceResult.rows[0]?.rim_id || "stock");
+      const selectedRimId = ownedRims.includes(requested) ? requested : "stock";
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        balance: Number(balance),
+        selectedRimId,
+        ownedRims,
+        rimCatalog: RIM_OPTIONS
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Load Drag Racing rims:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось загрузить диски гаража."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/rims/select", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const rimId = String(req.body?.rimId || "stock");
+    if (!Object.hasOwn(RIM_OPTIONS, rimId)) {
+      return res.status(400).json({ ok: false, error: "Такого дизайна дисков нет в каталоге." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      await lockPlayerBalance(client, user);
+      if (rimId !== "stock") {
+        const owned = await client.query(
+          "SELECT 1 FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT AND rim_id = $2",
+          [user.id, rimId]
+        );
+        if (!owned.rowCount) throw new DragRacingError(403, "Сначала купи этот комплект дисков.");
+      }
+      await client.query(
+        "INSERT INTO drag_racing_player_rim_preferences (telegram_id, rim_id) VALUES ($1::BIGINT, $2) " +
+        "ON CONFLICT (telegram_id) DO UPDATE SET rim_id = EXCLUDED.rim_id, updated_at = NOW()",
+        [user.id, rimId]
+      );
+      const [balance, ownedResult] = await Promise.all([
+        readBalance(client, user.id),
+        client.query(
+          "SELECT rim_id FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+          [user.id]
+        )
+      ]);
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        selectedRimId: rimId,
+        ownedRims: ["stock", ...ownedResult.rows.map(row => String(row.rim_id))],
+        balance
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Select Drag Racing rims:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось установить диски."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/rims/buy", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const rimId = String(req.body?.rimId || "");
+    if (!Object.hasOwn(RIM_OPTIONS, rimId) || rimId === "stock") {
+      return res.status(400).json({ ok: false, error: "Выбери комплект дисков из каталога." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const alreadyOwned = await client.query(
+        "SELECT 1 FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT AND rim_id = $2",
+        [user.id, rimId]
+      );
+      if (alreadyOwned.rowCount) {
+        await client.query(
+          "INSERT INTO drag_racing_player_rim_preferences (telegram_id, rim_id) VALUES ($1::BIGINT, $2) " +
+          "ON CONFLICT (telegram_id) DO UPDATE SET rim_id = EXCLUDED.rim_id, updated_at = NOW()",
+          [user.id, rimId]
+        );
+        const owned = await client.query(
+          "SELECT rim_id FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+          [user.id]
+        );
+        await client.query("COMMIT"); open = false;
+        return res.json({
+          ok: true, purchased: false, alreadyOwned: true, rimId,
+          selectedRimId: rimId, balance: Number(balance),
+          ownedRims: ["stock", ...owned.rows.map(row => String(row.rim_id))]
+        });
+      }
+
+      const price = BigInt(RIM_OPTIONS[rimId].price);
+      if (balance < price) {
+        throw new DragRacingError(400, "Недостаточно AC для покупки этого комплекта дисков.");
+      }
+      const debit = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
+        [price.toString(), user.id]
+      );
+      if (!debit.rows.length) {
+        throw new DragRacingError(400, "Недостаточно AC для покупки этого комплекта дисков.");
+      }
+      await client.query(
+        "INSERT INTO drag_racing_player_rims (telegram_id, rim_id) VALUES ($1::BIGINT, $2) ON CONFLICT DO NOTHING",
+        [user.id, rimId]
+      );
+      await client.query(
+        "INSERT INTO drag_racing_player_rim_preferences (telegram_id, rim_id) VALUES ($1::BIGINT, $2) " +
+        "ON CONFLICT (telegram_id) DO UPDATE SET rim_id = EXCLUDED.rim_id, updated_at = NOW()",
+        [user.id, rimId]
+      );
+      const owned = await client.query(
+        "SELECT rim_id FROM drag_racing_player_rims WHERE telegram_id = $1::BIGINT ORDER BY purchased_at ASC",
+        [user.id]
+      );
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true, purchased: true, alreadyOwned: false, rimId,
+        price: Number(price), selectedRimId: rimId,
+        balance: Number(debit.rows[0].balance),
+        ownedRims: ["stock", ...owned.rows.map(row => String(row.rim_id))]
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Buy Drag Racing rims:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось купить диски."
       });
     } finally { client.release(); }
   });
