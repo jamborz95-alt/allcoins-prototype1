@@ -6259,9 +6259,9 @@ function acGarageSeparateBumpersFromBody(root) {
     // bumper strip, but use a tighter and lower region at the rear so the rear body panel
     // and the small painted section above/around the rear bumper remain paintable.
     const frontEndZone = Math.max(size.x * .055, .08);
-    const rearEndZone = Math.max(size.x * .04, .05);
+    const rearEndZone = Math.max(size.x * .035, .045);
     const frontSteelTrimTop = bounds.min.y + size.y * .38;
-    const rearSteelTrimTop = bounds.min.y + size.y * .30;
+    const rearSteelTrimTop = bounds.min.y + size.y * .26;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
