@@ -176,10 +176,10 @@ try {
   await page.locator('button[data-tab="shop"]').click();
   await page.waitForFunction(() => {
     const shop = document.getElementById("shop");
-    const image = document.querySelector("#carShop .shop-car-png");
+    const image = document.querySelector('#carShop .shop-car-png[alt*="2107"]');
     return shop && !shop.classList.contains("hidden") && image && image.complete && image.naturalWidth > 0;
   }, null, { timeout: 10000 });
-  const shopPng = await page.locator("#carShop .shop-car-png").evaluate(image => ({
+  const shopPng = await page.locator('#carShop .shop-car-png[alt*="2107"]').first().evaluate(image => ({
     src: image.currentSrc || image.src,
     width: image.naturalWidth,
     height: image.naturalHeight,
