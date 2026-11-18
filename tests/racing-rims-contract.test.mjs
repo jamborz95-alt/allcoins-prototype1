@@ -162,7 +162,7 @@ test("VAZ-2107 white and black paints neutralize original body texture colours",
 
 test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
   assert.match(page, /function acGarageSetBodyPaintMaterial\(material, paint\)/);
-  assert.match(page, /material\.color\.set\(paint\)/);
+  assert.match(page, /material\.color\.set\(isBlackPaint \? "#08090b" : paint\)/);
   assert.match(page, /acGarageSetBodyPaintMaterial\(material, paint\)/);
   assert.doesNotMatch(page, /acGaragePreparePaintMaterial|acGaragePaintSourceLuma|allcoins-vaz2107-body-paint-v3/);
   assert.match(page, /material\.map\s*=\s*null/);
