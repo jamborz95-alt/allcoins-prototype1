@@ -3410,13 +3410,6 @@ function acGarageBuildRimFace(style, radius, depth, side) {
     const x = Math.cos(angle) * boltCircle;
     const z = Math.sin(angle) * boltCircle;
 
-    const seat = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * .034, radius * .034, faceDepth * .12, 24),
-      recessMaterial
-    );
-    seat.position.set(x, side * faceDepth * .60, z);
-    face.add(seat);
-
     const bolt = new THREE.Mesh(
       new THREE.CylinderGeometry(radius * .022, radius * .025, faceDepth * .17, 6),
       machinedMaterial
