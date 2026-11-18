@@ -31,7 +31,8 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /function acGarageBuildRimFace\\(style, radius, depth, side\\)/);
   assert.match(page, /kind:"cast"/);
   assert.match(page, /function makeSpokeShape/);
-  assert.match(page, /addSpokeMesh\\(makeSpokeShape\\(1\\), alloyMaterial/);\n  assert.match(page, /new THREE\\.ExtrudeGeometry\\(shape/);
+  assert.match(page, /addSpokeMesh\\(makeSpokeShape\\(1\\), alloyMaterial/);
+  assert.match(page, /new THREE\\.ExtrudeGeometry\\(shape/);
   assert.match(page, /bevelEnabled: true/);
   assert.match(page, /bevelSegments: 4/);
   assert.match(page, /Narrow polished ridge follows the cast spoke/);
