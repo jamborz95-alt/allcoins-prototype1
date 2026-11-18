@@ -173,12 +173,13 @@ test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edg
   assert.ok(page.includes("material.map = null"));
   assert.ok(page.includes("function acGarageSeparateBumpersFromBody(root)"));
   assert.ok(page.includes("ALLCOINS_VAZ2107_UnpaintedBumpers"));
-  assert.ok(page.includes("const rearEndZone = Math.max(size.x * .025, .035)"));
-  assert.ok(page.includes("const rearSteelTrimTop = bounds.min.y + size.y * .12"));
+  assert.ok(page.includes("const rearEndZone = Math.max(size.x * .012, .02)"));
+  assert.ok(page.includes("const rearSteelTrimTop = bounds.min.y + size.y * .055"));
   assert.ok(page.includes("const isFrontSteelTrim = withinFrontCap && withinFrontSteelTrimBand"));
   assert.ok(page.includes("const isRearSteelTrim = withinRearCap && withinRearSteelTrimBand"));
   assert.ok(page.includes("const keepFactorySteel = isFrontSteelTrim || isRearSteelTrim"));
-  assert.ok(page.includes("all rear body panels above it"));
+  assert.ok(page.includes("the rear valance, tail panel and all"));
+  assert.ok(page.includes("surrounding bodywork stay in the paintable geometry"));
   assert.ok(page.includes("const frontEndZone = Math.max(size.x * .055, .08)"));
   assert.ok(page.includes("const frontSteelTrimTop = bounds.min.y + size.y * .38"));
   assert.ok(page.includes("const withinRearCap = points.every"));
