@@ -506,6 +506,18 @@
       }
       return await window.allcoinsRacingPaintApi.buy(data.paintId);
     }
+    if (action === "parts:profile") {
+      if (!window.allcoinsRacingPartsApi || typeof window.allcoinsRacingPartsApi.profile !== "function") {
+        throw new Error("Сервис запчастей ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingPartsApi.profile();
+    }
+    if (action === "parts:buy") {
+      if (!window.allcoinsRacingPartsApi || typeof window.allcoinsRacingPartsApi.buy !== "function") {
+        throw new Error("Сервис покупки запчастей ALLCOINS ещё не готов.");
+      }
+      return await window.allcoinsRacingPartsApi.buy(data.partId);
+    }
 
     await ensureTelegramAuthentication();
     let result;
@@ -708,7 +720,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261117-speed-distance-world-v57", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261118-performance-parts-v58", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
