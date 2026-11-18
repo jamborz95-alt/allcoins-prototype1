@@ -8,37 +8,23 @@ const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, sprint: 4000 });
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const BODY_PAINTS = Object.freeze({
-  white: { price: 2000, color: "#ffffff" },
-  black: { price: 2000, color: "#000000" },
-  silver: { price: 2000, color: "#c0c0c0" },
-  graphite: { price: 2000, color: "#3a4148" },
-  red: { price: 2000, color: "#e31b23" },
-  blue: { price: 2000, color: "#0057b8" },
-  green: { price: 2000, color: "#00843d" },
-  burgundy: { price: 2000, color: "#800020" },
-  yellow: { price: 2000, color: "#f2c230" },
-  orange: { price: 2000, color: "#ef6c25" },
-  skyblue: { price: 2000, color: "#48a8e8" },
-  turquoise: { price: 2000, color: "#11a6a0" },
-  violet: { price: 2000, color: "#7442a8" },
-  bronze: { price: 2000, color: "#a56a35" },
-  vaz106: { price: 2000, color: "#7b3f32" },
-  vaz107: { price: 2000, color: "#38243f" },
-  vaz110: { price: 2000, color: "#9c2032" },
-  vaz118: { price: 2000, color: "#ce2736" },
-  vaz127: { price: 2000, color: "#5b1c2b" },
-  vaz128: { price: 2000, color: "#b92a3c" },
-  vaz140: { price: 2000, color: "#702537" },
-  vaz182: { price: 2000, color: "#7d2331" },
-  vaz223: { price: 2000, color: "#e4c32d" },
-  vaz228: { price: 2000, color: "#d7bd9d" },
-  vaz304: { price: 2000, color: "#1e4936" },
-  vaz377: { price: 2000, color: "#24535a" },
-  vaz404: { price: 2000, color: "#718078" },
-  vaz420: { price: 2000, color: "#1d4852" },
-  vaz441: { price: 2000, color: "#172d59" },
-  vaz449: { price: 2000, color: "#1b4267" },
-  vaz605: { price: 2000, color: "#4e627b" },
+  vaz106: { price: 2000, color: "#7b3f32" }
+  vaz107: { price: 2000, color: "#38243f" }
+  vaz110: { price: 2000, color: "#9c2032" }
+  vaz118: { price: 2000, color: "#ce2736" }
+  vaz127: { price: 2000, color: "#5b1c2b" }
+  vaz128: { price: 2000, color: "#b92a3c" }
+  vaz140: { price: 2000, color: "#702537" }
+  vaz182: { price: 2000, color: "#7d2331" }
+  vaz223: { price: 2000, color: "#e4c32d" }
+  vaz228: { price: 2000, color: "#d7bd9d" }
+  vaz304: { price: 2000, color: "#1e4936" }
+  vaz377: { price: 2000, color: "#24535a" }
+  vaz404: { price: 2000, color: "#718078" }
+  vaz420: { price: 2000, color: "#1d4852" }
+  vaz441: { price: 2000, color: "#172d59" }
+  vaz449: { price: 2000, color: "#1b4267" }
+  vaz605: { price: 2000, color: "#4e627b" }
   vaz791: { price: 2000, color: "#52402f" }
 });
 
