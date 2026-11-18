@@ -157,7 +157,7 @@ test("VAZ-2107 white and black paints neutralize original body texture colours",
   assert.match(page, /const isWhitePaint = selectedPaint === "#ffffff"/);
   assert.match(page, /material\.map = neutralTexture/);
   assert.match(page, /material\.map = originalMap/);
-  assert.match(page, /data-paint-id="white"[^>]*data-car-paint="#ffffff"/);
+  assert.match(page, /data-car-paint="#ffffff"[^>]*data-paint-id="white"/);
 });
 
 test("VAZ-2107 body paint uses the original material tint without a PNG paint shader", () => {
