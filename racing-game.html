@@ -1213,6 +1213,21 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .garage-paint-apply{display:block;width:100%;min-height:42px;margin-top:12px;padding:9px 12px;border:1px solid #ffe0a2;border-radius:11px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:13px;font-weight:950;letter-spacing:.04em}
   .garage-paint-apply[hidden]{display:none!important}
   .garage-paint-apply:disabled{opacity:.45;filter:grayscale(.55)}
+.garage-parts-status{margin-top:10px;padding:8px 10px;border:1px solid #8bb8e455;border-radius:9px;background:#102033;color:#b9d8f8;font-size:11px;line-height:1.4}
+.garage-parts-status.error{border-color:#e8756b88;color:#ffb0a8}
+.garage-parts-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:12px}
+.garage-parts-list[hidden],.garage-parts-status[hidden]{display:none!important}
+.garage-part-card{min-width:0;padding:10px;border:1px solid #8ca9c455;border-radius:11px;background:linear-gradient(145deg,#1d2b3d,#101925);box-shadow:inset 0 1px 0 #ffffff12}
+.garage-part-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.garage-part-name{margin:0;color:#f3d08b;font-size:13px;font-weight:900}
+.garage-part-category{flex:none;padding:3px 6px;border:1px solid #e9b94f55;border-radius:99px;color:#d6bf8c;font-size:9px;font-weight:800}
+.garage-part-description{margin:7px 0;color:#cad5e2;font-size:11px;line-height:1.42}
+.garage-part-level{margin:5px 0;color:#9fc8f4;font-size:10px;font-weight:850}
+.garage-part-effect{margin:4px 0;color:#dce6f1;font-size:10px;line-height:1.35}
+.garage-part-next{margin:4px 0 8px;color:#aebdce;font-size:10px;line-height:1.35}
+.garage-part-buy{width:100%;min-height:36px;padding:7px 9px;border:1px solid #ffe0a2;border-radius:8px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:10px;font-weight:950}
+.garage-part-buy:disabled{opacity:.45;filter:grayscale(.5)}
+@media(min-width:700px){.garage-tab-panel{width:min(600px,calc(100vw - 24px))}}
 @media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-test-bot{min-height:34px;font-size:10px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
 </style>
@@ -1238,6 +1253,8 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
+<div class="garage-parts-status" id="garagePartsStatus" hidden></div>
+<div class="garage-parts-list" id="garagePartsList" hidden></div>
 </section>
 <div class="garage-controls">
 <div class="garage-topbar">
@@ -2228,14 +2245,140 @@ function onlineUpdateOpponentCars(dt) {
 }
 
 
+
+const RACING_PART_DEFS = [
+  {id:"ecu",name:"ЭБУ Stage",category:"Двигатель",description:"Спортивная настройка электронного блока управления улучшает отдачу двигателя на всех оборотах.",prices:[3000,6000,12000],effects:["+3% тяги двигателя","+6% тяги двигателя","+9% тяги двигателя"]},
+  {id:"turbo",name:"Турбокомпрессор",category:"Наддув",description:"Повышает давление наддува: машина быстрее разгоняется и получает больший запас максимальной скорости.",prices:[5000,10000,20000],effects:["+2% тяги · +3% скорости","+4% тяги · +6% скорости","+6% тяги · +9% скорости"]},
+  {id:"intake",name:"Спортивный впуск",category:"Двигатель",description:"Снижает сопротивление на впуске и добавляет тягу на низких и средних оборотах, особенно при старте.",prices:[2500,5000,9000],effects:["+2% тяги до 4 000 об/мин","+4% тяги до 4 000 об/мин","+6% тяги до 4 000 об/мин"]},
+  {id:"exhaust",name:"Спортивный выпуск",category:"Выхлоп",description:"Улучшает отвод выхлопных газов: двигатель эффективнее тянет на высоких оборотах перед переключением.",prices:[2500,5000,9000],effects:["+2% тяги от 4 000 об/мин","+4% тяги от 4 000 об/мин","+6% тяги от 4 000 об/мин"]},
+  {id:"gearbox",name:"Спортивный ряд КПП",category:"Трансмиссия",description:"Меняет передаточные числа коробки. Нижние передачи дают более резкий разгон, пятая лучше подходит для высокой скорости.",prices:[6000,12000,24000],effects:["+2% разгона · +1% к пределу передачи","+4% разгона · +2% к пределу передачи","+6% разгона · +3% к пределу передачи"]},
+  {id:"clutch",name:"Спортивное сцепление",category:"Переключение",description:"Сокращает паузу восстановления тяги после ручного переключения передачи, особенно под нагрузкой.",prices:[3500,7000,14000],effects:["Восстановление тяги за 0,175 с","Восстановление тяги за 0,130 с","Восстановление тяги за 0,085 с"]},
+  {id:"diff",name:"Самоблокирующийся дифференциал",category:"Задний привод",description:"Лучше распределяет тягу между задними колёсами. Уменьшает пробуксовку при старте и улучшает зацеп.",prices:[4500,9000,18000],effects:["На 8% меньше пробуксовки","На 16% меньше пробуксовки","На 24% меньше пробуксовки"]},
+  {id:"tires",name:"Спортивные шины",category:"Сцепление",description:"Более цепкий состав улучшает контакт с асфальтом. Снижает пробуксовку и повышает эффективность торможения.",prices:[3000,6000,12000],effects:["На 5% меньше пробуксовки · +3% торможения","На 10% меньше пробуксовки · +6% торможения","На 15% меньше пробуксовки · +9% торможения"]}
+];
+let racingInstalledParts = Object.create(null);
+let racingPartsProfileLoaded = false;
+let racingPartsProfilePromise = null;
+const racingPartsBusy = new Set();
+function racingPartLevel(partId) {
+  return Math.max(0, Math.min(3, Number(racingInstalledParts[partId]) || 0));
+}
+function racingNormalizeParts(value) {
+  const result = Object.create(null);
+  for (const part of RACING_PART_DEFS) {
+    const level = Number(value && value[part.id]);
+    result[part.id] = Number.isInteger(level) ? Math.max(0, Math.min(3, level)) : 0;
+  }
+  return result;
+}
+function acGaragePartsStatus(message, isError=false) {
+  const status = $("garagePartsStatus");
+  if (!status) return;
+  status.textContent = message || "";
+  status.classList.toggle("error", Boolean(isError));
+  status.hidden = !message;
+}
+function acGarageRefreshPartsUi() {
+  const list = $("garagePartsList");
+  if (!list) return;
+  list.replaceChildren();
+  for (const part of RACING_PART_DEFS) {
+    const level = racingPartLevel(part.id);
+    const card = document.createElement("article");
+    card.className = "garage-part-card";
+    const heading = document.createElement("div");
+    heading.className = "garage-part-heading";
+    const name = document.createElement("h3");
+    name.className = "garage-part-name";
+    name.textContent = part.name;
+    const category = document.createElement("span");
+    category.className = "garage-part-category";
+    category.textContent = part.category;
+    heading.append(name, category);
+    const description = document.createElement("p");
+    description.className = "garage-part-description";
+    description.textContent = part.description;
+    const levelText = document.createElement("div");
+    levelText.className = "garage-part-level";
+    levelText.textContent = level ? "УСТАНОВЛЕНО · УРОВЕНЬ " + level + "/3" : "ШТАТНАЯ ДЕТАЛЬ · УРОВЕНЬ 0/3";
+    const effect = document.createElement("div");
+    effect.className = "garage-part-effect";
+    effect.textContent = level ? "СЕЙЧАС: " + part.effects[level - 1] : "СЕЙЧАС: заводские характеристики";
+    const next = document.createElement("div");
+    next.className = "garage-part-next";
+    next.textContent = level < 3 ? "СЛЕДУЮЩИЙ УРОВЕНЬ: " + part.effects[level] : "МАКСИМАЛЬНЫЙ УРОВЕНЬ ДОСТИГНУТ";
+    const buy = document.createElement("button");
+    buy.type = "button";
+    buy.className = "garage-part-buy";
+    buy.dataset.buyPart = part.id;
+    buy.disabled = !racingPartsProfileLoaded || level >= 3 || racingPartsBusy.has(part.id);
+    buy.textContent = level >= 3 ? "МАКСИМАЛЬНЫЙ УРОВЕНЬ ✓" :
+      (level ? "УЛУЧШИТЬ · " : "КУПИТЬ · ") + part.prices[level].toLocaleString("ru-RU") + " AC";
+    card.append(heading, description, levelText, effect, next, buy);
+    list.appendChild(card);
+  }
+}
+async function acGarageLoadPartsProfile({silent=false}={}) {
+  if (racingPartsProfileLoaded) {
+    acGarageRefreshPartsUi();
+    return true;
+  }
+  if (racingPartsProfilePromise) return racingPartsProfilePromise;
+  if (!silent) acGaragePartsStatus("СИНХРОНИЗАЦИЯ ЗАПЧАСТЕЙ С БАЛАНСОМ ALLCOINS…");
+  racingPartsProfilePromise = (async () => {
+    try {
+      const profile = await onlineHostRequest("parts:profile");
+      racingInstalledParts = racingNormalizeParts(profile.ownedParts || {});
+      racingPartsProfileLoaded = true;
+      acGarageRefreshPartsUi();
+      if (!silent) acGaragePartsStatus("Запчасти загружены. Установленные детали действуют в заездах.");
+      return true;
+    } catch (error) {
+      if (!silent) acGaragePartsStatus(error.message || "Не удалось загрузить запчасти. Повтори открытие раздела.", true);
+      return false;
+    } finally {
+      racingPartsProfilePromise = null;
+    }
+  })();
+  return racingPartsProfilePromise;
+}
+async function acGarageBuyPart(partId) {
+  const part = RACING_PART_DEFS.find(item => item.id === partId);
+  if (!part || racingPartsBusy.has(partId)) return;
+  if (!racingPartsProfileLoaded && !(await acGarageLoadPartsProfile())) return;
+  const currentLevel = racingPartLevel(partId);
+  if (currentLevel >= 3) return;
+  racingPartsBusy.add(partId);
+  acGarageRefreshPartsUi();
+  acGaragePartsStatus("ПОКУПАЕМ И УСТАНАВЛИВАЕМ: " + part.name + "…");
+  try {
+    const result = await onlineHostRequest("parts:buy", {partId});
+    racingInstalledParts = racingNormalizeParts(result.ownedParts || {});
+    racingPartsProfileLoaded = true;
+    const installedLevel = racingPartLevel(partId);
+    acGaragePartsStatus(result.purchased
+      ? part.name + " установлена · уровень " + installedLevel + "/3. Характеристики обновлены."
+      : part.name + " уже улучшена до максимального уровня.");
+  } catch (error) {
+    acGaragePartsStatus(error.message || "Не удалось купить запчасть.", true);
+  } finally {
+    racingPartsBusy.delete(partId);
+    acGarageRefreshPartsUi();
+  }
+}
+$("garagePartsList").addEventListener("click", event => {
+  const button = event.target.closest("[data-buy-part]");
+  if (button && !button.disabled) void acGarageBuyPart(button.dataset.buyPart);
+});
+
 const garageTabContent = {
   shop: {
     title: "Магазин автомобилей",
     text: "Здесь будет каталог ALLCOINS Racing: выбор автомобилей, их характеристики и покупка за AC. Сейчас в гараже доступна ВАЗ-2107."
   },
   upgrades: {
-    title: "Улучшения",
-    text: "Здесь будут улучшения двигателя, коробки передач, подвески и других характеристик автомобиля."
+    title: "Улучшения и запчасти",
+    text: "Восемь компонентов, у каждого по три уровня. Покупка за AC сразу устанавливает деталь и меняет характеристики автомобиля."
   },
   tuning: {
     title: "Тюнинг · Цвет кузова",
@@ -2257,9 +2400,16 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     $("garageTabTitle").textContent = content.title;
     $("garageTabDescription").textContent = content.text;
     const paintMode = button.dataset.garageTab === "tuning";
+    const partsMode = button.dataset.garageTab === "upgrades";
     $("garagePaintOptions").hidden = !paintMode;
     $("garagePaintSelected").hidden = !paintMode;
     $("garagePaintApply").hidden = !paintMode || !acGaragePendingPaint;
+    $("garagePartsList").hidden = !partsMode;
+    $("garagePartsStatus").hidden = !partsMode;
+    if (partsMode) {
+      acGarageRefreshPartsUi();
+      void acGarageLoadPartsProfile();
+    }
     if (paintMode) {
       const currentPaint = acGaragePendingPaint || acGarageSelectedPaint;
       const selected = currentPaint && [...document.querySelectorAll("[data-car-paint]")].find(item => item.dataset.carPaint.toLowerCase() === currentPaint.toLowerCase());
