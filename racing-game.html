@@ -1717,6 +1717,12 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <button class="garage-paint-swatch" type="button" data-car-paint="#0057b8" data-paint-id="blue" data-paint-name="Синий" data-price-label="2 000 AC" style="--paint-color:#0057b8">СИНИЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#00843d" data-paint-id="green" data-paint-name="Зелёный" data-price-label="2 000 AC" style="--paint-color:#00843d">ЗЕЛЁНЫЙ</button>
 <button class="garage-paint-swatch" type="button" data-car-paint="#800020" data-paint-id="burgundy" data-paint-name="Бордовый" data-price-label="2 000 AC" style="--paint-color:#800020">БОРДО</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#f2c230" data-paint-id="yellow" data-paint-name="Жёлтый" data-price-label="2 000 AC" style="--paint-color:#f2c230">ЖЁЛТЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#ef6c25" data-paint-id="orange" data-paint-name="Оранжевый" data-price-label="2 000 AC" style="--paint-color:#ef6c25">ОРАНЖЕВЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#48a8e8" data-paint-id="skyblue" data-paint-name="Голубой" data-price-label="2 000 AC" style="--paint-color:#48a8e8">ГОЛУБОЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#11a6a0" data-paint-id="turquoise" data-paint-name="Бирюзовый" data-price-label="2 000 AC" style="--paint-color:#11a6a0">БИРЮЗОВЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#7442a8" data-paint-id="violet" data-paint-name="Фиолетовый" data-price-label="2 000 AC" style="--paint-color:#7442a8">ФИОЛЕТОВЫЙ</button>
+<button class="garage-paint-swatch" type="button" data-car-paint="#a56a35" data-paint-id="bronze" data-paint-name="Бронзовый" data-price-label="2 000 AC" style="--paint-color:#a56a35">БРОНЗОВЫЙ</button>
 </div>
 <div class="garage-paint-selected" id="garagePaintSelected" hidden></div>
 <button class="garage-paint-apply" id="garagePaintApply" type="button" hidden>ПРИМЕНИТЬ</button>
@@ -5308,11 +5314,42 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
-// Recolour only the body paint, using the PNG's luminance as a shading mask.
+// Recolour only the VAZ body: replace the PNG's factory hue with the selected paint,
+// while retaining the source texture's luminance, shadows and stamped body details.
+function acGaragePreparePaintMaterial(material) {
+  if (!material || !material.color) return false;
+  material.userData = material.userData || {};
+  if (!material.userData.acGaragePaintShaderV3) {
+    const originalOnBeforeCompile = material.onBeforeCompile;
+    const originalProgramCacheKey = material.customProgramCacheKey;
+    material.onBeforeCompile = function(shader, renderer) {
+      if (typeof originalOnBeforeCompile === "function") {
+        originalOnBeforeCompile.call(this, shader, renderer);
+      }
+      const mapChunk = "#include <map_fragment>";
+      if (!shader.fragmentShader.includes(mapChunk)) return;
+      shader.fragmentShader = shader.fragmentShader.replace(mapChunk, `${mapChunk}
+#ifdef USE_MAP
+      float acGaragePaintSourceLuma = dot(sampledDiffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+      float acGaragePaintShade = mix(0.58, 1.12, pow(clamp(acGaragePaintSourceLuma, 0.0, 1.0), 0.52));
+#else
+      float acGaragePaintShade = 1.0;
+#endif
+      diffuseColor.rgb = diffuse.rgb * acGaragePaintShade;`);
+    };
+    material.customProgramCacheKey = function() {
+      const baseKey = typeof originalProgramCacheKey === "function"
+        ? originalProgramCacheKey.call(this) : "";
+      return baseKey + "|allcoins-vaz2107-body-paint-v3";
+    };
+    material.userData.acGaragePaintShaderV3 = true;
+    material.needsUpdate = true;
+  }
+  return true;
+}
+
 function acGarageSetBodyPaintMaterial(material, paint) {
-  if (!material?.color) return false;
-  // Возвращаем прежнее наложение цвета поверх исходной PNG-текстуры кузова.
-  // Фактура, оттенки и заводские детали остаются такими, как в оригинале.
+  if (!acGaragePreparePaintMaterial(material)) return false;
   material.color.set(paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
