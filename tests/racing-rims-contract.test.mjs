@@ -123,6 +123,12 @@ test("VAZ-2107 white and coloured paints replace the factory hue while preservin
   assert.match(page, /material\.color\.set\(paint\)/);
   assert.match(page, /allcoins-vaz2107-body-paint-v3/);
   assert.doesNotMatch(page, /material\.map\s*=\s*null/);
+  assert.match(page, /function acGarageSeparateBumpersFromBody\(root\)/);
+  assert.match(page, /object\.name !== "Car_CarBody_0"/);
+  assert.match(page, /const endZone = Math\.max\(size\.x \* \.075, \.10\)/);
+  assert.match(page, /const bumperTop = bounds\.min\.y \+ size\.y \* \.58/);
+  assert.match(page, /ALLCOINS_VAZ2107_UnpaintedBumpers/);
+  assert.match(page, /acGarageSeparateBumpersFromBody\(vehicle\);if\(acGarageSelectedPaint\)acGarageApplyBodyPaint/);
 
   const addedColours = {
     white: "#ffffff", yellow: "#f2c230", orange: "#ef6c25",
