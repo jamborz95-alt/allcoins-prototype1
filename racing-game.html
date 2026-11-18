@@ -5313,10 +5313,11 @@ async function acGarageLoadPaintProfile() {
   })();
   return acGaragePaintProfilePromise;
 }
-// Preserve the original body texture for every paint choice. White is special:
-// remove the source texture's old paint hue while retaining its light/dark body detail.
+// Preserve the original body texture for each paint choice. White and black
+// use neutralized texture copies so the previous factory/body colour cannot bleed through.
 const acGaragePaintOriginalMaps = new WeakMap();
 const acGarageWhitePaintTextureCache = new WeakMap();
+const acGarageBlackPaintTextureCache = new WeakMap();
 
 function acGarageGetWhitePaintTexture(sourceTexture) {
   if (!sourceTexture?.image) return null;
@@ -5365,23 +5366,75 @@ function acGarageGetWhitePaintTexture(sourceTexture) {
   }
 }
 
+function acGarageGetBlackPaintTexture(sourceTexture) {
+  if (!sourceTexture?.image) return null;
+  const cached = acGarageBlackPaintTextureCache.get(sourceTexture);
+  if (cached) return cached;
+
+  try {
+    const image = sourceTexture.image;
+    const width = Number(image.naturalWidth || image.videoWidth || image.width || image.displayWidth);
+    const height = Number(image.naturalHeight || image.videoHeight || image.height || image.displayHeight);
+    if (!width || !height) return null;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.drawImage(image, 0, 0, width, height);
+
+    const pixels = context.getImageData(0, 0, width, height);
+    const data = pixels.data;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 3] === 0) continue;
+      const luminance = (
+        data[index] * 0.2126 +
+        data[index + 1] * 0.7152 +
+        data[index + 2] * 0.0722
+      ) / 255;
+      // Keep subtle panel shading, but remove the original paint hue completely.
+      // The restricted neutral range makes the selected black stay uniformly black.
+      const neutral = Math.round(205 + 50 * luminance);
+      data[index] = neutral;
+      data[index + 1] = neutral;
+      data[index + 2] = neutral;
+    }
+    context.putImageData(pixels, 0, 0);
+
+    const neutralTexture = sourceTexture.clone();
+    neutralTexture.image = canvas;
+    neutralTexture.needsUpdate = true;
+    acGarageBlackPaintTextureCache.set(sourceTexture, neutralTexture);
+    return neutralTexture;
+  } catch (error) {
+    console.warn("ALLCOINS Racing: не удалось нейтрализовать исходную текстуру для чёрной краски.", error);
+    return null;
+  }
+}
+
 function acGarageSetBodyPaintMaterial(material, paint) {
   if (!material?.color) return false;
   if (!acGaragePaintOriginalMaps.has(material)) {
     acGaragePaintOriginalMaps.set(material, material.map || null);
   }
   const originalMap = acGaragePaintOriginalMaps.get(material);
-  const isWhitePaint = String(paint).toLowerCase() === "#ffffff";
+  const selectedPaint = String(paint).toLowerCase();
+  const isWhitePaint = selectedPaint === "#ffffff";
+  const isBlackPaint = selectedPaint === "#151719";
 
-  if (isWhitePaint && originalMap) {
+  if (originalMap && isWhitePaint) {
     const neutralTexture = acGarageGetWhitePaintTexture(originalMap);
-    if (neutralTexture) material.map = neutralTexture;
+    material.map = neutralTexture || originalMap;
+  } else if (originalMap && isBlackPaint) {
+    const neutralTexture = acGarageGetBlackPaintTexture(originalMap);
+    material.map = neutralTexture || originalMap;
   } else {
-    // Switching away from white restores the exact original map.
+    // Other colours restore the exact original map before applying their tint.
     material.map = originalMap;
   }
 
-  material.color.set(isWhitePaint ? "#ffffff" : paint);
+  material.color.set(paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
   const metallicFactoryPaints = new Set(["#74887e"]);
