@@ -387,6 +387,10 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
     );
     await pool.query(
+      "CREATE TABLE IF NOT EXISTS drag_racing_player_air_suspensions (" +
+      "telegram_id BIGINT PRIMARY KEY, purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
+    );
+    await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_player_parts (" +
       "telegram_id BIGINT NOT NULL, part_id TEXT NOT NULL, " +
       "level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1 AND level <= 3), " +
@@ -717,6 +721,89 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       return res.status(status).json({
         ok: false,
         error: error instanceof DragRacingError ? error.message : "Не удалось купить диски."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/suspension/profile", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      const owned = await client.query(
+        "SELECT 1 FROM drag_racing_player_air_suspensions WHERE telegram_id = $1::BIGINT",
+        [user.id]
+      );
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true,
+        balance: Number(balance),
+        hasAirSuspension: owned.rowCount > 0,
+        price: 3000
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Load Drag Racing air suspension:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось проверить пневмоподвеску."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/suspension/buy", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      // Lock the wallet so two simultaneous taps cannot charge twice.
+      const balance = await lockPlayerBalance(client, user);
+      const existing = await client.query(
+        "SELECT 1 FROM drag_racing_player_air_suspensions WHERE telegram_id = $1::BIGINT FOR UPDATE",
+        [user.id]
+      );
+      if (existing.rowCount) {
+        await client.query("COMMIT"); open = false;
+        return res.json({
+          ok: true, purchased: false, alreadyOwned: true,
+          hasAirSuspension: true, price: 3000, balance: Number(balance)
+        });
+      }
+
+      const price = 3000n;
+      if (balance < price) {
+        throw new DragRacingError(400, "Недостаточно AC. Для покупки пневмоподвески нужно 3 000 AC.");
+      }
+      const debit = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
+        [price.toString(), user.id]
+      );
+      if (!debit.rows.length) {
+        throw new DragRacingError(400, "Недостаточно AC для покупки пневмоподвески.");
+      }
+      await client.query(
+        "INSERT INTO drag_racing_player_air_suspensions (telegram_id) VALUES ($1::BIGINT) ON CONFLICT DO NOTHING",
+        [user.id]
+      );
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true, purchased: true, alreadyOwned: false,
+        hasAirSuspension: true, price: Number(price),
+        balance: Number(debit.rows[0].balance)
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Buy Drag Racing air suspension:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось купить пневмоподвеску."
       });
     } finally { client.release(); }
   });
