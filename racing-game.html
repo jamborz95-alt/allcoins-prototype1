@@ -6255,11 +6255,13 @@ function acGarageSeparateBumpersFromBody(root) {
       const isFrontOrRearEnd = withinFrontCap || withinRearCap;
       const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
-      // With identifiable steel/chrome materials, preserve all their bumper-end
-      // faces regardless of height. Only use the lower-height fallback if the GLB
-      // provides no identifiable steel material slot.
-      const keepFactorySteel = isFrontOrRearEnd &&
-        (steelMaterialIndexes.size ? isSteelMaterial : belowBumperLine);
+      // If the GLB identifies a steel/chrome material slot, keep every face
+      // using that slot in its original finish (including the small bumper edges
+      // that extend beyond the spatial end-zone). Paint all other body surfaces.
+      // Use the spatial bumper fallback only when the model has no steel material slot.
+      const keepFactorySteel = steelMaterialIndexes.size
+        ? isSteelMaterial
+        : (isFrontOrRearEnd && belowBumperLine);
       if (keepFactorySteel) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
     }
