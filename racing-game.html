@@ -6923,7 +6923,7 @@ let acGarageAirSuspensionOwned=false, acGarageAirSuspensionProfileReady=false, a
 const gearTopSpeed=[0,42,78,118,158,210];
 const gearRatios=[0,3.67,2.10,1.36,1.00,.82];
 const finalDrive=3.90;
-const accelerationByGear=[0,17,12.5,9.5,7.2,5.5];
+const accelerationByGear=[0,12,8.8,6.2,4.8,3.9]; // заводская динамика ВАЗ-2107, км/ч в секунду
 const reverseGearRatio=3.20, reverseTopSpeed=24;
 function raceGearRatio(gearNumber) {
   if (gearNumber === -1) return reverseGearRatio;
@@ -6947,6 +6947,13 @@ function torqueCurve(value){
   if(r<3200)return .80+(r-1500)/1700*.20;
   if(r<5200)return 1-(r-3200)/2000*.13;
   return .87-(r-5200)/1800*.25;
+}
+
+// Сопротивление качению и воздуха в тех же единицах, что и speed (км/ч).
+// На малой скорости сопротивление почти незаметно, на высокой растёт квадратично.
+function raceRoadLoadDeceleration(speedKmh){
+  const v=Math.max(0,Number(speedKmh)||0);
+  return .18+v*.003+v*v*.00003;
 }
 function updateGear(){
   $('gearNow').textContent=gear===-1?'R':String(gear);$('gearNow').classList.add('current');
@@ -7151,15 +7158,20 @@ function animate(now){
         const traction=Math.min(1.15,Math.max(.68,1-rearSlip*.34+diffLevel*.018+tireLevel*.012));
         const engineAcceleration=gear===-1?accelerationByGear[1]*.52:accelerationByGear[gear];
         const gearboxAcceleration=gear>0&&gear<5?1+gearboxLevel*.02:1;
-        const accel=engineAcceleration*torque*traction*engineUpgradeFactor*gearboxAcceleration*shiftPowerFactor*(1-speedRatio*.24);
+        // Плавное трогание с места: сцепление постепенно передаёт момент на колёса.
+        const launchFactor=Math.min(1,.80+speed*.02);
+        const roadLoad=raceRoadLoadDeceleration(speed);
+        const engineForce=engineAcceleration*torque*traction*engineUpgradeFactor*gearboxAcceleration*shiftPowerFactor*(1-speedRatio*.24)*launchFactor;
+        const accel=Math.max(0,engineForce-roadLoad);
         if(speed<top)speed=Math.min(top,speed+accel*dt);
         else speed=Math.max(top,speed-dt*1.8);
+        // Одновременное нажатие газа и тормоза даёт контролируемое торможение.
+        if(braking)speed=Math.max(0,speed-dt*14*(1+tireLevel*.03));
       }else{
         const tireBrakeFactor=1+tireLevel*.03;
-        const coast=braking?31*tireBrakeFactor:2.8;
+        const coast=braking?34*tireBrakeFactor:raceRoadLoadDeceleration(speed);
         speed=Math.max(0,speed-dt*coast);
       }
-      if(braking)speed=Math.max(0,speed-dt*(throttle?10:18)*(1+tireLevel*.03));
       const wheelRpm=(speed/3.6)/(2*Math.PI*Math.max(.18,wheelRadiusWorld/Math.max(.3,worldUnitsPerRealMeter)))*60;
       const coupledRpm=wheelRpm*raceGearRatio(gear)*raceFinalDriveRatio();
       targetRpm=throttle?Math.max(1150,Math.min(6800,coupledRpm||1750+burnout*300)):Math.max(850,Math.min(6800,coupledRpm||900));
