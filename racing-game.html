@@ -5318,6 +5318,7 @@ async function acGarageLoadPaintProfile() {
 const acGaragePaintOriginalMaps = new WeakMap();
 const acGaragePaintOriginalVertexColors = new WeakMap();
 const acGarageWhitePaintTextureCache = new WeakMap();
+const acGarageNeutralBodyPaintTextureCache = new WeakMap();
 
 function acGarageGetWhitePaintTexture(sourceTexture) {
   if (!sourceTexture?.image) return null;
@@ -5366,6 +5367,52 @@ function acGarageGetWhitePaintTexture(sourceTexture) {
   }
 }
 
+function acGarageGetNeutralBodyPaintTexture(sourceTexture) {
+  if (!sourceTexture?.image) return null;
+  const cached = acGarageNeutralBodyPaintTextureCache.get(sourceTexture);
+  if (cached) return cached;
+
+  try {
+    const image = sourceTexture.image;
+    const width = Number(image.naturalWidth || image.videoWidth || image.width || image.displayWidth);
+    const height = Number(image.naturalHeight || image.videoHeight || image.height || image.displayHeight);
+    if (!width || !height) return null;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.drawImage(image, 0, 0, width, height);
+
+    const pixels = context.getImageData(0, 0, width, height);
+    const data = pixels.data;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 3] === 0) continue;
+      const luminance = (
+        data[index] * 0.2126 +
+        data[index + 1] * 0.7152 +
+        data[index + 2] * 0.0722
+      ) / 255;
+      // Remove factory paint hue while keeping only bright neutral panel shading.
+      const neutral = Math.round(190 + 65 * luminance);
+      data[index] = neutral;
+      data[index + 1] = neutral;
+      data[index + 2] = neutral;
+    }
+    context.putImageData(pixels, 0, 0);
+
+    const neutralTexture = sourceTexture.clone();
+    neutralTexture.image = canvas;
+    neutralTexture.needsUpdate = true;
+    acGarageNeutralBodyPaintTextureCache.set(sourceTexture, neutralTexture);
+    return neutralTexture;
+  } catch (error) {
+    console.warn("ALLCOINS Racing: не удалось нейтрализовать исходную текстуру кузова.", error);
+    return null;
+  }
+}
+
 function acGarageSetBodyPaintMaterial(material, paint) {
   if (!material?.color) return false;
   if (!acGaragePaintOriginalMaps.has(material)) {
@@ -5373,31 +5420,32 @@ function acGarageSetBodyPaintMaterial(material, paint) {
     acGaragePaintOriginalVertexColors.set(material, Boolean(material.vertexColors));
   }
   const originalMap = acGaragePaintOriginalMaps.get(material);
-  const originalVertexColors = acGaragePaintOriginalVertexColors.get(material);
   const selectedPaint = String(paint).toLowerCase();
   const isWhitePaint = selectedPaint === "#ffffff";
   const isBlackPaint = selectedPaint === "#08090b";
 
   if (isBlackPaint) {
-    // Solid deep-black base coat: remove the old painted diffuse map and vertex tint,
-    // while retaining normal/roughness maps so body contours and reflections remain visible.
+    // Deep black uses a clean solid base coat with no factory diffuse colour.
     material.map = null;
-    material.vertexColors = false;
-  } else if (originalMap && isWhitePaint) {
-    const neutralTexture = acGarageGetWhitePaintTexture(originalMap);
+  } else if (originalMap) {
+    // Every non-black colour gets the same neutralized texture. This removes
+    // factory blue/grey paint from every panel before applying the chosen colour.
+    const neutralTexture = isWhitePaint
+      ? acGarageGetWhitePaintTexture(originalMap)
+      : acGarageGetNeutralBodyPaintTexture(originalMap);
     material.map = neutralTexture || originalMap;
-    material.vertexColors = originalVertexColors;
   } else {
-    // Other colours restore the exact original map and vertex-colour state.
-    material.map = originalMap;
-    material.vertexColors = originalVertexColors;
+    material.map = null;
   }
+  // Ignore coloured vertex tints from the source GLB; preserve the original flag
+  // in the WeakMap so the unpainted material can be restored when needed.
+  material.vertexColors = false;
 
-  material.color.set(isBlackPaint ? "#08090b" : paint);
+  material.color.set(paint);
   if (material.emissive) material.emissive.set(0x000000);
   if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
   const metallicFactoryPaints = new Set(["#74887e"]);
-  const hasMetallicFinish = metallicFactoryPaints.has(String(paint).toLowerCase());
+  const hasMetallicFinish = metallicFactoryPaints.has(selectedPaint);
   if ("metalness" in material) material.metalness = hasMetallicFinish ? 0.32 : (isBlackPaint ? 0.035 : 0.08);
   if ("roughness" in material) material.roughness = hasMetallicFinish ? 0.3 : (isBlackPaint ? 0.48 : 0.42);
   material.needsUpdate = true;
