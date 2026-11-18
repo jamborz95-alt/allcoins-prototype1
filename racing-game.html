@@ -6316,9 +6316,9 @@ function acGarageSeparateBumpersFromBody(root) {
     const size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
 
-    // Keep the front lower grille as before. At the rear, protect only the
-    // narrow outermost lower bumper lip; the rear valance, tail panel and all
-    // surrounding bodywork stay in the paintable geometry.
+    // In this GLB the exhaust/tailpipe is at min.x, so min.x is the REAR
+    // and max.x is the FRONT. Keep the front lower grille at max.x. At the rear
+    // (min.x), protect only the narrow bottom bumper lip; paint the rear body.
     const frontEndZone = Math.max(size.x * .055, .08);
     const frontSteelTrimTop = bounds.min.y + size.y * .38;
     const rearEndZone = Math.max(size.x * .012, .02);
@@ -6354,9 +6354,9 @@ function acGarageSeparateBumpersFromBody(root) {
       object.localToWorld(pointC);
 
       const points = [pointA, pointB, pointC];
-      const withinFrontCap = points.every(point => point.x <= bounds.min.x + frontEndZone);
+      const withinFrontCap = points.every(point => point.x >= bounds.max.x - frontEndZone);
       const withinFrontSteelTrimBand = points.every(point => point.y <= frontSteelTrimTop);
-      const withinRearCap = points.every(point => point.x >= bounds.max.x - rearEndZone);
+      const withinRearCap = points.every(point => point.x <= bounds.min.x + rearEndZone);
       const withinRearSteelTrimBand = points.every(point => point.y <= rearSteelTrimTop);
       const materialIndex = materialForElement(at);
       const entry = { a, b, c, materialIndex };
