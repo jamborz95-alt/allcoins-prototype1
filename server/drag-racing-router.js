@@ -8,24 +8,13 @@ const VALID_MODES = new Set(["quarter", "half", "sprint"]);
 const RACE_DISTANCE_METERS = Object.freeze({ quarter: 1609.344, half: 3218.688, sprint: 4000 });
 const DEFAULT_TUNE = Object.freeze({ ecu: 50, boost: 25, grip: 70, shift: 45 });
 const BODY_PAINTS = Object.freeze({
-  vaz106: { price: 2000, color: "#7b3f32" }
-  vaz107: { price: 2000, color: "#38243f" }
-  vaz110: { price: 2000, color: "#9c2032" }
-  vaz118: { price: 2000, color: "#ce2736" }
-  vaz127: { price: 2000, color: "#5b1c2b" }
-  vaz128: { price: 2000, color: "#b92a3c" }
-  vaz140: { price: 2000, color: "#702537" }
-  vaz182: { price: 2000, color: "#7d2331" }
-  vaz223: { price: 2000, color: "#e4c32d" }
-  vaz228: { price: 2000, color: "#d7bd9d" }
-  vaz304: { price: 2000, color: "#1e4936" }
-  vaz377: { price: 2000, color: "#24535a" }
-  vaz404: { price: 2000, color: "#718078" }
-  vaz420: { price: 2000, color: "#1d4852" }
-  vaz441: { price: 2000, color: "#172d59" }
-  vaz449: { price: 2000, color: "#1b4267" }
-  vaz605: { price: 2000, color: "#4e627b" }
-  vaz791: { price: 2000, color: "#52402f" }
+  white: { price: 2000, color: "#f4f3ef" },
+  black: { price: 2000, color: "#151719" },
+  green: { price: 2000, color: "#176b40" },
+  blue: { price: 2000, color: "#174f9c" },
+  sochi: { price: 2000, color: "#74887e" },
+  red: { price: 2000, color: "#c62932" },
+  yellow: { price: 2000, color: "#f0cf27" }
 });
 
 // Three permanent upgrade stages per part; the server owns the price list.
