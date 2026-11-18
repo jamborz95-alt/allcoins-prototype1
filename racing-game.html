@@ -6316,13 +6316,13 @@ function acGarageSeparateBumpersFromBody(root) {
     const size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.x) || size.x < 1 || !Number.isFinite(size.y) || size.y < .2) return;
 
-    // The front lower grille uses the established front band. At the rear,
-    // retain only the very bottom bumper edge; all rear body panels above it
-    // remain in the paintable geometry.
+    // Keep the front lower grille as before. At the rear, protect only the
+    // narrow outermost lower bumper lip; the rear valance, tail panel and all
+    // surrounding bodywork stay in the paintable geometry.
     const frontEndZone = Math.max(size.x * .055, .08);
     const frontSteelTrimTop = bounds.min.y + size.y * .38;
-    const rearEndZone = Math.max(size.x * .025, .035);
-    const rearSteelTrimTop = bounds.min.y + size.y * .12;
+    const rearEndZone = Math.max(size.x * .012, .02);
+    const rearSteelTrimTop = bounds.min.y + size.y * .055;
     const bodyTriangles = [];
     const bumperTriangles = [];
     const groups = geometry.groups || [];
