@@ -15,7 +15,13 @@ const BODY_PAINTS = Object.freeze({
   red: { price: 2000, color: "#e31b23" },
   blue: { price: 2000, color: "#0057b8" },
   green: { price: 2000, color: "#00843d" },
-  burgundy: { price: 2000, color: "#800020" }
+  burgundy: { price: 2000, color: "#800020" },
+  yellow: { price: 2000, color: "#f2c230" },
+  orange: { price: 2000, color: "#ef6c25" },
+  skyblue: { price: 2000, color: "#48a8e8" },
+  turquoise: { price: 2000, color: "#11a6a0" },
+  violet: { price: 2000, color: "#7442a8" },
+  bronze: { price: 2000, color: "#a56a35" }
 });
 
 // Three permanent upgrade stages per part; the server owns the price list.
