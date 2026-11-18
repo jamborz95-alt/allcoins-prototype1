@@ -1657,6 +1657,126 @@ async function onlineStartTestBotRace() {
   });
 }
 
+/* ALLCOINS RACING · 3D START TRAFFIC LIGHT */
+let acStartTrafficSignal = null;
+let acStartTrafficSignalBulbs = null;
+let acStartTrafficSignalHideTimer = null;
+
+function acCreateStartTrafficSignal() {
+  if (acStartTrafficSignal) return acStartTrafficSignal;
+  if (!scene || !THREE) return null;
+
+  const group = new THREE.Group();
+  group.name = "ALLCOINS 3D Start Traffic Light";
+
+  const poleMaterial = new THREE.MeshStandardMaterial({
+    color: 0x485564, metalness: .78, roughness: .28
+  });
+  const darkMaterial = new THREE.MeshStandardMaterial({
+    color: 0x101722, metalness: .62, roughness: .34
+  });
+  const trimMaterial = new THREE.MeshStandardMaterial({
+    color: 0x8998aa, metalness: .88, roughness: .22
+  });
+
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.065, .09, 3.25, 14), poleMaterial);
+  pole.position.y = 1.61;
+  group.add(pole);
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(.38, .43, .16, 20), darkMaterial);
+  base.position.y = -.035;
+  group.add(base);
+
+  const housing = new THREE.Mesh(new THREE.BoxGeometry(.82, 1.98, .42), darkMaterial);
+  housing.position.set(0, 2.31, .03);
+  group.add(housing);
+
+  const visorGeometry = new THREE.BoxGeometry(.58, .075, .2);
+  const lensGeometry = new THREE.SphereGeometry(.17, 20, 16);
+  const ringGeometry = new THREE.TorusGeometry(.195, .027, 8, 28);
+  const colors = {
+    red: 0xff302b,
+    yellow: 0xffbf32,
+    green: 0x35ed87
+  };
+  const yPositions = { red: 2.92, yellow: 2.31, green: 1.70 };
+  const bulbs = {};
+
+  for (const key of ["red", "yellow", "green"]) {
+    const y = yPositions[key];
+    const visor = new THREE.Mesh(visorGeometry, darkMaterial);
+    visor.position.set(0, y + .17, .285);
+    group.add(visor);
+
+    const ring = new THREE.Mesh(ringGeometry, trimMaterial);
+    ring.position.set(0, y, .265);
+    group.add(ring);
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x222a34,
+      emissive: colors[key],
+      emissiveIntensity: .025,
+      roughness: .3,
+      metalness: .05
+    });
+    const lens = new THREE.Mesh(lensGeometry, material);
+    lens.scale.set(1, 1, .48);
+    lens.position.set(0, y, .29);
+    group.add(lens);
+
+    const glow = new THREE.PointLight(colors[key], 0, 3.6, 2);
+    glow.position.set(0, y, .62);
+    group.add(glow);
+    bulbs[key] = { material, glow };
+  }
+
+  const topCap = new THREE.Mesh(new THREE.BoxGeometry(.9, .1, .48), trimMaterial);
+  topCap.position.set(0, 3.33, .02);
+  group.add(topCap);
+
+  // Светофор стоит у края полосы, немного впереди переднего бампера.
+  group.position.set(carAnchor + 4.3, -.12, AC_PLAYER_LANE_Z + 2.25);
+  group.visible = false;
+  group.traverse(object => {
+    if (object.isMesh) {
+      object.castShadow = false;
+      object.receiveShadow = false;
+    }
+  });
+  scene.add(group);
+
+  acStartTrafficSignal = group;
+  acStartTrafficSignalBulbs = bulbs;
+  return group;
+}
+
+function acSetStartTrafficSignal(stage) {
+  const group = acCreateStartTrafficSignal();
+  if (!group) return;
+
+  if (acStartTrafficSignalHideTimer) {
+    clearTimeout(acStartTrafficSignalHideTimer);
+    acStartTrafficSignalHideTimer = null;
+  }
+
+  const active = stage === "red" || stage === "yellow" || stage === "green";
+  group.visible = active;
+  for (const key of ["red", "yellow", "green"]) {
+    const isOn = key === stage;
+    const bulb = acStartTrafficSignalBulbs[key];
+    bulb.material.emissiveIntensity = isOn ? 2.7 : .025;
+    bulb.material.color.setHex(isOn ? (key === "red" ? 0xff6a62 : key === "yellow" ? 0xffd36b : 0x83ffc0) : 0x222a34);
+    bulb.glow.intensity = isOn ? 1.15 : 0;
+  }
+}
+
+function acStartTrafficGreenAndHide() {
+  acSetStartTrafficSignal("green");
+  acStartTrafficSignalHideTimer = window.setTimeout(() => {
+    acSetStartTrafficSignal("off");
+  }, 2200);
+}
+
 /* ALLCOINS READY COUNTDOWN 2026-11-12 */
 function onlineRenderPlayers(players) {
   const list = $("onlinePlayerList");
@@ -1771,6 +1891,7 @@ async function onlineRefreshRooms() {
 
 async function onlineBeginRace() {
   if (!racingPartsProfileLoaded) await acGarageLoadPartsProfile({silent:true});
+  acStartTrafficGreenAndHide();
   setGarageMode(false);
   $("onlinePanel").hidden = true;
   onlineMode = true;
@@ -1840,6 +1961,9 @@ function onlinePrepareCountdown(payload = {}) {
 
   onlineRoomStatus = "racing";
   onlineRaceStarted = false;
+  setGarageMode(false);
+  $("onlinePanel").hidden = true;
+  acSetStartTrafficSignal("red");
   raceStarted = false;
   distance = 0;
   elapsed = 0;
@@ -1867,6 +1991,7 @@ function onlinePrepareCountdown(payload = {}) {
 
     if (label !== previousLabel) {
       previousLabel = label;
+      acSetStartTrafficSignal(label === "1" ? "yellow" : label === "СТАРТ!" ? "green" : "red");
       onlineShowCountdown(label);
     }
 
@@ -4836,6 +4961,7 @@ acGarageAddWallDisplay(-2.95, 1.72, 3.05, 1.02, acGarageRightToolsTexture);
 
 function setGarageMode(enabled) {
   const active = Boolean(enabled);
+  if (active && typeof acSetStartTrafficSignal === "function") acSetStartTrafficSignal("off");
   document.body.classList.toggle("garage-mode", active);
   document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
