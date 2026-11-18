@@ -142,7 +142,9 @@ test("VAZ-2107 has a dedicated factory paint palette with server-matching codes"
     assert.ok(button[0].includes('data-paint-finish="' + paint.finish + '"'));
     assert.match(router, new RegExp(id + ': \\{ price: 2000, color: "' + paint.color + '" \\}'));
   }
-  const paletteMarkup = page.match(/<div class="garage-paint-options" id="garagePaintOptions" hidden>([\\s\\S]*?)<\\/div>/)?.[1] || "";
+  const paletteStart = page.indexOf('<div class="garage-paint-options" id="garagePaintOptions" hidden>');
+  const paletteEnd = page.indexOf('<div class="garage-paint-selected"', paletteStart);
+  const paletteMarkup = paletteStart >= 0 && paletteEnd > paletteStart ? page.slice(paletteStart, paletteEnd) : "";
   assert.equal((paletteMarkup.match(/class="garage-paint-swatch/g) || []).length, 18,
     "Only the eighteen VAZ-2107 factory colours should be visible.");
   for (const oldId of ["white","black","silver","graphite","red","blue","green","burgundy","yellow","orange","skyblue","turquoise","violet","bronze"]) {
