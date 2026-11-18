@@ -6252,13 +6252,15 @@ function acGarageSeparateBumpersFromBody(root) {
       const withinRearCap = [pointA, pointB, pointC].every(point => point.x >= bounds.max.x - endZone);
       const belowBumperLine = [pointA, pointB, pointC].every(point => point.y <= bumperTop);
       const materialIndex = materialForElement(at);
-      const inBumperZone = (withinFrontCap || withinRearCap) && belowBumperLine;
+      const isFrontOrRearEnd = withinFrontCap || withinRearCap;
       const isSteelMaterial = steelMaterialIndexes.has(materialIndex);
       const entry = { a, b, c, materialIndex };
-      // Only steel/chrome material faces are kept factory-coloured. Any painted
-      // bumper cover, fender or body panel stays in the paintable body geometry.
-      // If the model uses unnamed/non-PBR materials, retain the narrow spatial fallback.
-      if (inBumperZone && (steelMaterialIndexes.size ? isSteelMaterial : true)) bumperTriangles.push(entry);
+      // With identifiable steel/chrome materials, preserve all their bumper-end
+      // faces regardless of height. Only use the lower-height fallback if the GLB
+      // provides no identifiable steel material slot.
+      const keepFactorySteel = isFrontOrRearEnd &&
+        (steelMaterialIndexes.size ? isSteelMaterial : belowBumperLine);
+      if (keepFactorySteel) bumperTriangles.push(entry);
       else bodyTriangles.push(entry);
     }
 
