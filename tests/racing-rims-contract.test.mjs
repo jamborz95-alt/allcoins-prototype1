@@ -20,7 +20,7 @@ test("VAZ-2107 tuning exposes all four paid rim styles with server-matching pric
     const button = page.match(new RegExp('<button class="garage-rim-card"[^>]*data-rim-style="' + id + '"[\\s\\S]*?<\\/button>'));
     assert.ok(button, "Missing rim option " + id);
     assert.ok(button[0].includes(item.label), "Wrong label for " + id);
-    const formattedPrice = String(item.price).replace(/\\B(?=(\\d{3})+(?!\\d))/g, " ");
+    const formattedPrice = String(item.price).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     assert.ok(button[0].includes(formattedPrice + " AC"), "Wrong displayed price for " + id);
     assert.match(router, new RegExp(id + ': \\{ price: ' + item.price + ','));
   }
