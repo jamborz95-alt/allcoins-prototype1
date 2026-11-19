@@ -1725,6 +1725,260 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .tachometer .gauge-scale-svg .scale-number{font-size:15px}
 }
 </style>
+
+<style id="allcoins-racing-dashboard-reference-v31">
+/* V31 — панель приборов по скриншоту: две большие синие шкалы в общем корпусе. */
+:root{
+  --ac-cluster-dial:clamp(116px,24.6vh,178px);
+  --ac-cluster-safe:env(safe-area-inset-bottom,0px);
+}
+#dashboardBackplate{
+  position:fixed!important;
+  left:50%!important;right:auto!important;bottom:0!important;
+  transform:translateX(-50%)!important;
+  width:min(590px,92vw)!important;
+  height:clamp(154px,33vh,238px)!important;
+  z-index:12!important;
+  pointer-events:none!important;
+  overflow:visible!important;
+  border:1px solid #7d899588!important;
+  border-bottom:0!important;
+  border-radius:34px 34px 0 0!important;
+  background:
+    linear-gradient(180deg,#333b43 0%,#252c33 10%,#111820 32%,#080e15 78%,#03070c 100%)!important;
+  box-shadow:
+    0 -7px 24px #000b,
+    inset 0 2px 5px #ffffff38,
+    inset 0 18px 28px #0007!important;
+}
+#dashboardBackplate:before{
+  content:"";position:absolute;inset:16px 16px 0;
+  border:1px solid #7d8b9870;border-bottom:0;
+  border-radius:26px 26px 0 0;
+  background:
+    radial-gradient(ellipse at 50% 8%,#52606b55 0%,transparent 58%),
+    linear-gradient(180deg,#1c252d88,#050a10 80%);
+  box-shadow:inset 0 2px 5px #ffffff16;
+}
+#dashboardBackplate:after{
+  content:"";position:absolute;left:50%;top:13px;transform:translateX(-50%);
+  width:42%;height:5px;border-radius:50%;
+  background:linear-gradient(90deg,transparent,#9eabb866,#d1d8df77,#9eabb866,transparent);
+}
+
+/* Main dials: silver outer bezel, electric-blue inner ring and deep navy face. */
+.tachometer,.speedometer{
+  position:fixed!important;top:auto!important;
+  width:var(--ac-cluster-dial)!important;height:var(--ac-cluster-dial)!important;
+  bottom:calc(5px + var(--ac-cluster-safe))!important;
+  z-index:14!important;pointer-events:none!important;
+  transform:translateX(-50%)!important;
+  filter:drop-shadow(0 5px 8px #000e)!important;
+}
+.tachometer{
+  left:calc(50% - clamp(14px,2.08vw,32px))!important;
+}
+.speedometer{
+  left:calc(50% + clamp(108px,10vw,154px))!important;
+}
+.tachometer-dial,.speedometer-dial{
+  position:relative!important;width:100%!important;height:100%!important;
+  overflow:hidden!important;border-radius:50%!important;
+  border:5px solid #687886!important;
+  background:
+    radial-gradient(circle at 50% 48%,#122e50 0%,#0c1d35 34%,#071322 62%,#02070d 100%)!important;
+  box-shadow:
+    0 0 0 2px #080d13,
+    0 0 0 5px #303b45,
+    inset 0 0 0 2px #91a5b8aa,
+    inset 0 0 0 7px #09182b,
+    inset 0 0 18px #000e,
+    0 3px 9px #000c!important;
+}
+.tachometer-dial:before,.speedometer-dial:before{
+  content:"";position:absolute!important;inset:7px!important;
+  border-radius:50%!important;border:2px solid #287bff!important;
+  box-shadow:0 0 8px #2575ffbb,inset 0 0 9px #1c65e988!important;
+  pointer-events:none!important;z-index:2!important;
+}
+.tachometer-dial:after,.speedometer-dial:after{
+  content:"";position:absolute;inset:13px;border-radius:50%;
+  border:1px solid #8bc0ff22;box-shadow:inset 0 0 18px #000b;
+  pointer-events:none;z-index:0;
+}
+.tachometer-ticks,.speedometer-ticks{
+  position:absolute!important;inset:0!important;z-index:3!important;
+}
+.gauge-scale-svg{width:100%!important;height:100%!important;display:block!important}
+.gauge-scale-svg .minor-tick{
+  stroke:#a9bacb!important;stroke-width:1.25!important;opacity:.84!important;
+}
+.gauge-scale-svg .major-tick{
+  stroke:#f2f5f7!important;stroke-width:2.15!important;stroke-linecap:round!important;
+}
+.gauge-scale-svg .red-tick{
+  stroke:#ff453e!important;stroke-width:2.8!important;stroke-linecap:round!important;
+}
+.gauge-scale-svg .scale-number{
+  fill:#eff3f7!important;font-family:Arial,sans-serif!important;
+  font-size:15px!important;font-weight:800!important;
+  text-anchor:middle!important;dominant-baseline:middle!important;
+  paint-order:stroke;stroke:#07111f;stroke-width:.8px;
+}
+.tachometer .gauge-scale-svg .scale-number{font-size:16px!important}
+.gauge-scale-svg .scale-red{fill:#ff625d!important}
+.speedometer-label,.tachometer-label{display:none!important}
+.tachometer-needle,.speedometer-needle{
+  position:absolute!important;left:50%!important;bottom:50%!important;
+  width:3px!important;height:39%!important;z-index:5!important;
+  border-radius:3px!important;transform-origin:50% 100%!important;
+  background:linear-gradient(180deg,#fff 0%,#ff6459 66%,#b92431 100%)!important;
+  box-shadow:0 0 8px #ff554d88!important;
+  transition:none!important;
+}
+.tachometer-needle.redline{
+  background:linear-gradient(180deg,#fff 0%,#ff3935 65%,#970b13 100%)!important;
+  box-shadow:0 0 10px #ff2525!important;
+}
+.tachometer-hub,.speedometer-hub{
+  position:absolute!important;left:50%!important;top:50%!important;
+  width:13px!important;height:13px!important;border-radius:50%!important;
+  transform:translate(-50%,-50%)!important;z-index:7!important;
+  background:radial-gradient(circle at 35% 28%,#fff,#aebdc9 47%,#293743 74%)!important;
+  border:2px solid #e6edf3!important;box-shadow:0 1px 6px #000e!important;
+}
+/* Values sit in the separate gear display in the reference, not over either dial. */
+.tachometer-value,.speedometer-value,.tachometer-range,.speedometer-range{
+  display:none!important;
+}
+
+/* Small engine temperature instrument perched over the central housing. */
+.temp-gauge{
+  position:fixed!important;left:calc(50% + clamp(35px,4.36vw,67px))!important;
+  bottom:clamp(112px,22.2vh,160px)!important;
+  width:clamp(57px,10.7vh,78px)!important;
+  height:clamp(57px,10.7vh,78px)!important;
+  transform:translateX(-50%)!important;z-index:15!important;pointer-events:none!important;
+  filter:drop-shadow(0 3px 5px #000d);
+}
+.temp-gauge-dial{
+  position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;
+  border:4px solid #9ba8b3;
+  background:radial-gradient(circle at 50% 55%,#1a2730,#070c12 72%);
+  box-shadow:0 0 0 3px #151c22,inset 0 2px 4px #ffffff33,inset 0 -5px 12px #000c;
+}
+.temp-gauge-dial:before{
+  content:"";position:absolute;inset:4px;border:1px solid #d6e1ea77;border-radius:50%;
+}
+.temp-gauge-caption{
+  position:absolute;top:23%;left:0;right:0;text-align:center;
+  color:#d9e4ed;font:800 8px Arial,sans-serif;letter-spacing:.08em;z-index:3;
+}
+.temp-gauge-scale{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.temp-gauge-needle{
+  position:absolute;left:50%;top:49%;width:2px;height:29%;
+  background:linear-gradient(#fff,#e7e9e6 68%,#b9c6d0);
+  border-radius:2px;transform-origin:50% 0%;transform:rotate(0deg);
+  z-index:4;box-shadow:0 0 3px #fff9;
+}
+.temp-gauge-hub{
+  position:absolute;left:50%;top:49%;width:7px;height:7px;border-radius:50%;
+  transform:translate(-50%,-50%);background:#d7e0e7;border:1px solid #fff;z-index:5;
+}
+
+/* Aluminium shift paddles on the left of the tachometer. */
+.gearbox{display:contents!important}
+.gear-label,.gear-pattern{display:none!important}
+#gearUp,#gearDown{
+  position:fixed!important;left:calc(50% - clamp(175px,18.55vw,285px))!important;
+  width:clamp(46px,4.6vw,70px)!important;min-width:0!important;
+  z-index:18!important;pointer-events:auto!important;
+  padding:0!important;margin:0!important;color:#3b4650!important;
+  font-family:Arial,sans-serif!important;font-weight:900!important;
+  text-shadow:0 1px 1px #fff9!important;
+  border:2px solid #aab5be!important;
+  background:linear-gradient(105deg,#6d7881 0%,#f5f6f5 20%,#aeb8c0 47%,#f5f6f5 69%,#6b7781 100%)!important;
+  box-shadow:inset 0 2px 4px #fff,inset 0 -5px 9px #26313b99,0 4px 8px #000b!important;
+  touch-action:manipulation!important;
+}
+#gearUp{
+  bottom:clamp(42px,11vh,80px)!important;
+  height:clamp(124px,22vh,160px)!important;
+  border-radius:24px 7px 8px 13px!important;
+  clip-path:polygon(38% 0,100% 0,84% 35%,97% 48%,100% 62%,78% 70%,73% 100%,9% 100%,0 73%,13% 30%);
+  font-size:clamp(27px,4vh,38px)!important;
+  padding-top:35px!important;
+}
+#gearUp:before{
+  content:"";position:absolute;left:15%;right:13%;top:8%;bottom:12%;
+  border-radius:18px 5px 6px 8px;
+  background:linear-gradient(105deg,#ffffff66,#dfe5e9aa 45%,#7c899477);
+  box-shadow:inset 0 1px 4px #fff9;
+  z-index:-1;
+}
+#gearDown{
+  bottom:clamp(34px,11.4vh,82px)!important;
+  height:clamp(48px,8vh,59px)!important;
+  border-radius:5px 10px 13px 6px!important;
+  clip-path:polygon(0 20%,14% 0,100% 0,100% 82%,82% 100%,0 100%);
+  font-size:clamp(25px,3.8vh,36px)!important;
+}
+#gearDown:before{
+  content:"";position:absolute;left:16%;right:12%;top:20%;height:24%;
+  border-radius:3px;background:linear-gradient(180deg,#313c46,#111820 50%,#8e9ba5);
+  box-shadow:0 1px 2px #fff7;z-index:-1;
+}
+#gearUp:active,#gearDown:active{
+  filter:brightness(1.25)!important;transform:translateY(2px)!important;
+}
+
+/* A small dark gear-number window to the right of the speed dial. */
+#gearNow{
+  position:fixed!important;left:calc(50% + clamp(138px,17.5vw,269px))!important;
+  bottom:clamp(66px,16.5vh,119px)!important;
+  width:clamp(28px,2.5vw,39px)!important;
+  min-width:0!important;height:clamp(28px,4.7vh,35px)!important;
+  z-index:17!important;border:2px solid #343e47!important;
+  border-radius:5px!important;
+  background:linear-gradient(145deg,#26333e,#05090e 72%)!important;
+  color:#f4f7fa!important;font:900 clamp(16px,2.5vh,22px)/1 Arial,sans-serif!important;
+  box-shadow:inset 0 1px 4px #ffffff30,inset 0 -3px 5px #000d,0 2px 5px #000b!important;
+  text-shadow:0 0 5px #c8e3ff88!important;
+}
+#gearNow:before,#gearNow:after{display:none!important;content:none!important}
+
+/* Keep the clutch-free pedals at the far edges, as in the supplied screen. */
+#brake,#gas{z-index:18!important}
+@media(max-width:700px){
+  #dashboardBackplate{width:min(450px,96vw)!important}
+  .tachometer,.speedometer{
+    width:clamp(112px,24vh,148px)!important;height:clamp(112px,24vh,148px)!important;
+  }
+  .tachometer{left:calc(50% - 16px)!important}
+  .speedometer{left:calc(50% + 116px)!important}
+  .gauge-scale-svg .scale-number{font-size:13px!important}
+  .tachometer .gauge-scale-svg .scale-number{font-size:14px!important}
+  #gearUp,#gearDown{left:calc(50% - 178px)!important;width:48px!important}
+  #gearNow{left:calc(50% + 230px)!important}
+  .temp-gauge{left:calc(50% + 50px)!important}
+}
+@media(max-height:440px) and (orientation:landscape){
+  #dashboardBackplate{height:clamp(150px,38vh,166px)!important}
+  .tachometer,.speedometer{
+    width:clamp(116px,30vh,132px)!important;height:clamp(116px,30vh,132px)!important;
+    bottom:3px!important;
+  }
+  .tachometer{left:calc(50% - 15px)!important}
+  .speedometer{left:calc(50% + 125px)!important}
+  #gearUp{height:clamp(100px,30vh,118px)!important;bottom:35px!important}
+  #gearDown{height:44px!important;bottom:35px!important}
+  #gearNow{left:calc(50% + 240px)!important;bottom:66px!important}
+  .temp-gauge{bottom:clamp(108px,28vh,125px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .tachometer-needle,.speedometer-needle{transition:none!important}
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -1875,7 +2129,19 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 
 
-<div id="dashboardBackplate"></div>
+<div id="dashboardBackplate" aria-hidden="true"></div>
+<div class="temp-gauge" aria-label="Температура двигателя">
+  <div class="temp-gauge-dial">
+    <span class="temp-gauge-caption">TEMP</span>
+    <svg class="temp-gauge-scale" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M18 65 A34 34 0 0 1 82 65" fill="none" stroke="#c7d7e6" stroke-width="2.2" stroke-dasharray="2 4" stroke-linecap="round"/>
+      <path d="M70 39 A34 34 0 0 1 82 65" fill="none" stroke="#e45a58" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M24 59 L30 55 M34 39 L38 43 M50 31 L50 38 M66 39 L62 43" fill="none" stroke="#eef3f8" stroke-width="1.8"/>
+    </svg>
+    <i class="temp-gauge-needle"></i>
+    <b class="temp-gauge-hub"></b>
+  </div>
+</div>
 <div class="tachometer" aria-label="Обороты двигателя">
   <div class="tachometer-dial">
     <div class="tachometer-ticks"></div>
@@ -7390,9 +7656,9 @@ if(distance>=RACE_DISTANCE_METERS){
 document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';}});
 
 /* ALLCOINS RACING V28 · реалистичная шкала ВАЗ-2107 и демпфирование стрелок */
-const AC_SPEEDOMETER_MAX = 220;
-const AC_TACHOMETER_MAX = 8000;
-const AC_TACHOMETER_REDLINE = 6000;
+const AC_SPEEDOMETER_MAX = 400;
+const AC_TACHOMETER_MAX = 11000;
+const AC_TACHOMETER_REDLINE = 9000;
 
 function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorStep, redlineStart) {
   const host = document.querySelector(containerSelector);
@@ -7429,9 +7695,8 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
     const label = document.createElementNS(ns, 'text');
     label.setAttribute('x', at.x.toFixed(2));
     label.setAttribute('y', at.y.toFixed(2));
-    label.setAttribute('class', 'scale-number');
+    label.setAttribute('class', value >= redlineStart ? 'scale-number scale-red' : 'scale-number');
     label.textContent = containerSelector === '.speedometer-ticks' ? String(value) : String(value / 1000);
-    if (value >= redlineStart) label.setAttribute('fill', '#ff7770');
     svg.appendChild(label);
   }
 
@@ -7440,10 +7705,10 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
 }
 
 const acSpeedScaleTickCount = acBuildInstrumentScale(
-  '.speedometer-ticks', AC_SPEEDOMETER_MAX, 20, 5, Infinity
+  '.speedometer-ticks', AC_SPEEDOMETER_MAX, 40, 10, 320
 );
 const acRpmScaleTickCount = acBuildInstrumentScale(
-  '.tachometer-ticks', AC_TACHOMETER_MAX, 1000, 200, AC_TACHOMETER_REDLINE
+  '.tachometer-ticks', AC_TACHOMETER_MAX, 1000, 250, AC_TACHOMETER_REDLINE
 );
 
 window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
