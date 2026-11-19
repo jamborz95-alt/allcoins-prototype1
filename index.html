@@ -5411,6 +5411,18 @@ window.allcoinsRacingPartsApi = Object.freeze({
     if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
     render();
     return result;
+  },
+  async remove(partId) {
+    const result = await apiRequest("/api/drag-racing/garage/parts/remove", { partId: String(partId || "") });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async install(partId) {
+    const result = await apiRequest("/api/drag-racing/garage/parts/install", { partId: String(partId || "") });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
   }
 });
 
@@ -14267,6 +14279,6 @@ $("refreshDurakRooms").onclick = async () => {
   }
 </style>
 
-<script src="./racing-host.js?v=20261119-fuel-100ac-v142"></script>
+<script src="./racing-host.js?v=20261119-parts-inventory-v143"></script>
 </body>
 </html>
