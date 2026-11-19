@@ -203,6 +203,25 @@ async function sendProfile(res, client, telegramId) {
   return res.json({ ok: true, balance: await readBalance(client, telegramId), profile });
 }
 
+async function readRacingPartsInventory(client, telegramId) {
+  const result = await client.query(
+    "SELECT part_id, level, is_installed FROM drag_racing_player_parts " +
+    "WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
+    [String(telegramId)]
+  );
+  const ownedParts = {};
+  const installedParts = {};
+  const storedParts = {};
+  for (const row of result.rows) {
+    const id = String(row.part_id);
+    const level = Math.max(1, Math.min(3, Number(row.level) || 1));
+    ownedParts[id] = level;
+    if (row.is_installed === false) storedParts[id] = level;
+    else installedParts[id] = level;
+  }
+  return { ownedParts, installedParts, storedParts, maxLevel: 3 };
+}
+
 async function roomPayload(client, roomId, userId) {
   const roomResult = await client.query(
     "SELECT r.id::TEXT AS id, r.owner_telegram_id::TEXT AS owner_telegram_id, r.owner_name, " +
@@ -400,6 +419,10 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "PRIMARY KEY (telegram_id, part_id))"
+    );
+    // Existing owned parts stay installed; newly removed parts remain in the player's inventory.
+    await pool.query(
+      "ALTER TABLE drag_racing_player_parts ADD COLUMN IF NOT EXISTS is_installed BOOLEAN NOT NULL DEFAULT TRUE"
     );
     await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_player_car_rewards (" +
@@ -931,15 +954,9 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     try {
       await client.query("BEGIN"); open = true;
       const balance = await lockPlayerBalance(client, user);
-      const owned = await client.query(
-        "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
-        [user.id]
-      );
-      const ownedParts = Object.fromEntries(owned.rows.map(row => [
-        String(row.part_id), Math.max(1, Math.min(3, Number(row.level) || 1))
-      ]));
+      const inventory = await readRacingPartsInventory(client, user.id);
       await client.query("COMMIT"); open = false;
-      return res.json({ ok: true, balance: Number(balance), ownedParts, maxLevel: 3 });
+      return res.json({ ok: true, balance: Number(balance), ...inventory });
     } catch (error) {
       if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
       console.error("Load Drag Racing parts:", error.message || error);
@@ -961,21 +978,19 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     let open = false;
     try {
       await client.query("BEGIN"); open = true;
-      // Lock the player's wallet so simultaneous purchases cannot spend the same balance.
       const balance = await lockPlayerBalance(client, user);
       const currentResult = await client.query(
-        "SELECT level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT AND part_id = $2 FOR UPDATE",
+        "SELECT level, is_installed FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT AND part_id = $2 FOR UPDATE",
         [user.id, partId]
       );
+      if (currentResult.rows.length && currentResult.rows[0].is_installed === false) {
+        throw new DragRacingError(409, "Эта деталь находится на складе. Сначала установи её на автомобиль.");
+      }
       const currentLevel = Math.max(0, Math.min(3, Number(currentResult.rows[0]?.level) || 0));
       if (currentLevel >= 3) {
-        const owned = await client.query(
-          "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
-          [user.id]
-        );
-        const ownedParts = Object.fromEntries(owned.rows.map(row => [String(row.part_id), Number(row.level)]));
+        const inventory = await readRacingPartsInventory(client, user.id);
         await client.query("COMMIT"); open = false;
-        return res.json({ ok: true, purchased: false, alreadyMax: true, partId, level: 3, balance: Number(balance), ownedParts });
+        return res.json({ ok: true, purchased: false, alreadyMax: true, partId, level: 3, balance: Number(balance), ...inventory });
       }
 
       const nextLevel = currentLevel + 1;
@@ -992,26 +1007,22 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
 
       if (currentLevel > 0) {
         await client.query(
-          "UPDATE drag_racing_player_parts SET level = $3, purchased_at = NOW(), updated_at = NOW() " +
+          "UPDATE drag_racing_player_parts SET level = $3, is_installed = TRUE, purchased_at = NOW(), updated_at = NOW() " +
           "WHERE telegram_id = $1::BIGINT AND part_id = $2",
           [user.id, partId, nextLevel]
         );
       } else {
         await client.query(
-          "INSERT INTO drag_racing_player_parts (telegram_id, part_id, level) VALUES ($1::BIGINT, $2, $3)",
+          "INSERT INTO drag_racing_player_parts (telegram_id, part_id, level, is_installed) VALUES ($1::BIGINT, $2, $3, TRUE)",
           [user.id, partId, nextLevel]
         );
       }
 
-      const owned = await client.query(
-        "SELECT part_id, level FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT ORDER BY part_id ASC",
-        [user.id]
-      );
-      const ownedParts = Object.fromEntries(owned.rows.map(row => [String(row.part_id), Number(row.level)]));
+      const inventory = await readRacingPartsInventory(client, user.id);
       await client.query("COMMIT"); open = false;
       return res.json({
         ok: true, purchased: true, partId, level: nextLevel,
-        price: Number(price), balance: Number(debit.rows[0].balance), ownedParts
+        price: Number(price), balance: Number(debit.rows[0].balance), ...inventory
       });
     } catch (error) {
       if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
@@ -1020,6 +1031,78 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       return res.status(status).json({
         ok: false,
         error: error instanceof DragRacingError ? error.message : "Не удалось купить запчасть."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/parts/remove", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const partId = String(req.body?.partId || "");
+    if (!Object.hasOwn(RACING_PARTS, partId)) {
+      return res.status(400).json({ ok: false, error: "Такой запчасти нет в каталоге." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      await lockPlayerBalance(client, user);
+      const current = await client.query(
+        "SELECT level, is_installed FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT AND part_id = $2 FOR UPDATE",
+        [user.id, partId]
+      );
+      if (!current.rows.length) throw new DragRacingError(404, "Эта запчасть не найдена в гараже.");
+      if (current.rows[0].is_installed === false) throw new DragRacingError(409, "Эта запчасть уже лежит на складе.");
+      await client.query(
+        "UPDATE drag_racing_player_parts SET is_installed = FALSE, updated_at = NOW() WHERE telegram_id = $1::BIGINT AND part_id = $2",
+        [user.id, partId]
+      );
+      const inventory = await readRacingPartsInventory(client, user.id);
+      await client.query("COMMIT"); open = false;
+      return res.json({ ok: true, removed: true, partId, level: Number(current.rows[0].level), ...inventory });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Remove Drag Racing part:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось снять запчасть с автомобиля."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/garage/parts/install", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const partId = String(req.body?.partId || "");
+    if (!Object.hasOwn(RACING_PARTS, partId)) {
+      return res.status(400).json({ ok: false, error: "Такой запчасти нет в каталоге." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      await lockPlayerBalance(client, user);
+      const current = await client.query(
+        "SELECT level, is_installed FROM drag_racing_player_parts WHERE telegram_id = $1::BIGINT AND part_id = $2 FOR UPDATE",
+        [user.id, partId]
+      );
+      if (!current.rows.length) throw new DragRacingError(404, "Эта запчасть не найдена на складе.");
+      if (current.rows[0].is_installed !== false) throw new DragRacingError(409, "Эта запчасть уже установлена.");
+      await client.query(
+        "UPDATE drag_racing_player_parts SET is_installed = TRUE, updated_at = NOW() WHERE telegram_id = $1::BIGINT AND part_id = $2",
+        [user.id, partId]
+      );
+      const inventory = await readRacingPartsInventory(client, user.id);
+      await client.query("COMMIT"); open = false;
+      return res.json({ ok: true, installed: true, partId, level: Number(current.rows[0].level), ...inventory });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Install Drag Racing part:", error.message || error);
+      return res.status(status).json({
+        ok: false,
+        error: error instanceof DragRacingError ? error.message : "Не удалось установить запчасть."
       });
     } finally { client.release(); }
   });
