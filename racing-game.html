@@ -4972,7 +4972,7 @@ scene.background = new THREE.Color(0x0b1423);
 scene.fog = new THREE.Fog(0x101b2c, 78, 218);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
-camera.position.set(0,4.2,28); camera.lookAt(0,0.2,0);
+camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
 const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
 const renderer = new THREE.WebGLRenderer({
   canvas,
