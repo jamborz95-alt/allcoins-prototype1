@@ -5212,10 +5212,10 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: asphaltMaps.roughnessMap,
-  bumpMap: asphaltMaps.bumpMap,
-  bumpScale: acRacingMobileDevice ? .009 : .018,
-  roughness: acRacingMobileDevice ? .74 : .68,
+  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
+  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? 0 : .018,
+  roughness: acRacingMobileDevice ? .78 : .68,
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
@@ -7638,11 +7638,11 @@ function attachVehicle(root,label='сохранённая модель'){
   wheelNodes=[];frontWheelNodes=[];rearWheelNodes=[];
   vehicleChassis=null;vehicleChassisBaseY=0;vehicleChassisBaseRotationZ=0;vehicleChassisBasePosition.set(0,0,0);vehicleChassisBaseQuaternion.identity();vehicleChassisPitchAxis.set(0,0,1);vehicleChassisSuspensionUp.set(0,1,0);
   root.visible = true;
+  root.traverse(object => { object.visible = true; });
   // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
   const carTextureAnisotropy=Math.min(acRacingMobileDevice?4:8,renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
-    object.visible = true;
     if(!object.isMesh)return;
     const materials=Array.isArray(object.material)?object.material:[object.material];
     for(const material of materials){
