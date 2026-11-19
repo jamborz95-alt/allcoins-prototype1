@@ -4991,12 +4991,14 @@ if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? 1.35 : 1.75));
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Mobile render profile: reduce GPU fill-rate and remove the expensive real-time shadow pass.
+renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? 1.05 : 1.75));
+renderer.shadowMap.enabled = !acRacingMobileDevice;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.98;
 scene.add(new THREE.HemisphereLight(0x607b9e,0x080e18,.30));
-const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=true;
+const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
 sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
 scene.add(sun);
 const fill = new THREE.DirectionalLight(0x344b70,.20); fill.position.set(8,5,-12); scene.add(fill);
@@ -5110,7 +5112,7 @@ function acCreateAsphaltMaps() {
   roughnessMap.repeat.copy(colorMap.repeat);
   const bumpMap = colorMap.clone();
   bumpMap.repeat.copy(colorMap.repeat);
-  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const anisotropy = Math.min(acRacingMobileDevice ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
   colorMap.anisotropy = roughnessMap.anisotropy = bumpMap.anisotropy = anisotropy;
   return { colorMap, roughnessMap, bumpMap };
 }
@@ -5203,10 +5205,10 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: asphaltMaps.roughnessMap,
-  bumpMap: asphaltMaps.bumpMap,
-  bumpScale: .018,
-  roughness: .68,
+  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
+  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? 0 : .018,
+  roughness: acRacingMobileDevice ? .78 : .68,
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
@@ -6480,7 +6482,7 @@ for(let i=0;i<7;i++){
 }
 
 /* Дождь перед камерой */
-const acRainCount=150;
+const acRainCount=acRacingMobileDevice ? 55 : 150;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
@@ -8041,10 +8043,34 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
+let acPerfFrameCount = 0;
+let acPerfSampleStart = performance.now();
+let acPerfLastFrameMs = 0;
+let acPerfMaxFrameMs = 0;
 function animate(now){
   requestAnimationFrame(animate);
-  const dt=Math.min(.04,(now-last)/1000||0);
+  const rawFrameMs=Math.max(0,now-last);
+  const dt=Math.min(.04,rawFrameMs/1000||0);
   last=now;
+  if(acRacingMobileDevice){
+    acPerfFrameCount++;
+    acPerfLastFrameMs=rawFrameMs;
+    acPerfMaxFrameMs=Math.max(acPerfMaxFrameMs,rawFrameMs);
+    const sampleDuration=now-acPerfSampleStart;
+    if(sampleDuration>=1500){
+      window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
+        fps:Number((acPerfFrameCount*1000/sampleDuration).toFixed(1)),
+        averageFrameMs:Number((sampleDuration/acPerfFrameCount).toFixed(1)),
+        lastFrameMs:Number(acPerfLastFrameMs.toFixed(1)),
+        maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
+        pixelRatio:renderer.getPixelRatio(),
+        shadows:renderer.shadowMap.enabled
+      });
+      acPerfFrameCount=0;
+      acPerfMaxFrameMs=0;
+      acPerfSampleStart=now;
+    }
+  }
   updateInstrumentCluster(now);
   let frameWorldDelta=0;
   updateEngineAudio();
@@ -8238,7 +8264,27 @@ if(distance>=RACE_DISTANCE_METERS){
   renderer.render(scene,camera);
 }
 
-document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';void acFuelSyncUse(true);}});
+let acPausedByVisibility = false;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    throttle=false;
+    braking=false;
+    if(!paused){
+      paused=true;
+      acPausedByVisibility=true;
+    }
+    $('pause').textContent='ПРОДОЛЖИТЬ';
+    void acFuelSyncUse(true);
+    return;
+  }
+  // Android WebView can briefly hide the page while entering fullscreen or rotating.
+  // Resume only an automatic background pause; a player-requested pause stays paused.
+  if(acPausedByVisibility){
+    acPausedByVisibility=false;
+    paused=false;
+    $('pause').textContent='ПАУЗА';
+  }
+});
 
 /* ALLCOINS RACING V28 · реалистичная шкала ВАЗ-2107 и демпфирование стрелок */
 const AC_SPEEDOMETER_MAX = 400;
@@ -8296,6 +8342,13 @@ const acRpmScaleTickCount = acBuildInstrumentScale(
   '.tachometer-ticks', AC_TACHOMETER_MAX, 1000, 250, AC_TACHOMETER_REDLINE
 );
 
+window.__allcoinsRacingGraphicsProfile = Object.freeze({
+  mobileOptimized: acRacingMobileDevice,
+  pixelRatio: renderer.getPixelRatio(),
+  realTimeShadows: renderer.shadowMap.enabled,
+  asphaltBumpMap: Boolean(roadMat.bumpMap),
+  rainSegments: acRainCount
+});
 window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
   speedometerScaleTicks: acSpeedScaleTickCount,
   tachometerScaleTicks: acRpmScaleTickCount,
