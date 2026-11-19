@@ -186,6 +186,15 @@ try {
   await gameFrame.locator("#gearDown").click();
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
     "The − control must lower the selected gear.");
+
+  assert.notEqual(await gameFrame.locator("#gearPattern").evaluate(el => getComputedStyle(el).display), "none",
+    "The compact H-pattern selector must be visible.");
+  await gameFrame.locator('#gearPattern [data-gear-target="3"]').click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "3",
+    "The H-pattern selector must select the requested forward gear.");
+  await gameFrame.locator('#gearPattern [data-gear-target="R"]').click();
+  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "3",
+    "Reverse must remain blocked while the car is moving.");
   await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "The gas pedal must activate while pressed.");
