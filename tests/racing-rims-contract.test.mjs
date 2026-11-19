@@ -204,11 +204,12 @@ test("VAZ-2107 acceleration uses progressive launch, gear torque and road resist
 });
 
 
-test("VAZ-2107 engine revs quickly at launch and couples RPM to road speed", () => {
+test("VAZ-2107 first gear has a stronger RPM pickup while other gears retain clutch coupling", () => {
+  assert.match(page, /if\(throttle&&gear===1\)/);
+  assert.match(page, /firstGearLaunchRpm=3900\+Math\.min\(1300,speed\*31\)/);
+  assert.match(page, /targetRpm=Math\.max\(coupledEngineRpm,Math\.min\(6800,firstGearLaunchRpm\)\)/);
   assert.match(page, /const launchClutchBlend=throttle\?Math\.max\(0,1-Math\.min\(1,speed\/30\)\):0/);
-  assert.match(page, /const freeEngineRpm=2750\+Math\.min\(1500,speed\*42\)/);
-  assert.match(page, /coupledEngineRpm\+\(freeEngineRpm-coupledEngineRpm\)\*launchClutchBlend/);
-  assert.match(page, /dt\*\(burnoutActive\?8\.5:throttle\?11\.5:6\.2\)/);
+  assert.match(page, /throttle&&gear===1\?32:throttle\?11\.5/);
   assert.match(page, /const torque=torqueCurve\(rpm\)/);
   assert.match(page, /engineForce=.*torque.*launchFactor/);
 });
@@ -237,10 +238,8 @@ test("VAZ-2107 road speed, wheel rotation and finish distance share one world sc
   assert.match(page, /roadWorldUnitsMatchWheelTravel: true/);
 });
 
-test("VAZ-2107 first gear raises engine RPM quickly from launch and smoothly with speed", () => {
-  assert.match(page, /if\(throttle&&gear===1\)/);
-  assert.match(page, /firstGearLaunchRpm=3400\+Math\.min\(1430,speed\*34\)/);
-  assert.match(page, /targetRpm=Math\.max\(coupledEngineRpm,Math\.min\(6800,firstGearLaunchRpm\)\)/);
-  assert.match(page, /throttle&&gear===1\?25:throttle\?11\.5/);
+test("VAZ-2107 first-gear RPM curve rises strongly with vehicle speed", () => {
+  assert.match(page, /firstGearLaunchRpm=3900\+Math\.min\(1300,speed\*31\)/);
+  assert.match(page, /throttle&&gear===1\?32:throttle\?11\.5/);
   assert.match(page, /const coupledEngineRpm=Math\.max\(850,Math\.min\(6800,coupledRpm\|\|900\)\)/);
 });
