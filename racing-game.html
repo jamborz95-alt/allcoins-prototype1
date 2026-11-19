@@ -3813,8 +3813,14 @@ function acFuelRender() {
   if (hudText) hudText.textContent = fuel.toFixed(1);
   const gas = $("gas");
   if (gas) {
-    gas.disabled = !acFuelProfileReady || fuel < .01;
-    gas.title = !acFuelProfileReady ? "Загружаем запас бензина…" : fuel < .01 ? "Нет бензина · заправься в гараже" : "Газ, удерживать";
+    // Do not freeze the car while the asynchronous profile request is pending.
+    // Only a server-confirmed empty tank blocks the pedal.
+    gas.disabled = acFuelProfileReady && fuel < .01;
+    gas.title = !acFuelProfileReady
+      ? "Запас бензина ещё загружается"
+      : fuel < .01
+        ? "Нет бензина · заправься в гараже"
+        : "Газ, удерживать";
   }
   const quantity = $("garageFuelQty");
   const cost = $("garageFuelCost");
@@ -7994,10 +8000,11 @@ function bindHold(id,setter){
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 bindHold('gas',v=>{
-  if(v&&(!acFuelProfileReady||acFuelLiters<.01)){
+  // Loading the tank profile must not block ignition/startup.
+  // Only a confirmed empty tank prevents acceleration.
+  if(v&&acFuelProfileReady&&acFuelLiters<.01){
     throttle=false;
-    if(acFuelProfileReady)acFuelShowEmptyMessage();
-    else acFuelSetStatus("Проверяем запас бензина. Попробуй нажать газ ещё раз.");
+    acFuelShowEmptyMessage();
     return;
   }
   throttle=v;
@@ -8426,23 +8433,8 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
 
 <style id="allcoins-racing-camera-controls-v144">
 /* V144: keep the player car centered in the camera after moving it to the near lane. */
-#gearPattern{
-  display:grid!important;
-  position:fixed!important;
-  z-index:19!important;
-  left:50%!important;
-  transform:translateX(-50%)!important;
-  bottom:calc(clamp(112px,22vh,154px) + env(safe-area-inset-bottom,0px))!important;
-  width:min(208px,43vw)!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:3px!important;
-  padding:4px!important;
-  border:1px solid #8293a5!important;
-  border-radius:9px!important;
-  background:linear-gradient(145deg,#1c2938,#080e17)!important;
-  box-shadow:0 3px 12px #000b!important;
-  pointer-events:auto!important;
-}
+/* Hide the numbered H-pattern plate; keep only + / −. */
+#gearPattern{display:none!important}
 #gearPattern button{
   min-width:0!important;
   min-height:25px!important;
@@ -8457,6 +8449,9 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
   border-color:#ffe6ad!important;
 }
 #gearUp,#gearDown{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
   width:36px!important;
   height:42px!important;
   min-height:42px!important;
@@ -8467,6 +8462,8 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
   border-radius:8px!important;
   font-size:23px!important;
   padding:0!important;
+  z-index:21!important;
+  pointer-events:auto!important;
 }
 #gearDown{bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 #dashboardBackplate{
@@ -8503,8 +8500,8 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
   #dashboardBackplate{width:min(410px,94vw)!important}
   .tachometer{left:calc(50% - 45px)!important}
   .speedometer{left:calc(50% + 45px)!important}
-  #gearPattern{width:min(184px,48vw)!important}
-  #gearUp,#gearDown{right:calc(50% + min(104px,27vw))!important;width:32px!important}
+  #gearPattern{display:none!important}
+  #gearUp,#gearDown{display:flex!important;right:calc(50% + min(104px,27vw))!important;width:32px!important}
 }
 @media(max-height:440px) and (orientation:landscape){
   #dashboardBackplate{width:min(380px,56vw)!important;height:94px!important}
@@ -8516,14 +8513,9 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
   .tachometer{left:calc(50% - 39px)!important}
   .speedometer{left:calc(50% + 39px)!important}
   .temp-gauge{width:34px!important;height:34px!important;bottom:82px!important}
-  #gearPattern{
-    width:144px!important;
-    left:50%!important;
-    bottom:98px!important;
-    gap:2px!important;padding:3px!important;
-  }
-  #gearPattern button{min-height:20px!important;font-size:10px!important}
+  #gearPattern{display:none!important}
   #gearUp,#gearDown{
+    display:flex!important;
     width:28px!important;height:30px!important;min-height:30px!important;
     right:calc(50% + 82px)!important;
   }
