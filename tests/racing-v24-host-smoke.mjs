@@ -187,14 +187,12 @@ try {
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
     "The − control must lower the selected gear.");
 
-  assert.notEqual(await gameFrame.locator("#gearPattern").evaluate(el => getComputedStyle(el).display), "none",
-    "The compact H-pattern selector must be visible.");
-  await gameFrame.locator('#gearPattern [data-gear-target="3"]').click();
-  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "3",
-    "The H-pattern selector must select the requested forward gear.");
-  await gameFrame.locator('#gearPattern [data-gear-target="R"]').click();
-  assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "3",
-    "Reverse must remain blocked while the car is moving.");
+  assert.equal(await gameFrame.locator("#gearPattern").evaluate(el => getComputedStyle(el).display), "none",
+    "The large numbered gear selector must be hidden; only + / − remain visible.");
+  assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none");
+  assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none");
+  assert.equal(await gameFrame.locator("#gas").isDisabled(), false,
+    "The gas pedal must remain usable while the fuel profile is loading or unavailable.");
   await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "The gas pedal must activate while pressed.");
