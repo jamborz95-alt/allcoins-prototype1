@@ -203,12 +203,14 @@ try {
     "The upshift (+) control must be visible.");
   assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
     "The downshift (−) control must be visible.");
-  await gameFrame.locator("#gearUp").click();
+  await gameFrame.locator("#gearUp").dispatchEvent("pointerdown", { pointerId: 40, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
     "The + control must raise the selected gear.");
-  await gameFrame.locator("#gearDown").click();
+  await gameFrame.locator("#gearUp").dispatchEvent("pointerup", { pointerId: 40, pointerType: "touch", isPrimary: true, bubbles: true });
+  await gameFrame.locator("#gearDown").dispatchEvent("pointerdown", { pointerId: 41, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
     "The − control must lower the selected gear.");
+  await gameFrame.locator("#gearDown").dispatchEvent("pointerup", { pointerId: 41, pointerType: "touch", isPrimary: true, bubbles: true });
 
   assert.equal(await gameFrame.locator("#gearPattern").evaluate(el => getComputedStyle(el).display), "none",
     "The large numbered gear selector must be hidden; only + / − remain visible.");
