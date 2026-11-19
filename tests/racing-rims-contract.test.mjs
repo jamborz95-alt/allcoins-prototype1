@@ -283,3 +283,18 @@ test("removing a racing part stores it without losing its level, and reinstallin
   assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/remove"/);
   assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/install"/);
 });
+
+test("landscape cockpit keeps the loaded VAZ in view and exposes a compact H-pattern shifter", () => {
+  assert.match(page, /root\.visible = true/);
+  assert.match(page, /root\.traverse\(object => \{ object\.visible = true; \}\)/);
+  assert.match(page, /const focusZ = vehicle \? vehicle\.position\.z : AC_PLAYER_LANE_Z/);
+  assert.match(page, /camera\.lookAt\(focusX, focusY, focusZ\)/);
+  assert.match(page, /acOnlineCameraMode = ""/);
+  assert.match(page, /window\.__allcoinsRacingVehicleDiagnostics = Object\.freeze\(/);
+  assert.match(page, /allcoins-racing-landscape-compact-v1/);
+  assert.match(page, /\.gear-pattern\s*\{[\s\S]*?display:grid!important/);
+  assert.match(page, /grid-template-columns:repeat\(3,23px\)/);
+  assert.match(page, /#gearUp,#gearDown\s*\{[\s\S]*?position:static!important/);
+  assert.match(page, /function selectGearFromPattern\(target\)/);
+  assert.match(page, /button\.addEventListener\('click',\(\)=>\{\s*selectGearFromPattern\(button\.dataset\.gearTarget\)/);
+});
