@@ -548,6 +548,24 @@
       }
       return await window.allcoinsRacingSuspensionApi.buy();
     }
+    if (action === "fuel:profile") {
+      if (!window.allcoinsRacingFuelApi || typeof window.allcoinsRacingFuelApi.profile !== "function") {
+        throw new Error("АЗС ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingFuelApi.profile();
+    }
+    if (action === "fuel:buy") {
+      if (!window.allcoinsRacingFuelApi || typeof window.allcoinsRacingFuelApi.buy !== "function") {
+        throw new Error("Покупка бензина ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingFuelApi.buy(data.liters);
+    }
+    if (action === "fuel:use") {
+      if (!window.allcoinsRacingFuelApi || typeof window.allcoinsRacingFuelApi.use !== "function") {
+        throw new Error("Сохранение расхода бензина ALLCOINS ещё не подключено.");
+      }
+      return await window.allcoinsRacingFuelApi.use(data.usedLiters);
+    }
     if (action === "garage:profile") {
       if (!window.allcoinsRacingGarageApi || typeof window.allcoinsRacingGarageApi.profile !== "function") {
         throw new Error("Автосалон ALLCOINS ещё не подключён.");
