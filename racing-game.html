@@ -7191,7 +7191,7 @@ function animate(now){
       // затем растут вместе со скоростью и сходятся с расчётом оборотов колёс.
       const coupledEngineRpm=Math.max(850,Math.min(6800,coupledRpm||900));
       if(throttle&&gear===1){
-        const firstGearLaunchRpm=3400+Math.min(1430,speed*34);
+        const firstGearLaunchRpm=3900+Math.min(1300,speed*31);
         targetRpm=Math.max(coupledEngineRpm,Math.min(6800,firstGearLaunchRpm));
       }else{
         // На остальных передачах сохраняем прежнюю плавную модель сцепления.
@@ -7206,7 +7206,7 @@ function animate(now){
       if(braking&&speed>58&&Math.random()<.018)addSmoke(rearWheelPoint,'tire');
     }
     // На первой передаче тахометр реагирует особенно быстро на нажатие газа.
-    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle&&gear===1?25:throttle?11.5:6.2));
+    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle&&gear===1?32:throttle?11.5:6.2));
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
     distance+=signedSpeed/3.6*dt;
