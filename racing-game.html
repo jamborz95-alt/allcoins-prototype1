@@ -7189,16 +7189,25 @@ function animate(now){
       const coupledRpm=wheelRpm*raceGearRatio(gear)*raceFinalDriveRatio();
       // Автоматическое проскальзывание сцепления при старте: двигатель быстро
       // набирает обороты, а по мере разгона обороты всё точнее связываются со скоростью колёс.
-      const launchClutchBlend=throttle?Math.max(0,1-Math.min(1,speed/30)):0;
-      const freeEngineRpm=2750+Math.min(1500,speed*42);
+      // На первой передаче двигатель быстрее набирает обороты, как при
+      // пробуксовке сцепления на старте; затем обороты плавно связываются со скоростью колёс.
+      const firstGearLaunch=throttle&&gear===1;
+      const launchClutchBlend=firstGearLaunch?Math.max(0,1-Math.min(1,speed/40)):0;
+      const freeEngineRpm=firstGearLaunch
+        ? 3650+Math.min(800,speed*28)
+        : 2750+Math.min(1500,speed*42);
       const coupledEngineRpm=Math.max(850,Math.min(6800,coupledRpm||900));
+      const launchCoupledRpm=coupledEngineRpm+(freeEngineRpm-coupledEngineRpm)*launchClutchBlend;
       targetRpm=throttle
-        ? Math.max(1150,Math.min(6800,coupledEngineRpm+(freeEngineRpm-coupledEngineRpm)*launchClutchBlend))
+        ? firstGearLaunch
+          ? Math.max(3300,Math.min(6800,launchCoupledRpm))
+          : Math.max(1150,Math.min(6800,launchCoupledRpm))
         : coupledEngineRpm;
       if(throttle&&rearSlip>.30&&Math.random()<Math.min(.7,rearSlip*.45))emitRearTireSmoke();
       if(braking&&speed>58&&Math.random()<.018)addSmoke(rearWheelPoint,'tire');
     }
-    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle?11.5:6.2));
+    // На первой передаче тахометр реагирует особенно быстро на нажатие газа.
+    rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle&&gear===1?25:throttle?11.5:6.2));
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
     distance+=signedSpeed/3.6*dt;
