@@ -222,3 +222,17 @@ test("asphalt texture and its relief move left in proportion to speed and distan
   assert.match(page, /acAdvanceRoadSurface\(scroll\)/);
   assert.match(page, /acAdvanceCentralMarkings\(scroll\)/);
 });
+
+
+test("VAZ-2107 road speed, wheel rotation and finish distance share one world scale", () => {
+  assert.match(page, /let WORLD_UNITS_PER_METER = 1/);
+  assert.match(page, /worldUnitsPerRealMeter=vehicleLength\/4\.57/);
+  assert.match(page, /WORLD_UNITS_PER_METER=worldUnitsPerRealMeter/);
+  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
+  assert.match(page, /const roadWheelRate=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\/Math\.max/);
+  assert.match(page, /finishLine\.position\.x=finishStartX-distance\*WORLD_UNITS_PER_METER/);
+  assert.match(page, /PlaneGeometry\(2400, 25\.6\)/);
+  assert.match(page, /BoxGeometry\(2400, \.026, \.13\)/);
+  assert.match(page, /colorMap\.repeat\.set\(266\.6666667, 2\.13\)/);
+  assert.match(page, /roadWorldUnitsMatchWheelTravel: true/);
+});
