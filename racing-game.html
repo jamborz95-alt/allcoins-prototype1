@@ -2030,6 +2030,141 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
  .fuel-hud-metric{display:none}
 }
 </style>
+<style id="allcoins-racing-landscape-compact-v1">
+/* Landscape mobile: keep the loaded car above the controls and all controls reachable. */
+@media screen and (orientation:landscape) and (max-height:700px) {
+  #dashboardBackplate {
+    width:min(620px,86vw)!important;
+    height:clamp(92px,18vh,116px)!important;
+    border-radius:22px 22px 0 0!important;
+  }
+  #dashboardBackplate:before { inset:9px 10px 0!important; border-radius:17px 17px 0 0!important; }
+  #dashboardBackplate:after { top:8px!important; height:3px!important; }
+
+  .tachometer,.speedometer {
+    width:clamp(78px,16vh,96px)!important;
+    height:clamp(78px,16vh,96px)!important;
+    bottom:7px!important;
+  }
+  .tachometer { left:calc(50% - 51px)!important; }
+  .speedometer { left:calc(50% + 51px)!important; }
+  .tachometer-dial,.speedometer-dial { border-width:4px!important; }
+  .tachometer-dial:before,.speedometer-dial:before { inset:5px!important; }
+  .tachometer-dial:after,.speedometer-dial:after { inset:9px!important; }
+  .gauge-scale-svg .scale-number { font-size:13px!important; }
+  .tachometer .gauge-scale-svg .scale-number { font-size:14px!important; }
+  .tachometer-hub,.speedometer-hub { width:10px!important;height:10px!important; }
+  .tachometer-needle,.speedometer-needle { height:36%!important;width:2px!important; }
+  .temp-gauge {
+    left:50%!important;
+    bottom:clamp(86px,17vh,108px)!important;
+    width:clamp(38px,7vh,48px)!important;
+    height:clamp(38px,7vh,48px)!important;
+  }
+  .temp-gauge-dial { border-width:3px!important; }
+  .temp-gauge-caption { font-size:6px!important; }
+
+  .hud {
+    padding:5px 8px!important;
+    padding-top:max(5px,env(safe-area-inset-top))!important;
+    padding-bottom:max(5px,env(safe-area-inset-bottom))!important;
+  }
+  .top {
+    display:grid!important;
+    grid-template-columns:minmax(74px,112px) minmax(150px,1fr) auto!important;
+    align-items:start!important;
+    gap:5px!important;
+  }
+  .brand { min-width:0!important;padding:5px 7px!important;border-radius:9px!important; }
+  .brand b { font-size:10px!important; }
+  .brand span { font-size:8px!important; }
+  .stats { min-width:0!important;gap:5px!important;padding:5px 6px!important;border-radius:9px!important; }
+  .metric { min-width:0!important; }
+  .metric strong { font-size:14px!important; }
+  .metric small { font-size:7px!important;letter-spacing:.06em!important; }
+  .actions {
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:wrap!important;
+    justify-content:flex-end!important;
+    gap:3px!important;
+    max-width:34vw!important;
+    padding:3px!important;
+    border-radius:9px!important;
+  }
+  .small-btn { min-height:25px!important;padding:4px 6px!important;font-size:8px!important;border-radius:6px!important; }
+  #raceProgress {
+    top:calc(env(safe-area-inset-top) + 58px)!important;
+    width:min(330px,46vw)!important;
+    padding:4px 7px!important;
+    gap:3px!important;
+  }
+  .race-progress-row { grid-template-columns:42px minmax(0,1fr) 28px!important;gap:4px!important; }
+  .race-progress-label,.race-progress-value { font-size:8px!important; }
+  .race-progress-track { height:5px!important; }
+
+  .bottom {
+    display:flex!important;
+    flex-direction:row!important;
+    justify-content:space-between!important;
+    align-items:flex-end!important;
+    gap:8px!important;
+    width:100%!important;
+    padding:0 7px 3px!important;
+  }
+  .pedals { gap:5px!important;align-items:flex-end!important; }
+  .pedal {
+    width:clamp(46px,5.2vw,60px)!important;
+    height:clamp(48px,9vh,58px)!important;
+    padding:0 2px 5px!important;
+    border-radius:9px!important;
+    font-size:9px!important;
+    transform:none!important;
+  }
+  .pedal:before { top:5px!important;left:7px!important;right:7px!important;bottom:24px!important; }
+  .pedal span { display:none!important; }
+  .pedal.active { transform:translateY(2px)!important; }
+
+  /* A real compact H-pattern selector, connected to the existing gear logic. */
+  .gearbox {
+    display:flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    min-height:0!important;
+    padding:4px!important;
+    border-radius:9px!important;
+    pointer-events:auto!important;
+  }
+  .gear-label { display:none!important; }
+  #gearNow {
+    position:static!important;
+    left:auto!important;bottom:auto!important;transform:none!important;
+    width:25px!important;min-width:25px!important;height:25px!important;
+    padding:0!important;font-size:13px!important;border-radius:6px!important;
+  }
+  .gear-pattern {
+    position:static!important;
+    display:grid!important;
+    grid-template-columns:repeat(3,23px)!important;
+    grid-template-rows:repeat(2,20px)!important;
+    gap:2px!important;
+    margin:0!important;padding:3px!important;
+    border-radius:7px!important;
+  }
+  .gear-pattern button {
+    width:23px!important;min-width:23px!important;height:20px!important;
+    padding:0!important;border-radius:4px!important;font-size:10px!important;
+  }
+  #gearUp,#gearDown {
+    position:static!important;
+    left:auto!important;bottom:auto!important;transform:none!important;
+    width:24px!important;min-width:24px!important;height:24px!important;
+    padding:0!important;border-radius:6px!important;clip-path:none!important;
+    font-size:14px!important;
+  }
+  #gearUp:before,#gearDown:before { display:none!important;content:none!important; }
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -3131,14 +3266,21 @@ const acOnlineRaceCameraTarget = new THREE.Vector3(0, 0.2, 0);
 function acOnlineSetCameraMode(mode) {
   if (acOnlineCameraMode === mode) return;
   if (mode === 'garage') {
-    // The garage car is anchored at carAnchor (-4.6), so center the
-    // narrow portrait viewport on the car rather than the track origin.
+    // The garage display remains centred on the loaded car inside the workshop.
     camera.position.set(carAnchor, 4.2, 28);
     camera.lookAt(carAnchor, 0.2, 0);
   } else {
-    const online = mode === 'online';
-    camera.position.copy(online ? acOnlineRaceCameraPosition : acOnlineSoloCameraPosition);
-    camera.lookAt(online ? acOnlineRaceCameraTarget : acOnlineSoloCameraTarget);
+    // Race view must follow the player's near lane. The former target at Z=0
+    // placed the car below the camera centre; the lower dashboard then covered
+    // most of the body on landscape phone screens.
+    const focusX = vehicle ? vehicle.position.x : carAnchor;
+    const focusZ = vehicle ? vehicle.position.z : AC_PLAYER_LANE_Z;
+    const bounds = vehicle ? new THREE.Box3().setFromObject(vehicle) : null;
+    const focusY = bounds && !bounds.isEmpty()
+      ? bounds.min.y + (bounds.max.y - bounds.min.y) * .48
+      : .72;
+    camera.position.set(focusX, focusY + 3.6, focusZ + 18);
+    camera.lookAt(focusX, focusY, focusZ);
   }
   camera.updateMatrixWorld(true);
   acOnlineCameraMode = mode;
@@ -7480,6 +7622,8 @@ function attachVehicle(root,label='сохранённая модель'){
   if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
   wheelNodes=[];frontWheelNodes=[];rearWheelNodes=[];
   vehicleChassis=null;vehicleChassisBaseY=0;vehicleChassisBaseRotationZ=0;vehicleChassisBasePosition.set(0,0,0);vehicleChassisBaseQuaternion.identity();vehicleChassisPitchAxis.set(0,0,1);vehicleChassisSuspensionUp.set(0,1,0);
+  root.visible = true;
+  root.traverse(object => { object.visible = true; });
   root.updateMatrixWorld(true);
   let box=new THREE.Box3().setFromObject(root);let size=box.getSize(new THREE.Vector3());
   if(size.z>size.x*1.08)root.rotation.y=Math.PI/2;
@@ -7588,6 +7732,25 @@ function attachVehicle(root,label='сохранённая модель'){
   acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
+  // Force one fresh camera fit after the GLB is attached, including when the
+  // race screen was opened before the asynchronous model transfer completed.
+  acOnlineCameraMode = "";
+  acOnlineSetCameraMode(document.body.classList.contains("garage-mode")
+    ? "garage"
+    : (onlineMode && onlineRaceStarted ? "online" : "solo"));
+  const visibleMeshes = [];
+  vehicle.traverse(object => { if (object.isMesh) visibleMeshes.push(object); });
+  const visibleBounds = new THREE.Box3().setFromObject(vehicle);
+  const visibleCenter = visibleBounds.getCenter(new THREE.Vector3());
+  window.__allcoinsRacingVehicleDiagnostics = Object.freeze({
+    loaded: true,
+    rootVisible: vehicle.visible === true,
+    visibleMeshCount: visibleMeshes.filter(object => object.visible).length,
+    meshCount: visibleMeshes.length,
+    worldCenter: [visibleCenter.x, visibleCenter.y, visibleCenter.z].map(value => Number(value.toFixed(3))),
+    cameraTarget: [camera.position.x, camera.position.y, camera.position.z].map(value => Number(value.toFixed(3))),
+    playerLaneZ: AC_PLAYER_LANE_Z
+  });
   hideMessage();
   if(onlineRaceStarted){raceStarted=true;setGarageMode(false);}
   console.info('ALLCOINS Racing V5 · GLB mesh audit',label,'dimensions',actualSize.toArray(),'independent wheel meshes',wheelNodes.length,'front',frontWheelNodes.length,'rear',rearWheelNodes.length,'named exhaust',Boolean(namedTail));
