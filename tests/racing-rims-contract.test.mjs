@@ -236,3 +236,11 @@ test("VAZ-2107 road speed, wheel rotation and finish distance share one world sc
   assert.match(page, /colorMap\.repeat\.set\(266\.6666667, 2\.13\)/);
   assert.match(page, /roadWorldUnitsMatchWheelTravel: true/);
 });
+
+test("VAZ-2107 first gear raises engine RPM quickly on launch and then couples it to wheel speed", () => {
+  assert.match(page, /const firstGearLaunch=throttle&&gear===1/);
+  assert.match(page, /firstGearLaunch\?Math\.max\(0,1-Math\.min\(1,speed\/40\)\):0/);
+  assert.match(page, /firstGearLaunch\s*\? 3650\+Math\.min\(800,speed\*28\)/);
+  assert.match(page, /firstGearLaunch\s*\? Math\.max\(3300,Math\.min\(6800,launchCoupledRpm\)\)/);
+  assert.match(page, /throttle&&gear===1\?25:throttle\?11\.5/);
+});
