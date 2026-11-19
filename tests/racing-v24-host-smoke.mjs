@@ -166,16 +166,16 @@ try {
   assert.ok(dashboardDiagnostics, "The V26 live dashboard must be initialized.");
   assert.equal(dashboardDiagnostics.speedometerUsesLiveSpeed, true);
   assert.equal(dashboardDiagnostics.tachometerUsesLiveRpm, true);
-  assert.equal(dashboardDiagnostics.speedometerScaleTicks, 57);
-  assert.equal(dashboardDiagnostics.tachometerScaleTicks, 46);
+  assert.equal(dashboardDiagnostics.speedometerScaleTicks, 41);
+  assert.equal(dashboardDiagnostics.tachometerScaleTicks, 45);
   assert.equal(dashboardDiagnostics.acceleratorButton, true);
   assert.equal(dashboardDiagnostics.brakeButton, true);
   assert.equal(dashboardDiagnostics.gearPlusButton, true);
   assert.equal(dashboardDiagnostics.gearMinusButton, true);
-  assert.ok(await gameFrame.locator("#speedometer-ticks svg line, .speedometer-ticks svg line").count() >= 57,
-    "The speedometer must show a graduated 0–280 km/h scale.");
-  assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 46,
-    "The tachometer must show a graduated 0–9,000 RPM scale.");
+  assert.ok(await gameFrame.locator("#speedometer-ticks svg line, .speedometer-ticks svg line").count() >= 41,
+    "The speedometer must show a graduated 0–400 km/h scale.");
+  assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 45,
+    "The tachometer must show a graduated 0–11,000 RPM scale.");
   assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none",
     "The upshift (+) control must be visible.");
   assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
@@ -264,7 +264,7 @@ try {
   const mobilePanelHeight = await gameFrame.locator("#dashboardBackplate").evaluate(
     element => Math.round(element.getBoundingClientRect().height)
   );
-  assert.ok(mobilePanelHeight >= 116 && mobilePanelHeight <= 130,
+  assert.ok(mobilePanelHeight >= 92 && mobilePanelHeight <= 116,
     "The compact landscape dashboard panel must be slightly shorter on a phone.");
   await page.setViewportSize({ width: 1365, height: 768 });
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
