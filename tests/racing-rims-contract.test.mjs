@@ -296,5 +296,5 @@ test("landscape cockpit keeps the loaded VAZ in view and exposes a compact H-pat
   assert.match(page, /grid-template-columns:repeat\(3,23px\)/);
   assert.match(page, /#gearUp,#gearDown\s*\{[\s\S]*?position:static!important/);
   assert.match(page, /function selectGearFromPattern\(target\)/);
-  assert.match(page, /button\.addEventListener\('click',\(\)=>\{\s*selectGearFromPattern\(button\.dataset\.gearTarget\)/);
+  assert.match(page, /document\.querySelectorAll\('\[data-gear-target\]'\)\.forEach\(button => \{\s*button\.addEventListener\('click', \(\) => \{\s*selectGearFromPattern\(button\.dataset\.gearTarget\)/);
 });
