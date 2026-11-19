@@ -1334,6 +1334,14 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .garage-part-next{margin:4px 0 8px;color:#aebdce;font-size:10px;line-height:1.35}
 .garage-part-buy{width:100%;min-height:36px;padding:7px 9px;border:1px solid #ffe0a2;border-radius:8px;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21;font-size:10px;font-weight:950}
 .garage-part-buy:disabled{opacity:.45;filter:grayscale(.5)}
+.garage-part-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.garage-part-actions.single{grid-template-columns:1fr}
+.garage-part-remove,.garage-part-install{width:100%;min-height:36px;padding:7px 9px;border-radius:8px;font-size:10px;font-weight:950}
+.garage-part-remove{border:1px solid #df8b7e88;background:linear-gradient(145deg,#633b3a,#352020);color:#ffe0db}
+.garage-part-install{border:1px solid #ffe0a2;background:linear-gradient(145deg,#f3ce83,#b87b2e);color:#171b21}
+.garage-part-remove:disabled,.garage-part-install:disabled{opacity:.45;filter:grayscale(.5)}
+.garage-parts-note{margin:8px 0 10px;padding:10px 12px;border:1px solid #e9b94f44;border-radius:10px;background:#101d2b;color:#cbd6e3;font-size:11px;line-height:1.45}
+
 @media(min-width:700px){.garage-tab-panel{width:min(600px,calc(100vw - 24px))}}
 @media(max-width:520px){.garage-controls{gap:6px;width:100%}.garage-topbar{width:min(330px,100%);gap:4px;padding:4px}.garage-tab{min-height:30px;padding:4px 3px;font-size:10px}.garage-bottom{gap:7px}.garage-action{min-height:46px;padding:8px 6px;font-size:11px}.garage-test-bot{min-height:34px;font-size:10px}.garage-tab-panel{bottom:calc(env(safe-area-inset-bottom) + 126px)}}
 
@@ -2114,6 +2122,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   <div class="garage-suspension-status" id="garageSuspensionStatus">Проверяем наличие пневмоподвески…</div>
   <button class="garage-suspension-buy" id="garageSuspensionBuy" type="button" disabled>ПРОВЕРКА…</button>
 </div>
+<div class="garage-parts-note">Установленные детали дают бонусы автомобилю. Кнопка «СНЯТЬ С АВТО» переносит деталь на склад: она остаётся твоей, а её бонус временно отключается. Со склада деталь можно установить обратно.</div>
 <div class="garage-parts-status" id="garagePartsStatus" hidden></div>
 <div class="garage-parts-list" id="garagePartsList" hidden></div>
 <section class="garage-fuel-section" id="garageFuelSection" hidden>
@@ -3296,11 +3305,15 @@ const RACING_PART_DEFS = [
   {id:"tires",name:"Спортивные шины",category:"Сцепление",description:"Более цепкий состав улучшает контакт с асфальтом. Снижает пробуксовку и повышает эффективность торможения.",prices:[3000,6000,12000],effects:["На 5% меньше пробуксовки · +3% торможения","На 10% меньше пробуксовки · +6% торможения","На 15% меньше пробуксовки · +9% торможения"]}
 ];
 let racingInstalledParts = Object.create(null);
+let racingOwnedParts = Object.create(null);
 let racingPartsProfileLoaded = false;
 let racingPartsProfilePromise = null;
 const racingPartsBusy = new Set();
 function racingPartLevel(partId) {
   return Math.max(0, Math.min(3, Number(racingInstalledParts[partId]) || 0));
+}
+function racingOwnedPartLevel(partId) {
+  return Math.max(0, Math.min(3, Number(racingOwnedParts[partId]) || 0));
 }
 function racingNormalizeParts(value) {
   const result = Object.create(null);
@@ -3317,12 +3330,25 @@ function acGaragePartsStatus(message, isError=false) {
   status.classList.toggle("error", Boolean(isError));
   status.hidden = !message;
 }
+function acGaragePartButton(label, className, datasetName, partId, disabled=false) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.dataset[datasetName] = partId;
+  button.textContent = label;
+  button.disabled = disabled;
+  return button;
+}
 function acGarageRefreshPartsUi() {
   const list = $("garagePartsList");
   if (!list) return;
   list.replaceChildren();
   for (const part of RACING_PART_DEFS) {
     const level = racingPartLevel(part.id);
+    const ownedLevel = racingOwnedPartLevel(part.id);
+    const installed = level > 0;
+    const stored = ownedLevel > 0 && !installed;
+    const busy = racingPartsBusy.has(part.id);
     const card = document.createElement("article");
     card.className = "garage-part-card";
     const heading = document.createElement("div");
@@ -3339,23 +3365,65 @@ function acGarageRefreshPartsUi() {
     description.textContent = part.description;
     const levelText = document.createElement("div");
     levelText.className = "garage-part-level";
-    levelText.textContent = level ? "УСТАНОВЛЕНО · УРОВЕНЬ " + level + "/3" : "ШТАТНАЯ ДЕТАЛЬ · УРОВЕНЬ 0/3";
+    levelText.textContent = installed
+      ? "УСТАНОВЛЕНО · УРОВЕНЬ " + level + "/3"
+      : stored
+        ? "НА СКЛАДЕ · УРОВЕНЬ " + ownedLevel + "/3"
+        : "НЕ КУПЛЕНО · ЗАВОДСКАЯ ДЕТАЛЬ";
     const effect = document.createElement("div");
     effect.className = "garage-part-effect";
-    effect.textContent = level ? "СЕЙЧАС: " + part.effects[level - 1] : "СЕЙЧАС: заводские характеристики";
+    effect.textContent = installed
+      ? "СЕЙЧАС: " + part.effects[level - 1]
+      : stored
+        ? "БОНУС ВРЕМЕННО НЕ ДЕЙСТВУЕТ · ДЕТАЛЬ СОХРАНЕНА"
+        : "СЕЙЧАС: заводские характеристики";
     const next = document.createElement("div");
     next.className = "garage-part-next";
-    next.textContent = level < 3 ? "СЛЕДУЮЩИЙ УРОВЕНЬ: " + part.effects[level] : "МАКСИМАЛЬНЫЙ УРОВЕНЬ ДОСТИГНУТ";
-    const buy = document.createElement("button");
-    buy.type = "button";
-    buy.className = "garage-part-buy";
-    buy.dataset.buyPart = part.id;
-    buy.disabled = !racingPartsProfileLoaded || level >= 3 || racingPartsBusy.has(part.id);
-    buy.textContent = level >= 3 ? "МАКСИМАЛЬНЫЙ УРОВЕНЬ ✓" :
-      (level ? "УЛУЧШИТЬ · " : "КУПИТЬ · ") + part.prices[level].toLocaleString("ru-RU") + " AC";
-    card.append(heading, description, levelText, effect, next, buy);
+    next.textContent = installed
+      ? level < 3
+        ? "СЛЕДУЮЩИЙ УРОВЕНЬ: " + part.effects[level]
+        : "МАКСИМАЛЬНЫЙ УРОВЕНЬ ДОСТИГНУТ"
+      : stored
+        ? "УСТАНОВИ ДЕТАЛЬ С СОКЛАДА, ЧТОБЫ ВЕРНУТЬ ЕЁ БОНУС"
+        : "ПЕРВАЯ ПОКУПКА: " + part.prices[0].toLocaleString("ru-RU") + " AC";
+    const actions = document.createElement("div");
+    actions.className = "garage-part-actions" + (installed && level < 3 ? "" : " single");
+    if (installed) {
+      if (level < 3) {
+        actions.appendChild(acGaragePartButton(
+          "УЛУЧШИТЬ · " + part.prices[level].toLocaleString("ru-RU") + " AC",
+          "garage-part-buy", "buyPart", part.id,
+          !racingPartsProfileLoaded || busy
+        ));
+      }
+      actions.appendChild(acGaragePartButton(
+        busy ? "СНИМАЕМ…" : "СНЯТЬ С АВТО",
+        "garage-part-remove", "removePart", part.id,
+        !racingPartsProfileLoaded || busy
+      ));
+    } else if (stored) {
+      actions.appendChild(acGaragePartButton(
+        busy ? "УСТАНАВЛИВАЕМ…" : "УСТАНОВИТЬ СО СКЛАДА",
+        "garage-part-install", "installPart", part.id,
+        !racingPartsProfileLoaded || busy
+      ));
+    } else {
+      actions.appendChild(acGaragePartButton(
+        "КУПИТЬ · " + part.prices[0].toLocaleString("ru-RU") + " AC",
+        "garage-part-buy", "buyPart", part.id,
+        !racingPartsProfileLoaded || busy
+      ));
+    }
+    card.append(heading, description, levelText, effect, next, actions);
     list.appendChild(card);
   }
+}
+function acGarageApplyPartsInventory(result) {
+  const owned = result && (result.ownedParts || result.installedParts);
+  const installed = result && (result.installedParts || result.ownedParts);
+  racingOwnedParts = racingNormalizeParts(owned || {});
+  racingInstalledParts = racingNormalizeParts(installed || {});
+  racingPartsProfileLoaded = true;
 }
 async function acGarageLoadPartsProfile({silent=false}={}) {
   if (racingPartsProfileLoaded) {
@@ -3363,14 +3431,13 @@ async function acGarageLoadPartsProfile({silent=false}={}) {
     return true;
   }
   if (racingPartsProfilePromise) return racingPartsProfilePromise;
-  if (!silent) acGaragePartsStatus("СИНХРОНИЗАЦИЯ ЗАПЧАСТЕЙ С БАЛАНСОМ ALLCOINS…");
+  if (!silent) acGaragePartsStatus("СИНХРОНИЗАЦИЯ ЗАПЧАСТЕЙ И СКЛАДА ALLCOINS…");
   racingPartsProfilePromise = (async () => {
     try {
       const profile = await onlineHostRequest("parts:profile");
-      racingInstalledParts = racingNormalizeParts(profile.ownedParts || {});
-      racingPartsProfileLoaded = true;
+      acGarageApplyPartsInventory(profile);
       acGarageRefreshPartsUi();
-      if (!silent) acGaragePartsStatus("Запчасти загружены. Установленные детали действуют в заездах.");
+      if (!silent) acGaragePartsStatus("Запчасти загружены. Их можно снимать на склад и устанавливать обратно.");
       return true;
     } catch (error) {
       if (!silent) acGaragePartsStatus(error.message || "Не удалось загрузить запчасти. Повтори открытие раздела.", true);
@@ -3386,14 +3453,17 @@ async function acGarageBuyPart(partId) {
   if (!part || racingPartsBusy.has(partId)) return;
   if (!racingPartsProfileLoaded && !(await acGarageLoadPartsProfile())) return;
   const currentLevel = racingPartLevel(partId);
+  if (racingOwnedPartLevel(partId) > 0 && currentLevel === 0) {
+    acGaragePartsStatus("Эта деталь уже лежит на складе. Сначала установи её на автомобиль.", true);
+    return;
+  }
   if (currentLevel >= 3) return;
   racingPartsBusy.add(partId);
   acGarageRefreshPartsUi();
   acGaragePartsStatus("ПОКУПАЕМ И УСТАНАВЛИВАЕМ: " + part.name + "…");
   try {
     const result = await onlineHostRequest("parts:buy", {partId});
-    racingInstalledParts = racingNormalizeParts(result.ownedParts || {});
-    racingPartsProfileLoaded = true;
+    acGarageApplyPartsInventory(result);
     const installedLevel = racingPartLevel(partId);
     acGaragePartsStatus(result.purchased
       ? part.name + " установлена · уровень " + installedLevel + "/3. Характеристики обновлены."
@@ -3405,9 +3475,38 @@ async function acGarageBuyPart(partId) {
     acGarageRefreshPartsUi();
   }
 }
+async function acGarageChangePartState(partId, action) {
+  const part = RACING_PART_DEFS.find(item => item.id === partId);
+  if (!part || racingPartsBusy.has(partId)) return;
+  if (!racingPartsProfileLoaded && !(await acGarageLoadPartsProfile())) return;
+  const installed = racingPartLevel(partId) > 0;
+  const owned = racingOwnedPartLevel(partId) > 0;
+  if (action === "remove" && !installed) return;
+  if (action === "install" && (!owned || installed)) return;
+  racingPartsBusy.add(partId);
+  acGarageRefreshPartsUi();
+  acGaragePartsStatus(action === "remove"
+    ? "СНИМАЕМ " + part.name + " И ПЕРЕНОСИМ НА СКЛАД…"
+    : "УСТАНАВЛИВАЕМ " + part.name + " СО СКЛАДА…");
+  try {
+    const result = await onlineHostRequest(action === "remove" ? "parts:remove" : "parts:install", {partId});
+    acGarageApplyPartsInventory(result);
+    acGaragePartsStatus(action === "remove"
+      ? part.name + " снята и сохранена на складе. Её бонус отключён до повторной установки."
+      : part.name + " установлена со склада. Бонус восстановлен.");
+  } catch (error) {
+    acGaragePartsStatus(error.message || "Не удалось изменить состояние запчасти.", true);
+  } finally {
+    racingPartsBusy.delete(partId);
+    acGarageRefreshPartsUi();
+  }
+}
 $("garagePartsList").addEventListener("click", event => {
-  const button = event.target.closest("[data-buy-part]");
-  if (button && !button.disabled) void acGarageBuyPart(button.dataset.buyPart);
+  const button = event.target.closest("button");
+  if (!button || button.disabled) return;
+  if (button.dataset.buyPart) void acGarageBuyPart(button.dataset.buyPart);
+  else if (button.dataset.removePart) void acGarageChangePartState(button.dataset.removePart, "remove");
+  else if (button.dataset.installPart) void acGarageChangePartState(button.dataset.installPart, "install");
 });
 
 
