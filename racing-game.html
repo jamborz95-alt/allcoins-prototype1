@@ -3880,17 +3880,24 @@ function setHeadlights(enabled){
 }
 $('headlights').addEventListener('click',()=>setHeadlights(!headlightEnabled));
 window.addEventListener('keydown',event=>{if(event.code==='KeyL'&&!event.repeat){setHeadlights(!headlightEnabled);}});
+// Матрицы родителей уже обновлены физическим шагом подвески выше.
+ // Не вызываем getWorldPosition/worldToLocal в цикле: в Three.js они пересчитывают
+ // цепочку матриц автомобиля, из-за чего четыре колеса обходили весь GLB по нескольку раз за кадр.
+const acWheelWorldScratch = new THREE.Vector3();
 function updateWheelGroundContact(){
   if(!vehicle||!wheelNodes.length)return;
-  vehicle.updateMatrixWorld(true);
+  const inverseByParent = new Map();
   for(const wheel of wheelNodes){
     const parent=wheel.node.parent;
     if(!parent)continue;
-    const world=wheel.node.getWorldPosition(new THREE.Vector3());
-    world.y=wheel.groundWorldY;
-    parent.updateMatrixWorld(true);
-    wheel.node.position.copy(parent.worldToLocal(world));
-    vehicle.updateMatrixWorld(true);
+    let parentInverse=inverseByParent.get(parent);
+    if(!parentInverse){
+      parentInverse=parent.matrixWorld.clone().invert();
+      inverseByParent.set(parent,parentInverse);
+    }
+    const matrix=wheel.node.matrixWorld.elements;
+    acWheelWorldScratch.set(matrix[12],wheel.groundWorldY,matrix[14]).applyMatrix4(parentInverse);
+    wheel.node.position.copy(acWheelWorldScratch);
   }
 }
 /* ALLCOINS RACING V8 · INDEPENDENT CHASSIS SUSPENSION */
@@ -4081,13 +4088,14 @@ function acRacingPrepareSuspensionRig(actual){
   return true;
 }
 
+let rearWheelAnchorNode = null;
 function updateAnchoredEffects(){
   if(!vehicle)return;
-  vehicle.updateMatrixWorld(true);
-  exhaustPoint.copy((vehicleChassis||vehicle).localToWorld(exhaustLocalPoint.clone()));
-  if(rearWheelNodes.length){
-    const visibleRear=rearWheelNodes.slice().sort((a,b)=>b.centerWorld.z-a.centerWorld.z);
-    rearWheelPoint.copy(visibleRear[0].node.getWorldPosition(new THREE.Vector3()));
+  // Эти world-матрицы уже рассчитаны в текущем физическом шаге.
+  exhaustPoint.copy(exhaustLocalPoint).applyMatrix4((vehicleChassis||vehicle).matrixWorld);
+  const rearNode=rearWheelAnchorNode||rearWheelNodes[0]?.node;
+  if(rearNode?.parent){
+    rearWheelPoint.copy(rearNode.position).applyMatrix4(rearNode.parent.matrixWorld);
     rearWheelPoint.y-=.08;
   }
 }
@@ -4186,17 +4194,26 @@ scene.fog = new THREE.Fog(0x101b2c, 78, 218);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,28); camera.lookAt(0,0.2,0);
-const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  // На телефонах отключаем дорогой MSAA: плотности пикселей 1.35 достаточно для чёткой картинки.
+  antialias: !acRacingMobileDevice,
+  alpha: false,
+  powerPreference: "high-performance"
+});
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? 1.35 : 1.75));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.98;
 scene.add(new THREE.HemisphereLight(0x607b9e,0x080e18,.30));
-const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=true;
+sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
+scene.add(sun);
 const fill = new THREE.DirectionalLight(0x344b70,.20); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
@@ -6910,8 +6927,15 @@ function attachVehicle(root,label='сохранённая модель'){
   // Exhaust outlet is kept on the camera-facing side and follows suspension travel.
   const tailWorld=namedTail?new THREE.Vector3(actual.min.x-.035,actual.min.y+actualSize.y*.22,center.z+actualSize.z*.20):new THREE.Vector3(actual.min.x-.11,actual.min.y+actualSize.y*.19,center.z+actualSize.z*.22);
   exhaustLocalPoint.copy(vehicle.worldToLocal(tailWorld.clone()));exhaustPoint.copy(tailWorld);
-  if(rearWheelNodes.length){const w=rearWheelNodes.slice().sort((a,b)=>b.centerWorld.z-a.centerWorld.z)[0];rearWheelPoint.copy(w.node.getWorldPosition(new THREE.Vector3()));rearWheelPoint.y-=.08;}
-  else rearWheelPoint.set(actual.min.x+actualSize.x*.22,actual.min.y+actualSize.y*.24,center.z+actualSize.z*.22);
+  rearWheelAnchorNode=null;
+  if(rearWheelNodes.length){
+    const w=rearWheelNodes.reduce((best,item)=>!best||item.centerWorld.z>best.centerWorld.z?item:best,null);
+    rearWheelAnchorNode=w?.node||null;
+    if(rearWheelAnchorNode){
+      rearWheelPoint.copy(rearWheelAnchorNode.position).applyMatrix4(rearWheelAnchorNode.parent.matrixWorld);
+      rearWheelPoint.y-=.08;
+    }
+  }else rearWheelPoint.set(actual.min.x+actualSize.x*.22,actual.min.y+actualSize.y*.24,center.z+actualSize.z*.22);
   createHeadlightRig(actual,actualSize);
   acRacingPrepareSuspensionRig(actual);
   acRacingApplyRearLowRideShadowPolicy();
@@ -7181,7 +7205,13 @@ function resize(){
 addEventListener('resize',resize);resize();
 const clockText=v=>{const m=Math.floor(v/60),s=Math.floor(v%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');};
 function animate(now){
-  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000||0);last=now;let frameWorldDelta=0;updateEngineAudio();rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
+  requestAnimationFrame(animate);
+  const dt=Math.min(.04,(now-last)/1000||0);
+  last=now;
+  updateInstrumentCluster(now);
+  let frameWorldDelta=0;
+  updateEngineAudio();
+  rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
   if(!paused&&raceStarted&&!finished&&vehicle){
     elapsed+=dt;
     const ecuLevel=racingPartLevel("ecu");
@@ -7295,6 +7325,9 @@ function animate(now){
       const pitchDelta=new THREE.Quaternion().setFromAxisAngle(vehicleChassisPitchAxis,pitchAngle);
       vehicleChassis.quaternion.copy(pitchDelta).multiply(vehicleChassisBaseQuaternion);
     }else vehicle.rotation.z=vehicleBaseRotationZ+pitchAngle;
+    // In chassis mode the matrix tree was refreshed after the suspension move.
+    // In simple-root mode refresh it once here, not once per wheel and again for effects.
+    if(!vehicleChassis)vehicle.updateMatrixWorld(true);
     updateWheelGroundContact();
     updateAnchoredEffects();
     const roadWheelRate=(signedSpeed/3.6)*worldUnitsPerRealMeter/Math.max(.12,wheelRadiusWorld);
@@ -7350,7 +7383,7 @@ if(distance>=RACE_DISTANCE_METERS){
   onlineUpdateTestBot();
   onlineUpdateOpponentCars(dt);
   onlineUpdateRaceProgress();
-  updateRaceEnvironment(dt,frameWorldDelta);
+  if(document.body.classList.contains('race-mode'))updateRaceEnvironment(dt,frameWorldDelta);
   renderer.render(scene,camera);
 }
 
@@ -7433,6 +7466,14 @@ window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
 let acDisplayedSpeed = 0;
 let acDisplayedRpm = 900;
 let acGaugeLastFrame = 0;
+let acLastSpeedText = -1;
+let acLastRpmText = -1;
+let acLastGearText = "";
+const acSpeedNeedleElement = document.getElementById('speedNeedle');
+const acRpmNeedleElement = document.getElementById('rpmNeedle');
+const acSpeedReadoutElement = document.getElementById('speedDial');
+const acRpmReadoutElement = document.getElementById('rpmDial');
+const acGearButtons = [...document.querySelectorAll('[data-gear-target]')];
 
 function updateInstrumentCluster(now) {
   const dt = acGaugeLastFrame
@@ -7448,10 +7489,10 @@ function updateInstrumentCluster(now) {
   acDisplayedSpeed += (targetSpeed - acDisplayedSpeed) * (1 - Math.exp(-speedResponse * dt));
   acDisplayedRpm += (targetRpm - acDisplayedRpm) * (1 - Math.exp(-rpmResponse * dt));
 
-  const speedNeedle = document.getElementById('speedNeedle');
-  const rpmNeedle = document.getElementById('rpmNeedle');
-  const speedReadout = document.getElementById('speedDial');
-  const rpmReadout = document.getElementById('rpmDial');
+  const speedNeedle = acSpeedNeedleElement;
+  const rpmNeedle = acRpmNeedleElement;
+  const speedReadout = acSpeedReadoutElement;
+  const rpmReadout = acRpmReadoutElement;
 
   if (speedNeedle) {
     const angle = -135 + (acDisplayedSpeed / AC_SPEEDOMETER_MAX) * 270;
@@ -7462,17 +7503,25 @@ function updateInstrumentCluster(now) {
     rpmNeedle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
     rpmNeedle.classList.toggle('redline', acDisplayedRpm >= AC_TACHOMETER_REDLINE);
   }
-  if (speedReadout) speedReadout.textContent = String(Math.round(acDisplayedSpeed));
-  if (rpmReadout) rpmReadout.textContent = String(Math.round(acDisplayedRpm / 10) * 10);
+  const speedText = Math.round(acDisplayedSpeed);
+  const rpmText = Math.round(acDisplayedRpm / 10) * 10;
+  if (speedReadout && speedText !== acLastSpeedText) {
+    speedReadout.textContent = String(speedText);
+    acLastSpeedText = speedText;
+  }
+  if (rpmReadout && rpmText !== acLastRpmText) {
+    rpmReadout.textContent = String(rpmText);
+    acLastRpmText = rpmText;
+  }
 
   const currentGear = gear === -1 ? 'R' : String(gear);
-  document.querySelectorAll('[data-gear-target]').forEach(button => {
-    button.classList.toggle('selected', button.dataset.gearTarget === currentGear);
-  });
-
-  requestAnimationFrame(updateInstrumentCluster);
+  if (currentGear !== acLastGearText) {
+    for (const button of acGearButtons) {
+      button.classList.toggle('selected', button.dataset.gearTarget === currentGear);
+    }
+    acLastGearText = currentGear;
+  }
 }
-requestAnimationFrame(updateInstrumentCluster);
 
 function selectGearFromPattern(target) {
   const desired = target === 'R' ? -1 : Number(target);
