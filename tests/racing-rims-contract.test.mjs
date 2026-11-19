@@ -243,3 +243,24 @@ test("VAZ-2107 first-gear RPM curve rises strongly with vehicle speed", () => {
   assert.match(page, /throttle&&gear===1\?32:throttle\?11\.5/);
   assert.match(page, /const coupledEngineRpm=Math\.max\(850,Math\.min\(6800,coupledRpm\|\|900\)\)/);
 });
+
+test("racing parts can be removed to persistent storage and reinstalled without losing their level", () => {
+  assert.match(router, /ALTER TABLE drag_racing_player_parts ADD COLUMN IF NOT EXISTS is_installed BOOLEAN NOT NULL DEFAULT TRUE/);
+  assert.match(router, /SELECT part_id, level, is_installed FROM drag_racing_player_parts/);
+  assert.match(router, /router\.post\("\/garage\/parts\/remove"/);
+  assert.match(router, /router\.post\("\/garage\/parts\/install"/);
+  assert.match(router, /SET is_installed = FALSE/);
+  assert.match(router, /SET is_installed = TRUE/);
+  assert.match(router, /is_installed === false/);
+  assert.match(router, /Эта деталь находится на складе/);
+  assert.match(page, /НА СКЛАДЕ · УРОВЕНЬ /);
+  assert.match(page, /СНЯТЬ С АВТО/);
+  assert.match(page, /УСТАНОВИТЬ СО СКЛАДА/);
+  assert.match(page, /БОНУС ВРЕМЕННО НЕ ДЕЙСТВУЕТ/);
+  assert.match(page, /racingInstalledParts = racingNormalizeParts\(installed \|\| \{\}\)/);
+  assert.match(page, /onlineHostRequest\(action === "remove" \? "parts:remove" : "parts:install", \{partId\}\)/);
+  assert.match(bridge, /action === "parts:remove"/);
+  assert.match(bridge, /action === "parts:install"/);
+  assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/remove"/);
+  assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/install"/);
+});
