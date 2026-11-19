@@ -264,3 +264,22 @@ test("racing parts can be removed to persistent storage and reinstalled without 
   assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/remove"/);
   assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/install"/);
 });
+
+test("removing a racing part stores it without losing its level, and reinstalling restores its effect", () => {
+  assert.match(router, /is_installed BOOLEAN NOT NULL DEFAULT TRUE/);
+  assert.match(router, /async function readRacingPartsInventory\([\s\S]*?installedParts[\s\S]*?storedParts/);
+  assert.match(router, /router\.post\("\/garage\/parts\/remove"/);
+  assert.match(router, /router\.post\("\/garage\/parts\/install"/);
+  assert.match(router, /SET is_installed = FALSE/);
+  assert.match(router, /SET is_installed = TRUE/);
+  assert.match(router, /Эта деталь находится на складе/);
+  assert.match(page, /function racingOwnedPartLevel\(partId\)/);
+  assert.match(page, /СНЯТЬ С АВТО/);
+  assert.match(page, /НА СКЛАДЕ · УРОВЕНЬ /);
+  assert.match(page, /УСТАНОВИТЬ СО СКЛАДА/);
+  assert.match(page, /racingInstalledParts = racingNormalizeParts\(installed \|\| \{\}\)/);
+  assert.match(bridge, /action === "parts:remove"/);
+  assert.match(bridge, /action === "parts:install"/);
+  assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/remove"/);
+  assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/install"/);
+});
