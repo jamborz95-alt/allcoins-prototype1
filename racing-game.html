@@ -8047,6 +8047,8 @@ let acPerfFrameCount = 0;
 let acPerfSampleStart = performance.now();
 let acPerfLastFrameMs = 0;
 let acPerfMaxFrameMs = 0;
+let acPerfLowFpsSamples = 0;
+let acPerfStableFpsSamples = 0;
 function animate(now){
   requestAnimationFrame(animate);
   const rawFrameMs=Math.max(0,now-last);
@@ -8058,13 +8060,39 @@ function animate(now){
     acPerfMaxFrameMs=Math.max(acPerfMaxFrameMs,rawFrameMs);
     const sampleDuration=now-acPerfSampleStart;
     if(sampleDuration>=1500){
+      const measuredFps=acPerfFrameCount*1000/sampleDuration;
+      let currentPixelRatio=renderer.getPixelRatio();
+      if(measuredFps<38){
+        acPerfLowFpsSamples++;
+        acPerfStableFpsSamples=0;
+      }else if(measuredFps>54){
+        acPerfStableFpsSamples++;
+        acPerfLowFpsSamples=0;
+      }else{
+        acPerfLowFpsSamples=0;
+        acPerfStableFpsSamples=0;
+      }
+      if(acPerfLowFpsSamples>=2&&currentPixelRatio>.85){
+        const nextPixelRatio=Math.max(.85,currentPixelRatio-.10);
+        renderer.setPixelRatio(nextPixelRatio);
+        renderer.setSize(innerWidth,innerHeight,false);
+        currentPixelRatio=nextPixelRatio;
+        acPerfLowFpsSamples=0;
+      }else if(acPerfStableFpsSamples>=8&&currentPixelRatio<1.05){
+        const nextPixelRatio=Math.min(1.05,currentPixelRatio+.05);
+        renderer.setPixelRatio(nextPixelRatio);
+        renderer.setSize(innerWidth,innerHeight,false);
+        currentPixelRatio=nextPixelRatio;
+        acPerfStableFpsSamples=0;
+      }
       window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
-        fps:Number((acPerfFrameCount*1000/sampleDuration).toFixed(1)),
+        fps:Number(measuredFps.toFixed(1)),
         averageFrameMs:Number((sampleDuration/acPerfFrameCount).toFixed(1)),
         lastFrameMs:Number(acPerfLastFrameMs.toFixed(1)),
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
-        pixelRatio:renderer.getPixelRatio(),
-        shadows:renderer.shadowMap.enabled
+        pixelRatio:currentPixelRatio,
+        shadows:renderer.shadowMap.enabled,
+        adaptiveResolution:true
       });
       acPerfFrameCount=0;
       acPerfMaxFrameMs=0;
