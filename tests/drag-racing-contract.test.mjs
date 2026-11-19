@@ -6,6 +6,8 @@ const server = readFileSync(new URL("../server/server.js", import.meta.url), "ut
 const router = readFileSync(new URL("../server/drag-racing-router.js", import.meta.url), "utf8");
 const page = readFileSync(new URL("../drag-racing.html", import.meta.url), "utf8");
 const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const racingGame = readFileSync(new URL("../racing-game.html", import.meta.url), "utf8");
+const racingHost = readFileSync(new URL("../racing-host.js", import.meta.url), "utf8");
 
 
 test("drag racing uses engine and gear-change audio samples with RPM-linked pitch", () => {
@@ -232,4 +234,28 @@ test("headlight beam originates at the front bumper and road bumps do not flash 
   assert.ok(bump, "road bump animation remains defined for compatibility");
   assert.doesNotMatch(bump[1], /brightness|filter/, "road bump keyframes must not flash the scene");
   assert.match(page, /road-bump-active \.race2d-road-surface\{filter:none!important\}/, "the uneven-road state must not change screen brightness");
+});
+
+
+test("racing fuel tank is persistent and refuelling costs exactly 100 AC per litre", () => {
+  assert.match(router, /ADD COLUMN IF NOT EXISTS fuel_liters NUMERIC\(6,2\) NOT NULL DEFAULT 40\.00/);
+  assert.match(router, /router\.post\("\/fuel\/profile"/);
+  assert.match(router, /router\.post\("\/fuel\/buy"/);
+  assert.match(router, /router\.post\("\/fuel\/use"/);
+  assert.match(router, /const price = BigInt\(liters\) \* 100n/);
+  assert.match(router, /fuel_liters = LEAST\(50::NUMERIC, fuel_liters \+ \$1::NUMERIC\)/);
+  assert.match(router, /fuel_liters = GREATEST\(0::NUMERIC, fuel_liters - \$1::NUMERIC\)/);
+  assert.match(racingHost, /action === "fuel:profile"/);
+  assert.match(racingHost, /action === "fuel:buy"/);
+  assert.match(racingHost, /action === "fuel:use"/);
+  assert.match(index, /apiRequest\("\/api\/drag-racing\/fuel\/profile"/);
+  assert.match(index, /apiRequest\("\/api\/drag-racing\/fuel\/buy"/);
+  assert.match(index, /apiRequest\("\/api\/drag-racing\/fuel\/use"/);
+  assert.match(racingGame, /data-garage-tab="fuel">АЗС/);
+  assert.match(racingGame, /100 <small>AC \/ Л<\/small>/);
+  assert.match(racingGame, /const AC_FUEL_TANK_CAPACITY = 50/);
+  assert.match(racingGame, /const AC_FUEL_PRICE_PER_LITER = 100/);
+  assert.match(racingGame, /const AC_FUEL_CONSUMPTION_L_PER_100KM = 9/);
+  assert.match(racingGame, /acFuelPendingUse\+=actualUse/);
+  assert.match(racingGame, /if\(acFuelLiters<=\.0001\)acFuelShowEmptyMessage\(\)/);
 });
