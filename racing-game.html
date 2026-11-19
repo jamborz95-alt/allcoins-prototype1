@@ -1770,7 +1770,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 .tachometer,.speedometer{
   position:fixed!important;top:auto!important;
   width:var(--ac-cluster-dial)!important;height:var(--ac-cluster-dial)!important;
-  bottom:calc(5px + var(--ac-cluster-safe))!important;
+  bottom:calc(18px + var(--ac-cluster-safe))!important;
   z-index:14!important;pointer-events:none!important;
   transform:translateX(-50%)!important;
   filter:drop-shadow(0 5px 8px #000e)!important;
@@ -1855,7 +1855,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 /* Small engine temperature instrument perched over the central housing. */
 .temp-gauge{
   position:fixed!important;left:calc(50% + clamp(35px,4.36vw,67px))!important;
-  bottom:clamp(112px,22.2vh,160px)!important;
+  bottom:clamp(130px,25vh,180px)!important;
   width:clamp(57px,10.7vh,78px)!important;
   height:clamp(57px,10.7vh,78px)!important;
   transform:translateX(-50%)!important;z-index:15!important;pointer-events:none!important;
@@ -1933,8 +1933,8 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 }
 
 /* A small dark gear-number window to the right of the speed dial. */
-#gearNow{
-  position:fixed!important;left:calc(50% + clamp(138px,17.5vw,269px))!important;
+ #gearNow{
+  position:fixed!important;left:calc(50% + clamp(200px,17.5vw,269px))!important;transform:translateX(-50%)!important;
   bottom:clamp(66px,16.5vh,119px)!important;
   width:clamp(28px,2.5vw,39px)!important;
   min-width:0!important;height:clamp(28px,4.7vh,35px)!important;
@@ -1959,7 +1959,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .gauge-scale-svg .scale-number{font-size:13px!important}
   .tachometer .gauge-scale-svg .scale-number{font-size:14px!important}
   #gearUp,#gearDown{left:calc(50% - 178px)!important;width:48px!important}
-  #gearNow{left:calc(50% + 230px)!important}
+  #gearNow{left:calc(50% + 200px)!important;transform:translateX(-50%)!important}
   .temp-gauge{left:calc(50% + 50px)!important}
 }
 @media(max-height:440px) and (orientation:landscape){
@@ -1972,7 +1972,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .speedometer{left:calc(50% + 125px)!important}
   #gearUp{height:clamp(100px,30vh,118px)!important;bottom:35px!important}
   #gearDown{height:44px!important;bottom:35px!important}
-  #gearNow{left:calc(50% + 240px)!important;bottom:66px!important}
+  #gearNow{left:calc(50% + 200px)!important;bottom:66px!important;transform:translateX(-50%)!important}
   .temp-gauge{bottom:clamp(108px,28vh,125px)!important}
 }
 @media(prefers-reduced-motion:reduce){
