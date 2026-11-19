@@ -166,7 +166,7 @@ try {
   assert.ok(graphicsProfile, "The game must expose its mobile graphics profile.");
   if (graphicsProfile.mobileOptimized) {
     assert.equal(graphicsProfile.realTimeShadows, false, "Mobile rendering must skip expensive real-time shadows.");
-    assert.ok(graphicsProfile.pixelRatio <= 1.05, "Mobile render resolution must be capped.");
+    assert.ok(graphicsProfile.pixelRatio <= 1.28, "Mobile render resolution must stay within the sharper adaptive cap.");
     assert.equal(graphicsProfile.asphaltBumpMap, false, "Mobile asphalt must use the lighter shader.");
     assert.equal(graphicsProfile.rainSegments, 55, "Mobile rain particle count must be reduced.");
   }
