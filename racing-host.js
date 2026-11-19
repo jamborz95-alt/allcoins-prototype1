@@ -536,6 +536,18 @@
       }
       return await window.allcoinsRacingPartsApi.buy(data.partId);
     }
+    if (action === "parts:remove") {
+      if (!window.allcoinsRacingPartsApi || typeof window.allcoinsRacingPartsApi.remove !== "function") {
+        throw new Error("Снятие запчастей ALLCOINS ещё не подключено.");
+      }
+      return await window.allcoinsRacingPartsApi.remove(data.partId);
+    }
+    if (action === "parts:install") {
+      if (!window.allcoinsRacingPartsApi || typeof window.allcoinsRacingPartsApi.install !== "function") {
+        throw new Error("Установка запчастей со склада ALLCOINS ещё не подключена.");
+      }
+      return await window.allcoinsRacingPartsApi.install(data.partId);
+    }
     if (action === "suspension:profile") {
       if (!window.allcoinsRacingSuspensionApi || typeof window.allcoinsRacingSuspensionApi.profile !== "function") {
         throw new Error("Сервис пневмоподвески ALLCOINS ещё не готов.");
@@ -786,7 +798,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261119-fuel-100ac-v141", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261119-parts-inventory-v143", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
