@@ -178,7 +178,8 @@ test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edg
   assert.ok(page.includes("const isFrontSteelTrim = withinFrontCap && withinFrontSteelTrimBand"));
   assert.ok(page.includes("const isRearSteelTrim = withinRearCap && withinRearSteelTrimBand"));
   assert.ok(page.includes("const keepFactorySteel = isFrontSteelTrim || isRearSteelTrim"));
-  assert.ok(page.includes("rear (min.x), protect only the narrow bottom bumper lip; paint the rear body."));
+  assert.ok(page.includes("At the rear"));
+  assert.ok(page.includes("protect only the narrow bottom bumper lip; paint the rear body."));
   assert.ok(page.includes("Protect only the physical bumper/grille edge polygons by position."));
   assert.ok(page.includes("const frontEndZone = Math.max(size.x * .055, .08)"));
   assert.ok(page.includes("const frontSteelTrimTop = bounds.min.y + size.y * .38"));
@@ -304,7 +305,7 @@ test("mobile racing quality is sharper and idle rendering is throttled to reduce
   assert.match(page, /antialias: true/);
   assert.match(page, /const acMobilePixelRatioCap = 1\.28/);
   assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
-  assert.match(page, /acCarTextureAnisotropy=Math\.min\(acRacingMobileDevice\?4:8/);
+  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?4:8/);
   assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
   assert.match(page, /acNextRaceProgressUpdateAt=now\+100/);
   assert.match(page, /acWheelSpinScratchQuaternion\.setFromAxisAngle/);
