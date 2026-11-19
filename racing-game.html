@@ -1979,6 +1979,48 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   .tachometer-needle,.speedometer-needle{transition:none!important}
 }
 </style>
+
+<style id="allcoins-racing-fuel-v1">
+.garage-fuel-section{display:grid;gap:14px;padding:clamp(12px,2.2vw,22px);border:1px solid #88a0b655;border-radius:18px;background:linear-gradient(150deg,#172636,#0a111b 72%);color:#eef4f8}
+.garage-fuel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.garage-fuel-kicker{color:#81b8d8;font-size:9px;font-weight:900;letter-spacing:.16em}
+.garage-fuel-heading h3{margin:5px 0;color:#f3f6fa;font-size:20px}
+.garage-fuel-heading p{margin:0;max-width:440px;color:#b8c7d4;font-size:12px;line-height:1.45}
+.garage-fuel-price{white-space:nowrap;color:#f0d17d;font-size:21px}
+.garage-fuel-price small{font-size:10px;letter-spacing:.08em}
+.garage-fuel-meter{padding:12px;border:1px solid #ffffff1c;border-radius:13px;background:#030a12aa}
+.garage-fuel-meter-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#b8c8d5;font-size:10px;font-weight:800;letter-spacing:.1em}
+.garage-fuel-meter-head strong{color:#fff;font-size:15px;font-variant-numeric:tabular-nums}
+.garage-fuel-track{height:12px;margin-top:10px;overflow:hidden;border-radius:20px;background:#344352;box-shadow:inset 0 2px 4px #000b}
+.garage-fuel-track i{display:block;width:0;height:100%;border-radius:20px;background:linear-gradient(90deg,#e6a64c,#75d49b);box-shadow:0 0 8px #64c88a77;transition:width .2s ease}
+.garage-fuel-track i.low{background:linear-gradient(90deg,#d8463e,#f1a14d)}
+.garage-fuel-capacity{margin-top:6px;text-align:right;color:#8799a9;font-size:10px}
+.garage-fuel-quantity-label{color:#c6d3df;font-size:10px;font-weight:900;letter-spacing:.12em}
+.garage-fuel-quick{display:flex;gap:7px;flex-wrap:wrap}
+.garage-fuel-quick button{min-width:52px;min-height:38px;border:1px solid #8ca3b944;border-radius:9px;background:#25384a;color:#f0f5f8;font-size:12px;font-weight:800}
+.garage-fuel-quick button:active{filter:brightness(1.25)}
+.garage-fuel-order{display:flex;align-items:center;gap:12px}
+#garageFuelQty{width:94px;min-height:48px;padding:8px 10px;border:1px solid #829bad88;border-radius:10px;background:#08131e;color:#fff;font-size:19px;font-weight:900;text-align:center}
+.garage-fuel-total{display:grid;gap:3px}
+.garage-fuel-total small{color:#90a5b8;font-size:9px;font-weight:900;letter-spacing:.12em}
+.garage-fuel-total strong{color:#f4d27e;font-size:21px}
+.garage-fuel-buy{min-height:48px;border:1px solid #69d29a;border-radius:11px;background:linear-gradient(120deg,#286f51,#174332);color:#f1fff6;font-weight:900;letter-spacing:.06em}
+.garage-fuel-buy:disabled{opacity:.45;filter:grayscale(.45)}
+.garage-fuel-status{min-height:20px;color:#b9cad8;font-size:12px;line-height:1.4}
+.garage-fuel-status.success{color:#8be0ac}
+.garage-fuel-status.error{color:#ff9d95}
+.garage-fuel-tab{border-color:#7bd7a788!important;color:#a7edc0!important}
+.fuel-hud-metric strong{color:#8fe0ad}
+.pedal:disabled{opacity:.45!important;filter:grayscale(.65)!important;pointer-events:none!important}
+@media(max-width:560px){
+ .garage-fuel-heading{flex-wrap:wrap}
+ .garage-fuel-heading h3{font-size:17px}
+ .garage-fuel-price{font-size:18px}
+ .garage-fuel-quick{gap:5px}
+ .garage-fuel-quick button{flex:1;min-width:0;padding:6px}
+ .fuel-hud-metric{display:none}
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -2073,12 +2115,48 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 <div class="garage-parts-status" id="garagePartsStatus" hidden></div>
 <div class="garage-parts-list" id="garagePartsList" hidden></div>
+<section class="garage-fuel-section" id="garageFuelSection" hidden>
+  <div class="garage-fuel-heading">
+    <div>
+      <span class="garage-fuel-kicker">ALLCOINS · FUEL STATION</span>
+      <h3>АЗС · БЕНЗИН</h3>
+      <p>Заправляй автомобиль перед заездом. Топливо сохраняется в гараже между сессиями.</p>
+    </div>
+    <strong class="garage-fuel-price">100 <small>AC / Л</small></strong>
+  </div>
+  <div class="garage-fuel-meter">
+    <div class="garage-fuel-meter-head">
+      <span>ТОПЛИВО В БАКЕ</span>
+      <strong id="garageFuelTankAmount">ЗАГРУЗКА…</strong>
+    </div>
+    <div class="garage-fuel-track"><i id="garageFuelTankFill"></i></div>
+    <div class="garage-fuel-capacity">Ёмкость бака · 50 литров</div>
+  </div>
+  <label class="garage-fuel-quantity-label" for="garageFuelQty">СКОЛЬКО ЛИТРОВ ЗАЛИТЬ</label>
+  <div class="garage-fuel-quick">
+    <button type="button" data-fuel-liters="1">1 л</button>
+    <button type="button" data-fuel-liters="5">5 л</button>
+    <button type="button" data-fuel-liters="10">10 л</button>
+    <button type="button" data-fuel-liters="20">20 л</button>
+    <button type="button" data-fuel-fill="max">ПОЛНЫЙ БАК</button>
+  </div>
+  <div class="garage-fuel-order">
+    <input id="garageFuelQty" type="number" min="1" max="50" step="1" value="5" inputmode="numeric" aria-label="Количество литров бензина">
+    <div class="garage-fuel-total">
+      <small>К ОПЛАТЕ</small>
+      <strong id="garageFuelCost">500 AC</strong>
+    </div>
+  </div>
+  <button class="garage-fuel-buy" id="garageFuelBuy" type="button" disabled>КУПИТЬ БЕНЗИН</button>
+  <div class="garage-fuel-status" id="garageFuelStatus" aria-live="polite">Проверяем бак и баланс ALLCOINS…</div>
+</section>
 </section>
 <div class="garage-controls">
 <div class="garage-topbar">
 <button class="garage-tab" type="button" data-garage-tab="shop">МАГАЗИН</button>
 <button class="garage-tab" type="button" data-garage-tab="upgrades">УЛУЧШЕНИЯ</button>
 <button class="garage-tab" type="button" data-garage-tab="tuning">ТЮНИНГ</button>
+<button class="garage-tab garage-fuel-tab" type="button" data-garage-tab="fuel">АЗС</button>
 </div>
 <div class="garage-bottom">
 <button class="garage-action" type="button" id="garageCreateRoom">СОЗДАТЬ КОМНАТУ</button>
@@ -2095,6 +2173,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <div class="metric"><strong id="rpm">900</strong><small>ОБ/МИН</small></div>
       <div class="metric"><strong id="distance">0</strong><small>МЕТРЫ</small></div>
       <div class="metric"><strong id="timer">00:00</strong><small>ВРЕМЯ</small></div>
+      <div class="metric fuel-hud-metric"><strong id="fuelText">—</strong><small>БЕНЗИН · Л</small></div>
     </div>
     <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Купить пневмоподвеску в разделе Тюнинг" disabled>ПНЕВМА · ЗАКРЫТА</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
   </div>
@@ -3456,6 +3535,186 @@ async function acGarageWatchRewardedAdForVaz2107() {
 $("garageCarBuyAc").addEventListener("click", () => { void acGarageBuyVaz2107(); });
 $("garageCarBuyAd").addEventListener("click", () => { void acGarageWatchRewardedAdForVaz2107(); });
 
+/* ALLCOINS fuel system · persistent 50 L tank, refuelling at 100 AC per litre. */
+const AC_FUEL_TANK_CAPACITY = 50;
+const AC_FUEL_PRICE_PER_LITER = 100;
+const AC_FUEL_CONSUMPTION_L_PER_100KM = 9;
+let acFuelLiters = 0;
+let acFuelProfileReady = false;
+let acFuelBusy = false;
+let acFuelEmptyNoticeShown = false;
+let acFuelPendingUse = 0;
+let acFuelSyncPromise = null;
+let acFuelProfilePromise = null;
+let acFuelLastSyncAt = 0;
+
+function acFuelSetStatus(message, state = "") {
+  const node = $("garageFuelStatus");
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle("error", state === "error");
+  node.classList.toggle("success", state === "success");
+}
+
+function acFuelRender() {
+  const fuel = Math.max(0, Math.min(AC_FUEL_TANK_CAPACITY, Number(acFuelLiters) || 0));
+  const percent = fuel / AC_FUEL_TANK_CAPACITY * 100;
+  const amount = fuel.toFixed(1) + " / " + AC_FUEL_TANK_CAPACITY + " л";
+  const tankAmount = $("garageFuelTankAmount");
+  const tankFill = $("garageFuelTankFill");
+  const hudText = $("fuelText");
+  if (tankAmount) tankAmount.textContent = amount;
+  if (tankFill) {
+    tankFill.style.width = percent.toFixed(1) + "%";
+    tankFill.classList.toggle("low", percent <= 20);
+  }
+  if (hudText) hudText.textContent = fuel.toFixed(1);
+  const gas = $("gas");
+  if (gas) {
+    gas.disabled = !acFuelProfileReady || fuel < .01;
+    gas.title = !acFuelProfileReady ? "Загружаем запас бензина…" : fuel < .01 ? "Нет бензина · заправься в гараже" : "Газ, удерживать";
+  }
+  const quantity = $("garageFuelQty");
+  const cost = $("garageFuelCost");
+  const buy = $("garageFuelBuy");
+  if (quantity && cost && buy) {
+    const remaining = Math.max(0, Math.floor(AC_FUEL_TANK_CAPACITY - fuel + .0001));
+    quantity.max = String(remaining);
+    let litres = Number(quantity.value);
+    const valid = Number.isInteger(litres) && litres >= 1 && litres <= remaining;
+    cost.textContent = valid ? (litres * AC_FUEL_PRICE_PER_LITER).toLocaleString("ru-RU") + " AC" : "— AC";
+    buy.disabled = !acFuelProfileReady || acFuelBusy || !valid || remaining < 1;
+    buy.textContent = acFuelBusy ? "ЗАПРАВЛЯЕМ…" : remaining < 1 ? "БАК ПОЛНЫЙ" : "КУПИТЬ " + (valid ? litres + " Л" : "БЕНЗИН");
+  }
+}
+
+async function acFuelLoadProfile({silent = false, refresh = false} = {}) {
+  if (acFuelProfileReady && !refresh) {
+    acFuelRender();
+    return true;
+  }
+  if (acFuelProfilePromise) return acFuelProfilePromise;
+  if (!silent) acFuelSetStatus("Проверяем бак и баланс ALLCOINS…");
+  acFuelProfilePromise = (async () => {
+    try {
+      const result = await onlineHostRequest("fuel:profile");
+      acFuelLiters = Math.max(0, Math.min(AC_FUEL_TANK_CAPACITY, Number(result.fuelLiters) || 0));
+      acFuelProfileReady = true;
+      acFuelRender();
+      acFuelSetStatus("Бензин сохраняется между заездами. Цена — 100 AC за литр.", "success");
+      return true;
+    } catch (error) {
+      acFuelProfileReady = false;
+      acFuelSetStatus(error.message || "Не удалось проверить запас бензина.", "error");
+      acFuelRender();
+      console.warn("ALLCOINS Racing: fuel profile failed:", error);
+      return false;
+    } finally {
+      acFuelProfilePromise = null;
+    }
+  })();
+  return acFuelProfilePromise;
+}
+
+async function acFuelBuySelected() {
+  if (acFuelBusy || !(await acFuelLoadProfile())) return;
+  const input = $("garageFuelQty");
+  const litres = Number(input?.value);
+  const remaining = Math.max(0, Math.floor(AC_FUEL_TANK_CAPACITY - acFuelLiters + .0001));
+  if (!Number.isInteger(litres) || litres < 1 || litres > remaining) {
+    acFuelSetStatus("Можно залить не более " + remaining + " л.", "error");
+    return;
+  }
+  acFuelBusy = true;
+  acFuelRender();
+  try {
+    const result = await onlineHostRequest("fuel:buy", {liters});
+    if (!result || result.ok !== true) throw new Error(result?.error || "Сервер не подтвердил заправку.");
+    acFuelLiters = Math.max(0, Math.min(AC_FUEL_TANK_CAPACITY, Number(result.fuelLiters) || 0));
+    acFuelProfileReady = true;
+    acFuelSetStatus("Залито " + litres + " л бензина. Списано " + Number(result.price).toLocaleString("ru-RU") + " AC.", "success");
+  } catch (error) {
+    acFuelSetStatus(error.message || "Не удалось купить бензин.", "error");
+  } finally {
+    acFuelBusy = false;
+    acFuelRender();
+  }
+}
+
+async function acFuelSyncUse(force = false) {
+  if (!acFuelProfileReady || acFuelSyncPromise) return acFuelSyncPromise;
+  const litres = Math.min(1, Math.floor((acFuelPendingUse + 1e-8) * 100) / 100);
+  if (litres < .01 || (!force && litres < .02)) return null;
+  acFuelPendingUse = Math.max(0, acFuelPendingUse - litres);
+  acFuelLastSyncAt = performance.now();
+  acFuelSyncPromise = (async () => {
+    try {
+      const result = await onlineHostRequest("fuel:use", {usedLiters: Number(litres.toFixed(2))});
+      if (result && result.ok === true && Number.isFinite(Number(result.fuelLiters))) {
+        acFuelLiters = Math.max(0, Math.min(AC_FUEL_TANK_CAPACITY, Number(result.fuelLiters) - acFuelPendingUse));
+        acFuelRender();
+      } else {
+        acFuelPendingUse += litres;
+      }
+    } catch (error) {
+      acFuelPendingUse += litres;
+      console.warn("ALLCOINS Racing: fuel usage sync failed:", error);
+    }
+  })().finally(() => {
+    acFuelSyncPromise = null;
+  });
+  return acFuelSyncPromise;
+}
+
+function acFuelReturnToGarage() {
+  throttle = false;
+  braking = false;
+  raceStarted = false;
+  paused = false;
+  speed = 0;
+  rpm = 900;
+  gear = 1;
+  distance = 0;
+  elapsed = 0;
+  finished = false;
+  updateGear();
+  $("speed").textContent = "0";
+  $("rpm").textContent = "900";
+  $("distance").textContent = "0";
+  $("timer").textContent = "00:00";
+  setGarageMode(true);
+  hideMessage();
+  void acFuelSyncUse(true);
+  void acFuelLoadProfile({refresh: true});
+}
+
+function acFuelShowEmptyMessage() {
+  if (acFuelEmptyNoticeShown) return;
+  acFuelEmptyNoticeShown = true;
+  throttle = false;
+  setMessage("БЕНЗИН ЗАКОНЧИЛСЯ", "Двигатель остановлен. Вернись в гараж и заправь автомобиль по цене 100 AC за литр.", false);
+  const button = document.createElement("button");
+  button.className = "small-btn";
+  button.style.marginLeft = "8px";
+  button.textContent = "ВЕРНУТЬСЯ В ГАРАЖ";
+  button.addEventListener("click", acFuelReturnToGarage, {once: true});
+  $("message").appendChild(button);
+}
+
+$("garageFuelQty").addEventListener("input", acFuelRender);
+$("garageFuelBuy").addEventListener("click", () => { void acFuelBuySelected(); });
+document.querySelectorAll("[data-fuel-liters]").forEach(button => {
+  button.addEventListener("click", () => {
+    $("garageFuelQty").value = button.dataset.fuelLiters;
+    acFuelRender();
+  });
+});
+document.querySelector("[data-fuel-fill]")?.addEventListener("click", () => {
+  const remaining = Math.max(0, Math.floor(AC_FUEL_TANK_CAPACITY - acFuelLiters + .0001));
+  $("garageFuelQty").value = String(remaining);
+  acFuelRender();
+});
+
 const garageTabContent = {
   shop: {
     title: "Автосалон ALLCOINS",
@@ -3468,6 +3727,10 @@ const garageTabContent = {
   tuning: {
     title: "Тюнинг · Цвет кузова",
     text: "Меняй цвет кузова и выбирай разные литые диски. Все изменения видны на 3D-модели до покупки."
+  },
+  fuel: {
+    title: "АЗС ALLCOINS",
+    text: "Заправляй автомобиль бензином. Стоимость одного литра — 100 AC, объём бака — 50 литров."
   }
 };
 document.querySelectorAll("[data-garage-tab]").forEach(button => {
@@ -3496,6 +3759,7 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     const shopMode = button.dataset.garageTab === "shop";
     const paintMode = button.dataset.garageTab === "tuning";
     const partsMode = button.dataset.garageTab === "upgrades";
+    const fuelMode = button.dataset.garageTab === "fuel";
     const wasPaintMode = panel.classList.contains("tuning-fullscreen");
     if (wasPaintMode && !paintMode) {
       acGarageClearBodyPaintPreview();
@@ -3525,9 +3789,14 @@ document.querySelectorAll("[data-garage-tab]").forEach(button => {
     }
     $("garagePartsList").hidden = !partsMode;
     $("garagePartsStatus").hidden = !partsMode;
+    $("garageFuelSection").hidden = !fuelMode;
     if (partsMode) {
       acGarageRefreshPartsUi();
       void acGarageLoadPartsProfile();
+    }
+    if (fuelMode) {
+      acFuelRender();
+      void acFuelLoadProfile({refresh: true});
     }
     if (paintMode) {
       const currentPaint = acGaragePendingPaint || acGarageSelectedPaint;
@@ -7440,7 +7709,18 @@ function bindHold(id,setter){
   ['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,off));
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
-bindHold('gas',v=>{throttle=v;if(v)raceStarted=true;updateGear();});bindHold('brake',v=>{braking=v;if(v)raceStarted=true;});
+bindHold('gas',v=>{
+  if(v&&(!acFuelProfileReady||acFuelLiters<.01)){
+    throttle=false;
+    if(acFuelProfileReady)acFuelShowEmptyMessage();
+    else acFuelSetStatus("Проверяем запас бензина. Попробуй нажать газ ещё раз.");
+    return;
+  }
+  throttle=v;
+  if(v)raceStarted=true;
+  updateGear();
+});
+bindHold('brake',v=>{braking=v;if(v)raceStarted=true;});
 window.addEventListener('keydown',e=>{if(e.repeat&&['ArrowRight','ArrowLeft','KeyE','KeyQ'].includes(e.code))return;if(['ArrowUp','KeyW','Space'].includes(e.code)){e.preventDefault();throttle=true;raceStarted=true;updateGear();}if(['ArrowDown','KeyS'].includes(e.code)){e.preventDefault();braking=true;raceStarted=true;}if(e.code==='ArrowRight'||e.code==='KeyE')shift(1);if(e.code==='ArrowLeft'||e.code==='KeyQ')shift(-1);if(e.code==='Escape')paused=!paused;});
 window.addEventListener('keyup',e=>{if(['ArrowUp','KeyW','Space'].includes(e.code)){throttle=false;updateGear();}if(['ArrowDown','KeyS'].includes(e.code))braking=false;});
 $('pause').addEventListener('click',()=>{paused=!paused;$('pause').textContent=paused?'ПРОДОЛЖИТЬ':'ПАУЗА';});
@@ -7554,6 +7834,19 @@ function animate(now){
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
     distance+=signedSpeed/3.6*dt;
+    if(acFuelProfileReady){
+      const fuelDistanceKm=Math.max(0,speed)*dt/3600;
+      const idleFuel=throttle&&speed<1?.00008*dt:0;
+      const fuelUsed=fuelDistanceKm*AC_FUEL_CONSUMPTION_L_PER_100KM/100+idleFuel;
+      if(fuelUsed>0){
+        const actualUse=Math.min(acFuelLiters,fuelUsed);
+        acFuelLiters=Math.max(0,acFuelLiters-actualUse);
+        acFuelPendingUse+=actualUse;
+        acFuelRender();
+        if(acFuelLiters<=.0001)acFuelShowEmptyMessage();
+        if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
+      }
+    }
     $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
@@ -7607,6 +7900,7 @@ function animate(now){
     onlineSendState(now);
     /* ALLCOINS CLIENT FINISH SYNC 2026-11-12 */
 if(distance>=RACE_DISTANCE_METERS){
+      void acFuelSyncUse(true);
       let finishDetails = 'Дистанция '+RACE_DISTANCE_METERS+' м пройдена за '+clockText(elapsed)+'.';
       if (onlineTestBotActive) {
         onlineUpdateTestBot();
@@ -7653,7 +7947,7 @@ if(distance>=RACE_DISTANCE_METERS){
   renderer.render(scene,camera);
 }
 
-document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';void acFuelSyncUse(true);}});
 
 /* ALLCOINS RACING V28 · реалистичная шкала ВАЗ-2107 и демпфирование стрелок */
 const AC_SPEEDOMETER_MAX = 400;
@@ -7843,7 +8137,7 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 // Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
 
-requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});
+requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});void acFuelLoadProfile({silent:true});
 </script>
 </body>
 </html>
