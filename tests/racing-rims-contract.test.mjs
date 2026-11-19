@@ -161,7 +161,7 @@ test("VAZ-2107 paint colours neutralize factory texture and black uses a solid b
   assert.match(page, /const neutral = Math\.round\(188 \+ 67 \* luminance\)/);
   assert.match(page, /const isWhitePaint = selectedPaint === "#ffffff"/);
   assert.match(page, /material\.map = neutralTexture/);
-  assert.match(page, /material\.map = originalMap/);
+  assert.match(page, /material\.map = neutralTexture \|\| originalMap/);
   assert.match(page, /data-car-paint="#ffffff"[^>]*data-paint-id="white"/);
 });
 
@@ -178,8 +178,8 @@ test("VAZ-2107 body paint covers rear panels and protects only narrow bumper edg
   assert.ok(page.includes("const isFrontSteelTrim = withinFrontCap && withinFrontSteelTrimBand"));
   assert.ok(page.includes("const isRearSteelTrim = withinRearCap && withinRearSteelTrimBand"));
   assert.ok(page.includes("const keepFactorySteel = isFrontSteelTrim || isRearSteelTrim"));
-  assert.ok(page.includes("the rear valance, tail panel and all"));
-  assert.ok(page.includes("surrounding bodywork stay in the paintable geometry"));
+  assert.ok(page.includes("rear (min.x), protect only the narrow bottom bumper lip; paint the rear body."));
+  assert.ok(page.includes("Protect only the physical bumper/grille edge polygons by position."));
   assert.ok(page.includes("const frontEndZone = Math.max(size.x * .055, .08)"));
   assert.ok(page.includes("const frontSteelTrimTop = bounds.min.y + size.y * .38"));
   assert.ok(page.includes("const withinRearCap = points.every"));
@@ -219,7 +219,7 @@ test("asphalt texture and its relief move left in proportion to speed and distan
   assert.match(page, /const textureDelta = scroll \* repeatX \/ roadWidth/);
   assert.match(page, /texture\.offset\.x = \(\(texture\.offset\.x \+ textureDelta\) % 1 \+ 1\) % 1/);
   assert.match(page, /road\.userData\.lastLeftwardScroll = scroll > 0 \? scroll : 0/);
-  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*WORLD_UNITS_PER_METER\*dt/);
+  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
   assert.match(page, /acAdvanceRoadSurface\(scroll\)/);
   assert.match(page, /acAdvanceCentralMarkings\(scroll\)/);
 });
@@ -284,7 +284,7 @@ test("removing a racing part stores it without losing its level, and reinstallin
   assert.match(appShell, /"\/api\/drag-racing\/garage\/parts\/install"/);
 });
 
-test("landscape cockpit keeps the loaded VAZ in view and exposes a compact H-pattern shifter", () => {
+test("landscape cockpit keeps the VAZ visible and leaves only + / − gear controls", () => {
   assert.match(page, /root\.visible = true/);
   assert.match(page, /root\.traverse\(object => \{ object\.visible = true; \}\)/);
   assert.match(page, /const focusZ = vehicle \? vehicle\.position\.z : AC_PLAYER_LANE_Z/);
@@ -292,9 +292,22 @@ test("landscape cockpit keeps the loaded VAZ in view and exposes a compact H-pat
   assert.match(page, /acOnlineCameraMode = ""/);
   assert.match(page, /window\.__allcoinsRacingVehicleDiagnostics = Object\.freeze\(/);
   assert.match(page, /allcoins-racing-landscape-compact-v1/);
-  assert.match(page, /\.gear-pattern\s*\{[\s\S]*?display:grid!important/);
-  assert.match(page, /grid-template-columns:repeat\(3,23px\)/);
-  assert.match(page, /#gearUp,#gearDown\s*\{[\s\S]*?position:static!important/);
+  assert.match(page, /#gearPattern\{display:none!important\}/);
+  assert.match(page, /#gearUp,#gearDown\{[\s\S]*?display:flex!important/);
+  assert.match(page, /#gearUp,#gearDown\s*\{[\s\S]*?width:36px!important/);
   assert.match(page, /function selectGearFromPattern\(target\)/);
   assert.match(page, /document\.querySelectorAll\('\[data-gear-target\]'\)\.forEach\(button => \{\s*button\.addEventListener\('click', \(\) => \{\s*selectGearFromPattern\(button\.dataset\.gearTarget\)/);
+});
+
+
+test("mobile racing quality is sharper and idle rendering is throttled to reduce frame-time pressure", () => {
+  assert.match(page, /antialias: true/);
+  assert.match(page, /const acMobilePixelRatioCap = 1\.28/);
+  assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
+  assert.match(page, /acCarTextureAnisotropy=Math\.min\(acRacingMobileDevice\?4:8/);
+  assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
+  assert.match(page, /acNextRaceProgressUpdateAt=now\+100/);
+  assert.match(page, /acWheelSpinScratchQuaternion\.setFromAxisAngle/);
+  assert.match(page, /acOnlineCameraMode === targetCameraMode && !acOnlineLaneLayoutActive/);
+  assert.match(page, /const staticScene=document\.body\.classList\.contains\('garage-mode'\)\|\|paused/);
 });
