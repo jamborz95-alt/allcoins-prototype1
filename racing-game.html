@@ -4253,7 +4253,7 @@ function acCreateAsphaltMaps() {
 
   const colorMap = new THREE.CanvasTexture(asphaltCanvas);
   colorMap.wrapS = colorMap.wrapT = THREE.RepeatWrapping;
-  colorMap.repeat.set(100, 2.13);
+  colorMap.repeat.set(266.6666667, 2.13);
   colorMap.encoding = THREE.sRGBEncoding;
   const roughnessMap = new THREE.CanvasTexture(roughCanvas);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
@@ -4361,7 +4361,7 @@ const roadMat = new THREE.MeshStandardMaterial({
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
 // Полотно расширено, чтобы автомобиль на Z=10 полностью оставался на асфальте.
-const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 25.6), roadMat);
+const road = new THREE.Mesh(new THREE.PlaneGeometry(2400, 25.6), roadMat);
 road.rotation.x = -Math.PI / 2;
 road.position.y = -.12;
 road.receiveShadow = true;
@@ -4372,14 +4372,14 @@ const shoulderMat = new THREE.MeshStandardMaterial({
   roughness: .96,
   metalness: .01
 });
-const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(900, 34), shoulderMat);
+const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(2400, 34), shoulderMat);
 shoulder.rotation.x = -Math.PI / 2;
 shoulder.position.set(0, -.19, -.2);
 scene.add(shoulder);
 
 // Тротуар, бетонные швы и приподнятый бордюр со стороны города.
 const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x92999f, roughness: .94, metalness: .01 });
-const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(900, 4.4), sidewalkMat);
+const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(2400, 4.4), sidewalkMat);
 sidewalk.rotation.x = -Math.PI / 2;
 sidewalk.position.set(0, -.105, -11.2);
 sidewalk.receiveShadow = true;
@@ -4473,7 +4473,7 @@ const edgeMat = new THREE.MeshStandardMaterial({
 });
 const acRoadEdgeMeshes = [];
 for (const z of [-12.72, 12.72]) {
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(900, .026, .13), edgeMat);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(2400, .026, .13), edgeMat);
   edge.position.set(0, -.088, z);
   scene.add(edge);
   acRoadEdgeMeshes.push(edge);
@@ -4876,7 +4876,7 @@ const acNearGuardrailMaterial = new THREE.MeshStandardMaterial({
 });
 const acNearGuardrail = new THREE.Group();
 for (const y of [.12, .48]) {
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(900, .105, .20), acNearGuardrailMaterial);
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(2400, .105, .20), acNearGuardrailMaterial);
   rail.position.set(0, y, 14.45);
   rail.castShadow = true;
   rail.receiveShadow = true;
@@ -4897,7 +4897,7 @@ scene.add(acNearGuardrail);
 
 // Grass strip and a winter tree line behind the far-side fence.
 const acTrackGrass = new THREE.Mesh(
-  new THREE.PlaneGeometry(900, 12),
+  new THREE.PlaneGeometry(2400, 12),
   new THREE.MeshStandardMaterial({ color: 0x313d3c, roughness: .99, metalness: 0 })
 );
 acTrackGrass.rotation.x = -Math.PI / 2;
@@ -5058,9 +5058,9 @@ distantHills.visible = false;
 
 const carAnchor = -4.6;
 // Finish marker belongs to the track and advances in exact proportion to race distance.
-const WORLD_UNITS_PER_METER = .22;
+let WORLD_UNITS_PER_METER = 1; // уточняется по реальной длине загруженной модели
 const RACE_DISTANCE_METERS = 1000;
-const finishStartX = carAnchor + RACE_DISTANCE_METERS * WORLD_UNITS_PER_METER;
+let finishStartX = carAnchor + RACE_DISTANCE_METERS * WORLD_UNITS_PER_METER;
 const finishLine = new THREE.Group();
 const finishTileMats = [
   new THREE.MeshStandardMaterial({ color: 0xf0f0ec, roughness: .85 }),
@@ -5089,6 +5089,8 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltLongitudinalWear: true,
   asphaltRoadDirection: "forward-x",
   asphaltFollowsTrackDirection: true,
+  roadWorldUnitsMatchWheelTravel: true,
+  roadTrackLengthWorld: 2400,
   asphaltScrollUsesDistanceDelta: true,
   roadsideObjectsUseDistanceDelta: true,
   foregroundParallaxFactor: .96,
@@ -6788,6 +6790,12 @@ function attachVehicle(root,label='сохранённая модель'){
   vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
+  // One road-world unit must match one unit of wheel travel. The old .22
+  // track scale made the road move about 4.7x slower than the wheels at 70 km/h.
+  worldUnitsPerRealMeter=vehicleLength/4.57;
+  WORLD_UNITS_PER_METER=worldUnitsPerRealMeter;
+  finishStartX=carAnchor+RACE_DISTANCE_METERS*WORLD_UNITS_PER_METER;
+  finishLine.position.x=finishStartX;
   wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
   const wheelRegex=/wheel|tire|tyre|колес|шина|disk|rim|pneu|reifen|llanta/i;
   const meshAudit=[];
@@ -7197,7 +7205,9 @@ function animate(now){
     $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
-    const scroll=(signedSpeed/3.6)*WORLD_UNITS_PER_METER*dt;
+    // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
+    // the same world-units-per-metre conversion from the loaded car model.
+    const scroll=(signedSpeed/3.6)*worldUnitsPerRealMeter*dt;
     frameWorldDelta=scroll;
     acAdvanceRoadSurface(scroll);
     acAdvanceCentralMarkings(scroll);
