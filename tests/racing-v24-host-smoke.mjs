@@ -162,6 +162,29 @@ try {
     throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
   }
 
+  const graphicsProfile = await gameFrame.evaluate(() => window.__allcoinsRacingGraphicsProfile || null);
+  assert.ok(graphicsProfile, "The game must expose its mobile graphics profile.");
+  if (graphicsProfile.mobileOptimized) {
+    assert.equal(graphicsProfile.realTimeShadows, false, "Mobile rendering must skip expensive real-time shadows.");
+    assert.ok(graphicsProfile.pixelRatio <= 1.05, "Mobile render resolution must be capped.");
+    assert.equal(graphicsProfile.asphaltBumpMap, false, "Mobile asphalt must use the lighter shader.");
+    assert.equal(graphicsProfile.rainSegments, 55, "Mobile rain particle count must be reduced.");
+  }
+
+  const visibilityResume = await gameFrame.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    const wasPausedInBackground = document.getElementById("pause").textContent === "ПРОДОЛЖИТЬ";
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    document.dispatchEvent(new Event("visibilitychange"));
+    return {
+      wasPausedInBackground,
+      resumed: document.getElementById("pause").textContent === "ПАУЗА"
+    };
+  });
+  assert.deepEqual(visibilityResume, { wasPausedInBackground: true, resumed: true },
+    "An Android WebView background/rotation pause must resume when the scene becomes visible again.");
+
   const dashboardDiagnostics = await gameFrame.evaluate(() => window.__allcoinsRacingDashboardDiagnostics || null);
   assert.ok(dashboardDiagnostics, "The V26 live dashboard must be initialized.");
   assert.equal(dashboardDiagnostics.speedometerUsesLiveSpeed, true);
