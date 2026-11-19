@@ -291,6 +291,29 @@ try {
     null,
     { timeout: 10000 }
   );
+  await gameFrame.waitForFunction(() => {
+    const state = window.__allcoinsRacingVehicleDiagnostics;
+    return state && state.loaded === true;
+  }, null, { timeout: 10000 });
+  const vehicleDiagnostics = await gameFrame.evaluate(
+    () => window.__allcoinsRacingVehicleDiagnostics
+  );
+  assert.equal(vehicleDiagnostics.rootVisible, true,
+    "The loaded VAZ root must remain visible in the race scene.");
+  assert.ok(vehicleDiagnostics.visibleMeshCount > 0 && vehicleDiagnostics.meshCount > 0,
+    "At least one visible 3D mesh must be attached to the car.");
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  assert.equal(
+    await gameFrame.locator(".gear-pattern").evaluate(element => getComputedStyle(element).display),
+    "grid",
+    "The compact H-pattern gear selector must be visible in landscape phone mode."
+  );
+  const compactDashboardHeight = await gameFrame.locator("#dashboardBackplate").evaluate(
+    element => Math.round(element.getBoundingClientRect().height)
+  );
+  assert.ok(compactDashboardHeight >= 92 && compactDashboardHeight <= 116,
+    "The landscape dashboard must remain compact and leave the car visible above it.");
   assert.ok(apiCalls.some(call => call.path === "/api/auth/telegram"));
   assert.ok(apiCalls.some(call => call.path === "/api/racing/shared-model-asset"));
   assert.deepEqual(pageErrors, [],
