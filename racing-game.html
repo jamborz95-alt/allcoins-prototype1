@@ -3330,8 +3330,12 @@ function onlineUpdateRaceProgress() {
 function onlineUpdateOpponentCars(dt) {
   const inGarage = document.body.classList.contains('garage-mode');
   const hasRealOpponent = !inGarage && onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
+  const targetCameraMode = inGarage ? 'garage' : (hasRealOpponent ? 'online' : 'solo');
+  // В одиночной гонке не пересоздаём служебные списки и не обрабатываем пустой список соперников каждый кадр.
+  if (!hasRealOpponent && onlineRemoteCars.size === 0 &&
+      acOnlineCameraMode === targetCameraMode && !acOnlineLaneLayoutActive) return;
   acOnlineApplyLaneLayout(hasRealOpponent);
-  acOnlineSetCameraMode(inGarage ? 'garage' : (hasRealOpponent ? 'online' : 'solo'));
+  acOnlineSetCameraMode(targetCameraMode);
 
   if (!vehicle || inGarage || !hasRealOpponent) {
     onlineClearOpponentCars();
@@ -4884,11 +4888,12 @@ function updateAnchoredEffects(){
     rearWheelPoint.y-=.08;
   }
 }
+const acWheelSpinScratchQuaternion = new THREE.Quaternion();
 function spinWheelSet(nodes,angle){
   for(const wheel of nodes){
     /* ALLCOINS RACING V7 · WHEEL ROTATION DIRECTION */
-    const delta=new THREE.Quaternion().setFromAxisAngle(wheel.spinAxisParent,angle);
-    wheel.node.quaternion.copy(delta).multiply(wheel.baseQuaternion);
+    acWheelSpinScratchQuaternion.setFromAxisAngle(wheel.spinAxisParent,angle);
+    wheel.node.quaternion.copy(acWheelSpinScratchQuaternion).multiply(wheel.baseQuaternion);
   }
 }
 function createHeadlightRig(actual,actualSize){
@@ -4982,17 +4987,19 @@ camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
 const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  // На телефонах отключаем дорогой MSAA: плотности пикселей 1.35 достаточно для чёткой картинки.
-  antialias: !acRacingMobileDevice,
+  // Умеренное сглаживание вместе с повышенной плотностью пикселей делает кузов и приборы чётче.
+  antialias: true,
   alpha: false,
-  powerPreference: "high-performance"
+  powerPreference: "high-performance",
+  precision: "highp"
 });
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-// Mobile render profile: reduce GPU fill-rate and remove the expensive real-time shadow pass.
-renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? 1.05 : 1.75));
+// Mobile render profile: sharper image without the expensive real-time shadow pass.
+const acMobilePixelRatioCap = 1.28;
+renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioCap : 1.9));
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -5112,7 +5119,7 @@ function acCreateAsphaltMaps() {
   roughnessMap.repeat.copy(colorMap.repeat);
   const bumpMap = colorMap.clone();
   bumpMap.repeat.copy(colorMap.repeat);
-  const anisotropy = Math.min(acRacingMobileDevice ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
+  const anisotropy = Math.min(acRacingMobileDevice ? 4 : 8, renderer.capabilities.getMaxAnisotropy());
   colorMap.anisotropy = roughnessMap.anisotropy = bumpMap.anisotropy = anisotropy;
   return { colorMap, roughnessMap, bumpMap };
 }
@@ -5205,10 +5212,10 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
-  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
-  bumpScale: acRacingMobileDevice ? 0 : .018,
-  roughness: acRacingMobileDevice ? .78 : .68,
+  roughnessMap: asphaltMaps.roughnessMap,
+  bumpMap: asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? .009 : .018,
+  roughness: acRacingMobileDevice ? .74 : .68,
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
@@ -8049,6 +8056,8 @@ let acPerfLastFrameMs = 0;
 let acPerfMaxFrameMs = 0;
 let acPerfLowFpsSamples = 0;
 let acPerfStableFpsSamples = 0;
+let acNextRaceProgressUpdateAt = 0;
+let acIdleRenderFrame = 0;
 function animate(now){
   requestAnimationFrame(animate);
   const rawFrameMs=Math.max(0,now-last);
@@ -8062,7 +8071,7 @@ function animate(now){
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       let currentPixelRatio=renderer.getPixelRatio();
-      if(measuredFps<38){
+      if(measuredFps<40){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
       }else if(measuredFps>54){
@@ -8072,14 +8081,14 @@ function animate(now){
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(acPerfLowFpsSamples>=2&&currentPixelRatio>.85){
-        const nextPixelRatio=Math.max(.85,currentPixelRatio-.10);
+      if(acPerfLowFpsSamples>=2&&currentPixelRatio>.90){
+        const nextPixelRatio=Math.max(.90,currentPixelRatio-.10);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
-      }else if(acPerfStableFpsSamples>=8&&currentPixelRatio<1.05){
-        const nextPixelRatio=Math.min(1.05,currentPixelRatio+.05);
+      }else if(acPerfStableFpsSamples>=5&&currentPixelRatio<acMobilePixelRatioCap){
+        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.05);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
@@ -8092,7 +8101,11 @@ function animate(now){
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
         shadows:renderer.shadowMap.enabled,
-        adaptiveResolution:true
+        adaptiveResolution:true,
+        renderCalls:renderer.info.render.calls,
+        triangles:renderer.info.render.triangles,
+        geometries:renderer.info.memory.geometries,
+        textures:renderer.info.memory.textures
       });
       acPerfFrameCount=0;
       acPerfMaxFrameMs=0;
@@ -8287,9 +8300,15 @@ if(distance>=RACE_DISTANCE_METERS){
   for(let i=smokeParticles.length-1;i>=0;i--){const p=smokeParticles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.scale.multiplyScalar(1+dt*.55);p.mesh.material.opacity=Math.max(0,p.baseOpacity*(p.life/p.max));if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();smokeParticles.splice(i,1);}}
   onlineUpdateTestBot();
   onlineUpdateOpponentCars(dt);
-  onlineUpdateRaceProgress();
+  if(now>=acNextRaceProgressUpdateAt){
+    onlineUpdateRaceProgress();
+    acNextRaceProgressUpdateAt=now+100;
+  }
   if(document.body.classList.contains('race-mode'))updateRaceEnvironment(dt,frameWorldDelta);
-  renderer.render(scene,camera);
+  // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
+  // это снижает нагрев и оставляет полный FPS во время движения.
+  const staticScene=document.body.classList.contains('garage-mode')||paused;
+  if(!staticScene || (acIdleRenderFrame++%2===0))renderer.render(scene,camera);
 }
 
 let acPausedByVisibility = false;
