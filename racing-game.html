@@ -1677,6 +1677,54 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   }
 }
 </style>
+
+<style id="allcoins-racing-dashboard-v28">
+/* Чёрные приборные циферблаты, белая разметка и красные стрелки. */
+.tachometer-dial,.speedometer-dial{
+  background:radial-gradient(circle at 48% 42%,#18212b 0%,#0b1017 64%,#030609 100%)!important;
+  border-color:#aeb8c2!important;
+  box-shadow:0 0 0 2px #070b10,inset 0 0 0 2px #ffffff20,inset 0 -9px 24px #000!important;
+}
+.tachometer-dial:before,.speedometer-dial:before{
+  border-color:#aebdca66!important;
+}
+.gauge-scale-svg .minor-tick{stroke:#aab6c2;stroke-width:1.25;opacity:.7}
+.gauge-scale-svg .major-tick{stroke:#f3f6fa;stroke-width:2.15;stroke-linecap:round}
+.gauge-scale-svg .red-tick{stroke:#ff443e;stroke-width:2.8;stroke-linecap:round}
+.gauge-scale-svg .scale-number{
+  fill:#f2f5f8;font-size:15px;font-weight:800;
+  font-family:Arial,sans-serif;text-anchor:middle;dominant-baseline:middle;
+}
+.tachometer .gauge-scale-svg .scale-number{font-size:16px}
+.speedometer-label,.tachometer-label{
+  color:#cbd4dd!important;
+  font-size:7px!important;
+  letter-spacing:.11em;
+}
+.speedometer-needle,.tachometer-needle{
+  transition:none!important;
+  width:3px!important;height:37%!important;
+  background:linear-gradient(180deg,#fff7f1 0%,#ff6b61 52%,#c81d25 100%)!important;
+  box-shadow:0 0 7px #ff443e88!important;
+}
+.tachometer-needle.redline{
+  background:linear-gradient(180deg,#fff2ed 0%,#ff2828 58%,#a50000 100%)!important;
+  box-shadow:0 0 11px #ff2828!important;
+}
+.speedometer-value,.tachometer-value{bottom:11%!important}
+.speedometer-value strong,.tachometer-value strong{
+  font-size:clamp(19px,3.2vh,27px)!important;
+  letter-spacing:.01em;
+}
+.speedometer-value small,.tachometer-value small{
+  font-size:6.5px!important;letter-spacing:.04em;
+}
+@media(max-height:440px) and (orientation:landscape){
+  .speedometer-label,.tachometer-label{font-size:6px!important}
+  .gauge-scale-svg .scale-number{font-size:14px}
+  .tachometer .gauge-scale-svg .scale-number{font-size:15px}
+}
+</style>
 </head>
 <body class="garage-mode">
 <div id="stage"><canvas id="view"></canvas></div>
@@ -1831,12 +1879,12 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div class="tachometer" aria-label="Обороты двигателя">
   <div class="tachometer-dial">
     <div class="tachometer-ticks"></div>
-    <div class="tachometer-label" aria-hidden="true"></div>
+    <div class="tachometer-label" aria-hidden="true">×1000 ОБ/МИН</div>
     <div class="tachometer-needle" id="rpmNeedle"></div>
     <div class="tachometer-hub"></div>
     <div class="tachometer-value">
-      <strong>RPM × 1000</strong>
-      <small>ENGINE</small>
+      <strong id="rpmDial">900</strong>
+      <small>ОБ/МИН</small>
     </div>
     <div class="tachometer-range">
       <span>0</span><span>2</span><span>4</span>
@@ -1848,7 +1896,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 <div class="speedometer" aria-label="Скорость автомобиля">
   <div class="speedometer-dial">
     <div class="speedometer-ticks"></div>
-    <div class="speedometer-label" aria-hidden="true"></div>
+    <div class="speedometer-label" aria-hidden="true">ВАЗ-2107</div>
     <div class="speedometer-needle" id="speedNeedle"></div>
     <div class="speedometer-hub"></div>
     <div class="speedometer-value">
@@ -7308,7 +7356,11 @@ if(distance>=RACE_DISTANCE_METERS){
 
 document.addEventListener('visibilitychange',()=>{if(document.hidden){throttle=false;braking=false;paused=true;$('pause').textContent='ПРОДОЛЖИТЬ';}});
 
-/* ALLCOINS RACING V26 · реальные шкалы приборов от физических speed/rpm */
+/* ALLCOINS RACING V28 · реалистичная шкала ВАЗ-2107 и демпфирование стрелок */
+const AC_SPEEDOMETER_MAX = 220;
+const AC_TACHOMETER_MAX = 8000;
+const AC_TACHOMETER_REDLINE = 6000;
+
 function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorStep, redlineStart) {
   const host = document.querySelector(containerSelector);
   if (!host) return 0;
@@ -7322,23 +7374,25 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
     const radians = angle * Math.PI / 180;
     return { x: 100 + Math.sin(radians) * radius, y: 100 - Math.cos(radians) * radius };
   };
-  const count = Math.round(maxValue / minorStep);
-  for (let index = 0; index <= count; index++) {
+
+  for (let index = 0; index <= Math.round(maxValue / minorStep); index++) {
     const value = index * minorStep;
-    const major = Math.abs(value / majorStep - Math.round(value / majorStep)) < 0.0001;
+    const major = value % majorStep === 0;
     const angle = -135 + (value / maxValue) * 270;
-    const from = point(angle, major ? 83 : 85);
+    const from = point(angle, major ? 84 : 85);
     const to = point(angle, major ? 72 : 79);
     const line = document.createElementNS(ns, 'line');
-    line.setAttribute('x1', from.x.toFixed(2)); line.setAttribute('y1', from.y.toFixed(2));
-    line.setAttribute('x2', to.x.toFixed(2)); line.setAttribute('y2', to.y.toFixed(2));
+    line.setAttribute('x1', from.x.toFixed(2));
+    line.setAttribute('y1', from.y.toFixed(2));
+    line.setAttribute('x2', to.x.toFixed(2));
+    line.setAttribute('y2', to.y.toFixed(2));
     line.setAttribute('class', value >= redlineStart ? 'red-tick' : major ? 'major-tick' : 'minor-tick');
     svg.appendChild(line);
   }
+
   for (let value = 0; value <= maxValue; value += majorStep) {
-    // На спидометре цифры через 40 км/ч, на тахометре — через 1000 об/мин.
     const angle = -135 + (value / maxValue) * 270;
-    const at = point(angle, 61);
+    const at = point(angle, 60);
     const label = document.createElementNS(ns, 'text');
     label.setAttribute('x', at.x.toFixed(2));
     label.setAttribute('y', at.y.toFixed(2));
@@ -7347,65 +7401,78 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
     if (value >= redlineStart) label.setAttribute('fill', '#ff7770');
     svg.appendChild(label);
   }
+
   host.replaceChildren(svg);
   return svg.querySelectorAll('line').length;
 }
-const acSpeedScaleTickCount = acBuildInstrumentScale('.speedometer-ticks', 280, 40, 5, 9999);
-const acRpmScaleTickCount = acBuildInstrumentScale('.tachometer-ticks', 9000, 1000, 200, 6500);
+
+const acSpeedScaleTickCount = acBuildInstrumentScale(
+  '.speedometer-ticks', AC_SPEEDOMETER_MAX, 20, 5, Infinity
+);
+const acRpmScaleTickCount = acBuildInstrumentScale(
+  '.tachometer-ticks', AC_TACHOMETER_MAX, 1000, 200, AC_TACHOMETER_REDLINE
+);
+
 window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
   speedometerScaleTicks: acSpeedScaleTickCount,
   tachometerScaleTicks: acRpmScaleTickCount,
+  speedometerMaximumKmh: AC_SPEEDOMETER_MAX,
+  tachometerMaximumRpm: AC_TACHOMETER_MAX,
+  tachometerRedlineRpm: AC_TACHOMETER_REDLINE,
   speedometerUsesLiveSpeed: true,
   tachometerUsesLiveRpm: true,
+  needlesUseDampedMotion: true,
+  digitalSpeedAndRpmReadouts: true,
   acceleratorButton: Boolean(document.getElementById('gas')),
   brakeButton: Boolean(document.getElementById('brake')),
   gearPlusButton: Boolean(document.getElementById('gearUp')),
   gearMinusButton: Boolean(document.getElementById('gearDown'))
 });
 
-/* ALLCOINS V24 ANDROID DASHBOARD V1: только отображение скорости */
-function updateAnalogSpeedometer() {
-  const value = Math.max(0, Math.min(280, Number(speed) || 0));
-  const needle = document.getElementById('speedNeedle');
-  const readout = document.getElementById('speedDial');
+/* Стрелки имеют небольшую инерцию: тахометр реагирует быстрее спидометра. */
+let acDisplayedSpeed = 0;
+let acDisplayedRpm = 900;
+let acGaugeLastFrame = 0;
 
-  if (needle) {
-    const angle = -135 + (value / 280) * 270;
-    needle.style.transform =
-      'translateX(-50%) rotate(' + angle + 'deg)';
+function updateInstrumentCluster(now) {
+  const dt = acGaugeLastFrame
+    ? Math.min(.05, Math.max(.001, (now - acGaugeLastFrame) / 1000))
+    : 1 / 60;
+  acGaugeLastFrame = now;
+
+  const targetSpeed = Math.max(0, Math.min(AC_SPEEDOMETER_MAX, Math.abs(Number(speed) || 0)));
+  const targetRpm = Math.max(0, Math.min(AC_TACHOMETER_MAX, Number(rpm) || 0));
+
+  const speedResponse = targetSpeed > acDisplayedSpeed ? 5.8 : 8.2;
+  const rpmResponse = targetRpm > acDisplayedRpm ? 13.5 : 9.0;
+  acDisplayedSpeed += (targetSpeed - acDisplayedSpeed) * (1 - Math.exp(-speedResponse * dt));
+  acDisplayedRpm += (targetRpm - acDisplayedRpm) * (1 - Math.exp(-rpmResponse * dt));
+
+  const speedNeedle = document.getElementById('speedNeedle');
+  const rpmNeedle = document.getElementById('rpmNeedle');
+  const speedReadout = document.getElementById('speedDial');
+  const rpmReadout = document.getElementById('rpmDial');
+
+  if (speedNeedle) {
+    const angle = -135 + (acDisplayedSpeed / AC_SPEEDOMETER_MAX) * 270;
+    speedNeedle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
   }
-
-  if (readout) {
-    readout.textContent = String(Math.round(Number(speed) || 0));
+  if (rpmNeedle) {
+    const angle = -135 + (acDisplayedRpm / AC_TACHOMETER_MAX) * 270;
+    rpmNeedle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
+    rpmNeedle.classList.toggle('redline', acDisplayedRpm >= AC_TACHOMETER_REDLINE);
   }
+  if (speedReadout) speedReadout.textContent = String(Math.round(acDisplayedSpeed));
+  if (rpmReadout) rpmReadout.textContent = String(Math.round(acDisplayedRpm / 10) * 10);
 
-  requestAnimationFrame(updateAnalogSpeedometer);
-}
-updateAnalogSpeedometer();
-
-
-/* ALLCOINS V24 REAL DASHBOARD V2: тахометр и выбор механической передачи */
-function updateRpmTachometer() {
-  const value = Math.max(0, Math.min(9000, Number(rpm) || 0));
-  const needle = document.getElementById('rpmNeedle');
-  const readout = document.getElementById('rpmDial');
-
-  if (needle) {
-    const angle = -135 + (value / 9000) * 270;
-    needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
-    needle.classList.toggle('redline', value >= 6500);
-  }
-  if (readout) readout.textContent = String(Math.round(Number(rpm) || 0));
-
-  // Подсветка включённой передачи в индикаторе и шкале.
-  const gearReadout = document.getElementById('gearNow');
-  if (gearReadout) gearReadout.textContent = gear === -1 ? 'R' : String(gear);
   const currentGear = gear === -1 ? 'R' : String(gear);
   document.querySelectorAll('[data-gear-target]').forEach(button => {
     button.classList.toggle('selected', button.dataset.gearTarget === currentGear);
   });
-  requestAnimationFrame(updateRpmTachometer);
+
+  requestAnimationFrame(updateInstrumentCluster);
 }
+requestAnimationFrame(updateInstrumentCluster);
 
 function selectGearFromPattern(target) {
   const desired = target === 'R' ? -1 : Number(target);
