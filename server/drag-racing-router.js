@@ -341,6 +341,10 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "tuning JSONB NOT NULL DEFAULT '{\"ecu\":50,\"boost\":25,\"grip\":70,\"shift\":45}'::jsonb, " +
       "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
     );
+    // Persist the fuel tank across sessions; existing profiles receive 40 L once.
+    await pool.query(
+      "ALTER TABLE drag_racing_player_profiles ADD COLUMN IF NOT EXISTS fuel_liters NUMERIC(6,2) NOT NULL DEFAULT 40.00"
+    );
     await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_player_cars (" +
       "telegram_id BIGINT NOT NULL, car_id TEXT NOT NULL, upgrades JSONB NOT NULL DEFAULT '{}'::jsonb, " +
@@ -453,6 +457,118 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       console.error("Load Drag Racing profile:", error.message || error);
       return res.status(error instanceof DragRacingError ? error.status : 500).json({
         ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось загрузить гараж."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/fuel/profile", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      await ensureProfile(client, user.id);
+      const tank = await client.query(
+        "SELECT fuel_liters::TEXT AS fuel_liters FROM drag_racing_player_profiles WHERE telegram_id = $1::BIGINT",
+        [user.id]
+      );
+      const fuelLiters = Math.max(0, Math.min(50, Number(tank.rows[0]?.fuel_liters ?? 40)));
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true, balance: Number(balance), fuelLiters,
+        tankCapacityLiters: 50, pricePerLiter: 100
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Load Drag Racing fuel profile:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось проверить запас бензина."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/fuel/buy", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const liters = Number(req.body?.liters);
+    if (!Number.isInteger(liters) || liters < 1 || liters > 50) {
+      return res.status(400).json({ ok: false, error: "Укажи целое количество от 1 до 50 литров." });
+    }
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const balance = await lockPlayerBalance(client, user);
+      await ensureProfile(client, user.id);
+      const tank = await client.query(
+        "SELECT fuel_liters::TEXT AS fuel_liters FROM drag_racing_player_profiles WHERE telegram_id = $1::BIGINT FOR UPDATE",
+        [user.id]
+      );
+      const currentFuel = Math.max(0, Math.min(50, Number(tank.rows[0]?.fuel_liters ?? 40)));
+      const remaining = Math.max(0, 50 - currentFuel);
+      if (liters > remaining + 0.001) {
+        throw new DragRacingError(400, "В бак помещается ещё " + remaining.toFixed(1) + " л.");
+      }
+      const price = BigInt(liters) * 100n;
+      if (balance < price) {
+        throw new DragRacingError(400, "Недостаточно AC. " + liters + " л бензина стоят " + price.toString() + " AC.");
+      }
+      const debit = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT AND balance >= $1::BIGINT RETURNING balance::TEXT AS balance",
+        [price.toString(), user.id]
+      );
+      if (!debit.rows.length) throw new DragRacingError(400, "Недостаточно AC для покупки бензина.");
+      const updated = await client.query(
+        "UPDATE drag_racing_player_profiles SET fuel_liters = LEAST(50::NUMERIC, fuel_liters + $1::NUMERIC), updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT RETURNING fuel_liters::TEXT AS fuel_liters",
+        [String(liters), user.id]
+      );
+      const fuelLiters = Number(updated.rows[0]?.fuel_liters ?? currentFuel);
+      await client.query("COMMIT"); open = false;
+      return res.json({
+        ok: true, purchasedLiters: liters, price: Number(price),
+        fuelLiters, tankCapacityLiters: 50, pricePerLiter: 100,
+        balance: Number(debit.rows[0].balance)
+      });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Buy Drag Racing fuel:", error.message || error);
+      return res.status(status).json({
+        ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось купить бензин."
+      });
+    } finally { client.release(); }
+  });
+
+  router.post("/fuel/use", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const used = Number(req.body?.usedLiters);
+    if (!Number.isFinite(used) || used < 0.01 || used > 1.00) {
+      return res.status(400).json({ ok: false, error: "Некорректный объём израсходованного бензина." });
+    }
+    const roundedUse = Math.round(used * 100) / 100;
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      await ensureProfile(client, user.id);
+      const updated = await client.query(
+        "UPDATE drag_racing_player_profiles SET fuel_liters = GREATEST(0::NUMERIC, fuel_liters - $1::NUMERIC), updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT RETURNING fuel_liters::TEXT AS fuel_liters",
+        [roundedUse.toFixed(2), user.id]
+      );
+      const fuelLiters = Math.max(0, Number(updated.rows[0]?.fuel_liters ?? 0));
+      await client.query("COMMIT"); open = false;
+      return res.json({ ok: true, usedLiters: roundedUse, fuelLiters, tankCapacityLiters: 50 });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Save Drag Racing fuel consumption:", error.message || error);
+      return res.status(error instanceof DragRacingError ? error.status : 500).json({
+        ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось сохранить расход бензина."
       });
     } finally { client.release(); }
   });
