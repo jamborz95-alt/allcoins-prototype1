@@ -5003,12 +5003,12 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMo
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.98;
-scene.add(new THREE.HemisphereLight(0x607b9e,0x080e18,.30));
-const sun = new THREE.DirectionalLight(0x9db8e8,.18); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.04;
+scene.add(new THREE.HemisphereLight(0x718daf,0x101722,.40));
+const sun = new THREE.DirectionalLight(0xb2c9e8,.24); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
 sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x344b70,.20); fill.position.set(8,5,-12); scene.add(fill);
+const fill = new THREE.DirectionalLight(0x50698c,.24); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -7638,7 +7638,24 @@ function attachVehicle(root,label='сохранённая модель'){
   wheelNodes=[];frontWheelNodes=[];rearWheelNodes=[];
   vehicleChassis=null;vehicleChassisBaseY=0;vehicleChassisBaseRotationZ=0;vehicleChassisBasePosition.set(0,0,0);vehicleChassisBaseQuaternion.identity();vehicleChassisPitchAxis.set(0,0,1);vehicleChassisSuspensionUp.set(0,1,0);
   root.visible = true;
-  root.traverse(object => { object.visible = true; });
+  // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
+  const carTextureAnisotropy=Math.min(acRacingMobileDevice?4:8,renderer.capabilities.getMaxAnisotropy());
+  const preparedCarTextures=new Set();
+  root.traverse(object => {
+    object.visible = true;
+    if(!object.isMesh)return;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    for(const material of materials){
+      if(!material)continue;
+      for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap','bumpMap']){
+        const texture=material[key];
+        if(texture?.isTexture&&!preparedCarTextures.has(texture)){
+          preparedCarTextures.add(texture);
+          texture.anisotropy=Math.max(texture.anisotropy||1,carTextureAnisotropy);
+        }
+      }
+    }
+  });
   root.updateMatrixWorld(true);
   let box=new THREE.Box3().setFromObject(root);let size=box.getSize(new THREE.Vector3());
   if(size.z>size.x*1.08)root.rotation.y=Math.PI/2;
