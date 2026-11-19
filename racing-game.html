@@ -7526,7 +7526,7 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
   });
 });
 
-updateRpmTachometer();
+// Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
 
 requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});
