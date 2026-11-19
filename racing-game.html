@@ -3258,17 +3258,17 @@ const AC_PLAYER_LANE_Z = 10.0;
 let acOnlinePlayerBaseZ = null;
 let acOnlineLaneLayoutActive = false;
 let acOnlineCameraMode = 'solo';
-const acOnlineSoloCameraPosition = new THREE.Vector3(0, 4.2, 28);
-const acOnlineSoloCameraTarget = new THREE.Vector3(0, 0.2, 0);
-const acOnlineRaceCameraPosition = new THREE.Vector3(0, 4.2, 28);
-const acOnlineRaceCameraTarget = new THREE.Vector3(0, 0.2, 0);
+const acOnlineSoloCameraPosition = new THREE.Vector3(0, 4.2, 38);
+const acOnlineSoloCameraTarget = new THREE.Vector3(0, 0.2, AC_PLAYER_LANE_Z);
+const acOnlineRaceCameraPosition = new THREE.Vector3(0, 4.2, 38);
+const acOnlineRaceCameraTarget = new THREE.Vector3(0, 0.2, AC_PLAYER_LANE_Z);
 
 function acOnlineSetCameraMode(mode) {
   if (acOnlineCameraMode === mode) return;
   if (mode === 'garage') {
     // The garage display remains centred on the loaded car inside the workshop.
-    camera.position.set(carAnchor, 4.2, 28);
-    camera.lookAt(carAnchor, 0.2, 0);
+    camera.position.set(carAnchor, 4.2, AC_PLAYER_LANE_Z + 28);
+    camera.lookAt(carAnchor, 0.2, AC_PLAYER_LANE_Z);
   } else {
     // Race view must follow the player's near lane. The former target at Z=0
     // placed the car below the camera centre; the lower dashboard then covered
@@ -7843,6 +7843,8 @@ function raceRoadLoadDeceleration(speedKmh){
 function updateGear(){
   $('gearNow').textContent=gear===-1?'R':String(gear);$('gearNow').classList.add('current');
   $('gearHint').textContent=gear===-1?'ЗАДНИЙ ХОД · ЗАДНИЙ ПРИВОД':'ЗАДНИЙ ПРИВОД · МЕХАНИКА';
+  document.querySelectorAll('#gearPattern [data-gear-target]').forEach(item=>item.classList.toggle('selected',item.dataset.gearTarget===(gear===-1?'R':String(gear))));
+
 }
 let acRacingShiftCount = 0;
 window.__allcoinsRacingShiftDiagnostics = {
@@ -7915,6 +7917,23 @@ function bindGearShift(id,delta){
 }
 bindGearShift('gearUp',1);
 bindGearShift('gearDown',-1);
+
+document.querySelectorAll('#gearPattern [data-gear-target]').forEach(button=>{
+  button.addEventListener('click',()=>{
+    const target=button.dataset.gearTarget;
+    if(target==='R'){
+      if(gear!==-1){if(speed<1.2&&gear===1)shift(-1);else if(speed>=1.2)$('gearHint').textContent='ОСТАНОВИТЕСЬ ДЛЯ R';}
+    }else{
+      const targetGear=Number(target);
+      if(Number.isInteger(targetGear)&&targetGear>=1&&targetGear<=5){
+        if(gear===-1){if(speed<1.2)shift(1);}
+        if(gear!==-1&&targetGear!==gear)shift(targetGear-gear);
+      }
+    }
+    document.querySelectorAll('#gearPattern [data-gear-target]').forEach(item=>item.classList.toggle('selected',item.dataset.gearTarget===(gear===-1?'R':String(gear))));
+  });
+});
+
 function acRacingApplyRearLowRideShadowPolicy(){
   const suppressRearWheelShadows=suspensionMode===0;
   let affectedMeshes=0;
@@ -8404,5 +8423,116 @@ setGarageMode(true);
 
 requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});void acFuelLoadProfile({silent:true});
 </script>
+
+<style id="allcoins-racing-camera-controls-v144">
+/* V144: keep the player car centered in the camera after moving it to the near lane. */
+#gearPattern{
+  display:grid!important;
+  position:fixed!important;
+  z-index:19!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  bottom:calc(clamp(112px,22vh,154px) + env(safe-area-inset-bottom,0px))!important;
+  width:min(208px,43vw)!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:3px!important;
+  padding:4px!important;
+  border:1px solid #8293a5!important;
+  border-radius:9px!important;
+  background:linear-gradient(145deg,#1c2938,#080e17)!important;
+  box-shadow:0 3px 12px #000b!important;
+  pointer-events:auto!important;
+}
+#gearPattern button{
+  min-width:0!important;
+  min-height:25px!important;
+  padding:2px!important;
+  border-radius:5px!important;
+  font:800 12px Arial,sans-serif!important;
+  touch-action:manipulation!important;
+}
+#gearPattern button.selected{
+  background:linear-gradient(145deg,#f1d18a,#9d6d26)!important;
+  color:#101820!important;
+  border-color:#ffe6ad!important;
+}
+#gearUp,#gearDown{
+  width:36px!important;
+  height:42px!important;
+  min-height:42px!important;
+  left:auto!important;
+  right:calc(50% + min(116px,23vw))!important;
+  bottom:calc(128px + env(safe-area-inset-bottom,0px))!important;
+  clip-path:none!important;
+  border-radius:8px!important;
+  font-size:23px!important;
+  padding:0!important;
+}
+#gearDown{bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+#dashboardBackplate{
+  width:min(440px,88vw)!important;
+  height:clamp(116px,25vh,174px)!important;
+  border-radius:22px 22px 0 0!important;
+}
+.tachometer,.speedometer{
+  --ac-cluster-dial:clamp(92px,18vh,132px);
+  bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+}
+.tachometer{left:calc(50% - 48px)!important}
+.speedometer{left:calc(50% + 48px)!important}
+.temp-gauge{
+  width:clamp(38px,7vh,52px)!important;
+  height:clamp(38px,7vh,52px)!important;
+  left:50%!important;
+  bottom:clamp(104px,21vh,142px)!important;
+}
+#gearNow{
+  left:calc(50% + 104px)!important;
+  bottom:calc(42px + env(safe-area-inset-bottom,0px))!important;
+  width:28px!important;height:28px!important;
+}
+#brake,#gas{
+  width:clamp(48px,8vw,66px)!important;
+  height:clamp(54px,10vh,72px)!important;
+  min-width:0!important;
+  border-radius:12px!important;
+  font-size:10px!important;
+  padding:5px!important;
+}
+@media(max-width:700px){
+  #dashboardBackplate{width:min(410px,94vw)!important}
+  .tachometer{left:calc(50% - 45px)!important}
+  .speedometer{left:calc(50% + 45px)!important}
+  #gearPattern{width:min(184px,48vw)!important}
+  #gearUp,#gearDown{right:calc(50% + min(104px,27vw))!important;width:32px!important}
+}
+@media(max-height:440px) and (orientation:landscape){
+  #dashboardBackplate{width:min(380px,56vw)!important;height:94px!important}
+  .tachometer,.speedometer{
+    width:clamp(76px,17vh,88px)!important;
+    height:clamp(76px,17vh,88px)!important;
+    bottom:3px!important;
+  }
+  .tachometer{left:calc(50% - 39px)!important}
+  .speedometer{left:calc(50% + 39px)!important}
+  .temp-gauge{width:34px!important;height:34px!important;bottom:82px!important}
+  #gearPattern{
+    width:144px!important;
+    left:50%!important;
+    bottom:98px!important;
+    gap:2px!important;padding:3px!important;
+  }
+  #gearPattern button{min-height:20px!important;font-size:10px!important}
+  #gearUp,#gearDown{
+    width:28px!important;height:30px!important;min-height:30px!important;
+    right:calc(50% + 82px)!important;
+  }
+  #gearUp{bottom:58px!important}
+  #gearDown{bottom:24px!important}
+  #gearNow{left:calc(50% + 88px)!important;bottom:28px!important;width:24px!important;height:24px!important}
+  #brake,#gas{width:46px!important;height:48px!important;bottom:4px!important}
+}
+</style>
+
 </body>
 </html>
