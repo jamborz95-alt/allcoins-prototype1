@@ -5429,6 +5429,24 @@ window.allcoinsRacingSuspensionApi = Object.freeze({
   }
 });
 
+window.allcoinsRacingFuelApi = Object.freeze({
+  async profile() {
+    const result = await apiRequest("/api/drag-racing/fuel/profile", {});
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async buy(liters) {
+    const result = await apiRequest("/api/drag-racing/fuel/buy", { liters: Number(liters) });
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    render();
+    return result;
+  },
+  async use(usedLiters) {
+    return await apiRequest("/api/drag-racing/fuel/use", { usedLiters: Number(usedLiters) });
+  }
+});
+
 window.allcoinsRacingGarageApi = Object.freeze({
   async profile() {
     const result = await apiRequest("/api/drag-racing/profile", {});
