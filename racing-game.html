@@ -2642,6 +2642,7 @@ async function onlineStartTestBotRace() {
   distance = 0;
   elapsed = 0;
   speed = 0;
+  acRacingResetMotionSmoothing();
   rpm = 900;
   gear = 1;
   shiftCutRemaining = 0;
@@ -2902,6 +2903,7 @@ async function onlineBeginRace() {
   distance = 0;
   elapsed = 0;
   speed = 0;
+  acRacingResetMotionSmoothing();
   rpm = 900;
   gear = 1;
   shiftCutRemaining = 0;
@@ -2970,6 +2972,7 @@ function onlinePrepareCountdown(payload = {}) {
   distance = 0;
   elapsed = 0;
   speed = 0;
+  acRacingResetMotionSmoothing();
   rpm = 900;
   gear = 1;
   finished = false;
@@ -3947,6 +3950,7 @@ async function acFuelReturnToGarage() {
   raceStarted = false;
   paused = false;
   speed = 0;
+  acRacingResetMotionSmoothing();
   rpm = 900;
   gear = 1;
   distance = 0;
@@ -8828,7 +8832,12 @@ $('modelPicker').addEventListener('change',async e=>{const file=e.target.files?.
 
 /* ALLCOINS RACING RWD + SUSPENSION V3 */
 let speed=0,rpm=900,gear=1,distance=0,elapsed=0,raceStarted=false,paused=false,finished=false,throttle=false,braking=false,burnout=0,shiftCutRemaining=0;
+let raceThrottleBlend=0,raceBrakeBlend=0;
 let rearSlip=0, suspensionMode=1, suspensionOffset=0, suspensionVelocity=0, chassisPitch=0, wheelRadiusWorld=.34, worldUnitsPerRealMeter=1, rearSmokeCooldown=0;
+function acRacingResetMotionSmoothing(){
+  raceThrottleBlend=0;
+  raceBrakeBlend=0;
+}
 let acGarageAirSuspensionOwned=false, acGarageAirSuspensionProfileReady=false, acGarageAirSuspensionBusy=false, acGarageAirSuspensionPromise=null;
 const gearTopSpeed=[0,42,78,118,158,210];
 const gearRatios=[0,3.67,2.10,1.36,1.00,.82];
@@ -9219,6 +9228,12 @@ function animate(now){
   rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
   if(!paused&&raceStarted&&!finished&&vehicle){
     elapsed+=dt;
+    const speedBeforeStep=speed;
+    // Progressive pedal take-up avoids a sharp jump when gas or brake is tapped.
+    const throttleTarget=throttle?1:0;
+    const brakeTarget=braking?1:0;
+    raceThrottleBlend+=(throttleTarget-raceThrottleBlend)*(1-Math.exp(-dt/.16));
+    raceBrakeBlend+=(brakeTarget-raceBrakeBlend)*(1-Math.exp(-dt/.11));
     const ecuLevel=racingPartLevel("ecu");
     const turboLevel=racingPartLevel("turbo");
     const intakeLevel=racingPartLevel("intake");
@@ -9245,7 +9260,7 @@ function animate(now){
       const slipReduction=Math.min(.45,diffLevel*.08+tireLevel*.05);
       const slipTarget=throttle?baseSlip*(1-slipReduction):0;
       rearSlip+=(slipTarget-rearSlip)*Math.min(1,dt*(slipTarget>rearSlip?3.8:2.2));
-      if(throttle){
+      if(throttle || raceThrottleBlend > .01){
         const speedRatio=Math.min(1,speed/Math.max(1,top));
         const torque=torqueCurve(rpm);
         const intakeFactor=rpm<4000?1+intakeLevel*.02:1;
@@ -9257,15 +9272,15 @@ function animate(now){
         // Плавное трогание с места: сцепление постепенно передаёт момент на колёса.
         const launchFactor=Math.min(1,.80+speed*.02);
         const roadLoad=raceRoadLoadDeceleration(speed);
-        const engineForce=engineAcceleration*torque*traction*engineUpgradeFactor*gearboxAcceleration*shiftPowerFactor*(1-speedRatio*.24)*launchFactor;
+        const engineForce=engineAcceleration*torque*traction*engineUpgradeFactor*gearboxAcceleration*shiftPowerFactor*(1-speedRatio*.24)*launchFactor*raceThrottleBlend;
         const accel=Math.max(0,engineForce-roadLoad);
         if(speed<top)speed=Math.min(top,speed+accel*dt);
         else speed=Math.max(top,speed-dt*1.8);
         // Одновременное нажатие газа и тормоза даёт контролируемое торможение.
-        if(braking)speed=Math.max(0,speed-dt*14*(1+tireLevel*.03));
+        if(raceBrakeBlend>.001)speed=Math.max(0,speed-dt*14*(1+tireLevel*.03)*raceBrakeBlend);
       }else{
         const tireBrakeFactor=1+tireLevel*.03;
-        const coast=braking?34*tireBrakeFactor:raceRoadLoadDeceleration(speed);
+        const coast=raceRoadLoadDeceleration(speed)+34*tireBrakeFactor*raceBrakeBlend;
         speed=Math.max(0,speed-dt*coast);
       }
       const wheelRpm=(speed/3.6)/(2*Math.PI*Math.max(.18,wheelRadiusWorld/Math.max(.3,worldUnitsPerRealMeter)))*60;
@@ -9292,9 +9307,11 @@ function animate(now){
     rpm+=(targetRpm-rpm)*Math.min(1,dt*(burnoutActive?8.5:throttle&&gear===1?32:throttle?11.5:6.2));
     const kmh=Math.round(speed);
     const signedSpeed=speed*(gear===-1?-1:1);
-    distance+=signedSpeed/3.6*dt;
+    const travelSpeed=Math.max(0,(speedBeforeStep+speed)*.5);
+    const signedTravelSpeed=travelSpeed*(gear===-1?-1:1);
+    distance+=signedTravelSpeed/3.6*dt;
     if(acFuelProfileReady){
-      const fuelDistanceKm=Math.max(0,speed)*dt/3600;
+      const fuelDistanceKm=Math.max(0,(speedBeforeStep+speed)*.5)*dt/3600;
       const idleFuel=throttle&&speed<1?.00008*dt:0;
       const fuelUsed=fuelDistanceKm*AC_FUEL_CONSUMPTION_L_PER_100KM/100+idleFuel;
       if(fuelUsed>0){
@@ -9311,7 +9328,7 @@ function animate(now){
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
     // the same world-units-per-metre conversion from the loaded car model.
-    const scroll=(signedSpeed/3.6)*worldUnitsPerRealMeter*dt;
+    const scroll=(signedTravelSpeed/3.6)*worldUnitsPerRealMeter*dt;
     frameWorldDelta=scroll;
     acAdvanceRoadSurface(scroll);
     acAdvanceCentralMarkings(scroll);
@@ -9319,11 +9336,18 @@ function animate(now){
     finishLine.position.x=finishStartX-distance*WORLD_UNITS_PER_METER;
     const ride=rideModes[suspensionMode];
     /* ALLCOINS Racing V23 · reduced throttle squat */
-    const bodyLoad=throttle&&!braking ? -.004 : braking ? -.020 : 0;
+    const bodyLoad=-(.004*raceThrottleBlend*(1-raceBrakeBlend)+.020*raceBrakeBlend);
     const suspensionTarget=ride.offset+bodyLoad;
-    suspensionVelocity+=(suspensionTarget-suspensionOffset)*ride.spring*dt;
-    suspensionVelocity*=Math.exp(-dt*(2*Math.sqrt(ride.spring)));
-    suspensionOffset+=suspensionVelocity*dt;
+    // Exact critically-damped suspension step: stable and smooth even when
+    // Android WebView delivers uneven frame times.
+    const suspensionOmega=Math.sqrt(Math.max(.01,ride.spring));
+    const suspensionError=suspensionOffset-suspensionTarget;
+    const suspensionVelocityTerm=suspensionVelocity+suspensionOmega*suspensionError;
+    const suspensionDecay=Math.exp(-suspensionOmega*dt);
+    suspensionOffset=suspensionTarget+
+      (suspensionError+suspensionVelocityTerm*dt)*suspensionDecay;
+    suspensionVelocity=
+      (suspensionVelocity-suspensionOmega*suspensionVelocityTerm*dt)*suspensionDecay;
     const roadBounce=0;
     vehicle.position.y=vehicleBaseY;
     if(vehicleChassis){
@@ -9336,8 +9360,8 @@ function animate(now){
       vehicle.updateMatrixWorld(true);
     }else vehicle.position.y=vehicleBaseY+suspensionOffset+roadBounce;
     // Positive world-Z pitch lifts the nose (+X) and lets the rear settle under acceleration.
-    const pitchTarget=throttle&&!braking ? .0025 : braking ? -.014 : 0;
-    chassisPitch+=(pitchTarget-chassisPitch)*Math.min(1,dt*4.5);
+    const pitchTarget=.0025*raceThrottleBlend*(1-raceBrakeBlend)-.014*raceBrakeBlend;
+    chassisPitch=pitchTarget+(chassisPitch-pitchTarget)*Math.exp(-dt*5.5);
     const pitchAngle=chassisPitch;
     if(vehicleChassis){
       const pitchDelta=new THREE.Quaternion().setFromAxisAngle(vehicleChassisPitchAxis,pitchAngle);
@@ -9375,7 +9399,7 @@ if(distance>=RACE_DISTANCE_METERS){
         }
       }
       onlineRaceStarted=false;
-      finished=true;speed=0;throttle=false;braking=false;
+      finished=true;speed=0;throttle=false;braking=false;acRacingResetMotionSmoothing();
       setMessage('ФИНИШ!',finishDetails+' Нажми «НОВЫЙ ЗАЕЗД», чтобы повторить.',false);
       const restart=document.createElement('button');restart.className='small-btn';restart.style.marginLeft='8px';restart.textContent=onlineTestBotActive?'ПОВТОРИТЬ ТЕСТ':'НОВЫЙ ЗАЕЗД';
       restart.onclick=()=>{
@@ -9387,7 +9411,7 @@ if(distance>=RACE_DISTANCE_METERS){
           onlineStartTestBotRace();
           return;
         }
-        distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;wheelSpinAngularVelocity=0;rearWheelSpinAngularVelocity=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);
+        distance=0;elapsed=0;speed=0;acRacingResetMotionSmoothing();rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;wheelSpinAngularVelocity=0;rearWheelSpinAngularVelocity=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);
       };
       $('message').appendChild(restart);
     }
@@ -9411,6 +9435,7 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
     throttle=false;
     braking=false;
+    acRacingResetMotionSmoothing();
     if(!paused){
       paused=true;
       acPausedByVisibility=true;
