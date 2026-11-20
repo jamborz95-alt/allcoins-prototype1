@@ -2348,7 +2348,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   <button type="button" data-gear-target="4">4</button>
   <button type="button" data-gear-target="R">R</button>
 </div>
-<button class="gear" id="gearDown" type="button" title="Понизить передачу" aria-label="Понизить передачу">−</button><button class="gear" id="gearUp" type="button" title="Повысить передачу" aria-label="Повысить передачу">+</button></div>
+<button class="gear" id="gearDown" type="button" title="Понизить передачу" aria-label="Понизить передачу"><span class="gear-lever-mark" aria-hidden="true">−</span></button><button class="gear" id="gearUp" type="button" title="Повысить передачу" aria-label="Повысить передачу"><span class="gear-lever-mark" aria-hidden="true">+</span></button></div>
   </div>
 </div>
 
@@ -8852,6 +8852,135 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
     min-height:30px!important;
     font-size:7px!important;
     border-radius:7px!important;
+  }
+}
+</style>
+
+
+<style id="allcoins-racing-realistic-shifters-v155">
+/* V155: two separate tactile + / − gear levers; shift logic remains unchanged. */
+#gearUp,#gearDown{
+  position:fixed!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  left:auto!important;
+  right:calc(50% + min(112px,24vw))!important;
+  width:48px!important;
+  min-width:48px!important;
+  height:56px!important;
+  min-height:56px!important;
+  padding:0!important;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:0!important;
+  box-shadow:none!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  pointer-events:auto!important;
+  touch-action:none!important;
+  z-index:23!important;
+}
+#gearUp{bottom:calc(118px + env(safe-area-inset-bottom,0px))!important}
+#gearDown{bottom:calc(56px + env(safe-area-inset-bottom,0px))!important}
+
+/* Polished chrome shaft and weighted mounting base. */
+#gearUp::before,#gearDown::before{
+  content:"";
+  position:absolute;
+  z-index:1;
+  left:50%;
+  top:19px;
+  width:7px;
+  height:30px;
+  border-radius:6px;
+  transform:translateX(-50%) rotate(-7deg);
+  transform-origin:50% 100%;
+  background:linear-gradient(90deg,#3f4b56 0%,#aebbc7 17%,#f7fbff 34%,#778795 52%,#e7edf2 73%,#394550 100%);
+  border:1px solid #53616d;
+  box-shadow:0 1px 3px #000b, inset 1px 0 1px #ffffffa0;
+}
+#gearUp::after,#gearDown::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  left:50%;
+  bottom:3px;
+  width:40px;
+  height:15px;
+  transform:translateX(-50%) perspective(48px) rotateX(18deg);
+  border:1px solid #aebac5;
+  border-radius:7px 7px 11px 11px;
+  background:
+    radial-gradient(ellipse at 50% 15%,#f5f8fb 0 7%,transparent 43%),
+    linear-gradient(180deg,#aeb9c3 0%,#65727e 32%,#202a34 78%,#0c1219 100%);
+  box-shadow:inset 0 2px 2px #ffffffa8,inset 0 -3px 4px #000c,0 3px 5px #000b;
+}
+#gearUp .gear-lever-mark,#gearDown .gear-lever-mark{
+  position:absolute;
+  z-index:3;
+  top:0;
+  left:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:31px;
+  transform:translateX(-50%);
+  border:2px solid #bac5ce;
+  border-bottom-color:#414c57;
+  border-radius:48% 48% 43% 43% / 44% 44% 52% 52%;
+  background:
+    radial-gradient(ellipse at 30% 17%,#f8fbff 0%,#aeb9c3 8%,transparent 25%),
+    radial-gradient(ellipse at 40% 27%,#53616e 0%,#1d2935 54%,#080d13 100%);
+  color:#f2f6fa;
+  font:900 18px/1 Arial,sans-serif;
+  text-shadow:0 1px 2px #000,0 0 4px #ffffff44;
+  box-shadow:inset 0 2px 3px #ffffff7a,inset 0 -4px 6px #000c,0 3px 7px #000c;
+}
+#gearUp .gear-lever-mark{border-color:#8fbea6 #c3d1d8 #547e68}
+#gearDown .gear-lever-mark{border-color:#b9a18f #d0c3b8 #795e52}
+#gearUp.pressed .gear-lever-mark,#gearDown.pressed .gear-lever-mark{
+  transform:translate(-50%,3px) scale(.97);
+  filter:brightness(1.2);
+}
+#gearUp.pressed::before,#gearDown.pressed::before{
+  transform:translateX(-50%) rotate(-3deg) translateY(2px);
+}
+#gearUp:focus-visible,#gearDown:focus-visible{
+  outline:2px solid #d9e9ff!important;
+  outline-offset:3px!important;
+  border-radius:12px!important;
+}
+@media(max-width:700px){
+  #gearUp,#gearDown{
+    right:calc(50% + min(82px,22vw))!important;
+    width:42px!important;min-width:42px!important;
+    height:50px!important;min-height:50px!important;
+  }
+  #gearUp{bottom:calc(112px + env(safe-area-inset-bottom,0px))!important}
+  #gearDown{bottom:calc(56px + env(safe-area-inset-bottom,0px))!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #gearUp,#gearDown{
+    right:calc(50% + 82px)!important;
+    width:36px!important;min-width:36px!important;
+    height:40px!important;min-height:40px!important;
+  }
+  #gearUp{bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}
+  #gearDown{bottom:calc(8px + env(safe-area-inset-bottom,0px))!important}
+  #gearUp::before,#gearDown::before{
+    top:16px;width:6px;height:21px;
+  }
+  #gearUp::after,#gearDown::after{
+    width:31px;height:11px;bottom:2px;
+  }
+  #gearUp .gear-lever-mark,#gearDown .gear-lever-mark{
+    width:27px;height:25px;font-size:15px;
   }
 }
 </style>
