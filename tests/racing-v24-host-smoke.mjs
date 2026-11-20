@@ -13,7 +13,7 @@ const files = new Map([
 ]);
 const pageHtml = `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="allcoins-racing-amvera-api" content="">
+<meta name="allcoins-racing-amvera-api" content="https://allcoins-engine-a-allcoins95.msk1.amvera.tech">
 <title>ALLCOINS Racing classic runtime test</title></head>
 <body>
 <a id="openDragRacing" href="#race" data-allcoins-racing-launch="true">Драг-рейсинг 3D</a>
@@ -100,8 +100,8 @@ try {
       });
     }
 
-    if (url.pathname === "/api/racing/shared-model-asset" && request.method() === "GET") {
-      assert.equal(request.headers().authorization, "Bearer mock-engine-session-token");
+    if (url.pathname === "/api/racing/vaz-2107.glb" && request.method() === "GET") {
+      assert.equal(request.headers().authorization, undefined);
       assert.match(request.headers().range || "", /^bytes=0-/);
       return route.fulfill({
         status: 200,
@@ -347,8 +347,9 @@ try {
   );
   assert.ok(compactDashboardHeight >= 92 && compactDashboardHeight <= 116,
     "The landscape dashboard must remain compact and leave the car visible above it.");
-  assert.ok(apiCalls.some(call => call.path === "/api/auth/telegram"));
-  assert.ok(apiCalls.some(call => call.path === "/api/racing/shared-model-asset"));
+  assert.ok(!apiCalls.some(call => call.path === "/api/auth/telegram"),
+    "Single-player model loading must not require Telegram room authentication.");
+  assert.ok(apiCalls.some(call => call.path === "/api/racing/vaz-2107.glb"));
   assert.deepEqual(pageErrors, [],
     "Classic Three.js startup and UI control binding must not raise uncaught browser errors.");
 
