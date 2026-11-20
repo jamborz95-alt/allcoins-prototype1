@@ -336,3 +336,14 @@ test("landscape dashboard and touch controls use the compact phone layout", () =
   assert.match(page, /height:46px!important/);
   assert.match(page, /width:27px!important/);
 });
+
+
+test("racing scene adds lightweight cinematic lighting and contact shadows", () => {
+  assert.match(page, /function acCreateSoftContactShadowTexture\(\)/);
+  assert.match(page, /ALLCOINS · мягкая контактная тень ВАЗ-2107/);
+  assert.match(page, /streetLampReflectionsInstanced: Boolean\(acLampPools && acLampPools\.isInstancedMesh\)/);
+  assert.match(page, /acSetLampPoolMatrix\(index,lamp\.x\)/);
+  assert.match(page, /acLampPools\.instanceMatrix\.needsUpdate=true/);
+  assert.match(page, /const acRainCount=acRacingMobileDevice \? 72 : 180/);
+  assert.match(page, /acVehicleShadow\.visible=trackVisible && Boolean\(vehicle\)/);
+});
