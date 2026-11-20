@@ -798,7 +798,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261120-vaz-open-failsafe-v161", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261120-larger-detailed-rolling-wheels-v162", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
