@@ -369,8 +369,8 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
 
   
 test("gear plus and minus levers are visibly mounted beside the dashboard", () => {
-  assert.match(page, /id="gearUp"[^>]*><\s*span class="gear-lever-assembly"/);
-  assert.match(page, /id="gearDown"[^>]*><\s*span class="gear-lever-assembly"/);
+  assert.match(page, /id="gearUp"[^>]*>\s*<span class="gear-lever-assembly"/);
+  assert.match(page, /id="gearDown"[^>]*>\s*<span class="gear-lever-assembly"/);
   assert.match(page, /id="racingGearControls"[^>]*>[\s\S]*?id="gearUp"[\s\S]*?id="gearDown"[\s\S]*?<\/div>\s*<div id="dashboardBackplate"/);
   assert.match(page, /allcoins-racing-visible-shifters-v157/);
   assert.match(page, /#racingGearControls\{\s*position:fixed!important;inset:0!important;\s*z-index:9999!important/);
