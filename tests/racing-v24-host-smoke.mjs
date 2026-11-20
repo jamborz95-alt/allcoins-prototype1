@@ -166,7 +166,7 @@ try {
   // Capture the actual 3D race scene at the landscape Android viewport used by the game.
   await page.setViewportSize({ width: 844, height: 390 });
   await gameFrame.waitForTimeout(250);
-  await gameFrame.screenshot({ path: resolve(root, "artifacts", "racing-scene-landscape.png") });
+  await gameFrame.locator("body").screenshot({ path: resolve(root, "artifacts", "racing-scene-landscape.png") });
   await page.setViewportSize({ width: 1365, height: 768 });
 
   const graphicsProfile = await gameFrame.evaluate(() => window.__allcoinsRacingGraphicsProfile || null);
