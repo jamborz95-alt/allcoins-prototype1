@@ -387,7 +387,22 @@ try {
   const hostMessages = await gameFrame.evaluate(() => window.__allcoinsTestHostMessages || []);
   const hostError = hostMessages.find(entry => entry.type === "allcoins:car-model-error");
   if (hostError) throw new Error("GLB host transfer failed: " + JSON.stringify({ hostError, apiCalls }));
-  await gameFrame.waitForFunction(() => window.__allcoinsRacingVehicleDiagnostics?.loaded === true, null, { timeout: 10000 });
+  try {
+    await gameFrame.waitForFunction(() => window.__allcoinsRacingVehicleDiagnostics?.loaded === true, null, { timeout: 10000 });
+  } catch (error) {
+    const modelDiagnostic = await gameFrame.evaluate(() => ({
+      vehicle: window.__allcoinsRacingVehicleDiagnostics || null,
+      modelLoadError: window.__allcoinsRacingModelLoadError || null,
+      boot: window.__allcoinsRacingBoot || null,
+      messageTitle: document.querySelector("#message strong")?.textContent || null,
+      message: document.querySelector("#messageText")?.textContent || null,
+      garageStatus: document.querySelector("#garageCarStatus")?.textContent || null,
+      hostMessages: window.__allcoinsTestHostMessages || [],
+      threeLoaded: Boolean(window.THREE && window.THREE.GLTFLoader)
+    }));
+    await gameFrame.screenshot({ path: resolve(root, "artifacts", "racing-model-load-failure.png") });
+    throw new Error("GLB parse/attach diagnostic: " + JSON.stringify(modelDiagnostic) + "; " + error.message);
+  }
   await gameFrame.evaluate(() => setGarageMode(false));
 
   // Capture the attached 3D vehicle in the actual landscape race view.
