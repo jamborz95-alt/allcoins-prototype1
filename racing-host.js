@@ -16,8 +16,10 @@
   // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
+  // Restore the last pre-import Racing cache instead of replacing the pink VAZ-2107
+  // with the newly uploaded GLB. This keeps the previous known-good model on the device.
   const MODEL_CACHE_KEY = RACING_AMVERA_API_BASE
-    ? "v24-vaz-2107-amvera-glb-v3-20261120"
+    ? "v24-vaz-2107-amvera-glb-v2"
     : "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
@@ -364,9 +366,32 @@
   }
 
   async function loadSharedModel() {
+    if (cachedModel) return cachedModel;
     if (loadingModel) return loadingModel;
 
     loadingModel = (async () => {
+      // First recover the last model already stored on this device. The current
+      // Amvera GLB was replaced with a different import, so version mismatch must
+      // not evict the older known-good Racing car.
+      setStatus("Восстанавливаем прежнюю ВАЗ-2107 с устройства…", false);
+      try {
+        const savedPrevious = await readCachedModel();
+        if (savedPrevious && isValidGlbBuffer(savedPrevious.buffer)) {
+          const previousModel = {
+            buffer: savedPrevious.buffer,
+            fileName: savedPrevious.fileName || "vaz-2107-previous.glb",
+            remoteVersion: savedPrevious.remoteVersion || null,
+            source: "previous-device-cache"
+          };
+          cachedModel = previousModel;
+          setStatus("Прежняя ВАЗ-2107 восстановлена с устройства", false);
+          hideModelProgress();
+          return previousModel;
+        }
+      } catch (error) {
+        console.warn("ALLCOINS Racing: previous local VAZ cache could not be restored:", error);
+      }
+
       setStatus("Проверяем актуальность 3D-модели…", false);
       let remoteVersion = null;
       if (RACING_AMVERA_API_BASE) {
