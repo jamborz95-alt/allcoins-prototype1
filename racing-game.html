@@ -9041,8 +9041,9 @@ window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
   digitalSpeedAndRpmReadouts: true,
   acceleratorButton: Boolean(document.getElementById('gas')),
   brakeButton: Boolean(document.getElementById('brake')),
-  gearPlusButton: Boolean(document.getElementById('gearUp')),
-  gearMinusButton: Boolean(document.getElementById('gearDown'))
+  gearSelector: Boolean(document.getElementById('gearSelector')),
+  gearPlusButton: Boolean(document.querySelector('#gearSelector .gear-selector-plus')),
+  gearMinusButton: Boolean(document.querySelector('#gearSelector .gear-selector-minus'))
 });
 
 /* Стрелки имеют небольшую инерцию: тахометр реагирует быстрее спидометра. */
