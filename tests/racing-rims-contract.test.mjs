@@ -368,15 +368,14 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
 });
 
   
-test("gear plus and minus levers are visibly mounted beside the dashboard", () => {
-  assert.match(page, /id="gearUp"[^>]*>\s*<span class="gear-lever-assembly"/);
-  assert.match(page, /id="gearDown"[^>]*>\s*<span class="gear-lever-assembly"/);
-  assert.match(page, /id="racingGearControls"[^>]*>[\s\S]*?id="gearUp"[\s\S]*?id="gearDown"[\s\S]*?<\/div>\s*<div id="dashboardBackplate"/);
-  assert.match(page, /allcoins-racing-visible-shifters-v157/);
-  assert.match(page, /#racingGearControls\{\s*position:fixed!important;inset:0!important;\s*z-index:9999!important/);
-  assert.match(page, /#racingGearControls \.gear-lever-head/);
-  assert.match(page, /#racingGearControls \.gear-lever-stem/);
-  assert.match(page, /#racingGearControls \.gear-lever-base/);
+test("gear plus and minus controls are directly mounted as visible body-level metallic levers", () => {
+  assert.match(page, /id="gearUp"[^>]*>[\s\S]*?gear-shifter-handle">\\+/);
+  assert.match(page, /id="gearDown"[^>]*>[\s\S]*?gear-shifter-handle">−/);
+  assert.doesNotMatch(page, /id="racingGearControls"/);
+  assert.match(page, /allcoins-racing-direct-shifters-v158/);
+  assert.match(page, /#gearUp,#gearDown\{\s*position:fixed!important;[\s\S]*?z-index:2147483000!important/);
+  assert.match(page, /#gearUp \.gear-shifter-stem,#gearDown \.gear-shifter-stem/);
+  assert.match(page, /#gearUp \.gear-shifter-boot,#gearDown \.gear-shifter-boot/);
   assert.match(page, /bindGearShift\('gearUp',1\)/);
   assert.match(page, /bindGearShift\('gearDown',-1\)/);
 });
