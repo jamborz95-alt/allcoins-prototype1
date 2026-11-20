@@ -5398,9 +5398,9 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: asphaltMaps.roughnessMap,
-  bumpMap: asphaltMaps.bumpMap,
-  bumpScale: acRacingMobileDevice ? .009 : .018,
+  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
+  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? 0 : .018,
   roughness: acRacingMobileDevice ? .84 : .74,
   metalness: .012
 });
@@ -6160,9 +6160,9 @@ finishLine.position.x = finishStartX;
 scene.add(finishLine);
 
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
-  asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
+  asphaltTexture: Boolean(roadMat.map && (acRacingMobileDevice || (roadMat.bumpMap && roadMat.roughnessMap))),
   asphaltRepeatX: roadMat.map.repeat.x,
-  asphaltTone: "blue-violet-wet-racing-asphalt",
+  asphaltTone: "graphite-road-asphalt",
   asphaltWidth: 25.6,
   roadsideTyreWalls: 0,
   checkeredEdgeCurbs: true,
@@ -6190,18 +6190,18 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   playerVehicleLane: "near-side",
   playerVehicleLaneCenterZ: AC_PLAYER_LANE_Z,
   skidMarksFollowTrackDirection: true,
-  cleanTrackMode: true,
-  cityBuildings: 0,
+  cleanTrackMode: false,
+  cityBuildings: city.length,
   cityWindows: acCityWindowCount,
   cityBuildingFloorsMin: 4,
   cityBuildingFloorsMax: 6,
   cityFacadePalette: "warm-beige-cream",
   cityEuropeanBalconies: true,
   cityUpperCornices: true,
-  skylineTowers: 0,
+  skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
   cityBuildingOffsetZ: -22.2,
-  cityFence: false,
+  cityFence: true,
   cityFenceType: "cross-braced-metal-panels",
   cityFenceZ: -16.4,
   cityFenceRoadClearanceFromEdge: Number((Math.abs(acFenceZ) - 9).toFixed(2)),
@@ -6209,16 +6209,16 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   citySidewalkSlabs: acSidewalkSeamCount,
   cityGroundFloorWindowRows: 33,
   cityResidentialEntrances: 17,
-  cityShrubs: 0,
+  cityShrubs: acShrubCount,
   cityShrubOffsetZ: -18.25,
   skylineOffsetZ: -48,
   cameraViewHeight: acRacingMobileDevice ? 8.25 : 9.1,
   cityLightingExposure: renderer.toneMappingExposure,
-  cityLightingStyle: "warm-blue-hour",
+  cityLightingStyle: "balanced-daylight",
   cityBlocksVisible: city.some(building => building.visible),
   distantSkylineVisible: distantHills.visible,
   asphaltSurfaceFinish: "graphite-blue textured satin",
-  cityFacadeTexture: "deep-blue-grey-night-facades",
+  cityFacadeTexture: "warm-beige-plaster",
   speedometerDigitalLayerAboveNeedle: true
 });
 
@@ -6261,7 +6261,7 @@ acV4SkyFill.intensity = .24;
 acV4CarKey.intensity = .88;
 acV4CarRim.intensity = .62;
 acV4WarmFill.intensity = .72;
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = .98;
 
 // Дополнительный мягкий контровой свет для боковой поверхности автомобиля.
 const acV5BodyLight = new THREE.DirectionalLight(0xe4efff, 0.38);
@@ -6276,10 +6276,10 @@ scene.add(acV5WarmBodyFill);
 
 // Умеренное усиление отражающего вида дорожного покрытия.
 // Dark graphite-blue asphalt with visible aggregate; wetness comes from fine reflections, not a mirror finish.
-roadMat.color.set(0x9eafc0);
-roadMat.roughness = 0.78;
-roadMat.metalness = 0.012;
-roadMat.bumpScale = acRacingMobileDevice ? .012 : .022;
+roadMat.color.set(0x707b86);
+roadMat.roughness = 0.82;
+roadMat.metalness = 0.008;
+roadMat.bumpScale = acRacingMobileDevice ? 0 : .022;
 
 // Световые блики на мокром асфальте. InstancedMesh ограничивает число draw calls для Android.
 const acV5WetGeometry = new THREE.PlaneGeometry(1, 1);
@@ -6767,7 +6767,7 @@ acLampPools.visible = false;
 scene.add(acLampPools);
 
 /* Дождь перед камерой */
-const acRainCount=acRacingMobileDevice ? 72 : 180;
+const acRainCount=acRacingMobileDevice ? 55 : 180;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
