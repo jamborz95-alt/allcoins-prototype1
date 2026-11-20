@@ -305,7 +305,7 @@ test("landscape cockpit keeps the VAZ visible and leaves only + / − gear contr
 
 test("mobile racing quality is sharper and idle rendering is throttled to reduce frame-time pressure", () => {
   assert.match(page, /antialias: true/);
-  assert.match(page, /const acMobilePixelRatioCap = 1\.28/);
+  assert.match(page, /const acMobilePixelRatioCap = 1\.10/);
   assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
   assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
   assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
@@ -324,11 +324,11 @@ test("camera is recalculated after the VAZ loads and after phone rotation", () =
 });
 
 test("mobile rendering reduces resolution quickly under load and restores it gradually", () => {
-  assert.match(page, /const acMobilePixelRatioInitial = 1\.05/);
-  assert.match(page, /if\(measuredFps<43\)/);
-  assert.match(page, /if\(acPerfLowFpsSamples>=1&&currentPixelRatio>\.82\)/);
-  assert.match(page, /Math\.max\(\.82,currentPixelRatio-\.12\)/);
-  assert.match(page, /Math\.min\(acMobilePixelRatioCap,currentPixelRatio\+\.04\)/);
+  assert.match(page, /const acMobilePixelRatioInitial = \.94/);
+  assert.match(page, /if\(measuredFps<50\)/);
+  assert.match(page, /if\(acPerfLowFpsSamples>=1&&currentPixelRatio>\.78\)/);
+  assert.match(page, /Math\.max\(\.78,currentPixelRatio-\.08\)/);
+  assert.match(page, /Math\.min\(acMobilePixelRatioCap,currentPixelRatio\+\.025\)/);
   assert.match(page, /const dt=Math\.min\(\.06,rawFrameMs\/1000\|\|0\)/);
 });
 
@@ -421,3 +421,18 @@ test("V164 frames the car prominently on the road above the dashboard", () => {
   assert.match(page, /acRacingMobileDevice \? 5\.8 : 6\.2/);
 });
 
+
+
+test("V165 reduces mobile frame spikes without changing car physics or wheel spin", () => {
+  assert.match(page, /function acGarageMergeWheelFaceGeometry\(face\)/);
+  assert.match(page, /face\.userData\.acMergedWheelFaceDrawCalls = 1/);
+  assert.match(page, /new THREE\.MeshPhysicalMaterial\([\s\S]*?vertexColors: true/);
+  assert.match(page, /const acWheelParentInverseCache = new WeakMap\(\)/);
+  assert.match(page, /cache\.matrix\.copy\(parent\.matrixWorld\)\.invert\(\)/);
+  assert.match(page, /const particleLimit = acRacingMobileDevice \? 28 : 72/);
+  assert.match(page, /const minimumInterval = acRacingMobileDevice \? \(tire \? 75 : 95\)/);
+  assert.match(page, /const acTrackTreeLayers = Object\.freeze/);
+  assert.match(page, /if\(!document\.hidden && \(!staticScene/);
+  assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
+  assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
+});
