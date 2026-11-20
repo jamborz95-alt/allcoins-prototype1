@@ -291,7 +291,7 @@ test("landscape cockpit keeps the VAZ visible and leaves only + / − gear contr
   assert.match(page, /root\.visible = true/);
   assert.match(page, /root\.traverse\(object => \{ object\.visible = true; \}\)/);
   assert.match(page, /const focusZ = vehicle \? vehicle\.position\.z : AC_PLAYER_LANE_Z/);
-  assert.match(page, /camera\.lookAt\(focusX, focusY, focusZ\)/);
+  assert.match(page, /camera\.lookAt\(focusX, focusY \+ frameLift, focusZ\)/);
   assert.match(page, /acOnlineCameraMode = ""/);
   assert.match(page, /window\.__allcoinsRacingVehicleDiagnostics = Object\.freeze\(/);
   assert.match(page, /allcoins-racing-landscape-compact-v1/);
