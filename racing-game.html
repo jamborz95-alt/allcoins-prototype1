@@ -5196,6 +5196,50 @@ sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ?
 scene.add(sun);
 const fill = new THREE.DirectionalLight(0x6ba7df,.24); fill.position.set(8,5,-12); scene.add(fill);
 
+// V28: lightweight procedural daylight sky, rendered behind the city without post-processing.
+function acCreateRaceSkyBackdrop() {
+  const skyCanvas = document.createElement("canvas");
+  skyCanvas.width = 512;
+  skyCanvas.height = 256;
+  const ctx = skyCanvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+  gradient.addColorStop(0, "#527b99");
+  gradient.addColorStop(.34, "#83a9bf");
+  gradient.addColorStop(.68, "#c2d2d6");
+  gradient.addColorStop(.86, "#e7d3b8");
+  gradient.addColorStop(1, "#b7c2c0");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Soft warm sunlight near the horizon, deliberately subtle to keep the car readable.
+  const sunGlow = ctx.createRadialGradient(390, 177, 5, 390, 177, 112);
+  sunGlow.addColorStop(0, "rgba(255,238,198,.52)");
+  sunGlow.addColorStop(.35, "rgba(255,222,173,.23)");
+  sunGlow.addColorStop(1, "rgba(255,222,173,0)");
+  ctx.fillStyle = sunGlow;
+  ctx.fillRect(260, 45, 252, 210);
+
+  const texture = new THREE.CanvasTexture(skyCanvas);
+  texture.encoding = THREE.sRGBEncoding;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    fog: false,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false
+  });
+  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(2400, 150), material);
+  backdrop.name = "ALLCOINS Racing natural daylight sky";
+  backdrop.position.set(0, 40, -92);
+  backdrop.renderOrder = -1000;
+  backdrop.frustumCulled = false;
+  scene.add(backdrop);
+  return backdrop;
+}
+const acRaceSkyBackdrop = acCreateRaceSkyBackdrop();
+
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
 
@@ -6215,6 +6259,8 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cameraViewHeight: acRacingMobileDevice ? 8.25 : 9.1,
   cityLightingExposure: .98,
   cityLightingStyle: "balanced-daylight",
+  atmosphereBackdrop: Boolean(acRaceSkyBackdrop && acRaceSkyBackdrop.material.map),
+  atmosphereStyle: "natural-daylight-gradient",
   cityBlocksVisible: city.some(building => building.visible),
   distantSkylineVisible: distantHills.visible,
   asphaltSurfaceFinish: "graphite-blue textured satin",
@@ -7275,6 +7321,7 @@ function setGarageMode(enabled) {
   resize();
   acGarageWorld.visible = active;
   const trackVisible = !active;
+  acRaceSkyBackdrop.visible = trackVisible;
   for (const building of city) building.visible = trackVisible;
   distantHills.visible = trackVisible;
   road.visible = trackVisible;
