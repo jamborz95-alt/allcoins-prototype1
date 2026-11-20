@@ -916,7 +916,14 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261120-wheel-rig-diagnostic1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261120-stock-steel-rims1", document.baseURI);
+      const restoreFactoryRims = new URLSearchParams(window.location.search).get("restoreFactoryRims") === "1";
+      if (restoreFactoryRims) {
+        sceneUrl.searchParams.set("restoreFactoryRims","1");
+        const cleanLaunchUrl = new URL(window.location.href);
+        cleanLaunchUrl.searchParams.delete("restoreFactoryRims");
+        window.history.replaceState(window.history.state,"",cleanLaunchUrl.pathname+cleanLaunchUrl.search+cleanLaunchUrl.hash);
+      }
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
