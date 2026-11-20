@@ -11,6 +11,116 @@ const files = new Map([
   ["/vendor/three-r147.min.js", ["vendor/three-r147.min.js", "text/javascript; charset=utf-8"]],
   ["/vendor/GLTFLoader-r147.js", ["vendor/GLTFLoader-r147.js", "text/javascript; charset=utf-8"]]
 ]);
+function buildTestCarGlb() {
+  const binaryParts = [], bufferViews = [], accessors = [], meshes = [];
+  const nodes = [{ name: "ALLCOINS_Test_VAZ2107", children: [] }];
+  let binaryLength = 0;
+
+  function view(data, target) {
+    const pad = (4 - binaryLength % 4) % 4;
+    if (pad) { binaryParts.push(Buffer.alloc(pad)); binaryLength += pad; }
+    const bytes = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    const byteOffset = binaryLength;
+    binaryParts.push(bytes); binaryLength += bytes.length;
+    bufferViews.push({ buffer: 0, byteOffset, byteLength: bytes.length, target });
+    return bufferViews.length - 1;
+  }
+
+  function geometryAccessors(g) {
+    const p = new Float32Array(g.p), n = new Float32Array(g.n), ix = new Uint16Array(g.i);
+    const pv = view(p, 34962), nv = view(n, 34962), iv = view(ix, 34963);
+    const min = [Infinity,Infinity,Infinity], max = [-Infinity,-Infinity,-Infinity];
+    for (let k=0;k<p.length;k+=3) for(let a=0;a<3;a++) {
+      min[a]=Math.min(min[a],p[k+a]); max[a]=Math.max(max[a],p[k+a]);
+    }
+    accessors.push({bufferView:pv,componentType:5126,count:p.length/3,type:"VEC3",min,max});
+    const pa=accessors.length-1;
+    accessors.push({bufferView:nv,componentType:5126,count:n.length/3,type:"VEC3"});
+    const na=accessors.length-1;
+    accessors.push({bufferView:iv,componentType:5123,count:ix.length,type:"SCALAR",min:[Math.min(...ix)],max:[Math.max(...ix)]});
+    return {pa,na,ia:accessors.length-1};
+  }
+
+  function box(w,h,d) {
+    const x=w/2,y=h/2,z=d/2, p=[],n=[],i=[];
+    const faces=[
+      {n:[0,0,1],v:[[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]]},
+      {n:[0,0,-1],v:[[x,-y,-z],[-x,-y,-z],[-x,y,-z],[x,y,-z]]},
+      {n:[1,0,0],v:[[x,-y,z],[x,-y,-z],[x,y,-z],[x,y,z]]},
+      {n:[-1,0,0],v:[[-x,-y,-z],[-x,-y,z],[-x,y,z],[-x,y,-z]]},
+      {n:[0,1,0],v:[[-x,y,z],[x,y,z],[x,y,-z],[-x,y,-z]]},
+      {n:[0,-1,0],v:[[-x,-y,-z],[x,-y,-z],[x,-y,z],[-x,-y,z]]}
+    ];
+    for(const face of faces){
+      const b=p.length/3;
+      for(const v of face.v){p.push(...v);n.push(...face.n);}
+      i.push(b,b+1,b+2,b,b+2,b+3);
+    }
+    return {p,n,i};
+  }
+
+  function cylinder(r,depth,segments=20) {
+    const p=[],n=[],i=[];
+    for(let k=0;k<segments;k++){
+      const a=k/segments*Math.PI*2,b=(k+1)/segments*Math.PI*2;
+      const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);
+      const base=p.length/3;
+      p.push(r*ca,-depth/2,r*sa,r*cb,-depth/2,r*sb,r*cb,depth/2,r*sb,r*ca,depth/2,r*sa);
+      n.push(ca,0,sa,cb,0,sb,cb,0,sb,ca,0,sa);
+      i.push(base,base+2,base+1,base,base+3,base+2);
+      let t=p.length/3;
+      p.push(0,depth/2,0,r*ca,depth/2,r*sa,r*cb,depth/2,r*sb);
+      n.push(0,1,0,0,1,0,0,1,0); i.push(t,t+1,t+2);
+      t=p.length/3;
+      p.push(0,-depth/2,0,r*cb,-depth/2,r*sb,r*ca,-depth/2,r*sa);
+      n.push(0,-1,0,0,-1,0,0,-1,0); i.push(t,t+1,t+2);
+    }
+    return {p,n,i};
+  }
+
+  const materials=[
+    {name:"metallic red body paint",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.72,.12,.15,1],metallicFactor:.58,roughnessFactor:.28}},
+    {name:"dark window glass",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.035,.07,.095,1],metallicFactor:.3,roughnessFactor:.18}},
+    {name:"tyre rubber",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.035,.04,.045,1],metallicFactor:0,roughnessFactor:.9}},
+    {name:"machined alloy",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.68,.73,.78,1],metallicFactor:.88,roughnessFactor:.23}},
+    {name:"chrome trim",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.72,.77,.82,1],metallicFactor:.9,roughnessFactor:.2}},
+    {name:"headlight glass",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.96,.86,.63,1],metallicFactor:.08,roughnessFactor:.18}}
+  ];
+
+  function part(name,g,material,translation=[0,0,0],rotation=null){
+    const a=geometryAccessors(g), mesh=meshes.length;
+    meshes.push({name,primitives:[{attributes:{POSITION:a.pa,NORMAL:a.na},indices:a.ia,material}]});
+    const node={name,mesh,translation}; if(rotation) node.rotation=rotation;
+    nodes.push(node); nodes[0].children.push(nodes.length-1);
+  }
+
+  const axleRotation=[Math.SQRT1_2,0,0,Math.SQRT1_2];
+  part("Car_CarBody_0",box(4.45,.68,1.46),0,[0,.78,0]);
+  part("Car_Roof_0",box(2.38,.82,1.28),0,[-.12,1.48,0]);
+  for(const side of [-1,1]) part("Car_Glass_Side_"+side,box(1.72,.46,.028),1,[-.12,1.52,side*.655]);
+  for(const x of [-1.37,1.37]) for(const side of [-1,1]){
+    part("Wheel_Tyre_"+x+"_"+side,cylinder(.39,.24),2,[x,.39,side*.77],axleRotation);
+    part("Wheel_Rim_"+x+"_"+side,cylinder(.235,.255),3,[x,.39,side*.77],axleRotation);
+  }
+  part("Car_Front_Bumper",box(.12,.15,1.55),4,[2.28,.52,0]);
+  part("Car_Rear_Bumper",box(.12,.15,1.55),4,[-2.28,.52,0]);
+  part("Car_Headlamp_Left",box(.035,.16,.22),5,[2.27,.78,-.47]);
+  part("Car_Headlamp_Right",box(.035,.16,.22),5,[2.27,.78,.47]);
+
+  const binary=Buffer.concat(binaryParts);
+  const doc={asset:{version:"2.0",generator:"ALLCOINS browser visual fixture"},scene:0,scenes:[{nodes:[0]}],nodes,meshes,materials,accessors,bufferViews,buffers:[{byteLength:binary.length}]};
+  const rawJson=Buffer.from(JSON.stringify(doc),"utf8"), jp=(4-rawJson.length%4)%4;
+  const json=Buffer.concat([rawJson,Buffer.alloc(jp,0x20)]), bp=(4-binary.length%4)%4;
+  const bin=Buffer.concat([binary,Buffer.alloc(bp)]);
+  const total=12+8+json.length+8+bin.length, glb=Buffer.alloc(total);
+  glb.writeUInt32LE(0x46546c67,0); glb.writeUInt32LE(2,4); glb.writeUInt32LE(total,8);
+  glb.writeUInt32LE(json.length,12); glb.writeUInt32LE(0x4e4f534a,16); json.copy(glb,20);
+  const binHeader=20+json.length; glb.writeUInt32LE(bin.length,binHeader);
+  glb.writeUInt32LE(0x004e4942,binHeader+4); bin.copy(glb,binHeader+8);
+  return glb;
+}
+const testCarGlb=buildTestCarGlb();
+
 const pageHtml = `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="allcoins-racing-amvera-api" content="https://allcoins-engine-a-allcoins95.msk1.amvera.tech">
@@ -109,10 +219,12 @@ try {
           "access-control-allow-origin": "*",
           "access-control-expose-headers": "X-File-Name, Content-Length, Content-Range, Accept-Ranges",
           "content-type": "model/gltf-binary",
-          "content-length": "4",
+          "content-length": String(testCarGlb.length),
+          "content-range": "bytes 0-" + (testCarGlb.length - 1) + "/" + testCarGlb.length,
+          "accept-ranges": "bytes",
           "x-file-name": "test-vaz-2107.glb"
         },
-        body: Buffer.from("glTF", "ascii")
+        body: testCarGlb
       });
     }
 
@@ -163,7 +275,15 @@ try {
     throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
   }
 
-  // Capture the actual 3D race scene at the landscape Android viewport used by the game.
+  await page.waitForFunction(() =>
+    document.querySelector("#allcoinsRacingV24Overlay")?.textContent.includes("3D-модель передана в игровую сцену"),
+    null,
+    { timeout: 10000 }
+  );
+  await gameFrame.waitForFunction(() => window.__allcoinsRacingVehicleDiagnostics?.loaded === true, null, { timeout: 10000 });
+  await gameFrame.evaluate(() => setGarageMode(false));
+
+  // Capture the attached 3D vehicle in the actual landscape race view.
   await page.setViewportSize({ width: 844, height: 390 });
   await gameFrame.waitForTimeout(250);
   await gameFrame.locator("body").screenshot({ path: resolve(root, "artifacts", "racing-scene-landscape.png") });
@@ -336,15 +456,6 @@ try {
   assert.equal(await gameFrame.locator("#headlights").textContent(), "ФАРЫ · ВКЛ",
     "The headlight control must respond to taps/clicks.");
 
-  await page.waitForFunction(() =>
-    document.querySelector("#allcoinsRacingV24Overlay")?.textContent.includes("3D-модель передана в игровую сцену"),
-    null,
-    { timeout: 10000 }
-  );
-  await gameFrame.waitForFunction(() => {
-    const state = window.__allcoinsRacingVehicleDiagnostics;
-    return state && state.loaded === true;
-  }, null, { timeout: 10000 });
   const vehicleDiagnostics = await gameFrame.evaluate(
     () => window.__allcoinsRacingVehicleDiagnostics
   );
