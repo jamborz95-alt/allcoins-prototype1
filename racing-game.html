@@ -2359,6 +2359,17 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
   <span class="gear-shifter" aria-hidden="true"><span class="gear-shifter-handle">−</span><span class="gear-shifter-stem"></span><span class="gear-shifter-boot"></span></span>
 </button>
 
+<div id="gearSelector" class="gear-selector" role="group" tabindex="0"
+     aria-label="Единый рычаг переключения передач: потяните вверх для повышения, вниз для понижения. Нажатие сверху — плюс, снизу — минус."
+     aria-keyshortcuts="ArrowUp ArrowDown">
+  <span class="gear-selector-mark gear-selector-plus" aria-hidden="true">+</span>
+  <span class="gear-selector-track" aria-hidden="true">
+    <span class="gear-selector-rail"></span>
+    <span class="gear-selector-knob"></span>
+  </span>
+  <span class="gear-selector-mark gear-selector-minus" aria-hidden="true">−</span>
+</div>
+
 <div id="dashboardBackplate" aria-hidden="true"></div>
 <button class="small-btn dashboard-light-switch" id="headlights" type="button" title="Включить или выключить свет фар" aria-label="Включить свет фар" aria-pressed="false">ФАРЫ ВЫКЛ</button>
 <div class="temp-gauge" aria-label="Температура двигателя">
@@ -8063,8 +8074,91 @@ function bindGearShift(id,delta){
   });
   el.addEventListener('contextmenu',event=>event.preventDefault());
 }
+
 bindGearShift('gearUp',1);
 bindGearShift('gearDown',-1);
+
+// Один последовательный рычаг: вверх = +1 передача, вниз = -1 передача.
+const acGearSelector = $('gearSelector');
+if (acGearSelector) {
+  const acGearSelectorKnob = acGearSelector.querySelector('.gear-selector-knob');
+  let acGearSelectorPointer = null;
+  let acGearSelectorStartY = 0;
+  let acGearSelectorHasShifted = false;
+
+  function acGearSelectorShift(delta) {
+    shift(delta);
+    acGearSelectorKnob.style.transform = `translate(-50%,calc(-50% + ${delta > 0 ? -10 : 10}px))`;
+    acGearSelector.classList.toggle('shift-up', delta > 0);
+    acGearSelector.classList.toggle('shift-down', delta < 0);
+    window.setTimeout(() => {
+      acGearSelectorKnob.style.transform = '';
+      acGearSelector.classList.remove('shift-up','shift-down');
+    }, 170);
+  }
+
+  acGearSelector.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    acGearSelectorPointer = event.pointerId;
+    acGearSelectorStartY = event.clientY;
+    acGearSelectorHasShifted = false;
+    acGearSelector.classList.add('is-pressed');
+    try { acGearSelector.setPointerCapture(event.pointerId); } catch (_) {}
+  });
+
+  acGearSelector.addEventListener('pointermove', event => {
+    if (acGearSelectorPointer !== event.pointerId) return;
+    const deltaY = event.clientY - acGearSelectorStartY;
+    const visualOffset = Math.max(-18, Math.min(18, deltaY));
+    acGearSelectorKnob.style.transform = `translate(-50%,calc(-50% + ${visualOffset}px))`;
+    if (!acGearSelectorHasShifted && Math.abs(deltaY) >= 14) {
+      acGearSelectorShift(deltaY < 0 ? 1 : -1);
+      acGearSelectorHasShifted = true;
+    }
+  });
+
+  function acGearSelectorFinish(event, cancelled) {
+    if (acGearSelectorPointer !== event.pointerId) return;
+    if (!cancelled && !acGearSelectorHasShifted) {
+      const deltaY = event.clientY - acGearSelectorStartY;
+      if (Math.abs(deltaY) >= 14) {
+        acGearSelectorShift(deltaY < 0 ? 1 : -1);
+      } else {
+        const rect = acGearSelector.getBoundingClientRect();
+        const localY = (event.clientY - rect.top) / Math.max(1, rect.height);
+        if (localY < .36) acGearSelectorShift(1);
+        else if (localY > .64) acGearSelectorShift(-1);
+      }
+    }
+    acGearSelectorPointer = null;
+    acGearSelector.classList.remove('is-pressed');
+    if (!cancelled) {
+      window.setTimeout(() => { acGearSelectorKnob.style.transform = ''; }, 170);
+    } else {
+      acGearSelectorKnob.style.transform = '';
+    }
+  }
+
+  acGearSelector.addEventListener('pointerup', event => acGearSelectorFinish(event, false));
+  acGearSelector.addEventListener('pointercancel', event => acGearSelectorFinish(event, true));
+  acGearSelector.addEventListener('lostpointercapture', event => {
+    if (acGearSelectorPointer === event.pointerId) {
+      acGearSelectorPointer = null;
+      acGearSelector.classList.remove('is-pressed');
+      acGearSelectorKnob.style.transform = '';
+    }
+  });
+  acGearSelector.addEventListener('keydown', event => {
+    if (event.key === 'ArrowUp' || event.key === '+') {
+      event.preventDefault();
+      acGearSelectorShift(1);
+    } else if (event.key === 'ArrowDown' || event.key === '-') {
+      event.preventDefault();
+      acGearSelectorShift(-1);
+    }
+  });
+}
 
 document.querySelectorAll('#gearPattern [data-gear-target]').forEach(button=>{
   button.addEventListener('click',()=>{
@@ -9119,6 +9213,156 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
 }
 body.garage-mode #gearUp,body.garage-mode #gearDown{display:none!important}
 body.race-mode #gearUp,body.race-mode #gearDown{display:flex!important;visibility:visible!important;opacity:1!important}
+</style>
+
+
+<style id="allcoins-racing-single-sequential-shifter-v159">
+/* V159: one clearly visible sequential gear selector, + at the top and − at the bottom. */
+body.race-mode #gearUp,
+body.race-mode #gearDown,
+body.garage-mode #gearUp,
+body.garage-mode #gearDown {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+#gearSelector {
+  position:fixed!important;
+  display:grid!important;
+  grid-template-rows:21px minmax(28px,1fr) 21px!important;
+  align-items:center!important;
+  justify-items:center!important;
+  gap:3px!important;
+  left:calc(50% - 154px)!important;
+  right:auto!important;
+  bottom:calc(6px + env(safe-area-inset-bottom,0px))!important;
+  width:58px!important;
+  height:clamp(84px,22vh,108px)!important;
+  margin:0!important;
+  padding:5px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  z-index:2147483001!important;
+  border:2px solid #c4d0da!important;
+  border-radius:12px!important;
+  background:
+    linear-gradient(110deg,rgba(255,255,255,.24),transparent 20% 78%,rgba(0,0,0,.4)),
+    linear-gradient(145deg,#aab7c2 0%,#465765 18%,#182632 58%,#080f17 100%)!important;
+  box-shadow:
+    inset 0 2px 4px #ffffffb0,
+    inset 0 -5px 8px #000d,
+    0 5px 13px #000d!important;
+  pointer-events:auto!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+  cursor:grab!important;
+}
+#gearSelector:focus-visible {
+  outline:2px solid #e6f2ff!important;
+  outline-offset:3px!important;
+}
+#gearSelector.is-pressed { filter:brightness(1.14)!important; cursor:grabbing!important; }
+#gearSelector .gear-selector-mark {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:21px!important;
+  border:1px solid #d5e0e8!important;
+  border-radius:6px!important;
+  background:linear-gradient(180deg,#e7edf2 0%,#8796a3 30%,#344554 100%)!important;
+  color:#f8fbff!important;
+  font:900 19px/1 Arial,sans-serif!important;
+  text-shadow:0 1px 2px #000b!important;
+  box-shadow:inset 0 1px 2px #fff9,0 1px 2px #000a!important;
+}
+#gearSelector .gear-selector-plus {
+  border-color:#b7dec6!important;
+  color:#d9ffe7!important;
+}
+#gearSelector .gear-selector-minus {
+  border-color:#d9b7ad!important;
+  color:#ffe0d8!important;
+}
+#gearSelector .gear-selector-track {
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:28px!important;
+  border:1px solid #718394!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,#0a121b 0%,#344757 24%,#0b141e 50%,#405263 76%,#0a121b 100%)!important;
+  box-shadow:inset 0 2px 5px #000e,inset 0 1px 2px #ffffff40!important;
+}
+#gearSelector .gear-selector-rail {
+  position:absolute!important;
+  left:50%!important;
+  top:3px!important;
+  bottom:3px!important;
+  width:9px!important;
+  transform:translateX(-50%)!important;
+  border:1px solid #647684!important;
+  border-radius:7px!important;
+  background:linear-gradient(90deg,#090f16,#8494a1 45%,#131d27)!important;
+  box-shadow:inset 0 1px 3px #000e,0 0 2px #ffffff44!important;
+}
+#gearSelector .gear-selector-knob {
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:35px!important;
+  height:20px!important;
+  transform:translate(-50%,-50%)!important;
+  border:2px solid #e5edf3!important;
+  border-bottom-color:#556675!important;
+  border-radius:8px!important;
+  background:
+    radial-gradient(ellipse at 25% 15%,#fff 0%,#d7e0e7 14%,transparent 38%),
+    linear-gradient(180deg,#dce5eb 0%,#788a98 32%,#293946 73%,#0b141d 100%)!important;
+  box-shadow:inset 0 2px 3px #ffffffc0,inset 0 -3px 5px #000d,0 2px 5px #000e!important;
+  transition:transform .1s ease,filter .1s ease!important;
+}
+#gearSelector .gear-selector-knob::after {
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:7px!important;
+  height:7px!important;
+  transform:translate(-50%,-50%)!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 30% 25%,#fff,#8798a5 55%,#1c2a35)!important;
+  box-shadow:0 0 2px #000!important;
+}
+#gearSelector.shift-up .gear-selector-knob { filter:brightness(1.2)!important; }
+#gearSelector.shift-down .gear-selector-knob { filter:brightness(1.2)!important; }
+body.garage-mode #gearSelector { display:none!important; }
+body.race-mode #gearSelector { display:grid!important; }
+@media(max-width:700px) {
+  #gearSelector {
+    left:calc(50% - 146px)!important;
+    width:54px!important;
+    height:clamp(82px,23vh,100px)!important;
+  }
+}
+@media(max-height:520px) and (orientation:landscape) {
+  #gearSelector {
+    left:calc(50% - 144px)!important;
+    bottom:calc(4px + env(safe-area-inset-bottom,0px))!important;
+    width:52px!important;
+    height:clamp(78px,22vh,90px)!important;
+    grid-template-rows:19px minmax(28px,1fr) 19px!important;
+    gap:2px!important;
+    padding:4px!important;
+  }
+  #gearSelector .gear-selector-mark { height:19px!important; font-size:17px!important; }
+}
+@media(max-width:390px) and (orientation:landscape) {
+  #gearSelector { left:calc(50% - 136px)!important; }
+}
 </style>
 
 </body>
