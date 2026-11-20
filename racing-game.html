@@ -5257,8 +5257,9 @@ if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
 // V165: favour stable frame pacing on phones; resolution rises only after sustained headroom.
-const acMobilePixelRatioCap = 1.10;
-const acMobilePixelRatioInitial = .94;
+const acMobilePixelRatioCap = .98;
+const acMobilePixelRatioInitial = .88;
+const acMobilePixelRatioFloor = .62;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -5653,10 +5654,12 @@ function acAdvanceRoadSurface(scroll) {
   // Положительный U-offset перемещает видимые детали текстуры в сторону -X (влево).
   const textureDelta = scroll * repeatX / roadWidth;
   acRoadTextureTravel += textureDelta;
-  for (const texture of [roadMat.map, roadMat.roughnessMap, roadMat.bumpMap]) {
-    if (!texture) continue;
-    texture.offset.x = ((texture.offset.x + textureDelta) % 1 + 1) % 1;
-  }
+  const colorTexture=roadMat.map;
+  if(colorTexture)colorTexture.offset.x=((colorTexture.offset.x+textureDelta)%1+1)%1;
+  const roughnessTexture=roadMat.roughnessMap;
+  if(roughnessTexture)roughnessTexture.offset.x=((roughnessTexture.offset.x+textureDelta)%1+1)%1;
+  const bumpTexture=roadMat.bumpMap;
+  if(bumpTexture)bumpTexture.offset.x=((bumpTexture.offset.x+textureDelta)%1+1)%1;
   road.userData.lastLeftwardScroll = scroll > 0 ? scroll : 0;
   road.userData.textureTravel = acRoadTextureTravel;
 }
@@ -7508,12 +7511,33 @@ let vehicleChassisBasePosition=new THREE.Vector3(), vehicleChassisBaseQuaternion
 let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vector3();
 const loader=new GLTFLoader();
 const smokeParticles=[];
+const smokeParticlePool=[];
 const smokeGeometry=new THREE.SphereGeometry(.13,7,6);
+const acSmokeParticleLimit=acRacingMobileDevice?10:72;
 let acLastTireSmokeAt=0,acLastExhaustSmokeAt=0;
+
+/* Reuse a bounded pool instead of allocating/discarding a new mesh and material
+   every 75–95 ms. This removes recurring garbage-collection spikes at speed. */
+function acAcquireSmokeParticle(){
+  let particle=smokeParticlePool.pop();
+  if(particle)return particle;
+  if(smokeParticles.length>=acSmokeParticleLimit){
+    particle=smokeParticles.shift();
+    return particle;
+  }
+  const material=new THREE.MeshBasicMaterial({
+    color:0x969fa3,transparent:true,opacity:0,depthWrite:false
+  });
+  const mesh=new THREE.Mesh(smokeGeometry,material);
+  mesh.visible=false;
+  scene.add(mesh);
+  return {mesh,life:0,max:1,baseOpacity:0,vx:0,vy:0};
+}
+
 function addSmoke(position,kind='exhaust'){
-  const tire = kind === 'tire';
-  const now = performance.now();
-  const minimumInterval = acRacingMobileDevice ? (tire ? 75 : 95) : (tire ? 42 : 58);
+  const tire=kind==='tire';
+  const now=performance.now();
+  const minimumInterval=acRacingMobileDevice?(tire?90:120):(tire?42:58);
   if(tire){
     if(now-acLastTireSmokeAt<minimumInterval)return false;
     acLastTireSmokeAt=now;
@@ -7521,24 +7545,20 @@ function addSmoke(position,kind='exhaust'){
     if(now-acLastExhaustSmokeAt<minimumInterval)return false;
     acLastExhaustSmokeAt=now;
   }
-  const life = tire ? 2.15 : 1.35;
-  const material = new THREE.MeshBasicMaterial({
-    color: tire ? 0x202326 : 0x969fa3,
-    transparent:true,
-    opacity:tire ? .66 : .30,
-    depthWrite:false
-  });
-  const mesh=new THREE.Mesh(smokeGeometry,material);
-  mesh.position.copy(position);
-  mesh.scale.setScalar(tire ? 1.12+Math.random()*.45 : .65+Math.random()*.3);
-  scene.add(mesh);
-  smokeParticles.push({mesh,life,max:life,baseOpacity:material.opacity,vx:-.55-Math.random()*.75,vy:tire?.20+Math.random()*.38:.22+Math.random()*.48});
-  const particleLimit = acRacingMobileDevice ? 28 : 72;
-  while(smokeParticles.length>particleLimit){
-    const old=smokeParticles.shift();
-    scene.remove(old.mesh);
-    old.mesh.material.dispose();
-  }
+  const life=tire?(acRacingMobileDevice?1.75:2.15):(acRacingMobileDevice?1.05:1.35);
+  const particle=acAcquireSmokeParticle();
+  const material=particle.mesh.material;
+  material.color.setHex(tire?0x202326:0x969fa3);
+  material.opacity=tire?.66:.30;
+  particle.mesh.position.copy(position);
+  particle.mesh.scale.setScalar(tire?1.12+Math.random()*.45:.65+Math.random()*.3);
+  particle.mesh.visible=true;
+  particle.life=life;
+  particle.max=life;
+  particle.baseOpacity=material.opacity;
+  particle.vx=-.55-Math.random()*.75;
+  particle.vy=tire?.20+Math.random()*.38:.22+Math.random()*.48;
+  smokeParticles.push(particle);
   return true;
 }
 function setMessage(title,body,allowPick=true){$('message').classList.remove('hidden');$('message').querySelector('strong').textContent=title;$('messageText').textContent=body;$('chooseModel').style.display=allowPick?'inline-block':'none';}
@@ -9178,24 +9198,26 @@ function animate(now){
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       let currentPixelRatio=renderer.getPixelRatio();
-      if(measuredFps<50){
+      if(measuredFps<53){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
-      }else if(measuredFps>57){
+      }else if(measuredFps>59){
         acPerfStableFpsSamples++;
         acPerfLowFpsSamples=0;
       }else{
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(acPerfLowFpsSamples>=1&&currentPixelRatio>.78){
-        const nextPixelRatio=Math.max(.78,currentPixelRatio-.08);
+      if(acPerfLowFpsSamples>=1&&currentPixelRatio>acMobilePixelRatioFloor){
+        // Larger reductions are applied only when the measured frame rate is poor.
+        const reduction=measuredFps<38?.20:measuredFps<46?.14:.08;
+        const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
-      }else if(acPerfStableFpsSamples>=6&&currentPixelRatio<acMobilePixelRatioCap){
-        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.025);
+      }else if(acPerfStableFpsSamples>=8&&currentPixelRatio<acMobilePixelRatioCap){
+        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.02);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
@@ -9211,6 +9233,8 @@ function animate(now){
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
         triangles:renderer.info.render.triangles,
+        activeSmokeParticles:smokeParticles.length,
+        pooledSmokeParticles:smokeParticlePool.length,
         geometries:renderer.info.memory.geometries,
         textures:renderer.info.memory.textures,
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
@@ -9416,7 +9440,19 @@ if(distance>=RACE_DISTANCE_METERS){
       $('message').appendChild(restart);
     }
   }
-  for(let i=smokeParticles.length-1;i>=0;i--){const p=smokeParticles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.scale.multiplyScalar(1+dt*.55);p.mesh.material.opacity=Math.max(0,p.baseOpacity*(p.life/p.max));if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();smokeParticles.splice(i,1);}}
+  for(let i=smokeParticles.length-1;i>=0;i--){
+    const particle=smokeParticles[i];
+    particle.life-=dt;
+    particle.mesh.position.x+=particle.vx*dt;
+    particle.mesh.position.y+=particle.vy*dt;
+    particle.mesh.scale.multiplyScalar(1+dt*.55);
+    particle.mesh.material.opacity=Math.max(0,particle.baseOpacity*(particle.life/particle.max));
+    if(particle.life<=0){
+      particle.mesh.visible=false;
+      smokeParticles.splice(i,1);
+      smokeParticlePool.push(particle);
+    }
+  }
   onlineUpdateTestBot();
   onlineUpdateOpponentCars(dt);
   if(now>=acNextRaceProgressUpdateAt){
