@@ -259,6 +259,18 @@ try {
   // Exercise the network-download fallback deterministically; IndexedDB persistence is covered by the live browser itself.
   await page.addInitScript(() => {
     Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined });
+    window.__allcoinsTestHostMessages = [];
+    window.addEventListener("message", event => {
+      const data = event.data || {};
+      if (typeof data.type === "string" && data.type.startsWith("allcoins:car-model")) {
+        window.__allcoinsTestHostMessages.push({
+          type: data.type,
+          fileName: data.fileName || null,
+          byteLength: data.buffer instanceof ArrayBuffer ? data.buffer.byteLength : null,
+          message: data.message || null
+        });
+      }
+    });
   });
 
   await page.route("**/api/**", async route => {
@@ -292,7 +304,7 @@ try {
       // Both the current public Amvera asset path and the legacy authenticated PC tunnel are supported.
       assert.match(request.headers().range || "", /^bytes=0-/);
       return route.fulfill({
-        status: 200,
+        status: 206,
         headers: {
           "access-control-allow-origin": "*",
           "access-control-expose-headers": "X-File-Name, Content-Length, Content-Range, Accept-Ranges",
@@ -354,14 +366,14 @@ try {
   }
 
   try {
-    await page.waitForFunction(() => {
-      const status = document.querySelector("#allcoinsRacingV24Overlay")?.textContent || "";
-      return status.includes("3D-модель передана в игровую сцену") || status.includes("Ошибка загрузки автомобиля");
-    }, null, { timeout: 10000 });
+    await gameFrame.waitForFunction(() =>
+      window.__allcoinsTestHostMessages?.some(entry =>
+        entry.type === "allcoins:car-model" || entry.type === "allcoins:car-model-error"
+      ), null, { timeout: 10000 });
   } catch (error) {
     const transferDiagnostic = {
-      overlay: await page.locator("#allcoinsRacingV24Overlay").innerText().catch(() => null),
-      apiCalls: [...apiCalls]
+      apiCalls: [...apiCalls],
+      hostMessages: await gameFrame.evaluate(() => window.__allcoinsTestHostMessages || [])
     };
     const gameDiagnostic = await gameFrame.evaluate(() => ({
       messageTitle: document.querySelector("#message strong")?.textContent || null,
@@ -371,15 +383,9 @@ try {
     }));
     throw new Error("GLB transfer diagnostic: " + JSON.stringify({ transferDiagnostic, gameDiagnostic }) + "; " + error.message);
   }
-  const transferStatus = await page.locator("#allcoinsRacingV24Overlay").innerText();
-  if (transferStatus.includes("Ошибка загрузки автомобиля")) {
-    const gameDiagnostic = await gameFrame.evaluate(() => ({
-      messageTitle: document.querySelector("#message strong")?.textContent || null,
-      message: document.querySelector("#messageText")?.textContent || null,
-      garageStatus: document.querySelector("#garageCarStatus")?.textContent || null
-    }));
-    throw new Error("GLB host transfer failed: " + JSON.stringify({ transferStatus, gameDiagnostic }));
-  }
+  const hostMessages = await gameFrame.evaluate(() => window.__allcoinsTestHostMessages || []);
+  const hostError = hostMessages.find(entry => entry.type === "allcoins:car-model-error");
+  if (hostError) throw new Error("GLB host transfer failed: " + JSON.stringify({ hostError, apiCalls }));
   await gameFrame.waitForFunction(() => window.__allcoinsRacingVehicleDiagnostics?.loaded === true, null, { timeout: 10000 });
   await gameFrame.evaluate(() => setGarageMode(false));
 
