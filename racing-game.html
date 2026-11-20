@@ -2320,7 +2320,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <div class="metric"><strong id="timer">00:00</strong><small>ВРЕМЯ</small></div>
       <div class="metric fuel-hud-metric"><strong id="fuelText">—</strong><small>БЕНЗИН · Л</small></div>
     </div>
-    <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Купить пневмоподвеску в разделе Тюнинг" disabled>ПНЕВМА · ЗАКРЫТА</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="headlights" title="Включить или выключить фары">ФАРЫ · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
+    <div class="actions"><button class="small-btn" id="onlineToggle">ОНЛАЙН</button><button class="small-btn" id="pause">ПАУЗА</button><button class="small-btn" id="suspension" title="Купить пневмоподвеску в разделе Тюнинг" disabled>ПНЕВМА · ЗАКРЫТА</button><button class="small-btn" id="engineSound" title="Включить синтезированный звук двигателя">ЗВУК · ВЫКЛ</button><button class="small-btn" id="fullscreen">⛶ ЭКРАН</button></div>
   </div>
   <div id="raceProgress" aria-label="Расположение машин на дистанции">
   <div class="race-progress-row">
@@ -2354,6 +2354,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 
 
 <div id="dashboardBackplate" aria-hidden="true"></div>
+<button class="small-btn dashboard-light-switch" id="headlights" type="button" title="Включить или выключить свет фар" aria-label="Включить свет фар" aria-pressed="false">ФАРЫ ВЫКЛ</button>
 <div class="temp-gauge" aria-label="Температура двигателя">
   <div class="temp-gauge-dial">
     <span class="temp-gauge-caption">TEMP</span>
@@ -4665,7 +4666,7 @@ function setHeadlights(enabled){
     for(const material of headlightRig.userData.bulbMaterials||[])material.emissiveIntensity=headlightEnabled?2.4:0;
   }
   const button=$('headlights');
-  if(button){button.textContent=headlightEnabled?'ФАРЫ · ВКЛ':'ФАРЫ · ВЫКЛ';button.classList.toggle('lights-active',headlightEnabled);}
+  if(button){button.textContent=headlightEnabled?'ФАРЫ ВКЛ':'ФАРЫ ВЫКЛ';button.classList.toggle('lights-active',headlightEnabled);button.setAttribute('aria-pressed',String(headlightEnabled));button.setAttribute('aria-label',headlightEnabled?'Выключить свет фар':'Включить свет фар');}
 }
 $('headlights').addEventListener('click',()=>setHeadlights(!headlightEnabled));
 window.addEventListener('keydown',event=>{if(event.code==='KeyL'&&!event.repeat){setHeadlights(!headlightEnabled);}});
@@ -8804,6 +8805,54 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
     font-size:9px!important;
   }
   .gearbox { padding:4px!important; gap:4px!important; }
+}
+</style>
+
+
+<style id="allcoins-racing-dashboard-light-switch-v154">
+/* V154: move the headlight toggle onto the lower instrument/control panel. */
+#headlights.dashboard-light-switch{
+  position:fixed!important;
+  left:calc(50% + 148px)!important;
+  right:auto!important;
+  bottom:calc(26px + env(safe-area-inset-bottom,0px))!important;
+  z-index:22!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:64px!important;
+  min-width:0!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0 4px!important;
+  border:1px solid #d8c17b!important;
+  border-radius:8px!important;
+  background:linear-gradient(145deg,#303b47,#131b25)!important;
+  color:#f6e7bd!important;
+  box-shadow:inset 0 1px 3px #ffffff20,0 3px 8px #0009!important;
+  font:900 8px/1 Arial,sans-serif!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+#headlights.dashboard-light-switch.lights-active{
+  color:#18202a!important;
+  background:linear-gradient(145deg,#fff0b4,#f2c96a)!important;
+  border-color:#fff0b4!important;
+  box-shadow:0 0 14px #ffe69b66,inset 0 1px 3px #ffffffaa!important;
+}
+.garage-mode #headlights.dashboard-light-switch{display:none!important}
+@media(max-height:520px) and (orientation:landscape){
+  #headlights.dashboard-light-switch{
+    left:calc(50% + min(108px,30vw))!important;
+    bottom:calc(27px + env(safe-area-inset-bottom,0px))!important;
+    width:clamp(52px,5vw,60px)!important;
+    height:30px!important;
+    min-height:30px!important;
+    font-size:7px!important;
+    border-radius:7px!important;
+  }
 }
 </style>
 
