@@ -353,3 +353,15 @@ test("distant city skyline is visible in race mode", () => {
   assert.match(page, /distantHills\.visible = trackVisible/);
   assert.match(page, /skylineTowerCount: farCityTowerCount/);
 });
+
+
+test("headlight toggle is mounted on the dashboard and reports on/off state", () => {
+  const actions = page.match(/<div class="actions">([\\s\\S]*?)<\\/div>/)?.[1] || "";
+  assert.doesNotMatch(actions, /id="headlights"/);
+  assert.match(page, /id="dashboardBackplate"[^>]*><\\/div>\\s*<button class="small-btn dashboard-light-switch" id="headlights"/);
+  assert.match(page, /aria-pressed="false">ФАРЫ ВЫКЛ<\\/button>/);
+  assert.match(page, /button\\.textContent=headlightEnabled\\?'ФАРЫ ВКЛ':'ФАРЫ ВЫКЛ'/);
+  assert.match(page, /button\\.setAttribute\\('aria-pressed',String\\(headlightEnabled\\)\\)/);
+  assert.match(page, /allcoins-racing-dashboard-light-switch-v154/);
+  assert.match(page, /@media\\(max-height:520px\\) and \\(orientation:landscape\\)/);
+});
