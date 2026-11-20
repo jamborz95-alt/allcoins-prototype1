@@ -382,3 +382,18 @@ test("gearbox uses one visible sequential selector with plus above and minus bel
   assert.match(page, /bindGearShift\('gearUp',1\)/);
   assert.match(page, /bindGearShift\('gearDown',-1\)/);
 });
+
+
+test("V160 improves VAZ body paint, glass, rubber and chrome without changing car geometry or physics", () => {
+  assert.match(page, /function acRacingCreateCarReflectionTexture\(\)/);
+  assert.match(page, /THREE\.EquirectangularReflectionMapping/);
+  assert.match(page, /function acRacingEnhanceCarSurface\(root\)/);
+  assert.match(page, /material\.clearcoat = \.82/);
+  assert.match(page, /material\.clearcoatRoughness = \.19/);
+  assert.match(page, /material\.envMapIntensity = \.58/);
+  assert.match(page, /material\.roughness = Math\.max\(originalRoughness, \.84\)/);
+  assert.match(page, /acRacingEnhanceCarSurface\(vehicle\);if\(acGarageSelectedPaint\)/);
+  assert.match(page, /Math\.min\(acRacingMobileDevice\?6:8,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
+  assert.match(page, /sourceGeometryPreserved: true/);
+  assert.match(page, /allcoins-racing-car-surface-v160/);
+});
