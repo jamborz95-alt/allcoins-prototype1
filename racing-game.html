@@ -5975,14 +5975,6 @@ for (let row = 0; row < 12; row++) {
 finishLine.position.x = finishStartX;
 scene.add(finishLine);
 
-window.__allcoinsRacingVisualQualityDiagnostics = Object.freeze({
-  softVehicleContactShadow: Boolean(acVehicleShadow && acVehicleShadow.material.map),
-  streetLampReflectionCount: acLampRecords.length,
-  streetLampReflectionsInstanced: Boolean(acLampPools && acLampPools.isInstancedMesh),
-  streetLampGlowRadius: .46,
-  mobileRainSegments: acRainCount,
-  mobileRealtimeShadowMaps: renderer.shadowMap.enabled
-});
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
   asphaltRepeatX: roadMat.map.repeat.x,
@@ -6623,6 +6615,14 @@ acRain.frustumCulled=false;
 scene.add(acRain);
 acRain.visible = false;
 
+window.__allcoinsRacingVisualQualityDiagnostics = Object.freeze({
+  softVehicleContactShadow: Boolean(acVehicleShadow && acVehicleShadow.material.map),
+  streetLampReflectionCount: acLampRecords.length,
+  streetLampReflectionsInstanced: Boolean(acLampPools && acLampPools.isInstancedMesh),
+  streetLampGlowRadius: .46,
+  mobileRainSegments: acRainCount,
+  mobileRealtimeShadowMaps: renderer.shadowMap.enabled
+});
 
 /* ALLCOINS RACING GARAGE ENVIRONMENT */
 const acGarageWorld = new THREE.Group();
