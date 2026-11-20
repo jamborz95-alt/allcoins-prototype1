@@ -568,11 +568,11 @@ try {
   await gameFrame.locator("#pause").click();
   assert.equal(await gameFrame.locator("#pause").textContent(), "ПАУЗА");
 
-  const suspensionBefore = await gameFrame.locator("#suspension").textContent();
-  await gameFrame.locator("#suspension").click();
-  const suspensionAfter = await gameFrame.locator("#suspension").textContent();
-  assert.notEqual(suspensionAfter, suspensionBefore,
-    "The suspension control must respond to taps/clicks.");
+  const suspensionControl = gameFrame.locator("#suspension");
+  assert.equal(await suspensionControl.isDisabled(), true,
+    "The pneumatic suspension must stay locked until it is purchased in the garage tuning section.");
+  assert.match(await suspensionControl.getAttribute("title"), /Купить пневмоподвеску/,
+    "The locked suspension button must explain where it can be unlocked.");
 
   await gameFrame.locator("#headlights").click();
   assert.equal(await gameFrame.locator("#headlights").textContent(), "ФАРЫ · ВКЛ",
@@ -611,7 +611,7 @@ try {
   assert.deepEqual(pageErrors, [],
     "Classic Three.js startup and UI control binding must not raise uncaught browser errors.");
 
-  console.log("Racing smoke test passed: same-origin scene, local classic Three.js/GLTFLoader, WebGL startup, model request handshake, and interactive pause/suspension/headlight controls.");
+  console.log("Racing smoke test passed: same-origin 3D scene, classic Three.js/GLTFLoader, VAZ model attachment, four independently extracted wheels, pause/headlight controls, and locked suspension state.");
 } finally {
   if (browser) await browser.close();
   if (server.listening) await new Promise(resolveClose => server.close(resolveClose));
