@@ -200,44 +200,55 @@ try {
     "The speedometer must show a graduated 0–400 km/h scale.");
   assert.ok(await gameFrame.locator(".tachometer-ticks svg line").count() >= 45,
     "The tachometer must show a graduated 0–11,000 RPM scale.");
-  assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none",
-    "The upshift (+) control must be visible.");
-  assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
-    "The downshift (−) control must be visible.");
-  await gameFrame.locator("#gearUp").dispatchEvent("pointerdown", { pointerId: 40, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
+  const gearSelector = gameFrame.locator("#gearSelector");
+  assert.equal(await gearSelector.count(), 1, "Exactly one sequential gear selector must be present.");
+  assert.notEqual(await gearSelector.evaluate(el => getComputedStyle(el).display), "none",
+    "The single sequential shifter must be visible in race mode.");
+  assert.equal((await gearSelector.locator(".gear-selector-plus").textContent()).trim(), "+",
+    "The top of the single selector must be marked plus.");
+  assert.equal((await gearSelector.locator(".gear-selector-minus").textContent()).trim(), "−",
+    "The bottom of the single selector must be marked minus.");
+  const shiftAt = async (fraction, pointerId, type = "touch") => gearSelector.evaluate((el, args) => {
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height * args.fraction;
+    const base = { bubbles: true, cancelable: true, pointerId: args.pointerId, pointerType: args.type, isPrimary: true, clientX: x, clientY: y };
+    el.dispatchEvent(new PointerEvent("pointerdown", base));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...base, buttons: 0 }));
+  }, { fraction, pointerId, type });
+  await shiftAt(.12, 40);
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
-    "The + control must raise the selected gear.");
-  await gameFrame.locator("#gearUp").dispatchEvent("pointerup", { pointerId: 40, pointerType: "touch", isPrimary: true, bubbles: true });
-  await gameFrame.locator("#gearDown").dispatchEvent("pointerdown", { pointerId: 41, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
+    "Touching the top + area must upshift.");
+  await shiftAt(.88, 41);
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
-    "The − control must lower the selected gear.");
-  await gameFrame.locator("#gearDown").dispatchEvent("pointerup", { pointerId: 41, pointerType: "touch", isPrimary: true, bubbles: true });
+    "Touching the bottom − area must downshift.");
 
   assert.equal(await gameFrame.locator("#gearPattern").evaluate(el => getComputedStyle(el).display), "none",
-    "The large numbered gear selector must be hidden; only + / − remain visible.");
-  assert.notEqual(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none");
-  assert.notEqual(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none");
+    "The numbered H-pattern must be hidden in favour of one sequential shifter.");
+  assert.equal(await gameFrame.locator("#gearUp").evaluate(el => getComputedStyle(el).display), "none",
+    "The old standalone plus button must stay hidden.");
+  assert.equal(await gameFrame.locator("#gearDown").evaluate(el => getComputedStyle(el).display), "none",
+    "The old standalone minus button must stay hidden.");
   assert.equal(await gameFrame.locator("#gas").isDisabled(), false,
     "The gas pedal must remain usable while the fuel profile is loading or unavailable.");
   await gameFrame.locator("#gas").dispatchEvent("pointerdown", { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true });
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "The gas pedal must activate while pressed.");
-  await gameFrame.locator("#gearUp").dispatchEvent("pointerdown", { pointerId: 8, pointerType: "touch", isPrimary: false, bubbles: true, cancelable: true });
+  await shiftAt(.12, 8, "touch");
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "2",
-    "A second touch must upshift while the first touch keeps the accelerator pressed.");
+    "A second touch on the upper + area must upshift while the first touch keeps the accelerator pressed.");
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "Upshifting must keep the accelerator held.");
   assert.deepEqual(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics), {
-    shiftCount: 3,
+    shiftCount: 4,
     lastShiftWithThrottle: true,
     throttlePreserved: true
   }, "The gear handler must preserve the live throttle state during a second-finger shift.");
   assert.doesNotMatch(await gameFrame.locator("#gearHint").textContent(), /ОТПУСТИ ГАЗ/,
     "The dashboard must not ask the driver to release the accelerator before shifting.");
-  await gameFrame.locator("#gearUp").dispatchEvent("pointerup", { pointerId: 8, pointerType: "touch", isPrimary: false, bubbles: true });
-  await gameFrame.locator("#gearDown").dispatchEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: false, bubbles: true, cancelable: true });
+  await shiftAt(.88, 9, "touch");
   assert.equal((await gameFrame.locator("#gearNow").textContent()).trim(), "1",
-    "A second touch must downshift while the first touch keeps the accelerator pressed.");
+    "A second touch on the lower − area must downshift while the first touch keeps the accelerator pressed.");
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "Downshifting must keep the accelerator held.");
   assert.equal(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics.lastShiftWithThrottle), true,
