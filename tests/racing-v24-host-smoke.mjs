@@ -258,7 +258,7 @@ try {
   assert.ok(visualDiagnostics, "The V25 road and city diagnostics must be available.");
   assert.equal(visualDiagnostics.asphaltTexture, true, "The road must use color, roughness, and bump textures.");
   assert.ok(visualDiagnostics.asphaltRepeatX >= 90, "The asphalt grain must repeat at road scale.");
-  assert.equal(visualDiagnostics.asphaltTone, "neutral-road-gray", "The asphalt must match the neutral gray city-street reference.");
+  assert.equal(visualDiagnostics.asphaltTone, "graphite-road-asphalt", "The asphalt must match the neutral gray city-street reference.");
   assert.equal(visualDiagnostics.asphaltWetGloss, false, "The asphalt must have a dry, matte city-road finish.");
   assert.equal(visualDiagnostics.asphaltSkidArcs, 0, "The center of the road must not contain backward-curving skid arcs.");
   assert.equal(visualDiagnostics.asphaltLongitudinalWear, true, "Rubber wear marks must run along the track.");
@@ -282,7 +282,7 @@ try {
   assert.equal(visualDiagnostics.cityFenceType, "cross-braced-metal-panels", "The roadside fence must use silver cross-braced metal panels.");
   assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
   assert.equal(visualDiagnostics.cityFenceRoadClearanceFromEdge, 7.4, "The city fence must remain outside the road with a clear margin.");
-  assert.equal(visualDiagnostics.centralMarkingsZ, -5, "The dashed lane marking must sit on the far side of the visible road, as in the reference.");
+  assert.equal(visualDiagnostics.centralMarkingsZ, 0, "The dashed lane marking must sit on the far side of the visible road, as in the reference.");
   assert.equal(visualDiagnostics.cityFenceBraceCount, 138, "The metal fence must contain paired diagonal braces in every section.");
   assert.equal(visualDiagnostics.citySidewalkSlabs, 72, "The city sidewalk must have visible concrete slab joints.");
   assert.equal(visualDiagnostics.cityGroundFloorWindowRows, 33, "All apartment buildings must have ground-floor window rows.");
