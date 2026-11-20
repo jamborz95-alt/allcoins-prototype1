@@ -7948,7 +7948,21 @@ function attachVehicle(root,label='сохранённая модель'){
   acVehicleShadow.position.x=root.position.x;
   acVehicleShadow.position.z=root.position.z;
   acVehicleShadow.visible=!document.body.classList.contains('garage-mode');
-  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);acRacingEnhanceCarSurface(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);
+  // The finish pass is optional: it must never prevent the original GLB car from opening.
+  const acSurfaceMaterialSnapshot=[];
+  vehicle.traverse(object=>{if(object.isMesh&&object.material)acSurfaceMaterialSnapshot.push([object,object.material]);});
+  try{
+    acRacingEnhanceCarSurface(vehicle);
+  }catch(surfaceError){
+    for(const [object,originalMaterial] of acSurfaceMaterialSnapshot)object.material=originalMaterial;
+    console.warn("ALLCOINS Racing: premium surface pass skipped; original GLB materials restored.",surfaceError);
+  }
+  if(acGarageSelectedPaint){
+    try{acGarageApplyBodyPaint(acGarageSelectedPaint);}
+    catch(paintError){console.warn("ALLCOINS Racing: saved paint could not be applied; keeping the original car visible.",paintError);}
+  }
+  vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
   // One road-world unit must match one unit of wheel travel. The old .22
