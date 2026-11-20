@@ -374,7 +374,7 @@ test("gear plus and minus controls are separate realistic metal levers without c
   assert.match(page, /allcoins-racing-realistic-shifters-v155/);
   assert.match(page, /#gearUp::before,#gearDown::before[\\s\\S]*?linear-gradient\\(90deg,#3f4b56/);
   assert.match(page, /#gearUp::after,#gearDown::after[\\s\\S]*?perspective\\(48px\\)/);
-  assert.match(page, /#gearUp \.gear-lever-mark,#gearDown \.gear-lever-mark/);
+  assert.match(page, /#gearUp \\.gear-lever-mark,#gearDown \\.gear-lever-mark/);
   assert.match(page, /bindGearShift\\('gearUp',1\\)/);
   assert.match(page, /bindGearShift\\('gearDown',-1\\)/);
   assert.match(page, /if\\(gear===-1\\).*?if\\(!stopped\\)/);
