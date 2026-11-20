@@ -370,8 +370,8 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
   
 test("gearbox uses one visible sequential selector with plus above and minus below", () => {
   assert.match(page, /id="gearSelector" class="gear-selector" role="group"/);
-  assert.match(page, /gear-selector-mark gear-selector-plus">\+<\/span>/);
-  assert.match(page, /gear-selector-mark gear-selector-minus">−<\/span>/);
+  assert.match(page, /gear-selector-mark gear-selector-plus"[^>]*>\+<\/span>/);
+  assert.match(page, /gear-selector-mark gear-selector-minus"[^>]*>−<\/span>/);
   assert.match(page, /function acGearSelectorShift\(delta\)[\s\S]*?shift\(delta\)/);
   assert.match(page, /acGearSelectorShift\(deltaY < 0 \? 1 : -1\)/);
   assert.match(page, /if \(localY < \.36\) acGearSelectorShift\(1\)/);
