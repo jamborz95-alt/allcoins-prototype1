@@ -402,7 +402,7 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
 
 
 test("V162 enlarges the race car and makes the rotating factory wheels more detailed", () => {
-  assert.match(page, /acRacingMobileDevice \\? 5\\.8 : 6\\.2/);
+  assert.match(page, /acRacingMobileDevice \? 5\.8 : 6\.2/);
   assert.match(page, /function acRacingEnhanceWheelRubber\(wheel\)/);
   assert.match(page, /material\.roughness = Math\.max\(\.88/);
   assert.match(page, /function acGarageBuildWheelRimOverlay\(wheel, style, rimId\)/);
