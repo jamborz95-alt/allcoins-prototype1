@@ -575,7 +575,7 @@ try {
     "The locked suspension button must explain where it can be unlocked.");
 
   await gameFrame.locator("#headlights").click();
-  assert.equal(await gameFrame.locator("#headlights").textContent(), "ФАРЫ · ВКЛ",
+  assert.equal(await gameFrame.locator("#headlights").textContent(), "ФАРЫ ВКЛ",
     "The headlight control must respond to taps/clicks.");
 
   const vehicleDiagnostics = await gameFrame.evaluate(
