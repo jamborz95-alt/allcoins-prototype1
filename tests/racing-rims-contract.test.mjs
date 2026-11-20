@@ -395,5 +395,5 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
   assert.match(page, /acRacingEnhanceCarSurface\(vehicle\);if\(acGarageSelectedPaint\)/);
   assert.match(page, /Math\.min\(acRacingMobileDevice\?6:8,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
   assert.match(page, /sourceGeometryPreserved: true/);
-  assert.match(page, /allcoins-racing-car-surface-v160/);
+  assert.match(page, /ALLCOINS RACING V160/);
 });
