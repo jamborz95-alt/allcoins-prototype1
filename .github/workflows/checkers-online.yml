@@ -1,0 +1,28 @@
+name: Checkers online multiplayer checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  checkers-online:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npm init -y && npm install --no-save playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Check syntax and Checkers rules
+        run: node --check server/checkers-router.js && node --check server/checkers-game.js && node --check tests/checkers-multiplayer.test.mjs && node --check tests/checkers-ui-smoke.mjs && node --test tests/checkers-multiplayer.test.mjs
+      - name: Test two mobile players in one shared room
+        run: node tests/checkers-ui-smoke.mjs

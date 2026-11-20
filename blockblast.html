@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ef9fba">
+<title>Block Blast — ALLCOINS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#080d19;--panel:#121b2d;--panel2:#19243a;--line:#293951;--gold:#f3c969;--text:#f6f8fc;--muted:#9cacc3;--cyan:#67e3d0;--pink:#eaa7ff;--cell:#202d42;--cellBorder:#32445f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overscroll-behavior:none}
+button{font:inherit;cursor:pointer;color:inherit}
+button:disabled{opacity:.55;cursor:not-allowed}
+#app{position:fixed;inset:0;overflow:auto;overscroll-behavior:contain;padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 12px);background:radial-gradient(ellipse at 50% -12%,#1b2a46 0,#0b1221 48%,#070b14 100%)}
+.page{width:min(100%,520px);margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px}
+.brand{display:flex;align-items:center;gap:9px;font-size:20px;line-height:1;font-weight:950;letter-spacing:.5px}
+.brand .logo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;color:#09111f;background:linear-gradient(145deg,#ffe69a,#d39b36);box-shadow:inset 0 1px 0 #fff8;font-size:19px}
+.top-actions{display:flex;gap:7px}
+.small-btn{border:1px solid var(--line);background:#111a2b;border-radius:12px;min-height:40px;padding:8px 12px;font-weight:750}
+.back-btn{padding:8px 11px}
+.section{background:linear-gradient(145deg,rgba(25,36,58,.95),rgba(13,21,36,.97));border:1px solid var(--line);border-radius:18px;padding:13px;box-shadow:0 10px 28px #0003}
+.eyebrow{font-size:10px;letter-spacing:1.2px;color:var(--muted);font-weight:850}
+.records{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.record{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;padding:11px 12px;background:linear-gradient(140deg,#17243a,#101827)}
+.record.week{border-color:#5d5033;background:linear-gradient(145deg,#30291e,#171b26)}
+.record.personal{border-color:#315b67;background:linear-gradient(145deg,#17363c,#151d2d)}
+.record .label{font-size:10px;font-weight:850;letter-spacing:.7px;color:#bdc9da}
+.record strong{display:block;margin-top:4px;font-size:27px;line-height:1.1;font-variant-numeric:tabular-nums}
+.record .caption{font-size:10px;color:var(--muted);margin-top:4px}
+.tourney{display:flex;align-items:center;gap:10px}
+.tourney-symbol{flex:0 0 44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#f8dc88,#b77c22);color:#142033;font-size:24px;font-weight:1000}
+.tourney-copy{flex:1;min-width:0}
+.tourney-copy strong{font-size:14px;display:block}
+.tourney-copy p{margin:4px 0 0;font-size:11px;color:var(--muted);line-height:1.4}
+.tourney .fee{font-weight:950;color:var(--gold);font-size:13px;white-space:nowrap}
+.primary{display:block;width:100%;border:0;border-radius:14px;min-height:48px;padding:12px 14px;background:linear-gradient(135deg,#ffe49a,#e7ae4b);color:#151a25;font-weight:950;box-shadow:inset 0 1px 0 #fff9,0 5px 14px #0003}
+.secondary{display:block;width:100%;border:1px solid #34455f;border-radius:13px;min-height:44px;padding:10px;background:#172237;font-weight:800}
+.status{font-size:12px;line-height:1.4;color:var(--muted);min-height:16px;overflow-wrap:anywhere}
+.status.good{color:#8cf2c1}.status.bad{color:#ffb2aa}
+.rules{margin:0;color:var(--muted);font-size:11px;line-height:1.45}
+#setup{display:flex;flex-direction:column;gap:10px}
+#play{display:none;flex:1;min-height:0;gap:9px}
+.playhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.scorebox{border:1px solid var(--line);border-radius:13px;background:#121d30;padding:8px 12px;min-width:88px}
+.scorebox span{display:block;font-size:9px;color:var(--muted);font-weight:850;letter-spacing:.8px}
+.scorebox strong{display:block;font-size:23px;line-height:1.2;font-variant-numeric:tabular-nums}
+.hint{font-size:11px;color:var(--muted);text-align:center;min-height:16px}
+.board-wrap{width:100%;display:flex;justify-content:center;align-items:center}
+.board{width:min(100%,calc(100dvh - 300px),440px);aspect-ratio:1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));gap:3px;padding:5px;border-radius:15px;border:1px solid #34445b;background:linear-gradient(135deg,#172238,#0d1524);box-shadow:0 12px 28px #0004;touch-action:manipulation}
+.cell{min-width:0;min-height:0;border:1px solid #2b3b53;border-radius:4px;background:var(--cell);padding:0}
+.cell.filled{border-color:#f4d482;background:linear-gradient(135deg,#ffe8a3,#e5a73f);box-shadow:inset 0 1px 0 #fff9,0 1px 3px #0006}
+.cell.preview-ok{outline:2px solid #69eed0;background:#28695f}
+.cell.preview-no{outline:2px solid #ff8585;background:#733844}
+.tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-height:86px}
+.piece-slot{min-width:0;min-height:80px;border:1px solid var(--line);border-radius:14px;background:#111b2c;display:grid;place-items:center;padding:6px}
+.piece-slot.selected{border-color:var(--gold);background:#2a2a2a;box-shadow:0 0 0 2px #f3c96925}
+.piece-grid{display:grid;grid-template-columns:repeat(4,14px);grid-template-rows:repeat(4,14px);gap:2px;pointer-events:none}
+.piece-dot{border-radius:3px;background:linear-gradient(145deg,#ffe6a0,#d79a37);box-shadow:inset 0 1px 0 #fff8}
+.piece-dot.empty{background:transparent;box-shadow:none}
+.playfoot{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.playfoot .secondary{min-height:40px;padding:8px}
+#gameover{position:fixed;inset:0;z-index:5;background:#050914df;display:none;align-items:center;justify-content:center;padding:22px}
+.modal{width:min(100%,380px);border:1px solid #465879;border-radius:22px;background:linear-gradient(145deg,#1a2841,#101827);padding:22px;text-align:center;box-shadow:0 24px 90px #000a}
+.modal .trophy{font-size:42px}
+.modal h2{margin:7px 0;font-size:25px}
+.final-score{font-size:42px;font-weight:1000;color:var(--gold);font-variant-numeric:tabular-nums}
+.modal p{font-size:12px;line-height:1.5;color:var(--muted)}
+.modal-actions{display:grid;gap:8px;margin-top:15px}
+@media(max-height:720px){#app{padding-top:calc(env(safe-area-inset-top) + 5px);gap:7px}.page{gap:8px}.section{padding:10px}.records{gap:7px}.record{padding:8px 10px}.record strong{font-size:23px}.board{width:min(100%,calc(100dvh - 260px),405px);gap:2px;padding:4px}.tray{min-height:70px}.piece-slot{min-height:66px}.piece-grid{grid-template-columns:repeat(4,12px);grid-template-rows:repeat(4,12px)}.piece-dot{border-radius:2px}}
+@media(max-width:360px){#app{padding-left:8px;padding-right:8px}.brand{font-size:17px}.record strong{font-size:23px}.board{gap:2px;padding:3px}.cell{border-radius:3px}.piece-grid{grid-template-columns:repeat(4,11px);grid-template-rows:repeat(4,11px)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+<style id="block-blast-pink-theme">
+:root{color-scheme:light;--bg:#ef9fba;--rose:#9b4964;--lilac:#d9c6ff;--coral:#ffd0d0;--white:#fffaff;--gold:#ffe45c}
+html,body{background:#ef9fba;color:#fffaff}
+body{background:radial-gradient(ellipse at 48% 20%,#f6b4c8 0,transparent 52%),linear-gradient(180deg,#f0a4bd 0%,#ed9bb7 56%,#e98dac 100%)}
+#app{background:radial-gradient(ellipse at 50% 32%,#f8b5cb55 0%,transparent 55%),linear-gradient(165deg,#f1a4bd 0%,#eb97b4 100%);padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 14px)}
+#app:before{content:"";pointer-events:none;position:fixed;inset:0;opacity:.13;background-image:radial-gradient(#fff 0.65px,transparent .8px);background-size:4px 4px;mix-blend-mode:soft-light}
+.page{position:relative;z-index:1;width:min(100%,620px);gap:12px}
+.top{min-height:44px}.brand{color:#fff;text-shadow:0 2px 3px #a64b6f55}.brand .logo{color:#84405b;background:linear-gradient(145deg,#fff1fa,#e7d2ff);box-shadow:inset 0 2px 2px #fff,0 4px 0 #b76483,0 5px 7px #a9476b66}
+.small-btn{border:1px solid #cb7a96;background:linear-gradient(180deg,#ffd8e6,#f3b3c9);color:#873e5b;box-shadow:inset 0 1px 0 #fff9,0 3px 0 #c66b8b}
+.section{background:linear-gradient(160deg,#f9c0d3,#f1a5c0);border:1px solid #d77f9d;box-shadow:inset 0 1px 0 #fff8,0 5px 0 #d77f9b,0 10px 18px #b84f7550}
+.eyebrow{color:#a45370}.records{gap:10px}.record{border:1px solid #d07c9a;border-radius:17px;background:linear-gradient(145deg,#fac5d7,#e9a1bb);color:#803a55;box-shadow:inset 0 1px 0 #fff9,0 4px 0 #cf7796,0 7px 13px #b84f7540}
+.record.week{border-color:#ddb04c;background:linear-gradient(145deg,#ffe3a0,#f5bc80)}.record.personal{border-color:#d88cb2;background:linear-gradient(145deg,#edc9ff,#c9b1f4)}
+.record .label{color:#84435e}.record strong{color:#fff;text-shadow:0 2px 2px #8f476455}.record .caption{color:#89415d}
+.tourney-copy{color:#7e3955}.tourney-copy p{color:#8f4d67}.tourney .fee{color:#8e4761}.tourney-symbol{background:linear-gradient(145deg,#fff0a2,#f0bd3c);color:#b96c1d;box-shadow:inset 0 2px 0 #fff,0 4px 0 #c58b43}
+.primary{border:1px solid #d09a34;background:linear-gradient(180deg,#fff08e,#ffc63e);color:#915328;box-shadow:inset 0 2px 0 #fff9,0 4px 0 #c58c30,0 7px 12px #9e55743f}
+.secondary{border:1px solid #cb7998;background:linear-gradient(180deg,#ffe0ea,#f4b6cb);color:#873e5b;box-shadow:inset 0 1px 0 #fff8,0 3px 0 #ce7896}
+.status{color:#853e59;text-shadow:0 1px #ffffff44}.status.good{color:#486e49}.status.bad{color:#8d2f4d}.rules{color:#88445f}
+#setup{display:flex;flex-direction:column;gap:12px;max-width:520px;margin:0 auto;width:100%}
+#play{display:none;flex:1;min-height:0;gap:0;flex-direction:column;width:100%}
+body.playing #app{overflow:hidden;padding:calc(env(safe-area-inset-top) + 2px) 0 calc(env(safe-area-inset-bottom) + 5px)}
+body.playing #app:before{opacity:.12}
+body.playing .page{height:100%;min-height:0;max-width:760px;width:100%;gap:0}
+body.playing .top{display:none}
+.play-recordbar{height:12.5dvh;min-height:82px;max-height:160px;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;gap:10px;flex:0 0 auto}
+.crown-record{display:flex;align-items:center;gap:8px;min-width:0;color:#ffda42;text-shadow:0 2px 2px #a85a6d66}
+.crown-icon{font-size:clamp(32px,7vw,48px);line-height:1;filter:drop-shadow(0 3px 1px #a85a6c5c)}
+.crown-numbers{min-width:0}.crown-numbers strong{display:block;font-size:clamp(19px,5vw,30px);line-height:1.02;font-weight:1000;letter-spacing:.3px;white-space:nowrap}
+.crown-numbers small{display:block;margin-top:4px;color:#a85270;font-size:8px;font-weight:1000;letter-spacing:1px;text-shadow:none}
+.week-mini{display:block;margin-top:2px;color:#97516b;font-size:9px;font-weight:900;text-shadow:none;white-space:nowrap}
+.game-controls{display:flex;align-items:center;gap:9px}.exit-round,.sound-toggle{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:#ffdae7aa;color:#984b68;font-size:20px;box-shadow:inset 0 1px 0 #fff8}.sound-toggle{font-size:17px}
+.new-round{position:relative;display:grid;place-items:center;width:50px;height:54px;border:0;background:transparent;color:#fff6fc;font-size:34px;text-shadow:0 2px 2px #a4546e}
+.new-round span{position:absolute;top:0;right:-3px;border:1px solid #f0b03a;border-radius:9px;padding:3px 6px;background:linear-gradient(180deg,#fff1a2,#ffc43c);color:#9e651a;font-size:10px;font-weight:1000;line-height:1;text-shadow:none;box-shadow:0 2px 2px #a85b7044}
+.current-score-wrap{height:10.5dvh;min-height:82px;max-height:150px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;margin-top:-1dvh}
+.score{margin:0;color:#fffdfd;font-size:clamp(58px,11vw,86px);line-height:1;font-weight:550;letter-spacing:-2px;text-shadow:0 4px 5px #a74b6d70}.score-caption{height:0;overflow:hidden;font-size:1px}
+#play .board-wrap{width:100%;height:min(43dvh,92vw,640px);flex:0 0 auto;display:flex;justify-content:center;align-items:center;margin:0 auto}
+.board{width:min(91vw,43dvh,640px);height:auto;aspect-ratio:1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:3px;padding:5px;border-radius:12px;border:4px solid #b65c7d;background:linear-gradient(145deg,#a04c68,#91435e);box-shadow:inset 0 2px 4px #6d304d99,0 3px 0 #8f3f5b,0 7px 13px #b44e7255;touch-action:none}
+.cell{position:relative;min-width:0;min-height:0;border:1px solid #a0516b;border-radius:5px;background:linear-gradient(145deg,#9c4b66,#94445f);padding:0;box-shadow:inset 0 2px 2px #74344c33;touch-action:none}
+.cell.filled{border:1px solid #efcadc;background:linear-gradient(145deg,#fff1ff 0%,#e3d1ff 44%,#c3b0f1 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #b1a0de,0 2px 1px #7e3e5a8a}
+.cell.coral{border-color:#ffe0e5;background:linear-gradient(145deg,#fff3ef 0%,#ffd1d1 48%,#f4aab8 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #e8a0b2,0 2px 1px #7e3e5a8a}
+.cell.filled:after{content:"";position:absolute;inset:1px 1px 48%;border-radius:4px;background:linear-gradient(180deg,#ffffff55,transparent);pointer-events:none}
+.cell.preview-ok{outline:3px solid #ffe46a;background:#8fe7ce}.cell.preview-no{outline:3px solid #bd2f5a;background:#e78da5}
+.tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-height:82px;margin:min(7dvh,100px) auto 0;width:min(94vw,500px);align-items:center;flex:0 0 auto}
+.piece-slot{min-width:0;min-height:76px;border:0;border-radius:10px;background:transparent;display:grid;place-items:center;padding:4px;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none}
+.piece-slot.selected{background:#ffffff1f;filter:drop-shadow(0 0 5px #fff7);transform:translateY(-3px)}.piece-slot:active{transform:translateY(-3px)}
+.piece-grid{display:grid;grid-template-columns:repeat(4,clamp(13px,4.6vw,24px));grid-template-rows:repeat(4,clamp(13px,4.6vw,24px));gap:2px;pointer-events:none}
+.piece-dot{border-radius:3px;background:linear-gradient(145deg,#fff3ff 0%,#e4d6ff 45%,#c6b5f0 100%);box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #b2a0df,0 2px 1px #a45d7a;position:relative}
+.piece-dot:after{content:"";position:absolute;inset:1px 1px 48%;border-radius:3px;background:linear-gradient(180deg,#ffffff70,transparent)}.piece-dot.empty{background:transparent;box-shadow:none}.piece-dot.empty:after{display:none}
+.game-hints{margin:4px auto 0;max-width:92%;text-align:center;color:#9a4a69;font-size:10px;line-height:1.25;min-height:15px;text-shadow:0 1px #ffffff35}#modeLabel{display:none}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.92;filter:drop-shadow(0 8px 6px #7c365966);transform:translate(-50%,-65%);display:grid;gap:2px}
+.drag-ghost .piece-dot{width:clamp(16px,5vw,28px);height:clamp(16px,5vw,28px)}
+#gameover{position:fixed;inset:0;z-index:5;background:#a54b6fd9;display:none;align-items:center;justify-content:center;padding:22px}
+.modal{width:min(100%,380px);border:1px solid #e7a4ba;border-radius:22px;background:linear-gradient(145deg,#f9c9da,#f0a3be);padding:22px;text-align:center;color:#813b56;box-shadow:0 7px 0 #c66e8e,0 24px 70px #883a5b66}
+.modal .trophy{font-size:42px}.modal h2{margin:7px 0;font-size:25px}.final-score{font-size:42px;font-weight:1000;color:#fff;text-shadow:0 3px 3px #9d4b6b}
+.modal p{font-size:12px;line-height:1.5;color:#89405d}.modal-actions{display:grid;gap:10px;margin-top:15px}
+@media(max-height:760px){.play-recordbar{height:10dvh;min-height:65px}.current-score-wrap{height:9dvh;min-height:58px}.score{font-size:clamp(48px,9vh,68px)}#play .board-wrap{height:min(42dvh,92vw,560px)}.board{width:min(91vw,42dvh,560px);gap:2px;padding:4px}.tray{margin-top:min(4dvh,26px);min-height:55px}.piece-slot{min-height:54px}.piece-grid{grid-template-columns:repeat(4,clamp(11px,3.5vw,19px));grid-template-rows:repeat(4,clamp(11px,3.5vw,19px))}}
+@media(max-width:360px){#app{padding-left:9px;padding-right:9px}.brand{font-size:17px}.record strong{font-size:24px}.board{width:91vw;gap:2px;padding:3px}.cell{border-radius:3px}.tray{width:96vw;gap:2px}.piece-grid{grid-template-columns:repeat(4,clamp(11px,3.8vw,15px));grid-template-rows:repeat(4,clamp(11px,3.8vw,15px))}.play-recordbar{padding:0 4vw}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Smooth, lightweight Block Blast explosion: animate only completed line cells. */
+@keyframes blockBlastExplode{
+  0%{transform:scale(1);opacity:1}
+  24%{transform:scale(1.12);opacity:1}
+  62%{transform:scale(.72) rotate(5deg);opacity:.72}
+  100%{transform:scale(.12) rotate(13deg);opacity:0}
+}
+@keyframes blockBlastBurst{
+  0%{transform:scale(.25);opacity:0}
+  28%{transform:scale(1.12);opacity:.9}
+  100%{transform:scale(1.65);opacity:0}
+}
+.cell.clearing{z-index:2;will-change:transform,opacity;animation:blockBlastExplode 250ms cubic-bezier(.18,.74,.2,1) forwards}
+.cell.clearing:before{content:"";position:absolute;z-index:4;pointer-events:none;inset:-35%;border-radius:50%;background:radial-gradient(circle,#fffbe0 0 10%,#ffe46a 18%,#ffb8d5 39%,transparent 70%);animation:blockBlastBurst 250ms ease-out forwards}
+#board.is-resolving{pointer-events:none}
+#tray.is-resolving{pointer-events:none;opacity:.86}
+@media(prefers-reduced-motion:reduce){.cell.clearing,.cell.clearing:before{animation-duration:1ms!important}}
+
+@keyframes blockBlastLand{
+  0%{transform:scale(.78);filter:brightness(1.2)}
+  65%{transform:scale(1.07);filter:brightness(1.08)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+.cell.just-placed{animation:blockBlastLand 230ms cubic-bezier(.2,.8,.25,1) both;will-change:transform}
+.drag-ghost.is-dropping .piece-dot:not(.empty){filter:brightness(1.1)}
+.drag-ghost{will-change:left,top;contain:layout style;backface-visibility:hidden}
+@media(prefers-reduced-motion:reduce){.cell.just-placed{animation-duration:1ms!important}}
+</style>
+<style id="block-blast-drop-size-final">
+:root{--block-size:18px}
+.board{width:min(88vw,43dvh,640px)}
+#play .board-wrap{height:min(43dvh,88vw,640px)}
+.piece-grid{display:grid;gap:2px;grid-template-columns:repeat(var(--piece-cols,3),var(--block-size));grid-template-rows:repeat(var(--piece-rows,3),var(--block-size));pointer-events:none}
+.piece-dot{width:var(--block-size);height:var(--block-size);min-width:0;min-height:0}
+.tray{width:min(96vw,500px);gap:2px;margin:min(3dvh,24px) auto 0;min-height:calc(var(--block-size)*3);align-items:center}
+.piece-slot{width:100%;min-width:0;min-height:calc(var(--block-size)*2);padding:0;overflow:visible;touch-action:none;user-select:none;-webkit-user-select:none}
+.drag-ghost{grid-auto-rows:var(--block-size);gap:2px}
+.drag-ghost .piece-dot{width:var(--block-size);height:var(--block-size)}
+@media(max-height:760px){.board{width:min(88vw,42dvh,560px)}#play .board-wrap{height:min(42dvh,88vw,560px)}.tray{margin-top:min(2dvh,14px)}}
+</style>
+<style id="block-blast-tray-compact-final">
+.tray .piece-grid{transform:scale(.72);transform-origin:center;will-change:transform}
+.drag-ghost .piece-dot{animation:blockBlastPickup 120ms cubic-bezier(.2,.85,.25,1) both;transform-origin:center}
+.piece-slot.is-drag-source .piece-grid{opacity:0!important;visibility:hidden!important}
+@keyframes blockBlastPickup{from{transform:scale(.72)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.drag-ghost .piece-dot{animation-duration:1ms!important}}
+  #continueAdButton[hidden]{display:none!important}
+  #continueAdButton:disabled{opacity:.72;filter:saturate(.7)}
+</style>
+
+<style id="block-blast-fullscreen-smooth-final">
+/* Keep the active game inside the entire Telegram viewport without page scrolling. */
+html,body{width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#app{position:fixed;inset:0;width:100%;height:100%;height:100dvh;min-height:0;overflow:auto}
+body.playing #app{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;padding:calc(env(safe-area-inset-top) + 2px) 0 calc(env(safe-area-inset-bottom) + 4px)}
+body.playing .page{width:100%;max-width:none;height:100%;min-height:0;gap:0;overflow:hidden}
+body.playing #play{display:flex!important;flex:1 1 auto;flex-direction:column;gap:0;width:100%;height:100%;min-height:0;overflow:hidden}
+body.playing .play-recordbar{height:clamp(58px,9dvh,100px);min-height:58px;max-height:none;flex:0 0 auto;padding:0 max(12px,3.5vw)}
+body.playing .current-score-wrap{height:clamp(54px,8dvh,90px);min-height:54px;max-height:none;flex:0 0 auto;margin:0}
+body.playing .score{font-size:clamp(46px,8vh,76px)}
+body.playing #play .board-wrap{width:100%;height:auto;max-height:100%;flex:1 1 auto;min-height:0;margin:0;padding:0 2px;display:flex;align-items:center;justify-content:center;overflow:visible}
+body.playing #play .board{width:min(92vw,calc(100dvh - 180px),640px);max-width:100%;max-height:100%;height:auto;aspect-ratio:1;flex:0 1 auto;margin:auto}
+body.playing #play .tray{width:min(96vw,540px);min-height:calc(var(--block-size)*2.3);flex:0 0 auto;gap:2px;margin:max(4px,.8dvh) auto 0}
+body.playing #play .game-hints{flex:0 0 auto;min-height:14px;margin:3px auto 0;padding:0 8px;max-width:98%;font-size:clamp(9px,1.5vh,11px);line-height:1.2}
+body.playing #play #modeLabel{display:none!important}
+/* A block settles into its final cell instead of fading away before the board updates. */
+@keyframes blockBlastLand{
+  0%{transform:scale(.82);opacity:.84;filter:brightness(1.22) saturate(1.08)}
+  56%{transform:scale(1.045);opacity:1;filter:brightness(1.09) saturate(1.04)}
+  78%{transform:scale(.99);filter:brightness(1.02)}
+  100%{transform:scale(1);opacity:1;filter:brightness(1)}
+}
+.cell.just-placed{animation:blockBlastLand 270ms cubic-bezier(.2,.78,.22,1) both;will-change:transform,filter,opacity;transform-origin:center}
+.drag-ghost{opacity:1;will-change:left,top,filter;backface-visibility:hidden}
+.drag-ghost.is-dropping .piece-dot:not(.empty){animation:blockBlastGhostSettle 190ms cubic-bezier(.2,.8,.22,1) both}
+@keyframes blockBlastGhostSettle{
+  0%{transform:scale(1.035);filter:brightness(1.18)}
+  70%{transform:scale(.985);filter:brightness(1.08)}
+  100%{transform:scale(1);filter:brightness(1.06)}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell.just-placed,.drag-ghost.is-dropping .piece-dot:not(.empty){animation-duration:1ms!important}
+}
+</style>
+
+
+<style id="block-blast-crystal-burst">
+/* Premium jewel-like blocks: soft enamel, bright top bevel, inner rim and deeper lower edge. */
+.cell.filled{
+  position:relative;
+  isolation:isolate;
+  overflow:visible;
+  border:1px solid #f8eaff;
+  background:linear-gradient(145deg,#fff6ff 0%,#efe0ff 13%,#d8c2ff 30%,#c1a5f3 52%,#a184df 74%,#8868c5 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 1px 0 1px #fff9,inset 0 -4px 2px #7551a5,0 2px 0 #986fc0,0 3px 5px #673e845c;
+  transform:translateZ(0);
+}
+.cell.filled:before{
+  content:"";position:absolute;inset:2px;border-radius:3px;border:1px solid #ffffff70;
+  box-shadow:inset 0 0 0 1px #7656a51a;pointer-events:none;
+}
+.cell.filled:after{
+  content:"";position:absolute;inset:1px 1px 54%;border-radius:3px;
+  background:linear-gradient(180deg,#ffffffb8 0%,#ffffff4d 38%,transparent 100%);
+  pointer-events:none;
+}
+.cell.filled.coral{
+  border-color:#fff0e6;
+  background:linear-gradient(145deg,#fff8f2 0%,#ffe5e5 15%,#ffcbd8 34%,#f4a9c6 55%,#e18bb3 75%,#c96f9b 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 1px 0 1px #fff9,inset 0 -4px 2px #ae5d87,0 2px 0 #db8aab,0 3px 5px #9f47745c;
+}
+.cell.filled.coral:before{border-color:#ffffff88;box-shadow:inset 0 0 0 1px #a950751c}
+.piece-dot:not(.empty){
+  border:1px solid #fff0ff;
+  border-radius:4px;
+  background:linear-gradient(145deg,#fff8ff 0%,#f1e4ff 13%,#dfccff 32%,#c2a8f4 58%,#9d7cdb 82%,#8060bd 100%);
+  box-shadow:inset 0 2px 1px #fff,inset 0 -3px 2px #7c58ae,0 2px 0 #ac88d4,0 3px 5px #8d477b55;
+  position:relative;
+}
+.piece-dot:not(.empty):after{
+  inset:1px 1px 56%;border-radius:3px;background:linear-gradient(180deg,#ffffffc9,#ffffff40 54%,transparent);
+}
+.piece-slot.selected .piece-dot:not(.empty){
+  filter:brightness(1.08) saturate(1.08);
+}
+
+/* Full-row/column clear: a bright pulse, jewel shatter and floating glassy sparks. */
+@keyframes blockBlastCellShatter{
+  0%{transform:scale(1);opacity:1;filter:brightness(1) saturate(1)}
+  14%{transform:scale(1.16);opacity:1;filter:brightness(1.75) saturate(1.25)}
+  30%{transform:scale(1.04) rotate(-3deg);opacity:1;filter:brightness(1.5) saturate(1.35)}
+  56%{transform:scale(.78) rotate(5deg);opacity:.88;filter:brightness(1.35) saturate(1.3)}
+  78%{transform:scale(.42) rotate(-8deg);opacity:.45;filter:brightness(1.55)}
+  100%{transform:scale(.12) rotate(12deg);opacity:0;filter:brightness(2)}
+}
+.cell.clearing{
+  z-index:8;
+  animation:blockBlastCellShatter 370ms cubic-bezier(.18,.76,.2,1) both;
+  will-change:transform,opacity,filter;
+}
+.cell.filled.clearing:before,.cell.filled.clearing.coral:before{
+  content:"";position:absolute;z-index:9;pointer-events:none;
+  inset:-34%;border:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.98) 0 7%,rgba(255,246,255,.9) 9%,rgba(255,222,251,.68) 17%,rgba(255,208,237,.25) 38%,transparent 70%);
+  box-shadow:0 0 13px #fff7,0 0 24px #f8b5ff88;
+  animation:blockBlastCoreBurst 390ms cubic-bezier(.16,.78,.18,1) both;
+  animation-delay:inherit;
+}
+.cell.filled.clearing:after,.cell.filled.clearing.coral:after{
+  content:"";position:absolute;z-index:10;pointer-events:none;
+  inset:-23%;border:0;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.94) 7deg,transparent 15deg,transparent 43deg,rgba(255,235,255,.9) 51deg,transparent 59deg,transparent 87deg,rgba(255,255,255,.9) 95deg,transparent 103deg,transparent 131deg,rgba(255,228,250,.9) 139deg,transparent 147deg,transparent 175deg,rgba(255,255,255,.9) 183deg,transparent 191deg,transparent 219deg,rgba(255,235,255,.9) 227deg,transparent 235deg,transparent 263deg,rgba(255,255,255,.9) 271deg,transparent 279deg,transparent 307deg,rgba(255,235,255,.9) 315deg,transparent 323deg,transparent 360deg);
+  mix-blend-mode:screen;
+  animation:blockBlastPrismBurst 390ms ease-out both;
+  animation-delay:inherit;
+}
+@keyframes blockBlastCoreBurst{
+  0%{transform:scale(.15);opacity:0}
+  18%{transform:scale(.72);opacity:1}
+  54%{transform:scale(1.12);opacity:.72}
+  100%{transform:scale(1.58);opacity:0}
+}
+@keyframes blockBlastPrismBurst{
+  0%{transform:scale(.25) rotate(0deg);opacity:0}
+  22%{transform:scale(.8) rotate(24deg);opacity:.95}
+  100%{transform:scale(1.8) rotate(85deg);opacity:0}
+}
+.block-blast-shard,.block-blast-spark{
+  position:fixed;left:0;top:0;z-index:1100;pointer-events:none;
+  will-change:transform,opacity;animation:blockBlastFly 380ms cubic-bezier(.12,.72,.22,1) var(--delay,0ms) both;
+}
+.block-blast-shard{
+  width:var(--size,5px);height:calc(var(--size,5px)*1.45);
+  clip-path:polygon(50% 0,100% 33%,72% 100%,8% 75%,0 28%);
+  border:1px solid #fff;
+  background:linear-gradient(145deg,#fffaff 0%,#f2d5ff 38%,#bd8cf1 100%);
+  filter:drop-shadow(0 0 3px #ffffffb0) drop-shadow(0 1px 3px #9850d899);
+}
+.block-blast-shard.coral{
+  background:linear-gradient(145deg,#fffdf4 0%,#ffd4e5 40%,#e782b3 100%);
+  filter:drop-shadow(0 0 3px #fff0b8) drop-shadow(0 1px 3px #a34475a8);
+}
+.block-blast-shard.gold{
+  background:linear-gradient(145deg,#fffde7 0%,#ffe69a 42%,#ffb84d 100%);
+  filter:drop-shadow(0 0 4px #fff0ad) drop-shadow(0 1px 3px #d98a41a8);
+}
+.block-blast-spark{
+  width:var(--size,5px);height:var(--size,5px);border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,#fff9d8 24%,#ffb8ed 56%,transparent 78%);
+  box-shadow:0 0 7px #fff,0 0 14px #ffb3e9;
+}
+@keyframes blockBlastFly{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(.2);opacity:0}
+  14%{opacity:1;transform:translate(-50%,-50%) rotate(15deg) scale(1.05)}
+  100%{transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) rotate(var(--spin,90deg)) scale(.12);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell.clearing,.cell.clearing:before,.cell.clearing:after,
+  .block-blast-shard,.block-blast-spark{animation-duration:1ms!important}
+}
+</style>
+
+
+<style id="block-blast-smooth-placement-and-prize-table">
+.leaderboard-card{gap:11px;padding:13px!important;border:1px solid #dc91ab!important;background:linear-gradient(145deg,#ffe2eb,#f5bad0)!important;color:#78394f;box-shadow:inset 0 1px 0 #fff9,0 5px 0 #d17f9e,0 10px 18px #a94b6b30!important}
+.leaderboard-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.leaderboard-title{display:flex;flex-direction:column;gap:4px;min-width:0}
+.leaderboard-title strong{font-size:15px;font-weight:1000;line-height:1.2;color:#803a55}
+.leaderboard-title small{font-size:10px;color:#9b5770}
+.leaderboard-pot{flex:0 0 auto;min-width:94px;padding:7px 9px;border-radius:12px;text-align:right;background:linear-gradient(145deg,#fff0ae,#f8ce78);border:1px solid #e2b65c;box-shadow:inset 0 1px 0 #fff9}
+.leaderboard-pot small{display:block;font-size:8px;font-weight:950;letter-spacing:.7px;color:#936127}
+.leaderboard-pot b{display:block;font-size:15px;font-weight:1000;color:#73441d;white-space:nowrap}
+.leaderboard-summary{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:10px;color:#9b5770}
+.leaderboard-summary b{color:#78394f;font-size:11px}
+.prize-distribution{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.prize-distribution span{min-width:0;text-align:center;padding:7px 3px;border-radius:10px;background:#ffffff72;border:1px solid #e6a4bb;font-size:9px;font-weight:900;color:#874158;white-space:nowrap}
+.leaderboard-scroll{max-height:268px;overflow:auto;border:1px solid #df9ab1;border-radius:12px;background:#fff7fb}
+#tournamentTable{width:100%;border-collapse:separate;border-spacing:0;font-size:10px;font-variant-numeric:tabular-nums}
+#tournamentTable th{position:sticky;top:0;z-index:1;padding:9px 5px;text-align:left;font-size:9px;font-weight:950;color:#8f4a63;background:#f6c4d6;border-bottom:1px solid #e5a2ba;white-space:nowrap}
+#tournamentTable td{padding:9px 5px;border-bottom:1px solid #f2d4df;color:#78394f;vertical-align:middle}
+#tournamentTable tr:last-child td{border-bottom:0}
+#tournamentTable td:first-child{font-weight:1000;white-space:nowrap}
+#tournamentTable td:nth-child(2){max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+#tournamentTable td:nth-child(3){font-weight:950}
+#tournamentTable td:last-child{white-space:nowrap;font-weight:950;color:#8d5a17}
+#tournamentTable tr.rank-1 td{background:#fff0b860}
+#tournamentTable tr.rank-2 td{background:#ffffff4a}
+#tournamentTable tr.rank-3 td{background:#ffd8be65}
+.leaderboard-empty{padding:14px 9px;text-align:center;border:1px dashed #d995af;border-radius:12px;color:#9b5770;font-size:11px;line-height:1.5;background:#fff8fb66}
+.leaderboard-note{font-size:9px;line-height:1.45;color:#96536c}
+.cell.just-placed:not(.clearing){animation:blockBlastPlaceIn 390ms cubic-bezier(.16,1,.3,1) backwards;animation-delay:var(--place-delay,0ms);transform-origin:center;will-change:transform,opacity,filter}
+@keyframes blockBlastPlaceIn{0%{transform:translateY(6px) scale(.72);opacity:.12;filter:brightness(1.65) saturate(1.18)}58%{transform:translateY(-1px) scale(1.065);opacity:1;filter:brightness(1.2) saturate(1.08)}78%{transform:translateY(0) scale(.985);filter:brightness(1.05)}100%{transform:translateY(0) scale(1);opacity:1;filter:none}}
+.drag-ghost.is-settling{transition:opacity 165ms ease-out,filter 165ms ease-out!important}
+@media(max-width:360px){.leaderboard-card{padding:10px!important}.leaderboard-pot{min-width:82px}.leaderboard-title strong{font-size:13px}#tournamentTable{font-size:9px}#tournamentTable th,#tournamentTable td{padding:8px 4px}.prize-distribution span{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.cell.just-placed:not(.clearing){animation:none!important;will-change:auto}}
+</style>
+
+<script src="./i18n-extra.js?v=20261026h"></script>
+</head>
+<body>
+<div id="app">
+ <div class="page">
+  <header class="top">
+   <div class="brand"><span class="logo">▦</span><span>BLOCK BLAST</span></div>
+   <div class="top-actions"><button class="small-btn back-btn" id="backButton" type="button">← Назад</button></div>
+  </header>
+
+  <section id="setup">
+   <div class="records">
+    <div class="record week"><div class="label">🏆 РЕКОРД НЕДЕЛИ</div><strong id="weeklyRecord">0</strong><div class="caption" id="weeklyCaption">Обновление турнира…</div></div>
+    <div class="record personal"><div class="label">⭐ ЛИЧНЫЙ РЕКОРД</div><strong id="personalRecord">0</strong><div class="caption">Не сбрасывается</div></div>
+   </div>
+   <div class="section">
+    <div class="tourney">
+     <div class="tourney-symbol">🏆</div>
+     <div class="tourney-copy"><strong>Недельный турнир ALLCOINS</strong><p>Оплати вход один раз на неделю. Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.</p></div>
+     <div class="fee">1 000 AC</div>
+    </div>
+    <div style="height:10px"></div>
+    <button class="primary" id="joinButton" type="button">Войти в турнир · 1 000 AC</button>
+    <div style="height:8px"></div>
+    <button class="secondary" id="practiceButton" type="button">Тренировка без турнира</button>
+    <p class="rules" style="margin-top:9px">Турнирная неделя завершается в понедельник в 00:00 UTC. Недельный рекорд начинает считаться заново, личный рекорд остаётся.</p>
+   </div>
+   <div class="status" id="setupStatus" role="status" aria-live="polite">Подключаем профиль и проверяем баланс…</div>
+   <div class="section leaderboard-card" id="leaderboardCard" aria-live="polite">
+    <div class="leaderboard-head">
+     <div class="leaderboard-title"><strong>🏆 Турнирная таблица</strong><small id="leaderboardWeek">Недельный рейтинг · UTC</small></div>
+     <div class="leaderboard-pot"><small>ОБЩИЙ БАНК</small><b id="tournamentGrossPot">0 AC</b></div>
+    </div>
+    <div class="leaderboard-summary">
+     <span>К распределению: <b id="tournamentPayoutPool">0 AC</b></span>
+     <span>Участников: <b id="tournamentEntries">0</b></span>
+    </div>
+    <div class="prize-distribution" aria-label="Распределение призов">
+     <span>🥇 <b id="prizeShare1">1 место · 50%</b></span>
+     <span>🥈 <b id="prizeShare2">2 место · 30%</b></span>
+     <span>🥉 <b id="prizeShare3">3 место · 20%</b></span>
+    </div>
+    <div class="leaderboard-empty" id="leaderboardEmpty">Пока нет участников. Войди в турнир, чтобы попасть в таблицу.</div>
+    <div class="leaderboard-scroll" id="leaderboardScroll" hidden>
+     <table id="tournamentTable">
+      <thead><tr><th>Место</th><th>Игрок</th><th>Очки</th><th>Приз сейчас</th></tr></thead>
+      <tbody id="leaderboardRows"></tbody>
+     </table>
+    </div>
+    <div class="leaderboard-note" id="leaderboardNote">Приз предварительный и меняется до закрытия недели. 5% банка — комиссия проекта. При равных очках выше тот, кто раньше установил результат.</div>
+   </div>
+   <p class="rules">Ставь фигуры на поле 8×8. Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков. Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.</p>
+  </section>
+
+  <section id="play">
+   <div class="play-recordbar">
+    <div class="crown-record"><span class="crown-icon" aria-hidden="true">👑</span><div class="crown-numbers"><strong id="inGameBest">0</strong><small>ЛИЧНЫЙ РЕКОРД</small><span class="week-mini">НЕДЕЛЯ · <b id="playingWeeklyRecord">0</b></span></div></div>
+    <div class="game-controls">
+     <button class="sound-toggle" id="soundToggle" type="button" aria-label="Выключить звук" aria-pressed="true" title="Звук включён">🔊</button>
+     <button class="exit-round" id="leaveGameButton" type="button" aria-label="В меню" title="В меню">↩</button>
+     <button class="new-round" id="restartButton" type="button" aria-label="Новая игра" title="Начать новую игру">↻<span>NEW</span></button>
+    </div>
+   </div>
+   <div class="current-score-wrap"><strong class="score" id="currentScore">0</strong><span class="score-caption">СЧЁТ</span></div>
+   <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Поле Block Blast 8 на 8"></div></div>
+   <div class="tray" id="tray" aria-label="Фигуры для размещения"></div>
+   <div class="game-hints" id="gameHint" aria-live="polite">Перетащи фигуру на поле или коснись фигуры, затем клетки.</div>
+   <div class="game-hints" id="modeLabel">Тренировка · личный рекорд сохраняется</div>
+  </section>
+ </div>
+</div>
+
+<div id="gameover" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+ <div class="modal">
+  <div class="trophy">🏆</div><h2 id="gameOverTitle">Игра окончена</h2>
+  <div class="final-score" id="finalScore">0</div>
+  <p id="resultMessage">Результат сохранён.</p>
+  <div class="modal-actions"><button class="primary" id="continueAdButton" type="button">▶ Посмотреть рекламу и продолжить</button><button class="primary" id="playAgainButton" type="button">Сыграть ещё раз</button><button class="secondary" id="resultMenuButton" type="button">В меню</button></div>
+ </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var API="https://demands-own-pottery-gear.trycloudflare.com";
+var tg=window.Telegram&&window.Telegram.WebApp;
+var $=function(id){return document.getElementById(id);};
+var userId=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.id)?String(tg.initDataUnsafe.user.id):"device";
+var weekStart=function(){var d=new Date();d.setUTCHours(0,0,0,0);d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d;};
+var weekDate=weekStart().toISOString().slice(0,10);
+var personalKey="allcoins_blockblast_personal_"+userId;
+var weeklyKey="allcoins_blockblast_week_"+userId+"_"+weekDate;
+var joinedKey="allcoins_blockblast_joined_"+userId+"_"+weekDate;
+var BOARD_SIZE=8;
+var lastPlacedCells=[];
+var blastParticlesCreated=0;
+var balance=null,authenticated=false,joined=false,tournamentMode=false,score=0,board=[],pieces=[],selected=-1,gameActive=false,submitting=false,dragState=null,dragGhost=null,dragSourceSlot=null,ignorePieceClick=false,isResolving=false,selectedAnchorRow=0,selectedAnchorCol=0,dragMotionFrame=0,dragTargetX=0,dragTargetY=0,dragCurrentX=0,dragCurrentY=0,continueUsed=false,adPending=false,adController=null,audioContext=null,soundEnabled=true;
+try{soundEnabled=localStorage.getItem("allcoins_blockblast_sound")!=="off";}catch(soundPreferenceError){}
+var shapes=[
+ [[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],
+ [[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],
+ [[0,0],[0,1],[0,2],[1,0]],[[0,0],[0,1],[0,2],[1,2]],[[0,0],[1,0],[2,0],[2,1]],[[0,1],[1,1],[2,0],[2,1]],
+ [[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[0,2],[0,3]],[[0,0],[1,0],[2,0],[3,0]],
+ [[0,0],[0,1],[0,2],[1,1]],[[0,1],[1,0],[1,1],[1,2]],[[0,0],[1,0],[1,1],[2,0]],
+ [[0,1],[1,0],[1,1],[2,1]],[[0,0],[0,1],[1,1],[1,2]],[[0,1],[0,2],[1,0],[1,1]],
+ [[0,0],[1,0],[1,1],[1,2]],[[0,2],[1,0],[1,1],[1,2]],[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]]
+];
+function readNumber(key){try{return Math.max(0,Number(localStorage.getItem(key)||0)||0);}catch(e){return 0;}}
+function storeNumber(key,value){try{localStorage.setItem(key,String(Math.max(0,Math.floor(value||0))));}catch(e){}}
+function setStatus(message,type){var el=$("setupStatus");el.textContent=message;el.className="status"+(type?" "+type:"");}
+function ensureAudioContext(){
+ if(!soundEnabled)return null;
+ var AudioConstructor=window.AudioContext||window.webkitAudioContext;
+ if(!AudioConstructor)return null;
+ try{
+  if(!audioContext)audioContext=new AudioConstructor();
+  if(audioContext.state==="suspended"){var resumed=audioContext.resume();if(resumed&&resumed.catch)resumed.catch(function(){});}
+  return audioContext;
+ }catch(audioError){return null;}
+}
+function playTone(ctx,frequency,duration,wave,volume,delay,endingFrequency){
+ try{
+  var oscillator=ctx.createOscillator(),gain=ctx.createGain(),startAt=ctx.currentTime+Math.max(0,delay||0);
+  oscillator.type=wave||"sine";oscillator.frequency.setValueAtTime(frequency,startAt);
+  if(endingFrequency&&endingFrequency>0)oscillator.frequency.exponentialRampToValueAtTime(endingFrequency,startAt+duration*.86);
+  gain.gain.setValueAtTime(.0001,startAt);gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),startAt+Math.min(.014,duration*.25));gain.gain.exponentialRampToValueAtTime(.0001,startAt+duration);
+  oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start(startAt);oscillator.stop(startAt+duration+.025);
+ }catch(toneError){}
+}
+function playGameSound(kind){
+ if(!soundEnabled)return;
+ var ctx=ensureAudioContext();if(!ctx)return;
+ if(kind==="pickup"){playTone(ctx,490,.065,"sine",.035,0,730);}
+ else if(kind==="place"){playTone(ctx,255,.095,"triangle",.055,0,180);playTone(ctx,470,.065,"sine",.025,.025,520);}
+ else if(kind==="bad"){playTone(ctx,190,.11,"triangle",.045,0,135);}
+ else if(kind==="clear"){playTone(ctx,520,.12,"sine",.045,0,740);playTone(ctx,660,.13,"sine",.04,.045,920);playTone(ctx,820,.15,"sine",.035,.09,1080);}
+ else if(kind==="start"){playTone(ctx,440,.09,"sine",.028,0,560);playTone(ctx,660,.11,"sine",.03,.055,790);}
+ else if(kind==="over"){playTone(ctx,470,.13,"sine",.04,0,390);playTone(ctx,370,.18,"sine",.035,.085,310);playTone(ctx,285,.22,"sine",.03,.17,230);}
+}
+function updateSoundButton(){
+ var button=$("soundToggle");if(!button)return;
+ button.textContent=soundEnabled?"🔊":"🔇";
+ button.title=soundEnabled?"Выключить звук":"Включить звук";
+ button.setAttribute("aria-label",soundEnabled?"Выключить звук":"Включить звук");
+ button.setAttribute("aria-pressed",soundEnabled?"true":"false");
+}
+function safeWeek(){var now=weekStart().toISOString().slice(0,10);if(now!==weekDate){location.reload();}}
+function updateRecords(){ $("personalRecord").textContent=String(readNumber(personalKey));$("weeklyRecord").textContent=String(readNumber(weeklyKey));var mini=$("playingWeeklyRecord");if(mini)mini.textContent=String(readNumber(weeklyKey));}
+function formatAC(value){return Math.max(0,Math.floor(Number(value)||0)).toLocaleString("ru-RU")+" AC";}
+function renderTournamentBoard(data){
+ if(!data)return;
+ var gross=Number(data.grossPot)||0,payout=Number(data.payoutPool)||0,entries=Number(data.entriesCount)||0;
+ $("tournamentGrossPot").textContent=formatAC(gross);
+ $("tournamentPayoutPool").textContent=formatAC(payout);
+ $("tournamentEntries").textContent=String(entries);
+ var weekText="Недельный рейтинг · UTC";
+ if(data.weekStart){weekText="Неделя с "+data.weekStart+" · UTC";if(data.weekEndsAt){try{weekText+=" · завершение "+new Date(data.weekEndsAt).toLocaleString("ru-RU",{timeZone:"UTC",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" UTC";}catch(e){}}}
+ $("leaderboardWeek").textContent=weekText;
+ var distribution=Array.isArray(data.distribution)?data.distribution:[];
+ var shares=[50,30,20];
+ distribution.forEach(function(item){var rank=Number(item.rank);if(rank>=1&&rank<=3)shares[rank-1]=Number(item.percent)||0;});
+ $("prizeShare1").textContent="1 место · "+shares[0]+"%";
+ $("prizeShare2").textContent="2 место · "+shares[1]+"%";
+ $("prizeShare3").textContent="3 место · "+shares[2]+"%";
+ var rows=$("leaderboardRows");rows.textContent="";
+ var list=Array.isArray(data.leaderboard)?data.leaderboard:[];
+ var medals=["🥇","🥈","🥉"];
+ list.forEach(function(player,index){
+  var tr=document.createElement("tr");if(index<3)tr.className="rank-"+(index+1);
+  var rank=document.createElement("td");rank.textContent=medals[index]||("#"+(Number(player.rank)||index+1));
+  var name=document.createElement("td");name.textContent=String(player.displayName||"Игрок").slice(0,64);name.title=name.textContent;
+  var scoreCell=document.createElement("td");scoreCell.textContent=(Number(player.score)||0).toLocaleString("ru-RU");
+  var prize=document.createElement("td");var prizeAmount=Number(player.prizeEstimate)||0;prize.textContent=prizeAmount>0?"~"+formatAC(prizeAmount):"—";
+  tr.appendChild(rank);tr.appendChild(name);tr.appendChild(scoreCell);tr.appendChild(prize);rows.appendChild(tr);
+ });
+ $("leaderboardEmpty").hidden=list.length>0;
+ $("leaderboardScroll").hidden=list.length===0;
+ if(entries===0){$("leaderboardEmpty").textContent="Пока нет участников. Войди в турнир, чтобы попасть в таблицу.";}
+ else if(list.length===0){$("leaderboardEmpty").textContent="Участники уже есть — таблица появится после первого сохранённого результата.";}
+ $("leaderboardNote").textContent="Приз предварительный до окончания недели. Из общего банка 5% учитываются как комиссия проекта. При равных очках выше тот, кто раньше установил результат.";
+}
+function updateWeekCaption(){var now=new Date();var end=weekStart();end.setUTCDate(end.getUTCDate()+7);var ms=end-now;var days=Math.max(0,Math.floor(ms/86400000));var hours=Math.max(0,Math.floor(ms%86400000/3600000));$("weeklyCaption").textContent="Сброс через "+days+" дн. "+hours+" ч. (UTC)";}
+async function post(path,data){
+ if(!tg||!tg.initData)throw new Error("Открой игру через Telegram-бота ALLCOINS.");
+ var response=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({},data||{},{initData:tg.initData}))});
+ var body={};try{body=await response.json();}catch(e){}
+ if(!response.ok)throw new Error(body.error||("Сервер ответил ошибкой "+response.status+"."));
+ return body;
+}
+async function loadProfile(){
+ if(tg){try{tg.ready();tg.expand();}catch(e){}}
+ if(!tg||!tg.initData){authenticated=false;joined=false;$("joinButton").disabled=true;setStatus("Для участия в платном турнире открой ALLCOINS через Telegram. Тренировка доступна без оплаты.","bad");return;}
+ try{
+  var result=await post("/api/auth");
+  if(!result.ok||!result.player)throw new Error("Сервер не подтвердил вход в профиль.");
+  authenticated=true;balance=Number(result.player.balance);
+  joined=false;
+  try{
+   var tournament=await post("/api/block-blast/status");
+   if(tournament.ok){
+    joined=Boolean(tournament.joined);
+    if(tournament.weeklyBest!==undefined)storeNumber(weeklyKey,Math.max(readNumber(weeklyKey),Number(tournament.weeklyBest)||0));
+    if(tournament.personalBest!==undefined)storeNumber(personalKey,Math.max(readNumber(personalKey),Number(tournament.personalBest)||0));
+    renderTournamentBoard(tournament);
+   }
+  }catch(statusError){joined=false;}
+  updateRecords();
+  if(joined){$("joinButton").textContent="Продолжить турнир";$("joinButton").disabled=false;setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход на эту неделю уже оплачен.","good");}
+  else{$("joinButton").textContent="Войти в турнир · 1 000 AC";$("joinButton").disabled=false;setStatus("Баланс: "+balance.toLocaleString("ru-RU")+" AC. Вход в турнир стоит 1 000 AC.","good");}
+ }catch(error){authenticated=false;joined=false;$("joinButton").disabled=true;setStatus("Не удалось проверить профиль: "+error.message+" Вход в турнир заблокирован; монеты не списаны.","bad");}
+}
+async function joinTournament(){
+ if(joined){tournamentMode=true;startGame();return;}
+ if(!authenticated){setStatus("Сначала открой приложение через Telegram и подключи профиль.","bad");return;}
+ if(balance===null){setStatus("Баланс ещё не проверен. Обнови страницу.","bad");return;}
+ if(balance<1000){setStatus("Недостаточно AC. Для входа нужно 1 000 AC; текущий баланс: "+balance.toLocaleString("ru-RU")+".","bad");return;}
+ if(!window.confirm("Внести 1 000 AC за вход в недельный турнир Block Blast? Повторно платить на этой неделе не потребуется."))return;
+ $("joinButton").disabled=true;$("joinButton").textContent="Проверяем оплату…";
+ try{
+  var result=await post("/api/block-blast/enter",{entryFee:1000});
+  if(!result.ok)throw new Error(result.error||"Сервер не подтвердил оплату.");
+  if(result.player&&result.player.balance!==undefined)balance=Number(result.player.balance);
+  else if(result.balance!==undefined)balance=Number(result.balance);
+  joined=true;localStorage.setItem(joinedKey,"1");$("joinButton").textContent="Продолжить турнир";
+  renderTournamentBoard(result);
+  setStatus("Вход подтверждён сервером. Списано 1 000 AC; можно играть весь турнир до конца недели.","good");
+  tournamentMode=true;updateRecords();startGame();
+ }catch(error){
+  $("joinButton").disabled=false;$("joinButton").textContent="Войти в турнир · 1 000 AC";
+  setStatus("Турнирный модуль не подтвердил списание. 1 000 AC НЕ списаны. "+error.message+" Используй тренировку или подключи серверный модуль турнира.","bad");
+ }
+}
+function emptyBoard(){return Array.from({length:BOARD_SIZE},function(){return Array(BOARD_SIZE).fill(0);});}
+function initialBoard(){
+ return [
+  [0,2,0,0,1,0,0,0],
+  [0,0,1,1,1,2,0,2],
+  [2,1,0,0,1,0,0,0],
+  [0,0,1,1,0,2,0,1],
+  [1,1,1,0,0,0,0,2],
+  [0,1,1,1,1,0,1,1],
+  [1,2,2,2,0,0,1,1],
+  [2,1,1,1,1,0,0,1]
+ ];
+}
+var trayPlayableShapes=shapes.filter(function(shape){return Math.max.apply(null,shape.map(function(c){return c[1];}))<3;});
+function randomPiece(){var shape=trayPlayableShapes[Math.floor(Math.random()*trayPlayableShapes.length)];return shape.map(function(c){return [c[0],c[1]];});}
+function generatePieces(){
+ var attempts=0,candidate=null;
+ // Check potential sets quickly to avoid long calculations on mobile.
+ while(attempts<32){
+  candidate=[randomPiece(),randomPiece(),randomPiece()];
+  if(canPlaceAllThree(board,candidate)){pieces=candidate;selected=-1;renderTray();return;}
+  attempts++;
+ }
+ // On a crowded board, prefer small pieces; each fallback is still checked with line clearing.
+ var fallbackSets=[
+  [[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]]],
+  [[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1]]],
+  [[[0,0]],[[0,0]],[[0,0]]]
+ ];
+ for(var f=0;f<fallbackSets.length;f++){
+  if(canPlaceAllThree(board,fallbackSets[f])){
+   pieces=fallbackSets[f];selected=-1;renderTray();return;
+  }
+ }
+ // If no trio of even single-cell pieces can be placed in a valid sequence, the board is truly blocked.
+ pieces=[[[0,0]],[[0,0]],[[0,0]]];selected=-1;renderTray();
+}
+function boardFits(state,piece,row,col){
+ for(var i=0;i<piece.length;i++){
+  var rr=row+piece[i][0],cc=col+piece[i][1];
+  if(rr<0||rr>=BOARD_SIZE||cc<0||cc>=BOARD_SIZE||state[rr][cc])return false;
+ }
+ return true;
+}
+function simulateBlockPlacement(state,piece,row,col){
+ var next=state.map(function(line){return line.slice();});
+ for(var i=0;i<piece.length;i++)next[row+piece[i][0]][col+piece[i][1]]=1;
+ var clearRows=[],clearCols=[];
+ for(var r=0;r<BOARD_SIZE;r++)if(next[r].every(Boolean))clearRows.push(r);
+ for(var c=0;c<BOARD_SIZE;c++){
+  var full=true;
+  for(var rr=0;rr<BOARD_SIZE;rr++)if(!next[rr][c]){full=false;break;}
+  if(full)clearCols.push(c);
+ }
+ clearRows.forEach(function(r){for(var c=0;c<BOARD_SIZE;c++)next[r][c]=0;});
+ clearCols.forEach(function(c){for(var r=0;r<BOARD_SIZE;r++)next[r][c]=0;});
+ return next;
+}
+function canPlaceAllThree(startBoard,candidate){
+ var nodes=0;
+ function search(state,remaining){
+  if(!remaining.length)return true;
+  if(++nodes>700)return false;
+  // Try the piece with the fewest legal placements first to prune dead ends early.
+  var choices=null,chosenIndex=-1;
+  for(var k=0;k<remaining.length;k++){
+   var idx=remaining[k],piece=candidate[idx],placements=[];
+   for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)
+    if(boardFits(state,piece,r,c))placements.push([r,c]);
+   if(!placements.length)return false;
+   if(!choices||placements.length<choices.length){choices=placements;chosenIndex=idx;}
+  }
+  // Randomize equivalent locations so the algorithm doesn't always steer play to a corner.
+  for(var p=choices.length-1;p>0;p--){var q=Math.floor(Math.random()*(p+1));var swap=choices[p];choices[p]=choices[q];choices[q]=swap;}
+  var nextRemaining=remaining.filter(function(idx){return idx!==chosenIndex;});
+  for(var n=0;n<choices.length;n++){
+   var place=choices[n];
+   var nextState=simulateBlockPlacement(state,candidate[chosenIndex],place[0],place[1]);
+   if(search(nextState,nextRemaining))return true;
+  }
+  return false;
+ }
+ return search(startBoard,[0,1,2]);
+}
+function setTelegramGameChrome(playing){
+ if(!tg)return;
+ try{
+  tg.ready();
+  tg.expand();
+  if(tg.BackButton){if(playing)tg.BackButton.hide();else tg.BackButton.show();}
+ }catch(telegramChromeError){}
+}
+function startGame(){
+ playGameSound("start");$("gameover").style.display="none";$("setup").style.display="none";$("play").style.display="flex";document.body.classList.add("playing");setTelegramGameChrome(true);board=initialBoard();score=0;gameActive=true;submitting=false;continueUsed=false;adPending=false;$("continueAdButton").hidden=false;$("continueAdButton").disabled=false;$("continueAdButton").textContent="▶ Посмотреть рекламу и продолжить";generatePieces();renderBoard();renderTray();renderScore();
+ $("modeLabel").textContent=tournamentMode?"Недельный турнир · вход подтверждён":"Тренировка · личный рекорд сохраняется";
+ $("gameHint").textContent="Перетащи фигуру на поле или выбери фигуру и коснись клетки.";
+}
+function backToMenu(){gameActive=false;document.body.classList.remove("playing");setTelegramGameChrome(false);clearDrag();$("gameover").style.display="none";$("play").style.display="none";$("setup").style.display="flex";updateRecords();loadProfile();}
+function renderBoard(){
+ var root=$("board");root.innerHTML="";
+ for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++){
+  var cell=document.createElement("button");cell.type="button";var justPlacedIndex=lastPlacedCells.indexOf(r+","+c);cell.className="cell"+(board[r][c]?" filled"+(board[r][c]===2?" coral":""):"")+(justPlacedIndex>=0?" just-placed":"");if(justPlacedIndex>=0)cell.style.setProperty("--place-delay",Math.min(justPlacedIndex,7)*22+"ms");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label","Строка "+(r+1)+", столбец "+(c+1)+(board[r][c]?", занято":", свободно"));cell.dataset.row=String(r);cell.dataset.col=String(c);
+  cell.addEventListener("click",function(){if(!isResolving)placeSelected(Number(this.dataset.row)-selectedAnchorRow,Number(this.dataset.col)-selectedAnchorCol);});
+  root.appendChild(cell);
+ }
+ syncBlockSize();
+}
+function syncBlockSize(){
+ var cell=$("board")&&$("board").querySelector(".cell");if(!cell)return;
+ var size=cell.getBoundingClientRect().width;
+ if(size>1)document.documentElement.style.setProperty("--block-size",size+"px");
+}
+function renderTray(){
+ var root=$("tray");root.innerHTML="";
+ for(var i=0;i<3;i++){
+  var slot=document.createElement("button");slot.type="button";slot.className="piece-slot"+(selected===i?" selected":"");slot.disabled=!pieces[i]||!gameActive||isResolving;slot.dataset.index=String(i);slot.setAttribute("aria-label","Выбрать фигуру "+(i+1)+"; можно перетащить на поле");
+  slot.addEventListener("click",function(){if(ignorePieceClick){ignorePieceClick=false;return;}var n=Number(this.dataset.index);if(!pieces[n]||isResolving)return;selected=n;setDefaultAnchor(pieces[n]);renderTray();$("gameHint").textContent="Фигура выбрана. Коснись нужной клетки или перетащи кубики в свободное место.";});
+  slot.addEventListener("pointerdown",function(ev){beginDrag(ev,Number(this.dataset.index));});
+  var grid=document.createElement("span");grid.className="piece-grid";var piece=pieces[i];
+  var maxRow=0,maxCol=0;
+  if(piece)piece.forEach(function(pos){maxRow=Math.max(maxRow,pos[0]);maxCol=Math.max(maxCol,pos[1]);});
+  grid.style.setProperty("--piece-cols",String(maxCol+1));grid.style.setProperty("--piece-rows",String(maxRow+1));
+  grid.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";grid.style.gridTemplateRows="repeat("+(maxRow+1)+",var(--block-size))";
+  for(var y=0;y<=maxRow;y++)for(var x=0;x<=maxCol;x++){
+   var dot=document.createElement("i");dot.className="piece-dot empty";
+   if(piece&&piece.some(function(pos){return pos[0]===y&&pos[1]===x;}))dot.className="piece-dot";
+   grid.appendChild(dot);
+  }
+  slot.appendChild(grid);root.appendChild(slot);
+ }
+}
+function getClosestPieceAnchor(piece,clientX,clientY,grid){
+ if(!grid)return getDefaultPieceAnchor(piece);
+ var maxCol=0;piece.forEach(function(pos){maxCol=Math.max(maxCol,pos[1]);});
+ var best=null,bestDistance=Infinity;
+ piece.forEach(function(pos){
+  var index=pos[0]*(maxCol+1)+pos[1],dot=grid.children[index];
+  if(!dot)return;
+  // getBoundingClientRect includes the tray's scale(.72), so the touched cube is identified correctly.
+  var rect=dot.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+  var distance=Math.pow(x-clientX,2)+Math.pow(y-clientY,2);
+  if(distance<bestDistance){bestDistance=distance;best=pos;}
+ });
+ return best||getDefaultPieceAnchor(piece);
+}
+function getDefaultPieceAnchor(piece){return [0,0];}
+function setDefaultAnchor(piece){var anchor=getDefaultPieceAnchor(piece);selectedAnchorRow=anchor[0];selectedAnchorCol=anchor[1];}
+function beginDrag(ev,index){
+ if(!gameActive||isResolving||!pieces[index])return;
+ playGameSound("pickup");
+ try{if(ev.currentTarget&&ev.currentTarget.setPointerCapture)ev.currentTarget.setPointerCapture(ev.pointerId);}catch(captureError){}
+ var grid=ev.currentTarget.querySelector(".piece-grid");
+ var anchor=getClosestPieceAnchor(pieces[index],ev.clientX,ev.clientY,grid);
+ dragState={index:index,pointerId:ev.pointerId,x:ev.clientX,y:ev.clientY,moved:false,anchorRow:anchor[0],anchorCol:anchor[1]};
+ selected=index;selectedAnchorRow=anchor[0];selectedAnchorCol=anchor[1];
+}
+function makeDragGhost(index,x,y,anchorRow,anchorCol){
+ clearDragGhost();var piece=pieces[index];if(!piece)return;
+ dragSourceSlot=$("tray").querySelector('.piece-slot[data-index="'+index+'"]');if(dragSourceSlot)dragSourceSlot.classList.add("is-drag-source");
+ var maxRow=0,maxCol=0;piece.forEach(function(p){maxRow=Math.max(maxRow,p[0]);maxCol=Math.max(maxCol,p[1]);});
+ dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.style.gridTemplateColumns="repeat("+(maxCol+1)+",var(--block-size))";
+ for(var r=0;r<=maxRow;r++)for(var c=0;c<=maxCol;c++){var dot=document.createElement("i");dot.className="piece-dot empty";if(piece.some(function(p){return p[0]===r&&p[1]===c;}))dot.className="piece-dot";dragGhost.appendChild(dot);}
+ var ghostCell=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--block-size"))||24;var ghostGap=2;dragGhost.style.transform="translate(-"+(anchorCol*(ghostCell+ghostGap)+ghostCell/2)+"px,-"+(anchorRow*(ghostCell+ghostGap)+ghostCell/2)+"px)";document.body.appendChild(dragGhost);dragCurrentX=x;dragCurrentY=y;dragTargetX=x;dragTargetY=y;dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";
+}
+function moveDragGhost(x,y){
+ if(!dragGhost)return;
+ dragTargetX=x;dragTargetY=y;
+ if(!dragMotionFrame)dragMotionFrame=requestAnimationFrame(animateDragGhost);
+}
+function animateDragGhost(){
+ dragMotionFrame=0;
+ if(!dragGhost)return;
+ dragCurrentX+=(dragTargetX-dragCurrentX)*0.82;
+ dragCurrentY+=(dragTargetY-dragCurrentY)*0.82;
+ if(Math.abs(dragTargetX-dragCurrentX)<0.65)dragCurrentX=dragTargetX;
+ if(Math.abs(dragTargetY-dragCurrentY)<0.65)dragCurrentY=dragTargetY;
+ dragGhost.style.left=dragCurrentX+"px";
+ dragGhost.style.top=dragCurrentY+"px";
+ if(dragCurrentX!==dragTargetX||dragCurrentY!==dragTargetY)dragMotionFrame=requestAnimationFrame(animateDragGhost);
+}
+function clearDragGhost(){if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}if(dragGhost&&dragGhost.parentNode)dragGhost.parentNode.removeChild(dragGhost);dragGhost=null;if(dragSourceSlot)dragSourceSlot.classList.remove("is-drag-source");dragSourceSlot=null;}
+function animateDropGhostToBoard(row,col,anchorRow,anchorCol){
+ return new Promise(function(resolve){
+  if(dragMotionFrame){cancelAnimationFrame(dragMotionFrame);dragMotionFrame=0;}
+  if(!dragGhost){resolve();return;}
+  var targetCell=$("board").querySelector('.cell[data-row="'+(row+anchorRow)+'"][data-col="'+(col+anchorCol)+'"]');
+  if(!targetCell){resolve();return;}
+  var rect=targetCell.getBoundingClientRect(),targetX=rect.left+rect.width/2,targetY=rect.top+rect.height/2;
+  dragGhost.classList.add("is-dropping");
+  dragGhost.style.transition="left 310ms cubic-bezier(.22,1,.36,1), top 310ms cubic-bezier(.22,1,.36,1), opacity 240ms ease-out, filter 310ms cubic-bezier(.22,1,.36,1)";
+  requestAnimationFrame(function(){
+   if(!dragGhost){resolve();return;}
+   dragGhost.style.left=targetX+"px";dragGhost.style.top=targetY+"px";dragGhost.style.opacity=".98";dragGhost.style.filter="drop-shadow(0 5px 5px #9f496e66) brightness(1.12) saturate(1.04)";
+  });
+  setTimeout(resolve,320);
+ });
+}
+function clearDrag(){dragState=null;clearDragGhost();}
+function findBoardCellAtPoint(x,y){
+ var boardEl=$("board");if(!boardEl)return null;
+ var rect=boardEl.getBoundingClientRect();
+ if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;
+ var cells=boardEl.querySelectorAll(".cell"),closest=null,best=Infinity;
+ for(var i=0;i<cells.length;i++){
+  var r=cells[i].getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  var dist=Math.pow(cx-x,2)+Math.pow(cy-y,2);
+  if(dist<best){best=dist;closest=cells[i];}
+ }
+ return closest;
+}
+document.addEventListener("pointermove",function(ev){
+ if(!dragState||ev.pointerId!==dragState.pointerId)return;
+ if(!dragState.moved&&Math.hypot(ev.clientX-dragState.x,ev.clientY-dragState.y)>10){dragState.moved=true;selected=dragState.index;selectedAnchorRow=dragState.anchorRow;selectedAnchorCol=dragState.anchorCol;makeDragGhost(dragState.index,ev.clientX,ev.clientY,dragState.anchorRow,dragState.anchorCol);}
+ if(dragState.moved){ev.preventDefault();moveDragGhost(ev.clientX,ev.clientY);}
+},{passive:false});
+document.addEventListener("pointerup",function(ev){
+ if(!dragState||ev.pointerId!==dragState.pointerId)return;
+ var state=dragState;dragState=null;
+ if(state.moved){
+  ignorePieceClick=true;var cell=findBoardCellAtPoint(ev.clientX,ev.clientY);
+  if(cell&&!isResolving){
+   selected=state.index;selectedAnchorRow=state.anchorRow;selectedAnchorCol=state.anchorCol;
+   var row=Number(cell.dataset.row)-state.anchorRow,col=Number(cell.dataset.col)-state.anchorCol;
+   if(pieces[state.index]&&fits(pieces[state.index],row,col)){
+    isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
+    animateDropGhostToBoard(row,col,state.anchorRow,state.anchorCol).then(function(){
+     $("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");isResolving=false;
+     placeSelected(row,col);
+     if(dragGhost){dragGhost.classList.add("is-settling");dragGhost.style.opacity="0";dragGhost.style.filter="blur(1.5px) drop-shadow(0 4px 4px #9f496e44)";setTimeout(clearDragGhost,175);}else{clearDragGhost();}
+    });
+   }else{
+    clearDragGhost();$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";renderTray();playGameSound("bad");
+   }
+  }else{
+   clearDragGhost();$("gameHint").textContent="Отпусти фигуру над игровым полем, чтобы поставить её.";renderTray();
+  }
+  setTimeout(function(){ignorePieceClick=false;},260);
+ }else{clearDragGhost();}
+});
+document.addEventListener("pointercancel",function(){clearDrag();});
+function fits(piece,row,col){
+ if(!piece)return false;
+ for(var i=0;i<piece.length;i++){var rr=row+piece[i][0],cc=col+piece[i][1];if(rr<0||rr>=BOARD_SIZE||cc<0||cc>=BOARD_SIZE||board[rr][cc])return false;}
+ return true;
+}
+function anyMoveAvailable(){for(var p=0;p<pieces.length;p++)if(pieces[p])for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)if(fits(pieces[p],r,c))return true;return false;}
+function spawnBlastParticles(cell,index){
+ var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if(reduced||blastParticlesCreated>=120)return;
+ var rect=cell.getBoundingClientRect();
+ var centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+ var coral=cell.classList.contains("coral");
+ for(var i=0;i<6&&blastParticlesCreated<120;i++){
+  var shard=document.createElement("span");
+  shard.className="block-blast-shard"+(coral?" coral":"")+(i%3===0?" gold":"");
+  var angle=(Math.PI*2*i/6)+(index%5)*.13;
+  var distance=18+((i*7+index*3)%24);
+  shard.style.left=centerX+"px";shard.style.top=centerY+"px";
+  shard.style.setProperty("--dx",(Math.cos(angle)*distance).toFixed(1)+"px");
+  shard.style.setProperty("--dy",(Math.sin(angle)*distance-((i%2)*7)-4).toFixed(1)+"px");
+  shard.style.setProperty("--spin",((i%2?1:-1)*(95+(i%4)*55))+"deg");
+  shard.style.setProperty("--size",(3+((i+index)%4))+"px");
+  shard.style.setProperty("--delay",(Math.min(index,5)*6+(i%3)*5)+"ms");
+  document.body.appendChild(shard);blastParticlesCreated++;
+  window.setTimeout(function(node){if(node&&node.parentNode)node.parentNode.removeChild(node);},520,shard);
+ }
+ for(var j=0;j<2&&blastParticlesCreated<120;j++){
+  var spark=document.createElement("span");
+  spark.className="block-blast-spark";
+  var sparkAngle=(j?Math.PI*.72:Math.PI*1.72)+(index%4)*.2;
+  var sparkDistance=25+j*14+(index%3)*4;
+  spark.style.left=centerX+"px";spark.style.top=centerY+"px";
+  spark.style.setProperty("--dx",(Math.cos(sparkAngle)*sparkDistance).toFixed(1)+"px");
+  spark.style.setProperty("--dy",(Math.sin(sparkAngle)*sparkDistance-9).toFixed(1)+"px");
+  spark.style.setProperty("--spin",(j?135:-135)+"deg");
+  spark.style.setProperty("--size",(4+j*2)+"px");
+  spark.style.setProperty("--delay",(Math.min(index,5)*6+j*7)+"ms");
+  document.body.appendChild(spark);blastParticlesCreated++;
+  window.setTimeout(function(node){if(node&&node.parentNode)node.parentNode.removeChild(node);},520,spark);
+ }
+}
+
+async function placeSelected(row,col){
+ if(!gameActive||isResolving||selected<0||!pieces[selected]){$("gameHint").textContent="Сначала выбери фигуру снизу.";return;}
+ var piece=pieces[selected];
+ if(!fits(piece,row,col)){$("gameHint").textContent="Фигура не помещается здесь целиком. Перетащи её в свободные клетки.";playGameSound("bad");return;}
+ var usedIndex=selected;
+ lastPlacedCells=[];for(var i=0;i<piece.length;i++){var placedRow=row+piece[i][0],placedCol=col+piece[i][1];board[placedRow][placedCol]=(Math.random()<0.38?2:1);lastPlacedCells.push(placedRow+","+placedCol);}
+ score+=piece.length;
+ var fullRows=[],fullCols=[];
+ for(var r=0;r<BOARD_SIZE;r++)if(board[r].every(Boolean))fullRows.push(r);
+ for(var c=0;c<BOARD_SIZE;c++){var full=true;for(var rr=0;rr<BOARD_SIZE;rr++)if(!board[rr][c]){full=false;break;}if(full)fullCols.push(c);}
+ var lines=fullRows.length+fullCols.length;
+ playGameSound(lines?"clear":"place");
+ pieces[usedIndex]=null;selected=-1;selectedAnchorRow=0;selectedAnchorCol=0;
+ if(lines){
+  score+=lines*10;if(lines>1)score+=(lines-1)*5;
+  $("gameHint").textContent="💥 Взрыв! Освобождено линий: "+lines+" · бонус +"+(lines*10+(lines>1?(lines-1)*5:0))+" очков.";
+  isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
+  renderBoard();renderTray();renderScore();
+  var clearSet=new Set();
+  fullRows.forEach(function(row){for(var c=0;c<BOARD_SIZE;c++)clearSet.add(row+","+c);});
+  fullCols.forEach(function(col){for(var r=0;r<BOARD_SIZE;r++)clearSet.add(r+","+col);});
+  var clearCells=[];
+  clearSet.forEach(function(key){var parts=key.split(",");var cell=$("board").querySelector('.cell[data-row="'+parts[0]+'"][data-col="'+parts[1]+'"]');if(cell)clearCells.push(cell);});
+  blastParticlesCreated=0;
+  clearCells.forEach(function(cell,index){
+   cell.classList.add("clearing");
+   cell.style.animationDelay=(index%6)*8+"ms";
+   spawnBlastParticles(cell,index);
+  });
+  await new Promise(function(resolve){
+   requestAnimationFrame(function(){requestAnimationFrame(function(){
+    var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(resolve,reduced?20:440);
+   });});
+  });
+  fullRows.forEach(function(row){for(var c=0;c<BOARD_SIZE;c++)board[row][c]=0;});
+  fullCols.forEach(function(col){for(var r=0;r<BOARD_SIZE;r++)board[r][col]=0;});
+  isResolving=false;$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");
+ }else{
+  $("gameHint").textContent="Хорошо! Поставь следующую фигуру.";
+ }
+ renderBoard();renderTray();renderScore();
+ if(lastPlacedCells.length){setTimeout(function(){lastPlacedCells=[];},220);}
+ if(pieces.every(function(p){return !p;})){generatePieces();}
+ if(!anyMoveAvailable()){endGame();return;}
+}
+function renderScore(){$("currentScore").textContent=String(score);$("inGameBest").textContent=String(Math.max(readNumber(personalKey),score));$("playingWeeklyRecord").textContent=String(readNumber(weeklyKey));}
+function pickRandomOccupiedCells(count){
+ var occupied=[];
+ for(var r=0;r<BOARD_SIZE;r++)for(var c=0;c<BOARD_SIZE;c++)if(board[r][c])occupied.push([r,c]);
+ for(var i=occupied.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),tmp=occupied[i];occupied[i]=occupied[j];occupied[j]=tmp;}
+ return occupied.slice(0,Math.min(count,occupied.length));
+}
+function waitFor(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
+async function resumeAfterAd(){
+ $("gameover").style.display="none";
+ isResolving=true;$("board").classList.add("is-resolving");$("tray").classList.add("is-resolving");
+ var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ var totalCleared=0;
+ for(var attempt=0;attempt<9;attempt++){
+  var occupied=pickRandomOccupiedCells(8);
+  if(!occupied.length){generatePieces();break;}
+  occupied.forEach(function(pos){
+   var cell=$("board").querySelector('.cell[data-row="'+pos[0]+'"][data-col="'+pos[1]+'"]');
+   if(cell)cell.classList.add("clearing");
+  });
+  $("gameHint").textContent="Продолжение после рекламы · освобождаем клетки…";
+  await waitFor(reduced?20:270);
+  occupied.forEach(function(pos){board[pos[0]][pos[1]]=0;});
+  totalCleared+=occupied.length;
+  renderBoard();generatePieces();
+  if(anyMoveAvailable())break;
+ }
+ gameActive=true;isResolving=false;
+ $("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");
+ renderBoard();renderTray();renderScore();
+ $("gameHint").textContent="Продолжаем игру! Освобождено клеток: "+totalCleared+". Счёт сохранён — играй дальше.";
+}
+async function continueAfterAd(){
+ if(adPending||continueUsed)return;
+ adPending=true;
+ var button=$("continueAdButton");
+ button.disabled=true;button.textContent="Загружаем рекламу…";
+ try{
+  if(!window.Adsgram||typeof window.Adsgram.init!=="function")throw new Error("Реклама не загрузилась. Проверь подключение и попробуй ещё раз.");
+  if(!adController)adController=window.Adsgram.init({blockId:"54021"});
+  var adResult=await adController.show();
+  if(!adResult||adResult.done!==true)throw new Error("Реклама не была досмотрена до конца. Продолжение не начислено.");
+  continueUsed=true;
+  button.hidden=true;
+  await resumeAfterAd();
+ }catch(error){
+  var reason=error&&error.message?error.message:"Не удалось показать рекламу.";
+  $("resultMessage").textContent="Продолжение доступно после полного просмотра ролика. "+reason;
+ }finally{
+  adPending=false;
+  button.disabled=continueUsed;
+  button.hidden=continueUsed;
+  if(!continueUsed)button.textContent="▶ Посмотреть рекламу и продолжить";
+ }
+}
+async function endGame(){
+ if(!gameActive)return;playGameSound("over");gameActive=false;isResolving=false;$("board").classList.remove("is-resolving");$("tray").classList.remove("is-resolving");renderTray();
+ var prevPersonal=readNumber(personalKey);if(score>prevPersonal)storeNumber(personalKey,score);
+ var prevWeekly=readNumber(weeklyKey);var weeklyUpdated=false;
+ if(tournamentMode&&joined&&score>prevWeekly){storeNumber(weeklyKey,score);weeklyUpdated=true;}
+ updateRecords();$("finalScore").textContent=String(score);
+ var msg="Личный рекорд: "+readNumber(personalKey)+". ";
+ if(tournamentMode&&joined){msg+=weeklyUpdated?"Новый недельный рекорд на этом устройстве! ":"Недельный рекорд: "+readNumber(weeklyKey)+". ";msg+="Отправляем результат в турнирный рейтинг.";}
+ else{msg+="Тренировка не меняет недельный рекорд.";}
+ $("resultMessage").textContent=msg;$("gameover").style.display="flex";
+ if(tournamentMode&&joined){
+  try{var result=await post("/api/block-blast/score",{score:score});if(result.weeklyBest!==undefined){storeNumber(weeklyKey,Number(result.weeklyBest));updateRecords();}if(result.personalBest!==undefined){storeNumber(personalKey,Number(result.personalBest));updateRecords();}renderTournamentBoard(result);$("resultMessage").textContent+=" Результат подтверждён сервером.";}
+  catch(error){$("resultMessage").textContent+=" Внимание: серверный рейтинг пока не подтвердил результат. Локальные рекорды сохранены на этом устройстве.";}
+ }
+}
+$("soundToggle").addEventListener("click",function(){
+ soundEnabled=!soundEnabled;try{localStorage.setItem("allcoins_blockblast_sound",soundEnabled?"on":"off");}catch(soundPreferenceError){}updateSoundButton();if(soundEnabled)playGameSound("pickup");
+});
+updateSoundButton();
+$("joinButton").addEventListener("click",joinTournament);
+$("practiceButton").addEventListener("click",function(){tournamentMode=false;startGame();});
+$("backButton").addEventListener("click",function(){if(tg&&tg.BackButton){try{tg.BackButton.hide();}catch(e){}}location.href="./index.html?v=20261026-smooth-prize2";});
+$("leaveGameButton").addEventListener("click",backToMenu);
+$("restartButton").addEventListener("click",startGame);
+$("continueAdButton").addEventListener("click",continueAfterAd);
+ $("playAgainButton").addEventListener("click",function(){startGame();});
+$("resultMenuButton").addEventListener("click",backToMenu);
+window.addEventListener("resize",function(){if(gameActive)renderBoard();});
+if(tg&&tg.BackButton){try{tg.BackButton.onClick(function(){backToMenu();});tg.BackButton.show();}catch(e){}}
+updateRecords();updateWeekCaption();loadProfile();
+setInterval(function(){safeWeek();updateWeekCaption();},60000);
+setInterval(function(){
+ if(!authenticated||!tg||!tg.initData)return;
+ var setup=$("setup");
+ if(!setup||getComputedStyle(setup).display==="none")return;
+ post("/api/block-blast/leaderboard").then(function(data){if(data&&data.ok)renderTournamentBoard(data);}).catch(function(){});
+},30000);
+})();
+</script>
+
+<script>
+/* ALLCOINS shared app-wide language engine. Choice is shared by all game pages via localStorage. */
+(function(){
+  const LANGS = {"ru":{},"en":{"Главная":"Home","Игры":"Games","Вывод":"Withdraw","Профиль":"Profile","Задание":"Tasks","Пользователь Telegram":"Telegram user","Гость":"Guest","не авторизован":"Not logged in","🌐 Язык приложения / Language":"🌐 App language / Language","Язык приложения":"App language","Язык будет применяться к меню и игровым интерфейсам.":"Your language will be used throughout the menus and games.","Баланс:":"Balance:","Энергия:":"Energy:","Повторить вход":"Log in again","🛟 Нужна помощь?":"🛟 Need help?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Report freezing, errors, room or animation problems. Your request is saved in ALLCOINS Support; no Telegram bot message is sent.","Обратиться в поддержку":"Contact support","Что случилось?":"What happened?","Зависание / тормоза":"Freezing / lag","Ошибка или вылет":"Error or crash","Карты / анимация":"Cards / animation","Комнаты / подключение":"Rooms / connection","Баланс / ставка":"Balance / bet","Другое":"Other","Опиши проблему":"Describe the problem","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Example: a UNO card disappears and reappears. Say which game it happened in and what you tapped before the error.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Do not send passwords, API keys or payment details. The text, category and Telegram ID are stored for diagnostics.","Отправить обращение ➤":"Send support request ➤","Обновить обращения":"Refresh reports","Поддержка игроков":"Player support","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Reports are saved on the server. ALLCOINS AI prepares an initial diagnosis. You can copy a report and share it with ChatGPT for coding help.","Заявки ещё не загружены.":"Reports have not been loaded yet.","В работу":"In progress","Решено":"Resolved","Новая":"New","Решена":"Resolved","Создать":"Create","Создать комнату":"Create room","Создать комнату 2 игрока":"Create room · 2 players","Найти комнату":"Find room","Найти комнату ↻ Обновить":"Find room ↻ Refresh","Открытые комнаты":"Open rooms","Обновить":"Refresh","Загрузка...":"Loading...","Загрузка…":"Loading…","Подключаем комнаты…":"Connecting to rooms…","Подключаемся к комнатам УНО…":"Connecting to UNO rooms…","Загружаем комнаты…":"Loading rooms…","Загружаем список комнат…":"Loading room list…","Загрузка комнат…":"Loading rooms…","Подключаюсь к комнате…":"Connecting to room…","Комната":"Room","Комната ALLCOINS":"ALLCOINS room","Название комнаты":"Room name","Комнату можно создать одному, а затем запустить тренировку с ботами.":"You can create a room alone and then start bot training.","Ставка":"Bet","Ставка:":"Bet:","Ставка за игрока (AC)":"Bet per player (AC)","Ставка за раунд":"Bet per round","Ограничение ставок":"Bet limits","От 1 000 000 AC — без верхнего лимита":"From 1,000,000 AC — no upper limit","Минимальная ставка — 100 AC.":"Minimum bet — 100 AC.","Верхнего лимита ставки не задаётся.":"There is no upper bet limit.","Баланс":"Balance","Игрок":"Player","Игроки":"Players","Игроков:":"Players:","Максимум игроков за столом":"Maximum players at the table","Сколько игроков?":"How many players?","2 игрока":"2 players","3 игрока":"3 players","4 игрока":"4 players","5 игроков":"5 players","6 игроков":"6 players","Готов":"Ready","Готово":"Done","Начать игру":"Start game","Начать онлайн":"Start online","Старт с ботами":"Start with bots","Добавить бота":"Add bot","🤖 Добавить бота для проверки":"🤖 Add test bot","Играть":"Play","Играть с ботом (тест) · выключено":"Play vs bot (test) · off","Играть с тестовым ботом":"Play with test bot","Присоединиться":"Join","Присоединиться к игре":"Join game","Отмена":"Cancel","Назад":"Back","← Назад":"← Back","← Назад к играм":"← Back to games","← Меню":"← Menu","В меню":"To menu","Закрыть":"Close","Сохранить":"Save","Отправить":"Send","Да":"Yes","Нет":"No","Выйти из комнаты":"Leave room","Выйти из игры":"Leave game","Выйти в комнаты":"Back to rooms","Выйти в лобби":"Back to lobby","Вернуться к комнатам":"Return to rooms","Вернуться в лобби":"Return to lobby","Остаться":"Stay","Покинуть комнату?":"Leave the room?","Покинуть партию?":"Leave the match?","Ты выйдешь из комнаты ожидания.":"You will leave the waiting room.","Чтобы не выйти случайно, подтверди действие.":"Confirm to avoid leaving accidentally.","Комната онлайн · общий ход скрыт до завершения выбора.":"Online room · choices stay hidden until everyone has selected.","Ожидание игроков":"Waiting for players","Ожидаем игроков.":"Waiting for players.","Ожидаем начало раунда.":"Waiting for the round to start.","Ожидаем готовности игроков...":"Waiting for players to get ready...","Новая игра":"New game","Новая партия":"New match","Играть снова":"Play again","Играть ещё":"Play again","Победа":"Win","Победа!":"Victory!","Поражение":"Defeat","Проигрыш":"Loss","Выигрыш":"Winnings","Бито":"Beaten","Беру":"Taking","Правила":"Rules","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Pass the bomb to another player before the fuse burns out.","Ставь фигуры на поле 8×8.":"Place pieces on the 8×8 board.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Fill complete rows and columns to clear them and score more points.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Choose a piece below, then tap the cell for its top-left corner.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Drag a piece onto the board or tap the piece and then a cell.","Турнирная таблица":"Tournament leaderboard","Недельный рейтинг · UTC":"Weekly ranking · UTC","ОБЩИЙ БАНК":"TOTAL PRIZE POOL","К распределению:":"Available to distribute:","Участников:":"Participants:","Пока нет участников.":"No participants yet.","Войди в турнир, чтобы попасть в таблицу.":"Join the tournament to appear on the leaderboard.","Место":"Place","Очки":"Points","Приз сейчас":"Current prize","Приз предварительный и меняется до закрытия недели.":"The prize is provisional and changes until the week closes.","5% банка — комиссия проекта.":"5% of the pool is the project fee.","Пока нет записей":"No entries yet","РЕКОРД НЕДЕЛИ":"WEEKLY RECORD","ЛИЧНЫЙ РЕКОРД":"PERSONAL BEST","Недельный турнир ALLCOINS":"ALLCOINS weekly tournament","Тренировка без турнира":"Practice without tournament","Войти в турнир · 1 000 AC":"Join tournament · 1,000 AC","Тренировка":"Practice","Игра окончена":"Game over","Результат сохранён.":"Result saved.","Сыграть ещё раз":"Play again","Счёт":"Score","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"PERSONAL BEST · WEEK","Бильярд Онлайн":"Online Billiards","Американский пул · 2 игрока · комнаты на AC":"American pool · 2 players · AC rooms","Верхнего лимита нет: доступная ставка зависит от баланса игроков.":"There is no upper limit; the available bet depends on players' balances.","В обычной комнате ставка списывается при начале партии.":"In a regular room, the bet is deducted when the match starts.","БИЛЬЯРД ONLINE Комната":"BILLIARDS ONLINE Room","Твой ход.":"Your turn.","Коснись стола и потяни в направлении удара.":"Touch the table and pull in the direction of the shot.","СИЛА УДАРА":"SHOT POWER","Прицелься и отпусти, чтобы ударить.":"Aim and release to shoot.","🎥 Повернуть стол":"🎥 Rotate table","🎯 Прицел":"🎯 Aim","Новый раунд":"New round","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Simplified 8-ball pool rules: pocket your group, then the black eight-ball.","Попадание битка в лузу передаёт ход.":"Pocketing the cue ball passes the turn.","Ставка будет списана при старте игры.":"The bet will be deducted when the game starts.","🏆 РЕКОРД НЕДЕЛИ":"🏆 WEEKLY RECORD","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Pass the Bomb","Быстрая игра на реакцию · до 4 игроков":"Fast reaction game · up to 4 players","Не держи её долго!":"Don't hold it too long!","Выберите локацию":"Choose a location","Медная шахта":"Copper Mine","Кристальная шахта":"Crystal Mine","Твой ник":"Your nickname","▶ Начать игру":"▶ Start game","📘 Как играть":"📘 How to play","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Tap another active player and the bomb will arc toward them with a passing animation.","Время до взрыва случайное, точный момент заранее не показывается.":"The time until the explosion is random and is not shown in advance.","За взрыв игрок теряет одно сердце.":"A player loses one heart when the bomb explodes.","После трёх потерь он выбывает.":"After three losses, the player is eliminated.","Побеждает последний оставшийся игрок.":"The last remaining player wins.","Нажми на соперника":"Tap an opponent","ДВИЖЕНИЕ":"MOVEMENT","Следующий раунд":"Next round","Бомба взорвалась.":"The bomb exploded.","Шашки Онлайн":"Online Checkers","Классические русские шашки · поле 8×8":"Classic Russian checkers · 8×8 board","💰 Ставка комнаты":"💰 Room bet","Размер ставки 100 AC":"Bet amount 100 AC","Или введи сумму вручную":"Or enter an amount manually","＋ Создать комнату":"＋ Create room","⌕ Найти комнату":"⌕ Find room","✅ Комната создана":"✅ Room created","Комната шашек":"Checkers room","🌍 Список комнат":"🌍 Room list","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Test mode: the bot is ready to test moves, captures and kings.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"For now, the room list is stored only in this browser and is not visible to other players.","Ставка сейчас демонстрационная: реальные AC не списываются и не начисляются.":"The bet is for demo only; real AC are not deducted or credited.","← Комнаты":"← Rooms","♟ Тестовый бот":"♟ Test bot","Соперник · чёрные":"Opponent · black","Твой ход — белые":"Your turn — white","Нажми на свою шашку, затем на подсвеченную клетку":"Tap your piece, then the highlighted square","👤 Игрок":"👤 Player","Ты играешь белыми":"You play white","↻ Новая партия":"↻ New match","Правило: брать обязательно.":"Rule: captures are mandatory.","Дамка ходит и бьёт по диагонали на любое расстояние.":"A king moves and captures diagonally over any distance.","Партия завершена":"Match finished","Камень · Ножницы · Бумага":"Rock · Paper · Scissors","Онлайн-комнаты до 3 игроков.":"Online rooms for up to 3 players.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Two players can start immediately; a third joins the next round.","Минимум 100 AC.":"Minimum 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Open rooms ↻ Refresh","AC — виртуальные монеты ALLCOINS, не деньги.":"AC are virtual ALLCOINS coins, not money.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Rooms • betting • AC pot","ВАШ БАЛАНС":"YOUR BALANCE","Создать комнату до 6 игроков":"Create a room for up to 6 players","Начальный взнос (AC)":"Initial contribution (AC)","Взнос в банк":"Contribution to pot","Показать комнаты с лимитом":"Show rooms by limit","Все лимиты":"All limits","Основные правила":"Main rules","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Each player receives 3 cards from a 36-card deck (6–ace).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"Ace = 11 points; 10, jack, queen and king = 10; other cards count at face value.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Cards of the same suit are added together; three of a kind make a strong combination.","В свой ход можно сбросить карты, поддержать ставку, повысить её или вскрыться, когда осталось двое.":"On your turn, fold, call, raise or reveal when two players remain.","Ожидание":"Waiting","НАЧАЛЬНЫЙ ВЗНОС":"INITIAL CONTRIBUTION","ТЕКУЩАЯ СТАВКА":"CURRENT BET","ВАШИ КАРТЫ":"YOUR CARDS","ВАША КОМБИНАЦИЯ":"YOUR COMBINATION","Подсчитываем комбинацию":"Calculating combination","Новая ставка всего (AC)":"New total bet (AC)","Повысить":"Raise","Пас":"Pass","Поддержать":"Call","Вскрыться":"Show cards","Сумма повышения — добавка к текущей ставке.":"Raise amount is added to the current bet.","🔄 Рематч":"🔄 Rematch","УНО Онлайн":"UNO Online","Классические карты · комнаты · игра на весь экран":"Classic cards · rooms · fullscreen game","AC ставки от 100":"AC bets from 100","Тренировка с ботами проходит без списания AC.":"Bot training does not deduct AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"You can create a room alone and then start bot training.","УНО поддерживает от 2 до 10 игроков.":"UNO supports 2 to 10 players.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Each match uses the classic 108-card deck; cards, turns and rooms are saved on the server.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Rooms are visible to ALLCOINS players while waiting for a match and with open seats.","Карта играетcя по цвету, числу или значку.":"Play a card by matching its color, number or symbol.","Подбери карту по цвету, числу или символу.":"Match the card by color, number or symbol.","Твои карты":"Your cards","ТВОЙ ХОД":"YOUR TURN","＋ Взять карту":"＋ Draw a card","Передать ход →":"Skip turn →","Дикая карта меняет цвет.":"A wild card changes the color.","Выбери цвет":"Choose a color","Какой цвет будет следующим после этой дикой карты?":"Which color comes next after this wild card?","Лото Онлайн":"Online Lotto","Комнаты и ставки":"Rooms and bets","Выберите ставку":"Choose a bet","Публичная":"Public","Приватная":"Private","Баланс пользователя":"User balance","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Real withdrawals are not enabled. Do not send payment details. The AC balance is for testing and has no monetary value.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"This is a test prototype. AC are virtual coins, not money.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Energy restoration is currently a demo and is not connected to ads.","⚡ Восстановить":"⚡ Restore","🎁 Бонус":"🎁 Bonus","Бонус дня":"Daily bonus","Правила: брать обязательно.":"Rule: captures are mandatory.","Ссылка на игру":"Game link","Перетащи фигуру на поле":"Drag the piece onto the board","Выбери ставку":"Choose a bet","Уже в комнате":"Already in room","Нажми, чтобы продолжить":"Tap to continue","Обновление турнира…":"Updating tournament…","Не сбрасывается":"Does not reset","Оплати вход один раз на неделю.":"Pay the entry fee once per week.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Your best score enters the ranking; prizes are automatically awarded to the leaders after the week ends.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"The tournament week ends Monday at 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"The weekly record resets; the personal best remains.","Подключаем профиль и проверяем баланс…":"Connecting profile and checking balance…","Тренировка · личный рекорд сохраняется":"Practice · personal best is saved","▶ Посмотреть рекламу и продолжить":"▶ Watch an ad and continue","Режим игры":"Game mode","🤖 Ты против ботов":"🤖 You vs bots","Боты сами передают бомбу.":"Bots pass the bomb automatically.","Удобно проверить игру в одиночку.":"Useful for testing the game solo.","👥 Игроки на одном экране":"👥 Players on one screen","Все участники по очереди нажимают на игрока-получателя.":"Players take turns tapping the player who will receive the bomb.","В игре нет ставок и списания AC.":"There are no bets or AC deductions in this game.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"This is a separate arcade mode for testing animations and passing mechanics.","Бомба случайно попадает к одному из игроков.":"The bomb is randomly assigned to one player.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"When the fuse is nearly burned out, the bomb flashes and shakes.","В ИГРЕ":"IN GAME","ФИТИЛЬ":"FUSE","Горит":"Burning","ШАХТА":"MINE","Передай бомбу!":"Pass the bomb!","РАУНД":"ROUND","Комната создана":"Room created","Список комнат":"Room list","Тест с ботом":"Bot test","При победе удерживается комиссия проекта 5% от общего банка; при ничьей ставки возвращаются.":"A 5% project fee is taken from the total pot on a win; bets are returned on a draw.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"In bot test mode, there are no deductions, payouts or fees.","Захват башен":"Tower capture","Стратегия в реальном времени · до 3 игроков":"Real-time strategy · up to 3 players","Захвати карту":"Capture the map","Веди войска.":"Lead your troops.","Захватывай башни.":"Capture towers.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Choose your tower and a target; an asphalt road will appear between them.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Troops will run along it; roads remain on the map, allowing several routes at once.","Ставка, AC":"Bet, AC","От 100 AC без фиксированной верхней границы.":"From 100 AC with no fixed upper limit.","Ставка не может превышать твой баланс.":"The bet cannot exceed your balance.","Создатель + соперники":"Creator + opponents","⚔️ Тренировка с ботами · бесплатно":"⚔️ Bot practice · free","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Online rooms are available after opening ALLCOINS through Telegram.","Тренировка с ботами работает без ставки.":"Bot practice works without a bet.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Online rooms created by other players appear here.","Синхронизация":"Synchronizing","Как играть: нажми на свою башню, затем на цель.":"How to play: tap your tower, then a target.","Или проведи пальцем от башни к башне.":"Or drag your finger from one tower to another.","Войска":"Troops","На столе":"On the table","Игроки за столом":"Players at the table","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"The creator can start the online game when at least one more person joins.","Тренировка с ботами доступна в любой момент.":"Bot practice is available at any time.","БАНК КОМНАТЫ":"ROOM POT","Карта играется по цвету, числу или значку.":"Play by matching color, number or symbol.","Ты захватил карту.":"You captured the map.","Приз распределяется автоматически после завершения недели.":"Prizes are distributed automatically after the week ends.","Нет доступных комнат.":"No rooms available.","Ошибка загрузки. Попробуй ещё раз.":"Loading error. Try again.","Сначала войди через Telegram.":"First sign in through Telegram.","Выбери комнату по цене билета.":"Choose a room by ticket price.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"The round starts automatically 3 minutes after the room opens.","За столом до 6 мест":"Up to 6 seats at the table","Ход игрока":"Player's turn","Карты розданы.":"Cards dealt.","0 AC БАНК":"0 AC POT","Ставка 100 AC":"Bet 100 AC","Классическая колода":"Classic deck","Колода":"Deck","Твой лучший результат попадёт в рейтинг":"Your best score will enter the ranking","Выйти в лобби бильярда":"Back to billiards lobby","Начать тренировку":"Start practice","Комната бильярда":"Billiards room","Повернуть стол":"Rotate table","Прицел":"Aim","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"YOUR BALANCE","Виртуальные монеты ALLCOINS":"Virtual ALLCOINS coins","⚡ Энергия":"⚡ Energy","НОВАЯ ИГРА · BLOCK BLAST":"NEW GAME · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Entry — 1,000 AC · personal best is saved","Дурак Онлайн":"Durak Online","21 Очко":"21 Points","Камень Ножницы Бумага":"Rock Paper Scissors","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Create room","Подкидной":"Throw-in","Переводной":"Transfer","24 карт":"24 cards","36 карт":"36 cards","52 карт":"52 cards","1 игрок + бот":"1 player + bot","⚡ Скорость игры":"⚡ Game speed","Обычная":"Normal","Минимум: 100 AC":"Minimum: 100 AC","🔒 Тип комнаты":"🔒 Room type","🌍 Открытая":"🌍 Public","🌍 Доступные комнаты":"🌍 Available rooms","🔊 Звук":"🔊 Sound","👤 Ты":"👤 You","⚔️ Атаковать":"⚔️ Attack","🛡️ Побить карту":"🛡️ Beat the card","Создавай комнаты Лото и приглашай игроков.":"Create Lotto rooms and invite players.","Количество игроков (от 2 до 1000)":"Number of players (2–1,000)","Цена одного билета (AC)":"Price per ticket (AC)","Всего билетов:":"Total tickets:","Мои билеты в выбранной комнате:":"My tickets in the selected room:","🎟️ Купить билет":"🎟️ Buy ticket","Подготовка системы вывода":"Preparing withdrawals","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"The withdrawal request interface will appear here if a separate system is developed and connected.","Проверить статус":"Check status","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS administration","💰 Комиссия проекта · 5%":"💰 Project fee · 5%","Начислено комиссии:":"Commission earned:","База начисления комиссии:":"Commission calculation base:","Завершённых игр с комиссией:":"Completed games with fee:","🎯 Задания":"🎯 Tasks","Твои цели ALLCOINS":"Your ALLCOINS goals","Выполняй задания, открывай награды и развивай свой баланс.":"Complete tasks, unlock rewards and grow your balance.","Выполнено заданий":"Tasks completed","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Tasks and rewards are for testing and stored on this device. Server-side reward crediting is not connected yet.","Комнаты обновляются каждые 3 минуты":"Rooms refresh every 3 minutes","До 3 билетов на игрока в каждой комнате":"Up to 3 tickets per player in each room","📘 Инструкция по игре в лото":"📘 How to play Lotto","Ручной режим":"Manual mode","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Buy a ticket and stay in the room during the draw. When a number on your ticket is called, tap it yourself. A purple circle marks a covered number.","Автоматический режим":"Automatic mode","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Buy a ticket and leave the room or minimize the app. After about 8–11 seconds of inactivity, matching numbers will be marked automatically. Your ticket keeps playing even when you are not watching.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате ставки.":"Open the same room later to see the drawn numbers, ticket marks, round result, and any win or bet refund details.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"A green card means you won; a red card means you did not. Open a report for details; once viewed, it can be removed from your list.","🗑 Удалить все отчёты":"🗑 Delete all reports","← К комнатам":"← To rooms","Билет:":"Ticket:","Банк:":"Pot:","Билеты у тебя:":"Your tickets:","Числа:":"Numbers:","Отчёт после игры":"Post-game report","🎱 Игра в лото":"🎱 Lotto game","Числа выпадают автоматически каждые 3 секунды":"Numbers are drawn automatically every 3 seconds","🔊 Озвучка: ВКЛ":"🔊 Voice: ON","Выпавшие числа":"Drawn numbers","Ожидаем розыгрыш…":"Waiting for the draw…","Твои билеты · до 3":"Your tickets · up to 3","📘 Инструкция: ручная и автоматическая игра":"📘 Instructions: manual and automatic play","Ручная игра":"Manual play","Автоматическая игра":"Automatic play","Как посмотреть отчёт":"How to view a report","🂡 21 Очко":"🂡 21 Points","Классическое русское очко · игра против банкира":"Classic Russian 21 · play against the dealer","Цель:":"Goal:","набрать больше очков, чем банкир, но не больше 21.":"Score more points than the dealer, but no more than 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 count face value; jack = 2; queen = 3; king = 4; ace = 11.","Ход:":"Turn:","Банкир:":"Dealer:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"This is currently a single-player game against the computer. AC are virtual points in the prototype, not cash payouts.","♣ Онлайн-комнаты 21 Очко":"♣ 21 Points online rooms","Мест в каждой комнате":"Seats per room","Сумма ставки (от 100 до 1 000 000 AC)":"Bet amount (100–1,000,000 AC)","♧ Доступные комнаты":"♧ Available rooms","Комнаты по размеру ставки":"Rooms by bet size","Все ставки":"All bets","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"The creator starts the round when everyone is ready. You can start with one player and up to five participants.","🃏 Начать раунд":"🃏 Start round","🂡 21 Очко · Онлайн":"🂡 21 Points · Online","♛ Банкир":"♛ Dealer","Скрытая карта":"Hidden card","СЧЁТ: — / 21":"SCORE: — / 21","＋ Ещё карту":"＋ Hit","✋ Хватит":"✋ Stand","Банкир":"Dealer","Карты банкира":"Dealer's cards","1 место · 50%":"1st place · 50%","2 место · 30%":"2nd place · 30%","3 место · 20%":"3rd place · 20%","НЕДЕЛЯ ·":"WEEK ·","СЧЁТ":"SCORE","Тёплый каньон и рельсы":"Warm Canyon and Rails","Фиолетовый свет и кристаллы":"Purple light and crystals","БУМ!":"BOOM!","1 тыс.":"1K","10 тыс.":"10K","100 тыс.":"100K","1 млн":"1 million","♟ Шашки":"♟ Checkers","🤖 Тестовый бот":"🤖 Test bot","Вернуться в комнаты":"Return to rooms","Загружаю список комнат…":"Loading room list…","Вход: 100 AC":"Entry: 100 AC","От 1 000 000 AC без верхнего лимита":"From 1,000,000 AC with no upper limit","ИГРОКИ":"PLAYERS","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC are virtual game coins, not real money.","↻ Комнаты":"↻ Rooms","ЗАХВАТ БАШЕН":"TOWER CAPTURE","2–10 мест":"2–10 seats","КОМНАТА УНО":"UNO ROOM","УНО ОНЛАЙН":"UNO ONLINE","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Test mode: play against a bot without AC deductions or real payouts.","Подходит для проверки стола, ударов и очередности ходов.":"Useful for testing the table, shots and turn order.","Дождись второго игрока":"Wait for the second player","Бильярд ALLCOINS":"ALLCOINS Billiards","Оба игрока должны иметь достаточно AC для ставки.":"Both players must have enough AC for the bet.","Когда оба будут в комнате, создатель сможет начать игру.":"When both players are in the room, the creator can start the game.","Текущая игра останется на сервере.":"The current game will remain on the server.","Вы вернётесь в лобби бильярда.":"You will return to the billiards lobby.","Чтобы случайно не выйти, выбери действие ниже.":"To avoid leaving by accident, choose an action below.","Камень Ножницы Бумага — ALLCOINS":"Rock Paper Scissors — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Rules may differ between groups; this version uses 7♣ as a joker and a special three-sixes combination."},"nl":{"Главная":"Home","Игры":"Spellen","Вывод":"Opnemen","Профиль":"Profiel","Задание":"Taken","Пользователь Telegram":"Telegram-gebruiker","Гость":"Gast","не авторизован":"Niet ingelogd","🌐 Язык приложения / Language":"🌐 App-taal / Language","Язык приложения":"App-taal","Язык будет применяться к меню и игровым интерфейсам.":"Je taal wordt in alle menu's en spellen gebruikt.","Баланс:":"Saldo:","Энергия:":"Energie:","Повторить вход":"Opnieuw inloggen","🛟 Нужна помощь?":"🛟 Hulp nodig?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Meld vastlopen, fouten of problemen met kamers of animaties. Je melding wordt opgeslagen in ALLCOINS Support; er wordt geen Telegram-botbericht gestuurd.","Обратиться в поддержку":"Contact opnemen met support","Что случилось?":"Wat is er gebeurd?","Зависание / тормоза":"Vastlopen / vertraging","Ошибка или вылет":"Fout of crash","Карты / анимация":"Kaarten / animatie","Комнаты / подключение":"Kamers / verbinding","Баланс / ставка":"Saldo / inzet","Другое":"Overig","Опиши проблему":"Beschrijf het probleem","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Bijvoorbeeld: een UNO-kaart verdwijnt en verschijnt opnieuw. Vermeld in welk spel dit gebeurt en wat je daarvoor deed.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Stuur geen wachtwoorden, API-sleutels of betaalgegevens. De tekst, categorie en Telegram-ID worden opgeslagen voor diagnose.","Отправить обращение ➤":"Supportverzoek verzenden ➤","Обновить обращения":"Meldingen vernieuwen","Поддержка игроков":"Spelersondersteuning","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Meldingen worden op de server opgeslagen. ALLCOINS AI maakt een eerste diagnose. Je kunt het rapport kopiëren en met ChatGPT delen voor hulp bij codefixes.","Заявки ещё не загружены.":"Meldingen zijn nog niet geladen.","В работу":"In behandeling","Решено":"Opgelost","Новая":"Nieuw","Решена":"Opgelost","Создать":"Maken","Создать комнату":"Kamer maken","Создать комнату 2 игрока":"Kamer maken · 2 spelers","Найти комнату":"Kamer zoeken","Найти комнату ↻ Обновить":"Kamer zoeken ↻ Vernieuwen","Открытые комнаты":"Open kamers","Обновить":"Vernieuwen","Загрузка...":"Laden...","Загрузка…":"Laden…","Подключаем комнаты…":"Verbinding maken met kamers…","Подключаемся к комнатам УНО…":"Verbinden met UNO-kamers…","Загружаем комнаты…":"Kamers laden…","Загружаем список комнат…":"Kameroverzicht laden…","Загрузка комнат…":"Kamers laden…","Подключаюсь к комнате…":"Verbinden met de kamer…","Комната":"Kamer","Комната ALLCOINS":"ALLCOINS-kamer","Название комнаты":"Kamernaam","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Je kunt alleen een kamer maken en daarna met bots oefenen.","Ставка":"Inzet","Ставка:":"Inzet:","Ставка за игрока (AC)":"Inzet per speler (AC)","Ставка за раунд":"Inzet per ronde","Ограничение ставок":"Inzetlimieten","От 1 000 000 AC — без верхнего лимита":"Vanaf 1.000.000 AC — geen bovengrens","Минимальная ставка — 100 AC.":"Minimale inzet — 100 AC.","Верхнего лимита ставки не задаётся.":"Er is geen maximale inzet.","Баланс":"Saldo","Игрок":"Speler","Игроки":"Spelers","Игроков:":"Spelers:","Максимум игроков за столом":"Maximaal aantal spelers aan tafel","Сколько игроков?":"Hoeveel spelers?","2 игрока":"2 spelers","3 игрока":"3 spelers","4 игрока":"4 spelers","5 игроков":"5 spelers","6 игроков":"6 spelers","Готов":"Klaar","Готово":"Gereed","Начать игру":"Spel starten","Начать онлайн":"Online starten","Старт с ботами":"Start met bots","Добавить бота":"Bot toevoegen","🤖 Добавить бота для проверки":"🤖 Testbot toevoegen","Играть":"Spelen","Играть с ботом (тест) · выключено":"Spelen tegen bot (test) · uit","Играть с тестовым ботом":"Spelen met testbot","Присоединиться":"Deelnemen","Присоединиться к игре":"Deelnemen aan spel","Отмена":"Annuleren","Назад":"Terug","← Назад":"← Terug","← Назад к играм":"← Terug naar spellen","← Меню":"← Menu","В меню":"Naar menu","Закрыть":"Sluiten","Сохранить":"Opslaan","Отправить":"Verzenden","Да":"Ja","Нет":"Nee","Выйти из комнаты":"Kamer verlaten","Выйти из игры":"Spel verlaten","Выйти в комнаты":"Terug naar kamers","Выйти в лобби":"Terug naar lobby","Вернуться к комнатам":"Terug naar kamers","Вернуться в лобби":"Terug naar lobby","Остаться":"Blijven","Покинуть комнату?":"De kamer verlaten?","Покинуть партию?":"De partij verlaten?","Ты выйдешь из комнаты ожидания.":"Je verlaat de wachtruimte.","Чтобы не выйти случайно, подтверди действие.":"Bevestig om te voorkomen dat je per ongeluk vertrekt.","Комната онлайн · общий ход скрыт до завершения выбора.":"Onlinekamer · keuzes blijven verborgen tot iedereen heeft gekozen.","Ожидание игроков":"Wachten op spelers","Ожидаем игроков.":"Wachten op spelers.","Ожидаем начало раунда.":"Wachten tot de ronde begint.","Ожидаем готовности игроков...":"Wachten tot spelers klaar zijn...","Новая игра":"Nieuw spel","Новая партия":"Nieuwe partij","Играть снова":"Opnieuw spelen","Играть ещё":"Opnieuw spelen","Победа":"Gewonnen","Победа!":"Gewonnen!","Поражение":"Verloren","Проигрыш":"Verlies","Выигрыш":"Winst","Бито":"Geslagen","Беру":"Ik neem","Правила":"Regels","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Geef de bom door voordat de lont opbrandt.","Ставь фигуры на поле 8×8.":"Plaats stukken op het bord van 8×8.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Vul volledige rijen en kolommen om ze te verwijderen en punten te verdienen.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Kies hieronder een stuk en tik daarna op de cel voor de linkerbovenhoek.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Sleep een stuk naar het bord of tik eerst op het stuk en daarna op een cel.","Турнирная таблица":"Toernooiklassement","Недельный рейтинг · UTC":"Weekranglijst · UTC","ОБЩИЙ БАНК":"TOTALE PRIJZENPOT","К распределению:":"Te verdelen:","Участников:":"Deelnemers:","Пока нет участников.":"Nog geen deelnemers.","Войди в турнир, чтобы попасть в таблицу.":"Doe mee aan het toernooi om op de ranglijst te komen.","Место":"Plaats","Очки":"Punten","Приз сейчас":"Huidige prijs","Приз предварительный и меняется до закрытия недели.":"De prijs is voorlopig en verandert tot het einde van de week.","5% банка — комиссия проекта.":"5% van de prijzenpot is projectcommissie.","Пока нет записей":"Nog geen resultaten","РЕКОРД НЕДЕЛИ":"WEEKRECORD","ЛИЧНЫЙ РЕКОРД":"PERSOONLIJK RECORD","Недельный турнир ALLCOINS":"ALLCOINS-weektoernooi","Тренировка без турнира":"Trainen zonder toernooi","Войти в турнир · 1 000 AC":"Deelnemen aan toernooi · 1.000 AC","Тренировка":"Training","Игра окончена":"Spel afgelopen","Результат сохранён.":"Resultaat opgeslagen.","Сыграть ещё раз":"Opnieuw spelen","Счёт":"Score","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"PERSOONLIJK RECORD · WEEK","Бильярд Онлайн":"Biljart Online","Американский пул · 2 игрока · комнаты на AC":"Amerikaans pool · 2 spelers · kamers met AC","Верхнего лимита нет: доступная ставка зависит от баланса игроков.":"Er is geen bovengrens; de inzet hangt af van de saldi van spelers.","В обычной комнате ставка списывается при начале партии.":"In een normale kamer wordt de inzet afgeschreven wanneer de partij begint.","БИЛЬЯРД ONLINE Комната":"BILJART ONLINE Kamer","Твой ход.":"Jij bent aan de beurt.","Коснись стола и потяни в направлении удара.":"Raak de tafel aan en trek in de richting van de stoot.","СИЛА УДАРА":"STOOTKRACHT","Прицелься и отпусти, чтобы ударить.":"Richt en laat los om te stoten.","🎥 Повернуть стол":"🎥 Draai tafel","🎯 Прицел":"🎯 Richten","Новый раунд":"Nieuwe ronde","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Vereenvoudigde 8-ball-regels: pot je eigen groep en daarna de zwarte achtbal.","Попадание битка в лузу передаёт ход.":"Als de witte bal in een pocket valt, gaat de beurt naar de ander.","Ставка будет списана при старте игры.":"De inzet wordt afgeschreven wanneer het spel begint.","🏆 РЕКОРД НЕДЕЛИ":"🏆 WEEKRECORD","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Geef de bom door","Быстрая игра на реакцию · до 4 игроков":"Snelle reactiespel · tot 4 spelers","Не держи её долго!":"Houd hem niet te lang vast!","Выберите локацию":"Kies een locatie","Медная шахта":"Kopermijn","Кристальная шахта":"Kristalmijn","Твой ник":"Je bijnaam","▶ Начать игру":"▶ Spel starten","📘 Как играть":"📘 Hoe speel je","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Tik op een andere actieve speler en de bom vliegt met een booganimatie naar die speler.","Время до взрыва случайное, точный момент заранее не показывается.":"De tijd tot de explosie is willekeurig en wordt niet vooraf getoond.","За взрыв игрок теряет одно сердце.":"Bij een explosie verliest een speler één hart.","После трёх потерь он выбывает.":"Na drie verliezen valt de speler af.","Побеждает последний оставшийся игрок.":"De laatst overgebleven speler wint.","Нажми на соперника":"Tik op een tegenstander","ДВИЖЕНИЕ":"BEWEGING","Следующий раунд":"Volgende ronde","Бомба взорвалась.":"De bom is ontploft.","Шашки Онлайн":"Dammen Online","Классические русские шашки · поле 8×8":"Klassiek Russisch dammen · bord 8×8","💰 Ставка комнаты":"💰 Kamerinzet","Размер ставки 100 AC":"Inzetbedrag 100 AC","Или введи сумму вручную":"Of voer zelf een bedrag in","＋ Создать комнату":"＋ Kamer maken","⌕ Найти комнату":"⌕ Kamer zoeken","✅ Комната создана":"✅ Kamer aangemaakt","Комната шашек":"Damakamer","🌍 Список комнат":"🌍 Kameroverzicht","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Testmodus: de bot is beschikbaar om zetten, slaan en dammen te testen.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"De kamerlijst wordt voorlopig alleen in deze browser opgeslagen en is niet zichtbaar voor andere spelers.","Ставка сейчас демонстрационная: реальные AC не списываются и не начисляются.":"De inzet is alleen een demo; echte AC worden niet afgeschreven of bijgeschreven.","← Комнаты":"← Kamers","♟ Тестовый бот":"♟ Testbot","Соперник · чёрные":"Tegenstander · zwart","Твой ход — белые":"Jij bent aan zet — wit","Нажми на свою шашку, затем на подсвеченную клетку":"Tik op je steen en daarna op het gemarkeerde vak","👤 Игрок":"👤 Speler","Ты играешь белыми":"Je speelt wit","↻ Новая партия":"↻ Nieuwe partij","Правило: брать обязательно.":"Regel: slaan is verplicht.","Дамка ходит и бьёт по диагонали на любое расстояние.":"Een dam beweegt en slaat diagonaal over elke afstand.","Партия завершена":"Partij afgelopen","Камень · Ножницы · Бумага":"Steen · Papier · Schaar","Онлайн-комнаты до 3 игроков.":"Onlinekamers voor maximaal 3 spelers.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Twee spelers kunnen meteen starten; een derde doet mee in de volgende ronde.","Минимум 100 AC.":"Minimaal 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Open kamers ↻ Vernieuwen","AC — виртуальные монеты ALLCOINS, не деньги.":"AC zijn virtuele ALLCOINS-munten, geen geld.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Kamers • inzetten • AC-pot","ВАШ БАЛАНС":"JOUW SALDO","Создать комнату до 6 игроков":"Maak een kamer voor maximaal 6 spelers","Начальный взнос (AC)":"Startinleg (AC)","Взнос в банк":"Inleg in de pot","Показать комнаты с лимитом":"Kamers met limiet tonen","Все лимиты":"Alle limieten","Основные правила":"Belangrijkste regels","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Elke speler krijgt 3 kaarten uit een spel van 36 kaarten (6–aas).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"Aas = 11 punten; 10, boer, vrouw en koning = 10; andere kaarten tellen op nominale waarde.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Kaarten van dezelfde soort worden opgeteld; drie gelijke waarden vormen een sterke combinatie.","В свой ход можно сбросить карты, поддержать ставку, повысить её или вскрыться, когда осталось двое.":"Je kunt passen, meegaan, verhogen of tonen wanneer er nog twee spelers zijn.","Ожидание":"Wachten","НАЧАЛЬНЫЙ ВЗНОС":"STARTINLEG","ТЕКУЩАЯ СТАВКА":"HUIDIGE INZET","ВАШИ КАРТЫ":"JOUW KAARTEN","ВАША КОМБИНАЦИЯ":"JOUW COMBINATIE","Подсчитываем комбинацию":"Combinatie berekenen","Новая ставка всего (AC)":"Nieuwe totale inzet (AC)","Повысить":"Verhogen","Пас":"Passen","Поддержать":"Meegaan","Вскрыться":"Kaarten tonen","Сумма повышения — добавка к текущей ставке.":"De verhoging wordt toegevoegd aan de huidige inzet.","🔄 Рематч":"🔄 Opnieuw spelen","УНО Онлайн":"UNO Online","Классические карты · комнаты · игра на весь экран":"Klassieke kaarten · kamers · volledig scherm","AC ставки от 100":"AC-inzetten vanaf 100","Тренировка с ботами проходит без списания AC.":"Oefenen met bots kost geen AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Je kunt alleen een kamer maken en daarna met bots oefenen.","УНО поддерживает от 2 до 10 игроков.":"UNO ondersteunt 2 tot 10 spelers.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Elke partij gebruikt de klassieke stapel van 108 kaarten; kaarten, beurten en kamers worden op de server opgeslagen.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Kamers zijn zichtbaar voor ALLCOINS-spelers zolang ze wachten op een partij en er plek is.","Карта играетcя по цвету, числу или значку.":"Speel een kaart met dezelfde kleur, hetzelfde nummer of symbool.","Подбери карту по цвету, числу или символу.":"Kies een kaart met dezelfde kleur, hetzelfde nummer of symbool.","Твои карты":"Jouw kaarten","ТВОЙ ХОД":"JOUW BEURT","＋ Взять карту":"＋ Kaart pakken","Передать ход →":"Beurt overslaan →","Дикая карта меняет цвет.":"Een joker verandert de kleur.","Выбери цвет":"Kies een kleur","Какой цвет будет следующим после этой дикой карты?":"Welke kleur volgt na deze joker?","Лото Онлайн":"Online Lotto","Комнаты и ставки":"Kamers en inzetten","Выберите ставку":"Kies een inzet","Публичная":"Openbaar","Приватная":"Privé","Баланс пользователя":"Gebruikerssaldo","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Echte uitbetalingen zijn niet beschikbaar. Stuur geen betaalgegevens. Het AC-saldo is testgeld zonder geldwaarde.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Dit is een testprototype. AC zijn virtuele munten, geen geld.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Energieherstel is momenteel een demo en is niet gekoppeld aan advertenties.","⚡ Восстановить":"⚡ Herstellen","🎁 Бонус":"🎁 Bonus","Бонус дня":"Dagelijkse bonus","Правила: брать обязательно.":"Regel: slaan is verplicht.","Ссылка на игру":"Spellink","Перетащи фигуру на поле":"Sleep het stuk naar het bord","Выбери ставку":"Kies een inzet","Уже в комнате":"Al in de kamer","Нажми, чтобы продолжить":"Tik om door te gaan","Обновление турнира…":"Toernooi wordt bijgewerkt…","Не сбрасывается":"Wordt niet gereset","Оплати вход один раз на неделю.":"Betaal eenmaal per week entree.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Je beste score komt in de ranglijst; na afloop van de week worden prijzen automatisch aan de leiders toegekend.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"De toernooiweek eindigt op maandag om 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"Het weekrecord wordt opnieuw gestart; het persoonlijk record blijft staan.","Подключаем профиль и проверяем баланс…":"Profiel verbinden en saldo controleren…","Тренировка · личный рекорд сохраняется":"Training · persoonlijk record wordt opgeslagen","▶ Посмотреть рекламу и продолжить":"▶ Bekijk advertentie en ga verder","Режим игры":"Spelmodus","🤖 Ты против ботов":"🤖 Jij tegen bots","Боты сами передают бомбу.":"Bots geven de bom automatisch door.","Удобно проверить игру в одиночку.":"Handig om het spel alleen te testen.","👥 Игроки на одном экране":"👥 Spelers op één scherm","Все участники по очереди нажимают на игрока-получателя.":"Spelers tikken om de beurt op degene die de bom krijgt.","В игре нет ставок и списания AC.":"Er zijn geen inzetten of AC-afschrijvingen in dit spel.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Dit is een aparte arcademodus om animaties en het doorgeven te testen.","Бомба случайно попадает к одному из игроков.":"De bom komt willekeurig bij een speler terecht.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Als de lont bijna op is, knippert en trilt de bom.","В ИГРЕ":"IN HET SPEL","ФИТИЛЬ":"LONT","Горит":"Brandt","ШАХТА":"MIJN","Передай бомбу!":"Geef de bom door!","РАУНД":"RONDE","Комната создана":"Kamer aangemaakt","Список комнат":"Kameroverzicht","Тест с ботом":"Test met bot","При победе удерживается комиссия проекта 5% от общего банка; при ничьей ставки возвращаются.":"Bij winst wordt 5% projectcommissie ingehouden op de totale pot; bij gelijkspel worden inzetten teruggegeven.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"In de testmodus met bot zijn er geen afschrijvingen, uitbetalingen of kosten.","Захват башен":"Torens veroveren","Стратегия в реальном времени · до 3 игроков":"Realtime strategie · maximaal 3 spelers","Захвати карту":"Verover de kaart","Веди войска.":"Leid je troepen.","Захватывай башни.":"Verover torens.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Kies je toren en doel; ertussen verschijnt een asfaltweg.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Troepen lopen erover; wegen blijven op de kaart zodat je meerdere routes tegelijk kunt gebruiken.","Ставка, AC":"Inzet, AC","От 100 AC без фиксированной верхней границы.":"Vanaf 100 AC zonder vaste bovengrens.","Ставка не может превышать твой баланс.":"De inzet mag niet hoger zijn dan je saldo.","Создатель + соперники":"Maker + tegenstanders","⚔️ Тренировка с ботами · бесплатно":"⚔️ Trainen met bots · gratis","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Onlinekamers zijn beschikbaar nadat je ALLCOINS via Telegram opent.","Тренировка с ботами работает без ставки.":"Oefenen met bots werkt zonder inzet.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Hier verschijnen online kamers van andere spelers.","Синхронизация":"Synchroniseren","Как играть: нажми на свою башню, затем на цель.":"Zo speel je: tik op je toren en daarna op een doel.","Или проведи пальцем от башни к башне.":"Of veeg met je vinger van toren naar toren.","Войска":"Troepen","На столе":"Op tafel","Игроки за столом":"Spelers aan tafel","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"De maker kan het online spel starten zodra er minstens één andere speler meedoet.","Тренировка с ботами доступна в любой момент.":"Oefenen met bots is altijd beschikbaar.","БАНК КОМНАТЫ":"KAMERPOT","Карта играется по цвету, числу или значку.":"Speel door kleur, nummer of symbool te matchen.","Ты захватил карту.":"Je hebt de kaart veroverd.","Приз распределяется автоматически после завершения недели.":"Prijzen worden automatisch verdeeld na afloop van de week.","Нет доступных комнат.":"Geen kamers beschikbaar.","Ошибка загрузки. Попробуй ещё раз.":"Laadfout. Probeer het opnieuw.","Сначала войди через Telegram.":"Log eerst in via Telegram.","Выбери комнату по цене билета.":"Kies een kamer op basis van de ticketprijs.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"De ronde begint automatisch 3 minuten nadat de kamer is geopend.","За столом до 6 мест":"Maximaal 6 plaatsen aan tafel","Ход игрока":"Beurt van speler","Карты розданы.":"Kaarten gedeeld.","0 AC БАНК":"0 AC-POT","Ставка 100 AC":"Inzet 100 AC","Классическая колода":"Klassiek kaartspel","Колода":"Stapel","Твой лучший результат попадёт в рейтинг":"Je beste score komt in de ranglijst","Выйти в лобби бильярда":"Terug naar biljartlobby","Начать тренировку":"Training starten","Комната бильярда":"Biljartkamer","Повернуть стол":"Tafel draaien","Прицел":"Richten","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"JOUW SALDO","Виртуальные монеты ALLCOINS":"Virtuele ALLCOINS-munten","⚡ Энергия":"⚡ Energie","НОВАЯ ИГРА · BLOCK BLAST":"NIEUW SPEL · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Toegang — 1.000 AC · persoonlijk record blijft bewaard","Дурак Онлайн":"Durak Online","21 Очко":"21 punten","Камень Ножницы Бумага":"Steen Papier Schaar","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Kamer maken","Подкидной":"Bijgooien","Переводной":"Doorschuiven","24 карт":"24 kaarten","36 карт":"36 kaarten","52 карт":"52 kaarten","1 игрок + бот":"1 speler + bot","⚡ Скорость игры":"⚡ Spelsnelheid","Обычная":"Normaal","Минимум: 100 AC":"Minimum: 100 AC","🔒 Тип комнаты":"🔒 Kamertype","🌍 Открытая":"🌍 Openbaar","🌍 Доступные комнаты":"🌍 Beschikbare kamers","🔊 Звук":"🔊 Geluid","👤 Ты":"👤 Jij","⚔️ Атаковать":"⚔️ Aanvallen","🛡️ Побить карту":"🛡️ Kaart slaan","Создавай комнаты Лото и приглашай игроков.":"Maak Lotto-kamers en nodig spelers uit.","Количество игроков (от 2 до 1000)":"Aantal spelers (2–1.000)","Цена одного билета (AC)":"Prijs per ticket (AC)","Всего билетов:":"Totaal aantal tickets:","Мои билеты в выбранной комнате:":"Mijn tickets in de gekozen kamer:","🎟️ Купить билет":"🎟️ Ticket kopen","Подготовка системы вывода":"Opname wordt voorbereid","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Hier komt een interface voor opnameverzoeken als er een apart systeem wordt ontwikkeld en aangesloten.","Проверить статус":"Status controleren","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS-beheer","💰 Комиссия проекта · 5%":"💰 Projectcommissie · 5%","Начислено комиссии:":"Verdiende commissie:","База начисления комиссии:":"Grondslag voor commissie:","Завершённых игр с комиссией:":"Voltooide spellen met commissie:","🎯 Задания":"🎯 Taken","Твои цели ALLCOINS":"Jouw ALLCOINS-doelen","Выполняй задания, открывай награды и развивай свой баланс.":"Voltooi taken, ontgrendel beloningen en verhoog je saldo.","Выполнено заданий":"Voltooide taken","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Taken en beloningen zijn testgegevens die op dit apparaat worden opgeslagen. Beloningen worden nog niet via de server bijgeschreven.","Комнаты обновляются каждые 3 минуты":"Kamers worden elke 3 minuten vernieuwd","До 3 билетов на игрока в каждой комнате":"Maximaal 3 tickets per speler per kamer","📘 Инструкция по игре в лото":"📘 Speluitleg Lotto","Ручной режим":"Handmatige modus","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Koop een ticket en blijf in de kamer tijdens de trekking. Tik zelf op een getrokken nummer dat op je ticket staat. Een paarse cirkel markeert een afgedekt nummer.","Автоматический режим":"Automatische modus","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Koop een ticket en verlaat de kamer of minimaliseer de app. Na ongeveer 8–11 seconden inactiviteit worden overeenkomende nummers automatisch gemarkeerd. Je ticket blijft meespelen als je niet kijkt.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате ставки.":"Open later dezelfde kamer om getrokken nummers, markeringen op tickets, de ronde-uitkomst en informatie over winst of terugbetaling te bekijken.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Een groene kaart betekent winst; een rode kaart betekent verlies. Open een verslag voor details; na het bekijken kun je het alleen uit je eigen lijst verwijderen.","🗑 Удалить все отчёты":"🗑 Alle rapporten verwijderen","← К комнатам":"← Naar kamers","Билет:":"Ticket:","Банк:":"Pot:","Билеты у тебя:":"Jouw tickets:","Числа:":"Nummers:","Отчёт после игры":"Verslag na het spel","🎱 Игра в лото":"🎱 Lottospel","Числа выпадают автоматически каждые 3 секунды":"Elke 3 seconden wordt automatisch een nummer getrokken","🔊 Озвучка: ВКЛ":"🔊 Spraak: AAN","Выпавшие числа":"Getrokken nummers","Ожидаем розыгрыш…":"Wachten op de trekking…","Твои билеты · до 3":"Jouw tickets · maximaal 3","📘 Инструкция: ручная и автоматическая игра":"📘 Uitleg: handmatig en automatisch spelen","Ручная игра":"Handmatig spelen","Автоматическая игра":"Automatisch spelen","Как посмотреть отчёт":"Een verslag bekijken","🂡 21 Очко":"🂡 21 punten","Классическое русское очко · игра против банкира":"Klassiek Russisch 21 · tegen de bankier","Цель:":"Doel:","набрать больше очков, чем банкир, но не больше 21.":"Scoor meer punten dan de bankier, maar niet meer dan 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 tellen als nominale waarde; boer = 2; vrouw = 3; koning = 4; aas = 11.","Ход:":"Beurt:","Банкир:":"Bankier:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Dit is momenteel een spel voor één speler tegen de computer. AC zijn virtuele punten, geen uitbetalingen in geld.","♣ Онлайн-комнаты 21 Очко":"♣ Onlinekamers 21 punten","Мест в каждой комнате":"Plaatsen per kamer","Сумма ставки (от 100 до 1 000 000 AC)":"Inzetbedrag (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Beschikbare kamers","Комнаты по размеру ставки":"Kamers op basis van inzet","Все ставки":"Alle inzetten","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"De maker start de ronde als iedereen klaar is. Je kunt met één speler beginnen en maximaal vijf deelnemers hebben.","🃏 Начать раунд":"🃏 Ronde starten","🂡 21 Очко · Онлайн":"🂡 21 punten · Online","♛ Банкир":"♛ Bankier","Скрытая карта":"Verborgen kaart","СЧЁТ: — / 21":"SCORE: — / 21","＋ Ещё карту":"＋ Nog een kaart","✋ Хватит":"✋ Genoeg","Банкир":"Bankier","Карты банкира":"Kaarten van de bankier","1 место · 50%":"1e plaats · 50%","2 место · 30%":"2e plaats · 30%","3 место · 20%":"3e plaats · 20%","НЕДЕЛЯ ·":"WEEK ·","СЧЁТ":"SCORE","Тёплый каньон и рельсы":"Warme kloof en rails","Фиолетовый свет и кристаллы":"Paars licht en kristallen","БУМ!":"BOEM!","1 тыс.":"1K","10 тыс.":"10K","100 тыс.":"100K","1 млн":"1 miljoen","♟ Шашки":"♟ Dammen","🤖 Тестовый бот":"🤖 Testbot","Вернуться в комнаты":"Terug naar kamers","Загружаю список комнат…":"Kameroverzicht laden…","Вход: 100 AC":"Toegang: 100 AC","От 1 000 000 AC без верхнего лимита":"Vanaf 1.000.000 AC zonder bovengrens","ИГРОКИ":"SPELERS","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC zijn virtuele spelmunten, geen echt geld.","↻ Комнаты":"↻ Kamers","ЗАХВАТ БАШЕН":"TORENS VEROOVEREN","2–10 мест":"2–10 plaatsen","КОМНАТА УНО":"UNO-KAMER","УНО ОНЛАЙН":"UNO ONLINE","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Testmodus: speel tegen een bot zonder AC-afschrijving of echte uitbetalingen.","Подходит для проверки стола, ударов и очередности ходов.":"Geschikt om de tafel, stoten en beurtvolgorde te testen.","Дождись второго игрока":"Wacht op de tweede speler","Бильярд ALLCOINS":"ALLCOINS Biljart","Оба игрока должны иметь достаточно AC для ставки.":"Beide spelers moeten genoeg AC hebben voor de inzet.","Когда оба будут в комнате, создатель сможет начать игру.":"Wanneer beide spelers in de kamer zijn, kan de maker het spel starten.","Текущая игра останется на сервере.":"Het huidige spel blijft op de server staan.","Вы вернётесь в лобби бильярда.":"Je keert terug naar de biljartlobby.","Чтобы случайно не выйти, выбери действие ниже.":"Kies hieronder een actie om niet per ongeluk te vertrekken.","Камень Ножницы Бумага — ALLCOINS":"Steen Papier Schaar — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Regels verschillen per groep; deze versie gebruikt 7♣ als joker en een speciale combinatie van drie zessen."},"tr":{"Главная":"Ana sayfa","Игры":"Oyunlar","Вывод":"Para çekme","Профиль":"Profil","Задание":"Görevler","Пользователь Telegram":"Telegram kullanıcısı","Гость":"Misafir","не авторизован":"Giriş yapılmadı","🌐 Язык приложения / Language":"🌐 Uygulama dili / Language","Язык приложения":"Uygulama dili","Язык будет применяться к меню и игровым интерфейсам.":"Seçtiğin dil tüm menülerde ve oyunlarda kullanılır.","Баланс:":"Bakiye:","Энергия:":"Enerji:","Повторить вход":"Tekrar giriş yap","🛟 Нужна помощь?":"🛟 Yardım mı gerekiyor?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Donma, hata, oda veya animasyon sorunlarını bildir. Talebin ALLCOINS Desteğe kaydedilir; Telegram bot mesajı gönderilmez.","Обратиться в поддержку":"Desteğe başvur","Что случилось?":"Ne oldu?","Зависание / тормоза":"Donma / gecikme","Ошибка или вылет":"Hata veya çökme","Карты / анимация":"Kartlar / animasyon","Комнаты / подключение":"Odalar / bağlantı","Баланс / ставка":"Bakiye / bahis","Другое":"Diğer","Опиши проблему":"Sorunu açıkla","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Örnek: UNO'da bir kart kaybolup tekrar beliriyor. Hangi oyunda olduğunu ve hata öncesinde neye bastığını yaz.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Şifre, API anahtarı veya ödeme bilgisi gönderme. Metin, kategori ve Telegram kimliğin tanılama için saklanır.","Отправить обращение ➤":"Destek talebi gönder ➤","Обновить обращения":"Talepleri yenile","Поддержка игроков":"Oyuncu desteği","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Talepler sunucuya kaydedilir. ALLCOINS AI ilk tanılamayı hazırlar. Raporu kopyalayıp kod düzeltme yardımı için ChatGPT'ye gönderebilirsin.","Заявки ещё не загружены.":"Talepler henüz yüklenmedi.","В работу":"İşleme al","Решено":"Çözüldü","Новая":"Yeni","Решена":"Çözüldü","Создать":"Oluştur","Создать комнату":"Oda oluştur","Создать комнату 2 игрока":"Oda oluştur · 2 oyuncu","Найти комнату":"Oda bul","Найти комнату ↻ Обновить":"Oda bul ↻ Yenile","Открытые комнаты":"Açık odalar","Обновить":"Yenile","Загрузка...":"Yükleniyor...","Загрузка…":"Yükleniyor…","Подключаем комнаты…":"Odalara bağlanılıyor…","Подключаемся к комнатам УНО…":"UNO odalarına bağlanılıyor…","Загружаем комнаты…":"Odalar yükleniyor…","Загружаем список комнат…":"Oda listesi yükleniyor…","Загрузка комнат…":"Odalar yükleniyor…","Подключаюсь к комнате…":"Odaya bağlanılıyor…","Комната":"Oda","Комната ALLCOINS":"ALLCOINS odası","Название комнаты":"Oda adı","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Tek başına oda oluşturup botlarla antrenman başlatabilirsin.","Ставка":"Bahis","Ставка:":"Bahis:","Ставка за игрока (AC)":"Oyuncu başına bahis (AC)","Ставка за раунд":"Tur bahsi","Ограничение ставок":"Bahis sınırları","От 1 000 000 AC — без верхнего лимита":"1.000.000 AC'den itibaren üst sınır yok","Минимальная ставка — 100 AC.":"Minimum bahis — 100 AC.","Верхнего лимита ставки не задаётся.":"Bahis için üst sınır yoktur.","Баланс":"Bakiye","Игрок":"Oyuncu","Игроки":"Oyuncular","Игроков:":"Oyuncular:","Максимум игроков за столом":"Masadaki maksimum oyuncu sayısı","Сколько игроков?":"Kaç oyuncu?","2 игрока":"2 oyuncu","3 игрока":"3 oyuncu","4 игрока":"4 oyuncu","5 игроков":"5 oyuncu","6 игроков":"6 oyuncu","Готов":"Hazır","Готово":"Tamamlandı","Начать игру":"Oyunu başlat","Начать онлайн":"Çevrimiçi başlat","Старт с ботами":"Botlarla başlat","Добавить бота":"Bot ekle","🤖 Добавить бота для проверки":"🤖 Test botu ekle","Играть":"Oyna","Играть с ботом (тест) · выключено":"Botla oyna (test) · kapalı","Играть с тестовым ботом":"Test botuyla oyna","Присоединиться":"Katıl","Присоединиться к игре":"Oyuna katıl","Отмена":"İptal","Назад":"Geri","← Назад":"← Geri","← Назад к играм":"← Oyunlara dön","← Меню":"← Menü","В меню":"Menüye dön","Закрыть":"Kapat","Сохранить":"Kaydet","Отправить":"Gönder","Да":"Evet","Нет":"Hayır","Выйти из комнаты":"Odadan çık","Выйти из игры":"Oyundan çık","Выйти в комнаты":"Odalara dön","Выйти в лобби":"Lobiye dön","Вернуться к комнатам":"Odalara dön","Вернуться в лобби":"Lobiye dön","Остаться":"Kal","Покинуть комнату?":"Odadan çıkılsın mı?","Покинуть партию?":"Maçtan çıkılsın mı?","Ты выйдешь из комнаты ожидания.":"Bekleme odasından çıkacaksın.","Чтобы не выйти случайно, подтверди действие.":"Yanlışlıkla çıkmamak için işlemi onayla.","Комната онлайн · общий ход скрыт до завершения выбора.":"Çevrimiçi oda · herkes seçimini yapana kadar hamleler gizlidir.","Ожидание игроков":"Oyuncular bekleniyor","Ожидаем игроков.":"Oyuncular bekleniyor.","Ожидаем начало раунда.":"Turun başlaması bekleniyor.","Ожидаем готовности игроков...":"Oyuncuların hazır olması bekleniyor...","Новая игра":"Yeni oyun","Новая партия":"Yeni maç","Играть снова":"Tekrar oyna","Играть ещё":"Tekrar oyna","Победа":"Zafer","Победа!":"Zafer!","Поражение":"Mağlubiyet","Проигрыш":"Kaybetme","Выигрыш":"Kazanç","Бито":"Yenildi","Беру":"Alıyorum","Правила":"Kurallar","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Fitil bitmeden bombayı başka oyuncuya aktar.","Ставь фигуры на поле 8×8.":"Taşları 8×8 tahtaya yerleştir.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Satır ve sütunları tamamen doldurarak temizle ve puan kazan.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Aşağıdan bir şekil seç, sonra sol üst köşesinin geleceği hücreye dokun.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Şekli tahtaya sürükle veya önce şekle, sonra hücreye dokun.","Турнирная таблица":"Turnuva tablosu","Недельный рейтинг · UTC":"Haftalık sıralama · UTC","ОБЩИЙ БАНК":"TOPLAM ÖDÜL HAVUZU","К распределению:":"Dağıtılacak:","Участников:":"Katılımcılar:","Пока нет участников.":"Henüz katılımcı yok.","Войди в турнир, чтобы попасть в таблицу.":"Tabloda görünmek için turnuvaya katıl.","Место":"Sıra","Очки":"Puan","Приз сейчас":"Mevcut ödül","Приз предварительный и меняется до закрытия недели.":"Ödül geçicidir ve hafta bitene kadar değişebilir.","5% банка — комиссия проекта.":"Havuzun %5'i proje komisyonudur.","Пока нет записей":"Henüz kayıt yok","РЕКОРД НЕДЕЛИ":"HAFTALIK REKOR","ЛИЧНЫЙ РЕКОРД":"KİŞİSEL REKOR","Недельный турнир ALLCOINS":"ALLCOINS haftalık turnuvası","Тренировка без турнира":"Turnuvasız antrenman","Войти в турнир · 1 000 AC":"Turnuvaya katıl · 1.000 AC","Тренировка":"Antrenman","Игра окончена":"Oyun bitti","Результат сохранён.":"Sonuç kaydedildi.","Сыграть ещё раз":"Tekrar oyna","Счёт":"Skor","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"KİŞİSEL REKOR · HAFTA","Бильярд Онлайн":"Çevrimiçi Bilardo","Американский пул · 2 игрока · комнаты на AC":"Amerikan bilardosu · 2 oyuncu · AC odaları","Верхнего лимита нет: доступная ставка зависит от баланса игроков.":"Üst sınır yoktur; kullanılabilir bahis oyuncu bakiyesine bağlıdır.","В обычной комнате ставка списывается при начале партии.":"Normal odada bahis maç başladığında düşülür.","БИЛЬЯРД ONLINE Комната":"BİLARDO ONLINE Oda","Твой ход.":"Senin sıran.","Коснись стола и потяни в направлении удара.":"Masaya dokun ve vuruş yönüne çek.","СИЛА УДАРА":"VURUŞ GÜCÜ","Прицелься и отпусти, чтобы ударить.":"Nişan al ve vuruş için bırak.","🎥 Повернуть стол":"🎥 Masayı döndür","🎯 Прицел":"🎯 Nişan","Новый раунд":"Yeni tur","МАСШТАБ":"YAKINLAŞTIRMA","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Basitleştirilmiş 8-ball kuralları: kendi grubunu, sonra siyah sekiz topu sok.","Попадание битка в лузу передаёт ход.":"Beyaz top deliğe girerse sıra rakibe geçer.","Ставка будет списана при старте игры.":"Bahis oyun başlayınca düşülür.","🏆 РЕКОРД НЕДЕЛИ":"🏆 HAFTALIK REKOR","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Bombayı aktar","Быстрая игра на реакцию · до 4 игроков":"Hızlı refleks oyunu · en fazla 4 oyuncu","Не держи её долго!":"Çok uzun tutma!","Выберите локацию":"Konum seç","Медная шахта":"Bakır Madeni","Кристальная шахта":"Kristal Madeni","Твой ник":"Takma adın","▶ Начать игру":"▶ Oyunu başlat","📘 Как играть":"📘 Nasıl oynanır","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Başka bir aktif oyuncuya dokun; bomba aktarım animasyonuyla ona doğru uçar.","Время до взрыва случайное, точный момент заранее не показывается.":"Patlamaya kalan süre rastgeledir ve önceden gösterilmez.","За взрыв игрок теряет одно сердце.":"Bomba patladığında oyuncu bir can kaybeder.","После трёх потерь он выбывает.":"Üç can kaybından sonra oyuncu elenir.","Побеждает последний оставшийся игрок.":"Son kalan oyuncu kazanır.","Нажми на соперника":"Rakibe dokun","ДВИЖЕНИЕ":"HAREKET","Следующий раунд":"Sonraki tur","Бомба взорвалась.":"Bomba patladı.","Шашки Онлайн":"Çevrimiçi Dama","Классические русские шашки · поле 8×8":"Klasik Rus daması · 8×8 tahta","💰 Ставка комнаты":"💰 Oda bahsi","Размер ставки 100 AC":"Bahis tutarı 100 AC","Или введи сумму вручную":"Veya tutarı elle gir","＋ Создать комнату":"＋ Oda oluştur","⌕ Найти комнату":"⌕ Oda bul","✅ Комната создана":"✅ Oda oluşturuldu","Комната шашек":"Dama odası","🌍 Список комнат":"🌍 Oda listesi","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Test modu: bot hamleleri, taş almayı ve damayı denemek için hazır.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"Oda listesi şimdilik yalnızca bu tarayıcıda tutulur ve diğer oyunculara görünmez.","Ставка сейчас демонстрационная: реальные AC не списываются и не начисляются.":"Bahis yalnızca demodur; gerçek AC düşülmez veya eklenmez.","← Комнаты":"← Odalar","♟ Тестовый бот":"♟ Test botu","Соперник · чёрные":"Rakip · siyah","Твой ход — белые":"Sıra sende — beyaz","Нажми на свою шашку, затем на подсвеченную клетку":"Taşına, ardından vurgulanan kareye dokun","👤 Игрок":"👤 Oyuncu","Ты играешь белыми":"Beyaz taşlarla oynuyorsun","↻ Новая партия":"↻ Yeni maç","Правило: брать обязательно.":"Kural: taş almak zorunludur.","Дамка ходит и бьёт по диагонали на любое расстояние.":"Dama, çaprazda istediği mesafe boyunca hareket eder ve taş alır.","Партия завершена":"Maç tamamlandı","Камень · Ножницы · Бумага":"Taş · Kağıt · Makas","Онлайн-комнаты до 3 игроков.":"En fazla 3 oyunculu çevrimiçi odalar.","Два участника могут начать сразу; третий подключается к следующему раунду.":"İki oyuncu hemen başlayabilir; üçüncü oyuncu sonraki turda katılır.","Минимум 100 AC.":"En az 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Açık odalar ↻ Yenile","AC — виртуальные монеты ALLCOINS, не деньги.":"AC, para olmayan sanal ALLCOINS paralarıdır.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Odalar • bahis • AC havuzu","ВАШ БАЛАНС":"BAKİYEN","Создать комнату до 6 игроков":"6 oyuncuya kadar oda oluştur","Начальный взнос (AC)":"Başlangıç katkısı (AC)","Взнос в банк":"Havuza katkı","Показать комнаты с лимитом":"Limitli odaları göster","Все лимиты":"Tüm limitler","Основные правила":"Temel kurallar","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Her oyuncuya 36 kartlık desteden 3 kart dağıtılır (6-as).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"As 11 puan; 10, vale, kız ve papaz 10; diğer kartlar üzerindeki değer kadar.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Aynı tür kartların puanları toplanır; üç aynı değer güçlü kombinasyon oluşturur.","В свой ход можно сбросить карты, поддержать ставку, повысить её или вскрыться, когда осталось двое.":"Sıranda pas geçebilir, bahsi görebilir, artırabilir veya iki kişi kalınca açılabilirsin.","Ожидание":"Bekleniyor","НАЧАЛЬНЫЙ ВЗНОС":"BAŞLANGIÇ KATKISI","ТЕКУЩАЯ СТАВКА":"MEVCUT BAHİS","ВАШИ КАРТЫ":"KARTLARIN","ВАША КОМБИНАЦИЯ":"KOMBİNASYONUN","Подсчитываем комбинацию":"Kombinasyon hesaplanıyor","Новая ставка всего (AC)":"Yeni toplam bahis (AC)","Повысить":"Artır","Пас":"Pas","Поддержать":"Gör","Вскрыться":"Kartları aç","Сумма повышения — добавка к текущей ставке.":"Artış miktarı mevcut bahse eklenir.","🔄 Рематч":"🔄 Rövanş","УНО Онлайн":"UNO Çevrimiçi","Классические карты · комнаты · игра на весь экран":"Klasik kartlar · odalar · tam ekran oyun","AC ставки от 100":"100 AC'den başlayan bahisler","Тренировка с ботами проходит без списания AC.":"Botlarla antrenmanda AC düşülmez.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Tek başına oda oluşturup botlarla antrenman başlatabilirsin.","УНО поддерживает от 2 до 10 игроков.":"UNO 2 ila 10 oyuncuyu destekler.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Her maçta klasik 108 kartlık deste kullanılır; kartlar, hamleler ve odalar sunucuya kaydedilir.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Odalar, maç başlamadan önce ve boş yer varken ALLCOINS oyuncularına görünür.","Карта играетcя по цвету, числу или значку.":"Kartı rengine, numarasına veya sembolüne göre oyna.","Подбери карту по цвету, числу или символу.":"Rengine, numarasına veya sembolüne uyan kartı seç.","Твои карты":"Kartların","ТВОЙ ХОД":"SIRAN SENDE","＋ Взять карту":"＋ Kart çek","Передать ход →":"Sırayı geçir →","Дикая карта меняет цвет.":"Joker kart rengi değiştirir.","Выбери цвет":"Renk seç","Какой цвет будет следующим после этой дикой карты?":"Bu joker karttan sonra hangi renk gelecek?","Лото Онлайн":"Çevrimiçi Loto","Комнаты и ставки":"Odalar ve bahisler","Выберите ставку":"Bahis seç","Публичная":"Herkese açık","Приватная":"Özel","Баланс пользователя":"Kullanıcı bakiyesi","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Gerçek para çekme etkin değil. Ödeme bilgisi gönderme. AC bakiyesi test amaçlıdır ve parasal değeri yoktur.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Bu bir test prototipidir. AC gerçek para değil, sanal paradır.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Enerji yenileme şu anda demodur ve reklamlara bağlı değildir.","⚡ Восстановить":"⚡ Yenile","🎁 Бонус":"🎁 Bonus","Бонус дня":"Günlük bonus","Правила: брать обязательно.":"Kural: taş almak zorunludur.","Ссылка на игру":"Oyun bağlantısı","Перетащи фигуру на поле":"Şekli tahtaya sürükle","Выбери ставку":"Bahis seç","Уже в комнате":"Zaten odada","Нажми, чтобы продолжить":"Devam etmek için dokun","Обновление турнира…":"Turnuva güncelleniyor…","Не сбрасывается":"Sıfırlanmaz","Оплати вход один раз на неделю.":"Haftada bir kez giriş ücreti öde.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"En iyi skorun sıralamaya girer; hafta bitince ödüller liderlere otomatik verilir.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"Turnuva haftası pazartesi 00.00 UTC'de biter.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"Haftalık rekor sıfırlanır, kişisel rekor kalır.","Подключаем профиль и проверяем баланс…":"Profil bağlanıyor ve bakiye kontrol ediliyor…","Тренировка · личный рекорд сохраняется":"Antrenman · kişisel rekor kaydedilir","▶ Посмотреть рекламу и продолжить":"▶ Reklamı izle ve devam et","Режим игры":"Oyun modu","🤖 Ты против ботов":"🤖 Botlara karşı","Боты сами передают бомбу.":"Botlar bombayı otomatik aktarır.","Удобно проверить игру в одиночку.":"Oyunu tek başına test etmek için kullanışlıdır.","👥 Игроки на одном экране":"👥 Aynı ekranda oyuncular","Все участники по очереди нажимают на игрока-получателя.":"Oyuncular sırayla bombayı alacak oyuncuya dokunur.","В игре нет ставок и списания AC.":"Bu oyunda bahis veya AC kesintisi yoktur.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Bu, animasyonları ve aktarma mekaniğini denemek için ayrı bir arcade modudur.","Бомба случайно попадает к одному из игроков.":"Bomba rastgele bir oyuncuya verilir.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Fitil bitmek üzereyken bomba yanıp söner ve titrer.","В ИГРЕ":"OYUNDA","ФИТИЛЬ":"FİTİL","Горит":"Yanıyor","ШАХТА":"MADEN","Передай бомбу!":"Bombayı aktar!","РАУНД":"TUR","Комната создана":"Oda oluşturuldu","Список комнат":"Oda listesi","Тест с ботом":"Bot testi","При победе удерживается комиссия проекта 5% от общего банка; при ничьей ставки возвращаются.":"Kazançta toplam havuzdan %5 proje komisyonu alınır; beraberlikte bahisler iade edilir.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"Bot test modunda kesinti, ödeme veya komisyon yoktur.","Захват башен":"Kule ele geçirme","Стратегия в реальном времени · до 3 игроков":"Gerçek zamanlı strateji · en fazla 3 oyuncu","Захвати карту":"Haritayı ele geçir","Веди войска.":"Birliklerini yönet.","Захватывай башни.":"Kuleleri ele geçir.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Kulenı ve hedefi seç; aralarında asfalt bir yol oluşur.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Birlikler yolda ilerler; yollar haritada kalır ve aynı anda birden fazla rota kullanabilirsin.","Ставка, AC":"Bahis, AC","От 100 AC без фиксированной верхней границы.":"100 AC'den başlar, sabit üst sınır yoktur.","Ставка не может превышать твой баланс.":"Bahis bakiyeni aşamaz.","Создатель + соперники":"Kurucu + rakipler","⚔️ Тренировка с ботами · бесплатно":"⚔️ Botlarla antrenman · ücretsiz","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Çevrimiçi odalar ALLCOINS'i Telegram üzerinden açınca kullanılabilir.","Тренировка с ботами работает без ставки.":"Bot antrenmanı bahis olmadan çalışır.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Diğer oyuncuların oluşturduğu çevrimiçi odalar burada görünür.","Синхронизация":"Eşitleniyor","Как играть: нажми на свою башню, затем на цель.":"Nasıl oynanır: kulene, ardından hedefe dokun.","Или проведи пальцем от башни к башне.":"Ya da parmağını bir kuleden diğerine sürükle.","Войска":"Birlikler","На столе":"Masada","Игроки за столом":"Masadaki oyuncular","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"Kurucu, en az bir kişi daha katıldığında çevrimiçi oyunu başlatabilir.","Тренировка с ботами доступна в любой момент.":"Bot antrenmanı her zaman kullanılabilir.","БАНК КОМНАТЫ":"ODA HAVUZU","Карта играется по цвету, числу или значку.":"Renk, sayı veya sembole göre oyna.","Ты захватил карту.":"Haritayı ele geçirdin.","Приз распределяется автоматически после завершения недели.":"Ödüller hafta bittikten sonra otomatik dağıtılır.","Нет доступных комнат.":"Kullanılabilir oda yok.","Ошибка загрузки. Попробуй ещё раз.":"Yükleme hatası. Tekrar dene.","Сначала войди через Telegram.":"Önce Telegram üzerinden giriş yap.","Выбери комнату по цене билета.":"Bilet fiyatına göre oda seç.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"Oda açıldıktan 3 dakika sonra tur otomatik başlar.","За столом до 6 мест":"Masada en fazla 6 yer","Ход игрока":"Oyuncunun sırası","Карты розданы.":"Kartlar dağıtıldı.","0 AC БАНК":"0 AC HAVUZ","Ставка 100 AC":"100 AC bahis","Классическая колода":"Klasik deste","Колода":"Deste","Твой лучший результат попадёт в рейтинг":"En iyi skorun sıralamaya girer","Выйти в лобби бильярда":"Bilardo lobisine dön","Начать тренировку":"Antrenmanı başlat","Комната бильярда":"Bilardo odası","Повернуть стол":"Masayı döndür","Прицел":"Nişan","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"BAKİYEN","Виртуальные монеты ALLCOINS":"ALLCOINS sanal paraları","⚡ Энергия":"⚡ Enerji","НОВАЯ ИГРА · BLOCK BLAST":"YENİ OYUN · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Giriş — 1.000 AC · kişisel rekor korunur","Дурак Онлайн":"Durak Online","21 Очко":"21 Puan","Камень Ножницы Бумага":"Taş Kağıt Makas","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Oda oluştur","Подкидной":"Atmalı","Переводной":"Transferli","24 карт":"24 kart","36 карт":"36 kart","52 карт":"52 kart","1 игрок + бот":"1 oyuncu + bot","⚡ Скорость игры":"⚡ Oyun hızı","Обычная":"Normal","Минимум: 100 AC":"En az: 100 AC","🔒 Тип комнаты":"🔒 Oda türü","🌍 Открытая":"🌍 Açık","🌍 Доступные комнаты":"🌍 Kullanılabilir odalar","🔊 Звук":"🔊 Ses","👤 Ты":"👤 Sen","⚔️ Атаковать":"⚔️ Saldır","🛡️ Побить карту":"🛡️ Kartı yen","Создавай комнаты Лото и приглашай игроков.":"Loto odaları oluştur ve oyuncuları davet et.","Количество игроков (от 2 до 1000)":"Oyuncu sayısı (2–1.000)","Цена одного билета (AC)":"Bilet başına fiyat (AC)","Всего билетов:":"Toplam bilet:","Мои билеты в выбранной комнате:":"Seçili odadaki biletlerim:","🎟️ Купить билет":"🎟️ Bilet al","Подготовка системы вывода":"Para çekme hazırlanıyor","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Ayrı bir sistem geliştirilip bağlanırsa para çekme talebi arayüzü burada yer alacak.","Проверить статус":"Durumu kontrol et","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS yönetimi","💰 Комиссия проекта · 5%":"💰 Proje komisyonu · %5","Начислено комиссии:":"Kazanılan komisyon:","База начисления комиссии:":"Komisyon hesaplama tabanı:","Завершённых игр с комиссией:":"Komisyonlu tamamlanan oyunlar:","🎯 Задания":"🎯 Görevler","Твои цели ALLCOINS":"ALLCOINS hedeflerin","Выполняй задания, открывай награды и развивай свой баланс.":"Görevleri tamamla, ödülleri aç ve bakiyeni artır.","Выполнено заданий":"Tamamlanan görevler","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Görevler ve ödüller test amaçlıdır ve bu cihazda saklanır. Sunucu üzerinden ödül ekleme henüz bağlı değil.","Комнаты обновляются каждые 3 минуты":"Odalar her 3 dakikada bir yenilenir","До 3 билетов на игрока в каждой комнате":"Her odada oyuncu başına en fazla 3 bilet","📘 Инструкция по игре в лото":"📘 Loto nasıl oynanır","Ручной режим":"Manuel mod","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Bilet al ve çekiliş boyunca odada kal. Biletindeki bir sayı çekilirse kendin dokun. Mor daire işaretlenmiş sayıyı gösterir.","Автоматический режим":"Otomatik mod","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Bilet alıp odadan çık veya uygulamayı küçült. Yaklaşık 8–11 saniye işlem yapılmazsa eşleşen sayılar otomatik işaretlenir. Ekrana bakmasan da biletin oynamaya devam eder.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате ставки.":"Daha sonra aynı odayı açarak çekilen sayıları, bilet işaretlerini, tur sonucunu ve kazanç veya bahis iadesi bilgilerini görebilirsin.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Yeşil kart kazandığını, kırmızı kart kazanmadığını gösterir. Ayrıntılar için raporu aç; görüntüledikten sonra yalnızca kendi listenden silebilirsin.","🗑 Удалить все отчёты":"🗑 Tüm raporları sil","← К комнатам":"← Odalara dön","Билет:":"Bilet:","Банк:":"Havuz:","Билеты у тебя:":"Biletlerin:","Числа:":"Sayılar:","Отчёт после игры":"Oyun sonrası rapor","🎱 Игра в лото":"🎱 Loto oyunu","Числа выпадают автоматически каждые 3 секунды":"Sayılar her 3 saniyede bir otomatik çekilir","🔊 Озвучка: ВКЛ":"🔊 Ses: AÇIK","Выпавшие числа":"Çekilen sayılar","Ожидаем розыгрыш…":"Çekiliş bekleniyor…","Твои билеты · до 3":"Biletlerin · en fazla 3","📘 Инструкция: ручная и автоматическая игра":"📘 Talimatlar: manuel ve otomatik oyun","Ручная игра":"Manuel oyun","Автоматическая игра":"Otomatik oyun","Как посмотреть отчёт":"Rapor nasıl görüntülenir","🂡 21 Очко":"🂡 21 Puan","Классическое русское очко · игра против банкира":"Klasik Rus 21 puan · bankere karşı oyna","Цель:":"Amaç:","набрать больше очков, чем банкир, но не больше 21.":"Bankerden fazla ama 21'i geçmeyecek puan topla.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 üzerindeki değer; vale 2, kız 3, papaz 4, as 11 puandır.","Ход:":"Sıra:","Банкир:":"Banka:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Bu, şu anda bilgisayara karşı tek oyunculu bir oyundur. AC prototipte sanal puandır, gerçek ödeme değildir.","♣ Онлайн-комнаты 21 Очко":"♣ 21 Puan çevrimiçi odalar","Мест в каждой комнате":"Her odadaki yer sayısı","Сумма ставки (от 100 до 1 000 000 AC)":"Bahis tutarı (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Kullanılabilir odalar","Комнаты по размеру ставки":"Bahis miktarına göre odalar","Все ставки":"Tüm bahisler","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"Herkes hazır olduğunda kurucu turu başlatır. Bir oyuncuyla başlayabilir en fazla beş kişi katılabilir.","🃏 Начать раунд":"🃏 Turu başlat","🂡 21 Очко · Онлайн":"🂡 21 Puan · Çevrimiçi","♛ Банкир":"♛ Banka","Скрытая карта":"Gizli kart","СЧЁТ: — / 21":"SKOR: — / 21","＋ Ещё карту":"＋ Bir kart daha","✋ Хватит":"✋ Yeter","Банкир":"Banka","Карты банкира":"Bankanın kartları","1 место · 50%":"1. sıra · %50","2 место · 30%":"2. sıra · %30","3 место · 20%":"3. sıra · %20","НЕДЕЛЯ ·":"HAFTA ·","СЧЁТ":"SKOR","Тёплый каньон и рельсы":"Sıcak Kanyon ve Raylar","Фиолетовый свет и кристаллы":"Mor ışık ve kristaller","БУМ!":"BUM!","1 тыс.":"1 B","10 тыс.":"10 B","100 тыс.":"100 B","1 млн":"1 milyon","♟ Шашки":"♟ Dama","🤖 Тестовый бот":"🤖 Test botu","Вернуться в комнаты":"Odalara dön","Загружаю список комнат…":"Oda listesi yükleniyor…","Вход: 100 AC":"Giriş: 100 AC","От 1 000 000 AC без верхнего лимита":"1.000.000 AC'den itibaren üst sınır yok","ИГРОКИ":"OYUNCULAR","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC sanal oyun parasıdır, gerçek para değildir.","↻ Комнаты":"↻ Odalar","ЗАХВАТ БАШЕН":"KULE ELE GEÇİRME","2–10 мест":"2–10 yer","КОМНАТА УНО":"UNO ODASI","УНО ОНЛАЙН":"UNO ÇEVRİMİÇİ","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Test modu: AC kesintisi veya gerçek ödeme olmadan bota karşı oyna.","Подходит для проверки стола, ударов и очередности ходов.":"Masa, vuruşlar ve sıra düzenini test etmek için uygundur.","Дождись второго игрока":"İkinci oyuncuyu bekle","Бильярд ALLCOINS":"ALLCOINS Bilardo","Оба игрока должны иметь достаточно AC для ставки.":"Her iki oyuncunun da bahis için yeterli AC'si olmalı.","Когда оба будут в комнате, создатель сможет начать игру.":"İki oyuncu da odadayken kurucu oyunu başlatabilir.","Текущая игра останется на сервере.":"Mevcut oyun sunucuda kalacak.","Вы вернётесь в лобби бильярда.":"Bilardo lobisine döneceksin.","Чтобы случайно не выйти, выбери действие ниже.":"Yanlışlıkla çıkmamak için aşağıdan bir seçenek belirle.","Камень Ножницы Бумага — ALLCOINS":"Taş Kâğıt Makas — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Kurallar gruplara göre değişebilir; bu sürümde 7♣ joker ve özel üç altılı kombinasyonu kullanılır."},"es":{"Главная":"Inicio","Игры":"Juegos","Вывод":"Retirar","Профиль":"Perfil","Задание":"Tareas","Пользователь Telegram":"Usuario de Telegram","Гость":"Invitado","не авторизован":"No has iniciado sesión","🌐 Язык приложения / Language":"🌐 Idioma de la aplicación / Language","Язык приложения":"Idioma de la aplicación","Язык будет применяться к меню и игровым интерфейсам.":"El idioma elegido se usará en todos los menús y juegos.","Баланс:":"Saldo:","Энергия:":"Energía:","Повторить вход":"Volver a iniciar sesión","🛟 Нужна помощь?":"🛟 ¿Necesitas ayuda?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Informa de bloqueos, errores o problemas con salas o animaciones. La solicitud se guarda en el soporte de ALLCOINS; no se envía ningún mensaje del bot de Telegram.","Обратиться в поддержку":"Contactar con soporte","Что случилось?":"¿Qué ha ocurrido?","Зависание / тормоза":"Bloqueo / retraso","Ошибка или вылет":"Error o cierre inesperado","Карты / анимация":"Cartas / animación","Комнаты / подключение":"Salas / conexión","Баланс / ставка":"Saldo / apuesta","Другое":"Otro","Опиши проблему":"Describe el problema","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Ejemplo: una carta de UNO desaparece y vuelve a aparecer. Indica el juego y qué pulsaste antes del error.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"No envíes contraseñas, claves API ni datos de pago. El texto, la categoría y tu ID de Telegram se guardan para el diagnóstico.","Отправить обращение ➤":"Enviar solicitud de soporte ➤","Обновить обращения":"Actualizar solicitudes","Поддержка игроков":"Soporte a jugadores","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Las solicitudes se guardan en el servidor. ALLCOINS IA prepara un diagnóstico inicial. Puedes copiar el informe y compartirlo con ChatGPT para corregir el código.","Заявки ещё не загружены.":"Las solicitudes aún no se han cargado.","В работу":"En curso","Решено":"Resuelto","Новая":"Nueva","Решена":"Resuelta","Создать":"Crear","Создать комнату":"Crear sala","Создать комнату 2 игрока":"Crear sala · 2 jugadores","Найти комнату":"Buscar sala","Найти комнату ↻ Обновить":"Buscar sala ↻ Actualizar","Открытые комнаты":"Salas abiertas","Обновить":"Actualizar","Загрузка...":"Cargando...","Загрузка…":"Cargando…","Подключаем комнаты…":"Conectando con las salas…","Подключаемся к комнатам УНО…":"Conectando con salas de UNO…","Загружаем комнаты…":"Cargando salas…","Загружаем список комнат…":"Cargando lista de salas…","Загрузка комнат…":"Cargando salas…","Подключаюсь к комнате…":"Conectando con la sala…","Комната":"Sala","Комната ALLCOINS":"Sala ALLCOINS","Название комнаты":"Nombre de la sala","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Puedes crear una sala y después iniciar un entrenamiento con bots.","Ставка":"Apuesta","Ставка:":"Apuesta:","Ставка за игрока (AC)":"Apuesta por jugador (AC)","Ставка за раунд":"Apuesta por ronda","Ограничение ставок":"Límites de apuesta","От 1 000 000 AC — без верхнего лимита":"Desde 1.000.000 AC, sin límite máximo","Минимальная ставка — 100 AC.":"Apuesta mínima: 100 AC.","Верхнего лимита ставки не задаётся.":"No hay límite máximo de apuesta.","Баланс":"Saldo","Игрок":"Jugador","Игроки":"Jugadores","Игроков:":"Jugadores:","Максимум игроков за столом":"Máximo de jugadores en la mesa","Сколько игроков?":"¿Cuántos jugadores?","2 игрока":"2 jugadores","3 игрока":"3 jugadores","4 игрока":"4 jugadores","5 игроков":"5 jugadores","6 игроков":"6 jugadores","Готов":"Listo","Готово":"Hecho","Начать игру":"Iniciar juego","Начать онлайн":"Iniciar en línea","Старт с ботами":"Iniciar con bots","Добавить бота":"Añadir bot","🤖 Добавить бота для проверки":"🤖 Añadir bot de prueba","Играть":"Jugar","Играть с ботом (тест) · выключено":"Jugar contra bot (prueba) · desactivado","Играть с тестовым ботом":"Jugar con bot de prueba","Присоединиться":"Unirse","Присоединиться к игре":"Unirse a la partida","Отмена":"Cancelar","Назад":"Atrás","← Назад":"← Atrás","← Назад к играм":"← Volver a los juegos","← Меню":"← Menú","В меню":"Al menú","Закрыть":"Cerrar","Сохранить":"Guardar","Отправить":"Enviar","Да":"Sí","Нет":"No","Выйти из комнаты":"Salir de la sala","Выйти из игры":"Salir del juego","Выйти в комнаты":"Volver a las salas","Выйти в лобби":"Volver al vestíbulo","Вернуться к комнатам":"Volver a las salas","Вернуться в лобби":"Volver al vestíbulo","Остаться":"Quedarse","Покинуть комнату?":"¿Salir de la sala?","Покинуть партию?":"¿Salir de la partida?","Ты выйдешь из комнаты ожидания.":"Saldrás de la sala de espera.","Чтобы не выйти случайно, подтверди действие.":"Confirma para evitar salir por accidente.","Комната онлайн · общий ход скрыт до завершения выбора.":"Sala en línea · las elecciones se ocultan hasta que todos elijan.","Ожидание игроков":"Esperando jugadores","Ожидаем игроков.":"Esperando a los jugadores.","Ожидаем начало раунда.":"Esperando a que comience la ronda.","Ожидаем готовности игроков...":"Esperando a que los jugadores estén listos...","Новая игра":"Nueva partida","Новая партия":"Nueva partida","Играть снова":"Jugar de nuevo","Играть ещё":"Jugar otra vez","Победа":"Victoria","Победа!":"¡Victoria!","Поражение":"Derrota","Проигрыш":"Derrota","Выигрыш":"Ganancias","Бито":"Cubierto","Беру":"Recojo","Правила":"Reglas","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Pasa la bomba a otro jugador antes de que se consuma la mecha.","Ставь фигуры на поле 8×8.":"Coloca las piezas en el tablero de 8×8.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Completa filas y columnas para eliminarlas y ganar más puntos.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Elige una pieza abajo y toca la celda donde colocar su esquina superior izquierda.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Arrastra una pieza al tablero o toca la pieza y después una celda.","Турнирная таблица":"Tabla del torneo","Недельный рейтинг · UTC":"Clasificación semanal · UTC","ОБЩИЙ БАНК":"BANCO TOTAL","К распределению:":"A distribuir:","Участников:":"Participantes:","Пока нет участников.":"Aún no hay participantes.","Войди в турнир, чтобы попасть в таблицу.":"Únete al torneo para aparecer en la tabla.","Место":"Puesto","Очки":"Puntos","Приз сейчас":"Premio actual","Приз предварительный и меняется до закрытия недели.":"El premio es provisional y cambia hasta que cierre la semana.","5% банка — комиссия проекта.":"El 5 % del banco es la comisión del proyecto.","Пока нет записей":"Aún no hay registros","РЕКОРД НЕДЕЛИ":"RÉCORD SEMANAL","ЛИЧНЫЙ РЕКОРД":"RÉCORD PERSONAL","Недельный турнир ALLCOINS":"Torneo semanal de ALLCOINS","Тренировка без турнира":"Entrenamiento sin torneo","Войти в турнир · 1 000 AC":"Entrar al torneo · 1.000 AC","Тренировка":"Entrenamiento","Игра окончена":"Fin de la partida","Результат сохранён.":"Resultado guardado.","Сыграть ещё раз":"Jugar otra vez","Счёт":"Puntuación","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"RÉCORD PERSONAL · SEMANA","Бильярд Онлайн":"Billar en línea","Американский пул · 2 игрока · комнаты на AC":"Pool americano · 2 jugadores · salas con AC","Верхнего лимита нет: доступная ставка зависит от баланса игроков.":"No hay límite máximo; la apuesta depende del saldo de los jugadores.","В обычной комнате ставка списывается при начале партии.":"En una sala normal, la apuesta se descuenta al comenzar la partida.","БИЛЬЯРД ONLINE Комната":"BILLAR ONLINE Sala","Твой ход.":"Tu turno.","Коснись стола и потяни в направлении удара.":"Toca la mesa y arrastra en la dirección del golpe.","СИЛА УДАРА":"FUERZA DEL GOLPE","Прицелься и отпусти, чтобы ударить.":"Apunta y suelta para golpear.","🎥 Повернуть стол":"🎥 Girar mesa","🎯 Прицел":"🎯 Apuntar","Новый раунд":"Nueva ronda","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Reglas simplificadas de pool 8-ball: mete tu grupo y después la bola negra ocho.","Попадание битка в лузу передаёт ход.":"Si la bola blanca cae en una tronera, el turno pasa al rival.","Ставка будет списана при старте игры.":"La apuesta se descontará cuando comience la partida.","🏆 РЕКОРД НЕДЕЛИ":"🏆 RÉCORD SEMANAL","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Pasa la bomba","Быстрая игра на реакцию · до 4 игроков":"Juego rápido de reflejos · hasta 4 jugadores","Не держи её долго!":"¡No la sostengas mucho tiempo!","Выберите локацию":"Elige una ubicación","Медная шахта":"Mina de cobre","Кристальная шахта":"Mina de cristal","Твой ник":"Tu apodo","▶ Начать игру":"▶ Iniciar juego","📘 Как играть":"📘 Cómo jugar","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Toca a otro jugador activo y la bomba volará hacia él con una animación.","Время до взрыва случайное, точный момент заранее не показывается.":"El tiempo hasta la explosión es aleatorio y no se muestra por adelantado.","За взрыв игрок теряет одно сердце.":"Cuando explota la bomba, el jugador pierde un corazón.","После трёх потерь он выбывает.":"Tras tres pérdidas, el jugador queda eliminado.","Побеждает последний оставшийся игрок.":"Gana el último jugador que quede.","Нажми на соперника":"Toca a un rival","ДВИЖЕНИЕ":"MOVIMIENTO","Следующий раунд":"Siguiente ronda","Бомба взорвалась.":"La bomba ha explotado.","Шашки Онлайн":"Damas en línea","Классические русские шашки · поле 8×8":"Damas rusas clásicas · tablero 8×8","💰 Ставка комнаты":"💰 Apuesta de la sala","Размер ставки 100 AC":"Importe de apuesta 100 AC","Или введи сумму вручную":"O introduce una cantidad manualmente","＋ Создать комнату":"＋ Crear sala","⌕ Найти комнату":"⌕ Buscar sala","✅ Комната создана":"✅ Sala creada","Комната шашек":"Sala de damas","🌍 Список комнат":"🌍 Lista de salas","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Modo de prueba: el bot está listo para probar movimientos, capturas y damas.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"Por ahora, la lista de salas solo se guarda en este navegador y no es visible para otros jugadores.","Ставка сейчас демонстрационная: реальные AC не списываются и не начисляются.":"La apuesta es solo de demostración; no se descuentan ni abonan AC reales.","← Комнаты":"← Salas","♟ Тестовый бот":"♟ Bot de prueba","Соперник · чёрные":"Rival · negras","Твой ход — белые":"Tu turno — blancas","Нажми на свою шашку, затем на подсвеченную клетку":"Toca tu ficha y después la casilla resaltada","👤 Игрок":"👤 Jugador","Ты играешь белыми":"Juegas con blancas","↻ Новая партия":"↻ Nueva partida","Правило: брать обязательно.":"Regla: es obligatorio capturar.","Дамка ходит и бьёт по диагонали на любое расстояние.":"La dama mueve y captura en diagonal a cualquier distancia.","Партия завершена":"Partida finalizada","Камень · Ножницы · Бумага":"Piedra · Papel · Tijera","Онлайн-комнаты до 3 игроков.":"Salas en línea de hasta 3 jugadores.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Dos jugadores pueden comenzar de inmediato; el tercero entra en la siguiente ronda.","Минимум 100 AC.":"Mínimo 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Salas abiertas ↻ Actualizar","AC — виртуальные монеты ALLCOINS, не деньги.":"AC son monedas virtuales de ALLCOINS, no dinero.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Salas • apuestas • bote AC","ВАШ БАЛАНС":"TU SALDO","Создать комнату до 6 игроков":"Crear sala para hasta 6 jugadores","Начальный взнос (AC)":"Aporte inicial (AC)","Взнос в банк":"Aporte al bote","Показать комнаты с лимитом":"Mostrar salas por límite","Все лимиты":"Todos los límites","Основные правила":"Reglas principales","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Cada jugador recibe 3 cartas de una baraja de 36 (6-as).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"As = 11 puntos; 10, jota, reina y rey = 10; las demás cartas valen su número.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Se suman cartas del mismo palo; tres valores iguales forman una combinación fuerte.","В свой ход можно сбросить карты, поддержать ставку, повысить её или вскрыться, когда осталось двое.":"En tu turno puedes retirarte, igualar, subir o mostrar las cartas cuando queden dos.","Ожидание":"En espera","НАЧАЛЬНЫЙ ВЗНОС":"APORTE INICIAL","ТЕКУЩАЯ СТАВКА":"APUESTA ACTUAL","ВАШИ КАРТЫ":"TUS CARTAS","ВАША КОМБИНАЦИЯ":"TU COMBINACIÓN","Подсчитываем комбинацию":"Calculando combinación","Новая ставка всего (AC)":"Nueva apuesta total (AC)","Повысить":"Subir","Пас":"Pasar","Поддержать":"Igualar","Вскрыться":"Mostrar cartas","Сумма повышения — добавка к текущей ставке.":"El importe de subida se suma a la apuesta actual.","🔄 Рематч":"🔄 Revancha","УНО Онлайн":"UNO en línea","Классические карты · комнаты · игра на весь экран":"Cartas clásicas · salas · juego a pantalla completa","AC ставки от 100":"Apuestas AC desde 100","Тренировка с ботами проходит без списания AC.":"El entrenamiento con bots no descuenta AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Puedes crear una sala y después iniciar un entrenamiento con bots.","УНО поддерживает от 2 до 10 игроков.":"UNO admite de 2 a 10 jugadores.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Cada partida usa la baraja clásica de 108 cartas; las cartas, turnos y salas se guardan en el servidor.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Las salas son visibles para los jugadores de ALLCOINS mientras esperan una partida y tengan plazas libres.","Карта играетcя по цвету, числу или значку.":"Juega una carta que coincida en color, número o símbolo.","Подбери карту по цвету, числу или символу.":"Elige una carta por color, número o símbolo.","Твои карты":"Tus cartas","ТВОЙ ХОД":"TU TURNO","＋ Взять карту":"＋ Robar carta","Передать ход →":"Pasar turno →","Дикая карта меняет цвет.":"Una carta comodín cambia el color.","Выбери цвет":"Elige un color","Какой цвет будет следующим после этой дикой карты?":"¿Qué color seguirá después de este comodín?","Лото Онлайн":"Lotería en línea","Комнаты и ставки":"Salas y apuestas","Выберите ставку":"Elige una apuesta","Публичная":"Pública","Приватная":"Privada","Баланс пользователя":"Saldo del usuario","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Los retiros reales no están habilitados. No envíes datos de pago. El saldo AC es de prueba y no tiene valor monetario.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Este es un prototipo de prueba. AC son monedas virtuales, no dinero.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"La recuperación de energía es una demostración y no está conectada con anuncios.","⚡ Восстановить":"⚡ Restaurar","🎁 Бонус":"🎁 Bonificación","Бонус дня":"Bono diario","Правила: брать обязательно.":"Regla: es obligatorio capturar.","Ссылка на игру":"Enlace del juego","Перетащи фигуру на поле":"Arrastra la pieza al tablero","Выбери ставку":"Elige una apuesta","Уже в комнате":"Ya estás en la sala","Нажми, чтобы продолжить":"Pulsa para continuar","Обновление турнира…":"Actualizando el torneo…","Не сбрасывается":"No se reinicia","Оплати вход один раз на неделю.":"Paga la entrada una vez por semana.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Tu mejor puntuación entrará en la clasificación; al cerrar la semana, los premios se asignarán automáticamente a los líderes.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"La semana del torneo termina el lunes a las 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"El récord semanal se reinicia; el récord personal se conserva.","Подключаем профиль и проверяем баланс…":"Conectando el perfil y comprobando el saldo…","Тренировка · личный рекорд сохраняется":"Entrenamiento · se guarda el récord personal","▶ Посмотреть рекламу и продолжить":"▶ Ver anuncio y continuar","Режим игры":"Modo de juego","🤖 Ты против ботов":"🤖 Tú contra bots","Боты сами передают бомбу.":"Los bots pasan la bomba automáticamente.","Удобно проверить игру в одиночку.":"Útil para probar el juego en solitario.","👥 Игроки на одном экране":"👥 Jugadores en una pantalla","Все участники по очереди нажимают на игрока-получателя.":"Los jugadores tocan por turnos al jugador que recibirá la bomba.","В игре нет ставок и списания AC.":"Este juego no tiene apuestas ni descuentos de AC.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Este es un modo arcade independiente para probar animaciones y la mecánica de pasar la bomba.","Бомба случайно попадает к одному из игроков.":"La bomba llega aleatoriamente a uno de los jugadores.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Cuando la mecha está a punto de acabarse, la bomba parpadea y tiembla.","В ИГРЕ":"EN JUEGO","ФИТИЛЬ":"MECHA","Горит":"Ardiendo","ШАХТА":"MINA","Передай бомбу!":"¡Pasa la bomba!","РАУНД":"RONDA","Комната создана":"Sala creada","Список комнат":"Lista de salas","Тест с ботом":"Prueba con bot","При победе удерживается комиссия проекта 5% от общего банка; при ничьей ставки возвращаются.":"Al ganar se retiene una comisión del 5 % del bote total; en empate se devuelven las apuestas.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"En el modo de prueba con bot no hay descuentos, pagos ni comisiones.","Захват башен":"Conquista de torres","Стратегия в реальном времени · до 3 игроков":"Estrategia en tiempo real · hasta 3 jugadores","Захвати карту":"Conquista el mapa","Веди войска.":"Dirige tus tropas.","Захватывай башни.":"Conquista las torres.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Elige tu torre y un objetivo; aparecerá una carretera asfaltada entre ambos.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Las tropas avanzarán por ella; las carreteras permanecen en el mapa y puedes llevar varias rutas a la vez.","Ставка, AC":"Apuesta, AC","От 100 AC без фиксированной верхней границы.":"Desde 100 AC sin límite máximo fijo.","Ставка не может превышать твой баланс.":"La apuesta no puede superar tu saldo.","Создатель + соперники":"Creador + rivales","⚔️ Тренировка с ботами · бесплатно":"⚔️ Entrenamiento con bots · gratis","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Las salas en línea están disponibles al abrir ALLCOINS desde Telegram.","Тренировка с ботами работает без ставки.":"El entrenamiento con bots funciona sin apuesta.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Aquí aparecen las salas en línea creadas por otros jugadores.","Синхронизация":"Sincronizando","Как играть: нажми на свою башню, затем на цель.":"Cómo jugar: toca tu torre y después un objetivo.","Или проведи пальцем от башни к башне.":"O desliza el dedo de una torre a otra.","Войска":"Tropas","На столе":"En la mesa","Игроки за столом":"Jugadores en la mesa","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"El creador puede iniciar la partida en línea cuando entre al menos otra persona.","Тренировка с ботами доступна в любой момент.":"El entrenamiento con bots está disponible en cualquier momento.","БАНК КОМНАТЫ":"BOTE DE LA SALA","Карта играется по цвету, числу или значку.":"Juega haciendo coincidir color, número o símbolo.","Ты захватил карту.":"Has conquistado el mapa.","Приз распределяется автоматически после завершения недели.":"Los premios se distribuyen automáticamente al terminar la semana.","Нет доступных комнат.":"No hay salas disponibles.","Ошибка загрузки. Попробуй ещё раз.":"Error de carga. Inténtalo de nuevo.","Сначала войди через Telegram.":"Primero inicia sesión a través de Telegram.","Выбери комнату по цене билета.":"Elige una sala según el precio del boleto.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"La ronda comienza automáticamente 3 minutos después de abrir la sala.","За столом до 6 мест":"Hasta 6 asientos en la mesa","Ход игрока":"Turno del jugador","Карты розданы.":"Cartas repartidas.","0 AC БАНК":"BOTE 0 AC","Ставка 100 AC":"Apuesta 100 AC","Классическая колода":"Baraja clásica","Колода":"Baraja","Твой лучший результат попадёт в рейтинг":"Tu mejor puntuación entrará en la clasificación","Выйти в лобби бильярда":"Volver al vestíbulo de billar","Начать тренировку":"Iniciar entrenamiento","Комната бильярда":"Sala de billar","Повернуть стол":"Girar mesa","Прицел":"Apuntar","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"TU SALDO","Виртуальные монеты ALLCOINS":"Monedas virtuales ALLCOINS","⚡ Энергия":"⚡ Energía","НОВАЯ ИГРА · BLOCK BLAST":"NUEVO JUEGO · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Entrada: 1.000 AC · se conserva el récord personal","Дурак Онлайн":"Durak en línea","21 Очко":"21 puntos","Камень Ножницы Бумага":"Piedra Papel Tijera","🃏 Дурак Онлайн":"🃏 Durak en línea","＋ Создание комнаты":"＋ Crear sala","Подкидной":"Añadir carta","Переводной":"Transferible","24 карт":"24 cartas","36 карт":"36 cartas","52 карт":"52 cartas","1 игрок + бот":"1 jugador + bot","⚡ Скорость игры":"⚡ Velocidad del juego","Обычная":"Normal","Минимум: 100 AC":"Mínimo: 100 AC","🔒 Тип комнаты":"🔒 Tipo de sala","🌍 Открытая":"🌍 Pública","🌍 Доступные комнаты":"🌍 Salas disponibles","🔊 Звук":"🔊 Sonido","👤 Ты":"👤 Tú","⚔️ Атаковать":"⚔️ Atacar","🛡️ Побить карту":"🛡️ Cubrir la carta","Создавай комнаты Лото и приглашай игроков.":"Crea salas de Loto e invita a jugadores.","Количество игроков (от 2 до 1000)":"Número de jugadores (2–1.000)","Цена одного билета (AC)":"Precio de cada boleto (AC)","Всего билетов:":"Total de boletos:","Мои билеты в выбранной комнате:":"Mis boletos en la sala seleccionada:","🎟️ Купить билет":"🎟️ Comprar boleto","Подготовка системы вывода":"Preparando retiros","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Aquí aparecerá la interfaz de solicitudes de retiro si se desarrolla y conecta un sistema independiente.","Проверить статус":"Comprobar estado","🛡 Администрирование ALLCOINS":"🛡 Administración de ALLCOINS","💰 Комиссия проекта · 5%":"💰 Comisión del proyecto · 5%","Начислено комиссии:":"Comisión acumulada:","База начисления комиссии:":"Base de cálculo de la comisión:","Завершённых игр с комиссией:":"Partidas completadas con comisión:","🎯 Задания":"🎯 Tareas","Твои цели ALLCOINS":"Tus objetivos de ALLCOINS","Выполняй задания, открывай награды и развивай свой баланс.":"Completa tareas, desbloquea recompensas y aumenta tu saldo.","Выполнено заданий":"Tareas completadas","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Las tareas y recompensas son de prueba y se guardan en este dispositivo. Aún no se acreditan recompensas desde el servidor.","Комнаты обновляются каждые 3 минуты":"Las salas se actualizan cada 3 minutos","До 3 билетов на игрока в каждой комнате":"Hasta 3 boletos por jugador en cada sala","📘 Инструкция по игре в лото":"📘 Instrucciones para jugar al Loto","Ручной режим":"Modo manual","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Compra un boleto y permanece en la sala durante el sorteo. Cuando salga un número de tu boleto, tócalo tú mismo. Un círculo morado indica un número marcado.","Автоматический режим":"Modo automático","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Compra un boleto y sal de la sala o minimiza la aplicación. Tras unos 8–11 segundos de inactividad, los números coincidentes se marcarán automáticamente. Tu boleto seguirá jugando aunque no mires la pantalla.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате ставки.":"Vuelve a abrir la misma sala para ver los números sorteados, las marcas de los boletos, el resultado y los detalles del premio o reembolso.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Una tarjeta verde indica que ganaste; una roja, que no. Abre el informe para ver detalles; después de verlo, solo podrás borrarlo de tu lista.","🗑 Удалить все отчёты":"🗑 Eliminar todos los informes","← К комнатам":"← Volver a salas","Билет:":"Boleto:","Банк:":"Bote:","Билеты у тебя:":"Tus boletos:","Числа:":"Números:","Отчёт после игры":"Informe después de la partida","🎱 Игра в лото":"🎱 Juego de Loto","Числа выпадают автоматически каждые 3 секунды":"Los números salen automáticamente cada 3 segundos","🔊 Озвучка: ВКЛ":"🔊 Voz: ACTIVADA","Выпавшие числа":"Números sorteados","Ожидаем розыгрыш…":"Esperando el sorteo…","Твои билеты · до 3":"Tus boletos · hasta 3","📘 Инструкция: ручная и автоматическая игра":"📘 Instrucciones: juego manual y automático","Ручная игра":"Juego manual","Автоматическая игра":"Juego automático","Как посмотреть отчёт":"Cómo ver un informe","🂡 21 Очко":"🂡 21 puntos","Классическое русское очко · игра против банкира":"21 clásico ruso · juega contra la banca","Цель:":"Objetivo:","набрать больше очков, чем банкир, но не больше 21.":"Consigue más puntos que la banca, pero no más de 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"Del 6 al 10 valen su número; jota = 2, reina = 3, rey = 4, as = 11.","Ход:":"Turno:","Банкир:":"Banca:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Actualmente es una partida individual contra el ordenador. AC son puntos virtuales del prototipo, no pagos en dinero.","♣ Онлайн-комнаты 21 Очко":"♣ Salas en línea de 21 puntos","Мест в каждой комнате":"Plazas por sala","Сумма ставки (от 100 до 1 000 000 AC)":"Importe de apuesta (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Salas disponibles","Комнаты по размеру ставки":"Salas por importe de apuesta","Все ставки":"Todas las apuestas","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"El creador inicia la ronda cuando todos están listos. Se puede empezar con un jugador y hasta cinco participantes.","🃏 Начать раунд":"🃏 Iniciar ronda","🂡 21 Очко · Онлайн":"🂡 21 puntos · En línea","♛ Банкир":"♛ Banca","Скрытая карта":"Carta oculta","СЧЁТ: — / 21":"PUNTOS: — / 21","＋ Ещё карту":"＋ Otra carta","✋ Хватит":"✋ Basta","Банкир":"Banca","Карты банкира":"Cartas de la banca","1 место · 50%":"1.º puesto · 50 %","2 место · 30%":"2.º puesto · 30 %","3 место · 20%":"3.º puesto · 20 %","НЕДЕЛЯ ·":"SEMANA ·","СЧЁТ":"PUNTUACIÓN","Тёплый каньон и рельсы":"Cañón cálido y raíles","Фиолетовый свет и кристаллы":"Luz violeta y cristales","БУМ!":"¡BOOM!","1 тыс.":"1 mil","10 тыс.":"10 mil","100 тыс.":"100 mil","1 млн":"1 millón","♟ Шашки":"♟ Damas","🤖 Тестовый бот":"🤖 Bot de prueba","Вернуться в комнаты":"Volver a las salas","Загружаю список комнат…":"Cargando lista de salas…","Вход: 100 AC":"Entrada: 100 AC","От 1 000 000 AC без верхнего лимита":"Desde 1.000.000 AC sin límite máximo","ИГРОКИ":"JUGADORES","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC son monedas virtuales del juego, no dinero real.","↻ Комнаты":"↻ Salas","ЗАХВАТ БАШЕН":"CONQUISTA DE TORRES","2–10 мест":"2–10 plazas","КОМНАТА УНО":"SALA DE UNO","УНО ОНЛАЙН":"UNO EN LÍNEA","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Modo de prueba: juega contra un bot sin descuentos de AC ni pagos reales.","Подходит для проверки стола, ударов и очередности ходов.":"Sirve para probar la mesa, los golpes y el orden de los turnos.","Дождись второго игрока":"Espera al segundo jugador","Бильярд ALLCOINS":"Billar ALLCOINS","Оба игрока должны иметь достаточно AC для ставки.":"Ambos jugadores deben tener suficientes AC para la apuesta.","Когда оба будут в комнате, создатель сможет начать игру.":"Cuando ambos estén en la sala, el creador podrá iniciar la partida.","Текущая игра останется на сервере.":"La partida actual permanecerá en el servidor.","Вы вернётесь в лобби бильярда.":"Volverás al vestíbulo de billar.","Чтобы случайно не выйти, выбери действие ниже.":"Para no salir por accidente, elige una acción abajo.","Камень Ножницы Бумага — ALLCOINS":"Piedra Papel Tijera — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Las reglas varían según el grupo; esta versión usa el 7♣ como comodín y una combinación especial de tres seises."}};
+  const LANGS_AVAILABLE = ["ru","en","nl","tr","es","de","fr","pt","zh"];
+  let current = "ru", busy = false, scheduled = false;
+  function getSaved(){ try { const value=localStorage.getItem("allcoins_language")||"ru"; return LANGS_AVAILABLE.includes(value)?value:"ru"; } catch(_){ return "ru"; } }
+  let dictionaryCacheCode=null, dictionaryCache=null;
+  function getDictionary(){ if(dictionaryCacheCode!==current){ const extra=(window.ALLCOINS_I18N_EXTRA && window.ALLCOINS_I18N_EXTRA[current]) || {}; dictionaryCache=Object.assign({},LANGS.en || {},LANGS[current] || {},extra); dictionaryCacheCode=current; } return dictionaryCache || {}; }
+  function trText(value){
+    if (!value || current==="ru") return value;
+    const dict=getDictionary(), clean=value.trim();
+    if (dict[clean]) return value.replace(clean,dict[clean]);
+    let out=value;
+    const keys=Object.keys(dict).filter(k=>k.length>=4).sort((a,b)=>b.length-a.length);
+    for(const key of keys){ if(out.includes(key)) out=out.split(key).join(dict[key]); }
+    return out;
+  }
+  function excluded(node){
+    const p=node.parentElement;
+    return !p || !!p.closest("script,style,textarea,input,code,pre,[contenteditable='true'],[data-no-translate],#aiMessages,#supportDescription");
+  }
+  function apply(persist){
+    if(busy || !document.documentElement) return;
+    busy=true;
+    if(persist){ try{localStorage.setItem("allcoins_language",current);}catch(_){} }
+    document.documentElement.lang=current;
+    const walker=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+    for(const node of nodes){
+      if(excluded(node)) continue;
+      if(node.__allcoinsOriginalText===undefined || (node.__allcoinsLastRenderedText!==undefined && node.nodeValue!==node.__allcoinsLastRenderedText)) node.__allcoinsOriginalText=node.nodeValue;
+      const source=node.__allcoinsOriginalText;
+      const target=current==="ru" ? source : trText(source);
+      if(node.nodeValue!==target) node.nodeValue=target;
+      node.__allcoinsLastRenderedText=target;
+    }
+    const attrs=["placeholder","title","aria-label","alt"];
+    document.querySelectorAll("[placeholder],[title],[aria-label],[alt]").forEach(el=>{
+      for(const attr of attrs){
+        if(!el.hasAttribute(attr)) continue;
+        const marker="allcoinsOriginal"+attr.replace(/(^|-)(.)/g,(_,a,c)=>c.toUpperCase());
+        const lastMarker=marker+"LastRendered";
+        const actual=el.getAttribute(attr);
+        if(el.dataset[marker]===undefined || (el.dataset[lastMarker]!==undefined && actual!==el.dataset[lastMarker])) el.dataset[marker]=actual;
+        const source=el.dataset[marker];
+        const target=current==="ru"?source:trText(source);
+        if(actual!==target) el.setAttribute(attr,target);
+        el.dataset[lastMarker]=target;
+      }
+    });
+    const title=document.querySelector("title");
+    if(title){
+      if(title.dataset.allcoinsOriginalTitle===undefined) title.dataset.allcoinsOriginalTitle=title.textContent;
+      const translatedTitle=current==="ru"?title.dataset.allcoinsOriginalTitle:trText(title.dataset.allcoinsOriginalTitle); if(title.textContent!==translatedTitle) title.textContent=translatedTitle;
+    }
+    const selector=document.getElementById("allcoinsLanguage");
+    if(selector && selector.value!==current) selector.value=current;
+    const status=document.getElementById("languageStatus");
+    if(status){
+      const texts={ru:"Язык будет применяться к меню и игровым интерфейсам.",en:"Your language will be used throughout the menus and games.",nl:"Je taal wordt in alle menu's en spellen gebruikt.",tr:"Seçtiğin dil tüm menülerde ve oyunlarda kullanılır.",es:"El idioma elegido se usará en todos los menús y juegos."};
+      const statusText=texts[current]||texts.ru; if(status.textContent!==statusText) status.textContent=statusText;
+    }
+    busy=false;
+  }
+  function applySaved(){ current=getSaved(); apply(false); }
+  function schedule(){
+    if(scheduled || busy) return;
+    scheduled=true;
+    requestAnimationFrame(()=>{scheduled=false; if(document.getElementById("allcoinsLanguage")) current=document.getElementById("allcoinsLanguage").value||getSaved(); else current=getSaved(); apply(false);});
+  }
+  document.addEventListener("change",e=>{
+    if(e.target && e.target.id==="allcoinsLanguage"){ current=LANGS_AVAILABLE.includes(e.target.value)?e.target.value:"ru"; apply(true); }
+  });
+  window.addEventListener("storage",e=>{if(e.key==="allcoins_language"){current=getSaved();apply(false);}});
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",applySaved,{once:true}); else applySaved();
+  const observer=new MutationObserver(schedule);
+  const startObserver=()=>{ if(document.documentElement) observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title","aria-label","alt"]}); };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",startObserver,{once:true}); else startObserver();
+  // Old standalone AI navigation is intentionally absent. AI triage remains active in Support.
+  document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
+})();
+</script>
+</body>
+</html>

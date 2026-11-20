@@ -1,0 +1,172 @@
+import crypto from "node:crypto";
+
+const SUITS = ["♠", "♥", "♦", "♣"];
+const RANKS_24 = ["9", "10", "В", "Д", "К", "Туз"];
+const RANKS_36 = ["6", "7", "8", "9", "10", "В", "Д", "К", "Т"];
+const RANKS_52 = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "В", "Д", "К", "Туз"];
+
+
+export const DURAK_TURN_TIMEOUT_MS = 120_000;
+
+// Сервер определяет проигрыш по бездействию, поэтому таймер нельзя
+// считать только в браузере. Возвращаем данные так, чтобы endpoint мог
+// надёжно сохранить результат в БД вместе с состоянием партии.
+export function expireDurakTurnIfNeeded(game, nowMs = Date.now()) {
+  if (!game || game.status !== "playing") {
+    return { changed: false, timedOut: false };
+  }
+
+  const startedAt = Date.parse(game.turnStartedAt || "");
+  if (!Number.isFinite(startedAt)) {
+    // Для партий, созданных до появления таймера, начинаем отсчёт с первого
+    // запроса вместо мгновенного проигрыша.
+    game.turnStartedAt = new Date(nowMs).toISOString();
+    return { changed: true, timedOut: false };
+  }
+
+  if (nowMs - startedAt < DURAK_TURN_TIMEOUT_MS) {
+    return { changed: false, timedOut: false };
+  }
+
+  // Во время защиты действует отбивающийся. Во всех остальных игровых
+  // фазах (включая ожидание окончательного «Бито» после «Беру») действует
+  // атакующий игрок.
+  const activeIndex = game.phase === "defense"
+    ? Number(game.defenderIndex)
+    : Number(game.attackerIndex);
+  const activePlayer = Array.isArray(game.players)
+    ? game.players[activeIndex]
+    : null;
+
+  // Бот ходит автоматически при обработке предыдущего действия; его нельзя
+  // объявлять проигравшим за таймер ожидания ответа человека.
+  if (!activePlayer || String(activePlayer.telegramId) === "0") {
+    return { changed: false, timedOut: false };
+  }
+
+  const nowIso = new Date(nowMs).toISOString();
+  game.status = "finished";
+  game.phase = "finished";
+  game.finishedReason = "timeout";
+  game.turnTimedOutAt = nowIso;
+  game.turnTimedOutPlayerId = String(activePlayer.telegramId);
+  game.loserTelegramId = String(activePlayer.telegramId);
+  return { changed: true, timedOut: true, loserTelegramId: game.loserTelegramId };
+}
+
+const RANK_ORDER = {
+  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8,
+  "9": 9, "10": 10, "В": 11, "J": 11, "Д": 12, "Q": 12,
+  "К": 13, "K": 13, "Т": 14, "Туз": 14, "A": 14
+};
+
+export function createDurakDeck(deckSize = 36) {
+  const size = Number(deckSize);
+  if (![24, 36, 52].includes(size)) {
+    throw new RangeError("Размер колоды должен быть 24, 36 или 52 карты");
+  }
+  const ranks = size === 24 ? RANKS_24 : size === 52 ? RANKS_52 : RANKS_36;
+  return SUITS.flatMap((suit) => ranks.map((rank) => ({
+    suit,
+    rank,
+    id: `${rank}${suit}`
+  })));
+}
+
+export function shuffleDurakDeck(deck, randomInt = crypto.randomInt) {
+  const shuffled = [...deck];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+export function cardRank(card) {
+  return RANK_ORDER[String(card?.rank)] || 0;
+}
+
+export function beatsCard(defense, attack, trumpSuit) {
+  if (!defense || !attack) return false;
+  const defenseSuit = String(defense.suit ?? "");
+  const attackSuit = String(attack.suit ?? "");
+  const trump = String(trumpSuit ?? "");
+  if (defenseSuit === attackSuit) {
+    return cardRank(defense) > cardRank(attack);
+  }
+  return defenseSuit === trump && attackSuit !== trump;
+}
+
+// По классическим правилам первым атакует игрок с младшим козырем.
+export function chooseStartingPlayerIndex(hands, trumpSuit) {
+  if (!Array.isArray(hands) || hands.length < 2) {
+    throw new RangeError("Для выбора первого хода нужны минимум 2 игрока");
+  }
+
+  let chosenPlayer = -1;
+  let lowestTrumpRank = Infinity;
+
+  hands.forEach((hand, playerIndex) => {
+    for (const card of Array.isArray(hand) ? hand : []) {
+      if (card?.suit !== trumpSuit) continue;
+      const rank = cardRank(card);
+      if (rank > 0 && rank < lowestTrumpRank) {
+        lowestTrumpRank = rank;
+        chosenPlayer = playerIndex;
+      }
+    }
+  });
+
+  // Если козырей на руках нет, начинает первый присоединившийся игрок.
+  return chosenPlayer >= 0 ? chosenPlayer : 0;
+}
+
+// Бот выбирает недорогие карты и по возможности сохраняет козыри.
+export function chooseBotAttackIndex(hand, trumpSuit, requiredRanks = null) {
+  const candidates = hand
+    .map((card, index) => ({ card, index }))
+    .filter(({ card }) =>
+      !requiredRanks || requiredRanks.includes(card.rank)
+    );
+
+  candidates.sort((a, b) => {
+    const aTrump = a.card.suit === trumpSuit ? 1 : 0;
+    const bTrump = b.card.suit === trumpSuit ? 1 : 0;
+    return aTrump - bTrump || cardRank(a.card) - cardRank(b.card);
+  });
+
+  return candidates[0]?.index ?? -1;
+}
+
+export function chooseBotDefenseIndex(hand, attack, trumpSuit) {
+  const candidates = hand
+    .map((card, index) => ({ card, index }))
+    .filter(({ card }) => beatsCard(card, attack, trumpSuit));
+
+  candidates.sort((a, b) => {
+    const aUsesTrump = a.card.suit === trumpSuit && attack.suit !== trumpSuit ? 1 : 0;
+    const bUsesTrump = b.card.suit === trumpSuit && attack.suit !== trumpSuit ? 1 : 0;
+    return aUsesTrump - bUsesTrump || cardRank(a.card) - cardRank(b.card);
+  });
+
+  return candidates[0]?.index ?? -1;
+}
+
+export function dealInitialHands(deck, playerCount, cardsPerPlayer = 6) {
+  if (!Number.isInteger(playerCount) || playerCount < 2) {
+    throw new RangeError("Для игры нужны минимум 2 игрока");
+  }
+  if (!Number.isInteger(cardsPerPlayer) || cardsPerPlayer < 1) {
+    throw new RangeError("Некорректное количество карт");
+  }
+  if (deck.length < playerCount * cardsPerPlayer + 1) {
+    throw new RangeError("В колоде недостаточно карт для раздачи и козыря");
+  }
+  const remaining = [...deck];
+  const hands = Array.from({ length: playerCount }, () => []);
+  for (const hand of hands) {
+    for (let i = 0; i < cardsPerPlayer; i++) hand.push(remaining.pop());
+  }
+  const trumpCard = remaining[remaining.length - 1];
+  return { hands, deck: remaining, trumpCard, trumpSuit: trumpCard.suit };
+}

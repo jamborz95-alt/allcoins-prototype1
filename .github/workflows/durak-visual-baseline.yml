@@ -1,0 +1,61 @@
+name: ALLCOINS mobile visual baseline
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-visual-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 > /tmp/allcoins-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+      - name: Run VAZ-2107 PNG paint regression test
+        run: node tests/drag-racing-paint-smoke.mjs
+      - name: Upload VAZ-2107 paint preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaz-2107-paint-preview
+          path: artifacts/lada-2107-orange-paint-check.png
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Run public-link localization visual test
+        run: node tests/live-link-visual-smoke.mjs
+      - name: Run drag-racing long-run mobile regression test
+        run: node tests/drag-racing-ui-smoke.mjs
+      - name: Run drag-racing v2 chase-camera motion test
+        run: node tests/drag-racing-v2-camera-smoke.mjs
+      - name: Run game visual regression tests
+        run: node tests/durak-visual-check.cjs && node tests/billiards-3d-smoke.mjs && node tests/bomb-game-smoke.mjs
+      - name: Upload screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allcoins-mobile-visual-baseline
+          path: |
+            visual-test-output/
+            artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 14

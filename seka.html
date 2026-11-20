@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Сека Онлайн — ALLCOINS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { color-scheme: dark; --gold:#e5c477; --gold2:#a47c33; --panel:#121d2d; --line:#2b3a50; --muted:#9dadc4; --green:#67f5b5; --red:#ff7c7c; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:#090f1c; color:#f6f7fb; font-family:Arial,sans-serif; }
+    body { padding: max(10px,env(safe-area-inset-top)) 10px max(22px,env(safe-area-inset-bottom)); }
+    button,input,select { font:inherit; }
+    button { min-height:44px; border:1px solid #48617b; color:#fff; border-radius:12px; padding:11px 14px; background:#24364d; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.42; cursor:not-allowed; }
+    button.primary { background:linear-gradient(135deg,#f0d58b,#b4883d); color:#20190c; border-color:#f5dc9e; }
+    button.danger { background:#4b2630; border-color:#7d3e4c; }
+    button.ghost { background:transparent; }
+    input,select { width:100%; min-width:0; min-height:46px; border:1px solid #394b62; border-radius:11px; color:#fff; background:#0b1423; padding:11px 12px; outline:none; }
+    input:focus,select:focus { border-color:var(--gold); }
+    label { display:block; font-size:12px; color:#b6c4d8; margin-bottom:6px; }
+    .app { max-width:540px; margin:0 auto; }
+    .topbar { display:flex; gap:12px; align-items:center; margin:4px 0 14px; }
+    .back { width:46px; min-width:46px; padding:8px; font-size:22px; }
+    .title-wrap { min-width:0; flex:1; }
+    h1 { font-size:24px; margin:0 0 4px; letter-spacing:.2px; }
+    .subtitle { color:var(--muted); font-size:12px; }
+    .balance { flex-shrink:0; border:1px solid #66532d; background:#201d18; border-radius:14px; padding:8px 10px; text-align:right; }
+    .balance strong { color:var(--gold); display:block; font-size:15px; }
+    .balance small { color:#b9b4a8; font-size:10px; }
+    .panel { background:linear-gradient(145deg,#141f31,#0f1928); border:1px solid var(--line); border-radius:18px; padding:15px; margin-bottom:12px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 12px; }
+    h2 { font-size:17px; margin:0; }
+    .muted { color:var(--muted); }
+    .tiny { font-size:11px; }
+    .field-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+    .field.full { grid-column:1/-1; }
+    .tier-info { padding:10px 11px; background:#0b1524; border:1px solid #29384d; border-radius:11px; line-height:1.45; font-size:12px; color:#d3dbea; }
+    .tier-chip { display:inline-flex; padding:5px 9px; border:1px solid #6b572e; color:#f3d58e; background:#282317; border-radius:99px; font-size:11px; font-weight:700; }
+    .toolbar { display:flex; gap:8px; margin-top:12px; }
+    .toolbar > * { flex:1; }
+    .status { min-height:18px; margin:8px 2px 0; font-size:12px; color:#f0cb78; line-height:1.4; overflow-wrap:anywhere; }
+    .rooms { display:grid; gap:9px; }
+    .room-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; border:1px solid #2b3b52; border-radius:13px; background:#0c1523; padding:12px; }
+    .room-name { font-weight:800; overflow-wrap:anywhere; margin-bottom:5px; }
+    .room-meta { font-size:11px; color:#a8b6ca; line-height:1.5; }
+    .room-card button { min-width:78px; }
+    .empty { border:1px dashed #3a4a60; border-radius:13px; padding:19px 12px; text-align:center; color:var(--muted); font-size:13px; line-height:1.5; }
+    .hidden { display:none !important; }
+    .room-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .room-title-row h2 { font-size:19px; overflow-wrap:anywhere; }
+    .room-facts { display:flex; gap:7px; flex-wrap:wrap; margin:10px 0 14px; }
+    .fact { min-width:0; flex:1; background:#0a1422; border:1px solid #2c3a4e; padding:9px; border-radius:12px; }
+    .fact span { display:block; color:var(--muted); font-size:10px; margin-bottom:5px; }
+    .fact strong { display:block; color:var(--gold); font-size:14px; overflow-wrap:anywhere; }
+    .players { display:grid; gap:7px; }
+    .player-row { display:flex; align-items:center; gap:9px; border:1px solid #29384d; border-radius:12px; padding:9px 10px; background:#0b1523; min-width:0; }
+    .player-row.current { border-color:#d5b66b; background:#282216; }
+    .player-row.folded { opacity:.52; }
+    .avatar { width:34px; height:34px; flex-shrink:0; border-radius:10px; display:grid; place-items:center; color:#22190b; font-weight:900; background:linear-gradient(135deg,#f3db9d,#a57b30); }
+    .player-main { min-width:0; flex:1; }
+    .player-main strong { display:block; overflow-wrap:anywhere; font-size:13px; }
+    .player-main small { display:block; color:var(--muted); line-height:1.45; margin-top:3px; font-size:10px; }
+    .seat-cards { display:flex; flex-shrink:0; }
+    .back-card { width:23px; height:34px; margin-left:-9px; border:1px solid #e2c47d; border-radius:4px; background:repeating-linear-gradient(45deg,#172d49 0 3px,#26466a 3px 6px); box-shadow:0 1px 2px #0008; }
+    .back-card:first-child { margin-left:0; }
+    .table { padding:12px 10px 14px; background:radial-gradient(ellipse at center,#145a49 0%,#0e4339 48%,#0c2d2c 100%); border:1px solid #8d743b; border-radius:20px; margin-top:12px; box-shadow:inset 0 0 0 5px #122b2a, inset 0 0 0 6px #896b32; }
+    .table-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:3px 6px 10px; color:#dce9dd; font-size:11px; }
+    .pot { text-align:center; font-weight:900; font-size:21px; color:#f5d58c; padding:8px; }
+    .pot small { display:block; font-size:10px; color:#bbd0c6; font-weight:400; margin-top:3px; }
+    .game-message { background:#081f21aa; border:1px solid #477668; color:#eff6ee; border-radius:10px; padding:9px; margin:8px 2px; font-size:12px; line-height:1.45; text-align:center; overflow-wrap:anywhere; }
+    .card-row { display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin:10px auto; }
+    .playing-card { position:relative; overflow:hidden; width:clamp(58px,17vw,78px); aspect-ratio:2/3; flex-shrink:0; background:#fffdf5; color:#17191f; border:1px solid #e4d7b5; border-radius:7px; box-shadow:0 4px 9px #0006; }
+    .playing-card.red { color:#b32635; }
+    .playing-card .card-art { display:block; width:100%; height:100%; object-fit:fill; transform:scale(1.03); transform-origin:center; }
+    .playing-card.card-small { width:34px; aspect-ratio:2/3; border-radius:4px; }
+    .playing-card.card-small .card-fallback { padding:2px; }
+    .playing-card.card-small .card-fallback .rank { font-size:10px; }
+    .playing-card.card-small .card-fallback .suit { font-size:15px; }
+    .card-fallback { position:absolute; inset:0; padding:5px 5px 4px; display:flex; flex-direction:column; justify-content:space-between; font-weight:900; background:linear-gradient(135deg,#fffef9,#f0e7d0); }
+    .card-fallback .rank { font-size:clamp(15px,4vw,20px); line-height:1; }
+    .card-fallback .suit { align-self:center; font-size:clamp(22px,6vw,31px); }
+    .card-fallback .corner-bottom { transform:rotate(180deg); align-self:flex-end; }
+    .card-caption { text-align:center; color:#e6e9d7; font-size:10px; margin:4px 0 0; }
+    .hand-area { text-align:center; margin:12px 0 4px; }
+    .hand-area h3 { font-size:13px; color:#f4d997; margin:0 0 7px; }
+    .action-area { display:grid; gap:8px; margin-top:12px; }
+    .action-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .raise-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+    .raise-row button { align-self:end; }
+    .button-row { display:flex; gap:8px; margin-top:10px; }
+    .button-row > * { flex:1; }
+    #waitingActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    #leaveRoomButton { grid-column:1/-1; }
+    .rule-list { padding-left:19px; margin:7px 0 0; color:#c3cede; font-size:12px; line-height:1.6; }
+    .footer-note { text-align:center; color:#63768e; font-size:10px; margin:14px 0 4px; line-height:1.5; }
+    @media (max-width:360px) {
+      body { padding-left:7px; padding-right:7px; }
+      .panel { padding:12px; }
+      h1 { font-size:21px; }
+      .balance { padding:7px; }
+      .field-grid { grid-template-columns:minmax(0,1fr); }
+      .field.full { grid-column:auto; }
+      .fact strong { font-size:12px; }
+      .playing-card { width:56px; }
+    }
+
+  
+  /* SEKA: после запуска партии игровое поле занимает весь экран телефона. */
+  html.seka-playing,
+  body.seka-playing {
+    width:100%;
+    height:100%;
+    overflow:hidden !important;
+    overscroll-behavior:none;
+  }
+  body.seka-playing {
+    position:fixed;
+    inset:0;
+    margin:0 !important;
+    padding:0 !important;
+    background:#0b3933 !important;
+  }
+  body.seka-playing .app {
+    display:flex !important;
+    flex-direction:column !important;
+    width:100vw !important;
+    max-width:none !important;
+    height:100vh !important;
+    height:100dvh !important;
+    min-height:100vh !important;
+    min-height:100dvh !important;
+    margin:0 !important;
+    padding:max(4px,env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left)) !important;
+    overflow:hidden !important;
+  }
+  body.seka-playing > .app > .topbar,
+  body.seka-playing #lobbyPanel,
+  body.seka-playing .footer-note,
+  body.seka-playing #roomPanel > .room-title-row,
+  body.seka-playing #roomPanel > .room-facts,
+  body.seka-playing #roomPanel > #waitingText,
+  body.seka-playing #roomPanel > .section-head,
+  body.seka-playing #roomPanel > #roomPlayers {
+    display:none !important;
+  }
+  body.seka-playing #roomPanel {
+    display:flex !important;
+    flex:1 1 auto !important;
+    flex-direction:column !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+  }
+  body.seka-playing #gameWrap.table:not(.hidden) {
+    display:grid !important;
+    flex:1 1 auto !important;
+    grid-template-rows:auto auto auto minmax(0,1fr) auto auto;
+    gap:clamp(4px,0.8vh,8px);
+    min-width:0 !important;
+    min-height:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    padding:clamp(7px,1.6vw,16px) !important;
+    overflow:hidden !important;
+    border:1px solid #a58a4b !important;
+    border-radius:0 !important;
+    background:radial-gradient(ellipse at center,#17604d 0%,#0e4439 52%,#0a2929 100%) !important;
+    box-shadow:inset 0 0 0 3px #102f2c,inset 0 0 0 4px #85682f !important;
+  }
+  body.seka-playing #gameWrap .table-head {
+    min-height:16px;
+    margin:0 2px;
+    font-size:11px;
+  }
+  body.seka-playing #gameWrap .pot {
+    padding:0 4px;
+    font-size:clamp(18px,2.8vh,25px);
+    line-height:1.05;
+  }
+  body.seka-playing #gameWrap .pot small {
+    margin-top:3px;
+    font-size:9px;
+  }
+  body.seka-playing #gameWrap #gameMessage {
+    min-height:0;
+    max-height:8vh;
+    overflow:auto;
+    margin:0;
+    padding:6px 8px;
+    font-size:11px;
+    line-height:1.3;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats {
+    display:grid !important;
+    grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+    align-content:center;
+    align-items:stretch;
+    gap:clamp(4px,0.8vh,8px);
+    min-height:0;
+    overflow-y:auto;
+    padding:2px;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .player-row {
+    min-width:0;
+    min-height:42px;
+    gap:5px;
+    padding:5px 6px;
+    border-radius:9px;
+    background:rgba(7,26,29,.62);
+    border-color:rgba(219,199,139,.5);
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .avatar {
+    width:27px;
+    height:27px;
+    border-radius:7px;
+    font-size:12px;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .player-main strong {
+    font-size:clamp(10px,2.7vw,12px);
+    line-height:1.15;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .player-main small {
+    margin-top:2px;
+    font-size:9px;
+    line-height:1.25;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .back-card {
+    width:17px;
+    height:25px;
+    margin-left:-7px;
+  }
+  body.seka-playing #gameWrap .hand-area {
+    min-width:0;
+    margin:0;
+  }
+  body.seka-playing #gameWrap .hand-area h3 {
+    margin:0 0 4px;
+    font-size:11px;
+  }
+  body.seka-playing #gameWrap #myHand {
+    gap:5px;
+    margin:4px auto 2px;
+  }
+  body.seka-playing #gameWrap #myHand .playing-card {
+    width:clamp(52px,14vw,76px);
+    max-height:15vh;
+  }
+  body.seka-playing #gameWrap .card-caption {
+    margin:2px 0 0;
+    font-size:9px;
+  }
+  body.seka-playing #gameWrap #actionArea {
+    gap:5px;
+    margin:0;
+    padding-bottom:2px;
+  }
+  body.seka-playing #gameWrap .raise-row,
+  body.seka-playing #gameWrap .action-buttons {
+    gap:5px;
+  }
+  body.seka-playing #gameWrap #raiseAmount {
+    min-height:40px;
+    height:40px;
+    margin:0;
+    padding:7px 9px;
+  }
+  body.seka-playing #gameWrap #actionArea label {
+    margin-bottom:3px;
+    font-size:10px;
+  }
+  body.seka-playing #gameWrap #actionArea button {
+    min-height:40px;
+    padding:8px 7px;
+    border-radius:9px;
+    font-size:12px;
+    line-height:1.15;
+  }
+  body.seka-playing #gameWrap #actionHint {
+    font-size:9px;
+    line-height:1.25;
+  }
+  body.seka-playing #roomPanel > #roomStatus:not(:empty) {
+    position:fixed !important;
+    top:max(4px,env(safe-area-inset-top)) !important;
+    left:50% !important;
+    z-index:80 !important;
+    width:min(94vw,540px) !important;
+    margin:0 !important;
+    padding:5px 8px !important;
+    transform:translateX(-50%) !important;
+    border:1px solid rgba(230,205,135,.5);
+    border-radius:9px;
+    background:rgba(6,18,25,.94);
+    text-align:center;
+    font-size:11px;
+    pointer-events:none;
+  }
+  body.seka-playing #roomPanel > #waitingActions:not(.hidden) {
+    display:flex !important;
+    flex:0 0 auto !important;
+    justify-content:center;
+    margin:0 !important;
+    padding:4px 0 0 !important;
+  }
+  body.seka-playing #roomPanel > #waitingActions:not(.hidden) #leaveRoomButton,
+  body.seka-playing #roomPanel > #waitingActions:not(.hidden) #rematchButton {
+    flex:1 1 45%;
+    width:auto !important;
+    max-width:320px;
+    min-height:40px;
+    padding:8px 10px;
+  }
+  #rematchButton { grid-column:1/-1; }
+  #rematchButton:disabled { opacity:.68; }
+  @media (max-height:650px) {
+    body.seka-playing #gameWrap.table:not(.hidden) {
+      gap:3px;
+      padding:5px !important;
+    }
+    body.seka-playing #gameWrap .pot { font-size:17px; }
+    body.seka-playing #gameWrap #gameMessage { padding:4px 6px; font-size:10px; }
+    body.seka-playing #gameWrap #myHand .playing-card { width:48px; max-height:13vh; }
+    body.seka-playing #gameWrap #actionArea button { min-height:35px; padding:6px; }
+  }
+
+
+  /* Сека: собственная комбинация цифрами и места игроков по периметру стола. */
+  .table-play-area {
+    position:relative;
+    min-height:220px;
+    overflow:hidden;
+    border-radius:16px;
+    background:radial-gradient(ellipse at center,rgba(23,96,77,.38),rgba(10,41,41,0) 76%);
+  }
+  .hand-score {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    margin:4px auto 0;
+    padding:5px 10px;
+    min-height:38px;
+    border:1px solid #9a7b3c;
+    border-radius:10px;
+    background:rgba(7,22,24,.94);
+    color:#e6e9d7;
+    text-align:center;
+    line-height:1.2;
+    font-size:9px;
+  }
+  .hand-score strong {
+    color:#f5d58c;
+    font-size:clamp(16px,2.6vh,21px);
+    line-height:1.05;
+  }
+  .hand-score small {
+    color:#dce9dd;
+    font-size:10px;
+    font-weight:700;
+  }
+
+  body.seka-playing #gameWrap.table:not(.hidden) {
+    grid-template-rows:auto minmax(0,1fr) auto auto !important;
+  }
+  body.seka-playing #gameWrap #tablePlayArea {
+    position:relative !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+  body.seka-playing #gameWrap #potValue {
+    position:absolute !important;
+    z-index:1 !important;
+    top:51% !important;
+    left:50% !important;
+    width:max-content;
+    min-width:104px;
+    max-width:44%;
+    margin:0 !important;
+    padding:7px 10px !important;
+    transform:translate(-50%,-50%) !important;
+    border:1px solid rgba(230,205,135,.65);
+    border-radius:12px;
+    background:rgba(5,28,27,.84);
+    box-shadow:0 3px 10px #0004;
+    pointer-events:none;
+  }
+  body.seka-playing #gameWrap #gameMessage {
+    position:absolute !important;
+    z-index:3;
+    top:2px !important;
+    left:6% !important;
+    width:88% !important;
+    max-height:31px !important;
+    overflow:hidden !important;
+    margin:0 !important;
+    padding:5px 7px !important;
+    border-radius:8px;
+    font-size:10px !important;
+    line-height:1.2 !important;
+    background:rgba(5,25,25,.72);
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats {
+    display:block !important;
+    position:absolute !important;
+    z-index:2;
+    inset:0 !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:0 !important;
+    pointer-events:none;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat {
+    position:absolute !important;
+    display:flex !important;
+    width:min(39%,158px) !important;
+    min-width:0 !important;
+    min-height:39px !important;
+    gap:5px !important;
+    padding:5px 6px !important;
+    border:1px solid rgba(219,199,139,.68) !important;
+    border-radius:9px !important;
+    background:rgba(5,23,27,.91) !important;
+    box-shadow:0 3px 9px #0005;
+    overflow:hidden;
+    pointer-events:auto;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .avatar {
+    width:24px !important;
+    height:24px !important;
+    flex:0 0 24px !important;
+    border-radius:6px !important;
+    font-size:10px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .player-main strong {
+    font-size:clamp(10px,2.5vw,12px) !important;
+    line-height:1.15 !important;
+    overflow-wrap:anywhere;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .player-main small {
+    margin-top:2px !important;
+    font-size:9px !important;
+    line-height:1.15 !important;
+    overflow-wrap:anywhere;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .seat-cards {
+    display:none !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-bottom {
+    left:50% !important;
+    bottom:3px !important;
+    transform:translateX(-50%) !important;
+    width:min(44%,174px) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top,
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-center {
+    top:36px !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    width:min(37%,148px) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-left {
+    top:36px !important;
+    left:2px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-top-right {
+    top:36px !important;
+    right:2px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-left {
+    left:2px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-right {
+    right:2px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-left-bottom {
+    left:2px !important;
+    bottom:3px !important;
+  }
+  body.seka-playing #gameWrap #gamePlayerSeats .seat-right-bottom {
+    right:2px !important;
+    bottom:3px !important;
+  }
+  body.seka-playing #gameWrap .hand-score {
+    gap:1px;
+    margin-top:2px;
+    padding:4px 8px;
+    min-height:32px;
+  }
+  body.seka-playing #gameWrap .hand-score strong {
+    font-size:clamp(16px,2.5vh,20px);
+  }
+  body.seka-playing #gameWrap .hand-score small { font-size:9px; }
+
+  @media (max-height:650px) {
+    body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat {
+      min-height:34px !important;
+      padding:4px 5px !important;
+    }
+    body.seka-playing #gameWrap #gamePlayerSeats .game-player-seat .avatar {
+      width:21px !important;
+      height:21px !important;
+      flex-basis:21px !important;
+    }
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-center,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-left,
+    body.seka-playing #gameWrap #gamePlayerSeats .seat-top-right {
+      top:32px !important;
+    }
+  }
+
+  </style>
+<script src="./i18n-extra.js?v=20261026h"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button type="button" id="backButton" class="back" aria-label="Назад">‹</button>
+    <div class="title-wrap">
+      <h1>♠ Сека Онлайн</h1>
+      <div class="subtitle">Комнаты • торги • банк AC</div>
+    </div>
+    <div class="balance"><strong id="balanceValue">— AC</strong><small>ВАШ БАЛАНС</small></div>
+  </header>
+
+  <section id="lobbyPanel">
+    <div class="panel">
+      <div class="section-head"><h2>Создать комнату</h2><span class="tier-chip">до 6 игроков</span></div>
+      <div class="field-grid">
+        <div class="field full">
+          <label for="roomName">Название комнаты</label>
+          <input id="roomName" maxlength="30" placeholder="Например, Комната ALLCOINS">
+        </div>
+        <div class="field full">
+          <label for="createTier">Ограничение сумм Allcoins</label>
+          <select id="createTier">
+            <option value="1">100–1 000 AC</option>
+            <option value="2">1 000–10 000 AC</option>
+            <option value="3">10 000–100 000 AC</option>
+            <option value="4">100 000–1 000 000 AC</option>
+            <option value="5">От 1 000 000 AC — без верхнего лимита</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="anteInput">Начальный взнос (AC)</label>
+          <input id="anteInput" type="number" min="100" max="1000" step="1" value="100" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>Взнос в банк</label>
+          <div id="tierInfo" class="tier-info">100–1 000 AC<br>Вход: 100 AC</div>
+        </div>
+      </div>
+      <div class="toolbar"><button type="button" class="primary" id="createRoomButton">＋ Создать комнату</button></div>
+      <div class="status" id="createStatus" aria-live="polite"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><h2>Найти комнату</h2><button type="button" class="ghost" id="refreshRoomsButton">↻ Обновить</button></div>
+      <label for="filterTier">Показать комнаты с лимитом</label>
+      <select id="filterTier">
+        <option value="all">Все лимиты</option>
+        <option value="1">100–1 000 AC</option>
+        <option value="2">1 000–10 000 AC</option>
+        <option value="3">10 000–100 000 AC</option>
+        <option value="4">100 000–1 000 000 AC</option>
+        <option value="5">От 1 000 000 AC без верхнего лимита</option>
+      </select>
+      <div id="roomsList" class="rooms" style="margin-top:10px">
+        <div class="empty">Загрузка комнат…</div>
+      </div>
+      <div class="status" id="lobbyStatus" aria-live="polite"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><h2>Основные правила</h2></div>
+      <ul class="rule-list">
+        <li>Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).</li>
+        <li>Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.</li>
+        <li>Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию. 7♣ работает как джокер.</li>
+        <li>В свой ход можно сбросить карты, поддержать текущую сумму Allcoins, повысить её или вскрыться, когда осталось двое.</li>
+      </ul>
+      <div class="muted tiny" style="margin-top:8px">В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.</div>
+    </div>
+  </section>
+
+  <section id="roomPanel" class="panel hidden">
+    <div class="room-title-row">
+      <div><h2 id="roomTitle">Комната Сека</h2><div id="roomSubtitle" class="subtitle" style="margin-top:5px"></div></div>
+      <span id="roomStatusChip" class="tier-chip">Ожидание</span>
+    </div>
+    <div class="room-facts">
+      <div class="fact"><span>НАЧАЛЬНЫЙ ВЗНОС</span><strong id="roomAnte">—</strong></div>
+      <div class="fact"><span>Текущая сумма Allcoins</span><strong id="roomBet">—</strong></div>
+      <div class="fact"><span>ИГРОКИ</span><strong id="roomCount">—</strong></div>
+    </div>
+    <div id="waitingText" class="game-message">Ожидаем игроков.</div>
+    <div class="section-head" style="margin-top:14px"><h2>За столом</h2><span class="muted tiny">до 6 мест</span></div>
+    <div id="roomPlayers" class="players"></div>
+    <div id="gameWrap" class="table hidden">
+      <div class="table-head"><span id="gameTurnLabel">Ход игрока</span><span id="deckLabel">36 карт</span></div>
+      <div id="tablePlayArea" class="table-play-area">
+        <div class="pot" id="potValue">0 AC<small>БАНК</small></div>
+        <div id="gameMessage" class="game-message" aria-live="polite">Карты розданы.</div>
+        <div id="gamePlayerSeats" class="game-player-seats"></div>
+      </div>
+      <div class="hand-area">
+        <h3>ВАШИ КАРТЫ</h3>
+        <div id="myHand" class="card-row"></div>
+        <div id="myHandCaption" class="hand-score" aria-live="polite" aria-label="Комбинация вашей руки">
+          <span>ВАША КОМБИНАЦИЯ</span>
+          <strong id="myHandScore">—</strong>
+          <small id="myHandType">Подсчитываем комбинацию</small>
+        </div>
+      </div>
+      <div id="actionArea" class="action-area">
+        <div class="raise-row">
+          <div><label for="raiseAmount">Новая сумма Allcoins (AC)</label><input id="raiseAmount" type="text" inputmode="numeric" pattern="[0-9]*" value="200" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+          <button type="button" class="primary" id="raiseButton">Повысить</button>
+        </div>
+        <div class="action-buttons">
+          <button type="button" class="danger" id="foldButton">Пас</button>
+          <button type="button" id="callButton">Поддержать</button>
+          <button type="button" id="openButton">Вскрыться</button>
+          <button type="button" class="ghost" id="refreshStateButton">↻ Обновить</button>
+        </div>
+        <div class="muted tiny" id="actionHint">Сумма повышения — добавка к текущей сумме Allcoins.</div>
+      </div>
+    </div>
+    <div id="waitingActions" class="button-row">
+      <button type="button" id="addBotButton" class="hidden">🤖 Добавить бота для проверки</button>
+      <button type="button" id="startGameButton" class="primary hidden">▶ Начать игру</button>
+      <button type="button" id="rematchButton" class="primary hidden">🔄 Рематч</button>
+      <button type="button" id="leaveRoomButton" class="ghost">Выйти из комнаты</button>
+    </div>
+    <div class="status" id="roomStatus" aria-live="polite"></div>
+  </section>
+
+  <div class="footer-note">ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const API = "https://demands-own-pottery-gear.trycloudflare.com";
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  const initData = tg && tg.initData ? tg.initData : "";
+  const tgUserId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : "";
+  const $ = id => document.getElementById(id);
+  const tiers = {
+    "1": { min: 100, max: 1000, label: "100–1 000 AC" },
+    "2": { min: 1000, max: 10000, label: "1 000–10 000 AC" },
+    "3": { min: 10000, max: 100000, label: "10 000–100 000 AC" },
+    "4": { min: 100000, max: 1000000, label: "100 000–1 000 000 AC" },
+    "5": { min: 1000000, max: null, label: "От 1 000 000 AC без верхнего лимита" }
+  };
+  // Используем тот же набор PNG, что и в «Дураке Онлайн» и «21 Очко».
+  // Картинки пока есть для 10, туза, валета, дамы и короля во всех мастях.
+  const CARD_ASSET_VERSION = "20261024-shared-cards-v2";
+  const rankImageNames = {
+    "10":"10",
+    "A":"ace", "Т":"ace", "ТУЗ":"ace", "ACE":"ace",
+    "J":"jack", "В":"jack", "ВАЛЕТ":"jack", "JACK":"jack",
+    "Q":"queen", "Д":"queen", "ДАМА":"queen", "QUEEN":"queen",
+    "K":"king", "К":"king", "КОРОЛЬ":"king", "KING":"king"
+  };
+  const suitImageNames = {
+    "♠":"spades", "♤":"spades", "SPADES":"spades",
+    "♥":"hearts", "♡":"hearts", "HEARTS":"hearts",
+    "♦":"diamonds", "♢":"diamonds", "DIAMONDS":"diamonds",
+    "♣":"clubs", "♧":"clubs", "CLUBS":"clubs"
+  };
+  function cardImageName(card) {
+    const rank = String(card?.rank ?? "").trim().toUpperCase();
+    // Until all four 10 PNGs are uploaded, render them as readable text cards instead of broken images.
+    if (rank === "10") return null;
+    const suit = String(card?.suit ?? "").trim();
+    const normalizedSuit = ({ "♤":"♠", "♡":"♥", "♢":"♦", "♧":"♣" })[suit] || suit;
+    const rankName = rankImageNames[rank];
+    const suitName = suitImageNames[normalizedSuit] ||
+      suitImageNames[normalizedSuit.toUpperCase()] ||
+      suitImageNames[suit] || suitImageNames[suit.toUpperCase()];
+    if (!rankName || !suitName) return null;
+    const filename = rankName + "-" + suitName + ".png";
+    return filename === "king-spades.png" ? "king-spades-2.png" : filename;
+  }
+  let currentRoomId = null;
+  let currentRoomData = null;
+  function saveCurrentRoom(id) {
+    try {
+      if (id) localStorage.setItem("allcoinsSekaRoomId", String(id));
+      else localStorage.removeItem("allcoinsSekaRoomId");
+    } catch (_) {}
+  }
+  let currentState = null;
+  let currentStateFingerprint = "";
+  let busy = false;
+  let pollBusy = false;
+  let roomStateVersion = 0;
+  let refreshAfterCurrentPoll = false;
+  let balance = 0;
+  let listBusy = false;
+
+  if (tg && typeof tg.ready === "function") tg.ready();
+  if (tg && typeof tg.expand === "function") tg.expand();
+
+  function fmt(value) {
+    const n = Number(value || 0);
+    return Number.isFinite(n) ? Math.floor(n).toLocaleString("ru-RU") : "0";
+  }
+  function sekaScoreWord(value) {
+    const n = Math.abs(Math.floor(Number(value) || 0));
+    const lastTwo = n % 100;
+    if (lastTwo >= 11 && lastTwo <= 14) return "очков";
+    const last = n % 10;
+    if (last === 1) return "очко";
+    if (last >= 2 && last <= 4) return "очка";
+    return "очков";
+  }
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[ch];
+    });
+  }
+  function setStatus(id, message, bad) {
+    const el = $(id);
+    if (el) {
+      el.textContent = message || "";
+      el.style.color = bad ? "#ff9494" : "#f0cb78";
+    }
+  }
+  async function api(path, payload) {
+    if (!initData) throw new Error("Открой Секу через Telegram Mini App — данные входа Telegram не найдены.");
+    const response = await fetch(API + "/api/seka" + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ initData: initData }, payload || {}))
+    });
+    let result = {};
+    try { result = await response.json(); } catch (_) {}
+    if (!response.ok || !result.ok) throw new Error(result.error || "Ошибка соединения с сервером.");
+    return result;
+  }
+  function displayBalance(value) {
+    balance = Number(value || 0);
+    $("balanceValue").textContent = fmt(balance) + " AC";
+  }
+  function updateTierInput() {
+    const tier = tiers[$("createTier").value] || tiers["1"];
+    const input = $("anteInput");
+    input.min = String(tier.min);
+    input.max = tier.max == null ? "" : String(tier.max);
+
+    // Не подставляем минимум, пока пользователь временно очищает поле для ввода
+    // собственной суммы. Иначе Android/WebView успевает вернуть число между нажатиями.
+    const rawAnte = input.value.trim();
+    if (rawAnte !== "") {
+      const anteValue = Number(rawAnte);
+      if (!Number.isSafeInteger(anteValue) || anteValue < tier.min ||
+          (tier.max != null && anteValue > tier.max)) {
+        if (document.activeElement !== input) input.value = String(tier.min);
+      }
+    }
+    $("tierInfo").innerHTML = escapeHtml(tier.label) + "<br>Вход: " +
+      (input.value.trim() === "" ? "введите сумму" : fmt(input.value) + " AC");
+
+    const raiseInput = $("raiseAmount");
+    if (raiseInput && !currentRoomId) {
+      raiseInput.min = String(tier.min);
+      const rawRaise = raiseInput.value.trim();
+      if (rawRaise !== "" && document.activeElement !== raiseInput &&
+          Number(rawRaise) < tier.min) raiseInput.value = String(tier.min);
+    }
+  }
+  async function loadProfile() {
+    const result = await fetch(API + "/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: initData })
+    });
+    const data = await result.json();
+    if (!result.ok || !data.ok) throw new Error(data.error || "Не удалось получить профиль ALLCOINS.");
+    displayBalance(data.player && data.player.balance);
+  }
+
+  function cardLabel(card) {
+    const ranks = { "A":"Т", "K":"К", "Q":"Д", "J":"В" };
+    return ranks[String(card.rank)] || String(card.rank);
+  }
+
+  // Счёт отображается локально только по собственным картам игрока.
+  // Эта функция не участвует в серверном определении победителя.
+  function scoreMySekaHand(cards) {
+    if (!Array.isArray(cards) || cards.length !== 3) return null;
+    const rankOf = card => String(card && card.rank || "").toUpperCase();
+    const suitOf = card => String(card && card.suit || "");
+    const points = card => {
+      const rank = rankOf(card);
+      if (rank === "A" || rank === "Т" || rank === "ТУЗ") return 11;
+      if (["10", "J", "Q", "K"].includes(rank)) return 10;
+      const value = Number(rank);
+      return Number.isFinite(value) ? value : 0;
+    };
+    const tripletValue = rank => rank === "6" ? 34 : rank === "A" ? 33 : points({ rank }) * 3;
+    const ranks = cards.map(rankOf);
+    const counts = new Map();
+    ranks.forEach(rank => counts.set(rank, (counts.get(rank) || 0) + 1));
+    if (counts.size === 1) {
+      const rank = ranks[0];
+      return { score: tripletValue(rank), label: "Три " + rank };
+    }
+    const jokerIndex = cards.findIndex(card => rankOf(card) === "7" && suitOf(card) === "♣");
+    if (jokerIndex >= 0) {
+      const others = cards.filter((card, index) => index !== jokerIndex).map(rankOf);
+      if (others[0] === others[1]) return { score: tripletValue(others[0]), label: "Тройка с джокером" };
+    }
+    if (ranks.filter(rank => rank === "A").length >= 2) return { score: 22, label: "Два туза" };
+    let best = { score: 0, type: 1, label: "Старшая карта" };
+    const totals = new Map();
+    for (const card of cards) {
+      const suit = suitOf(card);
+      const value = rankOf(card) === "7" && suit === "♣" ? 11 : points(card);
+      totals.set(suit, (totals.get(suit) || 0) + value);
+    }
+    for (const [suit, total] of totals.entries()) {
+      const count = cards.filter(card => suitOf(card) === suit).length;
+      if (count >= 2 && (best.type < 2 || total > best.score)) best = { score: total, type: 2, label: "Одна масть" };
+    }
+    if (best.type < 2) {
+      const highest = cards.reduce((max, card) => Math.max(max,
+        rankOf(card) === "7" && suitOf(card) === "♣" ? 11 : points(card)), 0);
+      best = { score: highest, type: 1, label: "Старшая карта" };
+    }
+    return { score: best.score, label: best.label };
+  }
+  function cardMarkup(card, compact) {
+    const imageName = cardImageName(card);
+    const red = ["♥", "♡", "♦", "♢"].includes(String(card.suit)) ? " red" : "";
+    const size = compact ? " card-small" : "";
+    if (imageName) {
+      return '<div class="playing-card image-card' + red + size + '"><img class="card-art" loading="eager" decoding="async" src="./cards/' +
+        imageName + '?v=' + CARD_ASSET_VERSION + '" alt="' +
+        escapeHtml(cardLabel(card) + card.suit) + '"></div>';
+    }
+    const label = escapeHtml(cardLabel(card));
+    const suit = escapeHtml(card.suit);
+    return '<div class="playing-card' + red + size + '"><div class="card-fallback"><span class="rank">' + label +
+      '<br><span style="font-size:12px">' + suit + '</span></span><span class="suit">' + suit +
+      '</span><span class="corner-bottom"><span class="rank">' + label + '<br><span style="font-size:12px">' +
+      suit + '</span></span></span></div></div>';
+  }
+  function backsMarkup(count) {
+    let html = '<div class="seat-cards">';
+    const total = Math.min(3, Number(count || 3));
+    for (let i = 0; i < total; i++) html += '<span class="back-card"></span>';
+    return html + '</div>';
+  }
+  function roomLimitText(room) {
+    return room.limitLabel || (tiers[String(room.tier)] ? tiers[String(room.tier)].label : "Лимит сумм Allcoins");
+  }
+
+  async function loadRooms(silent) {
+    if (listBusy || currentRoomId) return;
+    listBusy = true;
+    try {
+      const result = await api("/rooms/list", { tier: $("filterTier").value });
+      const rooms = result.rooms || [];
+      if (!rooms.length) {
+        $("roomsList").innerHTML = '<div class="empty">Пока нет открытых комнат с этим лимитом.<br>Создай комнату или выбери другой уровень сумм Allcoins.</div>';
+      } else {
+        $("roomsList").innerHTML = rooms.map(room =>
+          '<div class="room-card"><div><div class="room-name">' + escapeHtml(room.name) + '</div>' +
+          '<div class="room-meta">' + escapeHtml(roomLimitText(room)) + '<br>Взнос: ' + fmt(room.ante) +
+          ' AC · Игроки: ' + Number(room.playersCount) + '/' + Number(room.maxPlayers) + '</div></div>' +
+          '<button type="button" data-join-room="' + escapeHtml(room.id) + '">Войти</button></div>'
+        ).join("");
+        $("roomsList").querySelectorAll("[data-join-room]").forEach(button => {
+          button.addEventListener("click", () => joinRoom(button.getAttribute("data-join-room")));
+        });
+      }
+      if (!silent) setStatus("lobbyStatus", "Комнат найдено: " + rooms.length);
+    } catch (error) {
+      if (!silent) setStatus("lobbyStatus", error.message, true);
+      if (!$("roomsList").children.length) {
+        $("roomsList").innerHTML = '<div class="empty">Не удалось загрузить комнаты. Проверь соединение и обнови список.</div>';
+      }
+    } finally {
+      listBusy = false;
+    }
+  }
+
+  async function createRoom() {
+    if (busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    $("createRoomButton").disabled = true;
+    setStatus("createStatus", "Создаём комнату…");
+    try {
+      const result = await api("/rooms/create", {
+        name: $("roomName").value,
+        tier: Number($("createTier").value),
+        stake: Number($("anteInput").value)
+      });
+      currentRoomId = String(result.room.id);
+      currentStateFingerprint = "";
+      saveCurrentRoom(currentRoomId);
+      $("lobbyPanel").classList.add("hidden");
+      $("roomPanel").classList.remove("hidden");
+      setStatus("createStatus", "");
+      await refreshRoomState(true);
+    } catch (error) {
+      setStatus("createStatus", error.message, true);
+    } finally {
+      busy = false;
+      if (currentState) renderRoom(currentState);
+      scheduleSekaRefreshIfReady();
+      $("createRoomButton").disabled = false;
+    }
+  }
+
+  async function joinRoom(roomId) {
+    if (busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    try {
+      setStatus("lobbyStatus", "Входим в комнату…");
+      await api("/rooms/join", { roomId: String(roomId) });
+      currentRoomId = String(roomId);
+      currentStateFingerprint = "";
+      saveCurrentRoom(currentRoomId);
+      $("lobbyPanel").classList.add("hidden");
+      $("roomPanel").classList.remove("hidden");
+      setStatus("lobbyStatus", "");
+      await refreshRoomState(true);
+    } catch (error) {
+      setStatus("lobbyStatus", error.message, true);
+    } finally {
+      busy = false;
+      if (currentState) renderRoom(currentState);
+      scheduleSekaRefreshIfReady();
+    }
+  }
+
+  function renderRoomPlayers(state) {
+    const list = state.players || [];
+    const game = state.game;
+    const gamePlayers = game && game.players ? game.players : [];
+    const foundOwnIndex = list.findIndex(player => String(player.telegramId) === tgUserId);
+    const ownIndex = foundOwnIndex >= 0 ? foundOwnIndex : 0;
+    const seatLayouts = {
+      1: ["bottom"],
+      2: ["bottom", "top-center"],
+      3: ["bottom", "top-left", "top-right"],
+      4: ["bottom", "left", "top-center", "right"],
+      5: ["bottom", "left-bottom", "top-left", "top-right", "right-bottom"],
+      6: ["bottom", "left-bottom", "top-left", "top-center", "top-right", "right-bottom"]
+    };
+
+    function playerRow(player, index, seat) {
+      const gamePlayer = gamePlayers.find(item => String(item.telegramId) === String(player.telegramId));
+      const isCurrent = !!(game && game.status === "playing" &&
+        String(game.currentPlayerTelegramId) === String(player.telegramId));
+      const isMine = String(player.telegramId) === tgUserId;
+      const folded = gamePlayer && gamePlayer.folded;
+      let details = "В комнате";
+      if (gamePlayer) {
+        details = folded ? "Пас · выбыл из торгов" : "В банке: " + fmt(gamePlayer.contribution) + " AC";
+        if (game.status === "finished") {
+          if ((game.revealHands || isMine) && gamePlayer.score !== null && gamePlayer.score !== undefined) {
+            details += " · " + escapeHtml(gamePlayer.handType || "Комбинация") + " · " + fmt(gamePlayer.score) + " очков";
+          } else {
+            details += " · Карты закрыты";
+          }
+          if (gamePlayer.payout) details += " · +" + fmt(gamePlayer.payout) + " AC";
+        } else if (isCurrent) details = "Сейчас ходит · " + details;
+      }
+      let backs = "";
+      if (gamePlayer && !isMine && (!game || game.status !== "finished" || !(gamePlayer.hand || []).length)) backs = backsMarkup(gamePlayer.cardCount);
+      else if (gamePlayer && !isMine && game.status === "finished") {
+        backs = '<div class="seat-cards">' + (gamePlayer.hand || []).map(card => cardMarkup(card, true)).join("") + '</div>';
+      }
+      const seatClass = seat ? " game-player-seat seat-" + seat : "";
+      return '<div class="player-row' + (isCurrent ? " current" : "") + (folded ? " folded" : "") + seatClass + '">' +
+        '<div class="avatar">' + (isMine ? "Я" : (String(player.telegramId) === "0" || player.isBot ? "🤖" : String(index + 1))) + '</div><div class="player-main"><strong>' +
+        escapeHtml(player.label) + (isMine ? " · Вы" : "") + '</strong><small>' + details +
+        (gamePlayer ? "" : " · Баланс: " + fmt(player.balance) + " AC") + '</small></div>' + backs + '</div>';
+    }
+
+    $("roomPlayers").innerHTML = list.map((player, index) => playerRow(player, index, "")).join("");
+    if (!game || !list.length) {
+      $("gamePlayerSeats").innerHTML = "";
+      return;
+    }
+    const layout = seatLayouts[list.length] || seatLayouts[6];
+    $("gamePlayerSeats").innerHTML = list.map((player, index) => {
+      const relativeIndex = (index - ownIndex + list.length) % list.length;
+      return playerRow(player, index, layout[relativeIndex] || "top-center");
+    }).join("");
+  }
+
+  function setSekaFullscreen(active) {
+    const wasActive = document.body.classList.contains("seka-playing");
+    document.documentElement.classList.toggle("seka-playing", !!active);
+    document.body.classList.toggle("seka-playing", !!active);
+    if (active && !wasActive) {
+      try {
+        if (tg && typeof tg.requestFullscreen === "function") {
+          const result = tg.requestFullscreen();
+          if (result && typeof result.catch === "function") result.catch(() => {});
+        } else if (tg && typeof tg.expand === "function") {
+          tg.expand();
+        }
+      } catch (_) {}
+    } else if (!active && wasActive) {
+      try {
+        if (tg && typeof tg.exitFullscreen === "function") {
+          const result = tg.exitFullscreen();
+          if (result && typeof result.catch === "function") result.catch(() => {});
+        }
+      } catch (_) {}
+    }
+  }
+
+  // Поле принимает итоговую сумму Allcoins за круг, а серверу отправляем только добавку.
+  // Максимум учитывает лимит комнаты и доступный баланс конкретного игрока.
+  function getRaiseBounds(state) {
+    const room = state && state.room;
+    const game = state && state.game;
+    if (!room || !game) return { currentBet: 0, minTarget: 100, maxTarget: 1000 };
+    const currentBet = Number(game.currentBet || room.ante || 0);
+    const minTarget = currentBet + Math.max(1, Number(room.minBet || 100));
+    let maxTarget = room.maxBet == null ? null : Number(room.maxBet);
+    const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
+    if (!game.testMode && me) {
+      const affordableTarget = Number(me.contribution || 0) + Math.max(0, Number(state.balance ?? balance ?? 0));
+      maxTarget = maxTarget == null ? affordableTarget : Math.min(maxTarget, affordableTarget);
+    }
+    if (maxTarget != null && !Number.isSafeInteger(maxTarget)) maxTarget = null;
+    return { currentBet, minTarget, maxTarget };
+  }
+
+  function submitRaise() {
+    if (!currentState || !currentState.game) return;
+    const input = $("raiseAmount");
+    const raw = input.value.trim();
+    const amount = Number(raw);
+    const bounds = getRaiseBounds(currentState);
+    if (raw === "" || !/^\d+$/.test(raw) || !Number.isSafeInteger(amount)) {
+      setStatus("roomStatus", "Введи итоговую сумму Allcoins целым числом AC.", true);
+      input.focus();
+      return;
+    }
+    if (amount < bounds.minTarget) {
+      setStatus("roomStatus", "Минимальная Новая сумма Allcoins — " + fmt(bounds.minTarget) + " AC.", true);
+      input.focus();
+      return;
+    }
+    if (bounds.maxTarget != null && amount > bounds.maxTarget) {
+      setStatus("roomStatus", "Максимальная Новая сумма Allcoins для тебя — " + fmt(bounds.maxTarget) + " AC.", true);
+      input.focus();
+      return;
+    }
+    sendAction("raise", amount - bounds.currentBet);
+  }
+
+  function renderRoom(state) {
+    currentState = state;
+    currentRoomData = state.room;
+    displayBalance(state.balance);
+    const room = state.room;
+    const game = state.game;
+    $("roomTitle").textContent = room.name;
+    $("roomSubtitle").textContent = "Комната #" + room.id + " · " + roomLimitText(room) +
+      (game && game.testMode ? " · ТЕСТ БЕЗ СПИСАНИЯ AC" : "");
+    $("roomStatusChip").textContent = game && game.testMode ? "Режим проверки" :
+      room.status === "waiting" ? "Ожидание" : room.status === "playing" ? "Игра идёт" : "Завершена";
+    $("roomAnte").textContent = fmt(room.ante) + " AC";
+    $("roomBet").textContent = fmt(game ? game.currentBet : room.ante) + " AC";
+    $("roomCount").textContent = String((state.players || []).length) + "/" + String(room.maxPlayers);
+    renderRoomPlayers(state);
+
+    const waiting = room.status === "waiting";
+    const playing = room.status === "playing" && game && game.status === "playing";
+    // Полноэкранный режим продолжается и на экране результата, пока игрок не выйдет из комнаты.
+    const fullscreenGame = !!(game && (
+      room.status === "playing" || game.status === "playing" || game.status === "finished"
+    ));
+    setSekaFullscreen(fullscreenGame);
+    $("waitingText").classList.toggle("hidden", playing);
+    $("gameWrap").classList.toggle("hidden", !game);
+    $("waitingActions").classList.toggle("hidden", playing);
+    const hasBot = (state.players || []).some(player =>
+      String(player.telegramId) === "0" || player.isBot
+    );
+    $("addBotButton").classList.toggle("hidden", !(waiting && room.isOwner && !hasBot));
+    $("addBotButton").disabled = busy;
+    $("startGameButton").classList.toggle("hidden", !(waiting && room.isOwner));
+    $("startGameButton").disabled = (state.players || []).length < 2;
+    const finished = !!(game && game.status === "finished" && room.status === "finished");
+    const humanPlayers = (state.players || []).filter(player =>
+      String(player.telegramId) !== "0" && !player.isBot
+    );
+    const rematchVotes = Array.isArray(game && game.rematchVotes) ? game.rematchVotes.map(String) : [];
+    const readyCount = humanPlayers.filter(player => rematchVotes.includes(String(player.telegramId))).length;
+    const hasVotedForRematch = rematchVotes.includes(tgUserId);
+    $("rematchButton").classList.toggle("hidden", !finished);
+    $("rematchButton").textContent = hasVotedForRematch
+      ? "✓ Готов к рематчу (" + readyCount + "/" + humanPlayers.length + ")"
+      : "🔄 Рематч (" + readyCount + "/" + humanPlayers.length + ")";
+    $("rematchButton").disabled = busy || hasVotedForRematch || humanPlayers.length < 1;
+    $("leaveRoomButton").textContent = playing ? "Игра идёт" : "Выйти из комнаты";
+    $("leaveRoomButton").disabled = playing;
+    if (waiting) {
+      $("waitingText").textContent = hasBot
+        ? "Бот добавлен. Это режим проверки: AC не списываются и не начисляются. Нажми «Начать игру»."
+        : room.isOwner
+          ? "Пригласи игроков или добавь бота для проверки. Начать партию можно, когда за столом будут минимум два человека."
+          : "Ждём, пока создатель комнаты запустит игру.";
+    } else if (!game) {
+      $("waitingText").textContent = "Ожидаем состояние партии…";
+    } else if (game.status === "finished") {
+      $("waitingText").textContent = game.message || "Партия завершена. Можно выйти в лобби и создать новую комнату.";
+    } else {
+      $("waitingText").textContent = "Партия идёт";
+    }
+
+    if (game) {
+      $("potValue").innerHTML = fmt(game.pot) + " AC<small>БАНК ПАРТИИ</small>";
+      let gameMessageText = game.message || "";
+      if (game.status === "finished") {
+        const ownResult = (game.players || []).find(player => String(player.telegramId) === tgUserId);
+        const ownPayout = Math.max(0, Number(ownResult && ownResult.payout) || 0);
+        const personalWin = game.testMode
+          ? "Твой выигрыш: 0 AC — тестовый режим, баланс не менялся."
+          : ownPayout > 0
+            ? "Твой выигрыш: +" + fmt(ownPayout) + " AC."
+            : "Твой выигрыш: 0 AC.";
+        gameMessageText = (gameMessageText ? gameMessageText + " " : "") + personalWin;
+      }
+      $("gameMessage").textContent = gameMessageText;
+      $("gameTurnLabel").textContent = game.status === "finished" ? "Партия завершена" :
+        (game.isYourTurn ? "Ваш ход" : "Ход игрока: " + ((game.players || []).find(p => String(p.telegramId) === String(game.currentPlayerTelegramId)) || {}).label);
+      const me = (game.players || []).find(player => String(player.telegramId) === tgUserId);
+      $("myHand").innerHTML = me && me.hand ? me.hand.map(card => cardMarkup(card, false)).join("") : "";
+      const ownScore = me && me.hand ? scoreMySekaHand(me.hand) : null;
+      const hasOwnScore = !!ownScore;
+      $("myHandScore").textContent = hasOwnScore ? fmt(ownScore.score) + " " + sekaScoreWord(ownScore.score) : "—";
+      $("myHandType").textContent = hasOwnScore ? ownScore.label :
+        (game.status === "finished" && !game.revealHands ? "Карты соперников остались закрыты" : "Подсчитываем комбинацию");
+      $("myHandCaption").setAttribute("aria-label", hasOwnScore
+        ? "Ваша комбинация: " + ownScore.label + ", " + fmt(ownScore.score) + " " + sekaScoreWord(ownScore.score)
+        : "Ожидаем подсчёт комбинации");
+      const actionArea = $("actionArea");
+      actionArea.classList.toggle("hidden", !playing);
+      const isMyTurn = playing && !!game.isYourTurn;
+      const raiseBounds = getRaiseBounds(state);
+      const raiseInput = $("raiseAmount");
+      // Не меняем value вообще при фоновом обновлении состояния комнаты.
+      // На Android Telegram WebView фокус иногда теряется во время ввода:
+      // автоподстановка минимума тут же возвращала удалённые цифры.
+      // Любую пустую/неполную/недопустимую сумму проверяем только по нажатию «Повысить».
+      raiseInput.dataset.minTarget = String(raiseBounds.minTarget);
+      raiseInput.dataset.maxTarget = raiseBounds.maxTarget == null ? "" : String(raiseBounds.maxTarget);
+      const canRaise = raiseBounds.maxTarget == null || raiseBounds.maxTarget >= raiseBounds.minTarget;
+      $("raiseButton").disabled = !isMyTurn || !canRaise;
+      $("foldButton").disabled = !isMyTurn;
+      $("callButton").disabled = !isMyTurn;
+      const activePlayers = game.players.filter(p => !p.folded);
+      $("openButton").classList.toggle("hidden", !isMyTurn || activePlayers.length > 2);
+      $("openButton").disabled = !isMyTurn;
+      $("refreshStateButton").disabled = false;
+      $("callButton").textContent = "Поддержать (" + fmt(Math.max(0, Number(game.currentBet) - Number((me || {}).contribution || 0))) + " AC)";
+      $("raiseAmount").disabled = !isMyTurn || !canRaise;
+      $("actionHint").textContent = "Введи итоговую сумму Allcoins целиком — не добавку. Минимум: " +
+        fmt(raiseBounds.minTarget) + " AC" +
+        (raiseBounds.maxTarget == null ? ". Верхнего лимита нет, сумма ограничена балансом." :
+          ". Максимум сейчас: " + fmt(raiseBounds.maxTarget) + " AC.");
+    } else {
+      $("actionArea").classList.add("hidden");
+    }
+  }
+
+  function scheduleSekaRefreshIfReady() {
+    if (!refreshAfterCurrentPoll || busy || pollBusy || !currentRoomId) return;
+    refreshAfterCurrentPoll = false;
+    queueMicrotask(() => { void refreshRoomState().catch(() => {}); });
+  }
+
+  async function refreshRoomState(allowBusy = false) {
+    if (!currentRoomId || (busy && !allowBusy)) return;
+    if (pollBusy) {
+      if (allowBusy) refreshAfterCurrentPoll = true;
+      return;
+    }
+    pollBusy = true;
+    const roomIdAtStart = String(currentRoomId);
+    const versionAtStart = roomStateVersion;
+    try {
+      const result = await api("/rooms/state", { roomId: roomIdAtStart });
+      // Ignore results from polls that began before a move or room change.
+      if (!currentRoomId || String(currentRoomId) !== roomIdAtStart ||
+          versionAtStart !== roomStateVersion || (busy && !allowBusy)) return;
+      // Avoid rebuilding the whole poker table and hand when the server state is identical.
+      const fingerprint = JSON.stringify(result);
+      if (fingerprint === currentStateFingerprint) return;
+      currentStateFingerprint = fingerprint;
+      renderRoom(result);
+    } finally {
+      pollBusy = false;
+      scheduleSekaRefreshIfReady();
+    }
+  }
+
+  async function addBot() {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    $("addBotButton").disabled = true;
+    setStatus("roomStatus", "Добавляем тестового бота…");
+    try {
+      await api("/rooms/add-bot", { roomId: currentRoomId });
+      await refreshRoomState(true);
+      setStatus("roomStatus", "Бот добавлен. Можно начинать проверку игры.");
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+    } finally {
+      busy = false;
+      if (currentState) renderRoom(currentState);
+      scheduleSekaRefreshIfReady();
+      if ($("addBotButton")) $("addBotButton").disabled = false;
+    }
+  }
+
+  async function startGame() {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    $("startGameButton").disabled = true;
+    setStatus("roomStatus", "Раздаём карты…");
+    // Запрашиваем полноэкранный режим прямо из нажатия пользователя,
+    // до сетевого запроса: Telegram может отклонить вызов после await.
+    setSekaFullscreen(true);
+    setStatus("roomStatus", "Запускаем игру…");
+    try {
+      await api("/rooms/start", { roomId: currentRoomId });
+      await refreshRoomState(true);
+      setStatus("roomStatus", "");
+    } catch (error) {
+      setSekaFullscreen(false);
+      setStatus("roomStatus", error.message, true);
+    } finally {
+      busy = false;
+      if (currentState) renderRoom(currentState);
+      scheduleSekaRefreshIfReady();
+      if (currentState && currentState.room && currentState.room.status === "waiting") {
+        $("startGameButton").disabled = (currentState.players || []).length < 2;
+      }
+    }
+  }
+
+  async function requestRematch() {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    $("rematchButton").disabled = true;
+    setStatus("roomStatus", "Запрашиваем рематч…");
+    try {
+      const result = await api("/rooms/rematch", { roomId: currentRoomId });
+      await refreshRoomState(true);
+      if (result.started) {
+        setStatus("roomStatus", "Рематч начался! Новые карты уже розданы.");
+      } else {
+        setStatus("roomStatus", result.message || "Готовность сохранена. Ждём остальных игроков.");
+      }
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+      try { await refreshRoomState(true); } catch (_) {}
+    } finally {
+      busy = false;
+      scheduleSekaRefreshIfReady();
+      if (currentState) renderRoom(currentState);
+    }
+  }
+
+  async function sendAction(action, amount) {
+    if (!currentRoomId || busy) return;
+    busy = true;
+    roomStateVersion += 1;
+    $("actionArea").querySelectorAll("button").forEach(button => { button.disabled = true; });
+    setStatus("roomStatus", "Отправляем ход…");
+    try {
+      await api("/rooms/action", { roomId: currentRoomId, action: action, amount: amount });
+      await refreshRoomState(true);
+      setStatus("roomStatus", "");
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+      try { await refreshRoomState(true); } catch (_) {}
+    } finally {
+      busy = false;
+      scheduleSekaRefreshIfReady();
+      if (currentState) renderRoom(currentState);
+    }
+  }
+
+  async function leaveRoom() {
+    if (!currentRoomId || busy) return;
+    if (currentState && currentState.room && currentState.room.status === "playing") {
+      setStatus("roomStatus", "Во время активной партии выйти нельзя. Сначала заверши раунд.", true);
+      return;
+    }
+    busy = true;
+    roomStateVersion += 1;
+    $("leaveRoomButton").disabled = true;
+    try {
+      await api("/rooms/leave", { roomId: currentRoomId });
+      currentRoomId = null;
+      currentStateFingerprint = "";
+      saveCurrentRoom(null);
+      setSekaFullscreen(false);
+      currentRoomData = null;
+      currentState = null;
+      $("roomPanel").classList.add("hidden");
+      $("lobbyPanel").classList.remove("hidden");
+      setStatus("roomStatus", "");
+      await loadRooms(false);
+    } catch (error) {
+      setStatus("roomStatus", error.message, true);
+    } finally {
+      busy = false;
+      scheduleSekaRefreshIfReady();
+      $("leaveRoomButton").disabled = false;
+    }
+  }
+
+  async function goBack() {
+    if (currentRoomId) {
+      await leaveRoom();
+      if (currentRoomId) return;
+    }
+    if (tg && tg.BackButton && typeof tg.BackButton.hide === "function") tg.BackButton.hide();
+    window.location.href = "./index.html?v=20261024-seka";
+  }
+
+  async function poll() {
+    if (pollBusy || busy) return;
+    try {
+      if (currentRoomId) await refreshRoomState();
+      else await loadRooms(true);
+    } catch (_) {
+      // A short network hiccup should not erase the current game state.
+    }
+  }
+
+  $("createTier").addEventListener("change", updateTierInput);
+  $("anteInput").addEventListener("input", updateTierInput);
+  $("createRoomButton").addEventListener("click", createRoom);
+  $("refreshRoomsButton").addEventListener("click", () => loadRooms(false));
+  $("filterTier").addEventListener("change", () => loadRooms(false));
+  $("addBotButton").addEventListener("click", addBot);
+  $("startGameButton").addEventListener("click", startGame);
+  $("rematchButton").addEventListener("click", requestRematch);
+  $("leaveRoomButton").addEventListener("click", leaveRoom);
+  $("refreshStateButton").addEventListener("click", () => refreshRoomState().catch(error => setStatus("roomStatus", error.message, true)));
+  $("foldButton").addEventListener("click", () => sendAction("fold"));
+  $("callButton").addEventListener("click", () => sendAction("call"));
+  $("raiseButton").addEventListener("click", submitRaise);
+  $("openButton").addEventListener("click", () => sendAction("open"));
+  $("backButton").addEventListener("click", goBack);
+
+  updateTierInput();
+  $("raiseAmount").min = "200";
+  if (tg && tg.BackButton && typeof tg.BackButton.show === "function") {
+    tg.BackButton.show();
+    if (typeof tg.BackButton.onClick === "function") tg.BackButton.onClick(goBack);
+  }
+
+  try {
+    const savedRoomId = localStorage.getItem("allcoinsSekaRoomId");
+    if (savedRoomId && /^\d+$/.test(savedRoomId)) currentRoomId = savedRoomId;
+  } catch (_) {}
+  loadProfile().then(async () => {
+    if (currentRoomId) {
+      $("lobbyPanel").classList.add("hidden");
+      $("roomPanel").classList.remove("hidden");
+      try {
+        await refreshRoomState();
+      } catch (error) {
+        currentRoomId = null;
+        saveCurrentRoom(null);
+        $("roomPanel").classList.add("hidden");
+        $("lobbyPanel").classList.remove("hidden");
+        setStatus("lobbyStatus", "Сохранённая комната больше недоступна. " + error.message, true);
+        await loadRooms(false);
+      }
+    } else {
+      await loadRooms(false);
+    }
+  }).catch(error => {
+    setStatus("lobbyStatus", error.message, true);
+    $("roomsList").innerHTML = '<div class="empty">Открой мини-приложение через @allcoins95_bot и обнови страницу.</div>';
+  });
+  window.setInterval(poll, 650);
+})();
+</script>
+
+<script>
+/* ALLCOINS shared app-wide language engine. Choice is shared by all game pages via localStorage. */
+(function(){
+  const LANGS = {"ru":{},"en":{"Главная":"Home","Игры":"Games","Вывод":"Withdraw","Профиль":"Profile","Задание":"Tasks","Пользователь Telegram":"Telegram user","Гость":"Guest","не авторизован":"Not logged in","🌐 Язык приложения / Language":"🌐 App language / Language","Язык приложения":"App language","Язык будет применяться к меню и игровым интерфейсам.":"Your language will be used throughout the menus and games.","Баланс:":"Balance:","Энергия:":"Energy:","Повторить вход":"Log in again","🛟 Нужна помощь?":"🛟 Need help?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Report freezing, errors, room or animation problems. Your request is saved in ALLCOINS Support; no Telegram bot message is sent.","Обратиться в поддержку":"Contact support","Что случилось?":"What happened?","Зависание / тормоза":"Freezing / lag","Ошибка или вылет":"Error or crash","Карты / анимация":"Cards / animation","Комнаты / подключение":"Rooms / connection","баланс / Allcoins":"Balance / bet","Другое":"Other","Опиши проблему":"Describe the problem","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Example: a UNO card disappears and reappears. Say which game it happened in and what you tapped before the error.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Do not send passwords, API keys or payment details. The text, category and Telegram ID are stored for diagnostics.","Отправить обращение ➤":"Send support request ➤","Обновить обращения":"Refresh reports","Поддержка игроков":"Player support","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Reports are saved on the server. ALLCOINS AI prepares an initial diagnosis. You can copy a report and share it with ChatGPT for coding help.","Заявки ещё не загружены.":"Reports have not been loaded yet.","В работу":"In progress","Решено":"Resolved","Новая":"New","Решена":"Resolved","Создать":"Create","Создать комнату":"Create room","Создать комнату 2 игрока":"Create room · 2 players","Найти комнату":"Find room","Найти комнату ↻ Обновить":"Find room ↻ Refresh","Открытые комнаты":"Open rooms","Обновить":"Refresh","Загрузка...":"Loading...","Загрузка…":"Loading…","Подключаем комнаты…":"Connecting to rooms…","Подключаемся к комнатам УНО…":"Connecting to UNO rooms…","Загружаем комнаты…":"Loading rooms…","Загружаем список комнат…":"Loading room list…","Загрузка комнат…":"Loading rooms…","Подключаюсь к комнате…":"Connecting to room…","Комната":"Room","Комната ALLCOINS":"ALLCOINS room","Название комнаты":"Room name","Комнату можно создать одному, а затем запустить тренировку с ботами.":"You can create a room alone and then start bot training.","Сумма Allcoins":"Bet","Сумма Allcoins:":"Bet:","Сумма Allcoins за игрока (AC)":"Bet per player (AC)","Сумма Allcoins за раунд":"Bet per round","Ограничение сумм Allcoins":"Bet limits","От 1 000 000 AC — без верхнего лимита":"From 1,000,000 AC — no upper limit","Минимальная сумма Allcoins — 100 AC.":"Minimum bet — 100 AC.","Верхнего лимита суммы Allcoins не задаётся.":"There is no upper bet limit.","Баланс":"Balance","Игрок":"Player","Игроки":"Players","Игроков:":"Players:","Максимум игроков за столом":"Maximum players at the table","Сколько игроков?":"How many players?","2 игрока":"2 players","3 игрока":"3 players","4 игрока":"4 players","5 игроков":"5 players","6 игроков":"6 players","Готов":"Ready","Готово":"Done","Начать игру":"Start game","Начать онлайн":"Start online","Старт с ботами":"Start with bots","Добавить бота":"Add bot","🤖 Добавить бота для проверки":"🤖 Add test bot","Играть":"Play","Играть с ботом (тест) · выключено":"Play vs bot (test) · off","Играть с тестовым ботом":"Play with test bot","Присоединиться":"Join","Присоединиться к игре":"Join game","Отмена":"Cancel","Назад":"Back","← Назад":"← Back","← Назад к играм":"← Back to games","← Меню":"← Menu","В меню":"To menu","Закрыть":"Close","Сохранить":"Save","Отправить":"Send","Да":"Yes","Нет":"No","Выйти из комнаты":"Leave room","Выйти из игры":"Leave game","Выйти в комнаты":"Back to rooms","Выйти в лобби":"Back to lobby","Вернуться к комнатам":"Return to rooms","Вернуться в лобби":"Return to lobby","Остаться":"Stay","Покинуть комнату?":"Leave the room?","Покинуть партию?":"Leave the match?","Ты выйдешь из комнаты ожидания.":"You will leave the waiting room.","Чтобы не выйти случайно, подтверди действие.":"Confirm to avoid leaving accidentally.","Комната онлайн · общий ход скрыт до завершения выбора.":"Online room · choices stay hidden until everyone has selected.","Ожидание игроков":"Waiting for players","Ожидаем игроков.":"Waiting for players.","Ожидаем начало раунда.":"Waiting for the round to start.","Ожидаем готовности игроков...":"Waiting for players to get ready...","Новая игра":"New game","Новая партия":"New match","Играть снова":"Play again","Играть ещё":"Play again","Победа":"Win","Победа!":"Victory!","Поражение":"Defeat","Проигрыш":"Loss","Выигрыш":"Winnings","Бито":"Beaten","Беру":"Taking","Правила":"Rules","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Pass the bomb to another player before the fuse burns out.","Ставь фигуры на поле 8×8.":"Place pieces on the 8×8 board.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Fill complete rows and columns to clear them and score more points.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Choose a piece below, then tap the cell for its top-left corner.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Drag a piece onto the board or tap the piece and then a cell.","Турнирная таблица":"Tournament leaderboard","Недельный рейтинг · UTC":"Weekly ranking · UTC","ОБЩИЙ БАНК":"TOTAL PRIZE POOL","К распределению:":"Available to distribute:","Участников:":"Participants:","Пока нет участников.":"No participants yet.","Войди в турнир, чтобы попасть в таблицу.":"Join the tournament to appear on the leaderboard.","Место":"Place","Очки":"Points","Приз сейчас":"Current prize","Приз предварительный и меняется до закрытия недели.":"The prize is provisional and changes until the week closes.","5% банка — комиссия проекта.":"5% of the pool is the project fee.","Пока нет записей":"No entries yet","РЕКОРД НЕДЕЛИ":"WEEKLY RECORD","ЛИЧНЫЙ РЕКОРД":"PERSONAL BEST","Недельный турнир ALLCOINS":"ALLCOINS weekly tournament","Тренировка без турнира":"Practice without tournament","Войти в турнир · 1 000 AC":"Join tournament · 1,000 AC","Тренировка":"Practice","Игра окончена":"Game over","Результат сохранён.":"Result saved.","Сыграть ещё раз":"Play again","Счёт":"Score","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"PERSONAL BEST · WEEK","Бильярд Онлайн":"Online Billiards","Американский пул · 2 игрока · комнаты на AC":"American pool · 2 players · AC rooms","Верхнего лимита нет: доступная сумма Allcoins зависит от баланса игроков.":"There is no upper limit; the available bet depends on players' balances.","В обычной комнате сумма Allcoins списывается при начале партии.":"In a regular room, the bet is deducted when the match starts.","БИЛЬЯРД ONLINE Комната":"BILLIARDS ONLINE Room","Твой ход.":"Your turn.","Коснись стола и потяни в направлении удара.":"Touch the table and pull in the direction of the shot.","СИЛА УДАРА":"SHOT POWER","Прицелься и отпусти, чтобы ударить.":"Aim and release to shoot.","🎥 Повернуть стол":"🎥 Rotate table","🎯 Прицел":"🎯 Aim","Новый раунд":"New round","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Simplified 8-ball pool rules: pocket your group, then the black eight-ball.","Попадание битка в лузу передаёт ход.":"Pocketing the cue ball passes the turn.","Сумма Allcoins будет списана при старте игры.":"The bet will be deducted when the game starts.","🏆 РЕКОРД НЕДЕЛИ":"🏆 WEEKLY RECORD","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Pass the Bomb","Быстрая игра на реакцию · до 4 игроков":"Fast reaction game · up to 4 players","Не держи её долго!":"Don't hold it too long!","Выберите локацию":"Choose a location","Медная шахта":"Copper Mine","Кристальная шахта":"Crystal Mine","Твой ник":"Your nickname","▶ Начать игру":"▶ Start game","📘 Как играть":"📘 How to play","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Tap another active player and the bomb will arc toward them with a passing animation.","Время до взрыва случайное, точный момент заранее не показывается.":"The time until the explosion is random and is not shown in advance.","За взрыв игрок теряет одно сердце.":"A player loses one heart when the bomb explodes.","После трёх потерь он выбывает.":"After three losses, the player is eliminated.","Побеждает последний оставшийся игрок.":"The last remaining player wins.","Нажми на соперника":"Tap an opponent","ДВИЖЕНИЕ":"MOVEMENT","Следующий раунд":"Next round","Бомба взорвалась.":"The bomb exploded.","Шашки Онлайн":"Online Checkers","Классические русские шашки · поле 8×8":"Classic Russian checkers · 8×8 board","💰 сумма Allcoins в комнате":"💰 Room bet","Allcoins: 100 AC":"Bet amount 100 AC","Или введи сумму вручную":"Or enter an amount manually","＋ Создать комнату":"＋ Create room","⌕ Найти комнату":"⌕ Find room","✅ Комната создана":"✅ Room created","Комната шашек":"Checkers room","🌍 Список комнат":"🌍 Room list","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Test mode: the bot is ready to test moves, captures and kings.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"For now, the room list is stored only in this browser and is not visible to other players.","Сумма Allcoins сейчас демонстрационная: реальные AC не списываются и не начисляются.":"The bet is for demo only; real AC are not deducted or credited.","← Комнаты":"← Rooms","♟ Тестовый бот":"♟ Test bot","Соперник · чёрные":"Opponent · black","Твой ход — белые":"Your turn — white","Нажми на свою шашку, затем на подсвеченную клетку":"Tap your piece, then the highlighted square","👤 Игрок":"👤 Player","Ты играешь белыми":"You play white","↻ Новая партия":"↻ New match","Правило: брать обязательно.":"Rule: captures are mandatory.","Дамка ходит и бьёт по диагонали на любое расстояние.":"A king moves and captures diagonally over any distance.","Партия завершена":"Match finished","Камень · Ножницы · Бумага":"Rock · Paper · Scissors","Онлайн-комнаты до 3 игроков.":"Online rooms for up to 3 players.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Two players can start immediately; a third joins the next round.","Минимум 100 AC.":"Minimum 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Open rooms ↻ Refresh","AC — виртуальные монеты ALLCOINS, не деньги.":"AC are virtual ALLCOINS coins, not money.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Rooms • betting • AC pot","ВАШ БАЛАНС":"YOUR BALANCE","Создать комнату до 6 игроков":"Create a room for up to 6 players","Начальный взнос (AC)":"Initial contribution (AC)","Взнос в банк":"Contribution to pot","Показать комнаты с лимитом":"Show rooms by limit","Все лимиты":"All limits","Основные правила":"Main rules","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Each player receives 3 cards from a 36-card deck (6–ace).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"Ace = 11 points; 10, jack, queen and king = 10; other cards count at face value.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Cards of the same suit are added together; three of a kind make a strong combination.","В свой ход можно сбросить карты, поддержать текущую сумму Allcoins, повысить её или вскрыться, когда осталось двое.":"On your turn, fold, call, raise or reveal when two players remain.","Ожидание":"Waiting","НАЧАЛЬНЫЙ ВЗНОС":"INITIAL CONTRIBUTION","Текущая сумма Allcoins":"CURRENT BET","ВАШИ КАРТЫ":"YOUR CARDS","ВАША КОМБИНАЦИЯ":"YOUR COMBINATION","Подсчитываем комбинацию":"Calculating combination","Новая сумма Allcoins (AC)":"New total bet (AC)","Повысить":"Raise","Пас":"Pass","Поддержать":"Call","Вскрыться":"Show cards","Сумма повышения — добавка к текущей сумме Allcoins.":"Raise amount is added to the current bet.","🔄 Рематч":"🔄 Rematch","УНО Онлайн":"UNO Online","Классические карты · комнаты · игра на весь экран":"Classic cards · rooms · fullscreen game","AC Allcoins от 100":"AC bets from 100","Тренировка с ботами проходит без списания AC.":"Bot training does not deduct AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"You can create a room alone and then start bot training.","УНО поддерживает от 2 до 10 игроков.":"UNO supports 2 to 10 players.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Each match uses the classic 108-card deck; cards, turns and rooms are saved on the server.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Rooms are visible to ALLCOINS players while waiting for a match and with open seats.","Карта играетcя по цвету, числу или значку.":"Play a card by matching its color, number or symbol.","Подбери карту по цвету, числу или символу.":"Match the card by color, number or symbol.","Твои карты":"Your cards","ТВОЙ ХОД":"YOUR TURN","＋ Взять карту":"＋ Draw a card","Передать ход →":"Skip turn →","Дикая карта меняет цвет.":"A wild card changes the color.","Выбери цвет":"Choose a color","Какой цвет будет следующим после этой дикой карты?":"Which color comes next after this wild card?","Лото Онлайн":"Online Lotto","комнаты Allcoins":"Rooms and bets","Выберите сумму Allcoins":"Choose a bet","Публичная":"Public","Приватная":"Private","Баланс пользователя":"User balance","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Real withdrawals are not enabled. Do not send payment details. The AC balance is for testing and has no monetary value.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"This is a test prototype. AC are virtual coins, not money.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Energy restoration is currently a demo and is not connected to ads.","⚡ Восстановить":"⚡ Restore","🎁 Бонус":"🎁 Bonus","Бонус дня":"Daily bonus","Правила: брать обязательно.":"Rule: captures are mandatory.","Ссылка на игру":"Game link","Перетащи фигуру на поле":"Drag the piece onto the board","выбери сумму Allcoins":"Choose a bet","Уже в комнате":"Already in room","Нажми, чтобы продолжить":"Tap to continue","Обновление турнира…":"Updating tournament…","Не сбрасывается":"Does not reset","Оплати вход один раз на неделю.":"Pay the entry fee once per week.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Your best score enters the ranking; prizes are automatically awarded to the leaders after the week ends.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"The tournament week ends Monday at 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"The weekly record resets; the personal best remains.","Подключаем профиль и проверяем баланс…":"Connecting profile and checking balance…","Тренировка · личный рекорд сохраняется":"Practice · personal best is saved","▶ Посмотреть рекламу и продолжить":"▶ Watch an ad and continue","Режим игры":"Game mode","🤖 Ты против ботов":"🤖 You vs bots","Боты сами передают бомбу.":"Bots pass the bomb automatically.","Удобно проверить игру в одиночку.":"Useful for testing the game solo.","👥 Игроки на одном экране":"👥 Players on one screen","Все участники по очереди нажимают на игрока-получателя.":"Players take turns tapping the player who will receive the bomb.","В игре нет сумм Allcoins и списания AC.":"There are no bets or AC deductions in this game.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"This is a separate arcade mode for testing animations and passing mechanics.","Бомба случайно попадает к одному из игроков.":"The bomb is randomly assigned to one player.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"When the fuse is nearly burned out, the bomb flashes and shakes.","В ИГРЕ":"IN GAME","ФИТИЛЬ":"FUSE","Горит":"Burning","ШАХТА":"MINE","Передай бомбу!":"Pass the bomb!","РАУНД":"ROUND","Комната создана":"Room created","Список комнат":"Room list","Тест с ботом":"Bot test","При победе удерживается комиссия проекта 5% от общего банка; при ничьей суммы Allcoins возвращаются.":"A 5% project fee is taken from the total pot on a win; bets are returned on a draw.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"In bot test mode, there are no deductions, payouts or fees.","Захват башен":"Tower capture","Стратегия в реальном времени · до 3 игроков":"Real-time strategy · up to 3 players","Захвати карту":"Capture the map","Веди войска.":"Lead your troops.","Захватывай башни.":"Capture towers.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Choose your tower and a target; an asphalt road will appear between them.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Troops will run along it; roads remain on the map, allowing several routes at once.","Allcoins":"Bet, AC","От 100 AC без фиксированной верхней границы.":"From 100 AC with no fixed upper limit.","Сумма Allcoins не может превышать твой баланс.":"The bet cannot exceed your balance.","Создатель + соперники":"Creator + opponents","⚔️ Тренировка с ботами · бесплатно":"⚔️ Bot practice · free","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Online rooms are available after opening ALLCOINS through Telegram.","Тренировка с ботами работает без списания Allcoins.":"Bot practice works without a bet.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Online rooms created by other players appear here.","Синхронизация":"Synchronizing","Как играть: нажми на свою башню, затем на цель.":"How to play: tap your tower, then a target.","Или проведи пальцем от башни к башне.":"Or drag your finger from one tower to another.","Войска":"Troops","На столе":"On the table","Игроки за столом":"Players at the table","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"The creator can start the online game when at least one more person joins.","Тренировка с ботами доступна в любой момент.":"Bot practice is available at any time.","БАНК КОМНАТЫ":"ROOM POT","Карта играется по цвету, числу или значку.":"Play by matching color, number or symbol.","Ты захватил карту.":"You captured the map.","Приз распределяется автоматически после завершения недели.":"Prizes are distributed automatically after the week ends.","Нет доступных комнат.":"No rooms available.","Ошибка загрузки. Попробуй ещё раз.":"Loading error. Try again.","Сначала войди через Telegram.":"First sign in through Telegram.","Выбери комнату по цене билета.":"Choose a room by ticket price.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"The round starts automatically 3 minutes after the room opens.","За столом до 6 мест":"Up to 6 seats at the table","Ход игрока":"Player's turn","Карты розданы.":"Cards dealt.","0 AC БАНК":"0 AC POT","Allcoins: 100 AC":"Bet 100 AC","Классическая колода":"Classic deck","Колода":"Deck","Твой лучший результат попадёт в рейтинг":"Your best score will enter the ranking","Выйти в лобби бильярда":"Back to billiards lobby","Начать тренировку":"Start practice","Комната бильярда":"Billiards room","Повернуть стол":"Rotate table","Прицел":"Aim","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"YOUR BALANCE","Виртуальные монеты ALLCOINS":"Virtual ALLCOINS coins","⚡ Энергия":"⚡ Energy","НОВАЯ ИГРА · BLOCK BLAST":"NEW GAME · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Entry — 1,000 AC · personal best is saved","Дурак Онлайн":"Durak Online","21 Очко":"21 Points","Камень Ножницы Бумага":"Rock Paper Scissors","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Create room","Подкидной":"Throw-in","Переводной":"Transfer","24 карт":"24 cards","36 карт":"36 cards","52 карт":"52 cards","1 игрок + бот":"1 player + bot","⚡ Скорость игры":"⚡ Game speed","Обычная":"Normal","Минимум: 100 AC":"Minimum: 100 AC","🔒 Тип комнаты":"🔒 Room type","🌍 Открытая":"🌍 Public","🌍 Доступные комнаты":"🌍 Available rooms","🔊 Звук":"🔊 Sound","👤 Ты":"👤 You","⚔️ Атаковать":"⚔️ Attack","🛡️ Побить карту":"🛡️ Beat the card","Создавай комнаты Лото и приглашай игроков.":"Create Lotto rooms and invite players.","Количество игроков (от 2 до 1000)":"Number of players (2–1,000)","Цена одного билета (AC)":"Price per ticket (AC)","Всего билетов:":"Total tickets:","Мои билеты в выбранной комнате:":"My tickets in the selected room:","🎟️ Купить билет":"🎟️ Buy ticket","Подготовка системы вывода":"Preparing withdrawals","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"The withdrawal request interface will appear here if a separate system is developed and connected.","Проверить статус":"Check status","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS administration","💰 Комиссия проекта · 5%":"💰 Project fee · 5%","Начислено комиссии:":"Commission earned:","База начисления комиссии:":"Commission calculation base:","Завершённых игр с комиссией:":"Completed games with fee:","🎯 Задания":"🎯 Tasks","Твои цели ALLCOINS":"Your ALLCOINS goals","Выполняй задания, открывай награды и развивай свой баланс.":"Complete tasks, unlock rewards and grow your balance.","Выполнено заданий":"Tasks completed","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Tasks and rewards are for testing and stored on this device. Server-side reward crediting is not connected yet.","Комнаты обновляются каждые 3 минуты":"Rooms refresh every 3 minutes","До 3 билетов на игрока в каждой комнате":"Up to 3 tickets per player in each room","📘 Инструкция по игре в лото":"📘 How to play Lotto","Ручной режим":"Manual mode","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Buy a ticket and stay in the room during the draw. When a number on your ticket is called, tap it yourself. A purple circle marks a covered number.","Автоматический режим":"Automatic mode","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Buy a ticket and leave the room or minimize the app. After about 8–11 seconds of inactivity, matching numbers will be marked automatically. Your ticket keeps playing even when you are not watching.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате суммы Allcoins.":"Open the same room later to see the drawn numbers, ticket marks, round result, and any win or bet refund details.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"A green card means you won; a red card means you did not. Open a report for details; once viewed, it can be removed from your list.","🗑 Удалить все отчёты":"🗑 Delete all reports","← К комнатам":"← To rooms","Билет:":"Ticket:","Банк:":"Pot:","Билеты у тебя:":"Your tickets:","Числа:":"Numbers:","Отчёт после игры":"Post-game report","🎱 Игра в лото":"🎱 Lotto game","Числа выпадают автоматически каждые 3 секунды":"Numbers are drawn automatically every 3 seconds","🔊 Озвучка: ВКЛ":"🔊 Voice: ON","Выпавшие числа":"Drawn numbers","Ожидаем розыгрыш…":"Waiting for the draw…","Твои билеты · до 3":"Your tickets · up to 3","📘 Инструкция: ручная и автоматическая игра":"📘 Instructions: manual and automatic play","Ручная игра":"Manual play","Автоматическая игра":"Automatic play","Как посмотреть отчёт":"How to view a report","🂡 21 Очко":"🂡 21 Points","Классическое русское очко · игра против банкира":"Classic Russian 21 · play against the dealer","Цель:":"Goal:","набрать больше очков, чем банкир, но не больше 21.":"Score more points than the dealer, but no more than 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 count face value; jack = 2; queen = 3; king = 4; ace = 11.","Ход:":"Turn:","Банкир:":"Dealer:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"This is currently a single-player game against the computer. AC are virtual points in the prototype, not cash payouts.","♣ Онлайн-комнаты 21 Очко":"♣ 21 Points online rooms","Мест в каждой комнате":"Seats per room","Сумма Allcoins (от 100 до 1 000 000 AC)":"Bet amount (100–1,000,000 AC)","♧ Доступные комнаты":"♧ Available rooms","Комнаты по размеру суммы Allcoins":"Rooms by bet size","Все комнаты":"All bets","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"The creator starts the round when everyone is ready. You can start with one player and up to five participants.","🃏 Начать раунд":"🃏 Start round","🂡 21 Очко · Онлайн":"🂡 21 Points · Online","♛ Банкир":"♛ Dealer","Скрытая карта":"Hidden card","СЧЁТ: — / 21":"SCORE: — / 21","＋ Ещё карту":"＋ Hit","✋ Хватит":"✋ Stand","Банкир":"Dealer","Карты банкира":"Dealer's cards","1 место · 50%":"1st place · 50%","2 место · 30%":"2nd place · 30%","3 место · 20%":"3rd place · 20%","НЕДЕЛЯ ·":"WEEK ·","СЧЁТ":"SCORE","Тёплый каньон и рельсы":"Warm Canyon and Rails","Фиолетовый свет и кристаллы":"Purple light and crystals","БУМ!":"BOOM!","1 тыс.":"1K","10 тыс.":"10K","100 тыс.":"100K","1 млн":"1 million","♟ Шашки":"♟ Checkers","🤖 Тестовый бот":"🤖 Test bot","Вернуться в комнаты":"Return to rooms","Загружаю список комнат…":"Loading room list…","Вход: 100 AC":"Entry: 100 AC","От 1 000 000 AC без верхнего лимита":"From 1,000,000 AC with no upper limit","ИГРОКИ":"PLAYERS","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC are virtual game coins, not real money.","↻ Комнаты":"↻ Rooms","ЗАХВАТ БАШЕН":"TOWER CAPTURE","2–10 мест":"2–10 seats","КОМНАТА УНО":"UNO ROOM","УНО ОНЛАЙН":"UNO ONLINE","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Test mode: play against a bot without AC deductions or real payouts.","Подходит для проверки стола, ударов и очередности ходов.":"Useful for testing the table, shots and turn order.","Дождись второго игрока":"Wait for the second player","Бильярд ALLCOINS":"ALLCOINS Billiards","Оба игрока должны иметь достаточно AC для суммы Allcoins.":"Both players must have enough AC for the bet.","Когда оба будут в комнате, создатель сможет начать игру.":"When both players are in the room, the creator can start the game.","Текущая игра останется на сервере.":"The current game will remain on the server.","Вы вернётесь в лобби бильярда.":"You will return to the billiards lobby.","Чтобы случайно не выйти, выбери действие ниже.":"To avoid leaving by accident, choose an action below.","Камень Ножницы Бумага — ALLCOINS":"Rock Paper Scissors — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Rules may differ between groups; this version uses 7♣ as a joker and a special three-sixes combination."},"nl":{"Главная":"Home","Игры":"Spellen","Вывод":"Opnemen","Профиль":"Profiel","Задание":"Taken","Пользователь Telegram":"Telegram-gebruiker","Гость":"Gast","не авторизован":"Niet ingelogd","🌐 Язык приложения / Language":"🌐 App-taal / Language","Язык приложения":"App-taal","Язык будет применяться к меню и игровым интерфейсам.":"Je taal wordt in alle menu's en spellen gebruikt.","Баланс:":"Saldo:","Энергия:":"Energie:","Повторить вход":"Opnieuw inloggen","🛟 Нужна помощь?":"🛟 Hulp nodig?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Meld vastlopen, fouten of problemen met kamers of animaties. Je melding wordt opgeslagen in ALLCOINS Support; er wordt geen Telegram-botbericht gestuurd.","Обратиться в поддержку":"Contact opnemen met support","Что случилось?":"Wat is er gebeurd?","Зависание / тормоза":"Vastlopen / vertraging","Ошибка или вылет":"Fout of crash","Карты / анимация":"Kaarten / animatie","Комнаты / подключение":"Kamers / verbinding","баланс / Allcoins":"Saldo / inzet","Другое":"Overig","Опиши проблему":"Beschrijf het probleem","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Bijvoorbeeld: een UNO-kaart verdwijnt en verschijnt opnieuw. Vermeld in welk spel dit gebeurt en wat je daarvoor deed.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Stuur geen wachtwoorden, API-sleutels of betaalgegevens. De tekst, categorie en Telegram-ID worden opgeslagen voor diagnose.","Отправить обращение ➤":"Supportverzoek verzenden ➤","Обновить обращения":"Meldingen vernieuwen","Поддержка игроков":"Spelersondersteuning","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Meldingen worden op de server opgeslagen. ALLCOINS AI maakt een eerste diagnose. Je kunt het rapport kopiëren en met ChatGPT delen voor hulp bij codefixes.","Заявки ещё не загружены.":"Meldingen zijn nog niet geladen.","В работу":"In behandeling","Решено":"Opgelost","Новая":"Nieuw","Решена":"Opgelost","Создать":"Maken","Создать комнату":"Kamer maken","Создать комнату 2 игрока":"Kamer maken · 2 spelers","Найти комнату":"Kamer zoeken","Найти комнату ↻ Обновить":"Kamer zoeken ↻ Vernieuwen","Открытые комнаты":"Open kamers","Обновить":"Vernieuwen","Загрузка...":"Laden...","Загрузка…":"Laden…","Подключаем комнаты…":"Verbinding maken met kamers…","Подключаемся к комнатам УНО…":"Verbinden met UNO-kamers…","Загружаем комнаты…":"Kamers laden…","Загружаем список комнат…":"Kameroverzicht laden…","Загрузка комнат…":"Kamers laden…","Подключаюсь к комнате…":"Verbinden met de kamer…","Комната":"Kamer","Комната ALLCOINS":"ALLCOINS-kamer","Название комнаты":"Kamernaam","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Je kunt alleen een kamer maken en daarna met bots oefenen.","Сумма Allcoins":"Inzet","Сумма Allcoins:":"Inzet:","Сумма Allcoins за игрока (AC)":"Inzet per speler (AC)","Сумма Allcoins за раунд":"Inzet per ronde","Ограничение сумм Allcoins":"Inzetlimieten","От 1 000 000 AC — без верхнего лимита":"Vanaf 1.000.000 AC — geen bovengrens","Минимальная сумма Allcoins — 100 AC.":"Minimale inzet — 100 AC.","Верхнего лимита суммы Allcoins не задаётся.":"Er is geen maximale inzet.","Баланс":"Saldo","Игрок":"Speler","Игроки":"Spelers","Игроков:":"Spelers:","Максимум игроков за столом":"Maximaal aantal spelers aan tafel","Сколько игроков?":"Hoeveel spelers?","2 игрока":"2 spelers","3 игрока":"3 spelers","4 игрока":"4 spelers","5 игроков":"5 spelers","6 игроков":"6 spelers","Готов":"Klaar","Готово":"Gereed","Начать игру":"Spel starten","Начать онлайн":"Online starten","Старт с ботами":"Start met bots","Добавить бота":"Bot toevoegen","🤖 Добавить бота для проверки":"🤖 Testbot toevoegen","Играть":"Spelen","Играть с ботом (тест) · выключено":"Spelen tegen bot (test) · uit","Играть с тестовым ботом":"Spelen met testbot","Присоединиться":"Deelnemen","Присоединиться к игре":"Deelnemen aan spel","Отмена":"Annuleren","Назад":"Terug","← Назад":"← Terug","← Назад к играм":"← Terug naar spellen","← Меню":"← Menu","В меню":"Naar menu","Закрыть":"Sluiten","Сохранить":"Opslaan","Отправить":"Verzenden","Да":"Ja","Нет":"Nee","Выйти из комнаты":"Kamer verlaten","Выйти из игры":"Spel verlaten","Выйти в комнаты":"Terug naar kamers","Выйти в лобби":"Terug naar lobby","Вернуться к комнатам":"Terug naar kamers","Вернуться в лобби":"Terug naar lobby","Остаться":"Blijven","Покинуть комнату?":"De kamer verlaten?","Покинуть партию?":"De partij verlaten?","Ты выйдешь из комнаты ожидания.":"Je verlaat de wachtruimte.","Чтобы не выйти случайно, подтверди действие.":"Bevestig om te voorkomen dat je per ongeluk vertrekt.","Комната онлайн · общий ход скрыт до завершения выбора.":"Onlinekamer · keuzes blijven verborgen tot iedereen heeft gekozen.","Ожидание игроков":"Wachten op spelers","Ожидаем игроков.":"Wachten op spelers.","Ожидаем начало раунда.":"Wachten tot de ronde begint.","Ожидаем готовности игроков...":"Wachten tot spelers klaar zijn...","Новая игра":"Nieuw spel","Новая партия":"Nieuwe partij","Играть снова":"Opnieuw spelen","Играть ещё":"Opnieuw spelen","Победа":"Gewonnen","Победа!":"Gewonnen!","Поражение":"Verloren","Проигрыш":"Verlies","Выигрыш":"Winst","Бито":"Geslagen","Беру":"Ik neem","Правила":"Regels","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Geef de bom door voordat de lont opbrandt.","Ставь фигуры на поле 8×8.":"Plaats stukken op het bord van 8×8.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Vul volledige rijen en kolommen om ze te verwijderen en punten te verdienen.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Kies hieronder een stuk en tik daarna op de cel voor de linkerbovenhoek.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Sleep een stuk naar het bord of tik eerst op het stuk en daarna op een cel.","Турнирная таблица":"Toernooiklassement","Недельный рейтинг · UTC":"Weekranglijst · UTC","ОБЩИЙ БАНК":"TOTALE PRIJZENPOT","К распределению:":"Te verdelen:","Участников:":"Deelnemers:","Пока нет участников.":"Nog geen deelnemers.","Войди в турнир, чтобы попасть в таблицу.":"Doe mee aan het toernooi om op de ranglijst te komen.","Место":"Plaats","Очки":"Punten","Приз сейчас":"Huidige prijs","Приз предварительный и меняется до закрытия недели.":"De prijs is voorlopig en verandert tot het einde van de week.","5% банка — комиссия проекта.":"5% van de prijzenpot is projectcommissie.","Пока нет записей":"Nog geen resultaten","РЕКОРД НЕДЕЛИ":"WEEKRECORD","ЛИЧНЫЙ РЕКОРД":"PERSOONLIJK RECORD","Недельный турнир ALLCOINS":"ALLCOINS-weektoernooi","Тренировка без турнира":"Trainen zonder toernooi","Войти в турнир · 1 000 AC":"Deelnemen aan toernooi · 1.000 AC","Тренировка":"Training","Игра окончена":"Spel afgelopen","Результат сохранён.":"Resultaat opgeslagen.","Сыграть ещё раз":"Opnieuw spelen","Счёт":"Score","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"PERSOONLIJK RECORD · WEEK","Бильярд Онлайн":"Biljart Online","Американский пул · 2 игрока · комнаты на AC":"Amerikaans pool · 2 spelers · kamers met AC","Верхнего лимита нет: доступная сумма Allcoins зависит от баланса игроков.":"Er is geen bovengrens; de inzet hangt af van de saldi van spelers.","В обычной комнате сумма Allcoins списывается при начале партии.":"In een normale kamer wordt de inzet afgeschreven wanneer de partij begint.","БИЛЬЯРД ONLINE Комната":"BILJART ONLINE Kamer","Твой ход.":"Jij bent aan de beurt.","Коснись стола и потяни в направлении удара.":"Raak de tafel aan en trek in de richting van de stoot.","СИЛА УДАРА":"STOOTKRACHT","Прицелься и отпусти, чтобы ударить.":"Richt en laat los om te stoten.","🎥 Повернуть стол":"🎥 Draai tafel","🎯 Прицел":"🎯 Richten","Новый раунд":"Nieuwe ronde","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Vereenvoudigde 8-ball-regels: pot je eigen groep en daarna de zwarte achtbal.","Попадание битка в лузу передаёт ход.":"Als de witte bal in een pocket valt, gaat de beurt naar de ander.","Сумма Allcoins будет списана при старте игры.":"De inzet wordt afgeschreven wanneer het spel begint.","🏆 РЕКОРД НЕДЕЛИ":"🏆 WEEKRECORD","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Geef de bom door","Быстрая игра на реакцию · до 4 игроков":"Snelle reactiespel · tot 4 spelers","Не держи её долго!":"Houd hem niet te lang vast!","Выберите локацию":"Kies een locatie","Медная шахта":"Kopermijn","Кристальная шахта":"Kristalmijn","Твой ник":"Je bijnaam","▶ Начать игру":"▶ Spel starten","📘 Как играть":"📘 Hoe speel je","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Tik op een andere actieve speler en de bom vliegt met een booganimatie naar die speler.","Время до взрыва случайное, точный момент заранее не показывается.":"De tijd tot de explosie is willekeurig en wordt niet vooraf getoond.","За взрыв игрок теряет одно сердце.":"Bij een explosie verliest een speler één hart.","После трёх потерь он выбывает.":"Na drie verliezen valt de speler af.","Побеждает последний оставшийся игрок.":"De laatst overgebleven speler wint.","Нажми на соперника":"Tik op een tegenstander","ДВИЖЕНИЕ":"BEWEGING","Следующий раунд":"Volgende ronde","Бомба взорвалась.":"De bom is ontploft.","Шашки Онлайн":"Dammen Online","Классические русские шашки · поле 8×8":"Klassiek Russisch dammen · bord 8×8","💰 сумма Allcoins в комнате":"💰 Kamerinzet","Allcoins: 100 AC":"Inzetbedrag 100 AC","Или введи сумму вручную":"Of voer zelf een bedrag in","＋ Создать комнату":"＋ Kamer maken","⌕ Найти комнату":"⌕ Kamer zoeken","✅ Комната создана":"✅ Kamer aangemaakt","Комната шашек":"Damakamer","🌍 Список комнат":"🌍 Kameroverzicht","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Testmodus: de bot is beschikbaar om zetten, slaan en dammen te testen.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"De kamerlijst wordt voorlopig alleen in deze browser opgeslagen en is niet zichtbaar voor andere spelers.","Сумма Allcoins сейчас демонстрационная: реальные AC не списываются и не начисляются.":"De inzet is alleen een demo; echte AC worden niet afgeschreven of bijgeschreven.","← Комнаты":"← Kamers","♟ Тестовый бот":"♟ Testbot","Соперник · чёрные":"Tegenstander · zwart","Твой ход — белые":"Jij bent aan zet — wit","Нажми на свою шашку, затем на подсвеченную клетку":"Tik op je steen en daarna op het gemarkeerde vak","👤 Игрок":"👤 Speler","Ты играешь белыми":"Je speelt wit","↻ Новая партия":"↻ Nieuwe partij","Правило: брать обязательно.":"Regel: slaan is verplicht.","Дамка ходит и бьёт по диагонали на любое расстояние.":"Een dam beweegt en slaat diagonaal over elke afstand.","Партия завершена":"Partij afgelopen","Камень · Ножницы · Бумага":"Steen · Papier · Schaar","Онлайн-комнаты до 3 игроков.":"Onlinekamers voor maximaal 3 spelers.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Twee spelers kunnen meteen starten; een derde doet mee in de volgende ronde.","Минимум 100 AC.":"Minimaal 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Open kamers ↻ Vernieuwen","AC — виртуальные монеты ALLCOINS, не деньги.":"AC zijn virtuele ALLCOINS-munten, geen geld.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Kamers • inzetten • AC-pot","ВАШ БАЛАНС":"JOUW SALDO","Создать комнату до 6 игроков":"Maak een kamer voor maximaal 6 spelers","Начальный взнос (AC)":"Startinleg (AC)","Взнос в банк":"Inleg in de pot","Показать комнаты с лимитом":"Kamers met limiet tonen","Все лимиты":"Alle limieten","Основные правила":"Belangrijkste regels","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Elke speler krijgt 3 kaarten uit een spel van 36 kaarten (6–aas).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"Aas = 11 punten; 10, boer, vrouw en koning = 10; andere kaarten tellen op nominale waarde.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Kaarten van dezelfde soort worden opgeteld; drie gelijke waarden vormen een sterke combinatie.","В свой ход можно сбросить карты, поддержать текущую сумму Allcoins, повысить её или вскрыться, когда осталось двое.":"Je kunt passen, meegaan, verhogen of tonen wanneer er nog twee spelers zijn.","Ожидание":"Wachten","НАЧАЛЬНЫЙ ВЗНОС":"STARTINLEG","Текущая сумма Allcoins":"HUIDIGE INZET","ВАШИ КАРТЫ":"JOUW KAARTEN","ВАША КОМБИНАЦИЯ":"JOUW COMBINATIE","Подсчитываем комбинацию":"Combinatie berekenen","Новая сумма Allcoins (AC)":"Nieuwe totale inzet (AC)","Повысить":"Verhogen","Пас":"Passen","Поддержать":"Meegaan","Вскрыться":"Kaarten tonen","Сумма повышения — добавка к текущей сумме Allcoins.":"De verhoging wordt toegevoegd aan de huidige inzet.","🔄 Рематч":"🔄 Opnieuw spelen","УНО Онлайн":"UNO Online","Классические карты · комнаты · игра на весь экран":"Klassieke kaarten · kamers · volledig scherm","AC Allcoins от 100":"AC-inzetten vanaf 100","Тренировка с ботами проходит без списания AC.":"Oefenen met bots kost geen AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Je kunt alleen een kamer maken en daarna met bots oefenen.","УНО поддерживает от 2 до 10 игроков.":"UNO ondersteunt 2 tot 10 spelers.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Elke partij gebruikt de klassieke stapel van 108 kaarten; kaarten, beurten en kamers worden op de server opgeslagen.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Kamers zijn zichtbaar voor ALLCOINS-spelers zolang ze wachten op een partij en er plek is.","Карта играетcя по цвету, числу или значку.":"Speel een kaart met dezelfde kleur, hetzelfde nummer of symbool.","Подбери карту по цвету, числу или символу.":"Kies een kaart met dezelfde kleur, hetzelfde nummer of symbool.","Твои карты":"Jouw kaarten","ТВОЙ ХОД":"JOUW BEURT","＋ Взять карту":"＋ Kaart pakken","Передать ход →":"Beurt overslaan →","Дикая карта меняет цвет.":"Een joker verandert de kleur.","Выбери цвет":"Kies een kleur","Какой цвет будет следующим после этой дикой карты?":"Welke kleur volgt na deze joker?","Лото Онлайн":"Online Lotto","комнаты Allcoins":"Kamers en inzetten","Выберите сумму Allcoins":"Kies een inzet","Публичная":"Openbaar","Приватная":"Privé","Баланс пользователя":"Gebruikerssaldo","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Echte uitbetalingen zijn niet beschikbaar. Stuur geen betaalgegevens. Het AC-saldo is testgeld zonder geldwaarde.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Dit is een testprototype. AC zijn virtuele munten, geen geld.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Energieherstel is momenteel een demo en is niet gekoppeld aan advertenties.","⚡ Восстановить":"⚡ Herstellen","🎁 Бонус":"🎁 Bonus","Бонус дня":"Dagelijkse bonus","Правила: брать обязательно.":"Regel: slaan is verplicht.","Ссылка на игру":"Spellink","Перетащи фигуру на поле":"Sleep het stuk naar het bord","выбери сумму Allcoins":"Kies een inzet","Уже в комнате":"Al in de kamer","Нажми, чтобы продолжить":"Tik om door te gaan","Обновление турнира…":"Toernooi wordt bijgewerkt…","Не сбрасывается":"Wordt niet gereset","Оплати вход один раз на неделю.":"Betaal eenmaal per week entree.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Je beste score komt in de ranglijst; na afloop van de week worden prijzen automatisch aan de leiders toegekend.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"De toernooiweek eindigt op maandag om 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"Het weekrecord wordt opnieuw gestart; het persoonlijk record blijft staan.","Подключаем профиль и проверяем баланс…":"Profiel verbinden en saldo controleren…","Тренировка · личный рекорд сохраняется":"Training · persoonlijk record wordt opgeslagen","▶ Посмотреть рекламу и продолжить":"▶ Bekijk advertentie en ga verder","Режим игры":"Spelmodus","🤖 Ты против ботов":"🤖 Jij tegen bots","Боты сами передают бомбу.":"Bots geven de bom automatisch door.","Удобно проверить игру в одиночку.":"Handig om het spel alleen te testen.","👥 Игроки на одном экране":"👥 Spelers op één scherm","Все участники по очереди нажимают на игрока-получателя.":"Spelers tikken om de beurt op degene die de bom krijgt.","В игре нет сумм Allcoins и списания AC.":"Er zijn geen inzetten of AC-afschrijvingen in dit spel.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Dit is een aparte arcademodus om animaties en het doorgeven te testen.","Бомба случайно попадает к одному из игроков.":"De bom komt willekeurig bij een speler terecht.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Als de lont bijna op is, knippert en trilt de bom.","В ИГРЕ":"IN HET SPEL","ФИТИЛЬ":"LONT","Горит":"Brandt","ШАХТА":"MIJN","Передай бомбу!":"Geef de bom door!","РАУНД":"RONDE","Комната создана":"Kamer aangemaakt","Список комнат":"Kameroverzicht","Тест с ботом":"Test met bot","При победе удерживается комиссия проекта 5% от общего банка; при ничьей суммы Allcoins возвращаются.":"Bij winst wordt 5% projectcommissie ingehouden op de totale pot; bij gelijkspel worden inzetten teruggegeven.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"In de testmodus met bot zijn er geen afschrijvingen, uitbetalingen of kosten.","Захват башен":"Torens veroveren","Стратегия в реальном времени · до 3 игроков":"Realtime strategie · maximaal 3 spelers","Захвати карту":"Verover de kaart","Веди войска.":"Leid je troepen.","Захватывай башни.":"Verover torens.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Kies je toren en doel; ertussen verschijnt een asfaltweg.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Troepen lopen erover; wegen blijven op de kaart zodat je meerdere routes tegelijk kunt gebruiken.","Allcoins":"Inzet, AC","От 100 AC без фиксированной верхней границы.":"Vanaf 100 AC zonder vaste bovengrens.","Сумма Allcoins не может превышать твой баланс.":"De inzet mag niet hoger zijn dan je saldo.","Создатель + соперники":"Maker + tegenstanders","⚔️ Тренировка с ботами · бесплатно":"⚔️ Trainen met bots · gratis","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Onlinekamers zijn beschikbaar nadat je ALLCOINS via Telegram opent.","Тренировка с ботами работает без списания Allcoins.":"Oefenen met bots werkt zonder inzet.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Hier verschijnen online kamers van andere spelers.","Синхронизация":"Synchroniseren","Как играть: нажми на свою башню, затем на цель.":"Zo speel je: tik op je toren en daarna op een doel.","Или проведи пальцем от башни к башне.":"Of veeg met je vinger van toren naar toren.","Войска":"Troepen","На столе":"Op tafel","Игроки за столом":"Spelers aan tafel","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"De maker kan het online spel starten zodra er minstens één andere speler meedoet.","Тренировка с ботами доступна в любой момент.":"Oefenen met bots is altijd beschikbaar.","БАНК КОМНАТЫ":"KAMERPOT","Карта играется по цвету, числу или значку.":"Speel door kleur, nummer of symbool te matchen.","Ты захватил карту.":"Je hebt de kaart veroverd.","Приз распределяется автоматически после завершения недели.":"Prijzen worden automatisch verdeeld na afloop van de week.","Нет доступных комнат.":"Geen kamers beschikbaar.","Ошибка загрузки. Попробуй ещё раз.":"Laadfout. Probeer het opnieuw.","Сначала войди через Telegram.":"Log eerst in via Telegram.","Выбери комнату по цене билета.":"Kies een kamer op basis van de ticketprijs.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"De ronde begint automatisch 3 minuten nadat de kamer is geopend.","За столом до 6 мест":"Maximaal 6 plaatsen aan tafel","Ход игрока":"Beurt van speler","Карты розданы.":"Kaarten gedeeld.","0 AC БАНК":"0 AC-POT","Allcoins: 100 AC":"Inzet 100 AC","Классическая колода":"Klassiek kaartspel","Колода":"Stapel","Твой лучший результат попадёт в рейтинг":"Je beste score komt in de ranglijst","Выйти в лобби бильярда":"Terug naar biljartlobby","Начать тренировку":"Training starten","Комната бильярда":"Biljartkamer","Повернуть стол":"Tafel draaien","Прицел":"Richten","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"JOUW SALDO","Виртуальные монеты ALLCOINS":"Virtuele ALLCOINS-munten","⚡ Энергия":"⚡ Energie","НОВАЯ ИГРА · BLOCK BLAST":"NIEUW SPEL · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Toegang — 1.000 AC · persoonlijk record blijft bewaard","Дурак Онлайн":"Durak Online","21 Очко":"21 punten","Камень Ножницы Бумага":"Steen Papier Schaar","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Kamer maken","Подкидной":"Bijgooien","Переводной":"Doorschuiven","24 карт":"24 kaarten","36 карт":"36 kaarten","52 карт":"52 kaarten","1 игрок + бот":"1 speler + bot","⚡ Скорость игры":"⚡ Spelsnelheid","Обычная":"Normaal","Минимум: 100 AC":"Minimum: 100 AC","🔒 Тип комнаты":"🔒 Kamertype","🌍 Открытая":"🌍 Openbaar","🌍 Доступные комнаты":"🌍 Beschikbare kamers","🔊 Звук":"🔊 Geluid","👤 Ты":"👤 Jij","⚔️ Атаковать":"⚔️ Aanvallen","🛡️ Побить карту":"🛡️ Kaart slaan","Создавай комнаты Лото и приглашай игроков.":"Maak Lotto-kamers en nodig spelers uit.","Количество игроков (от 2 до 1000)":"Aantal spelers (2–1.000)","Цена одного билета (AC)":"Prijs per ticket (AC)","Всего билетов:":"Totaal aantal tickets:","Мои билеты в выбранной комнате:":"Mijn tickets in de gekozen kamer:","🎟️ Купить билет":"🎟️ Ticket kopen","Подготовка системы вывода":"Opname wordt voorbereid","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Hier komt een interface voor opnameverzoeken als er een apart systeem wordt ontwikkeld en aangesloten.","Проверить статус":"Status controleren","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS-beheer","💰 Комиссия проекта · 5%":"💰 Projectcommissie · 5%","Начислено комиссии:":"Verdiende commissie:","База начисления комиссии:":"Grondslag voor commissie:","Завершённых игр с комиссией:":"Voltooide spellen met commissie:","🎯 Задания":"🎯 Taken","Твои цели ALLCOINS":"Jouw ALLCOINS-doelen","Выполняй задания, открывай награды и развивай свой баланс.":"Voltooi taken, ontgrendel beloningen en verhoog je saldo.","Выполнено заданий":"Voltooide taken","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Taken en beloningen zijn testgegevens die op dit apparaat worden opgeslagen. Beloningen worden nog niet via de server bijgeschreven.","Комнаты обновляются каждые 3 минуты":"Kamers worden elke 3 minuten vernieuwd","До 3 билетов на игрока в каждой комнате":"Maximaal 3 tickets per speler per kamer","📘 Инструкция по игре в лото":"📘 Speluitleg Lotto","Ручной режим":"Handmatige modus","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Koop een ticket en blijf in de kamer tijdens de trekking. Tik zelf op een getrokken nummer dat op je ticket staat. Een paarse cirkel markeert een afgedekt nummer.","Автоматический режим":"Automatische modus","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Koop een ticket en verlaat de kamer of minimaliseer de app. Na ongeveer 8–11 seconden inactiviteit worden overeenkomende nummers automatisch gemarkeerd. Je ticket blijft meespelen als je niet kijkt.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате суммы Allcoins.":"Open later dezelfde kamer om getrokken nummers, markeringen op tickets, de ronde-uitkomst en informatie over winst of terugbetaling te bekijken.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Een groene kaart betekent winst; een rode kaart betekent verlies. Open een verslag voor details; na het bekijken kun je het alleen uit je eigen lijst verwijderen.","🗑 Удалить все отчёты":"🗑 Alle rapporten verwijderen","← К комнатам":"← Naar kamers","Билет:":"Ticket:","Банк:":"Pot:","Билеты у тебя:":"Jouw tickets:","Числа:":"Nummers:","Отчёт после игры":"Verslag na het spel","🎱 Игра в лото":"🎱 Lottospel","Числа выпадают автоматически каждые 3 секунды":"Elke 3 seconden wordt automatisch een nummer getrokken","🔊 Озвучка: ВКЛ":"🔊 Spraak: AAN","Выпавшие числа":"Getrokken nummers","Ожидаем розыгрыш…":"Wachten op de trekking…","Твои билеты · до 3":"Jouw tickets · maximaal 3","📘 Инструкция: ручная и автоматическая игра":"📘 Uitleg: handmatig en automatisch spelen","Ручная игра":"Handmatig spelen","Автоматическая игра":"Automatisch spelen","Как посмотреть отчёт":"Een verslag bekijken","🂡 21 Очко":"🂡 21 punten","Классическое русское очко · игра против банкира":"Klassiek Russisch 21 · tegen de bankier","Цель:":"Doel:","набрать больше очков, чем банкир, но не больше 21.":"Scoor meer punten dan de bankier, maar niet meer dan 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 tellen als nominale waarde; boer = 2; vrouw = 3; koning = 4; aas = 11.","Ход:":"Beurt:","Банкир:":"Bankier:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Dit is momenteel een spel voor één speler tegen de computer. AC zijn virtuele punten, geen uitbetalingen in geld.","♣ Онлайн-комнаты 21 Очко":"♣ Onlinekamers 21 punten","Мест в каждой комнате":"Plaatsen per kamer","Сумма Allcoins (от 100 до 1 000 000 AC)":"Inzetbedrag (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Beschikbare kamers","Комнаты по размеру суммы Allcoins":"Kamers op basis van inzet","Все комнаты":"Alle inzetten","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"De maker start de ronde als iedereen klaar is. Je kunt met één speler beginnen en maximaal vijf deelnemers hebben.","🃏 Начать раунд":"🃏 Ronde starten","🂡 21 Очко · Онлайн":"🂡 21 punten · Online","♛ Банкир":"♛ Bankier","Скрытая карта":"Verborgen kaart","СЧЁТ: — / 21":"SCORE: — / 21","＋ Ещё карту":"＋ Nog een kaart","✋ Хватит":"✋ Genoeg","Банкир":"Bankier","Карты банкира":"Kaarten van de bankier","1 место · 50%":"1e plaats · 50%","2 место · 30%":"2e plaats · 30%","3 место · 20%":"3e plaats · 20%","НЕДЕЛЯ ·":"WEEK ·","СЧЁТ":"SCORE","Тёплый каньон и рельсы":"Warme kloof en rails","Фиолетовый свет и кристаллы":"Paars licht en kristallen","БУМ!":"BOEM!","1 тыс.":"1K","10 тыс.":"10K","100 тыс.":"100K","1 млн":"1 miljoen","♟ Шашки":"♟ Dammen","🤖 Тестовый бот":"🤖 Testbot","Вернуться в комнаты":"Terug naar kamers","Загружаю список комнат…":"Kameroverzicht laden…","Вход: 100 AC":"Toegang: 100 AC","От 1 000 000 AC без верхнего лимита":"Vanaf 1.000.000 AC zonder bovengrens","ИГРОКИ":"SPELERS","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC zijn virtuele spelmunten, geen echt geld.","↻ Комнаты":"↻ Kamers","ЗАХВАТ БАШЕН":"TORENS VEROOVEREN","2–10 мест":"2–10 plaatsen","КОМНАТА УНО":"UNO-KAMER","УНО ОНЛАЙН":"UNO ONLINE","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Testmodus: speel tegen een bot zonder AC-afschrijving of echte uitbetalingen.","Подходит для проверки стола, ударов и очередности ходов.":"Geschikt om de tafel, stoten en beurtvolgorde te testen.","Дождись второго игрока":"Wacht op de tweede speler","Бильярд ALLCOINS":"ALLCOINS Biljart","Оба игрока должны иметь достаточно AC для суммы Allcoins.":"Beide spelers moeten genoeg AC hebben voor de inzet.","Когда оба будут в комнате, создатель сможет начать игру.":"Wanneer beide spelers in de kamer zijn, kan de maker het spel starten.","Текущая игра останется на сервере.":"Het huidige spel blijft op de server staan.","Вы вернётесь в лобби бильярда.":"Je keert terug naar de biljartlobby.","Чтобы случайно не выйти, выбери действие ниже.":"Kies hieronder een actie om niet per ongeluk te vertrekken.","Камень Ножницы Бумага — ALLCOINS":"Steen Papier Schaar — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Regels verschillen per groep; deze versie gebruikt 7♣ als joker en een speciale combinatie van drie zessen."},"tr":{"Главная":"Ana sayfa","Игры":"Oyunlar","Вывод":"Para çekme","Профиль":"Profil","Задание":"Görevler","Пользователь Telegram":"Telegram kullanıcısı","Гость":"Misafir","не авторизован":"Giriş yapılmadı","🌐 Язык приложения / Language":"🌐 Uygulama dili / Language","Язык приложения":"Uygulama dili","Язык будет применяться к меню и игровым интерфейсам.":"Seçtiğin dil tüm menülerde ve oyunlarda kullanılır.","Баланс:":"Bakiye:","Энергия:":"Enerji:","Повторить вход":"Tekrar giriş yap","🛟 Нужна помощь?":"🛟 Yardım mı gerekiyor?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Donma, hata, oda veya animasyon sorunlarını bildir. Talebin ALLCOINS Desteğe kaydedilir; Telegram bot mesajı gönderilmez.","Обратиться в поддержку":"Desteğe başvur","Что случилось?":"Ne oldu?","Зависание / тормоза":"Donma / gecikme","Ошибка или вылет":"Hata veya çökme","Карты / анимация":"Kartlar / animasyon","Комнаты / подключение":"Odalar / bağlantı","баланс / Allcoins":"Bakiye / bahis","Другое":"Diğer","Опиши проблему":"Sorunu açıkla","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Örnek: UNO'da bir kart kaybolup tekrar beliriyor. Hangi oyunda olduğunu ve hata öncesinde neye bastığını yaz.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"Şifre, API anahtarı veya ödeme bilgisi gönderme. Metin, kategori ve Telegram kimliğin tanılama için saklanır.","Отправить обращение ➤":"Destek talebi gönder ➤","Обновить обращения":"Talepleri yenile","Поддержка игроков":"Oyuncu desteği","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Talepler sunucuya kaydedilir. ALLCOINS AI ilk tanılamayı hazırlar. Raporu kopyalayıp kod düzeltme yardımı için ChatGPT'ye gönderebilirsin.","Заявки ещё не загружены.":"Talepler henüz yüklenmedi.","В работу":"İşleme al","Решено":"Çözüldü","Новая":"Yeni","Решена":"Çözüldü","Создать":"Oluştur","Создать комнату":"Oda oluştur","Создать комнату 2 игрока":"Oda oluştur · 2 oyuncu","Найти комнату":"Oda bul","Найти комнату ↻ Обновить":"Oda bul ↻ Yenile","Открытые комнаты":"Açık odalar","Обновить":"Yenile","Загрузка...":"Yükleniyor...","Загрузка…":"Yükleniyor…","Подключаем комнаты…":"Odalara bağlanılıyor…","Подключаемся к комнатам УНО…":"UNO odalarına bağlanılıyor…","Загружаем комнаты…":"Odalar yükleniyor…","Загружаем список комнат…":"Oda listesi yükleniyor…","Загрузка комнат…":"Odalar yükleniyor…","Подключаюсь к комнате…":"Odaya bağlanılıyor…","Комната":"Oda","Комната ALLCOINS":"ALLCOINS odası","Название комнаты":"Oda adı","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Tek başına oda oluşturup botlarla antrenman başlatabilirsin.","Сумма Allcoins":"Bahis","Сумма Allcoins:":"Bahis:","Сумма Allcoins за игрока (AC)":"Oyuncu başına bahis (AC)","Сумма Allcoins за раунд":"Tur bahsi","Ограничение сумм Allcoins":"Bahis sınırları","От 1 000 000 AC — без верхнего лимита":"1.000.000 AC'den itibaren üst sınır yok","Минимальная сумма Allcoins — 100 AC.":"Minimum bahis — 100 AC.","Верхнего лимита суммы Allcoins не задаётся.":"Bahis için üst sınır yoktur.","Баланс":"Bakiye","Игрок":"Oyuncu","Игроки":"Oyuncular","Игроков:":"Oyuncular:","Максимум игроков за столом":"Masadaki maksimum oyuncu sayısı","Сколько игроков?":"Kaç oyuncu?","2 игрока":"2 oyuncu","3 игрока":"3 oyuncu","4 игрока":"4 oyuncu","5 игроков":"5 oyuncu","6 игроков":"6 oyuncu","Готов":"Hazır","Готово":"Tamamlandı","Начать игру":"Oyunu başlat","Начать онлайн":"Çevrimiçi başlat","Старт с ботами":"Botlarla başlat","Добавить бота":"Bot ekle","🤖 Добавить бота для проверки":"🤖 Test botu ekle","Играть":"Oyna","Играть с ботом (тест) · выключено":"Botla oyna (test) · kapalı","Играть с тестовым ботом":"Test botuyla oyna","Присоединиться":"Katıl","Присоединиться к игре":"Oyuna katıl","Отмена":"İptal","Назад":"Geri","← Назад":"← Geri","← Назад к играм":"← Oyunlara dön","← Меню":"← Menü","В меню":"Menüye dön","Закрыть":"Kapat","Сохранить":"Kaydet","Отправить":"Gönder","Да":"Evet","Нет":"Hayır","Выйти из комнаты":"Odadan çık","Выйти из игры":"Oyundan çık","Выйти в комнаты":"Odalara dön","Выйти в лобби":"Lobiye dön","Вернуться к комнатам":"Odalara dön","Вернуться в лобби":"Lobiye dön","Остаться":"Kal","Покинуть комнату?":"Odadan çıkılsın mı?","Покинуть партию?":"Maçtan çıkılsın mı?","Ты выйдешь из комнаты ожидания.":"Bekleme odasından çıkacaksın.","Чтобы не выйти случайно, подтверди действие.":"Yanlışlıkla çıkmamak için işlemi onayla.","Комната онлайн · общий ход скрыт до завершения выбора.":"Çevrimiçi oda · herkes seçimini yapana kadar hamleler gizlidir.","Ожидание игроков":"Oyuncular bekleniyor","Ожидаем игроков.":"Oyuncular bekleniyor.","Ожидаем начало раунда.":"Turun başlaması bekleniyor.","Ожидаем готовности игроков...":"Oyuncuların hazır olması bekleniyor...","Новая игра":"Yeni oyun","Новая партия":"Yeni maç","Играть снова":"Tekrar oyna","Играть ещё":"Tekrar oyna","Победа":"Zafer","Победа!":"Zafer!","Поражение":"Mağlubiyet","Проигрыш":"Kaybetme","Выигрыш":"Kazanç","Бито":"Yenildi","Беру":"Alıyorum","Правила":"Kurallar","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Fitil bitmeden bombayı başka oyuncuya aktar.","Ставь фигуры на поле 8×8.":"Taşları 8×8 tahtaya yerleştir.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Satır ve sütunları tamamen doldurarak temizle ve puan kazan.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Aşağıdan bir şekil seç, sonra sol üst köşesinin geleceği hücreye dokun.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Şekli tahtaya sürükle veya önce şekle, sonra hücreye dokun.","Турнирная таблица":"Turnuva tablosu","Недельный рейтинг · UTC":"Haftalık sıralama · UTC","ОБЩИЙ БАНК":"TOPLAM ÖDÜL HAVUZU","К распределению:":"Dağıtılacak:","Участников:":"Katılımcılar:","Пока нет участников.":"Henüz katılımcı yok.","Войди в турнир, чтобы попасть в таблицу.":"Tabloda görünmek için turnuvaya katıl.","Место":"Sıra","Очки":"Puan","Приз сейчас":"Mevcut ödül","Приз предварительный и меняется до закрытия недели.":"Ödül geçicidir ve hafta bitene kadar değişebilir.","5% банка — комиссия проекта.":"Havuzun %5'i proje komisyonudur.","Пока нет записей":"Henüz kayıt yok","РЕКОРД НЕДЕЛИ":"HAFTALIK REKOR","ЛИЧНЫЙ РЕКОРД":"KİŞİSEL REKOR","Недельный турнир ALLCOINS":"ALLCOINS haftalık turnuvası","Тренировка без турнира":"Turnuvasız antrenman","Войти в турнир · 1 000 AC":"Turnuvaya katıl · 1.000 AC","Тренировка":"Antrenman","Игра окончена":"Oyun bitti","Результат сохранён.":"Sonuç kaydedildi.","Сыграть ещё раз":"Tekrar oyna","Счёт":"Skor","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"KİŞİSEL REKOR · HAFTA","Бильярд Онлайн":"Çevrimiçi Bilardo","Американский пул · 2 игрока · комнаты на AC":"Amerikan bilardosu · 2 oyuncu · AC odaları","Верхнего лимита нет: доступная сумма Allcoins зависит от баланса игроков.":"Üst sınır yoktur; kullanılabilir bahis oyuncu bakiyesine bağlıdır.","В обычной комнате сумма Allcoins списывается при начале партии.":"Normal odada bahis maç başladığında düşülür.","БИЛЬЯРД ONLINE Комната":"BİLARDO ONLINE Oda","Твой ход.":"Senin sıran.","Коснись стола и потяни в направлении удара.":"Masaya dokun ve vuruş yönüne çek.","СИЛА УДАРА":"VURUŞ GÜCÜ","Прицелься и отпусти, чтобы ударить.":"Nişan al ve vuruş için bırak.","🎥 Повернуть стол":"🎥 Masayı döndür","🎯 Прицел":"🎯 Nişan","Новый раунд":"Yeni tur","МАСШТАБ":"YAKINLAŞTIRMA","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Basitleştirilmiş 8-ball kuralları: kendi grubunu, sonra siyah sekiz topu sok.","Попадание битка в лузу передаёт ход.":"Beyaz top deliğe girerse sıra rakibe geçer.","Сумма Allcoins будет списана при старте игры.":"Bahis oyun başlayınca düşülür.","🏆 РЕКОРД НЕДЕЛИ":"🏆 HAFTALIK REKOR","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Bombayı aktar","Быстрая игра на реакцию · до 4 игроков":"Hızlı refleks oyunu · en fazla 4 oyuncu","Не держи её долго!":"Çok uzun tutma!","Выберите локацию":"Konum seç","Медная шахта":"Bakır Madeni","Кристальная шахта":"Kristal Madeni","Твой ник":"Takma adın","▶ Начать игру":"▶ Oyunu başlat","📘 Как играть":"📘 Nasıl oynanır","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Başka bir aktif oyuncuya dokun; bomba aktarım animasyonuyla ona doğru uçar.","Время до взрыва случайное, точный момент заранее не показывается.":"Patlamaya kalan süre rastgeledir ve önceden gösterilmez.","За взрыв игрок теряет одно сердце.":"Bomba patladığında oyuncu bir can kaybeder.","После трёх потерь он выбывает.":"Üç can kaybından sonra oyuncu elenir.","Побеждает последний оставшийся игрок.":"Son kalan oyuncu kazanır.","Нажми на соперника":"Rakibe dokun","ДВИЖЕНИЕ":"HAREKET","Следующий раунд":"Sonraki tur","Бомба взорвалась.":"Bomba patladı.","Шашки Онлайн":"Çevrimiçi Dama","Классические русские шашки · поле 8×8":"Klasik Rus daması · 8×8 tahta","💰 сумма Allcoins в комнате":"💰 Oda bahsi","Allcoins: 100 AC":"Bahis tutarı 100 AC","Или введи сумму вручную":"Veya tutarı elle gir","＋ Создать комнату":"＋ Oda oluştur","⌕ Найти комнату":"⌕ Oda bul","✅ Комната создана":"✅ Oda oluşturuldu","Комната шашек":"Dama odası","🌍 Список комнат":"🌍 Oda listesi","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Test modu: bot hamleleri, taş almayı ve damayı denemek için hazır.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"Oda listesi şimdilik yalnızca bu tarayıcıda tutulur ve diğer oyunculara görünmez.","Сумма Allcoins сейчас демонстрационная: реальные AC не списываются и не начисляются.":"Bahis yalnızca demodur; gerçek AC düşülmez veya eklenmez.","← Комнаты":"← Odalar","♟ Тестовый бот":"♟ Test botu","Соперник · чёрные":"Rakip · siyah","Твой ход — белые":"Sıra sende — beyaz","Нажми на свою шашку, затем на подсвеченную клетку":"Taşına, ardından vurgulanan kareye dokun","👤 Игрок":"👤 Oyuncu","Ты играешь белыми":"Beyaz taşlarla oynuyorsun","↻ Новая партия":"↻ Yeni maç","Правило: брать обязательно.":"Kural: taş almak zorunludur.","Дамка ходит и бьёт по диагонали на любое расстояние.":"Dama, çaprazda istediği mesafe boyunca hareket eder ve taş alır.","Партия завершена":"Maç tamamlandı","Камень · Ножницы · Бумага":"Taş · Kağıt · Makas","Онлайн-комнаты до 3 игроков.":"En fazla 3 oyunculu çevrimiçi odalar.","Два участника могут начать сразу; третий подключается к следующему раунду.":"İki oyuncu hemen başlayabilir; üçüncü oyuncu sonraki turda katılır.","Минимум 100 AC.":"En az 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Açık odalar ↻ Yenile","AC — виртуальные монеты ALLCOINS, не деньги.":"AC, para olmayan sanal ALLCOINS paralarıdır.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Odalar • bahis • AC havuzu","ВАШ БАЛАНС":"BAKİYEN","Создать комнату до 6 игроков":"6 oyuncuya kadar oda oluştur","Начальный взнос (AC)":"Başlangıç katkısı (AC)","Взнос в банк":"Havuza katkı","Показать комнаты с лимитом":"Limitli odaları göster","Все лимиты":"Tüm limitler","Основные правила":"Temel kurallar","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Her oyuncuya 36 kartlık desteden 3 kart dağıtılır (6-as).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"As 11 puan; 10, vale, kız ve papaz 10; diğer kartlar üzerindeki değer kadar.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Aynı tür kartların puanları toplanır; üç aynı değer güçlü kombinasyon oluşturur.","В свой ход можно сбросить карты, поддержать текущую сумму Allcoins, повысить её или вскрыться, когда осталось двое.":"Sıranda pas geçebilir, bahsi görebilir, artırabilir veya iki kişi kalınca açılabilirsin.","Ожидание":"Bekleniyor","НАЧАЛЬНЫЙ ВЗНОС":"BAŞLANGIÇ KATKISI","Текущая сумма Allcoins":"MEVCUT BAHİS","ВАШИ КАРТЫ":"KARTLARIN","ВАША КОМБИНАЦИЯ":"KOMBİNASYONUN","Подсчитываем комбинацию":"Kombinasyon hesaplanıyor","Новая сумма Allcoins (AC)":"Yeni toplam bahis (AC)","Повысить":"Artır","Пас":"Pas","Поддержать":"Gör","Вскрыться":"Kartları aç","Сумма повышения — добавка к текущей сумме Allcoins.":"Artış miktarı mevcut bahse eklenir.","🔄 Рематч":"🔄 Rövanş","УНО Онлайн":"UNO Çevrimiçi","Классические карты · комнаты · игра на весь экран":"Klasik kartlar · odalar · tam ekran oyun","AC Allcoins от 100":"100 AC'den başlayan bahisler","Тренировка с ботами проходит без списания AC.":"Botlarla antrenmanda AC düşülmez.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Tek başına oda oluşturup botlarla antrenman başlatabilirsin.","УНО поддерживает от 2 до 10 игроков.":"UNO 2 ila 10 oyuncuyu destekler.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Her maçta klasik 108 kartlık deste kullanılır; kartlar, hamleler ve odalar sunucuya kaydedilir.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Odalar, maç başlamadan önce ve boş yer varken ALLCOINS oyuncularına görünür.","Карта играетcя по цвету, числу или значку.":"Kartı rengine, numarasına veya sembolüne göre oyna.","Подбери карту по цвету, числу или символу.":"Rengine, numarasına veya sembolüne uyan kartı seç.","Твои карты":"Kartların","ТВОЙ ХОД":"SIRAN SENDE","＋ Взять карту":"＋ Kart çek","Передать ход →":"Sırayı geçir →","Дикая карта меняет цвет.":"Joker kart rengi değiştirir.","Выбери цвет":"Renk seç","Какой цвет будет следующим после этой дикой карты?":"Bu joker karttan sonra hangi renk gelecek?","Лото Онлайн":"Çevrimiçi Loto","комнаты Allcoins":"Odalar ve bahisler","Выберите сумму Allcoins":"Bahis seç","Публичная":"Herkese açık","Приватная":"Özel","Баланс пользователя":"Kullanıcı bakiyesi","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Gerçek para çekme etkin değil. Ödeme bilgisi gönderme. AC bakiyesi test amaçlıdır ve parasal değeri yoktur.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Bu bir test prototipidir. AC gerçek para değil, sanal paradır.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"Enerji yenileme şu anda demodur ve reklamlara bağlı değildir.","⚡ Восстановить":"⚡ Yenile","🎁 Бонус":"🎁 Bonus","Бонус дня":"Günlük bonus","Правила: брать обязательно.":"Kural: taş almak zorunludur.","Ссылка на игру":"Oyun bağlantısı","Перетащи фигуру на поле":"Şekli tahtaya sürükle","выбери сумму Allcoins":"Bahis seç","Уже в комнате":"Zaten odada","Нажми, чтобы продолжить":"Devam etmek için dokun","Обновление турнира…":"Turnuva güncelleniyor…","Не сбрасывается":"Sıfırlanmaz","Оплати вход один раз на неделю.":"Haftada bir kez giriş ücreti öde.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"En iyi skorun sıralamaya girer; hafta bitince ödüller liderlere otomatik verilir.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"Turnuva haftası pazartesi 00.00 UTC'de biter.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"Haftalık rekor sıfırlanır, kişisel rekor kalır.","Подключаем профиль и проверяем баланс…":"Profil bağlanıyor ve bakiye kontrol ediliyor…","Тренировка · личный рекорд сохраняется":"Antrenman · kişisel rekor kaydedilir","▶ Посмотреть рекламу и продолжить":"▶ Reklamı izle ve devam et","Режим игры":"Oyun modu","🤖 Ты против ботов":"🤖 Botlara karşı","Боты сами передают бомбу.":"Botlar bombayı otomatik aktarır.","Удобно проверить игру в одиночку.":"Oyunu tek başına test etmek için kullanışlıdır.","👥 Игроки на одном экране":"👥 Aynı ekranda oyuncular","Все участники по очереди нажимают на игрока-получателя.":"Oyuncular sırayla bombayı alacak oyuncuya dokunur.","В игре нет сумм Allcoins и списания AC.":"Bu oyunda bahis veya AC kesintisi yoktur.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Bu, animasyonları ve aktarma mekaniğini denemek için ayrı bir arcade modudur.","Бомба случайно попадает к одному из игроков.":"Bomba rastgele bir oyuncuya verilir.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Fitil bitmek üzereyken bomba yanıp söner ve titrer.","В ИГРЕ":"OYUNDA","ФИТИЛЬ":"FİTİL","Горит":"Yanıyor","ШАХТА":"MADEN","Передай бомбу!":"Bombayı aktar!","РАУНД":"TUR","Комната создана":"Oda oluşturuldu","Список комнат":"Oda listesi","Тест с ботом":"Bot testi","При победе удерживается комиссия проекта 5% от общего банка; при ничьей суммы Allcoins возвращаются.":"Kazançta toplam havuzdan %5 proje komisyonu alınır; beraberlikte bahisler iade edilir.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"Bot test modunda kesinti, ödeme veya komisyon yoktur.","Захват башен":"Kule ele geçirme","Стратегия в реальном времени · до 3 игроков":"Gerçek zamanlı strateji · en fazla 3 oyuncu","Захвати карту":"Haritayı ele geçir","Веди войска.":"Birliklerini yönet.","Захватывай башни.":"Kuleleri ele geçir.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Kulenı ve hedefi seç; aralarında asfalt bir yol oluşur.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Birlikler yolda ilerler; yollar haritada kalır ve aynı anda birden fazla rota kullanabilirsin.","Allcoins":"Bahis, AC","От 100 AC без фиксированной верхней границы.":"100 AC'den başlar, sabit üst sınır yoktur.","Сумма Allcoins не может превышать твой баланс.":"Bahis bakiyeni aşamaz.","Создатель + соперники":"Kurucu + rakipler","⚔️ Тренировка с ботами · бесплатно":"⚔️ Botlarla antrenman · ücretsiz","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Çevrimiçi odalar ALLCOINS'i Telegram üzerinden açınca kullanılabilir.","Тренировка с ботами работает без списания Allcoins.":"Bot antrenmanı bahis olmadan çalışır.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Diğer oyuncuların oluşturduğu çevrimiçi odalar burada görünür.","Синхронизация":"Eşitleniyor","Как играть: нажми на свою башню, затем на цель.":"Nasıl oynanır: kulene, ardından hedefe dokun.","Или проведи пальцем от башни к башне.":"Ya da parmağını bir kuleden diğerine sürükle.","Войска":"Birlikler","На столе":"Masada","Игроки за столом":"Masadaki oyuncular","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"Kurucu, en az bir kişi daha katıldığında çevrimiçi oyunu başlatabilir.","Тренировка с ботами доступна в любой момент.":"Bot antrenmanı her zaman kullanılabilir.","БАНК КОМНАТЫ":"ODA HAVUZU","Карта играется по цвету, числу или значку.":"Renk, sayı veya sembole göre oyna.","Ты захватил карту.":"Haritayı ele geçirdin.","Приз распределяется автоматически после завершения недели.":"Ödüller hafta bittikten sonra otomatik dağıtılır.","Нет доступных комнат.":"Kullanılabilir oda yok.","Ошибка загрузки. Попробуй ещё раз.":"Yükleme hatası. Tekrar dene.","Сначала войди через Telegram.":"Önce Telegram üzerinden giriş yap.","Выбери комнату по цене билета.":"Bilet fiyatına göre oda seç.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"Oda açıldıktan 3 dakika sonra tur otomatik başlar.","За столом до 6 мест":"Masada en fazla 6 yer","Ход игрока":"Oyuncunun sırası","Карты розданы.":"Kartlar dağıtıldı.","0 AC БАНК":"0 AC HAVUZ","Allcoins: 100 AC":"100 AC bahis","Классическая колода":"Klasik deste","Колода":"Deste","Твой лучший результат попадёт в рейтинг":"En iyi skorun sıralamaya girer","Выйти в лобби бильярда":"Bilardo lobisine dön","Начать тренировку":"Antrenmanı başlat","Комната бильярда":"Bilardo odası","Повернуть стол":"Masayı döndür","Прицел":"Nişan","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"BAKİYEN","Виртуальные монеты ALLCOINS":"ALLCOINS sanal paraları","⚡ Энергия":"⚡ Enerji","НОВАЯ ИГРА · BLOCK BLAST":"YENİ OYUN · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Giriş — 1.000 AC · kişisel rekor korunur","Дурак Онлайн":"Durak Online","21 Очко":"21 Puan","Камень Ножницы Бумага":"Taş Kağıt Makas","🃏 Дурак Онлайн":"🃏 Durak Online","＋ Создание комнаты":"＋ Oda oluştur","Подкидной":"Atmalı","Переводной":"Transferli","24 карт":"24 kart","36 карт":"36 kart","52 карт":"52 kart","1 игрок + бот":"1 oyuncu + bot","⚡ Скорость игры":"⚡ Oyun hızı","Обычная":"Normal","Минимум: 100 AC":"En az: 100 AC","🔒 Тип комнаты":"🔒 Oda türü","🌍 Открытая":"🌍 Açık","🌍 Доступные комнаты":"🌍 Kullanılabilir odalar","🔊 Звук":"🔊 Ses","👤 Ты":"👤 Sen","⚔️ Атаковать":"⚔️ Saldır","🛡️ Побить карту":"🛡️ Kartı yen","Создавай комнаты Лото и приглашай игроков.":"Loto odaları oluştur ve oyuncuları davet et.","Количество игроков (от 2 до 1000)":"Oyuncu sayısı (2–1.000)","Цена одного билета (AC)":"Bilet başına fiyat (AC)","Всего билетов:":"Toplam bilet:","Мои билеты в выбранной комнате:":"Seçili odadaki biletlerim:","🎟️ Купить билет":"🎟️ Bilet al","Подготовка системы вывода":"Para çekme hazırlanıyor","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Ayrı bir sistem geliştirilip bağlanırsa para çekme talebi arayüzü burada yer alacak.","Проверить статус":"Durumu kontrol et","🛡 Администрирование ALLCOINS":"🛡 ALLCOINS yönetimi","💰 Комиссия проекта · 5%":"💰 Proje komisyonu · %5","Начислено комиссии:":"Kazanılan komisyon:","База начисления комиссии:":"Komisyon hesaplama tabanı:","Завершённых игр с комиссией:":"Komisyonlu tamamlanan oyunlar:","🎯 Задания":"🎯 Görevler","Твои цели ALLCOINS":"ALLCOINS hedeflerin","Выполняй задания, открывай награды и развивай свой баланс.":"Görevleri tamamla, ödülleri aç ve bakiyeni artır.","Выполнено заданий":"Tamamlanan görevler","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Görevler ve ödüller test amaçlıdır ve bu cihazda saklanır. Sunucu üzerinden ödül ekleme henüz bağlı değil.","Комнаты обновляются каждые 3 минуты":"Odalar her 3 dakikada bir yenilenir","До 3 билетов на игрока в каждой комнате":"Her odada oyuncu başına en fazla 3 bilet","📘 Инструкция по игре в лото":"📘 Loto nasıl oynanır","Ручной режим":"Manuel mod","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Bilet al ve çekiliş boyunca odada kal. Biletindeki bir sayı çekilirse kendin dokun. Mor daire işaretlenmiş sayıyı gösterir.","Автоматический режим":"Otomatik mod","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Bilet alıp odadan çık veya uygulamayı küçült. Yaklaşık 8–11 saniye işlem yapılmazsa eşleşen sayılar otomatik işaretlenir. Ekrana bakmasan da biletin oynamaya devam eder.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате суммы Allcoins.":"Daha sonra aynı odayı açarak çekilen sayıları, bilet işaretlerini, tur sonucunu ve kazanç veya bahis iadesi bilgilerini görebilirsin.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Yeşil kart kazandığını, kırmızı kart kazanmadığını gösterir. Ayrıntılar için raporu aç; görüntüledikten sonra yalnızca kendi listenden silebilirsin.","🗑 Удалить все отчёты":"🗑 Tüm raporları sil","← К комнатам":"← Odalara dön","Билет:":"Bilet:","Банк:":"Havuz:","Билеты у тебя:":"Biletlerin:","Числа:":"Sayılar:","Отчёт после игры":"Oyun sonrası rapor","🎱 Игра в лото":"🎱 Loto oyunu","Числа выпадают автоматически каждые 3 секунды":"Sayılar her 3 saniyede bir otomatik çekilir","🔊 Озвучка: ВКЛ":"🔊 Ses: AÇIK","Выпавшие числа":"Çekilen sayılar","Ожидаем розыгрыш…":"Çekiliş bekleniyor…","Твои билеты · до 3":"Biletlerin · en fazla 3","📘 Инструкция: ручная и автоматическая игра":"📘 Talimatlar: manuel ve otomatik oyun","Ручная игра":"Manuel oyun","Автоматическая игра":"Otomatik oyun","Как посмотреть отчёт":"Rapor nasıl görüntülenir","🂡 21 Очко":"🂡 21 Puan","Классическое русское очко · игра против банкира":"Klasik Rus 21 puan · bankere karşı oyna","Цель:":"Amaç:","набрать больше очков, чем банкир, но не больше 21.":"Bankerden fazla ama 21'i geçmeyecek puan topla.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"6–10 üzerindeki değer; vale 2, kız 3, papaz 4, as 11 puandır.","Ход:":"Sıra:","Банкир:":"Banka:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Bu, şu anda bilgisayara karşı tek oyunculu bir oyundur. AC prototipte sanal puandır, gerçek ödeme değildir.","♣ Онлайн-комнаты 21 Очко":"♣ 21 Puan çevrimiçi odalar","Мест в каждой комнате":"Her odadaki yer sayısı","Сумма Allcoins (от 100 до 1 000 000 AC)":"Bahis tutarı (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Kullanılabilir odalar","Комнаты по размеру суммы Allcoins":"Bahis miktarına göre odalar","Все комнаты":"Tüm bahisler","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"Herkes hazır olduğunda kurucu turu başlatır. Bir oyuncuyla başlayabilir en fazla beş kişi katılabilir.","🃏 Начать раунд":"🃏 Turu başlat","🂡 21 Очко · Онлайн":"🂡 21 Puan · Çevrimiçi","♛ Банкир":"♛ Banka","Скрытая карта":"Gizli kart","СЧЁТ: — / 21":"SKOR: — / 21","＋ Ещё карту":"＋ Bir kart daha","✋ Хватит":"✋ Yeter","Банкир":"Banka","Карты банкира":"Bankanın kartları","1 место · 50%":"1. sıra · %50","2 место · 30%":"2. sıra · %30","3 место · 20%":"3. sıra · %20","НЕДЕЛЯ ·":"HAFTA ·","СЧЁТ":"SKOR","Тёплый каньон и рельсы":"Sıcak Kanyon ve Raylar","Фиолетовый свет и кристаллы":"Mor ışık ve kristaller","БУМ!":"BUM!","1 тыс.":"1 B","10 тыс.":"10 B","100 тыс.":"100 B","1 млн":"1 milyon","♟ Шашки":"♟ Dama","🤖 Тестовый бот":"🤖 Test botu","Вернуться в комнаты":"Odalara dön","Загружаю список комнат…":"Oda listesi yükleniyor…","Вход: 100 AC":"Giriş: 100 AC","От 1 000 000 AC без верхнего лимита":"1.000.000 AC'den itibaren üst sınır yok","ИГРОКИ":"OYUNCULAR","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC sanal oyun parasıdır, gerçek para değildir.","↻ Комнаты":"↻ Odalar","ЗАХВАТ БАШЕН":"KULE ELE GEÇİRME","2–10 мест":"2–10 yer","КОМНАТА УНО":"UNO ODASI","УНО ОНЛАЙН":"UNO ÇEVRİMİÇİ","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Test modu: AC kesintisi veya gerçek ödeme olmadan bota karşı oyna.","Подходит для проверки стола, ударов и очередности ходов.":"Masa, vuruşlar ve sıra düzenini test etmek için uygundur.","Дождись второго игрока":"İkinci oyuncuyu bekle","Бильярд ALLCOINS":"ALLCOINS Bilardo","Оба игрока должны иметь достаточно AC для суммы Allcoins.":"Her iki oyuncunun da bahis için yeterli AC'si olmalı.","Когда оба будут в комнате, создатель сможет начать игру.":"İki oyuncu da odadayken kurucu oyunu başlatabilir.","Текущая игра останется на сервере.":"Mevcut oyun sunucuda kalacak.","Вы вернётесь в лобби бильярда.":"Bilardo lobisine döneceksin.","Чтобы случайно не выйти, выбери действие ниже.":"Yanlışlıkla çıkmamak için aşağıdan bir seçenek belirle.","Камень Ножницы Бумага — ALLCOINS":"Taş Kâğıt Makas — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Kurallar gruplara göre değişebilir; bu sürümde 7♣ joker ve özel üç altılı kombinasyonu kullanılır.","Открой мини-приложение через @allcoins95_bot и обнови страницу.":"ALLCOINS mini uygulamasını @allcoins95_bot üzerinden aç ve sayfayı yenile."},"es":{"Главная":"Inicio","Игры":"Juegos","Вывод":"Retirar","Профиль":"Perfil","Задание":"Tareas","Пользователь Telegram":"Usuario de Telegram","Гость":"Invitado","не авторизован":"No has iniciado sesión","🌐 Язык приложения / Language":"🌐 Idioma de la aplicación / Language","Язык приложения":"Idioma de la aplicación","Язык будет применяться к меню и игровым интерфейсам.":"El idioma elegido se usará en todos los menús y juegos.","Баланс:":"Saldo:","Энергия:":"Energía:","Повторить вход":"Volver a iniciar sesión","🛟 Нужна помощь?":"🛟 ¿Necesitas ayuda?","Сообщи о зависании, ошибке, проблеме с комнатой или анимацией. Обращение сохранится в системе поддержки ALLCOINS; сообщения от бота в Telegram не отправляются.":"Informa de bloqueos, errores o problemas con salas o animaciones. La solicitud se guarda en el soporte de ALLCOINS; no se envía ningún mensaje del bot de Telegram.","Обратиться в поддержку":"Contactar con soporte","Что случилось?":"¿Qué ha ocurrido?","Зависание / тормоза":"Bloqueo / retraso","Ошибка или вылет":"Error o cierre inesperado","Карты / анимация":"Cartas / animación","Комнаты / подключение":"Salas / conexión","баланс / Allcoins":"Saldo / apuesta","Другое":"Otro","Опиши проблему":"Describe el problema","Например: в УНО карта исчезает и появляется снова. Напиши, в какой игре это происходит и что нажал перед ошибкой.":"Ejemplo: una carta de UNO desaparece y vuelve a aparecer. Indica el juego y qué pulsaste antes del error.","Не отправляй пароли, API-ключи или платёжные данные. Текст, категория и твой Telegram ID сохраняются для диагностики.":"No envíes contraseñas, claves API ni datos de pago. El texto, la categoría y tu ID de Telegram se guardan para el diagnóstico.","Отправить обращение ➤":"Enviar solicitud de soporte ➤","Обновить обращения":"Actualizar solicitudes","Поддержка игроков":"Soporte a jugadores","Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.":"Las solicitudes se guardan en el servidor. ALLCOINS IA prepara un diagnóstico inicial. Puedes copiar el informe y compartirlo con ChatGPT para corregir el código.","Заявки ещё не загружены.":"Las solicitudes aún no se han cargado.","В работу":"En curso","Решено":"Resuelto","Новая":"Nueva","Решена":"Resuelta","Создать":"Crear","Создать комнату":"Crear sala","Создать комнату 2 игрока":"Crear sala · 2 jugadores","Найти комнату":"Buscar sala","Найти комнату ↻ Обновить":"Buscar sala ↻ Actualizar","Открытые комнаты":"Salas abiertas","Обновить":"Actualizar","Загрузка...":"Cargando...","Загрузка…":"Cargando…","Подключаем комнаты…":"Conectando con las salas…","Подключаемся к комнатам УНО…":"Conectando con salas de UNO…","Загружаем комнаты…":"Cargando salas…","Загружаем список комнат…":"Cargando lista de salas…","Загрузка комнат…":"Cargando salas…","Подключаюсь к комнате…":"Conectando con la sala…","Комната":"Sala","Комната ALLCOINS":"Sala ALLCOINS","Название комнаты":"Nombre de la sala","Комнату можно создать одному, а затем запустить тренировку с ботами.":"Puedes crear una sala y después iniciar un entrenamiento con bots.","Сумма Allcoins":"Apuesta","Сумма Allcoins:":"Apuesta:","Сумма Allcoins за игрока (AC)":"Apuesta por jugador (AC)","Сумма Allcoins за раунд":"Apuesta por ronda","Ограничение сумм Allcoins":"Límites de apuesta","От 1 000 000 AC — без верхнего лимита":"Desde 1.000.000 AC, sin límite máximo","Минимальная сумма Allcoins — 100 AC.":"Apuesta mínima: 100 AC.","Верхнего лимита суммы Allcoins не задаётся.":"No hay límite máximo de apuesta.","Баланс":"Saldo","Игрок":"Jugador","Игроки":"Jugadores","Игроков:":"Jugadores:","Максимум игроков за столом":"Máximo de jugadores en la mesa","Сколько игроков?":"¿Cuántos jugadores?","2 игрока":"2 jugadores","3 игрока":"3 jugadores","4 игрока":"4 jugadores","5 игроков":"5 jugadores","6 игроков":"6 jugadores","Готов":"Listo","Готово":"Hecho","Начать игру":"Iniciar juego","Начать онлайн":"Iniciar en línea","Старт с ботами":"Iniciar con bots","Добавить бота":"Añadir bot","🤖 Добавить бота для проверки":"🤖 Añadir bot de prueba","Играть":"Jugar","Играть с ботом (тест) · выключено":"Jugar contra bot (prueba) · desactivado","Играть с тестовым ботом":"Jugar con bot de prueba","Присоединиться":"Unirse","Присоединиться к игре":"Unirse a la partida","Отмена":"Cancelar","Назад":"Atrás","← Назад":"← Atrás","← Назад к играм":"← Volver a los juegos","← Меню":"← Menú","В меню":"Al menú","Закрыть":"Cerrar","Сохранить":"Guardar","Отправить":"Enviar","Да":"Sí","Нет":"No","Выйти из комнаты":"Salir de la sala","Выйти из игры":"Salir del juego","Выйти в комнаты":"Volver a las salas","Выйти в лобби":"Volver al vestíbulo","Вернуться к комнатам":"Volver a las salas","Вернуться в лобби":"Volver al vestíbulo","Остаться":"Quedarse","Покинуть комнату?":"¿Salir de la sala?","Покинуть партию?":"¿Salir de la partida?","Ты выйдешь из комнаты ожидания.":"Saldrás de la sala de espera.","Чтобы не выйти случайно, подтверди действие.":"Confirma para evitar salir por accidente.","Комната онлайн · общий ход скрыт до завершения выбора.":"Sala en línea · las elecciones se ocultan hasta que todos elijan.","Ожидание игроков":"Esperando jugadores","Ожидаем игроков.":"Esperando a los jugadores.","Ожидаем начало раунда.":"Esperando a que comience la ronda.","Ожидаем готовности игроков...":"Esperando a que los jugadores estén listos...","Новая игра":"Nueva partida","Новая партия":"Nueva partida","Играть снова":"Jugar de nuevo","Играть ещё":"Jugar otra vez","Победа":"Victoria","Победа!":"¡Victoria!","Поражение":"Derrota","Проигрыш":"Derrota","Выигрыш":"Ganancias","Бито":"Cubierto","Беру":"Recojo","Правила":"Reglas","Отправляй бомбу другому игроку, пока фитиль не догорел.":"Pasa la bomba a otro jugador antes de que se consuma la mecha.","Ставь фигуры на поле 8×8.":"Coloca las piezas en el tablero de 8×8.","Заполняй целые строки и столбцы, чтобы убрать их и набрать больше очков.":"Completa filas y columnas para eliminarlas y ganar más puntos.","Выбери фигуру снизу, затем коснись клетки, куда поставить её верхний левый угол.":"Elige una pieza abajo y toca la celda donde colocar su esquina superior izquierda.","Перетащи фигуру на поле или коснись фигуры, затем клетки.":"Arrastra una pieza al tablero o toca la pieza y después una celda.","Турнирная таблица":"Tabla del torneo","Недельный рейтинг · UTC":"Clasificación semanal · UTC","ОБЩИЙ БАНК":"BANCO TOTAL","К распределению:":"A distribuir:","Участников:":"Participantes:","Пока нет участников.":"Aún no hay participantes.","Войди в турнир, чтобы попасть в таблицу.":"Únete al torneo para aparecer en la tabla.","Место":"Puesto","Очки":"Puntos","Приз сейчас":"Premio actual","Приз предварительный и меняется до закрытия недели.":"El premio es provisional y cambia hasta que cierre la semana.","5% банка — комиссия проекта.":"El 5 % del banco es la comisión del proyecto.","Пока нет записей":"Aún no hay registros","РЕКОРД НЕДЕЛИ":"RÉCORD SEMANAL","ЛИЧНЫЙ РЕКОРД":"RÉCORD PERSONAL","Недельный турнир ALLCOINS":"Torneo semanal de ALLCOINS","Тренировка без турнира":"Entrenamiento sin torneo","Войти в турнир · 1 000 AC":"Entrar al torneo · 1.000 AC","Тренировка":"Entrenamiento","Игра окончена":"Fin de la partida","Результат сохранён.":"Resultado guardado.","Сыграть ещё раз":"Jugar otra vez","Счёт":"Puntuación","ЛИЧНЫЙ РЕКОРД НЕДЕЛЯ":"RÉCORD PERSONAL · SEMANA","Бильярд Онлайн":"Billar en línea","Американский пул · 2 игрока · комнаты на AC":"Pool americano · 2 jugadores · salas con AC","Верхнего лимита нет: доступная сумма Allcoins зависит от баланса игроков.":"No hay límite máximo; la apuesta depende del saldo de los jugadores.","В обычной комнате сумма Allcoins списывается при начале партии.":"En una sala normal, la apuesta se descuenta al comenzar la partida.","БИЛЬЯРД ONLINE Комната":"BILLAR ONLINE Sala","Твой ход.":"Tu turno.","Коснись стола и потяни в направлении удара.":"Toca la mesa y arrastra en la dirección del golpe.","СИЛА УДАРА":"FUERZA DEL GOLPE","Прицелься и отпусти, чтобы ударить.":"Apunta y suelta para golpear.","🎥 Повернуть стол":"🎥 Girar mesa","🎯 Прицел":"🎯 Apuntar","Новый раунд":"Nueva ronda","МАСШТАБ":"ZOOM","Упрощённые правила пула 8-ball: забивай свою группу шаров, затем чёрную восьмёрку.":"Reglas simplificadas de pool 8-ball: mete tu grupo y después la bola negra ocho.","Попадание битка в лузу передаёт ход.":"Si la bola blanca cae en una tronera, el turno pasa al rival.","Сумма Allcoins будет списана при старте игры.":"La apuesta se descontará cuando comience la partida.","🏆 РЕКОРД НЕДЕЛИ":"🏆 RÉCORD SEMANAL","🧱":"🧱","Блок Бласт":"Block Blast","Передай бомбу":"Pasa la bomba","Быстрая игра на реакцию · до 4 игроков":"Juego rápido de reflejos · hasta 4 jugadores","Не держи её долго!":"¡No la sostengas mucho tiempo!","Выберите локацию":"Elige una ubicación","Медная шахта":"Mina de cobre","Кристальная шахта":"Mina de cristal","Твой ник":"Tu apodo","▶ Начать игру":"▶ Iniciar juego","📘 Как играть":"📘 Cómo jugar","Нажми на другого активного игрока — бомба полетит к нему по дуге с анимацией передачи.":"Toca a otro jugador activo y la bomba volará hacia él con una animación.","Время до взрыва случайное, точный момент заранее не показывается.":"El tiempo hasta la explosión es aleatorio y no se muestra por adelantado.","За взрыв игрок теряет одно сердце.":"Cuando explota la bomba, el jugador pierde un corazón.","После трёх потерь он выбывает.":"Tras tres pérdidas, el jugador queda eliminado.","Побеждает последний оставшийся игрок.":"Gana el último jugador que quede.","Нажми на соперника":"Toca a un rival","ДВИЖЕНИЕ":"MOVIMIENTO","Следующий раунд":"Siguiente ronda","Бомба взорвалась.":"La bomba ha explotado.","Шашки Онлайн":"Damas en línea","Классические русские шашки · поле 8×8":"Damas rusas clásicas · tablero 8×8","💰 сумма Allcoins в комнате":"💰 Apuesta de la sala","Allcoins: 100 AC":"Importe de apuesta 100 AC","Или введи сумму вручную":"O introduce una cantidad manualmente","＋ Создать комнату":"＋ Crear sala","⌕ Найти комнату":"⌕ Buscar sala","✅ Комната создана":"✅ Sala creada","Комната шашек":"Sala de damas","🌍 Список комнат":"🌍 Lista de salas","Тестовый режим: бот уже доступен для проверки ходов, взятий и дамок.":"Modo de prueba: el bot está listo para probar movimientos, capturas y damas.","Пока список комнат хранится только в этом браузере и не виден другим игрокам.":"Por ahora, la lista de salas solo se guarda en este navegador y no es visible para otros jugadores.","Сумма Allcoins сейчас демонстрационная: реальные AC не списываются и не начисляются.":"La apuesta es solo de demostración; no se descuentan ni abonan AC reales.","← Комнаты":"← Salas","♟ Тестовый бот":"♟ Bot de prueba","Соперник · чёрные":"Rival · negras","Твой ход — белые":"Tu turno — blancas","Нажми на свою шашку, затем на подсвеченную клетку":"Toca tu ficha y después la casilla resaltada","👤 Игрок":"👤 Jugador","Ты играешь белыми":"Juegas con blancas","↻ Новая партия":"↻ Nueva partida","Правило: брать обязательно.":"Regla: es obligatorio capturar.","Дамка ходит и бьёт по диагонали на любое расстояние.":"La dama mueve y captura en diagonal a cualquier distancia.","Партия завершена":"Partida finalizada","Камень · Ножницы · Бумага":"Piedra · Papel · Tijera","Онлайн-комнаты до 3 игроков.":"Salas en línea de hasta 3 jugadores.","Два участника могут начать сразу; третий подключается к следующему раунду.":"Dos jugadores pueden comenzar de inmediato; el tercero entra en la siguiente ronda.","Минимум 100 AC.":"Mínimo 100 AC.","🌐 Открытые комнаты ↻ Обновить":"🌐 Salas abiertas ↻ Actualizar","AC — виртуальные монеты ALLCOINS, не деньги.":"AC son monedas virtuales de ALLCOINS, no dinero.","Сека Онлайн":"Seka Online","Комнаты • торги • банк AC":"Salas • apuestas • bote AC","ВАШ БАЛАНС":"TU SALDO","Создать комнату до 6 игроков":"Crear sala para hasta 6 jugadores","Начальный взнос (AC)":"Aporte inicial (AC)","Взнос в банк":"Aporte al bote","Показать комнаты с лимитом":"Mostrar salas por límite","Все лимиты":"Todos los límites","Основные правила":"Reglas principales","Каждый участник получает по 3 карты из колоды в 36 карт (6–туз).":"Cada jugador recibe 3 cartas de una baraja de 36 (6-as).","Туз — 11 очков; 10, валет, дама и король — по 10; остальные карты — по номиналу.":"As = 11 puntos; 10, jota, reina y rey = 10; las demás cartas valen su número.","Суммируются карты одной масти; три одинаковых достоинства образуют сильную комбинацию.":"Se suman cartas del mismo palo; tres valores iguales forman una combinación fuerte.","В свой ход можно сбросить карты, поддержать текущую сумму Allcoins, повысить её или вскрыться, когда осталось двое.":"En tu turno puedes retirarte, igualar, subir o mostrar las cartas cuando queden dos.","Ожидание":"En espera","НАЧАЛЬНЫЙ ВЗНОС":"APORTE INICIAL","Текущая сумма Allcoins":"APUESTA ACTUAL","ВАШИ КАРТЫ":"TUS CARTAS","ВАША КОМБИНАЦИЯ":"TU COMBINACIÓN","Подсчитываем комбинацию":"Calculando combinación","Новая сумма Allcoins (AC)":"Nueva apuesta total (AC)","Повысить":"Subir","Пас":"Pasar","Поддержать":"Igualar","Вскрыться":"Mostrar cartas","Сумма повышения — добавка к текущей сумме Allcoins.":"El importe de subida se suma a la apuesta actual.","🔄 Рематч":"🔄 Revancha","УНО Онлайн":"UNO en línea","Классические карты · комнаты · игра на весь экран":"Cartas clásicas · salas · juego a pantalla completa","AC Allcoins от 100":"Apuestas AC desde 100","Тренировка с ботами проходит без списания AC.":"El entrenamiento con bots no descuenta AC.","Можно создать комнату одному, а затем запустить тренировку с ботами.":"Puedes crear una sala y después iniciar un entrenamiento con bots.","УНО поддерживает от 2 до 10 игроков.":"UNO admite de 2 a 10 jugadores.","В каждой партии используется классическая колода на 108 карт; карты, ход и комнаты сохраняются на сервере.":"Cada partida usa la baraja clásica de 108 cartas; las cartas, turnos y salas se guardan en el servidor.","Комнаты отображаются другим игрокам ALLCOINS, пока они ожидают начала партии и в них есть свободные места.":"Las salas son visibles para los jugadores de ALLCOINS mientras esperan una partida y tengan plazas libres.","Карта играетcя по цвету, числу или значку.":"Juega una carta que coincida en color, número o símbolo.","Подбери карту по цвету, числу или символу.":"Elige una carta por color, número o símbolo.","Твои карты":"Tus cartas","ТВОЙ ХОД":"TU TURNO","＋ Взять карту":"＋ Robar carta","Передать ход →":"Pasar turno →","Дикая карта меняет цвет.":"Una carta comodín cambia el color.","Выбери цвет":"Elige un color","Какой цвет будет следующим после этой дикой карты?":"¿Qué color seguirá después de este comodín?","Лото Онлайн":"Lotería en línea","комнаты Allcoins":"Salas y apuestas","Выберите сумму Allcoins":"Elige una apuesta","Публичная":"Pública","Приватная":"Privada","Баланс пользователя":"Saldo del usuario","Реальные выплаты не подключены. Не отправляй платёжные данные. Баланс AC — тестовый и не имеет денежной стоимости.":"Los retiros reales no están habilitados. No envíes datos de pago. El saldo AC es de prueba y no tiene valor monetario.","Это тестовый прототип. AC — виртуальные монеты, не деньги.":"Este es un prototipo de prueba. AC son monedas virtuales, no dinero.","Восстановление энергии пока демонстрационное и не связано с рекламой.":"La recuperación de energía es una demostración y no está conectada con anuncios.","⚡ Восстановить":"⚡ Restaurar","🎁 Бонус":"🎁 Bonificación","Бонус дня":"Bono diario","Правила: брать обязательно.":"Regla: es obligatorio capturar.","Ссылка на игру":"Enlace del juego","Перетащи фигуру на поле":"Arrastra la pieza al tablero","выбери сумму Allcoins":"Elige una apuesta","Уже в комнате":"Ya estás en la sala","Нажми, чтобы продолжить":"Pulsa para continuar","Обновление турнира…":"Actualizando el torneo…","Не сбрасывается":"No se reinicia","Оплати вход один раз на неделю.":"Paga la entrada una vez por semana.","Твой лучший результат попадёт в рейтинг; после закрытия недели призы автоматически начислятся лидерам.":"Tu mejor puntuación entrará en la clasificación; al cerrar la semana, los premios se asignarán automáticamente a los líderes.","Турнирная неделя завершается в понедельник в 00:00 UTC.":"La semana del torneo termina el lunes a las 00:00 UTC.","Недельный рекорд начинает считаться заново, личный рекорд остаётся.":"El récord semanal se reinicia; el récord personal se conserva.","Подключаем профиль и проверяем баланс…":"Conectando el perfil y comprobando el saldo…","Тренировка · личный рекорд сохраняется":"Entrenamiento · se guarda el récord personal","▶ Посмотреть рекламу и продолжить":"▶ Ver anuncio y continuar","Режим игры":"Modo de juego","🤖 Ты против ботов":"🤖 Tú contra bots","Боты сами передают бомбу.":"Los bots pasan la bomba automáticamente.","Удобно проверить игру в одиночку.":"Útil para probar el juego en solitario.","👥 Игроки на одном экране":"👥 Jugadores en una pantalla","Все участники по очереди нажимают на игрока-получателя.":"Los jugadores tocan por turnos al jugador que recibirá la bomba.","В игре нет сумм Allcoins и списания AC.":"Este juego no tiene apuestas ni descuentos de AC.","Это отдельный аркадный режим для проверки анимации и механики передачи.":"Este es un modo arcade independiente para probar animaciones y la mecánica de pasar la bomba.","Бомба случайно попадает к одному из игроков.":"La bomba llega aleatoriamente a uno de los jugadores.","Когда фитиль почти догорел, бомба начинает мигать и дрожать.":"Cuando la mecha está a punto de acabarse, la bomba parpadea y tiembla.","В ИГРЕ":"EN JUEGO","ФИТИЛЬ":"MECHA","Горит":"Ardiendo","ШАХТА":"MINA","Передай бомбу!":"¡Pasa la bomba!","РАУНД":"RONDA","Комната создана":"Sala creada","Список комнат":"Lista de salas","Тест с ботом":"Prueba con bot","При победе удерживается комиссия проекта 5% от общего банка; при ничьей суммы Allcoins возвращаются.":"Al ganar se retiene una comisión del 5 % del bote total; en empate se devuelven las apuestas.","В режиме проверки с ботом списаний, выплат и комиссии нет.":"En el modo de prueba con bot no hay descuentos, pagos ni comisiones.","Захват башен":"Conquista de torres","Стратегия в реальном времени · до 3 игроков":"Estrategia en tiempo real · hasta 3 jugadores","Захвати карту":"Conquista el mapa","Веди войска.":"Dirige tus tropas.","Захватывай башни.":"Conquista las torres.","Выбирай свою башню и цель — между ними появится асфальтовая дорога.":"Elige tu torre y un objetivo; aparecerá una carretera asfaltada entre ambos.","По ней побегут войска; дороги остаются на карте, и можно вести несколько направлений одновременно.":"Las tropas avanzarán por ella; las carreteras permanecen en el mapa y puedes llevar varias rutas a la vez.","Allcoins":"Apuesta, AC","От 100 AC без фиксированной верхней границы.":"Desde 100 AC sin límite máximo fijo.","Сумма Allcoins не может превышать твой баланс.":"La apuesta no puede superar tu saldo.","Создатель + соперники":"Creador + rivales","⚔️ Тренировка с ботами · бесплатно":"⚔️ Entrenamiento con bots · gratis","Онлайн-комнаты доступны после открытия ALLCOINS через Telegram.":"Las salas en línea están disponibles al abrir ALLCOINS desde Telegram.","Тренировка с ботами работает без списания Allcoins.":"El entrenamiento con bots funciona sin apuesta.","Здесь отображаются комнаты других игроков, созданные онлайн.":"Aquí aparecen las salas en línea creadas por otros jugadores.","Синхронизация":"Sincronizando","Как играть: нажми на свою башню, затем на цель.":"Cómo jugar: toca tu torre y después un objetivo.","Или проведи пальцем от башни к башне.":"O desliza el dedo de una torre a otra.","Войска":"Tropas","На столе":"En la mesa","Игроки за столом":"Jugadores en la mesa","Создатель может запустить онлайн-игру, когда войдёт хотя бы ещё один человек.":"El creador puede iniciar la partida en línea cuando entre al menos otra persona.","Тренировка с ботами доступна в любой момент.":"El entrenamiento con bots está disponible en cualquier momento.","БАНК КОМНАТЫ":"BOTE DE LA SALA","Карта играется по цвету, числу или значку.":"Juega haciendo coincidir color, número o símbolo.","Ты захватил карту.":"Has conquistado el mapa.","Приз распределяется автоматически после завершения недели.":"Los premios se distribuyen automáticamente al terminar la semana.","Нет доступных комнат.":"No hay salas disponibles.","Ошибка загрузки. Попробуй ещё раз.":"Error de carga. Inténtalo de nuevo.","Сначала войди через Telegram.":"Primero inicia sesión a través de Telegram.","Выбери комнату по цене билета.":"Elige una sala según el precio del boleto.","Раунд начинается автоматически через 3 минуты после открытия комнаты.":"La ronda comienza automáticamente 3 minutos después de abrir la sala.","За столом до 6 мест":"Hasta 6 asientos en la mesa","Ход игрока":"Turno del jugador","Карты розданы.":"Cartas repartidas.","0 AC БАНК":"BOTE 0 AC","Allcoins: 100 AC":"Apuesta 100 AC","Классическая колода":"Baraja clásica","Колода":"Baraja","Твой лучший результат попадёт в рейтинг":"Tu mejor puntuación entrará en la clasificación","Выйти в лобби бильярда":"Volver al vestíbulo de billar","Начать тренировку":"Iniciar entrenamiento","Комната бильярда":"Sala de billar","Повернуть стол":"Girar mesa","Прицел":"Apuntar","ДЕМО":"DEMO","ТВОЙ БАЛАНС":"TU SALDO","Виртуальные монеты ALLCOINS":"Monedas virtuales ALLCOINS","⚡ Энергия":"⚡ Energía","НОВАЯ ИГРА · BLOCK BLAST":"NUEVO JUEGO · BLOCK BLAST","Вход — 1 000 AC · личный рекорд сохраняется":"Entrada: 1.000 AC · se conserva el récord personal","Дурак Онлайн":"Durak en línea","21 Очко":"21 puntos","Камень Ножницы Бумага":"Piedra Papel Tijera","🃏 Дурак Онлайн":"🃏 Durak en línea","＋ Создание комнаты":"＋ Crear sala","Подкидной":"Añadir carta","Переводной":"Transferible","24 карт":"24 cartas","36 карт":"36 cartas","52 карт":"52 cartas","1 игрок + бот":"1 jugador + bot","⚡ Скорость игры":"⚡ Velocidad del juego","Обычная":"Normal","Минимум: 100 AC":"Mínimo: 100 AC","🔒 Тип комнаты":"🔒 Tipo de sala","🌍 Открытая":"🌍 Pública","🌍 Доступные комнаты":"🌍 Salas disponibles","🔊 Звук":"🔊 Sonido","👤 Ты":"👤 Tú","⚔️ Атаковать":"⚔️ Atacar","🛡️ Побить карту":"🛡️ Cubrir la carta","Создавай комнаты Лото и приглашай игроков.":"Crea salas de Loto e invita a jugadores.","Количество игроков (от 2 до 1000)":"Número de jugadores (2–1.000)","Цена одного билета (AC)":"Precio de cada boleto (AC)","Всего билетов:":"Total de boletos:","Мои билеты в выбранной комнате:":"Mis boletos en la sala seleccionada:","🎟️ Купить билет":"🎟️ Comprar boleto","Подготовка системы вывода":"Preparando retiros","Здесь будет интерфейс заявок на вывод, если такая система будет отдельно разработана и подключена.":"Aquí aparecerá la interfaz de solicitudes de retiro si se desarrolla y conecta un sistema independiente.","Проверить статус":"Comprobar estado","🛡 Администрирование ALLCOINS":"🛡 Administración de ALLCOINS","💰 Комиссия проекта · 5%":"💰 Comisión del proyecto · 5%","Начислено комиссии:":"Comisión acumulada:","База начисления комиссии:":"Base de cálculo de la comisión:","Завершённых игр с комиссией:":"Partidas completadas con comisión:","🎯 Задания":"🎯 Tareas","Твои цели ALLCOINS":"Tus objetivos de ALLCOINS","Выполняй задания, открывай награды и развивай свой баланс.":"Completa tareas, desbloquea recompensas y aumenta tu saldo.","Выполнено заданий":"Tareas completadas","Задания и их награды пока тестовые и хранятся на этом устройстве. Серверное начисление наград ещё не подключено.":"Las tareas y recompensas son de prueba y se guardan en este dispositivo. Aún no se acreditan recompensas desde el servidor.","Комнаты обновляются каждые 3 минуты":"Las salas se actualizan cada 3 minutos","До 3 билетов на игрока в каждой комнате":"Hasta 3 boletos por jugador en cada sala","📘 Инструкция по игре в лото":"📘 Instrucciones para jugar al Loto","Ручной режим":"Modo manual","Купи билет и оставайся в комнате во время розыгрыша. Когда выпадает число, которое есть на твоём билете, нажми на него сам. Фиолетовый кружок показывает закрытое число.":"Compra un boleto y permanece en la sala durante el sorteo. Cuando salga un número de tu boleto, tócalo tú mismo. Un círculo morado indica un número marcado.","Автоматический режим":"Modo automático","Купи билет и выйди из комнаты или сверни приложение. Примерно через 8–11 секунд без активности совпавшие числа начнут отмечаться автоматически. Билет продолжит играть, даже если ты не смотришь на экран.":"Compra un boleto y sal de la sala o minimiza la aplicación. Tras unos 8–11 segundos de inactividad, los números coincidentes se marcarán automáticamente. Tu boleto seguirá jugando aunque no mires la pantalla.","Позже открой ту же комнату: увидишь выпавшие числа, отметки на билетах, результат раунда и сведения о выигрыше или возврате суммы Allcoins.":"Vuelve a abrir la misma sala para ver los números sorteados, las marcas de los boletos, el resultado y los detalles del premio o reembolso.","Зелёная карточка — ты выиграл партию. Красная — не выиграл. Открой отчёт, чтобы посмотреть подробности; после просмотра его можно удалить только из твоего списка.":"Una tarjeta verde indica que ganaste; una roja, que no. Abre el informe para ver detalles; después de verlo, solo podrás borrarlo de tu lista.","🗑 Удалить все отчёты":"🗑 Eliminar todos los informes","← К комнатам":"← Volver a salas","Билет:":"Boleto:","Банк:":"Bote:","Билеты у тебя:":"Tus boletos:","Числа:":"Números:","Отчёт после игры":"Informe después de la partida","🎱 Игра в лото":"🎱 Juego de Loto","Числа выпадают автоматически каждые 3 секунды":"Los números salen automáticamente cada 3 segundos","🔊 Озвучка: ВКЛ":"🔊 Voz: ACTIVADA","Выпавшие числа":"Números sorteados","Ожидаем розыгрыш…":"Esperando el sorteo…","Твои билеты · до 3":"Tus boletos · hasta 3","📘 Инструкция: ручная и автоматическая игра":"📘 Instrucciones: juego manual y automático","Ручная игра":"Juego manual","Автоматическая игра":"Juego automático","Как посмотреть отчёт":"Cómo ver un informe","🂡 21 Очко":"🂡 21 puntos","Классическое русское очко · игра против банкира":"21 clásico ruso · juega contra la banca","Цель:":"Objetivo:","набрать больше очков, чем банкир, но не больше 21.":"Consigue más puntos que la banca, pero no más de 21.","от 6 до 10 — по номиналу; валет — 2; дама — 3; король — 4; туз — 11.":"Del 6 al 10 valen su número; jota = 2, reina = 3, rey = 4, as = 11.","Ход:":"Turno:","Банкир:":"Banca:","Сейчас это одиночная игра против компьютера. AC — виртуальные очки внутри прототипа, не денежные выплаты.":"Actualmente es una partida individual contra el ordenador. AC son puntos virtuales del prototipo, no pagos en dinero.","♣ Онлайн-комнаты 21 Очко":"♣ Salas en línea de 21 puntos","Мест в каждой комнате":"Plazas por sala","Сумма Allcoins (от 100 до 1 000 000 AC)":"Importe de apuesta (100–1.000.000 AC)","♧ Доступные комнаты":"♧ Salas disponibles","Комнаты по размеру суммы Allcoins":"Salas por importe de apuesta","Все комнаты":"Todas las apuestas","Создатель запускает раунд, когда все готовы. Можно начать с одним игроком и до пяти участников.":"El creador inicia la ronda cuando todos están listos. Se puede empezar con un jugador y hasta cinco participantes.","🃏 Начать раунд":"🃏 Iniciar ronda","🂡 21 Очко · Онлайн":"🂡 21 puntos · En línea","♛ Банкир":"♛ Banca","Скрытая карта":"Carta oculta","СЧЁТ: — / 21":"PUNTOS: — / 21","＋ Ещё карту":"＋ Otra carta","✋ Хватит":"✋ Basta","Банкир":"Banca","Карты банкира":"Cartas de la banca","1 место · 50%":"1.º puesto · 50 %","2 место · 30%":"2.º puesto · 30 %","3 место · 20%":"3.º puesto · 20 %","НЕДЕЛЯ ·":"SEMANA ·","СЧЁТ":"PUNTUACIÓN","Тёплый каньон и рельсы":"Cañón cálido y raíles","Фиолетовый свет и кристаллы":"Luz violeta y cristales","БУМ!":"¡BOOM!","1 тыс.":"1 mil","10 тыс.":"10 mil","100 тыс.":"100 mil","1 млн":"1 millón","♟ Шашки":"♟ Damas","🤖 Тестовый бот":"🤖 Bot de prueba","Вернуться в комнаты":"Volver a las salas","Загружаю список комнат…":"Cargando lista de salas…","Вход: 100 AC":"Entrada: 100 AC","От 1 000 000 AC без верхнего лимита":"Desde 1.000.000 AC sin límite máximo","ИГРОКИ":"JUGADORES","ALLCOINS • AC — виртуальные игровые монеты, не реальные деньги.":"ALLCOINS • AC son monedas virtuales del juego, no dinero real.","↻ Комнаты":"↻ Salas","ЗАХВАТ БАШЕН":"CONQUISTA DE TORRES","2–10 мест":"2–10 plazas","КОМНАТА УНО":"SALA DE UNO","УНО ОНЛАЙН":"UNO EN LÍNEA","Тестовый режим: игра против бота без списания AC и без реальных выплат.":"Modo de prueba: juega contra un bot sin descuentos de AC ni pagos reales.","Подходит для проверки стола, ударов и очередности ходов.":"Sirve para probar la mesa, los golpes y el orden de los turnos.","Дождись второго игрока":"Espera al segundo jugador","Бильярд ALLCOINS":"Billar ALLCOINS","Оба игрока должны иметь достаточно AC для суммы Allcoins.":"Ambos jugadores deben tener suficientes AC para la apuesta.","Когда оба будут в комнате, создатель сможет начать игру.":"Cuando ambos estén en la sala, el creador podrá iniciar la partida.","Текущая игра останется на сервере.":"La partida actual permanecerá en el servidor.","Вы вернётесь в лобби бильярда.":"Volverás al vestíbulo de billar.","Чтобы случайно не выйти, выбери действие ниже.":"Para no salir por accidente, elige una acción abajo.","Камень Ножницы Бумага — ALLCOINS":"Piedra Papel Tijera — ALLCOINS","В разных компаниях встречаются варианты подсчёта очков; здесь используется онлайн-вариант с 7♣ как джокером и особой тройкой шестёрок.":"Las reglas varían según el grupo; esta versión usa el 7♣ como comodín y una combinación especial de tres seises."}};
+  const LANGS_AVAILABLE = ["ru","en","nl","tr","es","de","fr","pt","zh"];
+  let current = "ru", busy = false, scheduled = false;
+  function getSaved(){ try { const value=localStorage.getItem("allcoins_language")||"ru"; return LANGS_AVAILABLE.includes(value)?value:"ru"; } catch(_){ return "ru"; } }
+  let dictionaryCacheCode=null, dictionaryCache=null;
+  function getDictionary(){ if(dictionaryCacheCode!==current){ const extra=(window.ALLCOINS_I18N_EXTRA && window.ALLCOINS_I18N_EXTRA[current]) || {}; dictionaryCache=Object.assign({},LANGS.en || {},LANGS[current] || {},extra); dictionaryCacheCode=current; } return dictionaryCache || {}; }
+  function trText(value){
+    if (!value || current==="ru") return value;
+    const dict=getDictionary(), clean=value.trim();
+    if (dict[clean]) return value.replace(clean,dict[clean]);
+    let out=value;
+    const keys=Object.keys(dict).filter(k=>k.length>=4).sort((a,b)=>b.length-a.length);
+    for(const key of keys){ if(out.includes(key)) out=out.split(key).join(dict[key]); }
+    return out;
+  }
+  function excluded(node){
+    const p=node.parentElement;
+    return !p || !!p.closest("script,style,textarea,input,code,pre,[contenteditable='true'],[data-no-translate],#aiMessages,#supportDescription");
+  }
+  function apply(persist){
+    if(busy || !document.documentElement) return;
+    busy=true;
+    if(persist){ try{localStorage.setItem("allcoins_language",current);}catch(_){} }
+    document.documentElement.lang=current;
+    const walker=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+    for(const node of nodes){
+      if(excluded(node)) continue;
+      if(node.__allcoinsOriginalText===undefined || (node.__allcoinsLastRenderedText!==undefined && node.nodeValue!==node.__allcoinsLastRenderedText)) node.__allcoinsOriginalText=node.nodeValue;
+      const source=node.__allcoinsOriginalText;
+      const target=current==="ru" ? source : trText(source);
+      if(node.nodeValue!==target) node.nodeValue=target;
+      node.__allcoinsLastRenderedText=target;
+    }
+    const attrs=["placeholder","title","aria-label","alt"];
+    document.querySelectorAll("[placeholder],[title],[aria-label],[alt]").forEach(el=>{
+      for(const attr of attrs){
+        if(!el.hasAttribute(attr)) continue;
+        const marker="allcoinsOriginal"+attr.replace(/(^|-)(.)/g,(_,a,c)=>c.toUpperCase());
+        const lastMarker=marker+"LastRendered";
+        const actual=el.getAttribute(attr);
+        if(el.dataset[marker]===undefined || (el.dataset[lastMarker]!==undefined && actual!==el.dataset[lastMarker])) el.dataset[marker]=actual;
+        const source=el.dataset[marker];
+        const target=current==="ru"?source:trText(source);
+        if(actual!==target) el.setAttribute(attr,target);
+        el.dataset[lastMarker]=target;
+      }
+    });
+    const title=document.querySelector("title");
+    if(title){
+      if(title.dataset.allcoinsOriginalTitle===undefined) title.dataset.allcoinsOriginalTitle=title.textContent;
+      const translatedTitle=current==="ru"?title.dataset.allcoinsOriginalTitle:trText(title.dataset.allcoinsOriginalTitle); if(title.textContent!==translatedTitle) title.textContent=translatedTitle;
+    }
+    const selector=document.getElementById("allcoinsLanguage");
+    if(selector && selector.value!==current) selector.value=current;
+    const status=document.getElementById("languageStatus");
+    if(status){
+      const texts={ru:"Язык будет применяться к меню и игровым интерфейсам.",en:"Your language will be used throughout the menus and games.",nl:"Je taal wordt in alle menu's en spellen gebruikt.",tr:"Seçtiğin dil tüm menülerde ve oyunlarda kullanılır.",es:"El idioma elegido se usará en todos los menús y juegos."};
+      const statusText=texts[current]||texts.ru; if(status.textContent!==statusText) status.textContent=statusText;
+    }
+    busy=false;
+  }
+  function applySaved(){ current=getSaved(); apply(false); }
+  function schedule(){
+    if(scheduled || busy) return;
+    scheduled=true;
+    requestAnimationFrame(()=>{scheduled=false; if(document.getElementById("allcoinsLanguage")) current=document.getElementById("allcoinsLanguage").value||getSaved(); else current=getSaved(); apply(false);});
+  }
+  document.addEventListener("change",e=>{
+    if(e.target && e.target.id==="allcoinsLanguage"){ current=LANGS_AVAILABLE.includes(e.target.value)?e.target.value:"ru"; apply(true); }
+  });
+  window.addEventListener("storage",e=>{if(e.key==="allcoins_language"){current=getSaved();apply(false);}});
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",applySaved,{once:true}); else applySaved();
+  const observer=new MutationObserver(schedule);
+  const startObserver=()=>{ if(document.documentElement) observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title","aria-label","alt"]}); };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",startObserver,{once:true}); else startObserver();
+  // Old standalone AI navigation is intentionally absent. AI triage remains active in Support.
+  document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('[data-page="ai"],[data-page="assistant"],#aiNavButton,#openAIButton').forEach(el=>el.remove()),{once:true});
+})();
+</script>
+</body>
+</html>

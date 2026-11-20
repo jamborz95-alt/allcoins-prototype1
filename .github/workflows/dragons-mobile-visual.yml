@@ -1,0 +1,37 @@
+name: Dragons mobile visual check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "dragons.html"
+      - "assets/dragons/**"
+      - "tests/dragons-game-smoke.mjs"
+      - ".github/workflows/dragons-mobile-visual.yml"
+  workflow_dispatch:
+
+jobs:
+  dragons-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Get project files
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npm init -y && npm install --no-save playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture Dragons mobile screens and run smoke test
+        run: node tests/dragons-game-smoke.mjs
+      - name: Upload Dragons mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragons-mobile-visual
+          path: artifacts/dragons-*.png
+          if-no-files-found: error
+          retention-days: 7

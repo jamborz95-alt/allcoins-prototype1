@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="ceiling" x2="0" y2="1"><stop stop-color="#080e15"/><stop offset="1" stop-color="#202a33"/></linearGradient>
+ <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#333b42"/><stop offset=".55" stop-color="#20282e"/><stop offset="1" stop-color="#10171e"/></linearGradient>
+ <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#65696a"/><stop offset=".38" stop-color="#353a3e"/><stop offset="1" stop-color="#171c22"/></linearGradient>
+ <linearGradient id="sideGlow"><stop stop-color="#c6d9ed" stop-opacity=".04"/><stop offset=".5" stop-color="#dfecf7" stop-opacity=".8"/><stop offset="1" stop-color="#b3cce3" stop-opacity=".03"/></linearGradient>
+ <linearGradient id="cabinet" x2="0" y2="1"><stop stop-color="#7c2025"/><stop offset=".5" stop-color="#a22b31"/><stop offset="1" stop-color="#48171c"/></linearGradient>
+ <linearGradient id="blueSteel" x2="1"><stop stop-color="#0c243b"/><stop offset=".42" stop-color="#17609a"/><stop offset=".7" stop-color="#287cb3"/><stop offset="1" stop-color="#0b243a"/></linearGradient>
+ <linearGradient id="lamp" x2="0" y2="1"><stop stop-color="#fff9dd"/><stop offset=".6" stop-color="#eaf4ff"/><stop offset="1" stop-color="#8aa2b1"/></linearGradient>
+ <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fff0ad"/><stop offset=".5" stop-color="#e8b949"/><stop offset="1" stop-color="#9f681b"/></linearGradient>
+ <linearGradient id="floorShine" x2="0" y2="1"><stop stop-color="#d9e1e5" stop-opacity=".32"/><stop offset="1" stop-color="#d9e1e5" stop-opacity="0"/></linearGradient>
+ <pattern id="brick" width="112" height="56" patternUnits="userSpaceOnUse"><path d="M0 0H112M0 56H112M56 0V28M0 28H112M0 28V56M112 28V56" fill="none" stroke="#869099" stroke-opacity=".18" stroke-width="2"/><path d="M5 5H51M61 5H107M5 33H51M61 33H107" stroke="#c6cdd1" stroke-opacity=".04" stroke-width="2"/></pattern>
+ <pattern id="floorLine" width="88" height="32" patternUnits="userSpaceOnUse" patternTransform="skewX(-18)"><path d="M0 0V32" stroke="#e1e9ed" stroke-opacity=".045" stroke-width="2"/></pattern>
+ <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<!-- ceiling and rear workshop wall -->
+<rect width="1600" height="900" fill="#111820"/>
+<path d="M0 0H1600V95L0 150Z" fill="url(#ceiling)"/>
+<path d="M0 98L1600 65V535H0Z" fill="url(#wall)"/>
+<path d="M0 98L1600 65V535H0Z" fill="url(#brick)"/>
+<path d="M0 94L1600 61M0 166L1600 132M0 507H1600" stroke="#05090d" stroke-width="12" opacity=".8"/>
+<path d="M0 104L1600 70M0 507H1600" stroke="#75818a" stroke-opacity=".35" stroke-width="3"/>
+<!-- ceiling trusses -->
+<g stroke="#05090e" stroke-width="20" opacity=".9"><path d="M0 20L1600 0"/><path d="M70 0L220 130M520 0L650 120M1020 0L1110 105M1450 0L1510 95"/></g>
+<g stroke="#46515b" stroke-width="5" opacity=".8"><path d="M0 18L1600 0"/><path d="M70 0L220 130M520 0L650 120M1020 0L1110 105M1450 0L1510 95"/></g>
+<!-- work lamps -->
+<g>
+ <path d="M415 116V166M925 112V161M1350 97V150" stroke="#080c11" stroke-width="7"/>
+ <rect x="330" y="157" width="190" height="22" rx="5" fill="#06090c"/><rect x="338" y="160" width="174" height="12" rx="4" fill="url(#lamp)"/><ellipse cx="425" cy="188" rx="105" ry="28" fill="#e2efff" opacity=".17" filter="url(#blur)"/>
+ <rect x="838" y="153" width="188" height="22" rx="5" fill="#070a0d"/><rect x="846" y="156" width="172" height="12" rx="4" fill="url(#lamp)"/><ellipse cx="932" cy="184" rx="100" ry="24" fill="#e2efff" opacity=".16" filter="url(#blur)"/>
+ <rect x="1272" y="144" width="170" height="22" rx="5" fill="#070a0d"/><rect x="1280" y="147" width="154" height="12" rx="4" fill="url(#lamp)"/><ellipse cx="1356" cy="177" rx="90" ry="24" fill="#fff0d0" opacity=".16" filter="url(#blur)"/>
+</g>
+<!-- left tire rack and tires -->
+<g transform="translate(20 225)">
+ <rect width="175" height="236" rx="5" fill="#11171d" stroke="#69737b" stroke-width="4"/>
+ <path d="M0 83H175M0 164H175" stroke="#8b959c" stroke-width="8"/>
+ <g fill="#080b0e" stroke="#4b555d" stroke-width="8">
+  <ellipse cx="37" cy="48" rx="30" ry="43"/><ellipse cx="89" cy="44" rx="30" ry="43"/><ellipse cx="140" cy="47" rx="30" ry="43"/>
+  <ellipse cx="37" cy="130" rx="30" ry="43"/><ellipse cx="89" cy="125" rx="30" ry="43"/><ellipse cx="140" cy="129" rx="30" ry="43"/>
+  <ellipse cx="37" cy="207" rx="30" ry="43"/><ellipse cx="89" cy="205" rx="30" ry="43"/><ellipse cx="140" cy="207" rx="30" ry="43"/>
+ </g>
+ <g fill="none" stroke="#252d34" stroke-width="3"><ellipse cx="37" cy="48" rx="19" ry="31"/><ellipse cx="89" cy="44" rx="19" ry="31"/><ellipse cx="140" cy="47" rx="19" ry="31"/><ellipse cx="37" cy="130" rx="19" ry="31"/><ellipse cx="89" cy="125" rx="19" ry="31"/><ellipse cx="140" cy="129" rx="19" ry="31"/></g>
+</g>
+<!-- branded backlit sign -->
+<g transform="translate(260 240)">
+ <rect width="190" height="125" rx="6" fill="#070c12" stroke="#4f5c64" stroke-width="5"/>
+ <rect x="9" y="9" width="172" height="107" fill="#101820" stroke="#182834" stroke-width="2"/>
+ <circle cx="95" cy="39" r="22" fill="none" stroke="url(#gold)" stroke-width="5"/>
+ <path d="M75 37L85 19L96 32L107 18L117 37L111 46H81Z" fill="url(#gold)"/>
+ <text x="95" y="76" text-anchor="middle" fill="url(#gold)" font-family="Arial,sans-serif" font-size="24" font-weight="900" letter-spacing="1">ALLCOINS</text>
+ <text x="95" y="99" text-anchor="middle" fill="#a9b7c1" font-family="Arial,sans-serif" font-size="11" font-weight="800" letter-spacing="3">RACING</text>
+</g>
+<!-- framed poster on the right -->
+<g transform="translate(1110 228)">
+ <rect width="230" height="145" rx="4" fill="#080d12" stroke="#53616b" stroke-width="5"/>
+ <rect x="10" y="10" width="210" height="125" fill="#18222a"/>
+ <ellipse cx="116" cy="104" rx="84" ry="7" fill="#000" opacity=".6"/>
+ <path d="M39 88L49 73L77 68L101 42L154 43L180 65L202 72L207 92Z" fill="#71808b" stroke="#aab6bd" stroke-width="3"/>
+ <path d="M88 66L108 48H149L169 66Z" fill="#101a24" stroke="#9baab3" stroke-width="3"/>
+ <circle cx="78" cy="91" r="16" fill="#090d11" stroke="#7f8c95" stroke-width="5"/><circle cx="178" cy="91" r="16" fill="#090d11" stroke="#7f8c95" stroke-width="5"/>
+ <path d="M50 80H73M184 80H201" stroke="#e7c46c" stroke-width="4"/>
+ <text x="115" y="26" text-anchor="middle" fill="#f0cb6c" font-family="Arial,sans-serif" font-size="10" font-weight="900" letter-spacing="3">GARAGE 07</text>
+</g>
+<!-- shelves and tool bench -->
+<g transform="translate(1360 240)">
+ <rect width="220" height="260" rx="4" fill="#0d141a" stroke="#4f5a62" stroke-width="5"/>
+ <path d="M0 71H220M0 139H220M0 208H220" stroke="#717b81" stroke-width="8"/>
+ <g fill="#9b4a29" stroke="#171d22" stroke-width="3"><rect x="14" y="18" width="25" height="42"/><rect x="48" y="27" width="22" height="33"/><rect x="79" y="12" width="26" height="48"/><rect x="122" y="21" width="34" height="39"/><rect x="169" y="17" width="32" height="43"/><rect x="15" y="84" width="42" height="41"/><rect x="66" y="91" width="25" height="34"/><rect x="101" y="80" width="36" height="45"/><rect x="150" y="94" width="52" height="31"/><rect x="17" y="155" width="32" height="43"/><rect x="60" y="164" width="38" height="34"/><rect x="111" y="151" width="28" height="47"/><rect x="154" y="159" width="45" height="39"/></g>
+ <path d="M0 257H220" stroke="#a5afb6" stroke-width="9"/>
+</g>
+<!-- red toolbox left -->
+<g transform="translate(16 470)">
+ <rect width="215" height="150" rx="4" fill="url(#cabinet)" stroke="#171d23" stroke-width="8"/>
+ <path d="M6 34H209M6 70H209M6 106H209" stroke="#210f13" stroke-width="6"/>
+ <g fill="#c3c8ca" stroke="#282f34" stroke-width="3"><rect x="74" y="15" width="66" height="8" rx="3"/><rect x="74" y="50" width="66" height="8" rx="3"/><rect x="74" y="86" width="66" height="8" rx="3"/><rect x="74" y="122" width="66" height="8" rx="3"/></g>
+ <path d="M0 5H215" stroke="#e37c79" stroke-width="4"/>
+</g>
+<!-- hydraulic lift right -->
+<g>
+ <path d="M1480 118H1543V640H1480Z" fill="url(#blueSteel)" stroke="#071827" stroke-width="8"/>
+ <path d="M1494 124V628M1527 124V628" stroke="#9dd1f0" stroke-opacity=".28" stroke-width="5"/>
+ <path d="M1450 180H1578M1450 193H1578M1461 180V208M1565 180V208" fill="none" stroke="#0a1a29" stroke-width="13"/>
+ <path d="M1455 517H1585" stroke="#b7c2c9" stroke-width="10"/>
+ <rect x="1445" y="505" width="140" height="14" rx="3" fill="#23323d" stroke="#77858e" stroke-width="3"/>
+</g>
+<!-- side walls and safety rails -->
+<path d="M0 528H1600" stroke="#080c10" stroke-width="16"/>
+<path d="M0 536H1600" stroke="#aab1b5" stroke-opacity=".23" stroke-width="4"/>
+<path d="M0 553H1600" stroke="#070b10" stroke-width="9"/>
+<!-- polished concrete floor -->
+<path d="M0 540H1600V900H0Z" fill="url(#floor)"/>
+<path d="M0 540H1600V900H0Z" fill="url(#floorLine)" opacity=".8"/>
+<path d="M0 542H1600" stroke="#d6d9d7" stroke-opacity=".28" stroke-width="4"/>
+<path d="M0 625L1600 590M0 725L1600 690M0 824L1600 795" stroke="#d5dfe3" stroke-opacity=".08" stroke-width="3"/>
+<path d="M250 550L90 900H350L500 550Z" fill="url(#floorShine)" opacity=".45"/>
+<path d="M425 552L325 900H470L560 552Z" fill="url(#floorShine)" opacity=".22"/>
+<path d="M880 548L1040 900H1300L1040 548Z" fill="url(#floorShine)" opacity=".25"/>
+<path d="M1350 547L1480 900H1590L1540 547Z" fill="url(#floorShine)" opacity=".32"/>
+<!-- soft reflection lights on wet-looking concrete -->
+<ellipse cx="740" cy="650" rx="360" ry="36" fill="#e4ebee" opacity=".08" filter="url(#blur)"/>
+<ellipse cx="780" cy="760" rx="500" ry="80" fill="#bbc6cb" opacity=".055" filter="url(#blur)"/>
+<path d="M285 620L530 618L467 763L350 787Z" fill="#fff4cd" opacity=".035"/>
+<path d="M820 610L1015 610L1125 770L950 784Z" fill="#d7e8f3" opacity=".045"/>
+<!-- foreground vignette -->
+<path d="M0 0H1600V900H0Z" fill="none" stroke="#03070b" stroke-width="42" opacity=".65"/>
+</svg>
