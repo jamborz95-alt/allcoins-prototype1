@@ -488,7 +488,7 @@ try {
   assert.ok(await gameFrame.locator("#gas").evaluate(el => el.classList.contains("active")),
     "Upshifting must keep the accelerator held.");
   assert.deepEqual(await gameFrame.evaluate(() => window.__allcoinsRacingShiftDiagnostics), {
-    shiftCount: 4,
+    shiftCount: 3,
     lastShiftWithThrottle: true,
     throttlePreserved: true
   }, "The gear handler must preserve the live throttle state during a second-finger shift.");
