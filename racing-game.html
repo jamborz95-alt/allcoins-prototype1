@@ -8358,50 +8358,148 @@ function requestSavedModel(){
     setMessage('Ошибка связи с Mini App',e.message||'Не удалось отправить запрос автомобиля.',true);
   }
 }
-window.addEventListener('message',async event=>{
-  const data=event.data||{};
-  if(data.type==='allcoins:car-model-loading'){
-    if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelAckReceived = true;
-    setMessage('Загрузка ВАЗ-2107','Mini App подтвердил запрос. Получаю GLB из облачного хранилища Amvera…',true);
-    return;
-  }
-  if(data.type==='allcoins:car-model-error'){
-    $("garageCarStatus").textContent="НЕ УДАЛОСЬ ЗАГРУЗИТЬ ВАЗ-2107";
-    $("garageCarStatus").classList.add("error");
-    setMessage("Модель не получена",String(data.message||"Не удалось получить GLB из выбранной сцены."),true);
-    return;
-  }
-  if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
-    try{
-      const modelFileName = String(data.fileName || 'vaz-2107.glb');
-      const modelBytes = Number(data.byteLength) || data.buffer.byteLength;
-      await loadGlbBuffer(data.buffer, modelFileName + ' · Amvera PostgreSQL');
-      window.__allcoinsRacingModelDiagnostics = Object.freeze({
-        loaded: true,
-        source: 'Amvera PostgreSQL',
-        fileName: modelFileName,
-        bytes: modelBytes,
-        remoteVersion: data.remoteVersion || null,
-        loadedAt: Date.now()
-      });
-      const badge = $("garageCarStatus");
-      if (badge) {
-        const sizeLabel = (modelBytes / 1048576).toLocaleString('ru-RU', { maximumFractionDigits: 1 });
-        badge.textContent = 'GLB ✓ · ' + sizeLabel + ' МБ';
-        badge.title = 'Загружен из Amvera PostgreSQL: ' + modelFileName +
-          '; ' + modelBytes + ' байт' +
-          (data.remoteVersion ? '; версия: ' + data.remoteVersion : '; версия не проверена');
-        badge.classList.remove("error");
-      }
+let acPendingCarModelTransfer = null;
+
+async function acInstallReceivedCarModel(buffer, details) {
+  const data = details || {};
+  try {
+    const modelFileName = String(data.fileName || 'vaz-2107.glb');
+    const modelBytes = Number(data.byteLength) || buffer.byteLength;
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength !== modelBytes) {
+      throw new Error('Получен неполный GLB-файл после передачи фрагментов.');
     }
-    catch(e){
-       console.error(e);
-       window.__allcoinsRacingModelLoadError = String(e && e.stack || e).slice(0,4000);
-       if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelLoadError = window.__allcoinsRacingModelLoadError;
-       $("garageCarStatus").textContent="ОШИБКА ОТКРЫТИЯ МОДЕЛИ";
-       $("garageCarStatus").classList.add("error");
-       setMessage("Ошибка чтения GLB",e.message||"Файл модели не удалось открыть.",true);
-     }
+    await loadGlbBuffer(buffer, modelFileName + ' · Amvera PostgreSQL');
+    window.__allcoinsRacingModelDiagnostics = Object.freeze({
+      loaded: true,
+      source: 'Amvera PostgreSQL',
+      fileName: modelFileName,
+      bytes: modelBytes,
+      remoteVersion: data.remoteVersion || null,
+      loadedAt: Date.now()
+    });
+    const badge = $("garageCarStatus");
+    if (badge) {
+      const sizeLabel = (modelBytes / 1048576).toLocaleString('ru-RU', { maximumFractionDigits: 1 });
+      badge.textContent = 'GLB ✓ · ' + sizeLabel + ' МБ';
+      badge.title = 'Загружен из Amvera PostgreSQL: ' + modelFileName +
+        '; ' + modelBytes + ' байт' +
+        (data.remoteVersion ? '; версия: ' + data.remoteVersion : '; версия не проверена');
+      badge.classList.remove("error");
+    }
+  } catch (e) {
+    console.error(e);
+    window.__allcoinsRacingModelLoadError = String(e && e.stack || e).slice(0, 4000);
+    if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelLoadError = window.__allcoinsRacingModelLoadError;
+    $("garageCarStatus").textContent = "ОШИБКА ОТКРЫТИЯ МОДЕЛИ";
+    $("garageCarStatus").classList.add("error");
+    setMessage("Ошибка чтения GLB", e.message || "Файл модели не удалось открыть.", true);
+  }
+}
+
+window.addEventListener('message', async event => {
+  const data = event.data || {};
+
+  if (data.type === 'allcoins:car-model-loading') {
+    if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelAckReceived = true;
+    setMessage('Загрузка ВАЗ-2107', 'Mini App подтвердил запрос. Получаю GLB из облачного хранилища Amvera…', true);
+    return;
+  }
+
+  if (data.type === 'allcoins:car-model-error') {
+    acPendingCarModelTransfer = null;
+    $("garageCarStatus").textContent = "НЕ УДАЛОСЬ ЗАГРУЗИТЬ ВАЗ-2107";
+    $("garageCarStatus").classList.add("error");
+    setMessage("Модель не получена", String(data.message || "Не удалось получить GLB из Amvera."), true);
+    return;
+  }
+
+  if (data.type === 'allcoins:car-model-start') {
+    const byteLength = Number(data.byteLength);
+    const chunkSize = Number(data.chunkSize);
+    const totalChunks = Number(data.totalChunks);
+    if (!data.transferId || !Number.isSafeInteger(byteLength) ||
+        byteLength < 20 || byteLength > 104857600 ||
+        !Number.isSafeInteger(chunkSize) || chunkSize < 1024 || chunkSize > 1048576 ||
+        !Number.isSafeInteger(totalChunks) || totalChunks < 1 ||
+        totalChunks !== Math.ceil(byteLength / chunkSize)) {
+      acPendingCarModelTransfer = null;
+      setMessage('Ошибка передачи GLB', 'Amvera передала некорректные параметры фрагментов модели.', true);
+      return;
+    }
+    acPendingCarModelTransfer = {
+      transferId: String(data.transferId),
+      fileName: String(data.fileName || 'vaz-2107.glb'),
+      byteLength,
+      remoteVersion: data.remoteVersion || null,
+      chunkSize,
+      totalChunks,
+      chunks: new Array(totalChunks),
+      receivedChunks: 0,
+      receivedBytes: 0
+    };
+    setMessage('Загрузка ВАЗ-2107',
+      'Передаю модель небольшими частями: 0 / ' + totalChunks + '…', true);
+    return;
+  }
+
+  if (data.type === 'allcoins:car-model-chunk') {
+    const pending = acPendingCarModelTransfer;
+    if (!pending || String(data.transferId) !== pending.transferId) return;
+    const index = Number(data.index);
+    const byteOffset = Number(data.byteOffset);
+    const chunk = data.buffer;
+    if (!Number.isSafeInteger(index) || index < 0 || index >= pending.totalChunks ||
+        byteOffset !== index * pending.chunkSize ||
+        !(chunk instanceof ArrayBuffer) || pending.chunks[index]) {
+      acPendingCarModelTransfer = null;
+      setMessage('Ошибка передачи GLB', 'Получен повреждённый или повторный фрагмент модели.', true);
+      return;
+    }
+    const expectedLength = Math.min(pending.chunkSize, pending.byteLength - byteOffset);
+    if (chunk.byteLength !== expectedLength) {
+      acPendingCarModelTransfer = null;
+      setMessage('Ошибка передачи GLB', 'Размер одного из фрагментов модели не совпадает.', true);
+      return;
+    }
+    pending.chunks[index] = new Uint8Array(chunk);
+    pending.receivedChunks++;
+    pending.receivedBytes += chunk.byteLength;
+
+    if (pending.receivedChunks < pending.totalChunks) {
+      if (pending.receivedChunks % 4 === 0) {
+        setMessage('Загрузка ВАЗ-2107',
+          'Передача модели: ' + pending.receivedChunks + ' / ' + pending.totalChunks + ' частей…', true);
+      }
+      return;
+    }
+
+    if (pending.receivedBytes !== pending.byteLength) {
+      acPendingCarModelTransfer = null;
+      setMessage('Ошибка передачи GLB', 'Передача завершилась с неполным размером файла.', true);
+      return;
+    }
+
+    const completed = pending;
+    acPendingCarModelTransfer = null;
+    const combined = new Uint8Array(completed.byteLength);
+    for (let i = 0; i < completed.totalChunks; i++) {
+      if (!completed.chunks[i]) {
+        setMessage('Ошибка передачи GLB', 'Не получен фрагмент №' + (i + 1) + '.', true);
+        return;
+      }
+      combined.set(completed.chunks[i], i * completed.chunkSize);
+    }
+    await acInstallReceivedCarModel(combined.buffer, {
+      fileName: completed.fileName,
+      byteLength: completed.byteLength,
+      remoteVersion: completed.remoteVersion
+    });
+    return;
+  }
+
+  // Legacy support for an older parent page that still sends one complete ArrayBuffer.
+  if (data.type === 'allcoins:car-model' && data.buffer instanceof ArrayBuffer) {
+    await acInstallReceivedCarModel(data.buffer, data);
   }
 });
 $('chooseModel').addEventListener('click',()=>$('modelPicker').click());
