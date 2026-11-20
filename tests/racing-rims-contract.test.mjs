@@ -436,3 +436,20 @@ test("V165 reduces mobile frame spikes without changing car physics or wheel spi
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
 });
+
+
+test("V166 smooths front and rear wheel spin independently with frame-rate-independent integration", () => {
+  assert.match(page, /const AC_WHEEL_SPIN_RESPONSE_SECONDS = \.035/);
+  assert.match(page, /function acAdvanceWheelSpin\(dt,signedSpeed,burnoutActive\)/);
+  assert.match(page, /const decay=Math\.exp\(-step\/response\)/);
+  assert.match(page, /const frontDelta=roadWheelRate\*step\+frontError\*response\*\(1-decay\)/);
+  assert.match(page, /const rearDelta=drivenWheelRate\*step\+rearError\*response\*\(1-decay\)/);
+  assert.match(page, /wheelSpinAngularVelocity=roadWheelRate\+frontError\*decay/);
+  assert.match(page, /rearWheelSpinAngularVelocity=drivenWheelRate\+rearError\*decay/);
+  assert.match(page, /wheelSpinAngle=\(wheelSpinAngle\+frontDelta\)%AC_WHEEL_SPIN_FULL_TURN/);
+  assert.match(page, /rearWheelSpinAngle=\(rearWheelSpinAngle\+rearDelta\)%AC_WHEEL_SPIN_FULL_TURN/);
+  assert.match(page, /acAdvanceWheelSpin\(dt,signedSpeed,burnoutActive\)/);
+  assert.match(page, /wheelSpinAngularVelocity=0;rearWheelSpinAngularVelocity=0/);
+  assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
+  assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
+});
