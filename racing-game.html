@@ -5163,8 +5163,8 @@ function playGearChangeCue(){
 
 const canvas = $('view');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1423);
-scene.fog = new THREE.Fog(0x101b2c, 78, 218);
+scene.background = new THREE.Color(0x1a2b41);
+scene.fog = new THREE.Fog(0x26384b, 78, 218);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
@@ -5188,12 +5188,13 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMo
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.04;
-scene.add(new THREE.HemisphereLight(0x718daf,0x101722,.40));
-const sun = new THREE.DirectionalLight(0xb2c9e8,.24); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.16;
+// V26: brighter blue-hour lighting with a warm key light; no extra render passes on mobile.
+scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.62));
+const sun = new THREE.DirectionalLight(0xffd7a8,.58); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
 sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x50698c,.24); fill.position.set(8,5,-12); scene.add(fill);
+const fill = new THREE.DirectionalLight(0x6ba7df,.34); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -5216,11 +5217,11 @@ function acCreateAsphaltMaps() {
 
   // Холодный сине-фиолетовый оттенок, как у мокрой гоночной трассы на референсе.
   for (let i = 0; i < size * size; i++) {
-    const grain = 101 + random() * 20 + (random() - .5) * 8;
+    const grain = 111 + random() * 22 + (random() - .5) * 8;
     const offset = i * 4;
     pixels.data[offset] = Math.max(0, Math.min(255, Math.round(grain + 1)));
     pixels.data[offset + 1] = Math.max(0, Math.min(255, Math.round(grain + 2 + random() * 2)));
-    pixels.data[offset + 2] = Math.max(0, Math.min(255, Math.round(grain - 1)));
+    pixels.data[offset + 2] = Math.max(0, Math.min(255, Math.round(grain + 8 + random() * 3)));
     pixels.data[offset + 3] = 255;
   }
   asphaltContext.putImageData(pixels, 0, 0);
@@ -5412,7 +5413,7 @@ road.receiveShadow = true;
 scene.add(road);
 
 const shoulderMat = new THREE.MeshStandardMaterial({
-  color: 0x353a40,
+  color: 0x414a55,
   roughness: .96,
   metalness: .01
 });
@@ -5545,14 +5546,14 @@ function acAdvanceRoadSurface(scroll) {
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
 // Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
-const buildingPalette = [0x26384d, 0x304258, 0x35465a, 0x29394d, 0x3a4b60, 0x26364a];
+const buildingPalette = [0x3a5068, 0x435d76, 0x4d6780, 0x3d5670, 0x536d85, 0x374f67];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
   roughness: .92,
   metalness: .025
 }));
-const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x52647a, roughness: .68, metalness: .22 });
+const windowFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x71859a, roughness: .68, metalness: .22 });
 const darkWindowMaterial = new THREE.MeshStandardMaterial({
   color: 0x101d30,
   roughness: .24,
@@ -5567,8 +5568,8 @@ const litWindowMaterial = new THREE.MeshStandardMaterial({
   emissive: 0xffa94a,
   emissiveIntensity: 1.05
 });
-const trimMaterial = new THREE.MeshStandardMaterial({ color: 0x53657a, roughness: .78, metalness: .12 });
-const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x111c2b, roughness: .9, metalness: .04 });
+const trimMaterial = new THREE.MeshStandardMaterial({ color: 0x6d8198, roughness: .78, metalness: .12 });
+const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x1e3044, roughness: .9, metalness: .04 });
 const shopGlassMaterial = new THREE.MeshStandardMaterial({
   color: 0x10263c, roughness: .22, metalness: .36,
   emissive: 0x07111d, emissiveIntensity: .38
