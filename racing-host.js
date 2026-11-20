@@ -548,14 +548,38 @@
   async function sendCarModel(target, targetOrigin) {
     target.postMessage({ type: "allcoins:car-model-loading" }, targetOrigin);
     const model = await loadSharedModel();
-    const transferable = model.buffer.slice(0);
+    // Telegram Android WebView may reject a single ~10 MB postMessage payload.
+    // Transfer small ArrayBuffer chunks instead of one large GLB message.
+    const chunkSize = 256 * 1024;
+    const totalChunks = Math.ceil(model.buffer.byteLength / chunkSize);
+    const transferId = "glb-" + Date.now().toString(36) + "-" +
+      Math.random().toString(36).slice(2, 10);
     target.postMessage({
-      type: "allcoins:car-model",
+      type: "allcoins:car-model-start",
+      transferId,
       fileName: model.fileName,
       byteLength: model.buffer.byteLength,
       remoteVersion: model.remoteVersion || null,
-      buffer: transferable
-    }, targetOrigin, [transferable]);
+      chunkSize,
+      totalChunks
+    }, targetOrigin);
+
+    for (let index = 0; index < totalChunks; index++) {
+      const byteOffset = index * chunkSize;
+      const chunk = model.buffer.slice(
+        byteOffset,
+        Math.min(model.buffer.byteLength, byteOffset + chunkSize)
+      );
+      target.postMessage({
+        type: "allcoins:car-model-chunk",
+        transferId,
+        index,
+        byteOffset,
+        buffer: chunk
+      }, targetOrigin, [chunk]);
+      // Yield to the WebView event loop so incoming chunks are processed smoothly.
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
     hideModelProgress();
   }
 
