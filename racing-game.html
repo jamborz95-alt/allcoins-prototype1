@@ -4298,6 +4298,80 @@ function acGarageBuildRimFace(style, radius, depth, side) {
     object.castShadow = false;
     object.receiveShadow = false;
   });
+  return acGarageMergeWheelFaceGeometry(face);
+}
+
+/* V165: collapse each detailed wheel face into one vertex-coloured mesh.
+   This keeps the metal finish but removes dozens of tiny draw calls per wheel. */
+function acGarageMergeWheelFaceGeometry(face) {
+  if (!face) return face;
+  face.updateMatrixWorld(true);
+  const inverseFaceMatrix = face.matrixWorld.clone().invert();
+  const positions = [];
+  const normals = [];
+  const colors = [];
+  const oldGeometries = new Set();
+  const oldMaterials = new Set();
+  let mergedVertexCount = 0;
+
+  face.traverse(object => {
+    if (!object.isMesh || !object.geometry) return;
+    const original = object.geometry;
+    oldGeometries.add(original);
+    const sourceMaterial = Array.isArray(object.material) ? object.material[0] : object.material;
+    if (Array.isArray(object.material)) {
+      for (const material of object.material) if (material) oldMaterials.add(material);
+    } else if (object.material) {
+      oldMaterials.add(object.material);
+    }
+
+    let geometry = original.index ? original.toNonIndexed() : original.clone();
+    const relativeMatrix = new THREE.Matrix4().multiplyMatrices(inverseFaceMatrix, object.matrixWorld);
+    geometry.applyMatrix4(relativeMatrix);
+    if (!geometry.getAttribute("normal")) geometry.computeVertexNormals();
+
+    const position = geometry.getAttribute("position");
+    const normal = geometry.getAttribute("normal");
+    if (position && normal) {
+      const color = sourceMaterial?.color || new THREE.Color(0xffffff);
+      for (let i = 0; i < position.count; i++) {
+        positions.push(position.getX(i), position.getY(i), position.getZ(i));
+        normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
+        colors.push(color.r, color.g, color.b);
+      }
+      mergedVertexCount += position.count;
+    }
+    geometry.dispose();
+  });
+
+  if (!mergedVertexCount) return face;
+
+  const mergedGeometry = new THREE.BufferGeometry();
+  mergedGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  mergedGeometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  mergedGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  mergedGeometry.computeBoundingBox();
+  mergedGeometry.computeBoundingSphere();
+
+  for (const geometry of oldGeometries) geometry.dispose();
+  for (const material of oldMaterials) material.dispose();
+  while (face.children.length) face.remove(face.children[0]);
+
+  const mergedMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    vertexColors: true,
+    metalness: .82,
+    roughness: .24,
+    clearcoat: .28,
+    clearcoatRoughness: .22,
+    side: THREE.DoubleSide
+  });
+  const mergedMesh = new THREE.Mesh(mergedGeometry, mergedMaterial);
+  mergedMesh.name = "ALLCOINS_Merged_OEM_WheelFace";
+  mergedMesh.castShadow = false;
+  mergedMesh.receiveShadow = false;
+  face.add(mergedMesh);
+  face.userData.acMergedWheelFaceDrawCalls = 1;
   return face;
 }
 /* ALLCOINS RACING V162 · make the tire rubber, wheel face and rotating spokes individually readable. */
@@ -4746,19 +4820,25 @@ window.addEventListener('keydown',event=>{if(event.code==='KeyL'&&!event.repeat)
  // Не вызываем getWorldPosition/worldToLocal в цикле: в Three.js они пересчитывают
  // цепочку матриц автомобиля, из-за чего четыре колеса обходили весь GLB по нескольку раз за кадр.
 const acWheelWorldScratch = new THREE.Vector3();
+const acWheelParentInverseCache = new WeakMap();
+let acWheelGroundContactFrame = 0;
 function updateWheelGroundContact(){
   if(!vehicle||!wheelNodes.length)return;
-  const inverseByParent = new Map();
+  const frame = ++acWheelGroundContactFrame;
   for(const wheel of wheelNodes){
     const parent=wheel.node.parent;
     if(!parent)continue;
-    let parentInverse=inverseByParent.get(parent);
-    if(!parentInverse){
-      parentInverse=parent.matrixWorld.clone().invert();
-      inverseByParent.set(parent,parentInverse);
+    let cache=acWheelParentInverseCache.get(parent);
+    if(!cache){
+      cache={frame:-1,matrix:new THREE.Matrix4()};
+      acWheelParentInverseCache.set(parent,cache);
+    }
+    if(cache.frame!==frame){
+      cache.matrix.copy(parent.matrixWorld).invert();
+      cache.frame=frame;
     }
     const matrix=wheel.node.matrixWorld.elements;
-    acWheelWorldScratch.set(matrix[12],wheel.groundWorldY,matrix[14]).applyMatrix4(parentInverse);
+    acWheelWorldScratch.set(matrix[12],wheel.groundWorldY,matrix[14]).applyMatrix4(cache.matrix);
     wheel.node.position.copy(acWheelWorldScratch);
   }
 }
@@ -5070,10 +5150,9 @@ if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-// Mobile render profile: sharper image without the expensive real-time shadow pass.
-const acMobilePixelRatioCap = 1.28;
-// Start at a dependable mobile resolution; climb toward the sharper cap only when frame pacing is stable.
-const acMobilePixelRatioInitial = 1.05;
+// V165: favour stable frame pacing on phones; resolution rises only after sustained headroom.
+const acMobilePixelRatioCap = 1.10;
+const acMobilePixelRatioInitial = .94;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -7239,11 +7318,13 @@ function acAdvanceWrappedSceneObject(object,worldDelta,factor,minX=-130,maxX=130
 
 // Все объекты обочины двигаются от одной величины пройденного пути.
 // Ближние детали идут почти со скоростью дорожной разметки, дальние — медленнее.
+// Static list avoids allocating a new array during every animation frame.
+const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTrackTreeUpper,acTrackTreeSnow]);
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
   for(const building of city){
-    acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
+    if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
   }
   acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acCityShrubs,worldDelta,.19,-132,104,236);
@@ -7255,9 +7336,7 @@ function acAdvanceRaceScenery(worldDelta){
   acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
 
   // Деревья и небольшие здания находятся дальше от трассы — параллакс слабее.
-  for(const mesh of [acTrackTreeTrunks,acTrackTreeLower,acTrackTreeUpper,acTrackTreeSnow]){
-    acAdvanceWrappedSceneObject(mesh,worldDelta,.14);
-  }
+  for(const mesh of acTrackTreeLayers)acAdvanceWrappedSceneObject(mesh,worldDelta,.14);
   acAdvanceWrappedSceneObject(acTrackHouseGroup,worldDelta,.075);
   acAdvanceWrappedSceneObject(distantHills,worldDelta,.035,-260,0,260);
 }
@@ -7271,8 +7350,18 @@ let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vecto
 const loader=new GLTFLoader();
 const smokeParticles=[];
 const smokeGeometry=new THREE.SphereGeometry(.13,7,6);
+let acLastTireSmokeAt=0,acLastExhaustSmokeAt=0;
 function addSmoke(position,kind='exhaust'){
   const tire = kind === 'tire';
+  const now = performance.now();
+  const minimumInterval = acRacingMobileDevice ? (tire ? 75 : 95) : (tire ? 42 : 58);
+  if(tire){
+    if(now-acLastTireSmokeAt<minimumInterval)return false;
+    acLastTireSmokeAt=now;
+  }else{
+    if(now-acLastExhaustSmokeAt<minimumInterval)return false;
+    acLastExhaustSmokeAt=now;
+  }
   const life = tire ? 2.15 : 1.35;
   const material = new THREE.MeshBasicMaterial({
     color: tire ? 0x202326 : 0x969fa3,
@@ -7285,7 +7374,13 @@ function addSmoke(position,kind='exhaust'){
   mesh.scale.setScalar(tire ? 1.12+Math.random()*.45 : .65+Math.random()*.3);
   scene.add(mesh);
   smokeParticles.push({mesh,life,max:life,baseOpacity:material.opacity,vx:-.55-Math.random()*.75,vy:tire?.20+Math.random()*.38:.22+Math.random()*.48});
-  if(smokeParticles.length>130){const old=smokeParticles.shift();scene.remove(old.mesh);old.mesh.material.dispose();}
+  const particleLimit = acRacingMobileDevice ? 28 : 72;
+  while(smokeParticles.length>particleLimit){
+    const old=smokeParticles.shift();
+    scene.remove(old.mesh);
+    old.mesh.material.dispose();
+  }
+  return true;
 }
 function setMessage(title,body,allowPick=true){$('message').classList.remove('hidden');$('message').querySelector('strong').textContent=title;$('messageText').textContent=body;$('chooseModel').style.display=allowPick?'inline-block':'none';}
 function hideMessage(){$('message').classList.add('hidden');}
@@ -8528,24 +8623,24 @@ function animate(now){
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       let currentPixelRatio=renderer.getPixelRatio();
-      if(measuredFps<43){
+      if(measuredFps<50){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
-      }else if(measuredFps>55){
+      }else if(measuredFps>57){
         acPerfStableFpsSamples++;
         acPerfLowFpsSamples=0;
       }else{
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(acPerfLowFpsSamples>=1&&currentPixelRatio>.82){
-        const nextPixelRatio=Math.max(.82,currentPixelRatio-.12);
+      if(acPerfLowFpsSamples>=1&&currentPixelRatio>.78){
+        const nextPixelRatio=Math.max(.78,currentPixelRatio-.08);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
-      }else if(acPerfStableFpsSamples>=5&&currentPixelRatio<acMobilePixelRatioCap){
-        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.04);
+      }else if(acPerfStableFpsSamples>=6&&currentPixelRatio<acMobilePixelRatioCap){
+        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.025);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
@@ -8765,7 +8860,7 @@ if(distance>=RACE_DISTANCE_METERS){
   // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
   // это снижает нагрев и оставляет полный FPS во время движения.
   const staticScene=document.body.classList.contains('garage-mode')||paused;
-  if(!staticScene || (acIdleRenderFrame++%2===0))renderer.render(scene,camera);
+  if(!document.hidden && (!staticScene || (acIdleRenderFrame++%2===0)))renderer.render(scene,camera);
 }
 
 let acPausedByVisibility = false;
