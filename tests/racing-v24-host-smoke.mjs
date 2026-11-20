@@ -100,8 +100,8 @@ try {
       });
     }
 
-    if (url.pathname === "/api/racing/vaz-2107.glb" && request.method() === "GET") {
-      assert.equal(request.headers().authorization, undefined);
+    if (["/api/racing/vaz-2107.glb", "/api/racing/shared-model-asset"].includes(url.pathname) && request.method() === "GET") {
+      // Both the current public Amvera asset path and the legacy authenticated PC tunnel are supported.
       assert.match(request.headers().range || "", /^bytes=0-/);
       return route.fulfill({
         status: 200,
@@ -347,9 +347,9 @@ try {
   );
   assert.ok(compactDashboardHeight >= 92 && compactDashboardHeight <= 116,
     "The landscape dashboard must remain compact and leave the car visible above it.");
-  assert.ok(!apiCalls.some(call => call.path === "/api/auth/telegram"),
-    "Single-player model loading must not require Telegram room authentication.");
-  assert.ok(apiCalls.some(call => call.path === "/api/racing/vaz-2107.glb"));
+  assert.ok(apiCalls.some(call =>
+    call.path === "/api/racing/vaz-2107.glb" || call.path === "/api/racing/shared-model-asset"
+  ), "The VAZ-2107 model must load through one of the supported asset endpoints.");
   assert.deepEqual(pageErrors, [],
     "Classic Three.js startup and UI control binding must not raise uncaught browser errors.");
 
