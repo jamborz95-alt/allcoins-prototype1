@@ -78,6 +78,70 @@ function buildTestCarGlb() {
     return {p,n,i};
   }
 
+  function subdividedBox(w,h,d,segments=8) {
+    const x=w/2,y=h/2,z=d/2,p=[],n=[],i=[];
+    const faces=[
+      {n:[0,0,1],v:[[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]]},
+      {n:[0,0,-1],v:[[x,-y,-z],[-x,-y,-z],[-x,y,-z],[x,y,-z]]},
+      {n:[1,0,0],v:[[x,-y,z],[x,-y,-z],[x,y,-z],[x,y,z]]},
+      {n:[-1,0,0],v:[[-x,-y,-z],[-x,-y,z],[-x,y,z],[-x,y,-z]]},
+      {n:[0,1,0],v:[[-x,y,z],[x,y,z],[x,y,-z],[-x,y,-z]]},
+      {n:[0,-1,0],v:[[-x,-y,-z],[x,-y,-z],[x,-y,z],[-x,-y,z]]}
+    ];
+    for(const face of faces){
+      const [a,b,c,d]=face.v;
+      const point=(u,v)=>[
+        (1-u)*(1-v)*a[0]+u*(1-v)*b[0]+u*v*c[0]+(1-u)*v*d[0],
+        (1-u)*(1-v)*a[1]+u*(1-v)*b[1]+u*v*c[1]+(1-u)*v*d[1],
+        (1-u)*(1-v)*a[2]+u*(1-v)*b[2]+u*v*c[2]+(1-u)*v*d[2]
+      ];
+      for(let row=0;row<segments;row++)for(let col=0;col<segments;col++){
+        const base=p.length/3;
+        for(const [u,v] of [[col/segments,row/segments],[(col+1)/segments,row/segments],[(col+1)/segments,(row+1)/segments],[col/segments,(row+1)/segments]]){
+          p.push(...point(u,v));n.push(...face.n);
+        }
+        i.push(base,base+1,base+2,base,base+2,base+3);
+      }
+    }
+    return {p,n,i};
+  }
+
+  function cylinderSideAxis(r,depth,segments=64) {
+    const p=[],n=[],i=[];
+    for(let k=0;k<segments;k++){
+      const a=k/segments*Math.PI*2,b=(k+1)/segments*Math.PI*2;
+      const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);
+      let base=p.length/3;
+      p.push(r*ca,r*sa,-depth/2,r*cb,r*sb,-depth/2,r*cb,r*sb,depth/2,r*ca,r*sa,depth/2);
+      n.push(ca,sa,0,cb,sb,0,cb,sb,0,ca,sa,0);
+      i.push(base,base+1,base+2,base,base+2,base+3);
+      base=p.length/3;
+      p.push(0,0,depth/2,r*ca,r*sa,depth/2,r*cb,r*sb,depth/2);
+      n.push(0,0,1,0,0,1,0,0,1);i.push(base,base+1,base+2);
+      base=p.length/3;
+      p.push(0,0,-depth/2,r*cb,r*sb,-depth/2,r*ca,r*sa,-depth/2);
+      n.push(0,0,-1,0,0,-1,0,0,-1);i.push(base,base+1,base+2);
+    }
+    return {p,n,i};
+  }
+
+  function combine(parts) {
+    const result={p:[],n:[],i:[]};
+    for(const part of parts){
+      const offset=result.p.length/3;
+      for(let k=0;k<part.geometry.p.length;k+=3){
+        result.p.push(
+          part.geometry.p[k]+part.translation[0],
+          part.geometry.p[k+1]+part.translation[1],
+          part.geometry.p[k+2]+part.translation[2]
+        );
+      }
+      result.n.push(...part.geometry.n);
+      result.i.push(...part.geometry.i.map(index=>index+offset));
+    }
+    return result;
+  }
+
   const materials=[
     {name:"metallic red body paint",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.72,.12,.15,1],metallicFactor:.58,roughnessFactor:.28}},
     {name:"dark window glass",doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.035,.07,.095,1],metallicFactor:.3,roughnessFactor:.18}},
@@ -98,10 +162,17 @@ function buildTestCarGlb() {
   part("Car_CarBody_0",box(4.45,.68,1.46),0,[0,.78,0]);
   part("Car_Roof_0",box(2.38,.82,1.28),0,[-.12,1.48,0]);
   for(const side of [-1,1]) part("Car_Glass_Side_"+side,box(1.72,.46,.028),1,[-.12,1.52,side*.655]);
+  // The production loader extracts four connected wheel islands from Car_Bottom_0.
+  const underbody=[
+    {geometry:subdividedBox(4.25,.30,1.18,8),translation:[0,.40,0]}
+  ];
   for(const x of [-1.37,1.37]) for(const side of [-1,1]){
-    part("Wheel_Tyre_"+x+"_"+side,cylinder(.39,.24),2,[x,.39,side*.77],axleRotation);
-    part("Wheel_Rim_"+x+"_"+side,cylinder(.235,.255),3,[x,.39,side*.77],axleRotation);
+    underbody.push(
+      {geometry:cylinderSideAxis(.39,.24,64),translation:[x,.39,side*.77]},
+      {geometry:cylinderSideAxis(.235,.255,64),translation:[x,.39,side*.77]}
+    );
   }
+  part("Car_Bottom_0",combine(underbody),2);
   part("Car_Front_Bumper",box(.12,.15,1.55),4,[2.28,.52,0]);
   part("Car_Rear_Bumper",box(.12,.15,1.55),4,[-2.28,.52,0]);
   part("Car_Headlamp_Left",box(.035,.16,.22),5,[2.27,.78,-.47]);
@@ -490,6 +561,9 @@ try {
     "The loaded VAZ root must remain visible in the race scene.");
   assert.ok(vehicleDiagnostics.visibleMeshCount > 0 && vehicleDiagnostics.meshCount > 0,
     "At least one visible 3D mesh must be attached to the car.");
+  assert.equal(vehicleDiagnostics.wheelCount, 4, "The GLB must produce four independently extracted wheel assemblies.");
+  assert.equal(vehicleDiagnostics.frontWheelCount, 2, "Both front wheels must be assigned to the front axle.");
+  assert.equal(vehicleDiagnostics.rearWheelCount, 2, "Both rear wheels must be assigned to the rear axle.");
 
   await page.setViewportSize({ width: 844, height: 390 });
   assert.equal(
