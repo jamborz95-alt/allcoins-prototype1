@@ -368,7 +368,7 @@ try {
   try {
     await gameFrame.waitForFunction(() =>
       window.__allcoinsTestHostMessages?.some(entry =>
-        entry.type === "allcoins:car-model" || entry.type === "allcoins:car-model-error"
+        entry.type === "allcoins:car-model-chunk" || entry.type === "allcoins:car-model" || entry.type === "allcoins:car-model-error"
       ), null, { timeout: 10000 });
   } catch (error) {
     const transferDiagnostic = {
