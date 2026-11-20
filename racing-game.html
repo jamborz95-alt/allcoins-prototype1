@@ -8358,6 +8358,8 @@ window.addEventListener('message',async event=>{
     try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из Amvera PostgreSQL');}
     catch(e){
        console.error(e);
+       window.__allcoinsRacingModelLoadError = String(e && e.stack || e).slice(0,4000);
+       if (window.__allcoinsRacingBoot) window.__allcoinsRacingBoot.modelLoadError = window.__allcoinsRacingModelLoadError;
        $("garageCarStatus").textContent="ОШИБКА ОТКРЫТИЯ МОДЕЛИ";
        $("garageCarStatus").classList.add("error");
        setMessage("Ошибка чтения GLB",e.message||"Файл модели не удалось открыть.",true);
