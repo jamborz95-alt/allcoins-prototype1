@@ -7755,6 +7755,162 @@ function acGarageRefreshLoadedCarPreview() {
   acGarageBuildLoadedCarPreview();
 }
 
+
+/* ALLCOINS RACING V160 · premium car paint, glass, rubber and metal finish.
+   The original GLB geometry, wheel rig and vehicle physics remain untouched. */
+let acRacingCarReflectionMap = null;
+
+function acRacingCreateCarReflectionTexture() {
+  if (acRacingCarReflectionMap) return acRacingCarReflectionMap;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const background = ctx.createLinearGradient(0, 0, 0, 256);
+  background.addColorStop(0, "#050a12");
+  background.addColorStop(.34, "#172333");
+  background.addColorStop(.52, "#425365");
+  background.addColorStop(.7, "#101923");
+  background.addColorStop(1, "#03070d");
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Large, soft studio strips create restrained reflections on curved body panels.
+  function softBox(x, y, width, height, strength, tint) {
+    const glow = ctx.createLinearGradient(x, y, x + width, y + height);
+    glow.addColorStop(0, "rgba(255,255,255,0)");
+    glow.addColorStop(.2, tint.replace("ALPHA", String(strength * .28)));
+    glow.addColorStop(.5, tint.replace("ALPHA", String(strength)));
+    glow.addColorStop(.82, tint.replace("ALPHA", String(strength * .22)));
+    glow.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 18, y - 10, width + 36, height + 20);
+  }
+  softBox(54, 34, 74, 150, .82, "rgba(225,239,255,ALPHA)");
+  softBox(208, 17, 36, 194, .54, "rgba(255,255,255,ALPHA)");
+  softBox(370, 48, 92, 116, .72, "rgba(170,205,245,ALPHA)");
+
+  const warm = ctx.createRadialGradient(285, 190, 5, 285, 190, 130);
+  warm.addColorStop(0, "rgba(255,190,125,.17)");
+  warm.addColorStop(1, "rgba(255,190,125,0)");
+  ctx.fillStyle = warm;
+  ctx.fillRect(155, 90, 260, 166);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.encoding = THREE.sRGBEncoding;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.needsUpdate = true;
+  acRacingCarReflectionMap = texture;
+  return texture;
+}
+
+function acRacingEnhanceCarSurface(root) {
+  if (!root || root.userData.acRacingFinishEnhanced) return 0;
+  const reflectionMap = acRacingCreateCarReflectionTexture();
+  const materialCache = new WeakMap();
+  const counts = { body: 0, metal: 0, glass: 0, rubber: 0 };
+
+  function upgradeMaterial(source, preset) {
+    if (!source || (!source.isMeshStandardMaterial && !source.isMeshPhysicalMaterial)) return source;
+    let variants = materialCache.get(source);
+    if (!variants) {
+      variants = new Map();
+      materialCache.set(source, variants);
+    }
+    if (variants.has(preset)) return variants.get(preset);
+
+    const material = new THREE.MeshPhysicalMaterial();
+    material.copy(source);
+    material.name = (source.name || "Car material") + " · ALLCOINS " + preset;
+    material.userData = Object.assign({}, source.userData || {}, { acRacingSurfacePreset: preset });
+    const originalRoughness = Number.isFinite(source.roughness) ? source.roughness : .5;
+    const originalMetalness = Number.isFinite(source.metalness) ? source.metalness : 0;
+
+    if (preset === "body-clearcoat") {
+      material.clearcoat = .82;
+      material.clearcoatRoughness = .19;
+      material.roughness = Math.max(.2, Math.min(originalRoughness, .34));
+      material.metalness = Math.max(originalMetalness, .12);
+      material.envMap = reflectionMap;
+      material.envMapIntensity = .36;
+    } else if (preset === "chrome-metal") {
+      material.clearcoat = .16;
+      material.clearcoatRoughness = .23;
+      material.roughness = Math.max(.18, Math.min(originalRoughness, .34));
+      material.metalness = Math.max(originalMetalness, .76);
+      material.envMap = reflectionMap;
+      material.envMapIntensity = .58;
+    } else if (preset === "window-glass") {
+      material.clearcoat = .68;
+      material.clearcoatRoughness = .12;
+      material.roughness = Math.max(.08, Math.min(originalRoughness, .2));
+      material.metalness = Math.min(originalMetalness, .08);
+      material.envMap = reflectionMap;
+      material.envMapIntensity = .5;
+    } else if (preset === "tire-rubber") {
+      material.clearcoat = .025;
+      material.clearcoatRoughness = .7;
+      material.roughness = Math.max(originalRoughness, .84);
+      material.metalness = 0;
+      material.envMap = null;
+      material.envMapIntensity = 0;
+    }
+
+    material.needsUpdate = true;
+    variants.set(preset, material);
+    return material;
+  }
+
+  root.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+    const names = [];
+    let cursor = object;
+    while (cursor && cursor !== root) {
+      if (cursor.name) names.push(cursor.name);
+      cursor = cursor.parent;
+    }
+    const objectName = names.join(" ").toLowerCase();
+    const isBody = object.name === "Car_CarBody_0" || /car[_ -]?body/.test(objectName);
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    let preset = null;
+
+    for (const source of materials) {
+      const materialName = String(source?.name || "").toLowerCase();
+      const combinedName = objectName + " " + materialName;
+      if (isBody) preset = "body-clearcoat";
+      else if (/tire|tyre|rubber|tread|шина|резин/.test(combinedName)) preset = "tire-rubber";
+      else if (/glass|window|windscreen|windshield|стекл/.test(combinedName)) preset = "window-glass";
+      else if (/chrome|stainless|metal|steel|trim|хром|металл|нержав/.test(combinedName)) preset = "chrome-metal";
+      else preset = null;
+
+      if (!preset) continue;
+      const enhanced = upgradeMaterial(source, preset);
+      if (enhanced !== source) {
+        const index = materials.indexOf(source);
+        materials[index] = enhanced;
+        counts[preset === "body-clearcoat" ? "body" :
+          preset === "chrome-metal" ? "metal" :
+          preset === "window-glass" ? "glass" : "rubber"]++;
+      }
+    }
+    if (Array.isArray(object.material)) object.material = materials;
+    else if (materials[0] !== object.material) object.material = materials[0];
+  });
+
+  root.userData.acRacingFinishEnhanced = true;
+  window.__allcoinsRacingCarFinishDiagnostics = Object.freeze({
+    enhanced: true,
+    ...counts,
+    studioReflectionMap: Boolean(reflectionMap),
+    sourceGeometryPreserved: true
+  });
+  console.info("ALLCOINS Racing V160 · premium vehicle finish", window.__allcoinsRacingCarFinishDiagnostics);
+  return Object.values(counts).reduce((sum, value) => sum + value, 0);
+}
+
 function attachVehicle(root,label='сохранённая модель'){
   onlineClearOpponentCars();
   if(vehicle){scene.remove(vehicle);vehicle.traverse(o=>{if(o.geometry)o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.();});}
@@ -7764,7 +7920,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.visible = true;
   root.traverse(object => { object.visible = true; });
   // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
-  const carTextureAnisotropy=Math.min(acRacingMobileDevice?4:8,renderer.capabilities.getMaxAnisotropy());
+  const carTextureAnisotropy=Math.min(acRacingMobileDevice?6:8,renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
     if(!object.isMesh)return;
@@ -7792,7 +7948,7 @@ function attachVehicle(root,label='сохранённая модель'){
   acVehicleShadow.position.x=root.position.x;
   acVehicleShadow.position.z=root.position.z;
   acVehicleShadow.visible=!document.body.classList.contains('garage-mode');
-  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
+  vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);acRacingEnhanceCarSurface(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
   // One road-world unit must match one unit of wheel travel. The old .22
