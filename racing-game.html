@@ -9323,7 +9323,7 @@ function animate(now){
         if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
       }
     }
-    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/7000*100)+'%';
+    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
@@ -9454,9 +9454,11 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ALLCOINS RACING V28 · реалистичная шкала ВАЗ-2107 и демпфирование стрелок */
-const AC_SPEEDOMETER_MAX = 400;
-const AC_TACHOMETER_MAX = 11000;
-const AC_TACHOMETER_REDLINE = 9000;
+// VAZ-2107 dashboard calibration: the gearbox can reach about 218 km/h
+// with upgrades; engine logic limits the simulated motor to 6,800 rpm.
+const AC_SPEEDOMETER_MAX = 220;
+const AC_TACHOMETER_MAX = 8000;
+const AC_TACHOMETER_REDLINE = 6000;
 
 function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorStep, redlineStart) {
   const host = document.querySelector(containerSelector);
@@ -9503,7 +9505,7 @@ function acBuildInstrumentScale(containerSelector, maxValue, majorStep, minorSte
 }
 
 const acSpeedScaleTickCount = acBuildInstrumentScale(
-  '.speedometer-ticks', AC_SPEEDOMETER_MAX, 40, 10, 320
+  '.speedometer-ticks', AC_SPEEDOMETER_MAX, 20, 10, Number.POSITIVE_INFINITY
 );
 const acRpmScaleTickCount = acBuildInstrumentScale(
   '.tachometer-ticks', AC_TACHOMETER_MAX, 1000, 250, AC_TACHOMETER_REDLINE
@@ -9522,6 +9524,10 @@ window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
   speedometerMaximumKmh: AC_SPEEDOMETER_MAX,
   tachometerMaximumRpm: AC_TACHOMETER_MAX,
   tachometerRedlineRpm: AC_TACHOMETER_REDLINE,
+  speedometerCalibrationMatchesTopGear: AC_SPEEDOMETER_MAX >= gearTopSpeed[5] * 1.04,
+  tachometerCalibrationMatchesEngineLimit: AC_TACHOMETER_MAX > 6800,
+  speedometerMajorStepKmh: 20,
+  tachometerMajorStepRpm: 1000,
   speedometerUsesLiveSpeed: true,
   tachometerUsesLiveRpm: true,
   needlesUseDampedMotion: true,
