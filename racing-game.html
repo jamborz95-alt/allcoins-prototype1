@@ -6621,6 +6621,7 @@ window.__allcoinsRacingVisualQualityDiagnostics = Object.freeze({
   streetLampReflectionsInstanced: Boolean(acLampPools && acLampPools.isInstancedMesh),
   streetLampGlowRadius: .46,
   mobileRainSegments: acRainCount,
+  skylineTowerCount: farCityTowerCount,
   mobileRealtimeShadowMaps: renderer.shadowMap.enabled
 });
 
@@ -7101,6 +7102,7 @@ function setGarageMode(enabled) {
   acTrackTreeUpper.visible = trackVisible;
   acTrackTreeSnow.visible = trackVisible;
   acTrackHouseGroup.visible = trackVisible;
+  distantHills.visible = trackVisible;
   finishLine.visible = trackVisible;
   acV5WetBlue.visible = trackVisible;
   acV5WetWarm.visible = trackVisible;
