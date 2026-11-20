@@ -5042,12 +5042,43 @@ function updateAnchoredEffects(){
   }
 }
 const acWheelSpinScratchQuaternion = new THREE.Quaternion();
+const AC_WHEEL_SPIN_RESPONSE_SECONDS = .035;
+const AC_WHEEL_SPIN_FULL_TURN = Math.PI * 2;
 function spinWheelSet(nodes,angle){
   for(const wheel of nodes){
     /* ALLCOINS RACING V7 · WHEEL ROTATION DIRECTION */
     acWheelSpinScratchQuaternion.setFromAxisAngle(wheel.spinAxisParent,angle);
     wheel.node.quaternion.copy(acWheelSpinScratchQuaternion).multiply(wheel.baseQuaternion);
   }
+}
+
+/* ALLCOINS RACING V166 · frame-rate-independent smooth wheel angular velocity.
+   The exact exponential integral avoids a sudden wheel-speed jump when throttle,
+   braking, reverse gear or rear-wheel slip changes. Wheel travel remains tied to
+   the same real road-speed conversion used by the car and road. */
+function acAdvanceWheelSpin(dt,signedSpeed,burnoutActive){
+  const step=Math.min(.06,Math.max(0,Number(dt)||0));
+  if(step<=0||!wheelNodes.length)return;
+
+  const roadWheelRate=(signedSpeed/3.6)*worldUnitsPerRealMeter/Math.max(.12,wheelRadiusWorld);
+  const drivenWheelRate=burnoutActive
+    ? Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(raceGearRatio(gear)*raceFinalDriveRatio())*.92)
+    : roadWheelRate*(1+rearSlip*3.3);
+
+  const response=AC_WHEEL_SPIN_RESPONSE_SECONDS;
+  const decay=Math.exp(-step/response);
+  const frontError=roadWheelRate-wheelSpinAngularVelocity;
+  const rearError=drivenWheelRate-rearWheelSpinAngularVelocity;
+  const frontDelta=roadWheelRate*step+frontError*response*(1-decay);
+  const rearDelta=drivenWheelRate*step+rearError*response*(1-decay);
+
+  wheelSpinAngularVelocity=roadWheelRate+frontError*decay;
+  rearWheelSpinAngularVelocity=drivenWheelRate+rearError*decay;
+
+  wheelSpinAngle=(wheelSpinAngle+frontDelta)%AC_WHEEL_SPIN_FULL_TURN;
+  rearWheelSpinAngle=(rearWheelSpinAngle+rearDelta)%AC_WHEEL_SPIN_FULL_TURN;
+  spinWheelSet(frontWheelNodes,wheelSpinAngle);
+  spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
 }
 function createHeadlightRig(actual,actualSize){
   if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
@@ -7343,7 +7374,7 @@ function acAdvanceRaceScenery(worldDelta){
 
 let vehicle=null, wheelNodes=[], frontWheelNodes=[], rearWheelNodes=[], exhaustPoint=new THREE.Vector3(carAnchor-2.2,.55,-.2), rearWheelPoint=new THREE.Vector3(carAnchor-1.45,.42,.15);
 let vehicleLength=4.6, vehicleCenterY=1.0;
-let vehicleBaseY=0, vehicleBaseRotationZ=0, wheelSpinAngle=0, rearWheelSpinAngle=0;
+let vehicleBaseY=0, vehicleBaseRotationZ=0, wheelSpinAngle=0, rearWheelSpinAngle=0, wheelSpinAngularVelocity=0, rearWheelSpinAngularVelocity=0;
 let vehicleChassis=null, vehicleChassisBaseY=0, vehicleChassisBaseRotationZ=0;
 let vehicleChassisBasePosition=new THREE.Vector3(), vehicleChassisBaseQuaternion=new THREE.Quaternion(), vehicleChassisPitchAxis=new THREE.Vector3(0,0,1), vehicleChassisSuspensionUp=new THREE.Vector3(0,1,0);
 let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vector3();
@@ -8121,7 +8152,7 @@ function attachVehicle(root,label='сохранённая модель'){
   WORLD_UNITS_PER_METER=worldUnitsPerRealMeter;
   finishStartX=carAnchor+RACE_DISTANCE_METERS*WORLD_UNITS_PER_METER;
   finishLine.position.x=finishStartX;
-  wheelSpinAngle=0;rearWheelSpinAngle=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
+  wheelSpinAngle=0;rearWheelSpinAngle=0;wheelSpinAngularVelocity=0;rearWheelSpinAngularVelocity=0;rearSlip=0;suspensionOffset=0;suspensionVelocity=0;
   const wheelRegex=/wheel|tire|tyre|колес|шина|disk|rim|pneu|reifen|llanta/i;
   const meshAudit=[];
   let wheelSourceMesh=null;
@@ -8657,7 +8688,10 @@ function animate(now){
         renderCalls:renderer.info.render.calls,
         triangles:renderer.info.render.triangles,
         geometries:renderer.info.memory.geometries,
-        textures:renderer.info.memory.textures
+        textures:renderer.info.memory.textures,
+        frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
+        rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
+        wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
       });
       acPerfFrameCount=0;
       acPerfMaxFrameMs=0;
@@ -8799,13 +8833,7 @@ function animate(now){
     if(!vehicleChassis)vehicle.updateMatrixWorld(true);
     updateWheelGroundContact();
     updateAnchoredEffects();
-    const roadWheelRate=(signedSpeed/3.6)*worldUnitsPerRealMeter/Math.max(.12,wheelRadiusWorld);
-    const freeWheelAngle=roadWheelRate*dt;
-    wheelSpinAngle+=freeWheelAngle;
-    const drivenWheelRate=burnoutActive?Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(raceGearRatio(gear)*raceFinalDriveRatio())*.92):roadWheelRate*(1+rearSlip*3.3);
-    rearWheelSpinAngle+=drivenWheelRate*dt;
-    spinWheelSet(frontWheelNodes,wheelSpinAngle);
-    spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
+    acAdvanceWheelSpin(dt,signedSpeed,burnoutActive);
     if(throttle&&speed>10&&Math.random()<Math.min(.55,speed/3200))addSmoke(exhaustPoint,'exhaust');
     onlineSendState(now);
     /* ALLCOINS CLIENT FINISH SYNC 2026-11-12 */
@@ -8844,7 +8872,7 @@ if(distance>=RACE_DISTANCE_METERS){
           onlineStartTestBotRace();
           return;
         }
-        distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);
+        distance=0;elapsed=0;speed=0;rpm=900;gear=1;burnout=0;rearSlip=0;wheelSpinAngle=0;rearWheelSpinAngle=0;wheelSpinAngularVelocity=0;rearWheelSpinAngularVelocity=0;finishLine.position.x=finishStartX;finished=false;raceStarted=false;suspensionOffset=0;suspensionVelocity=0;chassisPitch=0;updateGear();$('speed').textContent='0';$('rpm').textContent='900';$('distance').textContent='0';$('timer').textContent='00:00';$('rpmBar').style.width='13%';setMessage('ВАЗ-2107 готова','Модель снова на старте.',false);
       };
       $('message').appendChild(restart);
     }
