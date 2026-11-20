@@ -8372,7 +8372,28 @@ window.addEventListener('message',async event=>{
     return;
   }
   if(data.type==='allcoins:car-model'&&data.buffer instanceof ArrayBuffer){
-    try{await loadGlbBuffer(data.buffer,data.fileName||'GLB из Amvera PostgreSQL');}
+    try{
+      const modelFileName = String(data.fileName || 'vaz-2107.glb');
+      const modelBytes = Number(data.byteLength) || data.buffer.byteLength;
+      await loadGlbBuffer(data.buffer, modelFileName + ' · Amvera PostgreSQL');
+      window.__allcoinsRacingModelDiagnostics = Object.freeze({
+        loaded: true,
+        source: 'Amvera PostgreSQL',
+        fileName: modelFileName,
+        bytes: modelBytes,
+        remoteVersion: data.remoteVersion || null,
+        loadedAt: Date.now()
+      });
+      const badge = $("garageCarStatus");
+      if (badge) {
+        const sizeLabel = (modelBytes / 1048576).toLocaleString('ru-RU', { maximumFractionDigits: 1 });
+        badge.textContent = 'GLB ✓ · ' + sizeLabel + ' МБ';
+        badge.title = 'Загружен из Amvera PostgreSQL: ' + modelFileName +
+          '; ' + modelBytes + ' байт' +
+          (data.remoteVersion ? '; версия: ' + data.remoteVersion : '; версия не проверена');
+        badge.classList.remove("error");
+      }
+    }
     catch(e){
        console.error(e);
        window.__allcoinsRacingModelLoadError = String(e && e.stack || e).slice(0,4000);
