@@ -345,5 +345,5 @@ test("racing scene adds lightweight cinematic lighting and contact shadows", () 
   assert.match(page, /acSetLampPoolMatrix\(index,lamp\.x\)/);
   assert.match(page, /acLampPools\.instanceMatrix\.needsUpdate=true/);
   assert.match(page, /const acRainCount=acRacingMobileDevice \? 72 : 180/);
-  assert.match(page, /acVehicleShadow\.visible=trackVisible && Boolean\(vehicle\)/);
+  assert.match(page, /acVehicleShadow\\.visible\\s*=\\s*trackVisible && Boolean\\(vehicle\\)/);
 });
