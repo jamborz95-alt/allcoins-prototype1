@@ -275,11 +275,33 @@ try {
     throw new Error("Racing scene did not complete startup handshake: " + JSON.stringify(diagnostic) + "; " + error.message);
   }
 
-  await page.waitForFunction(() =>
-    document.querySelector("#allcoinsRacingV24Overlay")?.textContent.includes("3D-модель передана в игровую сцену"),
-    null,
-    { timeout: 10000 }
-  );
+  try {
+    await page.waitForFunction(() => {
+      const status = document.querySelector("#allcoinsRacingV24Overlay")?.textContent || "";
+      return status.includes("3D-модель передана в игровую сцену") || status.includes("Ошибка загрузки автомобиля");
+    }, null, { timeout: 10000 });
+  } catch (error) {
+    const transferDiagnostic = await page.evaluate(() => ({
+      overlay: document.querySelector("#allcoinsRacingV24Overlay")?.textContent || null,
+      apiCalls: window.__racingTestApiCalls || null
+    }));
+    const gameDiagnostic = await gameFrame.evaluate(() => ({
+      messageTitle: document.querySelector("#message strong")?.textContent || null,
+      message: document.querySelector("#messageText")?.textContent || null,
+      garageStatus: document.querySelector("#garageCarStatus")?.textContent || null,
+      boot: window.__allcoinsRacingBoot || null
+    }));
+    throw new Error("GLB transfer diagnostic: " + JSON.stringify({ transferDiagnostic, gameDiagnostic }) + "; " + error.message);
+  }
+  const transferStatus = await page.locator("#allcoinsRacingV24Overlay").innerText();
+  if (transferStatus.includes("Ошибка загрузки автомобиля")) {
+    const gameDiagnostic = await gameFrame.evaluate(() => ({
+      messageTitle: document.querySelector("#message strong")?.textContent || null,
+      message: document.querySelector("#messageText")?.textContent || null,
+      garageStatus: document.querySelector("#garageCarStatus")?.textContent || null
+    }));
+    throw new Error("GLB host transfer failed: " + JSON.stringify({ transferStatus, gameDiagnostic }));
+  }
   await gameFrame.waitForFunction(() => window.__allcoinsRacingVehicleDiagnostics?.loaded === true, null, { timeout: 10000 });
   await gameFrame.evaluate(() => setGarageMode(false));
 
