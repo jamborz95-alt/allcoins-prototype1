@@ -556,8 +556,8 @@ try {
   const mobilePanelHeight = await gameFrame.locator("#dashboardBackplate").evaluate(
     element => Math.round(element.getBoundingClientRect().height)
   );
-  assert.ok(mobilePanelHeight >= 92 && mobilePanelHeight <= 116,
-    "The compact landscape dashboard panel must be slightly shorter on a phone.");
+  assert.ok(mobilePanelHeight >= 76 && mobilePanelHeight <= 90,
+    "The single-shifter landscape dashboard must stay at its compact 82px phone height.");
   await page.setViewportSize({ width: 1365, height: 768 });
   assert.equal(visualDiagnostics.skylineTowers, 16, "The distant skyline must contain high-rise buildings.");
   assert.ok(visualDiagnostics.skylineWindows >= 100, "The distant skyline must contain illuminated windows.");
@@ -591,15 +591,20 @@ try {
 
   await page.setViewportSize({ width: 844, height: 390 });
   assert.equal(
-    await gameFrame.locator(".gear-pattern").evaluate(element => getComputedStyle(element).display),
-    "grid",
-    "The compact H-pattern gear selector must be visible in landscape phone mode."
+    await gameFrame.locator("#gearPattern").evaluate(element => getComputedStyle(element).display),
+    "none",
+    "The old H-pattern must stay hidden; the single sequential +/− selector is used in landscape phone mode."
+  );
+  assert.notEqual(
+    await gameFrame.locator("#gearSelector").evaluate(element => getComputedStyle(element).display),
+    "none",
+    "The single sequential +/− selector must remain visible in landscape phone mode."
   );
   const compactDashboardHeight = await gameFrame.locator("#dashboardBackplate").evaluate(
     element => Math.round(element.getBoundingClientRect().height)
   );
-  assert.ok(compactDashboardHeight >= 92 && compactDashboardHeight <= 116,
-    "The landscape dashboard must remain compact and leave the car visible above it.");
+  assert.ok(compactDashboardHeight >= 76 && compactDashboardHeight <= 90,
+    "The landscape dashboard must remain at its compact 82px height and leave the car visible above it.");
   assert.ok(apiCalls.some(call =>
     call.path === "/api/racing/vaz-2107.glb" || call.path === "/api/racing/shared-model-asset"
   ), "The VAZ-2107 model must load through one of the supported asset endpoints.");
