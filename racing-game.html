@@ -7741,19 +7741,20 @@ function acRacingReadGeometryIslands(object){
 }
 
 function acRacingAttachSeparateTireComponents(sourceMesh) {
-  if (!vehicle || !wheelNodes.length) return { scanned: 0, attached: 0, wheelsWithTire: 0 };
+  if (!vehicle || !wheelNodes.length) return { scanned: 0, attached: 0, wheelsWithTire: 0, wheels: wheelNodes.length };
 
   vehicle.updateMatrixWorld(true);
   const tireNamePattern = /tire|tyre|reifen|llanta|pneu|шина|колес|wheel/i;
   const wheelNodeSet = new Set(wheelNodes.map(item => item.node));
   const candidates = [];
+  const candidateReasons = new Map();
   const seen = new Set();
 
   vehicle.traverse(object => {
     if (!object.isMesh || !object.geometry?.getAttribute?.("position") || seen.has(object)) return;
     seen.add(object);
 
-    // Do not rescan wheel pivots or their current tyre/rim children.
+    // Geometry already placed below an animated pivot must not be extracted twice.
     for (let node = object; node && node !== vehicle; node = node.parent) {
       if (wheelNodeSet.has(node)) return;
     }
@@ -7765,24 +7766,41 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
     const namedTire = tireNamePattern.test(nameParts.join(" / "));
     const isWheelSource = object === sourceMesh;
 
-    // Also catch a tyre exported as a generic Cylinder/Object: its own bounds
-    // must be wheel-sized and its centre must sit directly on a known axle hub.
-    let hasWheelSizedBounds = false;
-    if (!namedTire && !isWheelSource) {
-      const bounds = new THREE.Box3().setFromObject(object);
-      const size = bounds.getSize(new THREE.Vector3());
-      const sorted = [size.x, size.y, size.z].sort((a, b) => a - b);
-      const center = bounds.getCenter(new THREE.Vector3());
-      hasWheelSizedBounds = wheelNodes.some(wheel => {
-        const diameter = Math.max(.02, wheel.radius * 2);
-        return center.distanceTo(wheel.centerWorld) < Math.max(.10, wheel.radius * .48) &&
-          sorted[2] / diameter > .72 && sorted[2] / diameter < 1.85 &&
-          sorted[0] / Math.max(.001, sorted[2]) < .78 &&
-          sorted[1] / Math.max(.001, sorted[2]) > .72;
+    // A GLB exporter may put all four unnamed tyres into ONE generic mesh.
+    // In that case the mesh bounding-box centre is in the middle of the car,
+    // so the old "one wheel-sized object, centred on one hub" test misses it.
+    // Include a generic mesh when its bounds contain two or more known hubs;
+    // the per-island tests below still decide exactly which geometry can move.
+    const bounds = new THREE.Box3().setFromObject(object);
+    const size = bounds.getSize(new THREE.Vector3());
+    const sorted = [size.x, size.y, size.z].sort((a, b) => a - b);
+    const centre = bounds.getCenter(new THREE.Vector3());
+    const maxWheelDiameter = Math.max(.02, ...wheelNodes.map(wheel => wheel.radius * 2));
+    const probeBounds = bounds.clone().expandByScalar(Math.max(.012, maxWheelDiameter * .035));
+    const enclosedHubCount = wheelNodes.reduce((count, wheel) =>
+      count + (probeBounds.containsPoint(wheel.centerWorld) ? 1 : 0), 0);
+
+    const hasWheelSizedBounds = wheelNodes.some(wheel => {
+      const diameter = Math.max(.02, wheel.radius * 2);
+      return centre.distanceTo(wheel.centerWorld) < Math.max(.10, wheel.radius * .48) &&
+        sorted[2] / diameter > .72 && sorted[2] / diameter < 1.85 &&
+        sorted[0] / Math.max(.001, sorted[2]) < .78 &&
+        sorted[1] / Math.max(.001, sorted[2]) > .72;
+    });
+    const hasSingleHubRegion = enclosedHubCount >= 1 &&
+      sorted[2] <= maxWheelDiameter * 2.2 &&
+      sorted[2] >= maxWheelDiameter * .55;
+    const hasCombinedWheelMesh = enclosedHubCount >= 2;
+
+    if (namedTire || isWheelSource || hasWheelSizedBounds || hasSingleHubRegion || hasCombinedWheelMesh) {
+      candidates.push(object);
+      candidateReasons.set(object, {
+        reason: namedTire ? "name" : isWheelSource ? "wheel-source" :
+          hasWheelSizedBounds ? "wheel-sized-bounds" :
+          hasSingleHubRegion ? "single-hub-region" : "combined-hubs",
+        enclosedHubCount
       });
     }
-
-    if (namedTire || isWheelSource || hasWheelSizedBounds) candidates.push(object);
   });
 
   let attached = 0;
@@ -7796,9 +7814,13 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
       components = acRacingReadGeometryIslands(object);
     } catch (error) {
       console.warn("ALLCOINS Racing: tyre-island inspection skipped", object.name, error);
+      reports.push({ mesh: object.name || "(без имени)", error: String(error.message || error) });
       continue;
     }
-    if (!components.length) continue;
+    if (!components.length) {
+      reports.push({ mesh: object.name || "(без имени)", components: 0, matchedIslands: 0 });
+      continue;
+    }
 
     const selected = new Map();
     const claimed = new Set();
@@ -7810,17 +7832,17 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
       for (const wheel of wheelNodes) {
         const diameter = Math.max(.02, wheel.radius * 2);
         const radiusRatio = component.radialWorld / diameter;
-        const centerDistance = component.centerWorld.distanceTo(wheel.centerWorld);
-        const centerTolerance = Math.max(.095, wheel.radius * .42);
+        const centreDistance = component.centerWorld.distanceTo(wheel.centerWorld);
+        const centreTolerance = Math.max(.095, wheel.radius * .58);
 
-        if (radiusRatio < .72 || radiusRatio > 1.85 ||
-            component.thinWorld / Math.max(.001, component.radialWorld) > .78 ||
-            component.middleWorld / Math.max(.001, component.radialWorld) < .72 ||
-            centerDistance > centerTolerance) continue;
+        if (radiusRatio < .72 || radiusRatio > 1.95 ||
+            component.thinWorld / Math.max(.001, component.radialWorld) > .82 ||
+            component.middleWorld / Math.max(.001, component.radialWorld) < .68 ||
+            centreDistance > centreTolerance) continue;
 
         matches.push({
           wheel,
-          distance: centerDistance,
+          distance: centreDistance,
           ratioError: Math.abs(Math.log(Math.max(.01, radiusRatio)))
         });
       }
@@ -7837,7 +7859,16 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
       claimed.add(component);
     }
 
-    if (!claimed.size) continue;
+    if (!claimed.size) {
+      reports.push({
+        mesh: object.name || "(без имени)",
+        reason: candidateReasons.get(object)?.reason || "candidate",
+        enclosedHubCount: candidateReasons.get(object)?.enclosedHubCount || 0,
+        components: components.length,
+        matchedIslands: 0
+      });
+      continue;
+    }
 
     const originalGeometry = object.geometry;
     const allTriangles = components.flatMap(component => component.triangles);
@@ -7863,8 +7894,7 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
           tireMesh.receiveShadow = object.receiveShadow;
           tireMesh.renderOrder = object.renderOrder;
 
-          // Preserve the exact GLB world transform before parenting the tyre
-          // underneath the animated wheel pivot (not under the chassis).
+          // Reparent the actual rubber geometry below the same pivot as the rim.
           tireMesh.position.copy(component.localCenter);
           object.add(tireMesh);
           object.updateMatrixWorld(true);
@@ -7879,18 +7909,25 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
       if (remainingTriangles.length) {
         object.geometry = acRacingBuildGeometryPart(originalGeometry, remainingTriangles, null);
       } else {
-        // Keep the source Object3D visible: Car_Bottom_0 can also be the parent
-        // of the four wheel pivots. Hiding the whole object would hide the wheels.
+        // Keep source Object3D visible: Car_Bottom_0 can also own the wheel pivots.
         object.geometry = new THREE.BufferGeometry();
       }
       // Do not dispose originalGeometry here: GLTF nodes may share a geometry.
       reports.push({
         mesh: object.name || "(без имени)",
-        attachedIslands: movingTriangles.size ? [...selected.values()].reduce((n, list) => n + list.length, 0) : 0,
+        reason: candidateReasons.get(object)?.reason || "candidate",
+        enclosedHubCount: candidateReasons.get(object)?.enclosedHubCount || 0,
+        components: components.length,
+        matchedIslands: [...selected.values()].reduce((n, list) => n + list.length, 0),
         remainingTriangles: remainingTriangles.length
       });
     } catch (error) {
       console.error("ALLCOINS Racing: failed to attach separated tyre geometry", object.name, error);
+      reports.push({
+        mesh: object.name || "(без имени)",
+        error: String(error.message || error),
+        matchedIslands: claimed.size
+      });
     }
   }
 
@@ -7900,10 +7937,22 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
     attached,
     wheelsWithTire: wheelsWithTire.size,
     wheels: wheelNodes.length,
+    frontWheels: frontWheelNodes.length,
+    rearWheels: rearWheelNodes.length,
     radii: wheelNodes.map(wheel => Number(wheel.radius.toFixed(3))),
     meshes: reports
   };
   window.__allcoinsRacingTireRigDiagnostics = Object.freeze(result);
+  window.__allcoinsRacingWheelRigDiagnostics = Object.freeze({
+    extractedWheelPivots: wheelNodes.length,
+    frontWheelPivots: frontWheelNodes.length,
+    rearWheelPivots: rearWheelNodes.length,
+    tireMeshesAttached: attached,
+    wheelPivotsWithTires: wheelsWithTire.size,
+    wheelPivotNames: wheelNodes.map(wheel => wheel.node.name),
+    tireMeshesUnderPivots: wheelNodes.map(wheel =>
+      wheel.node.children.filter(child => child.isMesh).map(child => child.name))
+  });
   console.info("ALLCOINS Racing · complete tyre assemblies connected to wheel pivots", result);
   return result;
 }
