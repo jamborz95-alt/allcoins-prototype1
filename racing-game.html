@@ -5918,6 +5918,45 @@ scene.add(distantHills);
 distantHills.visible = false;
 
 const carAnchor = -4.6;
+
+// Мягкая контактная тень под машиной: один прозрачный quad вместо дорогих realtime shadows на телефонах.
+function acCreateSoftContactShadowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(256, 128, 8, 256, 128, 126);
+  gradient.addColorStop(0, 'rgba(2,5,10,.72)');
+  gradient.addColorStop(.34, 'rgba(3,7,13,.48)');
+  gradient.addColorStop(.68, 'rgba(4,8,14,.18)');
+  gradient.addColorStop(1, 'rgba(4,8,14,0)');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+const acVehicleShadowTexture = acCreateSoftContactShadowTexture();
+const acVehicleShadowMaterial = new THREE.MeshBasicMaterial({
+  map: acVehicleShadowTexture,
+  color: 0x101722,
+  transparent: true,
+  opacity: .78,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  toneMapped: false
+});
+const acVehicleShadow = new THREE.Mesh(
+  new THREE.PlaneGeometry(5.9, 3.5),
+  acVehicleShadowMaterial
+);
+acVehicleShadow.name = 'ALLCOINS · мягкая контактная тень ВАЗ-2107';
+acVehicleShadow.rotation.x = -Math.PI / 2;
+acVehicleShadow.position.set(carAnchor, -.092, AC_PLAYER_LANE_Z);
+acVehicleShadow.renderOrder = 2;
+acVehicleShadow.visible = false;
+scene.add(acVehicleShadow);
+
 // Finish marker belongs to the track and advances in exact proportion to race distance.
 let WORLD_UNITS_PER_METER = 1; // уточняется по реальной длине загруженной модели
 const RACE_DISTANCE_METERS = 1000;
@@ -5936,6 +5975,14 @@ for (let row = 0; row < 12; row++) {
 finishLine.position.x = finishStartX;
 scene.add(finishLine);
 
+window.__allcoinsRacingVisualQualityDiagnostics = Object.freeze({
+  softVehicleContactShadow: Boolean(acVehicleShadow && acVehicleShadow.material.map),
+  streetLampReflectionCount: acLampRecords.length,
+  streetLampReflectionsInstanced: Boolean(acLampPools && acLampPools.isInstancedMesh),
+  streetLampGlowRadius: .46,
+  mobileRainSegments: acRainCount,
+  mobileRealtimeShadowMaps: renderer.shadowMap.enabled
+});
 window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltTexture: Boolean(roadMat.map && roadMat.bumpMap && roadMat.roughnessMap),
   asphaltRepeatX: roadMat.map.repeat.x,
@@ -6466,8 +6513,8 @@ function acV5EnhanceCarBody(root) {
 const acLampRecords=[];
 const acLampGlowMat=new THREE.MeshBasicMaterial({color:0xffe2bb});
 const acLampGeo=new THREE.SphereGeometry(.17,8,8);
-const acLampHaloGeo=new THREE.SphereGeometry(.34,10,8);
-const acLampHaloMat=new THREE.MeshBasicMaterial({color:0xffd69a,transparent:true,opacity:.16,depthWrite:false,blending:THREE.AdditiveBlending});
+const acLampHaloGeo=new THREE.SphereGeometry(.46,12,10);
+const acLampHaloMat=new THREE.MeshBasicMaterial({color:0xffd69a,transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending});
 
 for(let i=0;i<7;i++){
   const x=-108+i*36;
@@ -6479,7 +6526,7 @@ for(let i=0;i<7;i++){
   halo.position.copy(bulb.position);
   scene.add(halo);
 
-  const light=new THREE.PointLight(0x9fc8ff,2.6,31,2);
+  const light=new THREE.PointLight(0x9fc8ff,3.0,34,2);
   light.position.set(x,4.7,-6.1);
   light.castShadow=false;
   scene.add(light);
@@ -6490,8 +6537,58 @@ for(let i=0;i<7;i++){
   light.visible = false;
 }
 
+// Мягкие тёплые отражения уличных фонарей на асфальте — все семь пятен одним draw call.
+function acCreateLampPoolTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(128, 64, 3, 128, 64, 64);
+  gradient.addColorStop(0, 'rgba(255,196,126,.42)');
+  gradient.addColorStop(.35, 'rgba(255,172,102,.22)');
+  gradient.addColorStop(.72, 'rgba(255,156,88,.07)');
+  gradient.addColorStop(1, 'rgba(255,156,88,0)');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+const acLampPoolMaterial = new THREE.MeshBasicMaterial({
+  map: acCreateLampPoolTexture(),
+  color: 0xffffff,
+  transparent: true,
+  opacity: .72,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  blending: THREE.AdditiveBlending,
+  toneMapped: false
+});
+const acLampPools = new THREE.InstancedMesh(
+  new THREE.PlaneGeometry(1, 1),
+  acLampPoolMaterial,
+  acLampRecords.length
+);
+acLampPools.name = 'ALLCOINS · отражения уличных фонарей';
+acLampPools.frustumCulled = false;
+acLampPools.renderOrder = 1;
+const acLampPoolDummy = new THREE.Object3D();
+function acSetLampPoolMatrix(index, x) {
+  acLampPoolDummy.position.set(x, -.087, -6.0);
+  acLampPoolDummy.rotation.set(-Math.PI / 2, 0, 0);
+  acLampPoolDummy.scale.set(10.5, 5.2, 1);
+  acLampPoolDummy.updateMatrix();
+  acLampPools.setMatrixAt(index, acLampPoolDummy.matrix);
+}
+for (let i = 0; i < acLampRecords.length; i++) {
+  acSetLampPoolMatrix(i, acLampRecords[i].x);
+}
+acLampPools.instanceMatrix.needsUpdate = true;
+acLampPools.visible = false;
+scene.add(acLampPools);
+
 /* Дождь перед камерой */
-const acRainCount=acRacingMobileDevice ? 55 : 150;
+const acRainCount=acRacingMobileDevice ? 72 : 180;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
@@ -7007,6 +7104,8 @@ function setGarageMode(enabled) {
   finishLine.visible = trackVisible;
   acV5WetBlue.visible = trackVisible;
   acV5WetWarm.visible = trackVisible;
+  acLampPools.visible = trackVisible;
+  acVehicleShadow.visible = trackVisible && Boolean(vehicle);
   acRain.visible = trackVisible;
   for (const record of acLampRecords) {
     record.bulb.visible = trackVisible;
@@ -7043,14 +7142,17 @@ function updateRaceEnvironment(dt,worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
   // Блики на мокром асфальте и фонари используют тот же delta, что и разметка.
   acV5UpdateWetReflections(worldDelta);
-  for(const lamp of acLampRecords){
+  for(let index=0;index<acLampRecords.length;index++){
+    const lamp=acLampRecords[index];
     lamp.x-=worldDelta*.17;
     while(lamp.x < -125)lamp.x+=252;
     while(lamp.x > 127)lamp.x-=252;
     lamp.bulb.position.x=lamp.x;
     lamp.light.position.x=lamp.x;
     lamp.halo.position.x=lamp.x;
+    acSetLampPoolMatrix(index,lamp.x);
   }
+  acLampPools.instanceMatrix.needsUpdate=true;
 }
 
 function acAdvanceWrappedSceneObject(object,worldDelta,factor,minX=-130,maxX=130,wrap=260){
@@ -7667,6 +7769,9 @@ function attachVehicle(root,label='сохранённая модель'){
   root.position.x+=carAnchor-(box.min.x+box.max.x)/2;
   root.position.y+=-box.min.y+.025;
   root.position.z+=-(box.min.z+box.max.z)/2 + AC_PLAYER_LANE_Z;
+  acVehicleShadow.position.x=root.position.x;
+  acVehicleShadow.position.z=root.position.z;
+  acVehicleShadow.visible=!document.body.classList.contains('garage-mode');
   vehicle=root;scene.add(vehicle);acV5EnhanceCarBody(vehicle);vehicle.updateMatrixWorld(true);acGarageSeparateBumpersFromBody(vehicle);if(acGarageSelectedPaint)acGarageApplyBodyPaint(acGarageSelectedPaint);vehicle.updateMatrixWorld(true);if($("garageTestBot"))$("garageTestBot").disabled=false;
   const actual=new THREE.Box3().setFromObject(vehicle);const actualSize=actual.getSize(new THREE.Vector3());
   vehicleLength=actualSize.x;vehicleCenterY=actualSize.y*.46;vehicleBaseY=vehicle.position.y;vehicleBaseRotationZ=vehicle.rotation.z;
