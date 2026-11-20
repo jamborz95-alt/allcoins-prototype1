@@ -390,8 +390,8 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
   assert.match(page, /function acRacingCreateCarReflectionTexture\(\)/);
   assert.match(page, /THREE\.EquirectangularReflectionMapping/);
   assert.match(page, /function acRacingEnhanceCarSurface\(root\)/);
-  assert.match(page, /material\.clearcoat = \.82/);
-  assert.match(page, /material\.clearcoatRoughness = \.19/);
+  assert.match(page, /material\.clearcoat = \.94/);
+  assert.match(page, /material\.clearcoatRoughness = \.14/);
   assert.match(page, /material\.envMapIntensity = \.58/);
   assert.match(page, /material\.roughness = Math\.max\(originalRoughness, \.84\)/);
   assert.match(page, /acRacingEnhanceCarSurface\(vehicle\)/);
