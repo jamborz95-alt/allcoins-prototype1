@@ -3297,8 +3297,10 @@ function acOnlineSetCameraMode(mode, force = false) {
     const focusY = bounds && !bounds.isEmpty()
       ? bounds.min.y + (bounds.max.y - bounds.min.y) * .48
       : .72;
-    camera.position.set(focusX, focusY + 3.6, focusZ + 18);
-    camera.lookAt(focusX, focusY, focusZ);
+    // Keep the vehicle in the clear road window above the dashboard, with a slight lower-screen bias like the reference.
+    const frameLift = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches ? .35 : .28;
+    camera.position.set(focusX, focusY + 3.6 + frameLift, focusZ + 18);
+    camera.lookAt(focusX, focusY + frameLift, focusZ);
   }
   camera.updateMatrixWorld(true);
   acOnlineCameraMode = mode;
@@ -8489,11 +8491,10 @@ function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
   const aspect=w/Math.max(1,h);
-  // The race camera is closer to the car: roughly 28% larger on phones,
-  // while the garage keeps its full-car fit and the physics/world scale stay untouched.
+  // V164: frame the actual 3D car prominently on the road, while leaving the garage fit and game physics unchanged.
   const viewH=document.body.classList.contains('garage-mode') && h>w
     ? 13.8
-    : (acRacingMobileDevice ? 8.25 : 9.1);
+    : (acRacingMobileDevice ? 5.8 : 6.2);
   camera.left=-viewH*aspect/2;
   camera.right=viewH*aspect/2;
   camera.top=viewH/2;

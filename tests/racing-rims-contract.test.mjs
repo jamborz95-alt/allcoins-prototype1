@@ -402,7 +402,7 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
 
 
 test("V162 enlarges the race car and makes the rotating factory wheels more detailed", () => {
-  assert.match(page, /acRacingMobileDevice \? 8\.25 : 9\.1/);
+  assert.match(page, /acRacingMobileDevice \\? 5\\.8 : 6\\.2/);
   assert.match(page, /function acRacingEnhanceWheelRubber\(wheel\)/);
   assert.match(page, /material\.roughness = Math\.max\(\.88/);
   assert.match(page, /function acGarageBuildWheelRimOverlay\(wheel, style, rimId\)/);
@@ -413,3 +413,11 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
   assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
 });
+
+test("V164 frames the car prominently on the road above the dashboard", () => {
+  assert.match(page, /const frameLift = window\.matchMedia\("\(max-width: 900px\), \(pointer: coarse\)"\)\.matches \? \.35 : \.28/);
+  assert.match(page, /camera\.position\.set\(focusX, focusY \+ 3\.6 \+ frameLift, focusZ \+ 18\)/);
+  assert.match(page, /camera\.lookAt\(focusX, focusY \+ frameLift, focusZ\)/);
+  assert.match(page, /acRacingMobileDevice \? 5\.8 : 6\.2/);
+});
+
