@@ -312,3 +312,27 @@ test("mobile racing quality is sharper and idle rendering is throttled to reduce
   assert.match(page, /acOnlineCameraMode === targetCameraMode && !acOnlineLaneLayoutActive/);
   assert.match(page, /const staticScene=document\.body\.classList\.contains\('garage-mode'\)\|\|paused/);
 });
+
+
+test("camera is recalculated after the VAZ loads and after phone rotation", () => {
+  assert.match(page, /function acOnlineSetCameraMode\(mode, force = false\)/);
+  assert.match(page, /if \(!force && acOnlineCameraMode === mode\) return/);
+  assert.match(page, /acOnlineSetCameraMode\(cameraMode, true\)/);
+  assert.match(page, /acOnlineSetCameraMode\(document\.body\.classList\.contains\("garage-mode"\)[\s\S]*?true\)/);
+});
+
+test("mobile rendering reduces resolution quickly under load and restores it gradually", () => {
+  assert.match(page, /const acMobilePixelRatioInitial = 1\.05/);
+  assert.match(page, /if\(measuredFps<43\)/);
+  assert.match(page, /if\(acPerfLowFpsSamples>=1&&currentPixelRatio>\.82\)/);
+  assert.match(page, /Math\.max\(\.82,currentPixelRatio-\.12\)/);
+  assert.match(page, /Math\.min\(acMobilePixelRatioCap,currentPixelRatio\+\.04\)/);
+  assert.match(page, /const dt=Math\.min\(\.06,rawFrameMs\/1000\|\|0\)/);
+});
+
+test("landscape dashboard and touch controls use the compact phone layout", () => {
+  assert.match(page, /style id="allcoins-racing-landscape-compact-v2"/);
+  assert.match(page, /width:76px!important/);
+  assert.match(page, /height:46px!important/);
+  assert.match(page, /width:27px!important/);
+});
