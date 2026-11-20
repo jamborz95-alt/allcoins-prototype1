@@ -5102,10 +5102,12 @@ function spinWheelSet(nodes,angle){
   }
 }
 
-/* ALLCOINS RACING V166 · frame-rate-independent smooth wheel angular velocity.
-   The exact exponential integral avoids a sudden wheel-speed jump when throttle,
-   braking, reverse gear or rear-wheel slip changes. Wheel travel remains tied to
-   the same real road-speed conversion used by the car and road. */
+/* ALLCOINS RACING V167 · prevent high-speed wheel-spin strobing.
+   At very high road speeds the physically correct tyre rotation can advance
+   by more than half a turn between rendered frames. A phone display then
+   aliases the motion and makes a forward-spinning wheel look as if it reverses.
+   Cap only the VISUAL angular advance per frame; car speed, drivetrain, RPM,
+   road movement, burnout and rear-wheel-slip physics remain unchanged. */
 function acAdvanceWheelSpin(dt,signedSpeed,burnoutActive){
   const step=Math.min(.06,Math.max(0,Number(dt)||0));
   if(step<=0||!wheelNodes.length)return;
@@ -5115,20 +5117,39 @@ function acAdvanceWheelSpin(dt,signedSpeed,burnoutActive){
     ? Math.max(roadWheelRate*3.4,(rpm*2*Math.PI/60)/(raceGearRatio(gear)*raceFinalDriveRatio())*.92)
     : roadWheelRate*(1+rearSlip*3.3);
 
+  // Keep each rendered frame below 2.55 radians (< 180 degrees), with a
+  // 170 rad/s ceiling at high refresh rates. This prevents apparent reversal
+  // on Android/WebView when wheel speed exceeds the display's sampling rate.
+  const visibleRateLimit=Math.min(170,2.55/step);
+  const clampVisibleRate=rate=>Math.max(-visibleRateLimit,Math.min(visibleRateLimit,Number(rate)||0));
+  const frontTargetRate=clampVisibleRate(roadWheelRate);
+  const rearTargetRate=clampVisibleRate(drivenWheelRate);
+  wheelSpinAngularVelocity=clampVisibleRate(wheelSpinAngularVelocity);
+  rearWheelSpinAngularVelocity=clampVisibleRate(rearWheelSpinAngularVelocity);
+
   const response=AC_WHEEL_SPIN_RESPONSE_SECONDS;
   const decay=Math.exp(-step/response);
-  const frontError=roadWheelRate-wheelSpinAngularVelocity;
-  const rearError=drivenWheelRate-rearWheelSpinAngularVelocity;
-  const frontDelta=roadWheelRate*step+frontError*response*(1-decay);
-  const rearDelta=drivenWheelRate*step+rearError*response*(1-decay);
+  const frontError=frontTargetRate-wheelSpinAngularVelocity;
+  const rearError=rearTargetRate-rearWheelSpinAngularVelocity;
+  const frontDelta=frontTargetRate*step+frontError*response*(1-decay);
+  const rearDelta=rearTargetRate*step+rearError*response*(1-decay);
 
-  wheelSpinAngularVelocity=roadWheelRate+frontError*decay;
-  rearWheelSpinAngularVelocity=drivenWheelRate+rearError*decay;
+  wheelSpinAngularVelocity=frontTargetRate+frontError*decay;
+  rearWheelSpinAngularVelocity=rearTargetRate+rearError*decay;
 
   wheelSpinAngle=(wheelSpinAngle+frontDelta)%AC_WHEEL_SPIN_FULL_TURN;
   rearWheelSpinAngle=(rearWheelSpinAngle+rearDelta)%AC_WHEEL_SPIN_FULL_TURN;
   spinWheelSet(frontWheelNodes,wheelSpinAngle);
   spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
+
+  window.__allcoinsRacingWheelSpinDiagnostics=Object.freeze({
+    roadRate:Number(roadWheelRate.toFixed(2)),
+    drivenRate:Number(drivenWheelRate.toFixed(2)),
+    visualLimit:Number(visibleRateLimit.toFixed(2)),
+    appliedFrontRate:Number(wheelSpinAngularVelocity.toFixed(2)),
+    appliedRearRate:Number(rearWheelSpinAngularVelocity.toFixed(2)),
+    frameStep:Number(step.toFixed(4))
+  });
 }
 function createHeadlightRig(actual,actualSize){
   if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
