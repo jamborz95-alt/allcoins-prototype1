@@ -2353,8 +2353,12 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 
 <div id="racingGearControls" aria-label="Переключение передач">
-  <button class="gear" id="gearUp" type="button" title="Повысить передачу" aria-label="Повысить передачу"><span class="gear-lever-mark" aria-hidden="true">+</span></button>
-  <button class="gear" id="gearDown" type="button" title="Понизить передачу" aria-label="Понизить передачу"><span class="gear-lever-mark" aria-hidden="true">−</span></button>
+  <button class="gear" id="gearUp" type="button" title="Повысить передачу" aria-label="Повысить передачу">
+  <span class="gear-lever-assembly" aria-hidden="true"><span class="gear-lever-head">+</span><span class="gear-lever-stem"></span><span class="gear-lever-base"></span></span>
+</button>
+  <button class="gear" id="gearDown" type="button" title="Понизить передачу" aria-label="Понизить передачу">
+  <span class="gear-lever-assembly" aria-hidden="true"><span class="gear-lever-head">−</span><span class="gear-lever-stem"></span><span class="gear-lever-base"></span></span>
+</button>
 </div>
 
 <div id="dashboardBackplate" aria-hidden="true"></div>
@@ -8989,133 +8993,103 @@ requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile
 }
 </style>
 
-<style id="allcoins-racing-visible-shifters-v156">
-/* V156: mount gear controls outside the HUD stacking context so they remain visible in Telegram WebView. */
+
+
+<style id="allcoins-racing-visible-shifters-v157">
+/* V157: high-contrast metal shifter controls, positioned beside the instrument cluster. */
 #racingGearControls{
-  position:fixed!important;
-  inset:0!important;
-  z-index:100!important;
-  display:block!important;
+  position:fixed!important;inset:0!important;
+  z-index:9999!important;display:block!important;
+  visibility:visible!important;opacity:1!important;
   pointer-events:none!important;
 }
+body.race-mode #racingGearControls{display:block!important;visibility:visible!important}
+body.garage-mode #racingGearControls{display:none!important}
 #racingGearControls #gearUp,
 #racingGearControls #gearDown{
   position:absolute!important;
-  display:flex!important;
-  align-items:flex-start!important;
-  justify-content:center!important;
-  left:calc(50% - clamp(175px,18.55vw,285px))!important;
+  left:calc(50% - 264px)!important;
   right:auto!important;
-  width:54px!important;
-  min-width:54px!important;
-  height:62px!important;
-  min-height:62px!important;
-  margin:0!important;
-  padding:0!important;
-  overflow:visible!important;
-  clip-path:none!important;
-  transform:none!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  color:transparent!important;
-  font-size:0!important;
-  line-height:0!important;
-  box-shadow:none!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-  z-index:101!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:78px!important;min-width:78px!important;
+  height:76px!important;min-height:76px!important;
+  margin:0!important;padding:0!important;
+  overflow:visible!important;clip-path:none!important;
+  border:1px solid #aebbc7!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,#25313d 0%,#101821 52%,#050a10 100%)!important;
+  color:#fff!important;font-size:0!important;line-height:0!important;
+  box-shadow:inset 0 2px 4px #ffffff3b,inset 0 -5px 9px #000d,0 5px 12px #000c!important;
+  pointer-events:auto!important;touch-action:manipulation!important;
+  z-index:10000!important;
 }
-#racingGearControls #gearUp{bottom:calc(91px + env(safe-area-inset-bottom,0px))!important}
-#racingGearControls #gearDown{bottom:calc(18px + env(safe-area-inset-bottom,0px))!important}
-#racingGearControls #gearUp::before,
-#racingGearControls #gearDown::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:23px;
-  width:8px;
-  height:29px;
-  transform:translateX(-50%) rotate(-7deg);
-  transform-origin:50% 100%;
-  border:1px solid #53616d;
-  border-radius:6px;
-  background:linear-gradient(90deg,#263440 0%,#8493a0 18%,#ffffff 36%,#657482 52%,#e6edf4 76%,#26323d 100%);
-  box-shadow:0 1px 4px #000d,inset 1px 0 1px #ffffffb0;
-  z-index:1;
+#racingGearControls #gearUp{bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
+#racingGearControls #gearDown{bottom:calc(17px + env(safe-area-inset-bottom,0px))!important}
+#racingGearControls .gear-lever-assembly{
+  position:relative;display:block;width:62px;height:65px;
 }
-#racingGearControls #gearUp::after,
-#racingGearControls #gearDown::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  bottom:1px;
-  width:46px;
-  height:17px;
-  transform:translateX(-50%) perspective(52px) rotateX(18deg);
-  border:1px solid #b4c0ca;
-  border-radius:7px 7px 11px 11px;
-  background:linear-gradient(180deg,#e2e8ed 0%,#9aa7b3 25%,#4a5865 65%,#101923 100%);
-  box-shadow:inset 0 2px 3px #ffffffb8,inset 0 -3px 5px #000c,0 4px 7px #000c;
-  z-index:0;
+#racingGearControls .gear-lever-head{
+  position:absolute;left:50%;top:0;
+  display:flex;align-items:center;justify-content:center;
+  width:42px;height:34px;transform:translateX(-50%);
+  border:2px solid #d7e0e7;border-bottom-color:#566574;
+  border-radius:50% 50% 43% 43% / 45% 45% 55% 55%;
+  background:
+    radial-gradient(ellipse at 25% 15%,#fff 0%,#cbd6df 13%,transparent 35%),
+    linear-gradient(145deg,#697987 0%,#263643 48%,#080f17 100%);
+  color:#f5f8fb;font:900 22px/1 Arial,sans-serif;
+  text-shadow:0 1px 2px #000,0 0 5px #ffffff66;
+  box-shadow:inset 0 2px 4px #ffffffa8,inset 0 -4px 6px #000e,0 3px 6px #000c;
 }
-#racingGearControls .gear-lever-mark{
-  position:absolute;
-  z-index:3;
-  top:0;
-  left:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:38px;
-  height:34px;
-  transform:translateX(-50%);
-  border:2px solid #d3dce4;
-  border-bottom-color:#53616d;
-  border-radius:48% 48% 43% 43% / 44% 44% 52% 52%;
-  background:radial-gradient(ellipse at 27% 18%,#fff 0%,#c6d0d8 12%,transparent 30%),radial-gradient(ellipse at 43% 30%,#647483 0%,#23313e 56%,#080e15 100%);
-  color:#f7fafc;
-  font:900 20px/1 Arial,sans-serif;
-  text-shadow:0 1px 2px #000,0 0 5px #ffffff55;
-  box-shadow:inset 0 2px 4px #ffffffaa,inset 0 -5px 7px #000e,0 3px 8px #000c;
+#racingGearControls .gear-lever-stem{
+  position:absolute;left:50%;top:27px;
+  width:9px;height:27px;transform:translateX(-50%) rotate(-5deg);
+  transform-origin:50% 0;
+  border:1px solid #52616e;border-radius:5px;
+  background:linear-gradient(90deg,#25313c 0%,#aebbc7 22%,#fff 43%,#6d7c89 61%,#e5edf3 82%,#26323d 100%);
+  box-shadow:0 1px 3px #000d;
 }
-#racingGearControls #gearUp .gear-lever-mark{border-color:#9fcdb5 #d9e3e8 #5d8b70}
-#racingGearControls #gearDown .gear-lever-mark{border-color:#c9b5a7 #e5d9d0 #806455}
-#racingGearControls #gearUp.pressed .gear-lever-mark,
-#racingGearControls #gearDown.pressed .gear-lever-mark{
-  transform:translate(-50%,3px) scale(.96);
-  filter:brightness(1.22);
+#racingGearControls .gear-lever-base{
+  position:absolute;left:50%;bottom:0;
+  width:58px;height:18px;transform:translateX(-50%) perspective(60px) rotateX(17deg);
+  border:1px solid #d5dfe7;border-radius:7px 7px 11px 11px;
+  background:linear-gradient(180deg,#dce4eb 0%,#8998a5 24%,#455461 70%,#111a23 100%);
+  box-shadow:inset 0 2px 3px #ffffffbb,inset 0 -3px 5px #000c,0 4px 7px #000d;
 }
+#racingGearControls #gearUp .gear-lever-head{
+  border-color:#b2d9c1 #d7e0e7 #56846a;
+  background:
+    radial-gradient(ellipse at 25% 15%,#fff 0%,#cbd6df 13%,transparent 35%),
+    linear-gradient(145deg,#668a78 0%,#203b30 48%,#08140e 100%);
+}
+#racingGearControls #gearDown .gear-lever-head{
+  border-color:#d4c0b2 #e2d9d2 #886c5c;
+}
+#racingGearControls #gearUp.pressed,
+#racingGearControls #gearDown.pressed{filter:brightness(1.2);transform:translateY(2px)!important}
 #racingGearControls #gearUp:focus-visible,
-#racingGearControls #gearDown:focus-visible{
-  outline:2px solid #dcecff!important;
-  outline-offset:3px!important;
-}
-.garage-mode #racingGearControls{display:none!important}
+#racingGearControls #gearDown:focus-visible{outline:2px solid #dcecff!important;outline-offset:3px!important}
 @media(max-width:700px){
-  #racingGearControls #gearUp,
-  #racingGearControls #gearDown{
-    left:calc(50% - min(145px,18vw))!important;
-    width:48px!important;min-width:48px!important;
-    height:56px!important;min-height:56px!important;
+  #racingGearControls #gearUp,#racingGearControls #gearDown{
+    left:calc(50% - 190px)!important;
+    width:60px!important;min-width:60px!important;
+    height:62px!important;min-height:62px!important;
   }
-  #racingGearControls #gearUp{bottom:calc(86px + env(safe-area-inset-bottom,0px))!important}
-  #racingGearControls #gearDown{bottom:calc(17px + env(safe-area-inset-bottom,0px))!important}
+  #racingGearControls #gearUp{bottom:calc(82px + env(safe-area-inset-bottom,0px))!important}
+  #racingGearControls #gearDown{bottom:calc(12px + env(safe-area-inset-bottom,0px))!important}
+  #racingGearControls .gear-lever-assembly{transform:scale(.82);transform-origin:center}
 }
 @media(max-height:520px) and (orientation:landscape){
-  #racingGearControls #gearUp,
-  #racingGearControls #gearDown{
-    left:calc(50% - 168px)!important;
-    width:42px!important;min-width:42px!important;
-    height:48px!important;min-height:48px!important;
+  #racingGearControls #gearUp,#racingGearControls #gearDown{
+    left:calc(50% - 154px)!important;
+    width:48px!important;min-width:48px!important;
+    height:50px!important;min-height:50px!important;
   }
-  #racingGearControls #gearUp{bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}
-  #racingGearControls #gearDown{bottom:calc(9px + env(safe-area-inset-bottom,0px))!important}
-  #racingGearControls #gearUp::before,
-  #racingGearControls #gearDown::before{top:18px;width:6px;height:23px}
-  #racingGearControls #gearUp::after,
-  #racingGearControls #gearDown::after{width:36px;height:13px}
-  #racingGearControls .gear-lever-mark{width:31px;height:28px;font-size:17px}
+  #racingGearControls #gearUp{bottom:calc(58px + env(safe-area-inset-bottom,0px))!important}
+  #racingGearControls #gearDown{bottom:calc(5px + env(safe-area-inset-bottom,0px))!important}
+  #racingGearControls .gear-lever-assembly{transform:scale(.67);transform-origin:center}
 }
 </style>
 
