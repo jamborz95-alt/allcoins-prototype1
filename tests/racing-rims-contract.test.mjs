@@ -369,13 +369,13 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
 
   
 test("gear plus and minus controls are separate realistic metal levers without changing shift behavior", () => {
-  assert.match(page, /id="gearDown"[^>]*><span class="gear-lever-mark" aria-hidden="true">−<\\/span><\\/button>/);
-  assert.match(page, /id="gearUp"[^>]*><span class="gear-lever-mark" aria-hidden="true">\\+<\\/span><\\/button>/);
+  assert.match(page, /id="gearDown"[^>]*><span class="gear-lever-mark" aria-hidden="true">−<\/span><\/button>/);
+  assert.match(page, /id="gearUp"[^>]*><span class="gear-lever-mark" aria-hidden="true">\+<\/span><\/button>/);
   assert.match(page, /allcoins-racing-realistic-shifters-v155/);
-  assert.match(page, /#gearUp::before,#gearDown::before[\\s\\S]*?linear-gradient\\(90deg,#3f4b56/);
-  assert.match(page, /#gearUp::after,#gearDown::after[\\s\\S]*?perspective\\(48px\\)/);
-  assert.match(page, /#gearUp \\.gear-lever-mark,#gearDown \\.gear-lever-mark/);
-  assert.match(page, /bindGearShift\\('gearUp',1\\)/);
-  assert.match(page, /bindGearShift\\('gearDown',-1\\)/);
-  assert.match(page, /if\\(gear===-1\\).*?if\\(!stopped\\)/);
+  assert.match(page, /#gearUp::before,#gearDown::before[\s\S]*?linear-gradient\(90deg,#3f4b56/);
+  assert.match(page, /#gearUp::after,#gearDown::after[\s\S]*?perspective\(48px\)/);
+  assert.match(page, /#gearUp \.gear-lever-mark,#gearDown \.gear-lever-mark/);
+  assert.match(page, /bindGearShift\('gearUp',1\)/);
+  assert.match(page, /bindGearShift\('gearDown',-1\)/);
+  assert.match(page, /if\(gear===-1\)\{[\s\S]*?if\(!stopped\)/);
 });
