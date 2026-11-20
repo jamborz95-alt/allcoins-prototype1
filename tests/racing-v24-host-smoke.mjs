@@ -13,6 +13,7 @@ const files = new Map([
 ]);
 const pageHtml = `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="allcoins-racing-amvera-api" content="">
 <title>ALLCOINS Racing classic runtime test</title></head>
 <body>
 <a id="openDragRacing" href="#race" data-allcoins-racing-launch="true">Драг-рейсинг 3D</a>
@@ -289,7 +290,7 @@ try {
   assert.equal(visualDiagnostics.cityShrubs, 180, "The apartment-side green strip must be dense and continuous behind the fence.");
   assert.equal(visualDiagnostics.cityShrubOffsetZ, -18.25, "The shrub strip must sit between the fence and apartments.");
   assert.equal(visualDiagnostics.skylineOffsetZ, -48, "The skyline must sit behind the foreground buildings.");
-  assert.equal(visualDiagnostics.cameraViewHeight, 10.6, "The camera must be slightly closer to the player's car.");
+  assert.equal(visualDiagnostics.cameraViewHeight, 8.25, "The mobile race camera must frame the player's car larger.");
 
   // Check the slightly reduced lower dashboard on a typical landscape Android viewport.
   await page.setViewportSize({ width: 844, height: 390 });
