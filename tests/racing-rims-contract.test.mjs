@@ -368,14 +368,17 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
 });
 
   
-test("gear plus and minus controls are directly mounted as visible body-level metallic levers", () => {
-  assert.ok(page.includes('id="gearUp"') && page.includes('<span class="gear-shifter-handle">+</span>'));
-  assert.ok(page.includes('id="gearDown"') && page.includes('<span class="gear-shifter-handle">−</span>'));
-  assert.doesNotMatch(page, /id="racingGearControls"/);
-  assert.match(page, /allcoins-racing-direct-shifters-v158/);
-  assert.match(page, /#gearUp,#gearDown\{\s*position:fixed!important;[\s\S]*?z-index:2147483000!important/);
-  assert.match(page, /#gearUp \.gear-shifter-stem,#gearDown \.gear-shifter-stem/);
-  assert.match(page, /#gearUp \.gear-shifter-boot,#gearDown \.gear-shifter-boot/);
+test("gearbox uses one visible sequential selector with plus above and minus below", () => {
+  assert.match(page, /id="gearSelector" class="gear-selector" role="group"/);
+  assert.match(page, /gear-selector-mark gear-selector-plus">\+<\/span>/);
+  assert.match(page, /gear-selector-mark gear-selector-minus">−<\/span>/);
+  assert.match(page, /function acGearSelectorShift\(delta\)[\s\S]*?shift\(delta\)/);
+  assert.match(page, /acGearSelectorShift\(deltaY < 0 \? 1 : -1\)/);
+  assert.match(page, /if \(localY < \.36\) acGearSelectorShift\(1\)/);
+  assert.match(page, /else if \(localY > \.64\) acGearSelectorShift\(-1\)/);
+  assert.match(page, /allcoins-racing-single-sequential-shifter-v159/);
+  assert.match(page, /#gearSelector \{[\s\S]*?z-index:2147483001!important/);
+  assert.match(page, /body\.race-mode #gearUp,[\s\S]*?body\.garage-mode #gearDown/);
   assert.match(page, /bindGearShift\('gearUp',1\)/);
   assert.match(page, /bindGearShift\('gearDown',-1\)/);
 });
