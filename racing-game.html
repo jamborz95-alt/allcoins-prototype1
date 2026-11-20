@@ -8064,8 +8064,8 @@ function acRacingEnhanceCarSurface(root) {
     const originalMetalness = Number.isFinite(source.metalness) ? source.metalness : 0;
 
     if (preset === "body-clearcoat") {
-      material.clearcoat = .94;
-      material.clearcoatRoughness = .14;
+      material.clearcoat = .82;
+      material.clearcoatRoughness = .16;
       material.roughness = Math.max(.17, Math.min(originalRoughness, .28));
       material.metalness = Math.max(originalMetalness, .16);
       material.envMap = reflectionMap;
