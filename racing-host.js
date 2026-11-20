@@ -285,6 +285,40 @@
       header.getUint32(8, true) === buffer.byteLength;
   }
 
+  async function fetchRemoteModelVersion() {
+    if (!RACING_AMVERA_API_BASE) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(
+        RACING_AMVERA_API_BASE + "/api/racing/vaz-2107.glb?info=1",
+        {
+          method: "GET",
+          cache: "no-store",
+          credentials: "omit",
+          signal: controller.signal
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Проверка версии модели завершилась с HTTP " + response.status);
+      }
+      const info = await response.json();
+      const updatedAt = Date.parse(info?.updatedAt || "");
+      const bytes = Number(info?.bytes);
+      if (info?.status !== "ok" || !Number.isFinite(updatedAt) ||
+          !Number.isSafeInteger(bytes) || bytes < 20 || bytes > 104857600) {
+        throw new Error("Amvera вернула некорректные сведения о версии ВАЗ-2107.");
+      }
+      return [
+        String(updatedAt),
+        String(bytes),
+        String(info.fileName || "vaz-2107.glb")
+      ].join(":");
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function readCachedModel() {
     const db = await openModelCache();
     try {
@@ -314,6 +348,7 @@
         transaction.objectStore(MODEL_CACHE_STORE).put({
           buffer: model.buffer,
           fileName: model.fileName,
+          remoteVersion: model.remoteVersion || null,
           savedAt: Date.now()
         }, MODEL_CACHE_KEY);
         transaction.oncomplete = resolve;
@@ -329,17 +364,45 @@
   }
 
   async function loadSharedModel() {
-    if (cachedModel) return cachedModel;
     if (loadingModel) return loadingModel;
 
     loadingModel = (async () => {
-      setStatus("Проверяем кэш 3D-модели…", false);
+      setStatus("Проверяем актуальность 3D-модели…", false);
+      let remoteVersion = null;
+      if (RACING_AMVERA_API_BASE) {
+        try {
+          remoteVersion = await fetchRemoteModelVersion();
+        } catch (error) {
+          // Offline play remains possible: a previously cached GLB may still be used.
+          console.warn("ALLCOINS Racing: could not check the Amvera model version:", error);
+        }
+      }
+
+      if (cachedModel && (!remoteVersion || cachedModel.remoteVersion === remoteVersion)) {
+        setStatus(remoteVersion
+          ? "Актуальная 3D-модель уже загружена"
+          : "Нет связи с Amvera: используем сохранённую модель", false);
+        hideModelProgress();
+        return cachedModel;
+      }
+      if (cachedModel && remoteVersion && cachedModel.remoteVersion !== remoteVersion) {
+        cachedModel = null;
+      }
+
       try {
         const saved = await readCachedModel();
-        if (saved) {
-          setStatus("3D-модель загружена с устройства", false);
+        if (saved && (!remoteVersion || saved.remoteVersion === remoteVersion)) {
+          const model = {
+            buffer: saved.buffer,
+            fileName: saved.fileName || "vaz-2107.glb",
+            remoteVersion: saved.remoteVersion || null
+          };
+          cachedModel = model;
+          setStatus(remoteVersion
+            ? "Актуальная 3D-модель загружена с устройства"
+            : "Нет связи с Amvera: используем сохранённую модель", false);
           hideModelProgress();
-          return { buffer: saved.buffer, fileName: saved.fileName || "vaz-2107.glb" };
+          return model;
         }
       } catch (error) {
         console.warn("ALLCOINS Racing: could not read cached model:", error);
@@ -441,7 +504,7 @@
           if (!isValidGlbBuffer(buffer)) {
             throw new Error("Amvera вернула файл, который не прошёл проверку заголовка GLB 2.0.");
           }
-          const model = { buffer, fileName };
+          const model = { buffer, fileName, remoteVersion };
           setModelProgress("Сохранение 3D-модели на устройстве…", 100);
           await writeCachedModel(model);
           setStatus("3D-модель готова", false);
@@ -466,7 +529,7 @@
       if (!isValidGlbBuffer(combined.buffer)) {
         throw new Error("Собранный файл из Amvera не прошёл проверку GLB 2.0.");
       }
-      const model = { buffer: combined.buffer, fileName };
+      const model = { buffer: combined.buffer, fileName, remoteVersion };
       await writeCachedModel(model);
       setModelProgress("Модель загружена и сохранена на устройстве", 100);
       setStatus("3D-модель сохранена на устройстве", false);
