@@ -7879,7 +7879,9 @@ function acRacingAttachSeparateTireComponents(sourceMesh) {
       if (remainingTriangles.length) {
         object.geometry = acRacingBuildGeometryPart(originalGeometry, remainingTriangles, null);
       } else {
-        object.visible = false;
+        // Keep the source Object3D visible: Car_Bottom_0 can also be the parent
+        // of the four wheel pivots. Hiding the whole object would hide the wheels.
+        object.geometry = new THREE.BufferGeometry();
       }
       // Do not dispose originalGeometry here: GLTF nodes may share a geometry.
       reports.push({
