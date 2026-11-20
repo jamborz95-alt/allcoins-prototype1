@@ -200,6 +200,8 @@ const pageHtml = `<!doctype html>
 <a id="openDragRacing" href="#race" data-allcoins-racing-launch="true">Драг-рейсинг 3D</a>
 <script>
 window.__telegramFullscreenCalls = 0;
+// Exercise a fresh Amvera download in this smoke test rather than an old local model cache.
+Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined });
 window.Telegram = { WebApp: {
   initData: "mock-telegram-init-data",
   ready() {}, expand() {}, setHeaderColor() {}, setBackgroundColor() {},
