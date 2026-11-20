@@ -48,7 +48,9 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.doesNotMatch(page, /openingShadowMaterial|openingBacking|recessMaterial/);
   assert.match(page, /const originalRimGeometries=\[\]/);
   assert.match(page, /ALLCOINS_OriginalRimGeometry_/);
-  assert.match(page, /wheel\.originalRimMesh\.visible = true/);\n  assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);\n  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
+  assert.match(page, /wheel\.originalRimMesh\.visible = true/);
+  assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
+  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
