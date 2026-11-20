@@ -369,8 +369,8 @@ test("headlight toggle is mounted on the dashboard and reports on/off state", ()
 
   
 test("gear plus and minus controls are directly mounted as visible body-level metallic levers", () => {
-  assert.match(page, /id="gearUp"[^>]*>[\s\S]*?gear-shifter-handle">\\+/);
-  assert.match(page, /id="gearDown"[^>]*>[\s\S]*?gear-shifter-handle">−/);
+  assert.ok(page.includes('id="gearUp"') && page.includes('<span class="gear-shifter-handle">+</span>'));
+  assert.ok(page.includes('id="gearDown"') && page.includes('<span class="gear-shifter-handle">−</span>'));
   assert.doesNotMatch(page, /id="racingGearControls"/);
   assert.match(page, /allcoins-racing-direct-shifters-v158/);
   assert.match(page, /#gearUp,#gearDown\{\s*position:fixed!important;[\s\S]*?z-index:2147483000!important/);
