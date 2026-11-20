@@ -4098,6 +4098,19 @@ const AC_GARAGE_RIM_STYLES = Object.freeze({
   classic8: { name:"OEM SPLIT 5", price:4500, kind:"cast", count:5, width:.132, tipWidth:.095, sweep:.032, split:true, face:0x242d35, metal:0xd0d6dc, accent:0xedf1f4 }
 });
 
+/* ALLCOINS RACING V162 · free detailed OEM wheel face used for the factory fitment. */
+const AC_RACING_FACTORY_RIM_DETAIL_STYLE = Object.freeze({
+  name:"VAZ-2107 OEM detailed",
+  count:5,
+  width:.132,
+  tipWidth:.095,
+  sweep:.026,
+  split:true,
+  face:0x242c34,
+  metal:0xcbd3da,
+  accent:0xf1f4f7
+});
+
 let acGarageOwnedRims = new Set(["stock"]);
 let acGarageSelectedRimId = "stock";
 let acGaragePendingRimId = null;
@@ -4285,6 +4298,69 @@ function acGarageBuildRimFace(style, radius, depth, side) {
   });
   return face;
 }
+/* ALLCOINS RACING V162 · make the tire rubber, wheel face and rotating spokes individually readable. */
+function acRacingEnhanceWheelRubber(wheel) {
+  const tireMesh = wheel?.node?.children.find(object =>
+    object.isMesh && object.geometry && /^ALLCOINS_WheelGeometry_/.test(object.name || "")
+  );
+  if (!tireMesh || tireMesh.userData.acRacingTireMaterialEnhanced) return false;
+  const enhance = source => {
+    if (!source) return source;
+    const material = new THREE.MeshPhysicalMaterial();
+    material.copy(source);
+    material.name = (source.name || "Wheel material") + " · ALLCOINS tyre rubber";
+    if (source.color) material.color.copy(source.color).multiplyScalar(.68);
+    else material.color.set(0x34383d);
+    material.metalness = 0;
+    material.roughness = Math.max(.88, Number(source.roughness) || .5);
+    material.clearcoat = .018;
+    material.clearcoatRoughness = .82;
+    material.envMap = null;
+    material.envMapIntensity = 0;
+    material.needsUpdate = true;
+    return material;
+  };
+  tireMesh.material = Array.isArray(tireMesh.material)
+    ? tireMesh.material.map(enhance)
+    : enhance(tireMesh.material);
+  tireMesh.userData.acRacingTireMaterialEnhanced = true;
+  return true;
+}
+
+function acGarageBuildWheelRimOverlay(wheel, style, rimId) {
+  const sourceMesh = wheel?.node?.children.find(object => object.isMesh && object.geometry);
+  if (!sourceMesh) return null;
+  const geometry = sourceMesh.geometry;
+  if (!geometry.boundingBox) geometry.computeBoundingBox();
+  const size = geometry.boundingBox.getSize(new THREE.Vector3());
+  const dimensions = [size.x,size.y,size.z];
+  const axisIndex = dimensions.indexOf(Math.min(...dimensions));
+  const radialDimensions = dimensions.filter((value,index)=>index!==axisIndex);
+  const radius = Math.max(...radialDimensions)*.5*.828;
+  if (!Number.isFinite(radius) || radius < .04) return null;
+  const axis = new THREE.Vector3();
+  axis.setComponent(axisIndex,1);
+  const alignment = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),axis);
+  const thickness = dimensions[axisIndex];
+  const depth = Math.max(radius*.13,thickness*.075,.018);
+  const overlay = new THREE.Group();
+  overlay.name = "ALLCOINS VAZ-2107 Rim Style " + rimId;
+  overlay.quaternion.copy(alignment);
+  const offset = thickness*.5 + depth*.34;
+  const nearFace = acGarageBuildRimFace(style,radius,depth,1);
+  const farFace = acGarageBuildRimFace(style,radius,depth,-1);
+  nearFace.position.y = offset;
+  farFace.position.y = -offset;
+  overlay.add(nearFace,farFace);
+  overlay.traverse(object => {
+    if (object.isMesh) {
+      object.castShadow = false;
+      object.receiveShadow = false;
+    }
+  });
+  return overlay;
+}
+
 function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
   const style = AC_GARAGE_RIM_STYLES[rimId];
   if (!style) return false;
@@ -4302,42 +4378,19 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
       acGarageDisposeRimOverlay(previous);
       acGarageRimOverlayByNode.delete(wheel.node);
     }
-    // Open spokes must reveal the tyre interior, not the factory solid rim face.
-    if (wheel.originalRimMesh) wheel.originalRimMesh.visible = rimId === "stock";
-    if (rimId === "stock") { applied++; continue; }
 
-    const sourceMesh = wheel.node.children.find(object => object.isMesh && object.geometry);
-    if (!sourceMesh) continue;
-    const geometry = sourceMesh.geometry;
-    if (!geometry.boundingBox) geometry.computeBoundingBox();
-    const size = geometry.boundingBox.getSize(new THREE.Vector3());
-    const dimensions = [size.x,size.y,size.z];
-    let axisIndex = dimensions.indexOf(Math.min(...dimensions));
-    const radialDimensions = dimensions.filter((value,index)=>index!==axisIndex);
-    const radius = Math.max(...radialDimensions)*.5*.828;
-    if (!Number.isFinite(radius) || radius < .04) continue;
-    const axis = new THREE.Vector3();
-    axis.setComponent(axisIndex,1);
-    const alignment = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),axis);
-    const thickness = dimensions[axisIndex];
-    const depth = Math.max(radius*.13,thickness*.075,.018);
+    // Keep the tire material separate from the chassis material so its rubber finish is safe.
+    acRacingEnhanceWheelRubber(wheel);
+    // The factory set also gets an open, detailed double-spoke face so rotation is visible.
+    const faceStyle = rimId === "stock" ? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style;
+    const overlay = acGarageBuildWheelRimOverlay(wheel,faceStyle,rimId);
+    if (!overlay) {
+      if (wheel.originalRimMesh) wheel.originalRimMesh.visible = true;
+      continue;
+    }
 
-    const overlay = new THREE.Group();
-    overlay.name = "ALLCOINS VAZ-2107 Rim Style " + rimId;
-    overlay.quaternion.copy(alignment);
-    const offset = thickness*.5 + depth*.34;
-    overlay.add(acGarageBuildRimFace(style,radius,depth,1));
-    const farFace = acGarageBuildRimFace(style,radius,depth,-1);
-    farFace.position.y = -offset;
-    overlay.add(farFace);
-    // Shift the near face outward from the tire; the rear face mirrors it.
-    overlay.children[0].position.y = offset;
-    overlay.traverse(object => {
-      if (object.isMesh) {
-        object.castShadow = false;
-        object.receiveShadow = false;
-      }
-    });
+    // Open spokes reveal the darker brake cavity behind the wheel face.
+    if (wheel.originalRimMesh) wheel.originalRimMesh.visible = false;
     wheel.node.add(overlay);
     acGarageRimOverlayByNode.set(wheel.node,overlay);
     applied++;
@@ -7801,7 +7854,7 @@ function acRacingCreateCarReflectionTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.mapping = THREE.EquirectangularReflectionMapping;
   texture.encoding = THREE.sRGBEncoding;
-  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   texture.needsUpdate = true;
   acRacingCarReflectionMap = texture;
   return texture;
@@ -7920,7 +7973,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.visible = true;
   root.traverse(object => { object.visible = true; });
   // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
-  const carTextureAnisotropy=Math.min(acRacingMobileDevice?6:8,renderer.capabilities.getMaxAnisotropy());
+  const carTextureAnisotropy=Math.min(acRacingMobileDevice?8:12,renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
     if(!object.isMesh)return;
@@ -8436,9 +8489,11 @@ function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
   const aspect=w/Math.max(1,h);
-  // Give the portrait garage a little extra horizontal room so the full
-  // side profile of the VAZ-2107 fits on a phone; keep race framing intact.
-  const viewH=document.body.classList.contains('garage-mode') && h>w ? 13.8 : 10.6;
+  // The race camera is closer to the car: roughly 28% larger on phones,
+  // while the garage keeps its full-car fit and the physics/world scale stay untouched.
+  const viewH=document.body.classList.contains('garage-mode') && h>w
+    ? 13.8
+    : (acRacingMobileDevice ? 8.25 : 9.1);
   camera.left=-viewH*aspect/2;
   camera.right=viewH*aspect/2;
   camera.top=viewH/2;
