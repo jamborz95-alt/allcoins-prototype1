@@ -4464,6 +4464,7 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
   }
 
   let applied = 0;
+  let factoryRimsRestored = 0;
   for (const wheel of wheelNodes) {
     if (!wheel?.node) continue;
     const previous = acGarageRimOverlayByNode.get(wheel.node);
@@ -4474,25 +4475,40 @@ function acGarageApplyRimStyle(rimId,{refresh=true}={}) {
 
     // Keep the tire material separate from the chassis material so its rubber finish is safe.
     acRacingEnhanceWheelRubber(wheel);
-    // The factory set also gets an open, detailed double-spoke face so rotation is visible.
-    const faceStyle = rimId === "stock" ? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style;
-    const overlay = acGarageBuildWheelRimOverlay(wheel,faceStyle,rimId);
+
+    // "stock" means the actual original stamped-steel rim geometry from the GLB.
+    // Do not replace it with a generated alloy/spoke overlay.
+    if (rimId === "stock") {
+      if (wheel.originalRimMesh) {
+        wheel.originalRimMesh.visible = true;
+        factoryRimsRestored++;
+      }
+      continue;
+    }
+
+    const overlay = acGarageBuildWheelRimOverlay(wheel,style,rimId);
     if (!overlay) {
       if (wheel.originalRimMesh) wheel.originalRimMesh.visible = true;
       continue;
     }
 
-    // Open spokes reveal the darker brake cavity behind the wheel face.
+    // Custom rims replace the original stamped-steel face only while selected.
     if (wheel.originalRimMesh) wheel.originalRimMesh.visible = false;
     wheel.node.add(overlay);
     acGarageRimOverlayByNode.set(wheel.node,overlay);
     applied++;
   }
 
+  if (rimId === "stock") {
+    acGarageRimStatusText = factoryRimsRestored
+      ? "Возвращены родные штампованные диски ВАЗ-2107."
+      : "Выбран заводской комплект; исходная геометрия дисков отсутствует в модели.";
+  }
+
   if (refresh && typeof acGarageRefreshLoadedCarPreview === "function") {
     acGarageRefreshLoadedCarPreview();
   }
-  return applied > 0;
+  return rimId === "stock" ? factoryRimsRestored > 0 : applied > 0;
 }
 
 async function acGarageLoadRimProfile({silent=false}={}) {
@@ -4507,7 +4523,24 @@ async function acGarageLoadRimProfile({silent=false}={}) {
       const result = await onlineHostRequest("rims:profile");
       acGarageOwnedRims = new Set(Array.isArray(result.ownedRims) ? result.ownedRims : ["stock"]);
       acGarageOwnedRims.add("stock");
-      acGarageSelectedRimId = AC_GARAGE_RIM_STYLES[result.selectedRimId] ? result.selectedRimId : "stock";
+
+      // One-time restore link: persist the factory stamped-steel wheels as the selected set.
+      const restoreFactoryRims = new URLSearchParams(window.location.search).get("restoreFactoryRims") === "1";
+      if (restoreFactoryRims) {
+        const selection = await onlineHostRequest("rims:select",{rimId:"stock"});
+        if (!selection || selection.ok !== true) {
+          throw new Error(selection?.error || "Не удалось вернуть заводские штампованные диски.");
+        }
+        acGarageOwnedRims = new Set(Array.isArray(selection.ownedRims) ? selection.ownedRims : ["stock"]);
+        acGarageOwnedRims.add("stock");
+        acGarageSelectedRimId = "stock";
+        acGaragePendingRimId = "stock";
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("restoreFactoryRims");
+        window.history.replaceState(window.history.state,"",cleanUrl.pathname+cleanUrl.search+cleanUrl.hash);
+      } else {
+        acGarageSelectedRimId = AC_GARAGE_RIM_STYLES[result.selectedRimId] ? result.selectedRimId : "stock";
+      }
       acGarageRimProfileReady = true;
       const active = document.body.classList.contains("tuning-preview-mode") && acGaragePendingRimId
         ? acGaragePendingRimId : acGarageSelectedRimId;
