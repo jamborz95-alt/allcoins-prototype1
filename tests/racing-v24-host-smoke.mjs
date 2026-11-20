@@ -536,7 +536,7 @@ try {
   assert.equal(visualDiagnostics.cityLightingExposure, 0.98, "The scene must use balanced exposure.");
   assert.equal(visualDiagnostics.cityFacadeTexture, "warm-beige-plaster", "Apartment facades must use warm plaster texture.");
   assert.equal(visualDiagnostics.speedometerDigitalLayerAboveNeedle, true, "The digital speed readout must remain visible above the needle hub.");
-  assert.equal(visualDiagnostics.cityBuildingOffsetZ, -22.2, "The foreground buildings must be set farther back from the road.");
+  assert.equal(visualDiagnostics.cityBuildingOffsetZ, -20.8, "The foreground buildings must remain behind the far-side fence while visible in the side-on phone camera.");
   assert.equal(visualDiagnostics.cityFence, true, "A roadside fence must separate the street from the buildings.");
   assert.equal(visualDiagnostics.cityFenceType, "cross-braced-metal-panels", "The roadside fence must use silver cross-braced metal panels.");
   assert.equal(visualDiagnostics.cityFenceZ, -16.4, "The fence must stay behind the sidewalk and outside the asphalt.");
@@ -548,7 +548,7 @@ try {
   assert.equal(visualDiagnostics.cityResidentialEntrances, 17, "Apartment blocks must have residential entrance doors instead of shop signage.");
   assert.equal(visualDiagnostics.cityShrubs, 180, "The apartment-side green strip must be dense and continuous behind the fence.");
   assert.equal(visualDiagnostics.cityShrubOffsetZ, -18.25, "The shrub strip must sit between the fence and apartments.");
-  assert.equal(visualDiagnostics.skylineOffsetZ, -48, "The skyline must sit behind the foreground buildings.");
+  assert.equal(visualDiagnostics.skylineOffsetZ, -38, "The skyline must remain behind the foreground apartment row.");
   assert.equal(visualDiagnostics.cameraViewHeight, 8.25, "The mobile race camera must frame the player's car larger.");
 
   // Check the slightly reduced lower dashboard on a typical landscape Android viewport.
