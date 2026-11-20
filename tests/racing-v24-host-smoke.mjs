@@ -379,6 +379,7 @@ try {
       messageTitle: document.querySelector("#message strong")?.textContent || null,
       message: document.querySelector("#messageText")?.textContent || null,
       garageStatus: document.querySelector("#garageCarStatus")?.textContent || null,
+      modelLoadError: window.__allcoinsRacingModelLoadError || null,
       boot: window.__allcoinsRacingBoot || null
     }));
     throw new Error("GLB transfer diagnostic: " + JSON.stringify({ transferDiagnostic, gameDiagnostic }) + "; " + error.message);
