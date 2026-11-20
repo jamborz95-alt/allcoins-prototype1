@@ -3299,7 +3299,9 @@ function acOnlineSetCameraMode(mode, force = false) {
       : .72;
     // Keep the vehicle in the clear road window above the dashboard, with a slight lower-screen bias like the reference.
     const frameLift = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches ? .35 : .28;
-    camera.position.set(focusX, focusY + 3.6 + frameLift, focusZ + 18);
+    // Lower, longer side-on camera: keep the VAZ framing unchanged while
+    // allowing the far-side apartment blocks and skyline to enter the phone viewport.
+    camera.position.set(focusX, focusY + 1.05 + frameLift, focusZ + 28);
     camera.lookAt(focusX, focusY + frameLift, focusZ);
   }
   camera.updateMatrixWorld(true);
@@ -5833,7 +5835,7 @@ for (let i = 0; i < 33; i++) {
   }
 
   // Отодвигаем здания глубже за ограждение, сохраняя свободной всю дорожную полосу.
-  building.position.set(-115 + i * 7.15, 0, -22.2);
+  building.position.set(-115 + i * 7.15, 0, -20.8);
   scene.add(building);
   city.push(building);
 }
@@ -6088,7 +6090,7 @@ for (let i = 0; i < 17; i++) {
     new THREE.BoxGeometry(width, height, depth),
     acTrackHouseMaterials[i % acTrackHouseMaterials.length]
   );
-  building.position.set(x, height / 2, -34.5);
+  building.position.set(x, height / 2, -29.5);
   building.receiveShadow = true;
   acTrackHouseGroup.add(building);
   for (let row = 0; row < 2; row++) {
@@ -6097,7 +6099,7 @@ for (let i = 0; i < 17; i++) {
       windowMesh.position.set(
         x - width * .34 + col * (width * .22),
         .78 + row * .92,
-        -32.54
+        -27.54
       );
       acTrackHouseGroup.add(windowMesh);
     }
@@ -6129,7 +6131,7 @@ for (let i = 0; i < farCityTowerCount; i++) {
   const height = 10 + (i * 11 % 12) + random() * 2;
   const depth = 3.3 + (i % 3) * .7;
   const x = -128 + i * 16.8;
-  const z = -48;
+  const z = -38;
   const tower = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, depth),
     farBuildingMaterials[i % farBuildingMaterials.length]
@@ -6259,7 +6261,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityUpperCornices: true,
   skylineTowers: farCityTowerCount,
   skylineWindows: farCityDarkWindows.length + farCityLitWindows.length,
-  cityBuildingOffsetZ: -22.2,
+  cityBuildingOffsetZ: -20.8,
   cityFence: true,
   cityFenceType: "cross-braced-metal-panels",
   cityFenceZ: -16.4,
@@ -6270,7 +6272,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityResidentialEntrances: 17,
   cityShrubs: acShrubCount,
   cityShrubOffsetZ: -18.25,
-  skylineOffsetZ: -48,
+  skylineOffsetZ: -38,
   cameraViewHeight: acRacingMobileDevice ? 8.25 : 9.1,
   cityLightingExposure: .98,
   cityLightingStyle: "balanced-daylight",
