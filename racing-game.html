@@ -5163,8 +5163,8 @@ function playGearChangeCue(){
 
 const canvas = $('view');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a2b41);
-scene.fog = new THREE.Fog(0x26384b, 78, 218);
+scene.background = new THREE.Color(0x557994);
+scene.fog = new THREE.Fog(0x829caf, 88, 238);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
@@ -5188,13 +5188,13 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMo
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.16;
-// V26: brighter blue-hour lighting with a warm key light; no extra render passes on mobile.
-scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.62));
-const sun = new THREE.DirectionalLight(0xffd7a8,.58); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
+// V27: balanced daylight fill and warm highlights; preserve material contrast on mobile.
+scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.40));
+const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
 sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x6ba7df,.34); fill.position.set(8,5,-12); scene.add(fill);
+const fill = new THREE.DirectionalLight(0x6ba7df,.24); fill.position.set(8,5,-12); scene.add(fill);
 
 // ALLCOINS RACING V25 — детализированный мокрый асфальт и городская улица.
 // Изменяется только окружение: физика V24, двигатель, коробка передач и управление сохранены.
@@ -5398,10 +5398,10 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
-  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
-  bumpScale: acRacingMobileDevice ? 0 : .018,
-  roughness: acRacingMobileDevice ? .78 : .68,
+  roughnessMap: asphaltMaps.roughnessMap,
+  bumpMap: asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? .009 : .018,
+  roughness: acRacingMobileDevice ? .84 : .74,
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
@@ -5546,7 +5546,7 @@ function acAdvanceRoadSurface(scroll) {
 const city = [];
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
 // Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
-const buildingPalette = [0x3a5068, 0x435d76, 0x4d6780, 0x3d5670, 0x536d85, 0x374f67];
+const buildingPalette = [0xd9c8ae, 0xe4d4bd, 0xcbb99e, 0xd5d0c5, 0xe2d5c2, 0xc4ced5];
 const buildingMaterials = buildingPalette.map((color, index) => new THREE.MeshStandardMaterial({
   color,
   map: facadeTextures[index % facadeTextures.length],
@@ -5779,8 +5779,8 @@ for (let i = 0; i < 33; i++) {
   city.push(building);
 }
 
-// Временный чистый режим трассы: город вернём отдельными этапами после проверки основы.
-for (const building of city) building.visible = false;
+// V27: keep the detailed city blocks active in race mode; they scroll at distant-scene parallax.
+for (const building of city) building.visible = true;
 
 /* ALLCOINS RACING CITY-SIDE FENCE — секционное металлическое ограждение с диагональными распорками. */
 const acCityFence = new THREE.Group();
@@ -5954,10 +5954,10 @@ const acTrackTreeTrunkMaterial = new THREE.MeshStandardMaterial({
   color: 0x252b31, roughness: .98, metalness: 0
 });
 const acTrackTreeMaterial = new THREE.MeshStandardMaterial({
-  color: 0x263846, roughness: .98, metalness: 0
+  color: 0x3b5b4a, roughness: .98, metalness: 0
 });
 const acTrackTreeSnowMaterial = new THREE.MeshStandardMaterial({
-  color: 0x8793a0, roughness: .96, metalness: 0
+  color: 0xc4d1dc, roughness: .96, metalness: 0
 });
 const acTrackTreeTrunks = new THREE.InstancedMesh(
   new THREE.CylinderGeometry(.075, .13, 1.15, 6),
@@ -6060,9 +6060,9 @@ const farWindowLitMaterial = new THREE.MeshStandardMaterial({
   color: 0xffc875, roughness: .42, emissive: 0xffa94a, emissiveIntensity: .95
 });
 const farBuildingMaterials = [
-  new THREE.MeshStandardMaterial({ color: 0x26374d, roughness: .94, metalness: .02 }),
-  new THREE.MeshStandardMaterial({ color: 0x304158, roughness: .92, metalness: .02 }),
-  new THREE.MeshStandardMaterial({ color: 0x1e3047, roughness: .94, metalness: .02 })
+  new THREE.MeshStandardMaterial({ color: 0x526b80, roughness: .94, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0x647d91, roughness: .92, metalness: .02 }),
+  new THREE.MeshStandardMaterial({ color: 0x455e73, roughness: .94, metalness: .02 })
 ];
 for (let i = 0; i < farCityTowerCount; i++) {
   const random = acSeededRandom(88001 + i * 157);
@@ -6099,7 +6099,7 @@ const farLitMesh = acCreateInstancedFromMatrices(farWindowGeometry, farWindowLit
 if (farDarkMesh) distantHills.add(farDarkMesh);
 if (farLitMesh) distantHills.add(farLitMesh);
 scene.add(distantHills);
-distantHills.visible = false;
+distantHills.visible = true;
 
 const carAnchor = -4.6;
 
@@ -6123,9 +6123,9 @@ function acCreateSoftContactShadowTexture() {
 const acVehicleShadowTexture = acCreateSoftContactShadowTexture();
 const acVehicleShadowMaterial = new THREE.MeshBasicMaterial({
   map: acVehicleShadowTexture,
-  color: 0x101722,
+  color: 0x080d15,
   transparent: true,
-  opacity: .78,
+  opacity: .92,
   depthWrite: false,
   side: THREE.DoubleSide,
   toneMapped: false
@@ -6214,7 +6214,10 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   skylineOffsetZ: -48,
   cameraViewHeight: acRacingMobileDevice ? 8.25 : 9.1,
   cityLightingExposure: renderer.toneMappingExposure,
-  cityLightingStyle: "night-city-blue-hour",
+  cityLightingStyle: "warm-blue-hour",
+  cityBlocksVisible: city.some(building => building.visible),
+  distantSkylineVisible: distantHills.visible,
+  asphaltSurfaceFinish: "graphite-blue textured satin",
   cityFacadeTexture: "deep-blue-grey-night-facades",
   speedometerDigitalLayerAboveNeedle: true
 });
@@ -6233,7 +6236,7 @@ scene.add(acV4CarRim, acV4CarRim.target);
 const acV4WarmFill = new THREE.PointLight(0xffc98c, 1.8, 22, 2);
 acV4WarmFill.position.set(-4.4, 3.6, 4.2);
 scene.add(acV4WarmFill);
-if (typeof renderer !== "undefined" && renderer && "toneMappingExposure" in renderer) renderer.toneMappingExposure = .98;
+if (typeof renderer !== "undefined" && renderer && "toneMappingExposure" in renderer) renderer.toneMappingExposure = .96;
 scene.traverse((o) => {
   if (!o.isMesh || !o.material) return;
   const name = String(o.name || "").toLowerCase();
@@ -6254,28 +6257,29 @@ scene.traverse((o) => {
    Только визуальные эффекты. Физика, двигатель, передачи, колёса и управление не изменяются. */
 
 // Мягко усиливаем уже созданное V4 освещение, не добавляя тяжёлые источники теней.
-acV4SkyFill.intensity = .18;
-acV4CarKey.intensity = .78;
-acV4CarRim.intensity = .55;
-acV4WarmFill.intensity = .88;
-renderer.toneMappingExposure = .98;
+acV4SkyFill.intensity = .24;
+acV4CarKey.intensity = .88;
+acV4CarRim.intensity = .62;
+acV4WarmFill.intensity = .72;
+renderer.toneMappingExposure = 1.02;
 
 // Дополнительный мягкий контровой свет для боковой поверхности автомобиля.
-const acV5BodyLight = new THREE.DirectionalLight(0xdceaff, 0.28);
+const acV5BodyLight = new THREE.DirectionalLight(0xe4efff, 0.38);
 acV5BodyLight.position.set(-10, 5.8, 13);
 acV5BodyLight.target.position.set(-4.2, 1.05, 0);
 scene.add(acV5BodyLight, acV5BodyLight.target);
 
 // Небольшой тёплый свет возле кузова помогает отделить автомобиль от тёмного города.
-const acV5WarmBodyFill = new THREE.PointLight(0xffd6ad, 0.62, 18, 2);
+const acV5WarmBodyFill = new THREE.PointLight(0xffd6ad, 0.52, 18, 2);
 acV5WarmBodyFill.position.set(-7.0, 2.8, 5.8);
 scene.add(acV5WarmBodyFill);
 
 // Умеренное усиление отражающего вида дорожного покрытия.
-roadMat.color.set(0xb9bbef);
-roadMat.roughness = 0.44;
-roadMat.metalness = 0.035;
-roadMat.bumpScale = 0.028;
+// Dark graphite-blue asphalt with visible aggregate; wetness comes from fine reflections, not a mirror finish.
+roadMat.color.set(0x9eafc0);
+roadMat.roughness = 0.78;
+roadMat.metalness = 0.012;
+roadMat.bumpScale = acRacingMobileDevice ? .012 : .022;
 
 // Световые блики на мокром асфальте. InstancedMesh ограничивает число draw calls для Android.
 const acV5WetGeometry = new THREE.PlaneGeometry(1, 1);
@@ -6663,11 +6667,10 @@ function acV5EnhanceCarBody(root) {
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material || material.userData.acV5BodyEnhanced) continue;
-      if (material.color) material.color.multiplyScalar(1.12);
-      if (material.emissive) {
-        material.emissive.set(0x0a1420);
-        material.emissiveIntensity = Math.max(Number(material.emissiveIntensity) || 0, 0.12);
-      }
+      if (material.color) material.color.multiplyScalar(1.08);
+      // Avoid a self-lit blue tint: the paint should read from real highlights and reflections.
+      if (material.emissive) material.emissive.set(0x000000);
+      if ("emissiveIntensity" in material) material.emissiveIntensity = 0;
       if (Number.isFinite(material.roughness)) material.roughness = Math.min(material.roughness, 0.48);
       if (Number.isFinite(material.metalness)) material.metalness = Math.max(material.metalness, 0.12);
       material.userData.acV5BodyEnhanced = true;
@@ -7272,6 +7275,8 @@ function setGarageMode(enabled) {
   resize();
   acGarageWorld.visible = active;
   const trackVisible = !active;
+  for (const building of city) building.visible = trackVisible;
+  distantHills.visible = trackVisible;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
   for (const mark of laneMarks) mark.visible = trackVisible;
@@ -8012,26 +8017,26 @@ function acRacingEnhanceCarSurface(root) {
     const originalMetalness = Number.isFinite(source.metalness) ? source.metalness : 0;
 
     if (preset === "body-clearcoat") {
-      material.clearcoat = .82;
-      material.clearcoatRoughness = .19;
-      material.roughness = Math.max(.2, Math.min(originalRoughness, .34));
-      material.metalness = Math.max(originalMetalness, .12);
+      material.clearcoat = .94;
+      material.clearcoatRoughness = .14;
+      material.roughness = Math.max(.17, Math.min(originalRoughness, .28));
+      material.metalness = Math.max(originalMetalness, .16);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .36;
+      material.envMapIntensity = .48;
     } else if (preset === "chrome-metal") {
       material.clearcoat = .16;
       material.clearcoatRoughness = .23;
       material.roughness = Math.max(.18, Math.min(originalRoughness, .34));
       material.metalness = Math.max(originalMetalness, .76);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .58;
+      material.envMapIntensity = .68;
     } else if (preset === "window-glass") {
       material.clearcoat = .68;
       material.clearcoatRoughness = .12;
       material.roughness = Math.max(.08, Math.min(originalRoughness, .2));
       material.metalness = Math.min(originalMetalness, .08);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .5;
+      material.envMapIntensity = .58;
     } else if (preset === "tire-rubber") {
       material.clearcoat = .025;
       material.clearcoatRoughness = .7;
