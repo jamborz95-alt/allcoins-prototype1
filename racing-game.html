@@ -8531,6 +8531,52 @@ function attachVehicle(root,label='сохранённая модель'){
   }else{
     console.warn('ALLCOINS Racing V6 · Car_Bottom_0 found, but four safe wheel islands were not identified; original geometry kept intact');
   }
+  // Correct each wheel's spin-axis SIGN from the actual vehicle orientation.
+  // For forward travel (+X) the tyre top must move forward (+X); therefore
+  // angularAxis = localUp × localForward (normally -Z for this GLB).
+  // The old positive thin-axis default could make the whole wheel appear to
+  // rotate backwards, especially obvious at high speed.
+  let wheelSpinDirectionInfo = null;
+  if (wheelSourceMesh && wheelNodes.length === 4 &&
+      frontWheelNodes.length && rearWheelNodes.length) {
+    try {
+      vehicle.updateMatrixWorld(true);
+      const averageWheelCenter = nodes => nodes.reduce(
+        (sum,wheel) => sum.add(wheel.centerWorld), new THREE.Vector3()
+      ).multiplyScalar(1 / nodes.length);
+      const frontWorldCenter = averageWheelCenter(frontWheelNodes);
+      const rearWorldCenter = averageWheelCenter(rearWheelNodes);
+      const localFront = wheelSourceMesh.worldToLocal(frontWorldCenter.clone());
+      const localRear = wheelSourceMesh.worldToLocal(rearWorldCenter.clone());
+      const localOrigin = wheelSourceMesh.worldToLocal(new THREE.Vector3(0,0,0));
+      const localUp = wheelSourceMesh.worldToLocal(new THREE.Vector3(0,1,0))
+        .sub(localOrigin).normalize();
+      const localForward = localFront.sub(localRear);
+      localForward.addScaledVector(localUp,-localForward.dot(localUp)).normalize();
+      const desiredSpinAxis = localUp.clone().cross(localForward).normalize();
+      const wheelAxisChecks = [];
+      for (const wheel of wheelNodes) {
+        const axis = wheel.spinAxisParent;
+        const before = axis.dot(desiredSpinAxis);
+        if (Math.abs(before) > .25 && before < 0) axis.negate();
+        wheelAxisChecks.push({
+          wheel: wheel.node.name,
+          before: Number(before.toFixed(4)),
+          after: Number(axis.dot(desiredSpinAxis).toFixed(4))
+        });
+      }
+      wheelSpinDirectionInfo = {
+        localForward: localForward.toArray().map(v=>Number(v.toFixed(4))),
+        localUp: localUp.toArray().map(v=>Number(v.toFixed(4))),
+        desiredSpinAxis: desiredSpinAxis.toArray().map(v=>Number(v.toFixed(4))),
+        wheels: wheelAxisChecks
+      };
+      window.__allcoinsRacingWheelSpinDirectionDiagnostics = Object.freeze(wheelSpinDirectionInfo);
+      console.info("ALLCOINS Racing · wheel rotation direction calibrated",wheelSpinDirectionInfo);
+    } catch(error) {
+      console.warn("ALLCOINS Racing · could not calibrate wheel spin direction",error);
+    }
+  }
   // The GLB can store rubber tyres in separate named meshes while the rim faces
   // live inside Car_Bottom_0. Attach those tyre islands to the same four pivots
   // so the complete wheel (rubber + rim) rotates as one assembly.
