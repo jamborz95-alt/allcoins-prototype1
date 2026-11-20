@@ -183,6 +183,11 @@ try {
   page.on("pageerror", error => pageErrors.push(error.message));
 
   const apiCalls = [];
+  // Exercise the network-download fallback deterministically; IndexedDB persistence is covered by the live browser itself.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined });
+  });
+
   await page.route("**/api/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -281,10 +286,10 @@ try {
       return status.includes("3D-модель передана в игровую сцену") || status.includes("Ошибка загрузки автомобиля");
     }, null, { timeout: 10000 });
   } catch (error) {
-    const transferDiagnostic = await page.evaluate(() => ({
-      overlay: document.querySelector("#allcoinsRacingV24Overlay")?.textContent || null,
-      apiCalls: window.__racingTestApiCalls || null
-    }));
+    const transferDiagnostic = {
+      overlay: await page.locator("#allcoinsRacingV24Overlay").innerText().catch(() => null),
+      apiCalls: [...apiCalls]
+    };
     const gameDiagnostic = await gameFrame.evaluate(() => ({
       messageTitle: document.querySelector("#message strong")?.textContent || null,
       message: document.querySelector("#messageText")?.textContent || null,
