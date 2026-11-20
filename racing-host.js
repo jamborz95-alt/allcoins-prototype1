@@ -6,9 +6,12 @@
   const CHUNK_SIZE = 4 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
   // The multiplayer-room API remains on RACING_API_BASE; only the GLB source moves to Amvera.
+  const RACING_AMVERA_API_META = document.querySelector('meta[name="allcoins-racing-amvera-api"]');
+  // A present-but-empty meta tag intentionally selects the legacy PC tunnel for local bridge tests.
   const RACING_AMVERA_API_BASE = String(
-    document.querySelector('meta[name="allcoins-racing-amvera-api"]')?.content ||
-      "https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
+    RACING_AMVERA_API_META
+      ? RACING_AMVERA_API_META.content
+      : "https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
   ).trim().replace(/\/+$/, "");
   // A separate cache key forces a clean fetch from the Amvera asset endpoint.
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
@@ -798,7 +801,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261120-larger-detailed-rolling-wheels-v162", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261120-larger-detailed-rolling-wheels-v163", document.baseURI);
       const sceneResponse = await fetch(sceneUrl.toString(), {
         method: "GET",
         cache: "no-store",
