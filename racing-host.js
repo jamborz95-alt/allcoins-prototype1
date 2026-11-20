@@ -17,7 +17,7 @@
   const MODEL_CACHE_DB = "allcoins-racing-model-cache";
   const MODEL_CACHE_STORE = "models";
   const MODEL_CACHE_KEY = RACING_AMVERA_API_BASE
-    ? "v24-vaz-2107-amvera-glb-v2"
+    ? "v24-vaz-2107-amvera-glb-v3-20261120"
     : "v24-vaz-2107-glb-63426260-v1";
 
   let engineToken = "";
@@ -378,7 +378,7 @@
         }
       }
 
-      if (cachedModel && (!remoteVersion || cachedModel.remoteVersion === remoteVersion)) {
+      if (cachedModel && remoteVersion && cachedModel.remoteVersion === remoteVersion) {
         setStatus(remoteVersion
           ? "Актуальная 3D-модель уже загружена"
           : "Нет связи с Amvera: используем сохранённую модель", false);
@@ -391,7 +391,7 @@
 
       try {
         const saved = await readCachedModel();
-        if (saved && (!remoteVersion || saved.remoteVersion === remoteVersion)) {
+        if (saved && remoteVersion && saved.remoteVersion === remoteVersion) {
           const model = {
             buffer: saved.buffer,
             fileName: saved.fileName || "vaz-2107.glb",
@@ -413,7 +413,8 @@
       let fileName = "vaz-2107.glb";
       const useAmveraAsset = Boolean(RACING_AMVERA_API_BASE);
       const assetUrl = useAmveraAsset
-        ? RACING_AMVERA_API_BASE + "/api/racing/vaz-2107.glb"
+        ? RACING_AMVERA_API_BASE + "/api/racing/vaz-2107.glb" +
+          (remoteVersion ? "?v=" + encodeURIComponent(remoteVersion) : "?fresh=" + Date.now())
         : apiUrl("/api/racing/shared-model-asset");
 
       if (!useAmveraAsset) {
@@ -551,6 +552,8 @@
     target.postMessage({
       type: "allcoins:car-model",
       fileName: model.fileName,
+      byteLength: model.buffer.byteLength,
+      remoteVersion: model.remoteVersion || null,
       buffer: transferable
     }, targetOrigin, [transferable]);
     hideModelProgress();
