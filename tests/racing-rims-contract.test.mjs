@@ -48,7 +48,7 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.doesNotMatch(page, /openingShadowMaterial|openingBacking|recessMaterial/);
   assert.match(page, /const originalRimGeometries=\[\]/);
   assert.match(page, /ALLCOINS_OriginalRimGeometry_/);
-  assert.match(page, /wheel\.originalRimMesh\.visible = rimId === "stock"/);
+  assert.match(page, /wheel\.originalRimMesh\.visible = true/);\n  assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);\n  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
@@ -305,7 +305,7 @@ test("mobile racing quality is sharper and idle rendering is throttled to reduce
   assert.match(page, /antialias: true/);
   assert.match(page, /const acMobilePixelRatioCap = 1\.28/);
   assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
-  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?4:8/);
+  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
   assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
   assert.match(page, /acNextRaceProgressUpdateAt=now\+100/);
   assert.match(page, /acWheelSpinScratchQuaternion\.setFromAxisAngle/);
@@ -392,8 +392,22 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
   assert.match(page, /material\.clearcoatRoughness = \.19/);
   assert.match(page, /material\.envMapIntensity = \.58/);
   assert.match(page, /material\.roughness = Math\.max\(originalRoughness, \.84\)/);
-  assert.match(page, /acRacingEnhanceCarSurface\(vehicle\);if\(acGarageSelectedPaint\)/);
-  assert.match(page, /Math\.min\(acRacingMobileDevice\?6:8,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
+  assert.match(page, /acRacingEnhanceCarSurface\(vehicle\)/);
+  assert.match(page, /Math\.min\(acRacingMobileDevice\?8:12,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
   assert.match(page, /sourceGeometryPreserved: true/);
   assert.match(page, /ALLCOINS RACING V160/);
+});
+
+
+test("V162 enlarges the race car and makes the rotating factory wheels more detailed", () => {
+  assert.match(page, /acRacingMobileDevice \? 8\.25 : 9\.1/);
+  assert.match(page, /function acRacingEnhanceWheelRubber\(wheel\)/);
+  assert.match(page, /material\.roughness = Math\.max\(\.88/);
+  assert.match(page, /function acGarageBuildWheelRimOverlay\(wheel, style, rimId\)/);
+  assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
+  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
+  assert.match(page, /wheel\.node\.add\(overlay\)/);
+  assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
+  assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
+  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
 });
