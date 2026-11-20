@@ -347,3 +347,9 @@ test("racing scene adds lightweight cinematic lighting and contact shadows", () 
   assert.match(page, /const acRainCount=acRacingMobileDevice \? 72 : 180/);
   assert.match(page, /acVehicleShadow\.visible\s*=\s*trackVisible && Boolean\(vehicle\)/);
 });
+
+
+test("distant city skyline is visible in race mode", () => {
+  assert.match(page, /distantHills\.visible = trackVisible/);
+  assert.match(page, /skylineTowerCount: farCityTowerCount/);
+});
