@@ -4382,17 +4382,32 @@ function acRacingEnhanceWheelRubber(wheel) {
   if (!tireMesh || tireMesh.userData.acRacingTireMaterialEnhanced) return false;
   const enhance = source => {
     if (!source) return source;
-    const material = new THREE.MeshPhysicalMaterial();
-    material.copy(source);
+    // Do not call Material.copy() here: some imported GLB wheel materials omit
+    // optional vector fields (for example normalScale), which makes Three.js
+    // copy(undefined) throw and prevents the entire VAZ model from attaching.
+    // Build a tyre-only material explicitly and keep any available source maps.
+    const tireColor = source.color?.clone
+      ? source.color.clone().multiplyScalar(.68)
+      : new THREE.Color(0x34383d);
+    const material = new THREE.MeshStandardMaterial({
+      color: tireColor,
+      map: source.map || null,
+      alphaMap: source.alphaMap || null,
+      normalMap: source.normalMap || null,
+      roughnessMap: source.roughnessMap || null,
+      aoMap: source.aoMap || null,
+      transparent: Boolean(source.transparent),
+      opacity: Number.isFinite(source.opacity) ? source.opacity : 1,
+      alphaTest: Number.isFinite(source.alphaTest) ? source.alphaTest : 0,
+      side: source.side,
+      vertexColors: Boolean(source.vertexColors),
+      metalness: 0,
+      roughness: Math.max(.88, Number(source.roughness) || .5)
+    });
     material.name = (source.name || "Wheel material") + " · ALLCOINS tyre rubber";
-    if (source.color) material.color.copy(source.color).multiplyScalar(.68);
-    else material.color.set(0x34383d);
     material.metalness = 0;
     material.roughness = Math.max(.88, Number(source.roughness) || .5);
-    material.clearcoat = .018;
-    material.clearcoatRoughness = .82;
     material.envMap = null;
-    material.envMapIntensity = 0;
     material.needsUpdate = true;
     return material;
   };
