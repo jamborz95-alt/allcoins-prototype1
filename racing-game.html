@@ -8310,6 +8310,9 @@ function attachVehicle(root,label='сохранённая модель'){
     rootVisible: vehicle.visible === true,
     visibleMeshCount: visibleMeshes.filter(object => object.visible).length,
     meshCount: visibleMeshes.length,
+    wheelCount: wheelNodes.length,
+    frontWheelCount: frontWheelNodes.length,
+    rearWheelCount: rearWheelNodes.length,
     worldCenter: [visibleCenter.x, visibleCenter.y, visibleCenter.z].map(value => Number(value.toFixed(3))),
     cameraTarget: [camera.position.x, camera.position.y, camera.position.z].map(value => Number(value.toFixed(3))),
     playerLaneZ: AC_PLAYER_LANE_Z
