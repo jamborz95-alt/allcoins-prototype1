@@ -400,7 +400,7 @@ try {
       hostMessages: window.__allcoinsTestHostMessages || [],
       threeLoaded: Boolean(window.THREE && window.THREE.GLTFLoader)
     }));
-    await gameFrame.screenshot({ path: resolve(root, "artifacts", "racing-model-load-failure.png") });
+    await gameFrame.locator("body").screenshot({ path: resolve(root, "artifacts", "racing-model-load-failure.png") });
     throw new Error("GLB parse/attach diagnostic: " + JSON.stringify(modelDiagnostic) + "; " + error.message);
   }
   await gameFrame.evaluate(() => setGarageMode(false));
