@@ -1,0 +1,39 @@
+name: ALLCOINS Racing visual checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "racing-game.html"
+      - "racing-host.js"
+      - "vendor/three-r147.min.js"
+      - "vendor/GLTFLoader-r147.js"
+      - "tests/racing-v24-host-smoke.mjs"
+      - ".github/workflows/racing-visual.yml"
+  workflow_dispatch:
+
+jobs:
+  race-3d-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout ALLCOINS
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npm init -y && npm install --no-save playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run real 3D scene and VAZ wheel smoke test
+        run: node --check racing-host.js && node --check tests/racing-v24-host-smoke.mjs && node tests/racing-v24-host-smoke.mjs
+      - name: Upload race screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allcoins-racing-3d-visual-check
+          path: artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 7
