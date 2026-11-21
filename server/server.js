@@ -143,7 +143,7 @@ function verifyTelegramLoginWidget(payload, botToken) {
   const dataCheckString = entries
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}=${String(value)}`)
-    .join("\\n");
+    .join("\n");
   const secretKey = crypto.createHash("sha256").update(botToken).digest();
   const calculatedHash = crypto.createHmac("sha256", secretKey)
     .update(dataCheckString)
