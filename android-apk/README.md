@@ -1,13 +1,15 @@
-# Дурак Онлайн — Android APK
+# ALLCOINS — Android APK
 
-The installable Android app is a small native launcher for the existing ALLCOINS Telegram Mini App.
+This Android package installs as **ALLCOINS** and opens the existing ALLCOINS Telegram Mini App.
 
 ## Why the game opens through Telegram
 
-The current game backend verifies Telegram Mini App `initData` for room and player requests. A normal Android WebView does not receive Telegram-signed `initData`, so loading the website directly inside an APK would show the interface but multiplayer actions would fail authentication. The APK therefore opens the configured Mini App link in Telegram, where the existing authentication and online game continue to work.
+The existing game backend validates Telegram Mini App `initData` for account, balance, and online game requests. A standalone Android WebView does not receive Telegram-signed `initData`; loading the website directly inside an APK would show the interface but protected account and multiplayer operations would fail authentication.
+
+The APK therefore opens the configured ALLCOINS Mini App link in Telegram. The game, current account, server connection, and online rooms remain the existing Telegram version. No game source, database, or Telegram URL is changed by this Android launcher.
 
 ## Build
 
-The GitHub Actions workflow builds an installable debug APK and publishes it as a GitHub Release asset. The APK is named `durak-online.apk`.
+GitHub Actions builds a debug APK artifact named `allcoins.apk`.
 
 Application ID: `com.allcoins.durakonline`

@@ -17,7 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-    // Telegram has to open the Mini App so the backend can validate signed initData.
+    // Keep Telegram's signed Mini App initData and the existing online account flow.
     private static final String TELEGRAM_GAME_LINK =
             "https://t.me/allcoins95_bot?startapp=apk";
 
@@ -43,40 +43,39 @@ public class MainActivity extends Activity {
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{Color.rgb(19, 52, 78), navy, Color.rgb(4, 12, 22)}));
 
-        TextView suit = new TextView(this);
-        suit.setText("♠  ♦  ♣  ♥");
-        suit.setTextColor(gold);
-        suit.setTextSize(24);
-        suit.setGravity(Gravity.CENTER);
-        suit.setLetterSpacing(0.08f);
-        root.addView(suit, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(48)));
+        TextView emblem = new TextView(this);
+        emblem.setText("✦");
+        emblem.setTextColor(gold);
+        emblem.setTextSize(44);
+        emblem.setGravity(Gravity.CENTER);
+        root.addView(emblem, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(58)));
 
         TextView brand = new TextView(this);
         brand.setText("ALLCOINS");
         brand.setTextColor(gold);
-        brand.setTextSize(15);
+        brand.setTextSize(30);
         brand.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         brand.setGravity(Gravity.CENTER);
-        brand.setLetterSpacing(0.22f);
+        brand.setLetterSpacing(0.16f);
         LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(34));
-        brandParams.topMargin = dp(10);
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+        brandParams.topMargin = dp(8);
         root.addView(brand, brandParams);
 
         TextView title = new TextView(this);
-        title.setText("ДУРАК ОНЛАЙН");
+        title.setText("ИГРОВОЕ ПРИЛОЖЕНИЕ");
         title.setTextColor(cream);
-        title.setTextSize(27);
+        title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        titleParams.topMargin = dp(6);
+        titleParams.topMargin = dp(8);
         root.addView(title, titleParams);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("Карточная игра с друзьями");
+        subtitle.setText("Игры, профиль и баланс ALLCOINS");
         subtitle.setTextColor(mint);
         subtitle.setTextSize(15);
         subtitle.setGravity(Gravity.CENTER);
@@ -86,7 +85,7 @@ public class MainActivity extends Activity {
         root.addView(subtitle, subParams);
 
         TextView note = new TextView(this);
-        note.setText("Для защищённого входа и онлайн-комнат игра открывается через Telegram.");
+        note.setText("Нажми кнопку, чтобы открыть текущую версию ALLCOINS. Для защищённого входа и онлайн-игр приложение использует Telegram.");
         note.setTextColor(Color.rgb(208, 220, 232));
         note.setTextSize(14);
         note.setGravity(Gravity.CENTER);
@@ -97,7 +96,7 @@ public class MainActivity extends Activity {
         root.addView(note, noteParams);
 
         Button play = new Button(this);
-        play.setText("ИГРАТЬ В TELEGRAM");
+        play.setText("ОТКРЫТЬ ALLCOINS");
         play.setTextColor(Color.rgb(15, 32, 43));
         play.setTextSize(15);
         play.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -119,7 +118,7 @@ public class MainActivity extends Activity {
         });
 
         TextView footer = new TextView(this);
-        footer.setText("Интернет необходим");
+        footer.setText("Требуются Telegram и подключение к интернету");
         footer.setTextColor(Color.rgb(154, 173, 190));
         footer.setTextSize(12);
         footer.setGravity(Gravity.CENTER);

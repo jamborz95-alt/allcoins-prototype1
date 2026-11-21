@@ -1,15 +1,15 @@
-name: Build Durak Online APK
+name: Build ALLCOINS APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, build/allcoins-apk]
     paths:
       - "android-apk/**"
       - ".github/workflows/build-durak-apk.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-apk:
@@ -42,26 +42,12 @@ jobs:
         run: |
           gradle -p android-apk :app:assembleDebug
           mkdir -p release-assets
-          cp android-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/durak-online.apk
+          cp android-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/allcoins.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: durak-online-apk
-          path: release-assets/durak-online.apk
+          name: allcoins-apk
+          path: release-assets/allcoins.apk
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publish APK GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Дурак Онлайн APK v1.0.${{ github.run_number }}
-          body: |
-            Установочный APK Дурак Онлайн.
-
-            Это приложение открывает текущую онлайн-игру в Telegram, чтобы сохранить безопасную авторизацию и работу комнат.
-            Файл: durak-online.apk
-          files: release-assets/durak-online.apk
-          make_latest: true
-          fail_on_unmatched_files: true
