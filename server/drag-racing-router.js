@@ -113,7 +113,11 @@ function displayName(user) {
 }
 
 function requireUser(req, res, verifyTelegram) {
-  const verified = verifyTelegram(req.body?.initData);
+  const telegramCredentials = req.body?.telegramLogin &&
+    typeof req.body.telegramLogin === "object"
+      ? req.body.telegramLogin
+      : req.body?.initData;
+  const verified = verifyTelegram(telegramCredentials);
   if (!verified?.id) {
     res.status(401).json({ ok: false, error: "Открой «Драг-рейсинг» через ALLCOINS в Telegram." });
     return null;
