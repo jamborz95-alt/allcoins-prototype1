@@ -10482,5 +10482,59 @@ body.race-mode #gearSelector { display:grid!important; }
 @media(max-height:520px) and (orientation:landscape){#brake{right:102px!important}}
 </style>
 
+
+<!-- ALLCOINS ANDROID PERFORMANCE HUD V168: tap the compact badge to inspect live device/render metrics. -->
+<style id="acPerfHudStyles">
+#acPerfHud{position:fixed;z-index:2147483000;top:max(7px,env(safe-area-inset-top));right:8px;font:11px/1.35 system-ui,Arial,sans-serif;color:#f5f7fb;pointer-events:auto;user-select:none}
+#acPerfHud button{border:1px solid rgba(233,185,79,.65);border-radius:8px;background:rgba(8,13,20,.88);color:#fff;padding:6px 9px;font:600 11px system-ui;box-shadow:0 2px 10px #0006}
+#acPerfHudPanel{display:none;margin-top:5px;width:min(260px,78vw);padding:9px 10px;border:1px solid rgba(233,185,79,.55);border-radius:9px;background:rgba(7,11,18,.94);box-shadow:0 4px 18px #0008;white-space:pre-line}
+#acPerfHud.open #acPerfHudPanel{display:block}
+#acPerfHudPanel strong{color:#f2c65c}
+</style>
+<div id="acPerfHud" aria-live="polite">
+  <button id="acPerfHudToggle" type="button">FPS · собираем</button>
+  <div id="acPerfHudPanel">Собираем показатели…</div>
+</div>
+<script id="acPerfHudScript">
+(function(){
+  const root=document.getElementById("acPerfHud");
+  const toggle=document.getElementById("acPerfHudToggle");
+  const panel=document.getElementById("acPerfHudPanel");
+  if(!root||!toggle||!panel)return;
+  toggle.addEventListener("click",function(){root.classList.toggle("open");});
+  let longTaskMs=0;
+  try{
+    if("PerformanceObserver" in window){
+      const observer=new PerformanceObserver(list=>{
+        for(const entry of list.getEntries())longTaskMs+=entry.duration;
+      });
+      observer.observe({type:"longtask",buffered:true});
+    }
+  }catch(_){}
+  const memory=()=>performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576)+" MB":"н/д";
+  function update(){
+    const d=window.__allcoinsRacingPerformanceDiagnostics;
+    if(!d){toggle.textContent="FPS · собираем";panel.textContent="Ожидание первого замера сцены…";return;}
+    toggle.textContent="FPS "+d.fps+" · "+d.averageFrameMs+" мс";
+    panel.textContent=[
+      "ПРОИЗВОДИТЕЛЬНОСТЬ ANDROID",
+      "FPS: "+d.fps+" | кадр: "+d.averageFrameMs+" мс",
+      "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
+      "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
+      "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
+      "Геометрия: "+d.geometries+" | текстуры: "+d.textures,
+      "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
+      "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
+      "Профиль: "+d.mobileQualityProfile,
+      "Автооптимизация: "+(d.qualityFallback||"нет"),
+      "JS-память: "+memory()+" | long tasks: "+longTaskMs.toFixed(0)+" мс",
+      "Сбор показателей идёт автоматически каждые ~1,5 сек."
+    ].join("\n");
+    longTaskMs=0;
+  }
+  update();
+  setInterval(update,1000);
+})();
+</script>
 </body>
 </html>
