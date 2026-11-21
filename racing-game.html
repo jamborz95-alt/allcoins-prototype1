@@ -10364,5 +10364,20 @@ body.race-mode #gearSelector { display:grid!important; }
 }
 </style>
 
+
+<style id="allcoins-racing-gas-size-v163">
+/* V163: make the accelerator significantly larger; leave brake and gear control untouched. */
+#gas{
+  width:clamp(76px,8.5vw,96px)!important;
+  height:clamp(84px,13vh,104px)!important;
+}
+@media(max-width:700px){
+  #gas{width:76px!important;height:84px!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #gas{width:68px!important;height:74px!important}
+}
+</style>
+
 </body>
 </html>
