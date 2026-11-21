@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Вход в ALLCOINS Drag Racing</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#0a111d;color:#edf3fa;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+    main{width:min(100%,420px);padding:24px;border:1px solid #30445b;border-radius:18px;background:#121f2e;text-align:center;box-shadow:0 18px 55px #0008}
+    h1{margin:0 0 8px;font-size:22px}
+    p{color:#aebed0;font-size:14px;line-height:1.5}
+    #status{min-height:24px;margin-top:16px;color:#9ce5b0;font-size:13px}
+    #widget{display:flex;justify-content:center;min-height:48px;margin-top:20px}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ALLCOINS Drag Racing</h1>
+    <p>Подтверди вход своим Telegram-аккаунтом. Данные авторизации будут переданы только в открытое приложение ALLCOINS.</p>
+    <div id="widget"></div>
+    <div id="status" role="status">Ожидаем подтверждение Telegram…</div>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      const ALLOWED_PARENT_ORIGINS = new Set([
+        "https://localhost",
+        "capacitor://localhost",
+        "http://localhost",
+        "https://jamborz95-alt.github.io"
+      ]);
+      const requestedOrigin = new URLSearchParams(location.search).get("parentOrigin") || "";
+      const targetOrigin = ALLOWED_PARENT_ORIGINS.has(requestedOrigin) ? requestedOrigin : "";
+      const status = document.getElementById("status");
+
+      window.onTelegramAuth = function (user) {
+        if (!user || !user.id || !user.auth_date || !user.hash) {
+          status.textContent = "Telegram не вернул полные данные авторизации.";
+          return;
+        }
+        if (!targetOrigin || window.parent === window) {
+          status.textContent = "Вход подтверждён. Вернись в приложение ALLCOINS.";
+          return;
+        }
+        window.parent.postMessage({
+          type: "allcoins-drag-racing-telegram-auth",
+          user
+        }, targetOrigin);
+        status.textContent = "Вход подтверждён. Можно вернуться в игру.";
+      };
+
+      const widget = document.createElement("script");
+      widget.async = true;
+      widget.src = "https://telegram.org/js/telegram-widget.js?22";
+      widget.setAttribute("data-telegram-login", "allcoins95_bot");
+      widget.setAttribute("data-size", "large");
+      widget.setAttribute("data-userpic", "false");
+      widget.setAttribute("data-request-access", "write");
+      widget.setAttribute("data-onauth", "onTelegramAuth(user)");
+      document.getElementById("widget").appendChild(widget);
+    })();
+  </script>
+</body>
+</html>
