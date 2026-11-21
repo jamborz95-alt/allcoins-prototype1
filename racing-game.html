@@ -10403,5 +10403,13 @@ body.race-mode #gearSelector { display:grid!important; }
 }
 </style>
 
+
+<style id="allcoins-racing-brake-position-v165">
+/* V165: move only the brake pedal slightly to the left. */
+#brake{right:clamp(104px,calc(10vw + 38px),142px)!important;left:auto!important}
+@media(max-width:700px){#brake{right:104px!important}}
+@media(max-height:520px) and (orientation:landscape){#brake{right:102px!important}}
+</style>
+
 </body>
 </html>
