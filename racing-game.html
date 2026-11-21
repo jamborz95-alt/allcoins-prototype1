@@ -10319,5 +10319,35 @@ body.race-mode #gearSelector { display:grid!important; }
 }
 </style>
 
+
+<style id="allcoins-racing-controls-v161">
+/* V161: move both pedals farther left, slightly enlarge gas, and shift gear selector left. */
+#brake{
+  right:clamp(94px,calc(10vw + 28px),132px)!important;
+  left:auto!important;
+}
+#gas{
+  right:clamp(38px,calc(2vw + 22px),54px)!important;
+  width:clamp(56px,7vw,74px)!important;
+  height:clamp(62px,11vh,80px)!important;
+}
+#gearSelector{
+  left:max(8px,calc(50% - 184px))!important;
+}
+@media(max-width:700px){
+  #brake{right:94px!important}
+  #gas{right:38px!important;width:56px!important;height:62px!important}
+  #gearSelector{left:max(8px,calc(50% - 176px))!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #brake{right:92px!important;width:50px!important;height:54px!important}
+  #gas{right:36px!important;width:50px!important;height:54px!important}
+  #gearSelector{left:max(8px,calc(50% - 174px))!important}
+}
+@media(max-width:390px) and (orientation:landscape){
+  #gearSelector{left:max(6px,calc(50% - 166px))!important}
+}
+</style>
+
 </body>
 </html>
