@@ -8686,95 +8686,6 @@ function attachVehicle(root,label='сохранённая модель'){
 }
 
 function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
-let acPendingCarModelTransfer = null;
-let acDirectModelFallbackPromise = null;
-let acDirectModelInstalled = false;
-
-async function acLoadSavedModelDirectlyFromAmvera() {
-  if (acDirectModelFallbackPromise) return acDirectModelFallbackPromise;
-  acDirectModelFallbackPromise = (async () => {
-    const base = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
-    const infoResponse = await fetch(base + "/api/racing/vaz-2107.glb?info=1", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "omit",
-      headers: { "Accept": "application/json" }
-    });
-    const info = await infoResponse.json().catch(() => ({}));
-    if (!infoResponse.ok || info.status !== "ok") {
-      throw new Error(info.error || "Amvera не подтвердила сохранённую ВАЗ-2107 (HTTP " + infoResponse.status + ").");
-    }
-
-    const totalBytes = Number(info.bytes);
-    if (!Number.isSafeInteger(totalBytes) || totalBytes < 20 || totalBytes > 104857600 ||
-        Number(info.glbVersion) !== 2) {
-      throw new Error("Amvera вернула неверные сведения о GLB 2.0.");
-    }
-
-    const combined = new Uint8Array(totalBytes);
-    const chunkSize = 1024 * 1024;
-    const parallelChunks = 4;
-    let receivedBytes = 0;
-
-    for (let batchStart = 0; batchStart < totalBytes; batchStart += chunkSize * parallelChunks) {
-      // If the Mini App begins its own transfer while this fallback is running,
-      // stop here and let the host's chunked transfer finish instead.
-      if (window.__allcoinsRacingBoot?.modelAckReceived) return;
-      const batch = [];
-      for (let start = batchStart; start < Math.min(totalBytes, batchStart + chunkSize * parallelChunks); start += chunkSize) {
-        const end = Math.min(totalBytes - 1, start + chunkSize - 1);
-        batch.push((async () => {
-          const response = await fetch(base + "/api/racing/vaz-2107.glb", {
-            method: "GET",
-            cache: "no-store",
-            credentials: "omit",
-            headers: { "Range": "bytes=" + start + "-" + end }
-          });
-          if (response.status !== 206) {
-            const detail = await response.json().catch(() => ({}));
-            throw new Error(detail.error || "Ошибка получения фрагмента ВАЗ-2107 (HTTP " + response.status + ").");
-          }
-          const expected = "bytes " + start + "-" + end + "/" + totalBytes;
-          if (response.headers.get("Content-Range") !== expected) {
-            throw new Error("Amvera вернула неверный диапазон GLB.");
-          }
-          const part = await response.arrayBuffer();
-          if (part.byteLength !== end - start + 1) {
-            throw new Error("Amvera передала неполный фрагмент GLB.");
-          }
-          combined.set(new Uint8Array(part), start);
-          return part.byteLength;
-        })());
-      }
-      const sizes = await Promise.all(batch);
-      receivedBytes += sizes.reduce((sum, size) => sum + size, 0);
-      const percent = Math.floor(receivedBytes / totalBytes * 100);
-      setMessage("Загрузка ВАЗ-2107", "Прямая загрузка из Amvera · " + percent + "%", true);
-    }
-
-    if (window.__allcoinsRacingBoot?.modelAckReceived) return;
-    const buffer = combined.buffer;
-    const header = new DataView(buffer, 0, 12);
-    if (header.getUint32(0, true) !== 0x46546c67 ||
-        header.getUint32(4, true) !== 2 ||
-        header.getUint32(8, true) !== totalBytes) {
-      throw new Error("Полученный файл не прошёл проверку GLB 2.0.");
-    }
-    const fileName = String(info.fileName || "vaz-2107.glb");
-    await acInstallReceivedCarModel(buffer, {
-      fileName,
-      byteLength: totalBytes,
-      remoteVersion: String(info.updatedAt || "")
-    });
-    acDirectModelInstalled = Boolean(window.__allcoinsRacingModelDiagnostics?.loaded);
-  })();
-  try {
-    return await acDirectModelFallbackPromise;
-  } finally {
-    acDirectModelFallbackPromise = null;
-  }
-}
-
 function requestSavedModel(){
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
@@ -8782,24 +8693,17 @@ function requestSavedModel(){
   setMessage('Загрузка ВАЗ-2107','3D-сцена запущена. Отправляю запрос на загрузку автомобиля…',true);
   try {
     window.parent.postMessage({type:'allcoins:request-car-model'},'*');
-    // If the game was opened without the Mini App host (or its message bridge
-    // is unavailable), fetch the same public read-only GLB directly from Amvera.
-    // A host acknowledgement cancels this fallback before it can duplicate a transfer.
     setTimeout(() => {
-      if (acDirectModelInstalled || window.__allcoinsRacingBoot?.modelAckReceived) return;
-      setMessage('Загрузка ВАЗ-2107','Хост не подтвердил запрос. Проверяю прямое соединение с Amvera…',true);
-      void acLoadSavedModelDirectlyFromAmvera().catch(error => {
-        if (window.__allcoinsRacingBoot?.modelAckReceived) return;
-        console.error("ALLCOINS Racing direct Amvera model fallback failed:", error);
-        window.__allcoinsRacingModelLoadError = String(error && error.stack || error).slice(0, 4000);
-        setMessage('Не удалось получить ВАЗ-2107',error?.message || 'Нет ответа от загрузчика и Amvera.',true);
-      });
-    }, 6500);
+      if (window.__allcoinsRacingBoot && !window.__allcoinsRacingBoot.modelAckReceived) {
+        window.__allcoinsRacingBootShow?.('Ожидание ответа загрузчика','Запрос отправлен из игровой сцены, но подтверждение от Mini App ещё не получено.');
+      }
+    }, 6000);
   } catch(e) {
     console.error(e);
     setMessage('Ошибка связи с Mini App',e.message||'Не удалось отправить запрос автомобиля.',true);
   }
 }
+let acPendingCarModelTransfer = null;
 
 async function acInstallReceivedCarModel(buffer, details) {
   const data = details || {};
