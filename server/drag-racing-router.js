@@ -112,9 +112,9 @@ function displayName(user) {
   return String(name || user?.username || "Игрок").slice(0, 40);
 }
 
-function requireUser(req, res, verifyTelegram) {
-  const telegramCredentials = req.body?.telegramLogin &&
-    typeof req.body.telegramLogin === "object"
+function requireUser(req, res, verifyTelegram, allowLoginWidget = false) {
+  const telegramCredentials = allowLoginWidget &&
+    req.body?.telegramLogin && typeof req.body.telegramLogin === "object"
       ? req.body.telegramLogin
       : req.body?.initData;
   const verified = verifyTelegram(telegramCredentials);
@@ -468,7 +468,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   };
 
   router.post("/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -489,7 +489,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/fuel/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -517,7 +517,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/fuel/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const liters = Number(req.body?.liters);
     if (!Number.isInteger(liters) || liters < 1 || liters > 50) {
@@ -571,7 +571,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/fuel/use", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const used = Number(req.body?.usedLiters);
     if (!Number.isFinite(used) || used < 0.01 || used > 1.00) {
@@ -601,7 +601,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/paint/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -630,7 +630,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/paint/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const paintId = String(req.body?.paintId || "");
     if (!Object.hasOwn(BODY_PAINTS, paintId)) {
@@ -703,7 +703,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/rims/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -742,7 +742,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/rims/select", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const rimId = String(req.body?.rimId || "stock");
     if (!Object.hasOwn(RIM_OPTIONS, rimId)) {
@@ -791,7 +791,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/rims/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const rimId = String(req.body?.rimId || "");
     if (!Object.hasOwn(RIM_OPTIONS, rimId) || rimId === "stock") {
@@ -868,7 +868,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/suspension/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -897,7 +897,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/suspension/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -951,7 +951,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/parts/profile", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const client = await pool.connect();
     let open = false;
@@ -972,7 +972,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/parts/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const partId = String(req.body?.partId || "");
     if (!Object.hasOwn(RACING_PARTS, partId)) {
@@ -1040,7 +1040,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/parts/remove", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const partId = String(req.body?.partId || "");
     if (!Object.hasOwn(RACING_PARTS, partId)) {
@@ -1076,7 +1076,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/parts/install", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const partId = String(req.body?.partId || "");
     if (!Object.hasOwn(RACING_PARTS, partId)) {
@@ -1112,7 +1112,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/buy", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const carId = String(req.body?.carId || "");
     if (!Object.hasOwn(CARS, carId)) return res.status(400).json({ ok: false, error: "Такого автомобиля нет в автосалоне." });
@@ -1151,7 +1151,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
 
 
   router.post("/garage/rewarded-car/claim", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
 
     // This endpoint only grants the single VAZ-2107 rewarded placement.
@@ -1214,7 +1214,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/select", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const carId = String(req.body?.carId || "");
     const result = await pool.query(
@@ -1230,7 +1230,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/upgrade", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const partId = String(req.body?.partId || "");
     const carId = String(req.body?.carId || "");
@@ -1268,7 +1268,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/customize", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const carId = String(req.body?.carId || "");
     const paintId = String(req.body?.paintId || "");
@@ -1315,7 +1315,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   });
 
   router.post("/garage/tune", async (req, res) => {
-    const user = requireUser(req, res, verifyTelegram);
+    const user = requireUser(req, res, verifyTelegram, true);
     if (!user) return;
     const input = objectValue(req.body?.tune);
     const tuning = {};
