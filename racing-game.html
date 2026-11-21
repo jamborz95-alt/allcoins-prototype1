@@ -10349,5 +10349,20 @@ body.race-mode #gearSelector { display:grid!important; }
 }
 </style>
 
+
+<style id="allcoins-racing-gas-size-v162">
+/* V162: make the accelerator visibly larger; keep brake and shifter unchanged. */
+#gas{
+  width:clamp(64px,7.5vw,84px)!important;
+  height:clamp(70px,12vh,90px)!important;
+}
+@media(max-width:700px){
+  #gas{width:64px!important;height:70px!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #gas{width:58px!important;height:62px!important}
+}
+</style>
+
 </body>
 </html>
