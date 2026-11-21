@@ -5257,18 +5257,26 @@ if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
 // V165: favour stable frame pacing on phones; resolution rises only after sustained headroom.
-const acMobilePixelRatioCap = .98;
-const acMobilePixelRatioInitial = .88;
-const acMobilePixelRatioFloor = .62;
+// V164: high-detail mobile rendering; adaptive scaling protects frame pacing on slower phones.
+const acMobilePixelRatioCap = 1.32;
+const acMobilePixelRatioInitial = 1.12;
+const acMobilePixelRatioFloor = .76;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
-renderer.shadowMap.enabled = !acRacingMobileDevice;
+renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
 // V27: balanced daylight fill and warm highlights; preserve material contrast on mobile.
 scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.40));
-const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
-sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
+const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=true;
+sun.shadow.mapSize.set(acRacingMobileDevice ? 768 : 1024, acRacingMobileDevice ? 768 : 1024);
+if(acRacingMobileDevice){
+  sun.shadow.camera.left=-18; sun.shadow.camera.right=18;
+  sun.shadow.camera.top=14; sun.shadow.camera.bottom=-14;
+  sun.shadow.camera.near=.5; sun.shadow.camera.far=100;
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.bias=-.00018; sun.shadow.normalBias=.025; sun.shadow.radius=3;
+}
 scene.add(sun);
 const fill = new THREE.DirectionalLight(0x6ba7df,.24); fill.position.set(8,5,-12); scene.add(fill);
 
@@ -5425,7 +5433,7 @@ function acCreateAsphaltMaps() {
   roughnessMap.repeat.copy(colorMap.repeat);
   const bumpMap = colorMap.clone();
   bumpMap.repeat.copy(colorMap.repeat);
-  const anisotropy = Math.min(acRacingMobileDevice ? 4 : 8, renderer.capabilities.getMaxAnisotropy());
+  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   colorMap.anisotropy = roughnessMap.anisotropy = bumpMap.anisotropy = anisotropy;
   return { colorMap, roughnessMap, bumpMap };
 }
@@ -5518,10 +5526,10 @@ const asphaltMaps = acCreateAsphaltMaps();
 const roadMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   map: asphaltMaps.colorMap,
-  roughnessMap: acRacingMobileDevice ? null : asphaltMaps.roughnessMap,
-  bumpMap: acRacingMobileDevice ? null : asphaltMaps.bumpMap,
-  bumpScale: acRacingMobileDevice ? 0 : .018,
-  roughness: acRacingMobileDevice ? .84 : .74,
+  roughnessMap: asphaltMaps.roughnessMap,
+  bumpMap: asphaltMaps.bumpMap,
+  bumpScale: acRacingMobileDevice ? .012 : .018,
+  roughness: .76,
   metalness: .012
 });
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
@@ -6403,7 +6411,7 @@ scene.add(acV5WarmBodyFill);
 roadMat.color.set(0x59636d);
 roadMat.roughness = 0.82;
 roadMat.metalness = 0.008;
-roadMat.bumpScale = acRacingMobileDevice ? 0 : .022;
+roadMat.bumpScale = acRacingMobileDevice ? .014 : .022;
 
 // Световые блики на мокром асфальте. InstancedMesh ограничивает число draw calls для Android.
 const acV5WetGeometry = new THREE.PlaneGeometry(1, 1);
@@ -6891,7 +6899,7 @@ acLampPools.visible = false;
 scene.add(acLampPools);
 
 /* Дождь перед камерой */
-const acRainCount=acRacingMobileDevice ? 55 : 180;
+const acRainCount=acRacingMobileDevice ? 110 : 180;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
@@ -7513,7 +7521,7 @@ const loader=new GLTFLoader();
 const smokeParticles=[];
 const smokeParticlePool=[];
 const smokeGeometry=new THREE.SphereGeometry(.13,7,6);
-const acSmokeParticleLimit=acRacingMobileDevice?10:72;
+const acSmokeParticleLimit=acRacingMobileDevice?22:72;
 let acLastTireSmokeAt=0,acLastExhaustSmokeAt=0;
 
 /* Reuse a bounded pool instead of allocating/discarding a new mesh and material
@@ -7537,7 +7545,7 @@ function acAcquireSmokeParticle(){
 function addSmoke(position,kind='exhaust'){
   const tire=kind==='tire';
   const now=performance.now();
-  const minimumInterval=acRacingMobileDevice?(tire?90:120):(tire?42:58);
+  const minimumInterval=acRacingMobileDevice?(tire?70:95):(tire?42:58);
   if(tire){
     if(now-acLastTireSmokeAt<minimumInterval)return false;
     acLastTireSmokeAt=now;
@@ -7545,7 +7553,7 @@ function addSmoke(position,kind='exhaust'){
     if(now-acLastExhaustSmokeAt<minimumInterval)return false;
     acLastExhaustSmokeAt=now;
   }
-  const life=tire?(acRacingMobileDevice?1.75:2.15):(acRacingMobileDevice?1.05:1.35);
+  const life=tire?(acRacingMobileDevice?1.9:2.15):(acRacingMobileDevice?1.2:1.35);
   const particle=acAcquireSmokeParticle();
   const material=particle.mesh.material;
   material.color.setHex(tire?0x202326:0x969fa3);
@@ -9183,6 +9191,7 @@ let acPerfLastFrameMs = 0;
 let acPerfMaxFrameMs = 0;
 let acPerfLowFpsSamples = 0;
 let acPerfStableFpsSamples = 0;
+let acMobileShadowLowFpsSamples = 0;
 let acNextRaceProgressUpdateAt = 0;
 let acIdleRenderFrame = 0;
 function animate(now){
@@ -9198,6 +9207,15 @@ function animate(now){
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       let currentPixelRatio=renderer.getPixelRatio();
+      if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
+      else acMobileShadowLowFpsSamples=0;
+      if(acMobileShadowLowFpsSamples>=2 && renderer.shadowMap.enabled){
+        // Last-resort fallback only after sustained very low FPS on a phone.
+        renderer.shadowMap.enabled=false;
+        sun.castShadow=false;
+        window.__allcoinsRacingQualityFallback="real-time-shadows-disabled-for-stability";
+        acMobileShadowLowFpsSamples=0;
+      }
       if(measuredFps<53){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
@@ -9230,6 +9248,8 @@ function animate(now){
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
         shadows:renderer.shadowMap.enabled,
+        mobileQualityProfile:acRacingMobileDevice?"high-adaptive":"desktop-high",
+        qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
         triangles:renderer.info.render.triangles,
@@ -9549,9 +9569,13 @@ const acRpmScaleTickCount = acBuildInstrumentScale(
 
 window.__allcoinsRacingGraphicsProfile = Object.freeze({
   mobileOptimized: acRacingMobileDevice,
+  qualityProfile: acRacingMobileDevice ? "high-adaptive" : "desktop-high",
   pixelRatio: renderer.getPixelRatio(),
+  mobilePixelRatioCap: acMobilePixelRatioCap,
   realTimeShadows: renderer.shadowMap.enabled,
+  shadowMapSize: acRacingMobileDevice ? 768 : 1024,
   asphaltBumpMap: Boolean(roadMat.bumpMap),
+  asphaltRoughnessMap: Boolean(roadMat.roughnessMap),
   rainSegments: acRainCount
 });
 window.__allcoinsRacingDashboardDiagnostics = Object.freeze({
