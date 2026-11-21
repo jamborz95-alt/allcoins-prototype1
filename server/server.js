@@ -34,6 +34,9 @@ const app = express();
 app.use(cors({
   origin: [
     "https://jamborz95-alt.github.io",
+    "https://localhost",
+    "capacitor://localhost",
+    "http://localhost",
     "http://localhost:5173"
   ]
 }));
@@ -123,12 +126,54 @@ async function settleDurakGamePayout(client, gameState, roomId) {
   return pot.settlement;
 }
 
+function verifyTelegramLoginWidget(payload, botToken) {
+  const receivedHash = String(payload?.hash || "");
+  if (!/^[a-f0-9]{64}$/i.test(receivedHash)) return null;
+
+  const allowedFields = new Set([
+    "id", "first_name", "last_name", "username", "photo_url", "auth_date"
+  ]);
+  const entries = Object.entries(payload).filter(([key, value]) =>
+    key !== "hash" && allowedFields.has(key) &&
+    (typeof value === "string" || typeof value === "number")
+  );
+  if (!entries.some(([key]) => key === "id") ||
+      !entries.some(([key]) => key === "auth_date")) return null;
+
+  const dataCheckString = entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join("\\n");
+  const secretKey = crypto.createHash("sha256").update(botToken).digest();
+  const calculatedHash = crypto.createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest();
+  const receivedBuffer = Buffer.from(receivedHash, "hex");
+  if (receivedBuffer.length !== calculatedHash.length ||
+      !crypto.timingSafeEqual(receivedBuffer, calculatedHash)) return null;
+
+  const authDate = Number(payload.auth_date);
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) return null;
+
+  const id = Number(payload.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+  return {
+    id,
+    first_name: typeof payload.first_name === "string" ? payload.first_name : "",
+    last_name: typeof payload.last_name === "string" ? payload.last_name : "",
+    username: typeof payload.username === "string" ? payload.username : ""
+  };
+}
+
 function verifyTelegram(initData) {
   const botToken = process.env.BOT_TOKEN;
+  if (!botToken) return null;
 
-  if (!botToken || !initData || typeof initData !== "string") {
-    return null;
+  if (initData && typeof initData === "object" && !Array.isArray(initData)) {
+    return verifyTelegramLoginWidget(initData, botToken);
   }
+  if (!initData || typeof initData !== "string") return null;
 
   try {
     const params = new URLSearchParams(initData);
