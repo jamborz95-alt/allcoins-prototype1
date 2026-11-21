@@ -5550,6 +5550,72 @@ shoulder.rotation.x = -Math.PI / 2;
 shoulder.position.set(0, -.19, -.2);
 scene.add(shoulder);
 
+// ALLCOINS RACING V167 — visible gravel verges beyond both asphalt edges.
+function acCreateRoadsideGravelTexture(){
+  const canvas=document.createElement("canvas");
+  canvas.width=512; canvas.height=256;
+  const ctx=canvas.getContext("2d");
+  const base=ctx.createLinearGradient(0,0,0,256);
+  base.addColorStop(0,"#77756b");
+  base.addColorStop(.42,"#68675f");
+  base.addColorStop(1,"#56574f");
+  ctx.fillStyle=base; ctx.fillRect(0,0,512,256);
+  // Fine grain and scattered small stones give the verge a compact gravel finish.
+  for(let i=0;i<5200;i++){
+    const x=Math.random()*512, y=Math.random()*256;
+    const light=Math.random()>.48;
+    const alpha=.08+Math.random()*.22;
+    ctx.fillStyle=light
+      ? `rgba(210,205,185,${alpha.toFixed(3)})`
+      : `rgba(25,29,27,${alpha.toFixed(3)})`;
+    const radius=.35+Math.random()*1.05;
+    ctx.beginPath();
+    ctx.ellipse(x,y,radius,radius*(.45+Math.random()*.55),Math.random()*.6,0,Math.PI*2);
+    ctx.fill();
+  }
+  // Subtle longitudinal tyre-worn bands; they follow the direction of travel.
+  for(let i=0;i<34;i++){
+    const y=Math.random()*256;
+    ctx.strokeStyle=`rgba(35,39,36,${(.035+Math.random()*.045).toFixed(3)})`;
+    ctx.lineWidth=.7+Math.random()*2.1;
+    ctx.beginPath(); ctx.moveTo(0,y);
+    ctx.bezierCurveTo(150,y-3,350,y+4,512,y+(Math.random()-.5)*7);
+    ctx.stroke();
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(220,2.2);
+  texture.encoding=THREE.sRGBEncoding;
+  texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.magFilter=THREE.LinearFilter;
+  return texture;
+}
+const acRoadsideShoulders=new THREE.Group();
+acRoadsideShoulders.name="ALLCOINS detailed gravel road shoulders";
+const acRoadsideGravelTexture=acCreateRoadsideGravelTexture();
+const acRoadsideGravelMaterial=new THREE.MeshStandardMaterial({
+  color:0xffffff,
+  map:acRoadsideGravelTexture,
+  roughness:.96,
+  metalness:0
+});
+function acAddRoadsideShoulder(name,width,z){
+  const verge=new THREE.Mesh(new THREE.PlaneGeometry(2400,width),acRoadsideGravelMaterial);
+  verge.name=name;
+  verge.rotation.x=-Math.PI/2;
+  verge.position.set(0,-.108,z);
+  verge.receiveShadow=true;
+  verge.frustumCulled=false;
+  acRoadsideShoulders.add(verge);
+}
+// Near edge: a narrow strip between the kerb and the viewer-side guardrail.
+acAddRoadsideShoulder("Near-side gravel shoulder",1.55,13.55);
+// City edge: a wider gravel strip between the kerb and the city fence.
+acAddRoadsideShoulder("Far-side gravel shoulder",3.25,-14.45);
+scene.add(acRoadsideShoulders);
+
+
 // Тротуар, бетонные швы и приподнятый бордюр со стороны города.
 const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x92999f, roughness: .94, metalness: .01 });
 const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(2400, 4.4), sidewalkMat);
@@ -6294,6 +6360,10 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   asphaltRepeatX: roadMat.map.repeat.x,
   asphaltTone: "graphite-road-asphalt",
   asphaltWidth: 25.6,
+  roadsideShoulders: acRoadsideShoulders.children.length,
+  nearShoulderWidth: 1.55,
+  farShoulderWidth: 3.25,
+  roadsideSurface: "procedural-gravel",
   roadsideTyreWalls: 0,
   checkeredEdgeCurbs: true,
   dashedCenterDivider: true,
@@ -7412,6 +7482,7 @@ function setGarageMode(enabled) {
   distantHills.visible = trackVisible;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
+  acRoadsideShoulders.visible = trackVisible;
   for (const mark of laneMarks) mark.visible = trackVisible;
   for (const edge of acRoadEdgeMeshes) edge.visible = trackVisible;
   acTrackCurbMesh.visible = trackVisible;
