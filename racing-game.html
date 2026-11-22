@@ -7581,6 +7581,40 @@ function acApplyMobileSeverePerformanceTier() {
   return true;
 }
 
+let acMobileUltraFallbackApplied = false;
+function acApplyMobileUltraPerformanceTier() {
+  if (!acRacingMobileDevice || !acMobileFallbackApplied || acMobileUltraFallbackApplied) return false;
+  if (!acMobileSevereFallbackApplied) acApplyMobileSeverePerformanceTier();
+  acMobileUltraFallbackApplied = true;
+
+  // Final GPU-load reduction for phones that remain below the 30 FPS target.
+  // This changes only rendering quality; vehicle physics and input remain untouched.
+  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .30));
+  renderer.shadowMap.enabled = false;
+  sun.castShadow = false;
+  renderer.toneMapping = THREE.NoToneMapping;
+  scene.fog = null;
+
+  // Lower texture filtering cost on the critical path without replacing source textures.
+  const adjustedTextures = new Set();
+  scene.traverse(object => {
+    const materials = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
+    for (const material of materials) {
+      for (const value of Object.values(material)) {
+        if (value?.isTexture && !adjustedTextures.has(value) && value.anisotropy > 1) {
+          adjustedTextures.add(value);
+          value.anisotropy = 1;
+          value.needsUpdate = true;
+        }
+      }
+    }
+  });
+
+  renderer.setSize(innerWidth, innerHeight, false);
+  window.__allcoinsRacingQualityFallback = "ultra-mobile-performance";
+  return true;
+}
+
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,worldDelta){
   // Rain is skipped entirely in the critical mobile tier; the mesh is hidden too.
@@ -7609,7 +7643,7 @@ function updateRaceEnvironment(dt,worldDelta){
 
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
   // Блики на мокром асфальте и фонари используют тот же delta, что и разметка.
-  acV5UpdateWetReflections(worldDelta);
+  if (!acMobileSevereFallbackApplied) acV5UpdateWetReflections(worldDelta);
   for(let index=0;index<acLampRecords.length;index++){
     const lamp=acLampRecords[index];
     lamp.x-=worldDelta*.17;
@@ -9339,6 +9373,7 @@ let acPerfStableFpsSamples = 0;
 let acMobileShadowLowFpsSamples = 0;
 let acNextRaceProgressUpdateAt = 0;
 let acIdleRenderFrame = 0;
+let acNextUltraInstrumentUpdateAt = 0;
 function animate(now){
   requestAnimationFrame(animate);
   const rawFrameMs=Math.max(0,now-last);
@@ -9357,6 +9392,9 @@ function animate(now){
       }
       if (measuredFps < 18 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
         acApplyMobileSeverePerformanceTier();
+      }
+      if (measuredFps < 30 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileUltraFallbackApplied) {
+        acApplyMobileUltraPerformanceTier();
       }
       let currentPixelRatio=renderer.getPixelRatio();
       if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
@@ -9407,6 +9445,7 @@ function animate(now){
         shadows:renderer.shadowMap.enabled,
         mobileQualityProfile:acMobileSevereFallbackApplied?"mobile-critical-low-load":(acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high")),
          mobileSevereFallback:acMobileSevereFallbackApplied,
+        mobileUltraFallback:acMobileUltraFallbackApplied,
          mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         adaptiveResolution:true,
@@ -9425,7 +9464,10 @@ function animate(now){
       acPerfSampleStart=now;
     }
   }
-  updateInstrumentCluster(now);
+  if (!acMobileUltraFallbackApplied || now >= acNextUltraInstrumentUpdateAt) {
+    updateInstrumentCluster(now);
+    if (acMobileUltraFallbackApplied) acNextUltraInstrumentUpdateAt = now + 100;
+  }
   let frameWorldDelta=0;
   updateEngineAudio();
   rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
