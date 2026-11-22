@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>ALLCOINS · 3D Гараж ВАЗ-2107</title>
+<script src="./vendor/three-r147.min.js"></script>
+<script src="./vendor/GLTFLoader-r147.js"></script>
+<style>
+:root{color-scheme:dark;--gold:#e8bd66;--muted:#aebcce;--panel:rgba(9,17,29,.82)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1422;color:#f5f7fa;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;touch-action:none}
+#stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 42%,#34485f 0%,#1b2b40 44%,#0b1422 100%)}
+#view{width:100%;height:100%;display:block;outline:none;touch-action:none}
+.ui{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding: max(12px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));pointer-events:none}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand,.status,.controls,.hint{background:var(--panel);border:1px solid #d5b36b55;box-shadow:0 8px 28px #0005;backdrop-filter:blur(8px);border-radius:14px}
+.brand{padding:10px 14px;min-width:150px}
+.brand b{display:block;color:var(--gold);font-size:13px;letter-spacing:.18em}
+.brand span{display:block;margin-top:4px;color:var(--muted);font-size:10px;letter-spacing:.08em}
+.status{padding:10px 13px;color:#e8edf4;font-size:11px;max-width:55vw;text-align:right;line-height:1.4}
+.footer{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.hint{padding:9px 12px;color:#d2dce8;font-size:10px;line-height:1.45;max-width:44vw}
+.controls{pointer-events:auto;display:flex;align-items:center;gap:7px;padding:8px}
+button{min-width:42px;height:42px;border:1px solid #d7b66d77;border-radius:10px;background:linear-gradient(145deg,#34465c,#172437);color:#fff;font-size:17px;font-weight:800;touch-action:manipulation}
+button:active{filter:brightness(1.35);transform:translateY(1px)}
+button.primary{background:linear-gradient(145deg,#f3d58f,#ae792d);color:#171d26;border-color:#ffe6aa}
+#zoom{width:clamp(72px,14vw,130px);accent-color:#e8bd66}
+#loading{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:22px;background:#07101deF}
+#loading.hidden{display:none}
+.loadcard{width:min(430px,92vw);padding:22px;border:1px solid #d5b36b88;border-radius:18px;background:linear-gradient(145deg,#1a2b40,#0a1321);text-align:center;box-shadow:0 20px 65px #000a}
+.loadbrand{font-size:12px;font-weight:900;letter-spacing:.22em;color:var(--gold)}
+h1{font-size:20px;margin:13px 0 8px}
+#loadText{color:#c5d0dc;font-size:12px;line-height:1.5;min-height:36px}
+.track{height:7px;border-radius:8px;background:#29384a;overflow:hidden;margin:15px 0 8px}
+#bar{height:100%;width:8%;background:linear-gradient(90deg,#ad772c,#ffe5a0);transition:width .15s}
+#retry{display:none;margin:14px auto 0;padding:0 18px;font-size:12px}
+@media(max-width:650px){
+ .ui{padding-left:8px;padding-right:8px}
+ .brand{min-width:118px;padding:8px 10px}
+ .brand b{font-size:11px}
+ .brand span{font-size:8px}
+ .status{font-size:9px;padding:8px;max-width:48vw}
+ .hint{font-size:9px;max-width:38vw;padding:8px}
+ .controls{gap:4px;padding:6px}
+ button{min-width:36px;height:38px;font-size:15px}
+ #zoom{width:66px}
+}
+@media(max-height:430px){
+ .brand{padding:6px 9px}
+ .status{padding:6px 8px}
+ .hint{padding:6px 8px}
+ .controls{padding:5px}
+ button{height:34px;min-width:34px}
+}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="view" aria-label="3D модель ВАЗ-2107"></canvas></div>
+<div class="ui">
+  <div class="header">
+    <div class="brand"><b>ALLCOINS</b><span>3D ГАРАЖ · ВАЗ-2107</span></div>
+    <div class="status" id="status">Подготавливаю 3D-модель…</div>
+  </div>
+  <div class="footer">
+    <div class="hint">Проведи пальцем по машине, чтобы повернуть её.<br>Два пальца — приблизить или отдалить.</div>
+    <div class="controls">
+      <button id="turnLeft" aria-label="Повернуть влево" title="Повернуть влево">↶</button>
+      <button id="turnRight" aria-label="Повернуть вправо" title="Повернуть вправо">↷</button>
+      <button id="zoomOut" aria-label="Отдалить" title="Отдалить">−</button>
+      <input id="zoom" type="range" min="0" max="100" value="48" aria-label="Масштаб">
+      <button id="zoomIn" aria-label="Приблизить" title="Приблизить">+</button>
+      <button id="reset" class="primary" aria-label="Сбросить вид" title="Сбросить вид">⟲</button>
+    </div>
+  </div>
+</div>
+<div id="loading">
+ <div class="loadcard">
+  <div class="loadbrand">ALLCOINS 3D GARAGE</div>
+  <h1>Загрузка ВАЗ-2107</h1>
+  <div id="loadText">Открываю сохранённую 3D-модель из памяти приложения…</div>
+  <div class="track"><div id="bar"></div></div>
+  <button id="retry" class="primary">Повторить загрузку</button>
+ </div>
+</div>
+<script>
+(() => {
+ "use strict";
+ const canvas=document.getElementById("view");
+ const loading=document.getElementById("loading");
+ const loadText=document.getElementById("loadText");
+ const bar=document.getElementById("bar");
+ const status=document.getElementById("status");
+ const zoomSlider=document.getElementById("zoom");
+ const mobile=matchMedia("(pointer:coarse), (max-width:900px)").matches;
+ let renderer,scene,camera,car=null,baseViewHeight=5.55,zoomValue=.48;
+ let renderQueued=false,dragPointer=null,lastX=0,lastY=0,lastPinch=0;
+ const activePointers=new Map();
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ function showError(message){
+   loadText.textContent=message;
+   bar.style.width="100%";
+   document.getElementById("retry").style.display="inline-block";
+   status.textContent="Не удалось открыть модель";
+ }
+ function scheduleRender(){
+   if(!renderer||!scene||!camera||renderQueued)return;
+   renderQueued=true;
+   requestAnimationFrame(()=>{renderQueued=false;renderer.render(scene,camera);});
+ }
+ function setZoom(v){
+   zoomValue=clamp(v,0,1);
+   zoomSlider.value=String(Math.round(zoomValue*100));
+   resizeCamera();
+   scheduleRender();
+ }
+ function resizeCamera(){
+   if(!camera||!renderer)return;
+   const w=Math.max(1,window.innerWidth),h=Math.max(1,window.innerHeight);
+   const aspect=w/h;
+   const viewH=baseViewHeight*(1.45-zoomValue*.72);
+   camera.left=-viewH*aspect/2;
+   camera.right=viewH*aspect/2;
+   camera.top=viewH/2;
+   camera.bottom=-viewH/2;
+   camera.updateProjectionMatrix();
+   renderer.setSize(w,h,false);
+ }
+ function initScene(){
+   scene=new THREE.Scene();
+   scene.background=null;
+   camera=new THREE.OrthographicCamera(-8,8,4.5,-4.5,.1,300);
+   camera.position.set(0,3.5,18);
+   camera.lookAt(0,1,0);
+   renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:"high-performance",precision:"mediump"});
+   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1.12:1.5));
+   renderer.setClearColor(0x000000,0);
+   renderer.outputEncoding=THREE.sRGBEncoding;
+   renderer.toneMapping=THREE.ACESFilmicToneMapping;
+   renderer.toneMappingExposure=1.08;
+   renderer.shadowMap.enabled=false;
+   scene.add(new THREE.HemisphereLight(0xd8e9ff,0x202b3b,1.65));
+   const key=new THREE.DirectionalLight(0xffedcf,2.0);
+   key.position.set(-5,9,8);
+   scene.add(key);
+   const fill=new THREE.DirectionalLight(0x8bbcff,.85);
+   fill.position.set(6,4,-7);
+   scene.add(fill);
+   const rim=new THREE.DirectionalLight(0xffffff,.5);
+   rim.position.set(0,6,-10);
+   scene.add(rim);
+   const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x172638,roughness:.94,metalness:.03}));
+   floor.rotation.x=-Math.PI/2;
+   floor.position.y=-.035;
+   scene.add(floor);
+   const shadowCanvas=document.createElement("canvas");
+   shadowCanvas.width=256;shadowCanvas.height=256;
+   const ctx=shadowCanvas.getContext("2d");
+   const g=ctx.createRadialGradient(128,128,8,128,128,124);
+   g.addColorStop(0,"rgba(0,0,0,.42)");g.addColorStop(.48,"rgba(0,0,0,.18)");g.addColorStop(1,"rgba(0,0,0,0)");
+   ctx.fillStyle=g;ctx.fillRect(0,0,256,256);
+   const shadowTex=new THREE.CanvasTexture(shadowCanvas);
+   const fakeShadow=new THREE.Mesh(new THREE.PlaneGeometry(9.5,3.2),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,toneMapped:false}));
+   fakeShadow.rotation.x=-Math.PI/2;fakeShadow.position.set(0,.005,0);scene.add(fakeShadow);
+   resizeCamera();
+ }
+ function prepareCar(root){
+   root.updateMatrixWorld(true);
+   let bounds=new THREE.Box3().setFromObject(root);
+   let size=bounds.getSize(new THREE.Vector3());
+   if(size.z>size.x*1.08)root.rotation.y=Math.PI/2;
+   root.updateMatrixWorld(true);
+   bounds.setFromObject(root);size=bounds.getSize(new THREE.Vector3());
+   const longest=Math.max(size.x,size.z);
+   if(!Number.isFinite(longest)||longest<.1)throw new Error("Размеры 3D-модели не удалось определить.");
+   root.scale.setScalar(7.45/longest);
+   root.updateMatrixWorld(true);
+   bounds.setFromObject(root);
+   const center=bounds.getCenter(new THREE.Vector3());
+   root.position.x-=center.x;
+   root.position.z-=center.z;
+   root.position.y-=bounds.min.y-.025;
+   root.updateMatrixWorld(true);
+   let meshCount=0;
+   root.traverse(o=>{
+     if(!o.isMesh)return;
+     meshCount++;
+     o.castShadow=false;o.receiveShadow=false;
+     o.frustumCulled=true;
+     const materials=Array.isArray(o.material)?o.material:[o.material];
+     for(const m of materials){
+       if(!m)continue;
+       for(const key of ["map","normalMap","roughnessMap","metalnessMap","aoMap","emissiveMap","bumpMap"]){
+         const t=m[key];
+         if(t&&t.isTexture)t.anisotropy=Math.min(2,renderer.capabilities.getMaxAnisotropy());
+       }
+     }
+   });
+   root.position.y+=.02;
+   root.userData.meshCount=meshCount;
+   return root;
+ }
+ function loadCar(){
+   document.getElementById("retry").style.display="none";
+   loadText.textContent="Читаю встроенный файл ВАЗ-2107 GLB…";
+   bar.style.width="24%";
+   status.textContent="Загружаю сохранённую модель";
+   if(!window.THREE||!THREE.GLTFLoader){showError("Не удалось запустить 3D-движок. Перезапусти приложение.");return;}
+   const loader=new THREE.GLTFLoader();
+   loader.load("./vaz-2107.glb",gltf=>{
+     try{
+       if(car){scene.remove(car);}
+       car=prepareCar(gltf.scene);
+       scene.add(car);
+       bar.style.width="100%";
+       loadText.textContent="Сохранённая модель ВАЗ-2107 загружена.";
+       status.textContent="ВАЗ-2107 · 3D-модель готова";
+       loading.classList.add("hidden");
+       setZoom(.48);
+     }catch(error){showError("Ошибка подготовки модели: "+(error.message||error));}
+   },event=>{
+     if(event.total>0){
+       const p=Math.round(event.loaded/event.total*70);
+       bar.style.width=(25+p)+"%";
+       loadText.textContent="Загружаю 3D-модель · "+Math.round(event.loaded/1048576*10)/10+" МБ";
+     }
+   },error=>{
+     console.error("GLB load error",error);
+     showError("Не удалось прочитать ВАЗ-2107 из APK. Нажми «Повторить загрузку».");
+   });
+ }
+ function rotateBy(delta){if(!car)return;car.rotation.y+=delta;scheduleRender();}
+ document.getElementById("turnLeft").addEventListener("click",()=>rotateBy(-Math.PI/6));
+ document.getElementById("turnRight").addEventListener("click",()=>rotateBy(Math.PI/6));
+ document.getElementById("zoomIn").addEventListener("click",()=>setZoom(zoomValue+.08));
+ document.getElementById("zoomOut").addEventListener("click",()=>setZoom(zoomValue-.08));
+ document.getElementById("reset").addEventListener("click",()=>{
+   if(car){car.rotation.y=0;car.rotation.x=0;}
+   setZoom(.48);
+ });
+ zoomSlider.addEventListener("input",()=>setZoom(Number(zoomSlider.value)/100));
+ canvas.addEventListener("pointerdown",e=>{
+   e.preventDefault();canvas.setPointerCapture?.(e.pointerId);
+   activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   if(activePointers.size===1){dragPointer=e.pointerId;lastX=e.clientX;lastY=e.clientY;}
+   if(activePointers.size===2){
+     const pts=[...activePointers.values()];
+     lastPinch=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+   }
+ });
+ canvas.addEventListener("pointermove",e=>{
+   if(!activePointers.has(e.pointerId))return;
+   const prev=activePointers.get(e.pointerId);
+   activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   if(activePointers.size===1&&car){
+     const dx=e.clientX-lastX,dy=e.clientY-lastY;
+     car.rotation.y+=dx*.009;
+     car.rotation.x=clamp(car.rotation.x+dy*.003,-.12,.12);
+     lastX=e.clientX;lastY=e.clientY;
+     scheduleRender();
+   }else if(activePointers.size>=2){
+     const pts=[...activePointers.values()];
+     const dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+     if(lastPinch>0&&dist>0)setZoom(zoomValue+(dist-lastPinch)/Math.max(160,window.innerWidth)*1.5);
+     lastPinch=dist;
+   }
+ });
+ function endPointer(e){activePointers.delete(e.pointerId);if(activePointers.size===0){dragPointer=null;lastPinch=0;}else if(activePointers.size===1){const p=[...activePointers.values()][0];lastX=p.x;lastY=p.y;lastPinch=0;}}
+ canvas.addEventListener("pointerup",endPointer);
+ canvas.addEventListener("pointercancel",endPointer);
+ canvas.addEventListener("lostpointercapture",endPointer);
+ window.addEventListener("resize",()=>{resizeCamera();scheduleRender();});
+ document.getElementById("retry").addEventListener("click",loadCar);
+ try{initScene();loadCar();}
+ catch(error){console.error(error);showError("3D-движок не смог запуститься: "+(error.message||error));}
+})();
+</script>
+</body>
+</html>
