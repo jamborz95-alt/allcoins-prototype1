@@ -7610,6 +7610,11 @@ function acApplyMobileUltraPerformanceTier() {
     }
   });
 
+  // Keep half of the simple building silhouettes to reduce draw calls without an empty skyline.
+  for (let index = 0; index < city.length; index++) {
+    city[index].visible = index % 2 === 0;
+  }
+
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "ultra-mobile-performance";
   return true;
@@ -7617,6 +7622,8 @@ function acApplyMobileUltraPerformanceTier() {
 
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,worldDelta){
+  // All environment animation is frozen in ultra mode; the car and road remain active.
+  if (acMobileUltraFallbackApplied) return;
   // Rain is skipped entirely in the critical mobile tier; the mesh is hidden too.
   if(!acMobileSevereFallbackApplied){
     const rain=acRainGeometry.attributes.position.array;
@@ -7670,6 +7677,17 @@ function acAdvanceWrappedSceneObject(object,worldDelta,factor,minX=-130,maxX=130
 const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTrackTreeUpper,acTrackTreeSnow]);
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
+
+  if (acMobileUltraFallbackApplied) {
+    for (const building of city) {
+      if (building.visible) acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
+    }
+    acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
+    acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
+    acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
+    acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
+    return;
+  }
 
   for(const building of city){
     if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
