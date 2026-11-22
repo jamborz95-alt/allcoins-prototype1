@@ -8601,7 +8601,7 @@ function acRacingEnhanceCarSurface(root) {
   if (!root || root.userData.acRacingFinishEnhanced) return 0;
   const reflectionMap = acRacingCreateCarReflectionTexture();
   const materialCache = new WeakMap();
-  const counts = { body: 0, metal: 0, glass: 0, rubber: 0 };
+  const counts = { body: 0, metal: 0, glass: 0, rubber: 0, wheels: 0 };
 
   function upgradeMaterial(source, preset) {
     if (!source || (!source.isMeshStandardMaterial && !source.isMeshPhysicalMaterial)) return source;
@@ -8638,6 +8638,13 @@ function acRacingEnhanceCarSurface(root) {
       material.metalness = Math.max(originalMetalness, .76);
       material.envMap = reflectionMap;
       material.envMapIntensity = .76;
+    } else if (preset === "wheel-metal") {
+      material.clearcoat = .05;
+      material.clearcoatRoughness = .42;
+      material.roughness = Math.max(.36, Math.min(originalRoughness, .52));
+      material.metalness = Math.max(originalMetalness, .76);
+      material.envMap = reflectionMap;
+      material.envMapIntensity = .62;
     } else if (preset === "window-glass") {
       material.clearcoat = .68;
       material.clearcoatRoughness = .12;
@@ -8678,6 +8685,8 @@ function acRacingEnhanceCarSurface(root) {
       if (isBody) preset = "body-clearcoat";
       else if (/tire|tyre|rubber|tread|шина|резин/.test(combinedName)) preset = "tire-rubber";
       else if (/glass|window|windscreen|windshield|стекл/.test(combinedName)) preset = "window-glass";
+      else if (/car[_ -]?details_0/.test(objectName)) preset = "chrome-metal";
+      else if (/car[_ -]?bottom_0/.test(objectName)) preset = "wheel-metal";
       else if (/chrome|stainless|metal|steel|trim|хром|металл|нержав/.test(combinedName)) preset = "chrome-metal";
       else preset = null;
 
@@ -8688,7 +8697,8 @@ function acRacingEnhanceCarSurface(root) {
         materials[index] = enhanced;
         counts[preset === "body-clearcoat" ? "body" :
           preset === "chrome-metal" ? "metal" :
-          preset === "window-glass" ? "glass" : "rubber"]++;
+          preset === "window-glass" ? "glass" :
+          preset === "wheel-metal" ? "wheels" : "rubber"]++;
       }
     }
     if (Array.isArray(object.material)) object.material = materials;
