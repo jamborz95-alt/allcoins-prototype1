@@ -8730,27 +8730,34 @@ function attachVehicle(root,label='сохранённая модель'){
   const wheelRegex=/wheel|tire|tyre|колес|шина|disk|rim|pneu|reifen|llanta/i;
   const meshAudit=[];
   let wheelSourceMesh=null;
+  let namedTailFound=false;
+  // Detailed bounds/material inspection is useful while developing the GLB,
+  // but it is not part of gameplay. Skip it on phones to avoid a startup hitch.
+  const collectMeshAudit=!acRacingMobileDevice||window.__ALLCOINS_RACING_DEBUG__===true;
   vehicle.traverse(object=>{
     if(!object.isMesh||!object.geometry)return;
     object.castShadow=true;object.receiveShadow=true;
-    const bounds=new THREE.Box3().setFromObject(object);
-    const dims=bounds.getSize(new THREE.Vector3());
-    const centerWorld=bounds.getCenter(new THREE.Vector3());
     const names=[];let cursor=object;
     while(cursor&&cursor!==vehicle){if(cursor.name)names.push(cursor.name);cursor=cursor.parent;}
     const namePath=names.join(' / ');
     const exhaustNamed=/exhaust|muffler|tailpipe|pipe|глушител|выхлоп|труба/i.test(namePath);
-    const lightNamed=/head.?light|lamp|фара/i.test(namePath);
-    const acV15Materials=(Array.isArray(object.material)?object.material:[object.material]).filter(Boolean).map((m,i)=>({
-      slot:i,name:m.name||'(без имени)',type:m.type||'(unknown)',
-      map:Boolean(m.map),aoMap:Boolean(m.aoMap),normalMap:Boolean(m.normalMap),
-      roughnessMap:Boolean(m.roughnessMap),metalnessMap:Boolean(m.metalnessMap),
-      emissiveMap:Boolean(m.emissiveMap),alphaMap:Boolean(m.alphaMap),
-      transparent:Boolean(m.transparent),opacity:Number.isFinite(m.opacity)?Number(m.opacity.toFixed(3)):null,
-      aoMapIntensity:Number.isFinite(m.aoMapIntensity)?Number(m.aoMapIntensity.toFixed(3)):null,
-      color:m.color?.getHexString?.()||null
-    }));
-    meshAudit.push({name:object.name||'(без имени)',path:namePath||'(без имени)',size:[dims.x,dims.y,dims.z].map(v=>Number(v.toFixed(3))),center:[centerWorld.x,centerWorld.y,centerWorld.z].map(v=>Number(v.toFixed(3))),wheelCandidate:false,exhaust:exhaustNamed,lights:lightNamed,castsShadow:object.castShadow,receivesShadow:object.receiveShadow,materialInfo:acV15Materials});
+    if(exhaustNamed)namedTailFound=true;
+    if(collectMeshAudit){
+      const bounds=new THREE.Box3().setFromObject(object);
+      const dims=bounds.getSize(new THREE.Vector3());
+      const centerWorld=bounds.getCenter(new THREE.Vector3());
+      const lightNamed=/head.?light|lamp|фара/i.test(namePath);
+      const acV15Materials=(Array.isArray(object.material)?object.material:[object.material]).filter(Boolean).map((m,i)=>({
+        slot:i,name:m.name||'(без имени)',type:m.type||'(unknown)',
+        map:Boolean(m.map),aoMap:Boolean(m.aoMap),normalMap:Boolean(m.normalMap),
+        roughnessMap:Boolean(m.roughnessMap),metalnessMap:Boolean(m.metalnessMap),
+        emissiveMap:Boolean(m.emissiveMap),alphaMap:Boolean(m.alphaMap),
+        transparent:Boolean(m.transparent),opacity:Number.isFinite(m.opacity)?Number(m.opacity.toFixed(3)):null,
+        aoMapIntensity:Number.isFinite(m.aoMapIntensity)?Number(m.aoMapIntensity.toFixed(3)):null,
+        color:m.color?.getHexString?.()||null
+      }));
+      meshAudit.push({name:object.name||'(без имени)',path:namePath||'(без имени)',size:[dims.x,dims.y,dims.z].map(v=>Number(v.toFixed(3))),center:[centerWorld.x,centerWorld.y,centerWorld.z].map(v=>Number(v.toFixed(3))),wheelCandidate:false,exhaust:exhaustNamed,lights:lightNamed,castsShadow:object.castShadow,receivesShadow:object.receiveShadow,materialInfo:acV15Materials});
+    }
     if(!wheelSourceMesh&&/Car_Bottom_0/i.test(namePath))wheelSourceMesh=object;
   });
   let islandWheelInfo=null;
@@ -8838,7 +8845,7 @@ function attachVehicle(root,label='сохранённая модель'){
   wheelRadiusWorld=rearWheelNodes[0]?.radius||frontWheelNodes[0]?.radius||.34;
   worldUnitsPerRealMeter=vehicleLength/4.57;
   const center=actual.getCenter(new THREE.Vector3());
-  const namedTail=meshAudit.find(item=>item.exhaust);
+  const namedTail=namedTailFound;
   // Exhaust outlet is kept on the camera-facing side and follows suspension travel.
   const tailWorld=namedTail?new THREE.Vector3(actual.min.x-.035,actual.min.y+actualSize.y*.22,center.z+actualSize.z*.20):new THREE.Vector3(actual.min.x-.11,actual.min.y+actualSize.y*.19,center.z+actualSize.z*.22);
   exhaustLocalPoint.copy(vehicle.worldToLocal(tailWorld.clone()));exhaustPoint.copy(tailWorld);
@@ -8891,7 +8898,7 @@ function attachVehicle(root,label='сохранённая модель'){
   hideMessage();
   if(onlineRaceStarted){raceStarted=true;setGarageMode(false);}
   console.info('ALLCOINS Racing V5 · GLB mesh audit',label,'dimensions',actualSize.toArray(),'independent wheel meshes',wheelNodes.length,'front',frontWheelNodes.length,'rear',rearWheelNodes.length,'named exhaust',Boolean(namedTail));
-  console.table(meshAudit);
+  if(collectMeshAudit)console.table(meshAudit);
 }
 
 function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
