@@ -127,7 +127,7 @@ jobs:
           cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Telegram-Game-Android.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
-          apk = pathlib.Path("release-assets/ALLCOINS-Full-Game-Android.apk")
+          apk = pathlib.Path("release-assets/ALLCOINS-Telegram-Game-Android.apk")
           with zipfile.ZipFile(apk) as z:
               names = set(z.namelist())
               required = [
@@ -152,13 +152,13 @@ jobs:
           print("APK SHA-256:", hashlib.sha256(apk.read_bytes()).hexdigest())
           PY
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Full-Game-Android.apk
-          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Full-Game-Android.apk | head -n 8
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Telegram-Game-Android.apk
+          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Telegram-Game-Android.apk | head -n 8
 
       - name: Upload ALLCOINS Telegram Game Mirror APK
         uses: actions/upload-artifact@v4
         with:
           name: allcoins-telegram-game-mirror-apk
-          path: release-assets/ALLCOINS-Full-Game-Android.apk
+          path: release-assets/ALLCOINS-Telegram-Game-Android.apk
           if-no-files-found: error
           retention-days: 30
