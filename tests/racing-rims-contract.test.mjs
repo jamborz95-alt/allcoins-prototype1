@@ -493,3 +493,11 @@ test("ultra-low FPS Android mode reduces GPU work without changing vehicle physi
   assert.match(page, /if \(!acMobileSevereFallbackApplied\) acV5UpdateWetReflections\(worldDelta\)/);
   assert.match(page, /mobileUltraFallback:acMobileUltraFallbackApplied/);
 });
+
+test("ultra-low FPS Android mode limits scenery draw calls and freezes hidden environment animation", () => {
+  assert.match(page, /for \(let index = 0; index < city\.length; index\+\+\) \{\s*city\[index\]\.visible = index % 2 === 0/);
+  assert.match(page, /if \(acMobileUltraFallbackApplied\) return/);
+  assert.match(page, /if \(acMobileUltraFallbackApplied\) \{[\s\S]*?if \(building\.visible\) acAdvanceWrappedSceneObject/);
+  assert.match(page, /acAdvanceWrappedSceneObject\(acTrackCurbMesh,worldDelta,\.96\)/);
+  assert.match(page, /acApplyMobileUltraPerformanceTier\(\)/);
+});
