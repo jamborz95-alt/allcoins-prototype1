@@ -1,9 +1,9 @@
-name: Build ALLCOINS VAZ-2107 3D Showroom APK
+name: Build ALLCOINS Playable VAZ-2107 Arcade APK
 
 on:
   push:
     branches:
-      - android/vaz2107-showroom-safe
+      - android/vaz2107-arcade-game
     paths:
       - "android-racing-apk/**"
       - ".github/workflows/fetch-vaz-model.yml"
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout showroom project
+      - name: Checkout arcade game project
         uses: actions/checkout@v4
 
       - name: Download and verify the saved VAZ-2107 GLB
@@ -87,10 +87,10 @@ jobs:
           cp model-artifact/vaz-2107.glb "$ASSETS/vaz-2107.glb"
           cp model-artifact/model-info.json "$ASSETS/model-info.json"
           test -s "$ASSETS/launcher.html"
-          test -s "$ASSETS/showroom.html"
+          test -s "$ASSETS/game.html"
           test -s "$ASSETS/vendor/three-r147.min.js"
           test -s "$ASSETS/vendor/GLTFLoader-r147.js"
-          # Never package the old driving/racing screen into this safe showroom APK.
+          # Never package the old driving/racing screen into this safe arcade APK.
           rm -f "$ASSETS/racing-game.html"
 
       - name: Set up Java 17
@@ -114,21 +114,21 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build standalone VAZ-2107 showroom APK
+      - name: Build standalone VAZ-2107 arcade APK
         shell: bash
         run: |
           set -euo pipefail
           gradle -p android-racing-apk :app:assembleDebug
           mkdir -p release-assets
-          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
+          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-VAZ2107-Arcade-Game.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
-          apk = pathlib.Path("release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk")
+          apk = pathlib.Path("release-assets/ALLCOINS-VAZ2107-Arcade-Game.apk")
           with zipfile.ZipFile(apk) as z:
               names = set(z.namelist())
               required = [
                   "assets/racing/launcher.html",
-                  "assets/racing/showroom.html",
+                  "assets/racing/game.html",
                   "assets/racing/vendor/three-r147.min.js",
                   "assets/racing/vendor/GLTFLoader-r147.js",
                   "assets/racing/vaz-2107.glb",
@@ -136,9 +136,9 @@ jobs:
               ]
               missing = [name for name in required if name not in names]
               if missing:
-                  raise SystemExit("APK is missing showroom assets: " + ", ".join(missing))
+                  raise SystemExit("APK is missing arcade game assets: " + ", ".join(missing))
               if "assets/racing/racing-game.html" in names:
-                  raise SystemExit("Unsafe legacy driving screen must not be packaged in the showroom APK")
+                  raise SystemExit("Unsafe legacy driving screen must not be packaged in the arcade APK")
               info = z.getinfo("assets/racing/vaz-2107.glb")
               with z.open("assets/racing/vaz-2107.glb") as f:
                   header = f.read(12)
@@ -150,13 +150,13 @@ jobs:
           print("APK SHA-256:", hashlib.sha256(apk.read_bytes()).hexdigest())
           PY
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
-          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk | head -n 8
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-VAZ2107-Arcade-Game.apk
+          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-VAZ2107-Arcade-Game.apk | head -n 8
 
-      - name: Upload ALLCOINS VAZ-2107 3D Showroom APK
+      - name: Upload ALLCOINS VAZ-2107 Arcade Game APK
         uses: actions/upload-artifact@v4
         with:
-          name: allcoins-vaz2107-3d-showroom-apk
-          path: release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
+          name: allcoins-vaz2107-arcade-game-apk
+          path: release-assets/ALLCOINS-VAZ2107-Arcade-Game.apk
           if-no-files-found: error
           retention-days: 30
