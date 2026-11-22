@@ -457,3 +457,16 @@ test("V166 smooths front and rear wheel spin independently with frame-rate-indep
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
 });
+
+test("low-FPS Android races switch to a lighter scene tier without hiding the car or road", () => {
+  assert.match(page, /function acApplyMobilePerformanceTier\(\)/);
+  assert.match(page, /if \(measuredFps < 38 && document\.body\.classList\.contains\("race-mode"\)/);
+  assert.match(page, /if \(acRacingMobileDevice && mesh !== darkMesh && mesh !== litMesh\)/);
+  assert.match(page, /acV4SkyFill\.visible = false/);
+  assert.match(page, /acV4CarRim\.visible = false/);
+  assert.match(page, /acV5BodyLight\.visible = false/);
+  assert.match(page, /acV4WarmFill\.visible = false/);
+  assert.match(page, /acV5WarmBodyFill\.visible = false/);
+  assert.match(page, /record\.light\.visible = trackVisible && !acMobileFallbackApplied/);
+  assert.match(page, /reduced-mobile-lighting-and-city-details/);
+});
