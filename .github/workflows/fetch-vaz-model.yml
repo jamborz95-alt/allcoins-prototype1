@@ -1,10 +1,9 @@
-name: Build ALLCOINS Full Game Performance APK
+name: Build ALLCOINS VAZ-2107 3D Showroom APK
 
 on:
   push:
     branches:
-      - build/drag-racing-glb-probe
-      - android/vaz2107-fullgame-performance
+      - android/vaz2107-showroom-safe
     paths:
       - "android-racing-apk/**"
       - ".github/workflows/fetch-vaz-model.yml"
@@ -14,18 +13,19 @@ permissions:
   contents: read
 
 jobs:
-  build-racing-apk:
+  build-vaz2107-showroom:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout racing project
+      - name: Checkout showroom project
         uses: actions/checkout@v4
 
-      - name: Download the saved VAZ-2107 GLB from Amvera in verified ranges
+      - name: Download and verify the saved VAZ-2107 GLB
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p model-artifact/chunks android-racing-apk/app/src/main/assets/racing
+          ASSETS="android-racing-apk/app/src/main/assets/racing"
+          mkdir -p model-artifact/chunks "$ASSETS"
           BASE="https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
           curl --fail --show-error --silent --location --retry 8 --retry-all-errors --retry-delay 4 --connect-timeout 20 \
             "$BASE/api/racing/vaz-2107.glb?info=1" \
@@ -38,7 +38,7 @@ jobs:
               raise SystemExit("Unexpected model metadata: " + repr(d))
           n = int(d.get("bytes", 0))
           if not 20 <= n <= 104857600:
-              raise SystemExit(f"Unsafe/unexpected file size: {n}")
+              raise SystemExit(f"Unexpected GLB size: {n}")
           print(f"Preparing {n:,} byte GLB in 4 MiB ranges")
           PY
           TOTAL=$(python3 -c 'import json; print(json.load(open("model-artifact/model-info.json"))["bytes"])')
@@ -50,7 +50,7 @@ jobs:
             if [ "$END" -ge "$TOTAL" ]; then END=$((TOTAL - 1)); fi
             FILE=$(printf "model-artifact/chunks/%03d.bin" "$INDEX")
             HEADERS=$(mktemp)
-            echo "Fetching VAZ-2107 GLB bytes $START-$END of $TOTAL"
+            echo "Fetching GLB bytes $START-$END of $TOTAL"
             curl --fail --show-error --silent --location --retry 8 --retry-all-errors --retry-delay 4 \
               --connect-timeout 20 --max-time 180 \
               -H "Range: bytes=$START-$END" -D "$HEADERS" \
@@ -78,31 +78,28 @@ jobs:
           if magic != 0x46546c67 or version != 2 or declared != len(data):
               raise SystemExit(f"Invalid GLB header: {magic:#x}, version={version}, declared={declared}, actual={len(data)}")
           info = json.loads(pathlib.Path("model-artifact/model-info.json").read_text())
-          report = {
-              "status": "valid GLB 2.0",
-              "bytes": len(data),
-              "sha256": hashlib.sha256(data).hexdigest(),
-              "remoteInfo": info
-          }
-          pathlib.Path("model-artifact/report.json").write_text(json.dumps(report, indent=2))
-          print(json.dumps(report, indent=2))
           if len(data) != int(info["bytes"]):
               raise SystemExit("GLB byte count differs from Amvera metadata")
+          report = {"status":"valid GLB 2.0","bytes":len(data),"sha256":hashlib.sha256(data).hexdigest(),"remoteInfo":info}
+          pathlib.Path("model-artifact/report.json").write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
           PY
-          cp model-artifact/vaz-2107.glb android-racing-apk/app/src/main/assets/racing/vaz-2107.glb
-          cp model-artifact/model-info.json android-racing-apk/app/src/main/assets/racing/model-info.json
-          test -s android-racing-apk/app/src/main/assets/racing/launcher.html
-          test -s android-racing-apk/app/src/main/assets/racing/racing-game.html
-          test -s android-racing-apk/app/src/main/assets/racing/vendor/three-r147.min.js
-          test -s android-racing-apk/app/src/main/assets/racing/vendor/GLTFLoader-r147.js
+          cp model-artifact/vaz-2107.glb "$ASSETS/vaz-2107.glb"
+          cp model-artifact/model-info.json "$ASSETS/model-info.json"
+          test -s "$ASSETS/launcher.html"
+          test -s "$ASSETS/showroom.html"
+          test -s "$ASSETS/vendor/three-r147.min.js"
+          test -s "$ASSETS/vendor/GLTFLoader-r147.js"
+          # Never package the old driving/racing screen into this safe showroom APK.
+          rm -f "$ASSETS/racing-game.html"
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Accept Android SDK licenses and install build tools
+      - name: Install Android SDK components
         shell: bash
         run: |
           set -euo pipefail
@@ -117,21 +114,21 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build standalone racing APK
+      - name: Build standalone VAZ-2107 showroom APK
         shell: bash
         run: |
           set -euo pipefail
           gradle -p android-racing-apk :app:assembleDebug
           mkdir -p release-assets
-          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Full-Game-Android.apk
+          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
-          apk = pathlib.Path("release-assets/ALLCOINS-Full-Game-Android.apk")
+          apk = pathlib.Path("release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk")
           with zipfile.ZipFile(apk) as z:
               names = set(z.namelist())
               required = [
                   "assets/racing/launcher.html",
-                  "assets/racing/racing-game.html",
+                  "assets/racing/showroom.html",
                   "assets/racing/vendor/three-r147.min.js",
                   "assets/racing/vendor/GLTFLoader-r147.js",
                   "assets/racing/vaz-2107.glb",
@@ -139,7 +136,9 @@ jobs:
               ]
               missing = [name for name in required if name not in names]
               if missing:
-                  raise SystemExit("APK is missing required racing assets: " + ", ".join(missing))
+                  raise SystemExit("APK is missing showroom assets: " + ", ".join(missing))
+              if "assets/racing/racing-game.html" in names:
+                  raise SystemExit("Unsafe legacy driving screen must not be packaged in the showroom APK")
               info = z.getinfo("assets/racing/vaz-2107.glb")
               with z.open("assets/racing/vaz-2107.glb") as f:
                   header = f.read(12)
@@ -151,13 +150,13 @@ jobs:
           print("APK SHA-256:", hashlib.sha256(apk.read_bytes()).hexdigest())
           PY
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Full-Game-Android.apk
-          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Full-Game-Android.apk | head -n 8
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
+          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk | head -n 8
 
-      - name: Upload ALLCOINS Full Game Performance APK
+      - name: Upload ALLCOINS VAZ-2107 3D Showroom APK
         uses: actions/upload-artifact@v4
         with:
-          name: allcoins-full-game-performance-apk
-          path: release-assets/ALLCOINS-Full-Game-Android.apk
+          name: allcoins-vaz2107-3d-showroom-apk
+          path: release-assets/ALLCOINS-VAZ2107-3D-Showroom.apk
           if-no-files-found: error
           retention-days: 30
