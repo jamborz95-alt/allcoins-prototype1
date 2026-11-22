@@ -5243,7 +5243,7 @@ scene.fog = new THREE.Fog(0x829caf, 88, 238);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
-const acRacingMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
+const acRacingMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.matchMedia("(pointer: coarse)").matches && window.matchMedia("(max-width: 900px)").matches);
 if(acRacingMobileDevice)document.documentElement.classList.add("ac-racing-mobile");
 const renderer = new THREE.WebGLRenderer({
   canvas,
