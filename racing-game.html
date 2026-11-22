@@ -9398,6 +9398,15 @@ function emitRearTireSmoke(){
 
 let last=performance.now();
 let runElapsed=0;
+// Cache race HUD elements once and avoid writing identical DOM values every frame.
+const acRaceHudNodes = {
+  speed: $("speed"),
+  rpm: $("rpm"),
+  distance: $("distance"),
+  timer: $("timer"),
+  rpmBar: $("rpmBar")
+};
+let acFuelLastGameplayRenderAt = -Infinity;
 function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
@@ -9621,12 +9630,25 @@ function animate(now){
         const actualUse=Math.min(acFuelLiters,fuelUsed);
         acFuelLiters=Math.max(0,acFuelLiters-actualUse);
         acFuelPendingUse+=actualUse;
-        acFuelRender();
+        // Fuel physics remains per-frame; its text and gauge need no more than 5 UI updates/sec.
+        if (now - acFuelLastGameplayRenderAt >= 200) {
+          acFuelRender();
+          acFuelLastGameplayRenderAt = now;
+        }
         if(acFuelLiters<=.0001)acFuelShowEmptyMessage();
         if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
       }
     }
-    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
+    const speedText=String(kmh);
+    if(acRaceHudNodes.speed&&acRaceHudNodes.speed.textContent!==speedText)acRaceHudNodes.speed.textContent=speedText;
+    const rpmText=String(Math.round(rpm/100)*100);
+    if(acRaceHudNodes.rpm&&acRaceHudNodes.rpm.textContent!==rpmText)acRaceHudNodes.rpm.textContent=rpmText;
+    const distanceText=String(Math.floor(Math.max(0,distance)));
+    if(acRaceHudNodes.distance&&acRaceHudNodes.distance.textContent!==distanceText)acRaceHudNodes.distance.textContent=distanceText;
+    const timerText=clockText(elapsed);
+    if(acRaceHudNodes.timer&&acRaceHudNodes.timer.textContent!==timerText)acRaceHudNodes.timer.textContent=timerText;
+    const rpmBarWidth=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
+    if(acRaceHudNodes.rpmBar&&acRaceHudNodes.rpmBar.style.width!==rpmBarWidth)acRaceHudNodes.rpmBar.style.width=rpmBarWidth;
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
