@@ -529,3 +529,17 @@ test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel 
   assert.ok(attach.includes("const namedTail=namedTailFound"));
   assert.ok(attach.includes("if(collectMeshAudit)console.table(meshAudit)"));
 });
+
+test("V176 adds a last-resort Android FPS tier without hiding the player car or road", () => {
+  assert.ok(page.includes("function acApplyMobileExtremePerformanceTier()"));
+  assert.ok(page.includes("measuredFps < 24") && page.includes("acApplyMobileExtremePerformanceTier();"));
+  assert.ok(page.includes("city[index].visible = index % 4 === 0;"));
+  assert.ok(page.includes("renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .28));"));
+  assert.ok(page.includes("mobileExtremeFallback:acMobileExtremeFallbackApplied"));
+  const tierStart = page.indexOf("function acApplyMobileExtremePerformanceTier(");
+  const tierEnd = page.indexOf("/* Обновление окружения", tierStart);
+  assert.ok(tierStart >= 0 && tierEnd > tierStart, "The extreme tier must be defined");
+  const tier = page.slice(tierStart, tierEnd);
+  assert.ok(!tier.includes("vehicle.visible = false") && !tier.includes("road.visible = false"),
+    "The extreme tier must preserve the player car and road");
+});

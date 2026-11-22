@@ -7582,6 +7582,7 @@ function acApplyMobileSeverePerformanceTier() {
 }
 
 let acMobileUltraFallbackApplied = false;
+let acMobileExtremeFallbackApplied = false;
 function acApplyMobileUltraPerformanceTier() {
   if (!acRacingMobileDevice || !acMobileFallbackApplied || acMobileUltraFallbackApplied) return false;
   if (!acMobileSevereFallbackApplied) acApplyMobileSeverePerformanceTier();
@@ -7617,6 +7618,30 @@ function acApplyMobileUltraPerformanceTier() {
 
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "ultra-mobile-performance";
+  return true;
+}
+
+function acApplyMobileExtremePerformanceTier() {
+  if (!acRacingMobileDevice || !acMobileUltraFallbackApplied || acMobileExtremeFallbackApplied) return false;
+  acMobileExtremeFallbackApplied = true;
+
+  // Last resort for phones that remain below 24 FPS after the ultra tier.
+  // Keep the player car, asphalt, lane markings and near guardrail untouched.
+  // Retain a quarter of the simple distant building shells to preserve depth.
+  for (let index = 0; index < city.length; index++) {
+    city[index].visible = index % 4 === 0;
+  }
+  acCityShrubs.visible = false;
+  acSidewalkDetails.visible = false;
+  acTrackHouseGroup.visible = false;
+  for (const layer of acTrackTreeLayers) layer.visible = false;
+  acLampPools.visible = false;
+  acRain.visible = false;
+
+  // A small additional resolution step is limited to critically slow devices.
+  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .28));
+  renderer.setSize(innerWidth, innerHeight, false);
+  window.__allcoinsRacingQualityFallback = "extreme-mobile-low-load";
   return true;
 }
 
@@ -9425,6 +9450,9 @@ function animate(now){
       if (measuredFps < 30 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileUltraFallbackApplied) {
         acApplyMobileUltraPerformanceTier();
       }
+      if (measuredFps < 24 && document.body.classList.contains("race-mode") && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
+        acApplyMobileExtremePerformanceTier();
+      }
       let currentPixelRatio=renderer.getPixelRatio();
       if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
       else acMobileShadowLowFpsSamples=0;
@@ -9472,9 +9500,10 @@ function animate(now){
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
         shadows:renderer.shadowMap.enabled,
-        mobileQualityProfile:acMobileSevereFallbackApplied?"mobile-critical-low-load":(acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high")),
+        mobileQualityProfile:acMobileExtremeFallbackApplied?"mobile-extreme-low-load":(acMobileSevereFallbackApplied?"mobile-critical-low-load":(acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high"))),
          mobileSevereFallback:acMobileSevereFallbackApplied,
         mobileUltraFallback:acMobileUltraFallbackApplied,
+        mobileExtremeFallback:acMobileExtremeFallbackApplied,
          mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         adaptiveResolution:true,
