@@ -14,28 +14,60 @@ jobs:
   fetch-model:
     runs-on: ubuntu-latest
     steps:
-      - name: Download current GLB from the ALLCOINS Engine asset service
+      - name: Download the published VAZ-2107 GLB in verified 4 MiB ranges
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p model-artifact
+          mkdir -p model-artifact/chunks
           BASE="https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
-          curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+          curl --fail --show-error --silent --location --retry 8 --retry-all-errors --retry-delay 4 --connect-timeout 20 \
             "$BASE/api/racing/vaz-2107.glb?info=1" \
             -o model-artifact/model-info.json
           cat model-artifact/model-info.json
-          curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
-            "$BASE/api/racing/vaz-2107.glb" \
-            -o model-artifact/vaz-2107.glb
+          python3 - <<'PY'
+          import json
+          d = json.load(open("model-artifact/model-info.json"))
+          if d.get("status") != "ok" or d.get("contentType") != "model/gltf-binary":
+              raise SystemExit("Unexpected model metadata: " + repr(d))
+          n = int(d.get("bytes", 0))
+          if not 20 <= n <= 104857600:
+              raise SystemExit(f"Unsafe/unexpected file size: {n}")
+          print(f"Preparing {n:,} byte GLB in 4 MiB ranges")
+          PY
+          TOTAL=$(python3 -c 'import json; print(json.load(open("model-artifact/model-info.json"))["bytes"])')
+          CHUNK=$((4 * 1024 * 1024))
+          START=0
+          INDEX=0
+          while [ "$START" -lt "$TOTAL" ]; do
+            END=$((START + CHUNK - 1))
+            if [ "$END" -ge "$TOTAL" ]; then END=$((TOTAL - 1)); fi
+            FILE=$(printf "model-artifact/chunks/%03d.bin" "$INDEX")
+            HEADERS=$(mktemp)
+            echo "Fetching bytes $START-$END of $TOTAL"
+            curl --fail --show-error --silent --location --retry 8 --retry-all-errors --retry-delay 4 \
+              --connect-timeout 20 --max-time 120 \
+              -H "Range: bytes=$START-$END" -D "$HEADERS" \
+              "$BASE/api/racing/vaz-2107.glb" -o "$FILE"
+            STATUS=$(awk 'BEGIN{IGNORECASE=1} /^HTTP\//{s=$2} END{print s}' "$HEADERS")
+            ACTUAL=$(wc -c < "$FILE")
+            EXPECTED=$((END - START + 1))
+            if [ "$STATUS" != "206" ] || [ "$ACTUAL" -ne "$EXPECTED" ]; then
+              echo "Unexpected range response: HTTP=$STATUS bytes=$ACTUAL expected=$EXPECTED"
+              cat "$HEADERS"
+              exit 1
+            fi
+            rm -f "$HEADERS"
+            START=$((END + 1))
+            INDEX=$((INDEX + 1))
+          done
+          cat model-artifact/chunks/*.bin > model-artifact/vaz-2107.glb
           python3 - <<'PY'
           import json, pathlib, struct, hashlib
           p = pathlib.Path("model-artifact/vaz-2107.glb")
           data = p.read_bytes()
-          if len(data) < 20:
-              raise SystemExit(f"GLB too small: {len(data)} bytes")
           magic, version, declared = struct.unpack("<III", data[:12])
           if magic != 0x46546c67 or version != 2 or declared != len(data):
-              raise SystemExit(f"Invalid GLB header: magic={magic:#x}, version={version}, declared={declared}, actual={len(data)}")
+              raise SystemExit(f"Invalid GLB header: {magic:#x}, version={version}, declared={declared}, actual={len(data)}")
           info = json.loads(pathlib.Path("model-artifact/model-info.json").read_text())
           report = {
               "status": "valid GLB 2.0",
@@ -50,6 +82,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vaz-2107-glb-inspection
-          path: model-artifact/
+          path: |
+            model-artifact/vaz-2107.glb
+            model-artifact/model-info.json
+            model-artifact/report.json
           if-no-files-found: error
           retention-days: 7
