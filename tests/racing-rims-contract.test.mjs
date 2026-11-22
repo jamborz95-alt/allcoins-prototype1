@@ -470,3 +470,16 @@ test("low-FPS Android races switch to a lighter scene tier without hiding the ca
   assert.match(page, /record\.light\.visible = trackVisible && !acMobileFallbackApplied/);
   assert.match(page, /reduced-mobile-lighting-and-city-details/);
 });
+
+test("critically slow Android races enter a lower-load scene tier while keeping the VAZ and asphalt", () => {
+  assert.match(page, /function acApplyMobileSeverePerformanceTier\(\)/);
+  assert.match(page, /measuredFps < 18[\s\S]*?acApplyMobileSeverePerformanceTier\(\)/);
+  assert.match(page, /shell\.userData\.acMobileBaseShell = true/);
+  assert.match(page, /child\.visible = child === baseShell/);
+  assert.match(page, /distantHills\.visible = false/);
+  assert.match(page, /acCityShrubs\.visible = false/);
+  assert.match(page, /acRain\.visible = false/);
+  assert.match(page, /renderer\.setPixelRatio\(Math\.min\(renderer\.getPixelRatio\(\), \.38\)\)/);
+  assert.match(page, /if\(acMobileSevereFallbackApplied\)return false/);
+  assert.match(page, /mobileSevereFallback:acMobileSevereFallbackApplied/);
+});
