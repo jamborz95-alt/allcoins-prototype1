@@ -5246,30 +5246,32 @@ camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
 const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  // Умеренное сглаживание вместе с повышенной плотностью пикселей делает кузов и приборы чётче.
-  antialias: true,
+  // Mobile profile trades a little edge smoothing for much steadier frame time.
+  antialias: !acRacingMobileDevice,
   alpha: false,
   powerPreference: "high-performance",
-  precision: "highp"
+  precision: acRacingMobileDevice ? "mediump" : "highp"
 });
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-// V165: favour stable frame pacing on phones; resolution rises only after sustained headroom.
-// V164: high-detail mobile rendering; adaptive scaling protects frame pacing on slower phones.
-const acMobilePixelRatioCap = 1.32;
-const acMobilePixelRatioInitial = 1.12;
-const acMobilePixelRatioFloor = .76;
+// V168 ANDROID PERFORMANCE PROFILE.
+// Start at a phone-friendly render scale and raise it only after sustained FPS headroom.
+const acMobilePixelRatioCap = 1.02;
+const acMobilePixelRatioInitial = .90;
+const acMobilePixelRatioFloor = .60;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
-renderer.shadowMap.enabled = true;
+// Dynamic shadow maps are the most expensive scene-wide pass on mid-range phones.
+// The soft contact-shadow texture under the car remains visible without this pass.
+renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
 // V27: balanced daylight fill and warm highlights; preserve material contrast on mobile.
 scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.40));
-const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=true;
-sun.shadow.mapSize.set(acRacingMobileDevice ? 768 : 1024, acRacingMobileDevice ? 768 : 1024);
+const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
+sun.shadow.mapSize.set(acRacingMobileDevice ? 512 : 1024, acRacingMobileDevice ? 512 : 1024);
 if(acRacingMobileDevice){
   sun.shadow.camera.left=-18; sun.shadow.camera.right=18;
   sun.shadow.camera.top=14; sun.shadow.camera.bottom=-14;
@@ -5532,6 +5534,12 @@ const roadMat = new THREE.MeshStandardMaterial({
   roughness: .76,
   metalness: .012
 });
+// Keep the detailed asphalt colour map on phones, but skip two extra fragment texture samples.
+if(acRacingMobileDevice){
+  roadMat.roughnessMap=null;
+  roadMat.bumpMap=null;
+  roadMat.needsUpdate=true;
+}
 // Немного расширенное полотно: +6.7% по ширине, без изменения длины трассы.
 // Полотно расширено, чтобы автомобиль на Z=10 полностью оставался на асфальте.
 const road = new THREE.Mesh(new THREE.PlaneGeometry(2400, 25.6), roadMat);
@@ -5740,6 +5748,9 @@ function acAdvanceRoadSurface(scroll) {
 
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
+const acCityGroup = new THREE.Group();
+acCityGroup.name = "ALLCOINS city blocks · single moving root";
+scene.add(acCityGroup);
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
 // Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
 const buildingPalette = [0xcbb494, 0xd8bea0, 0xbfa280, 0xc1b7a6, 0xd4c1a0, 0x9db0b8];
@@ -5971,12 +5982,12 @@ for (let i = 0; i < 33; i++) {
 
   // Отодвигаем здания глубже за ограждение, сохраняя свободной всю дорожную полосу.
   building.position.set(-115 + i * 7.15, 0, -22.5);
-  scene.add(building);
+  acCityGroup.add(building);
   city.push(building);
 }
 
-// V27: keep the detailed city blocks active in race mode; they scroll at distant-scene parallax.
-for (const building of city) building.visible = true;
+// V168: move the whole city as one root instead of writing 33 building transforms every frame.
+acCityGroup.visible = true;
 
 /* ALLCOINS RACING CITY-SIDE FENCE — секционное металлическое ограждение с диагональными распорками. */
 const acCityFence = new THREE.Group();
@@ -6417,7 +6428,7 @@ window.__allcoinsRacingVisualDiagnostics = Object.freeze({
   cityLightingStyle: "balanced-daylight",
   atmosphereBackdrop: Boolean(acRaceSkyBackdrop && acRaceSkyBackdrop.material.map),
   atmosphereStyle: "natural-daylight-gradient",
-  cityBlocksVisible: city.some(building => building.visible),
+  cityBlocksVisible: acCityGroup.visible,
   distantSkylineVisible: distantHills.visible,
   asphaltSurfaceFinish: "graphite-blue textured satin",
   cityFacadeTexture: "warm-beige-plaster",
@@ -6969,7 +6980,7 @@ acLampPools.visible = false;
 scene.add(acLampPools);
 
 /* Дождь перед камерой */
-const acRainCount=acRacingMobileDevice ? 110 : 180;
+const acRainCount=acRacingMobileDevice ? 48 : 180;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
@@ -7478,7 +7489,7 @@ function setGarageMode(enabled) {
   acGarageWorld.visible = active;
   const trackVisible = !active;
   acRaceSkyBackdrop.visible = trackVisible;
-  for (const building of city) building.visible = trackVisible;
+  acCityGroup.visible = trackVisible;
   distantHills.visible = trackVisible;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
@@ -7564,9 +7575,8 @@ const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTr
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
-  for(const building of city){
-    if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
-  }
+  // One transform updates all 33 detailed blocks; wrap the complete 236-unit city strip.
+  if(acCityGroup.visible)acAdvanceWrappedSceneObject(acCityGroup,worldDelta,.19,-236,0,236);
   acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acCityShrubs,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acSidewalkDetails,worldDelta,.19,-132,104,236);
@@ -7591,8 +7601,8 @@ let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vecto
 const loader=new GLTFLoader();
 const smokeParticles=[];
 const smokeParticlePool=[];
-const smokeGeometry=new THREE.SphereGeometry(.13,7,6);
-const acSmokeParticleLimit=acRacingMobileDevice?22:72;
+const smokeGeometry=new THREE.SphereGeometry(.13,acRacingMobileDevice?5:7,acRacingMobileDevice?4:6);
+const acSmokeParticleLimit=acRacingMobileDevice?10:72;
 let acLastTireSmokeAt=0,acLastExhaustSmokeAt=0;
 
 /* Reuse a bounded pool instead of allocating/discarding a new mesh and material
@@ -7616,7 +7626,7 @@ function acAcquireSmokeParticle(){
 function addSmoke(position,kind='exhaust'){
   const tire=kind==='tire';
   const now=performance.now();
-  const minimumInterval=acRacingMobileDevice?(tire?70:95):(tire?42:58);
+  const minimumInterval=acRacingMobileDevice?(tire?115:145):(tire?42:58);
   if(tire){
     if(now-acLastTireSmokeAt<minimumInterval)return false;
     acLastTireSmokeAt=now;
@@ -7624,7 +7634,7 @@ function addSmoke(position,kind='exhaust'){
     if(now-acLastExhaustSmokeAt<minimumInterval)return false;
     acLastExhaustSmokeAt=now;
   }
-  const life=tire?(acRacingMobileDevice?1.9:2.15):(acRacingMobileDevice?1.2:1.35);
+  const life=tire?(acRacingMobileDevice?1.55:2.15):(acRacingMobileDevice?.95:1.35);
   const particle=acAcquireSmokeParticle();
   const material=particle.mesh.material;
   material.color.setHex(tire?0x202326:0x969fa3);
@@ -8602,7 +8612,7 @@ function attachVehicle(root,label='сохранённая модель'){
   let wheelSourceMesh=null;
   vehicle.traverse(object=>{
     if(!object.isMesh||!object.geometry)return;
-    object.castShadow=true;object.receiveShadow=true;
+    object.castShadow=!acRacingMobileDevice;object.receiveShadow=!acRacingMobileDevice;
     const bounds=new THREE.Box3().setFromObject(object);
     const dims=bounds.getSize(new THREE.Vector3());
     const centerWorld=bounds.getCenter(new THREE.Vector3());
@@ -9265,6 +9275,11 @@ let acPerfStableFpsSamples = 0;
 let acMobileShadowLowFpsSamples = 0;
 let acNextRaceProgressUpdateAt = 0;
 let acIdleRenderFrame = 0;
+let acHudCachedSpeed = -1;
+let acHudCachedRpm = -1;
+let acHudCachedDistance = -1;
+let acHudCachedSecond = -1;
+let acHudCachedRpmBar = -1;
 function animate(now){
   requestAnimationFrame(animate);
   const rawFrameMs=Math.max(0,now-last);
@@ -9438,7 +9453,15 @@ function animate(now){
         if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
       }
     }
-    $('speed').textContent=kmh;$('rpm').textContent=Math.round(rpm/100)*100;$('distance').textContent=Math.floor(Math.max(0,distance));$('timer').textContent=clockText(elapsed);$('rpmBar').style.width=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
+    if(kmh!==acHudCachedSpeed){$('speed').textContent=kmh;acHudCachedSpeed=kmh;}
+    const hudRpm=Math.round(rpm/100)*100;
+    if(hudRpm!==acHudCachedRpm){$('rpm').textContent=hudRpm;acHudCachedRpm=hudRpm;}
+    const hudDistance=Math.floor(Math.max(0,distance));
+    if(hudDistance!==acHudCachedDistance){$('distance').textContent=hudDistance;acHudCachedDistance=hudDistance;}
+    const hudSecond=Math.floor(elapsed);
+    if(hudSecond!==acHudCachedSecond){$('timer').textContent=clockText(hudSecond);acHudCachedSecond=hudSecond;}
+    const hudRpmBar=Math.round(Math.min(100,rpm/AC_TACHOMETER_MAX*100));
+    if(hudRpmBar!==acHudCachedRpmBar){$('rpmBar').style.width=hudRpmBar+'%';acHudCachedRpmBar=hudRpmBar;}
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
