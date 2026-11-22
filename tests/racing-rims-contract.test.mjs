@@ -518,7 +518,7 @@ test("racing suspension uses one vehicle hierarchy pass and reuses transform scr
 
 test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel and exhaust detection", () => {
   const attachStart = page.indexOf("function attachVehicle(");
-  const attachEnd = page.indexOf("\\nfunction loadGlbBuffer", attachStart);
+  const attachEnd = page.indexOf("\nfunction loadGlbBuffer", attachStart);
   assert.ok(attachStart >= 0 && attachEnd > attachStart, "attachVehicle must remain present");
   const attach = page.slice(attachStart, attachEnd);
   assert.ok(attach.includes("const collectMeshAudit=!acRacingMobileDevice||window.__ALLCOINS_RACING_DEBUG__===true"));
