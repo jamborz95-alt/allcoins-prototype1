@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a101b">
+<title>ALLCOINS · ВАЗ-2107 3D</title>
+<script src="./vendor/three-r147.min.js"></script>
+<script src="./vendor/GLTFLoader-r147.js"></script>
+<style>
+:root{color-scheme:dark;--gold:#e8bd63;--muted:#a9b4c3;--panel:rgba(8,14,23,.76)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b29;color:#f7f8fa;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;touch-action:none}
+#view{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,8,15,.35),transparent 25%,transparent 70%,rgba(3,8,15,.52))}
+.top{position:fixed;left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.brand,.status,.toolbar,.palette{background:var(--panel);border:1px solid rgba(232,189,99,.24);box-shadow:0 10px 30px #0005;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:14px}
+.brand{padding:10px 14px}.brand b{display:block;color:var(--gold);font-size:13px;letter-spacing:.16em}.brand span{display:block;margin-top:3px;color:#d5dce5;font-size:11px}
+.status{padding:8px 11px;color:#c8d2de;font-size:10px;letter-spacing:.05em;text-align:right}
+.status strong{display:block;color:#a7deb7;font-size:11px;margin-bottom:2px}
+.bottom{position:fixed;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:0 12px;pointer-events:none}
+.palette,.toolbar{pointer-events:auto;padding:10px 12px}
+.palette{min-width:170px}.caption{font-size:9px;color:var(--muted);letter-spacing:.13em;font-weight:800;margin:0 0 8px}
+.swatches{display:flex;gap:9px;align-items:center}
+.swatch{width:25px;height:25px;border-radius:50%;border:2px solid rgba(255,255,255,.65);box-shadow:0 2px 8px #0007;display:block;padding:0}
+.swatch[aria-pressed=true]{outline:2px solid var(--gold);outline-offset:3px}
+.toolbar{display:flex;gap:8px;align-items:center}
+button{font:inherit;cursor:pointer}
+.tool{min-width:42px;height:40px;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font-size:18px;font-weight:700}
+.tool:active{background:rgba(232,189,99,.24)}
+.tool.reset{font-size:10px;letter-spacing:.04em;padding:0 12px;color:#f0d69f}
+.hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;padding:8px 12px;border-radius:20px;background:#07101bb8;color:#e6edf5;font-size:11px;opacity:.82;transition:opacity .5s}
+.loading{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at center,#243b53 0%,#0b1421 75%);z-index:5}
+.loading.hidden{display:none}
+.loadcard{width:min(420px,92vw);padding:24px;border:1px solid rgba(232,189,99,.42);border-radius:18px;background:linear-gradient(145deg,#1a2b40,#0b1421);box-shadow:0 22px 70px #000a;text-align:center}
+.mark{font-size:12px;letter-spacing:.22em;color:var(--gold);font-weight:900}
+h1{font-size:21px;margin:12px 0 7px}
+#loadText{font-size:12px;line-height:1.5;color:#d2dbe6;min-height:38px}
+.track{height:6px;margin:16px 0 0;border-radius:9px;background:#2b3a4b;overflow:hidden}
+#fill{height:100%;width:8%;background:linear-gradient(90deg,#bd8c32,#ffe3a0);border-radius:9px;transition:width .2s}
+#retry{display:none;margin-top:16px;padding:11px 18px;border:0;border-radius:10px;background:var(--gold);color:#1a1b1d;font-weight:900}
+#errorHint{display:none;margin-top:9px;color:#ffb6a8;font-size:10px}
+@media(max-width:650px){
+ .top{gap:6px}.brand{padding:8px 10px}.brand b{font-size:11px}.brand span{font-size:9px}
+ .status{font-size:9px;padding:7px 8px}.bottom{gap:7px;padding:0 7px}
+ .palette,.toolbar{padding:8px}.palette{min-width:138px}.caption{font-size:8px;margin-bottom:7px}
+ .swatches{gap:7px}.swatch{width:21px;height:21px}.tool{min-width:36px;height:36px}
+ .tool.reset{padding:0 8px;font-size:9px}
+}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="shade"></div>
+<div class="top">
+  <div class="brand"><b>ALLCOINS</b><span>ВАЗ-2107 · 3D SHOWROOM</span></div>
+  <div class="status"><strong id="modelStatus">ЗАГРУЗКА МОДЕЛИ</strong><span id="fps">FPS —</span></div>
+</div>
+<div class="bottom">
+  <div class="palette">
+    <div class="caption">ЦВЕТ КУЗОВА</div>
+    <div class="swatches">
+      <button class="swatch" data-color="#b81720" aria-label="Красный" aria-pressed="true" style="background:#b81720"></button>
+      <button class="swatch" data-color="#182d55" aria-label="Синий" aria-pressed="false" style="background:#182d55"></button>
+      <button class="swatch" data-color="#d8d9d5" aria-label="Серебристый" aria-pressed="false" style="background:#d8d9d5"></button>
+      <button class="swatch" data-color="#202328" aria-label="Чёрный" aria-pressed="false" style="background:#202328"></button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button class="tool" id="zoomOut" aria-label="Отдалить">−</button>
+    <button class="tool" id="zoomIn" aria-label="Приблизить">+</button>
+    <button class="tool reset" id="resetView">СБРОС ВИДА</button>
+  </div>
+</div>
+<div class="hint" id="hint">Проведи пальцем, чтобы осмотреть автомобиль</div>
+<div class="loading" id="loading">
+  <div class="loadcard">
+    <div class="mark">ALLCOINS GARAGE</div>
+    <h1>ВАЗ-2107 · 3D</h1>
+    <div id="loadText">Открываем настоящую модель автомобиля…</div>
+    <div class="track"><div id="fill"></div></div>
+    <button id="retry" type="button">Повторить загрузку</button>
+    <div id="errorHint">Проверь, что файл модели включён в сборку APK.</div>
+  </div>
+</div>
+<script>
+(() => {
+"use strict";
+const canvas=document.getElementById("view");
+const loading=document.getElementById("loading");
+const loadText=document.getElementById("loadText");
+const fill=document.getElementById("fill");
+const retry=document.getElementById("retry");
+const modelStatus=document.getElementById("modelStatus");
+const fpsLabel=document.getElementById("fps");
+const hint=document.getElementById("hint");
+const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const MAX_DPR=mobile?1.12:1.45;
+let renderer,scene,camera,carRoot,carModel,bodyMaterials=[];
+let azimuth=0,elevation=.24,distance=10.8,minDistance=6.2,maxDistance=17;
+let dragging=false,lastX=0,lastY=0,lastFrame=0,fpsFrames=0,fpsTime=0;
+let autoRotate=true,qualityDpr=Math.min(window.devicePixelRatio||1,MAX_DPR);
+const target=new THREE.Vector3(0,1.15,0);
+const tempColor=new THREE.Color();
+const clock=new THREE.Clock();
+
+function setLoad(message,pct,error=false){
+ loadText.textContent=message;
+ fill.style.width=Math.max(3,Math.min(100,pct))+"%";
+ retry.style.display=error?"inline-block":"none";
+ document.getElementById("errorHint").style.display=error?"block":"none";
+}
+function initRenderer(){
+ const contextOptions={alpha:false,antialias:!mobile,powerPreference:"high-performance",precision:"mediump",stencil:false,depth:true};
+ renderer=new THREE.WebGLRenderer({canvas, ...contextOptions});
+ renderer.setPixelRatio(qualityDpr);
+ renderer.setSize(innerWidth,innerHeight,false);
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=1.12;
+ renderer.shadowMap.enabled=false;
+}
+function addCity(){
+ const group=new THREE.Group();
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,240),new THREE.MeshStandardMaterial({color:0x27323a,roughness:1,metalness:0}));
+ ground.rotation.x=-Math.PI/2;ground.position.y=-.28;group.add(ground);
+ const road=new THREE.Mesh(new THREE.RingGeometry(10.6,12.1,96),new THREE.MeshStandardMaterial({color:0x353c43,roughness:.92,metalness:.04,side:THREE.DoubleSide}));
+ road.rotation.x=-Math.PI/2;road.position.y=-.265;group.add(road);
+ const dashMat=new THREE.MeshBasicMaterial({color:0xd6bf85,transparent:true,opacity:.48,side:THREE.DoubleSide});
+ for(let i=0;i<48;i++){
+  const a=i*Math.PI*2/48;
+  const dash=new THREE.Mesh(new THREE.BoxGeometry(.1,.012,.42),dashMat);
+  dash.position.set(Math.cos(a)*11.35,-.25,Math.sin(a)*11.35);
+  dash.rotation.y=-a;group.add(dash);
+ }
+ const colors=[0x536575,0x71818b,0x46596b,0x8b8d88,0x4b5963,0x9b9b91];
+ for(let i=0;i<30;i++){
+  const angle=i*Math.PI*2/30;
+  const radius=23+(i%3)*1.4;
+  const w=2.4+(i%4)*.7,h=4+(i%7)*1.35,d=2.2+(i%3)*.6;
+  const mat=new THREE.MeshStandardMaterial({color:colors[i%colors.length],roughness:.94,metalness:.02});
+  const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  b.position.set(Math.cos(angle)*radius,h/2-.28,Math.sin(angle)*radius);
+  b.rotation.y=-angle+Math.PI/2;group.add(b);
+  if(i%2===0){
+   const rows=Math.min(4,Math.max(2,Math.floor(h/2)));
+   const windows=new THREE.Group();
+   const wm=new THREE.MeshBasicMaterial({color:0xf3cf8b,transparent:true,opacity:.48});
+   for(let row=0;row<rows;row++)for(let col=0;col<2;col++){
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(.24,.36),wm);
+    win.position.set((col-.5)*.65,1+row*.85,d/2+.006);windows.add(win);
+   }
+   windows.position.copy(b.position);windows.rotation.y=b.rotation.y;group.add(windows);
+  }
+ }
+ scene.add(group);
+}
+function initScene(){
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(0x879eac);
+ scene.fog=new THREE.Fog(0x879eac,32,78);
+ camera=new THREE.PerspectiveCamera(36,innerWidth/innerHeight,.1,160);
+ const hemi=new THREE.HemisphereLight(0xe5f0ff,0x28303b,2.0);scene.add(hemi);
+ const key=new THREE.DirectionalLight(0xffe5c1,3.0);key.position.set(-8,15,10);scene.add(key);
+ const fillLight=new THREE.DirectionalLight(0xb7d9ff,1.45);fillLight.position.set(9,7,-8);scene.add(fillLight);
+ const rim=new THREE.PointLight(0xe8bd63,65,25,2);rim.position.set(0,5,-5);scene.add(rim);
+ addCity();
+ const plinth=new THREE.Mesh(new THREE.CylinderGeometry(6.9,7.15,.34,80),new THREE.MeshStandardMaterial({color:0x171e28,metalness:.68,roughness:.34}));
+ plinth.position.y=-.16;scene.add(plinth);
+ const topDisk=new THREE.Mesh(new THREE.CylinderGeometry(6.78,6.9,.09,80),new THREE.MeshStandardMaterial({color:0x39424b,metalness:.55,roughness:.42}));
+ topDisk.position.y=.015;scene.add(topDisk);
+ const rimRing=new THREE.Mesh(new THREE.TorusGeometry(6.82,.035,8,100),new THREE.MeshBasicMaterial({color:0xd4a64e}));
+ rimRing.rotation.x=Math.PI/2;rimRing.position.y=.07;scene.add(rimRing);
+ const floorRing=new THREE.Mesh(new THREE.TorusGeometry(7.6,.012,5,100),new THREE.MeshBasicMaterial({color:0x8294a1,transparent:true,opacity:.5}));
+ floorRing.rotation.x=Math.PI/2;floorRing.position.y=-.27;scene.add(floorRing);
+}
+function rememberBodyMaterials(root){
+ bodyMaterials=[];
+ root.traverse(obj=>{
+  if(!obj.isMesh)return;
+  const mats=Array.isArray(obj.material)?obj.material:[obj.material];
+  mats.forEach((mat,index)=>{
+   if(!mat||!mat.color)return;
+   const name=((obj.name||"")+" "+(mat.name||"")).toLowerCase();
+   const c=mat.color;
+   const reddish=(c.r>.18&&c.r>c.g*1.22&&c.r>c.b*1.22);
+   const named=/body|paint|hood|door|fender|bonnet|wing| кузов|крыл|капот|двер/.test(name);
+   if(reddish||named){
+    const cloned=mat.clone();
+    if(Array.isArray(obj.material))obj.material[index]=cloned;else obj.material=cloned;
+    bodyMaterials.push({material:cloned,original:cloned.color.clone()});
+   }
+  });
+ });
+}
+function recolor(hex){
+ if(!bodyMaterials.length)return;
+ tempColor.set(hex);
+ for(const item of bodyMaterials)item.material.color.copy(tempColor);
+}
+function setCamera(){
+ const horizontal=Math.cos(elevation)*distance;
+ camera.position.set(Math.sin(azimuth)*horizontal,target.y+Math.sin(elevation)*distance,Math.cos(azimuth)*horizontal);
+ camera.lookAt(target);
+}
+function fitCar(root){
+ const box=new THREE.Box3().setFromObject(root);
+ const size=box.getSize(new THREE.Vector3());
+ const center=box.getCenter(new THREE.Vector3());
+ const longest=Math.max(size.x,size.z,0.01);
+ const scale=7.1/longest;
+ root.scale.setScalar(scale);
+ root.position.x=-center.x*scale;
+ root.position.z=-center.z*scale;
+ root.position.y=-box.min.y*scale+.07;
+ const finalBox=new THREE.Box3().setFromObject(root);
+ const finalSize=finalBox.getSize(new THREE.Vector3());
+ target.set(0,Math.max(.95,finalSize.y*.47),0);
+ distance=Math.max(9.6,Math.min(13.8,finalSize.x>finalSize.z?10.8:11.6));
+ minDistance=7.4;maxDistance=18;
+ if(size.x>=size.z){azimuth=0;}else{azimuth=Math.PI/2;}
+ elevation=.19;
+ setCamera();
+}
+function loadCar(){
+ setLoad("Открываем встроенный файл ВАЗ-2107 GLB…",12);
+ modelStatus.textContent="ЧТЕНИЕ GLB";
+ const loader=new THREE.GLTFLoader();
+ loader.load("./vaz-2107.glb",gltf=>{
+  carModel=gltf.scene;
+  carRoot=new THREE.Group();
+  carRoot.add(carModel);
+  scene.add(carRoot);
+  fitCar(carRoot);
+  rememberBodyMaterials(carRoot);
+  setLoad("Модель загружена. Настраиваем свет и материалы…",94);
+  modelStatus.textContent="ВАЗ-2107 ГОТОВ";
+  loading.classList.add("hidden");
+  setTimeout(()=>{hint.style.opacity="0";},4500);
+ },xhr=>{
+  if(xhr&&xhr.total>0)setLoad("Загружаем модель · "+Math.round(xhr.loaded/xhr.total*100)+"%",Math.round(xhr.loaded/xhr.total*86)+8);
+ },error=>{
+  console.error("GLB load failed",error);
+  modelStatus.textContent="ОШИБКА МОДЕЛИ";
+  setLoad("Не удалось открыть файл ВАЗ-2107. "+(error&&error.message?error.message:"Проверь наличие GLB в APK."),8,true);
+ });
+}
+function resize(){
+ if(!renderer||!camera)return;
+ camera.aspect=innerWidth/innerHeight;
+ camera.updateProjectionMatrix();
+ const wanted=Math.min(window.devicePixelRatio||1,MAX_DPR,qualityDpr);
+ renderer.setPixelRatio(wanted);
+ renderer.setSize(innerWidth,innerHeight,false);
+}
+function animate(now){
+ requestAnimationFrame(animate);
+ if(!renderer||!scene||!camera)return;
+ const dt=Math.min(.05,clock.getDelta());
+ if(autoRotate&&!dragging&&carRoot)azimuth+=dt*.055;
+ setCamera();
+ renderer.render(scene,camera);
+ fpsFrames++;
+ if(now-fpsTime>1600){
+  if(fpsTime){
+   const fps=fpsFrames*1000/(now-fpsTime);
+   fpsLabel.textContent="FPS "+fps.toFixed(0);
+   if(mobile&&fps<34&&qualityDpr>.68){qualityDpr=Math.max(.68,qualityDpr-.08);resize();}
+   else if(mobile&&fps>56&&qualityDpr<MAX_DPR){qualityDpr=Math.min(MAX_DPR,qualityDpr+.035);resize();}
+  }
+  fpsFrames=0;fpsTime=now;
+ }
+}
+function pointerDown(e){dragging=true;autoRotate=false;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture&&canvas.setPointerCapture(e.pointerId);}
+function pointerMove(e){
+ if(!dragging)return;
+ const dx=e.clientX-lastX,dy=e.clientY-lastY;
+ lastX=e.clientX;lastY=e.clientY;
+ azimuth-=dx*.006;
+ elevation=Math.max(.08,Math.min(.72,elevation+dy*.003));
+}
+function pointerUp(){dragging=false;setTimeout(()=>{autoRotate=true;},2200);}
+canvas.addEventListener("pointerdown",pointerDown);
+canvas.addEventListener("pointermove",pointerMove);
+canvas.addEventListener("pointerup",pointerUp);
+canvas.addEventListener("pointercancel",pointerUp);
+canvas.addEventListener("wheel",e=>{distance=Math.max(minDistance,Math.min(maxDistance,distance+Math.sign(e.deltaY)*.55));},{passive:true});
+document.getElementById("zoomIn").addEventListener("click",()=>distance=Math.max(minDistance,distance-.8));
+document.getElementById("zoomOut").addEventListener("click",()=>distance=Math.min(maxDistance,distance+.8));
+document.getElementById("resetView").addEventListener("click",()=>{if(carRoot)fitCar(carRoot);autoRotate=true;});
+document.querySelectorAll(".swatch").forEach(button=>button.addEventListener("click",()=>{
+ document.querySelectorAll(".swatch").forEach(item=>item.setAttribute("aria-pressed","false"));
+ button.setAttribute("aria-pressed","true");
+ recolor(button.dataset.color);
+}));
+retry.addEventListener("click",()=>{setLoad("Повторяем загрузку модели…",8);loadCar();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)autoRotate=false;else autoRotate=true;});
+window.addEventListener("resize",resize,{passive:true});
+try{
+ if(!window.THREE||!THREE.GLTFLoader)throw new Error("Не найден локальный Three.js или GLTFLoader.");
+ initRenderer();initScene();loadCar();requestAnimationFrame(animate);
+}catch(error){
+ console.error(error);modelStatus.textContent="ОШИБКА 3D";
+ setLoad("Не удалось запустить 3D-просмотр: "+error.message,5,true);
+}
+})();
+</script>
+</body>
+</html>
