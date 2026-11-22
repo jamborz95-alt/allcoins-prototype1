@@ -501,3 +501,15 @@ test("ultra-low FPS Android mode limits scenery draw calls and freezes hidden en
   assert.match(page, /acAdvanceWrappedSceneObject\(acTrackCurbMesh,worldDelta,\.96\)/);
   assert.match(page, /acApplyMobileUltraPerformanceTier\(\)/);
 });
+
+test("racing suspension uses one vehicle hierarchy pass and reuses transform scratch objects", () => {
+  const suspensionStart = page.indexOf("const suspensionOmega");
+  const wheelUpdate = page.indexOf("updateWheelGroundContact();", suspensionStart);
+  const suspensionLoop = page.slice(suspensionStart, wheelUpdate);
+  assert.match(page, /vehicle\.updateWorldMatrix\(true,false\)/);
+  assert.match(page, /vehicle\.updateWorldMatrix\(false,true\)/);
+  assert.match(page, /acVehicleSuspensionWorldScratch/);
+  assert.match(page, /acVehicleWorldInverseScratch/);
+  assert.match(page, /acVehiclePitchScratch\.setFromAxisAngle/);
+  assert.doesNotMatch(suspensionLoop, /vehicle\.updateMatrixWorld\(true\)|vehicle\.localToWorld|vehicle\.worldToLocal|new THREE\.Quaternion\(\)|vehicleChassisBasePosition\.clone\(\)/);
+});

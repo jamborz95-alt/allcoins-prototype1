@@ -7712,6 +7712,10 @@ let vehicleLength=4.6, vehicleCenterY=1.0;
 let vehicleBaseY=0, vehicleBaseRotationZ=0, wheelSpinAngle=0, rearWheelSpinAngle=0, wheelSpinAngularVelocity=0, rearWheelSpinAngularVelocity=0;
 let vehicleChassis=null, vehicleChassisBaseY=0, vehicleChassisBaseRotationZ=0;
 let vehicleChassisBasePosition=new THREE.Vector3(), vehicleChassisBaseQuaternion=new THREE.Quaternion(), vehicleChassisPitchAxis=new THREE.Vector3(0,0,1), vehicleChassisSuspensionUp=new THREE.Vector3(0,1,0);
+// Reuse scratch transforms; the imported GLB can contain many mesh nodes.
+const acVehicleSuspensionWorldScratch=new THREE.Vector3();
+const acVehicleWorldInverseScratch=new THREE.Matrix4();
+const acVehiclePitchScratch=new THREE.Quaternion();
 let headlightRig=null, headlightEnabled=false, exhaustLocalPoint=new THREE.Vector3();
 const loader=new GLTFLoader();
 const smokeParticles=[];
@@ -9614,20 +9618,21 @@ function animate(now){
     const roadBounce=0;
     vehicle.position.y=vehicleBaseY;
     if(vehicleChassis){
-      // Calculate the base chassis point in world space, change only world Y,
-      // then convert the result back into the vehicle-root local coordinate system.
-      vehicle.updateMatrixWorld(true);
-      const chassisTargetWorld=vehicle.localToWorld(vehicleChassisBasePosition.clone());
-      chassisTargetWorld.y+=suspensionOffset+roadBounce;
-      vehicleChassis.position.copy(vehicle.worldToLocal(chassisTargetWorld));
-      vehicle.updateMatrixWorld(true);
+      // Update only the vehicle root first. localToWorld/worldToLocal each trigger
+      // extra hierarchy updates, so use reusable matrices and one child-tree pass.
+      vehicle.updateWorldMatrix(true,false);
+      acVehicleWorldInverseScratch.copy(vehicle.matrixWorld).invert();
+      acVehicleSuspensionWorldScratch.copy(vehicleChassisBasePosition).applyMatrix4(vehicle.matrixWorld);
+      acVehicleSuspensionWorldScratch.y+=suspensionOffset+roadBounce;
+      vehicleChassis.position.copy(acVehicleSuspensionWorldScratch.applyMatrix4(acVehicleWorldInverseScratch));
+      vehicle.updateWorldMatrix(false,true);
     }else vehicle.position.y=vehicleBaseY+suspensionOffset+roadBounce;
     // Positive world-Z pitch lifts the nose (+X) and lets the rear settle under acceleration.
     const pitchTarget=.0025*raceThrottleBlend*(1-raceBrakeBlend)-.014*raceBrakeBlend;
     chassisPitch=pitchTarget+(chassisPitch-pitchTarget)*Math.exp(-dt*5.5);
     const pitchAngle=chassisPitch;
     if(vehicleChassis){
-      const pitchDelta=new THREE.Quaternion().setFromAxisAngle(vehicleChassisPitchAxis,pitchAngle);
+      const pitchDelta=acVehiclePitchScratch.setFromAxisAngle(vehicleChassisPitchAxis,pitchAngle);
       vehicleChassis.quaternion.copy(pitchDelta).multiply(vehicleChassisBaseQuaternion);
     }else vehicle.rotation.z=vehicleBaseRotationZ+pitchAngle;
     // In chassis mode the matrix tree was refreshed after the suspension move.
