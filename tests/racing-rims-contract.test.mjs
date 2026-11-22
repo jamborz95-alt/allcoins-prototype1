@@ -52,7 +52,7 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
   assert.match(page, /if \(rimId === "stock"\) \{/);
   assert.match(page, /wheel\.originalRimMesh\.visible = true/);
-  assert.match(page, /const overlay\s*=\s*acGarageBuildRimOverlay\(wheel,\s*style,\s*rimId\)/);
+  assert.match(page, /const overlay\s*=\s*acGarageBuildWheelRimOverlay\(wheel,\s*style,\s*rimId\)/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
@@ -417,7 +417,7 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
   assert.match(page, /if \(rimId === "stock"\) \{/);
   assert.match(page, /wheel\.originalRimMesh\.visible = true/);
-  assert.match(page, /const overlay\s*=\s*acGarageBuildRimOverlay\(wheel,\s*style,\s*rimId\)/);
+  assert.match(page, /const overlay\s*=\s*acGarageBuildWheelRimOverlay\(wheel,\s*style,\s*rimId\)/);
   assert.match(page, /wheel\.node\.add\(overlay\)/);
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
@@ -454,10 +454,10 @@ test("V166 smooths front and rear wheel spin independently with frame-rate-indep
   assert.match(page, /const visibleRateLimit=Math\.min\(170,2\.55\/step\)/);
   assert.match(page, /function acAdvanceWheelSpin\(dt,signedSpeed,burnoutActive\)/);
   assert.match(page, /const decay=Math\.exp\(-step\/response\)/);
-  assert.match(page, /const frontDelta=roadWheelRate\*step\+frontError\*response\*\(1-decay\)/);
-  assert.match(page, /const rearDelta=drivenWheelRate\*step\+rearError\*response\*\(1-decay\)/);
-  assert.match(page, /wheelSpinAngularVelocity=roadWheelRate\+frontError\*decay/);
-  assert.match(page, /rearWheelSpinAngularVelocity=drivenWheelRate\+rearError\*decay/);
+  assert.match(page, /const frontDelta=frontTargetRate\*step\+frontError\*response\*\(1-decay\)/);
+  assert.match(page, /const rearDelta=rearTargetRate\*step\+rearError\*response\*\(1-decay\)/);
+  assert.match(page, /wheelSpinAngularVelocity=frontTargetRate\+frontError\*decay/);
+  assert.match(page, /rearWheelSpinAngularVelocity=rearTargetRate\+rearError\*decay/);
   assert.match(page, /wheelSpinAngle=\(wheelSpinAngle\+frontDelta\)%AC_WHEEL_SPIN_FULL_TURN/);
   assert.match(page, /rearWheelSpinAngle=\(rearWheelSpinAngle\+rearDelta\)%AC_WHEEL_SPIN_FULL_TURN/);
   assert.match(page, /acAdvanceWheelSpin\(dt,signedSpeed,burnoutActive\)/);
