@@ -17,7 +17,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(8px,2vw,20px);padding-top:max(9px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .brand,.stats,.gearbox,.actions{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px #0005;backdrop-filter:blur(10px);border-radius:14px}
-.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}.brand span small{margin-left:6px;color:#9bd2a8;font-size:9px;font-weight:900;white-space:nowrap}
+@media (pointer:coarse),(max-width:900px){.brand,.stats,.gearbox,.actions{backdrop-filter:none;-webkit-backdrop-filter:none}}
+.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}.brand span small{margin-left:6px;color:#9bd2a8;font-size:9px;font-weight:900;white-space:nowrap}.brand .perf-details{display:block;margin-top:4px;font-size:9px;line-height:1.2;letter-spacing:0;color:#b7c3d1;white-space:nowrap}
 .stats{display:flex;gap:clamp(10px,3vw,25px);padding:8px 13px;align-items:center}.metric{text-align:center;min-width:54px}.metric strong{display:block;font-size:clamp(18px,3.4vw,27px);font-variant-numeric:tabular-nums;line-height:1.05}.metric small{font-size:9px;letter-spacing:.12em;color:var(--muted)}
 .actions{pointer-events:auto;display:flex;gap:6px;padding:5px}.small-btn{border:1px solid #ffffff18;background:#202a36;color:#f6f7fa;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px}
 .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.pedals{display:flex;gap:10px;pointer-events:auto;align-items:flex-end}.pedal{width:clamp(82px,15vw,130px);height:clamp(74px,13vw,104px);border-radius:16px;border:1px solid #ffffff35;background:linear-gradient(145deg,#263341,#111821);color:#fff;font-weight:900;font-size:15px;box-shadow:0 8px 20px #0006;touch-action:none;user-select:none}.pedal span{display:block;font-size:10px;letter-spacing:.16em;color:#bcc8d5;margin-top:5px}.pedal.gas{border-color:#56b88a88;background:linear-gradient(145deg,#245340,#10251e)}.pedal.brake{border-color:#d66a5d88;background:linear-gradient(145deg,#63332f,#271615)}.pedal.active{transform:translateY(3px);filter:brightness(1.3)}
@@ -2312,7 +2313,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 <div class="hud">
   <div class="top">
-    <div class="brand"><b>ALLCOINS</b><span>RACING · RWD 5MT <small id="racingFps">FPS --</small></span></div>
+    <div class="brand"><b>ALLCOINS</b><span>RACING · RWD 5MT <small id="racingFps">FPS --</small></span><span class="perf-details" id="racingPerfDetails">ANDROID APP 1.3.0 · PERF CHECK</span></div>
     <div class="stats">
       <div class="metric"><strong id="speed">0</strong><small>КМ/Ч</small></div>
       <div class="metric"><strong id="rpm">900</strong><small>ОБ/МИН</small></div>
@@ -5243,7 +5244,7 @@ scene.fog = new THREE.Fog(0x829caf, 88, 238);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
-const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
+const acRacingMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
 const renderer = new THREE.WebGLRenderer({
   canvas,
   // Mobile profile trades a little edge smoothing for much steadier frame time.
@@ -9350,6 +9351,11 @@ function animate(now){
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfStableFpsSamples=0;
+      }
+      const perfDetails=document.getElementById("racingPerfDetails");
+      if(perfDetails){
+        const avgFrameMs=sampleDuration/acPerfFrameCount;
+        perfDetails.textContent="DPR "+currentPixelRatio.toFixed(2)+" · "+avgFrameMs.toFixed(0)+" ms · "+renderer.info.render.calls+" draw · "+Math.round(renderer.info.render.triangles/1000)+"k tri";
       }
       window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
         fps:Number(measuredFps.toFixed(1)),
