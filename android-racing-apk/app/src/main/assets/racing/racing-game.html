@@ -8449,7 +8449,7 @@ function acRacingCreateCarReflectionTexture() {
 
 function acRacingEnhanceCarSurface(root) {
   if (!root || root.userData.acRacingFinishEnhanced) return 0;
-  const reflectionMap = acRacingCreateCarReflectionTexture();
+  const reflectionMap = acRacingMobileDevice ? null : acRacingCreateCarReflectionTexture();
   const materialCache = new WeakMap();
   const counts = { body: 0, metal: 0, glass: 0, rubber: 0 };
 
@@ -8462,14 +8462,31 @@ function acRacingEnhanceCarSurface(root) {
     }
     if (variants.has(preset)) return variants.get(preset);
 
-    const material = new THREE.MeshPhysicalMaterial();
+    const material = acRacingMobileDevice ? new THREE.MeshStandardMaterial() : new THREE.MeshPhysicalMaterial();
     material.copy(source);
     material.name = (source.name || "Car material") + " · ALLCOINS " + preset;
     material.userData = Object.assign({}, source.userData || {}, { acRacingSurfacePreset: preset });
     const originalRoughness = Number.isFinite(source.roughness) ? source.roughness : .5;
     const originalMetalness = Number.isFinite(source.metalness) ? source.metalness : 0;
 
-    if (preset === "body-clearcoat") {
+    if (acRacingMobileDevice) {
+      // Keep GLB textures and recognizable paint, but avoid clearcoat/environment layers on phones.
+      if (preset === "body-clearcoat") {
+        material.roughness = Math.max(.24, Math.min(originalRoughness, .36));
+        material.metalness = Math.max(originalMetalness, .14);
+      } else if (preset === "chrome-metal") {
+        material.roughness = Math.max(.24, Math.min(originalRoughness, .36));
+        material.metalness = Math.max(originalMetalness, .76);
+      } else if (preset === "window-glass") {
+        material.roughness = Math.max(.16, Math.min(originalRoughness, .24));
+        material.metalness = Math.min(originalMetalness, .08);
+      } else if (preset === "tire-rubber") {
+        material.roughness = Math.max(originalRoughness, .84);
+        material.metalness = 0;
+      }
+      material.envMap = null;
+      material.envMapIntensity = 0;
+    } else if (preset === "body-clearcoat") {
       material.clearcoat = .94;
       material.clearcoatRoughness = .14;
       material.roughness = Math.max(.17, Math.min(originalRoughness, .28));
@@ -8560,7 +8577,7 @@ function attachVehicle(root,label='сохранённая модель'){
   root.visible = true;
   root.traverse(object => { object.visible = true; });
   // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
-  const carTextureAnisotropy=Math.min(acRacingMobileDevice?8:12,renderer.capabilities.getMaxAnisotropy());
+  const carTextureAnisotropy=Math.min(acRacingMobileDevice?4:12,renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
     if(!object.isMesh)return;
