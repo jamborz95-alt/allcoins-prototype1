@@ -515,3 +515,17 @@ test("racing suspension uses one vehicle hierarchy pass and reuses transform scr
   assert.ok(chassisBranch.length > 0, "The imported VAZ chassis suspension path must be present.");
   assert.doesNotMatch(chassisBranch, /vehicle\.updateMatrixWorld\(|vehicle\.localToWorld|vehicle\.worldToLocal|new THREE\.Quaternion\(\)|vehicleChassisBasePosition\.clone\(\)/);
 });
+
+test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel and exhaust detection", () => {
+  const attachStart = page.indexOf("function attachVehicle(");
+  const attachEnd = page.indexOf("\nfunction loadGlbBuffer", attachStart);
+  assert.ok(attachStart >= 0 && attachEnd > attachStart, "attachVehicle must remain present");
+  const attach = page.slice(attachStart, attachEnd);
+  assert.ok(attach.includes("const collectMeshAudit=!acRacingMobileDevice||window.__ALLCOINS_RACING_DEBUG__===true"));
+  assert.ok(attach.includes("if(collectMeshAudit){"));
+  assert.ok(attach.includes("new THREE.Box3().setFromObject(object)"));
+  assert.ok(attach.includes("if(exhaustNamed)namedTailFound=true"));
+  assert.ok(attach.includes("if(!wheelSourceMesh&&/Car_Bottom_0/i.test(namePath))wheelSourceMesh=object"));
+  assert.ok(attach.includes("const namedTail=namedTailFound"));
+  assert.ok(attach.includes("if(collectMeshAudit)console.table(meshAudit)"));
+});
