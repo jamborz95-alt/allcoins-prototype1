@@ -1,0 +1,55 @@
+name: Fetch VAZ-2107 GLB for APK inspection
+
+on:
+  push:
+    branches:
+      - build/drag-racing-glb-probe
+    paths:
+      - .github/workflows/fetch-vaz-model.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download current GLB from the ALLCOINS Engine asset service
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p model-artifact
+          BASE="https://allcoins-engine-a-allcoins95.msk1.amvera.tech"
+          curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+            "$BASE/api/racing/vaz-2107.glb?info=1" \
+            -o model-artifact/model-info.json
+          cat model-artifact/model-info.json
+          curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+            "$BASE/api/racing/vaz-2107.glb" \
+            -o model-artifact/vaz-2107.glb
+          python3 - <<'PY'
+          import json, pathlib, struct, hashlib
+          p = pathlib.Path("model-artifact/vaz-2107.glb")
+          data = p.read_bytes()
+          if len(data) < 20:
+              raise SystemExit(f"GLB too small: {len(data)} bytes")
+          magic, version, declared = struct.unpack("<III", data[:12])
+          if magic != 0x46546c67 or version != 2 or declared != len(data):
+              raise SystemExit(f"Invalid GLB header: magic={magic:#x}, version={version}, declared={declared}, actual={len(data)}")
+          info = json.loads(pathlib.Path("model-artifact/model-info.json").read_text())
+          report = {
+              "status": "valid GLB 2.0",
+              "bytes": len(data),
+              "sha256": hashlib.sha256(data).hexdigest(),
+              "remoteInfo": info
+          }
+          pathlib.Path("model-artifact/report.json").write_text(json.dumps(report, indent=2))
+          print(json.dumps(report, indent=2))
+          PY
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaz-2107-glb-inspection
+          path: model-artifact/
+          if-no-files-found: error
+          retention-days: 7
