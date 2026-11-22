@@ -543,3 +543,15 @@ test("V176 adds a last-resort Android FPS tier without hiding the player car or 
   assert.ok(!tier.includes("vehicle.visible = false") && !tier.includes("road.visible = false"),
     "The extreme tier must preserve the player car and road");
 });
+
+
+test("Android race HUD skips redundant DOM writes and throttles fuel UI rendering", () => {
+  assert.match(page, /const acRaceHudNodes = \{/);
+  assert.match(page, /acRaceHudNodes\.speed\.textContent!==speedText/);
+  assert.match(page, /acRaceHudNodes\.rpm\.textContent!==rpmText/);
+  assert.match(page, /acRaceHudNodes\.distance\.textContent!==distanceText/);
+  assert.match(page, /acRaceHudNodes\.timer\.textContent!==timerText/);
+  assert.match(page, /acRaceHudNodes\.rpmBar\.style\.width!==rpmBarWidth/);
+  assert.match(page, /now - acFuelLastGameplayRenderAt >= 200/);
+  assert.match(page, /const fuelUsed=fuelDistanceKm\*AC_FUEL_CONSUMPTION_L_PER_100KM/);
+});
