@@ -50,7 +50,9 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /ALLCOINS_OriginalRimGeometry_/);
   assert.match(page, /wheel\.originalRimMesh\.visible = true/);
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
-  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
+  assert.match(page, /if \(rimId === "stock"\) \{/);
+  assert.match(page, /wheel\.originalRimMesh\.visible = true/);
+  assert.match(page, /const overlay = acGarageBuildRimOverlay\(wheel,style,rimId\)/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
@@ -201,8 +203,8 @@ test("VAZ-2107 acceleration uses progressive launch, gear torque and road resist
   assert.match(page, /const launchFactor=Math\.min\(1,\.80\+speed\*\.02\)/);
   assert.match(page, /const engineForce=.*launchFactor/);
   assert.match(page, /const accel=Math\.max\(0,engineForce-roadLoad\)/);
-  assert.match(page, /const coast=braking\?34\*tireBrakeFactor:raceRoadLoadDeceleration\(speed\)/);
-  assert.match(page, /if\(braking\)speed=Math\.max\(0,speed-dt\*14\*/);
+  assert.match(page, /const coast=raceRoadLoadDeceleration\(speed\)\+34\*tireBrakeFactor\*raceBrakeBlend/);
+  assert.match(page, /if\(raceBrakeBlend>\.001\)speed=Math\.max\(0,speed-dt\*14\*/);
   assert.match(page, /gear===-1\?accelerationByGear\[1\]\*\.52:accelerationByGear\[gear\]/);
 });
 
@@ -220,9 +222,11 @@ test("VAZ-2107 first gear has a stronger RPM pickup while other gears retain clu
 test("asphalt texture and its relief move left in proportion to speed and distance", () => {
   assert.match(page, /function acAdvanceRoadSurface\(scroll\)/);
   assert.match(page, /const textureDelta = scroll \* repeatX \/ roadWidth/);
-  assert.match(page, /texture\.offset\.x = \(\(texture\.offset\.x \+ textureDelta\) % 1 \+ 1\) % 1/);
+  assert.match(page, /if\(colorTexture\)colorTexture\.offset\.x=\(\(colorTexture\.offset\.x\+textureDelta\)%1\+1\)%1/);
+  assert.match(page, /if\(roughnessTexture\)roughnessTexture\.offset\.x=\(\(roughnessTexture\.offset\.x\+textureDelta\)%1\+1\)%1/);
+  assert.match(page, /if\(bumpTexture\)bumpTexture\.offset\.x=\(\(bumpTexture\.offset\.x\+textureDelta\)%1\+1\)%1/);
   assert.match(page, /road\.userData\.lastLeftwardScroll = scroll > 0 \? scroll : 0/);
-  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
+  assert.match(page, /const scroll=\(signedTravelSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
   assert.match(page, /acAdvanceRoadSurface\(scroll\)/);
   assert.match(page, /acAdvanceCentralMarkings\(scroll\)/);
 });
@@ -411,7 +415,9 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
   assert.match(page, /material\.roughness = Math\.max\(\.88/);
   assert.match(page, /function acGarageBuildWheelRimOverlay\(wheel, style, rimId\)/);
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
-  assert.match(page, /rimId === "stock" \? AC_RACING_FACTORY_RIM_DETAIL_STYLE : style/);
+  assert.match(page, /if \(rimId === "stock"\) \{/);
+  assert.match(page, /wheel\.originalRimMesh\.visible = true/);
+  assert.match(page, /const overlay = acGarageBuildRimOverlay\(wheel,style,rimId\)/);
   assert.match(page, /wheel\.node\.add\(overlay\)/);
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
@@ -420,7 +426,7 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
 
 test("V164 frames the car prominently on the road above the dashboard", () => {
   assert.match(page, /const frameLift = window\.matchMedia\("\(max-width: 900px\), \(pointer: coarse\)"\)\.matches \? \.35 : \.28/);
-  assert.match(page, /camera\.position\.set\(focusX, focusY \+ 3\.6 \+ frameLift, focusZ \+ 18\)/);
+  assert.match(page, /camera\.position\.set\(focusX, focusY \+ 1\.05 \+ frameLift, focusZ \+ 28\)/);
   assert.match(page, /camera\.lookAt\(focusX, focusY \+ frameLift, focusZ\)/);
   assert.match(page, /acRacingMobileDevice \? 5\.8 : 6\.2/);
 });
@@ -433,8 +439,9 @@ test("V165 reduces mobile frame spikes without changing car physics or wheel spi
   assert.match(page, /new THREE\.MeshPhysicalMaterial\([\s\S]*?vertexColors: true/);
   assert.match(page, /const acWheelParentInverseCache = new WeakMap\(\)/);
   assert.match(page, /cache\.matrix\.copy\(parent\.matrixWorld\)\.invert\(\)/);
-  assert.match(page, /const particleLimit = acRacingMobileDevice \? 28 : 72/);
-  assert.match(page, /const minimumInterval = acRacingMobileDevice \? \(tire \? 75 : 95\)/);
+  assert.match(page, /const acSmokeParticleLimit=acRacingMobileDevice\?22:72/);
+  assert.match(page, /if\(smokeParticles\.length>=acSmokeParticleLimit\)/);
+  assert.match(page, /const minimumInterval=acRacingMobileDevice\?\(tire\?70:95\)/);
   assert.match(page, /const acTrackTreeLayers = Object\.freeze/);
   assert.match(page, /if\(!document\.hidden && \(!staticScene/);
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
@@ -443,7 +450,8 @@ test("V165 reduces mobile frame spikes without changing car physics or wheel spi
 
 
 test("V166 smooths front and rear wheel spin independently with frame-rate-independent integration", () => {
-  assert.match(page, /const AC_WHEEL_SPIN_RESPONSE_SECONDS = \.035/);
+  assert.match(page, /const AC_WHEEL_SPIN_RESPONSE_SECONDS = \.12/);
+  assert.match(page, /const visibleRateLimit=Math\.min\(170,2\.55\/step\)/);
   assert.match(page, /function acAdvanceWheelSpin\(dt,signedSpeed,burnoutActive\)/);
   assert.match(page, /const decay=Math\.exp\(-step\/response\)/);
   assert.match(page, /const frontDelta=roadWheelRate\*step\+frontError\*response\*\(1-decay\)/);
