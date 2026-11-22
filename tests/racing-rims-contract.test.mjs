@@ -511,5 +511,7 @@ test("racing suspension uses one vehicle hierarchy pass and reuses transform scr
   assert.match(page, /acVehicleSuspensionWorldScratch/);
   assert.match(page, /acVehicleWorldInverseScratch/);
   assert.match(page, /acVehiclePitchScratch\.setFromAxisAngle/);
-  assert.doesNotMatch(suspensionLoop, /vehicle\.updateMatrixWorld\(true\)|vehicle\.localToWorld|vehicle\.worldToLocal|new THREE\.Quaternion\(\)|vehicleChassisBasePosition\.clone\(\)/);
+  const chassisBranch = suspensionLoop.match(/if\(vehicleChassis\)\{([\s\S]*?)\n\s{4}\}else vehicle\.position\.y=/)?.[1] || "";
+  assert.ok(chassisBranch.length > 0, "The imported VAZ chassis suspension path must be present.");
+  assert.doesNotMatch(chassisBranch, /vehicle\.updateMatrixWorld\(|vehicle\.localToWorld|vehicle\.worldToLocal|new THREE\.Quaternion\(\)|vehicleChassisBasePosition\.clone\(\)/);
 });
