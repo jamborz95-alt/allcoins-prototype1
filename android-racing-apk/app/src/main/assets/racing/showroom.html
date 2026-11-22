@@ -115,45 +115,66 @@ function initRenderer(){
  renderer=new THREE.WebGLRenderer({canvas, ...contextOptions});
  renderer.setPixelRatio(qualityDpr);
  renderer.setSize(innerWidth,innerHeight,false);
- renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.outputEncoding=THREE.sRGBEncoding;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.12;
  renderer.shadowMap.enabled=false;
 }
 function addCity(){
- const group=new THREE.Group();
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,240),new THREE.MeshStandardMaterial({color:0x27323a,roughness:1,metalness:0}));
- ground.rotation.x=-Math.PI/2;ground.position.y=-.28;group.add(ground);
+ ground.rotation.x=-Math.PI/2;ground.position.y=-.28;scene.add(ground);
  const road=new THREE.Mesh(new THREE.RingGeometry(10.6,12.1,96),new THREE.MeshStandardMaterial({color:0x353c43,roughness:.92,metalness:.04,side:THREE.DoubleSide}));
- road.rotation.x=-Math.PI/2;road.position.y=-.265;group.add(road);
- const dashMat=new THREE.MeshBasicMaterial({color:0xd6bf85,transparent:true,opacity:.48,side:THREE.DoubleSide});
+ road.rotation.x=-Math.PI/2;road.position.y=-.265;scene.add(road);
+ const dashMat=new THREE.MeshBasicMaterial({color:0xd6bf85,transparent:true,opacity:.48});
+ const dashMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.1,.012,.42),dashMat,48);
+ const dummy=new THREE.Object3D();
  for(let i=0;i<48;i++){
   const a=i*Math.PI*2/48;
-  const dash=new THREE.Mesh(new THREE.BoxGeometry(.1,.012,.42),dashMat);
-  dash.position.set(Math.cos(a)*11.35,-.25,Math.sin(a)*11.35);
-  dash.rotation.y=-a;group.add(dash);
+  dummy.position.set(Math.cos(a)*11.35,-.25,Math.sin(a)*11.35);
+  dummy.rotation.set(0,-a,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+  dashMesh.setMatrixAt(i,dummy.matrix);
  }
+ dashMesh.instanceMatrix.needsUpdate=true;scene.add(dashMesh);
  const colors=[0x536575,0x71818b,0x46596b,0x8b8d88,0x4b5963,0x9b9b91];
+ const buildingMesh=new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshStandardMaterial({color:0xffffff,roughness:.94,metalness:.02}),
+  30
+ );
+ const windowLimit=15*4*2;
+ const windowMesh=new THREE.InstancedMesh(
+  new THREE.PlaneGeometry(.24,.36),
+  new THREE.MeshBasicMaterial({color:0xf3cf8b,transparent:true,opacity:.48,side:THREE.DoubleSide}),
+  windowLimit
+ );
+ let windowIndex=0;
  for(let i=0;i<30;i++){
   const angle=i*Math.PI*2/30;
   const radius=23+(i%3)*1.4;
   const w=2.4+(i%4)*.7,h=4+(i%7)*1.35,d=2.2+(i%3)*.6;
-  const mat=new THREE.MeshStandardMaterial({color:colors[i%colors.length],roughness:.94,metalness:.02});
-  const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-  b.position.set(Math.cos(angle)*radius,h/2-.28,Math.sin(angle)*radius);
-  b.rotation.y=-angle+Math.PI/2;group.add(b);
+  const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
+  const rotation=-angle+Math.PI/2;
+  dummy.position.set(x,h/2-.28,z);
+  dummy.rotation.set(0,rotation,0);dummy.scale.set(w,h,d);dummy.updateMatrix();
+  buildingMesh.setMatrixAt(i,dummy.matrix);
+  buildingMesh.setColorAt(i,new THREE.Color(colors[i%colors.length]));
   if(i%2===0){
    const rows=Math.min(4,Math.max(2,Math.floor(h/2)));
-   const windows=new THREE.Group();
-   const wm=new THREE.MeshBasicMaterial({color:0xf3cf8b,transparent:true,opacity:.48});
+   const base=new THREE.Object3D();
+   base.position.set(x,h/2-.28,z);base.rotation.y=rotation;base.updateMatrix();
+   const local=new THREE.Object3D();
    for(let row=0;row<rows;row++)for(let col=0;col<2;col++){
-    const win=new THREE.Mesh(new THREE.PlaneGeometry(.24,.36),wm);
-    win.position.set((col-.5)*.65,1+row*.85,d/2+.006);windows.add(win);
+    local.position.set((col-.5)*.65,-h/2+1+row*.85,d/2+.014);
+    local.rotation.set(0,0,0);local.scale.set(1,1,1);local.updateMatrix();
+    const matrix=base.matrix.clone().multiply(local.matrix);
+    windowMesh.setMatrixAt(windowIndex++,matrix);
    }
-   windows.position.copy(b.position);windows.rotation.y=b.rotation.y;group.add(windows);
   }
  }
- scene.add(group);
+ buildingMesh.instanceMatrix.needsUpdate=true;
+ if(buildingMesh.instanceColor)buildingMesh.instanceColor.needsUpdate=true;
+ windowMesh.count=windowIndex;windowMesh.instanceMatrix.needsUpdate=true;
+ scene.add(buildingMesh);scene.add(windowMesh);
 }
 function initScene(){
  scene=new THREE.Scene();
