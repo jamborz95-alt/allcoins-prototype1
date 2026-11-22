@@ -130,6 +130,7 @@ jobs:
               names = set(z.namelist())
               required = [
                   "assets/racing/launcher.html",
+                  "assets/racing/garage-viewer.html",
                   "assets/racing/racing-game.html",
                   "assets/racing/vendor/three-r147.min.js",
                   "assets/racing/vendor/GLTFLoader-r147.js",
