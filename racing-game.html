@@ -7522,6 +7522,26 @@ function setGarageMode(enabled) {
 }
 
 
+function acSetMobileTextureAnisotropy(maxAnisotropy) {
+  if (!acRacingMobileDevice) return 0;
+  const adjustedTextures = new Set();
+  scene.traverse(object => {
+    const materials = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
+    for (const material of materials) {
+      if (!material) continue;
+      for (const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap','bumpMap']) {
+        const texture = material[key];
+        if (texture?.isTexture && !adjustedTextures.has(texture) && texture.anisotropy > maxAnisotropy) {
+          adjustedTextures.add(texture);
+          texture.anisotropy = maxAnisotropy;
+          texture.needsUpdate = true;
+        }
+      }
+    }
+  });
+  return adjustedTextures.size;
+}
+
 let acMobileFallbackApplied = false;
 let acMobileSevereFallbackApplied = false;
 function acApplyMobilePerformanceTier() {
@@ -7539,6 +7559,8 @@ function acApplyMobilePerformanceTier() {
   acV5WarmBodyFill.visible = false;
   for (const record of acLampRecords) record.light.visible = false;
 
+  // Keep full-size textures, but reduce costly anisotropic sampling on weak phones.
+  acSetMobileTextureAnisotropy(2);
   window.__allcoinsRacingQualityFallback = "reduced-mobile-lighting-and-city-details";
   return true;
 }
@@ -7596,20 +7618,8 @@ function acApplyMobileUltraPerformanceTier() {
   renderer.toneMapping = THREE.NoToneMapping;
   scene.fog = null;
 
-  // Lower texture filtering cost on the critical path without replacing source textures.
-  const adjustedTextures = new Set();
-  scene.traverse(object => {
-    const materials = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
-    for (const material of materials) {
-      for (const value of Object.values(material)) {
-        if (value?.isTexture && !adjustedTextures.has(value) && value.anisotropy > 1) {
-          adjustedTextures.add(value);
-          value.anisotropy = 1;
-          value.needsUpdate = true;
-        }
-      }
-    }
-  });
+  // Keep source texture resolution but reduce filtering to the lightest mode.
+  acSetMobileTextureAnisotropy(1);
 
   // Keep half of the simple building silhouettes to reduce draw calls without an empty skyline.
   for (let index = 0; index < city.length; index++) {
