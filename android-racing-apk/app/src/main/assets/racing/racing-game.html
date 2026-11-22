@@ -5752,6 +5752,8 @@ function acAdvanceRoadSurface(scroll) {
 const city = [];
 const acCityGroup = new THREE.Group();
 acCityGroup.name = "ALLCOINS city blocks · single moving root";
+// Preserve the original world positions while storing children in one local 0..228.8 strip.
+acCityGroup.position.x = -115;
 scene.add(acCityGroup);
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
 // Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
@@ -5983,7 +5985,7 @@ for (let i = 0; i < 33; i++) {
   }
 
   // Отодвигаем здания глубже за ограждение, сохраняя свободной всю дорожную полосу.
-  building.position.set(-115 + i * 7.15, 0, -22.5);
+  building.position.set(i * 7.15, 0, -22.5);
   acCityGroup.add(building);
   city.push(building);
 }
@@ -7578,7 +7580,7 @@ function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
   // One transform updates all 33 detailed blocks; wrap the complete 236-unit city strip.
-  if(acCityGroup.visible)acAdvanceWrappedSceneObject(acCityGroup,worldDelta,.19,-236,0,236);
+  if(acCityGroup.visible)acAdvanceWrappedSceneObject(acCityGroup,worldDelta,.19,-351,121,236);
   acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acCityShrubs,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acSidewalkDetails,worldDelta,.19,-132,104,236);
