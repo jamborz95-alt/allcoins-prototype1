@@ -1,10 +1,11 @@
-name: Build ALLCOINS Full Game Performance APK
+name: Build ALLCOINS Telegram Game Android Mirror
 
 on:
   push:
     branches:
       - build/drag-racing-glb-probe
       - android/vaz2107-fullgame-performance
+      - android/telegram-game-mirror
     paths:
       - "android-racing-apk/**"
       - ".github/workflows/fetch-vaz-model.yml"
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout racing project
+      - name: Checkout Telegram game mirror
         uses: actions/checkout@v4
 
       - name: Download the saved VAZ-2107 GLB from Amvera in verified ranges
@@ -117,13 +118,13 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build standalone racing APK
+      - name: Build standalone Telegram game mirror APK
         shell: bash
         run: |
           set -euo pipefail
           gradle -p android-racing-apk :app:assembleDebug
           mkdir -p release-assets
-          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Full-Game-Android.apk
+          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Telegram-Game-Android.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
           apk = pathlib.Path("release-assets/ALLCOINS-Full-Game-Android.apk")
@@ -154,10 +155,10 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Full-Game-Android.apk
           "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Full-Game-Android.apk | head -n 8
 
-      - name: Upload ALLCOINS Full Game Performance APK
+      - name: Upload ALLCOINS Telegram Game Mirror APK
         uses: actions/upload-artifact@v4
         with:
-          name: allcoins-full-game-performance-apk
+          name: allcoins-telegram-game-mirror-apk
           path: release-assets/ALLCOINS-Full-Game-Android.apk
           if-no-files-found: error
           retention-days: 30
