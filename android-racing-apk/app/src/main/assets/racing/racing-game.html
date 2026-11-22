@@ -5258,9 +5258,9 @@ if (window.__allcoinsRacingBoot) {
 }
 // V168 ANDROID PERFORMANCE PROFILE.
 // Start at a phone-friendly render scale and raise it only after sustained FPS headroom.
-const acMobilePixelRatioCap = 1.02;
-const acMobilePixelRatioInitial = .90;
-const acMobilePixelRatioFloor = .60;
+const acMobilePixelRatioCap = .82;
+const acMobilePixelRatioInitial = .65;
+const acMobilePixelRatioFloor = .40;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Dynamic shadow maps are the most expensive scene-wide pass on mid-range phones.
 // The soft contact-shadow texture under the car remains visible without this pass.
