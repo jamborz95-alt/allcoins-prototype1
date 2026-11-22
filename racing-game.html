@@ -5796,6 +5796,7 @@ const balconyRailGeometry = new THREE.BoxGeometry(1.14, .075, .07);
 const balconyMaterial = new THREE.MeshStandardMaterial({ color: 0x9ca8b4, roughness: .42, metalness: .72 });
 const cityDummy = new THREE.Object3D();
 let acCityWindowCount = 0;
+const acMobileCityDetailMeshes = [];
 
 for (let i = 0; i < 33; i++) {
   const random = acSeededRandom(202611 + i * 971);
@@ -5876,7 +5877,12 @@ for (let i = 0; i < 33; i++) {
   const balconyDeckMesh = acCreateInstancedFromMatrices(balconyDeckGeometry, trimMaterial, balconyDecks);
   const balconyRailMesh = acCreateInstancedFromMatrices(balconyRailGeometry, balconyMaterial, balconyRails);
   for (const mesh of [frameMesh, sillMesh, darkMesh, litMesh, acMesh, balconyDeckMesh, balconyRailMesh]) {
-    if (mesh) building.add(mesh);
+    if (!mesh) continue;
+    building.add(mesh);
+    // Keep the illuminated windows, but make secondary facade trim removable on slow phones.
+    if (acRacingMobileDevice && mesh !== darkMesh && mesh !== litMesh) {
+      acMobileCityDetailMeshes.push(mesh);
+    }
   }
 
   // Межэтажные пояса и узкие фасадные колонны.
@@ -7509,11 +7515,31 @@ function setGarageMode(enabled) {
   acRain.visible = trackVisible;
   for (const record of acLampRecords) {
     record.bulb.visible = trackVisible;
-    record.light.visible = trackVisible;
+    record.light.visible = trackVisible && !acMobileFallbackApplied;
     record.halo.visible = trackVisible;
   }
 }
 
+
+let acMobileFallbackApplied = false;
+function acApplyMobilePerformanceTier() {
+  if (!acRacingMobileDevice || acMobileFallbackApplied) return false;
+  acMobileFallbackApplied = true;
+
+  // Preserve the VAZ, wheels, roadway and illuminated windows; remove only
+  // secondary city trim and costly per-fragment lights on low-FPS Android devices.
+  for (const mesh of acMobileCityDetailMeshes) mesh.visible = false;
+  acV4SkyFill.visible = false;
+  acV4CarRim.visible = false;
+  acV5BodyLight.visible = false;
+  fill.visible = false;
+  acV4WarmFill.visible = false;
+  acV5WarmBodyFill.visible = false;
+  for (const record of acLampRecords) record.light.visible = false;
+
+  window.__allcoinsRacingQualityFallback = "reduced-mobile-lighting-and-city-details";
+  return true;
+}
 
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,worldDelta){
@@ -9282,6 +9308,10 @@ function animate(now){
     const sampleDuration=now-acPerfSampleStart;
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
+      // A low-FPS phone needs fewer shader light calculations, not only fewer pixels.
+      if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
+        acApplyMobilePerformanceTier();
+      }
       let currentPixelRatio=renderer.getPixelRatio();
       if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
       else acMobileShadowLowFpsSamples=0;
@@ -9329,7 +9359,8 @@ function animate(now){
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
         shadows:renderer.shadowMap.enabled,
-        mobileQualityProfile:acRacingMobileDevice?"high-adaptive":"desktop-high",
+        mobileQualityProfile:acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high"),
+         mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
