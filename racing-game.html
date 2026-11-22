@@ -5812,6 +5812,7 @@ for (let i = 0; i < 33; i++) {
     buildingMaterials[i % buildingMaterials.length]
   );
   shell.position.y = height / 2;
+  shell.userData.acMobileBaseShell = true;
   shell.receiveShadow = true;
   building.add(shell);
 
@@ -7522,6 +7523,7 @@ function setGarageMode(enabled) {
 
 
 let acMobileFallbackApplied = false;
+let acMobileSevereFallbackApplied = false;
 function acApplyMobilePerformanceTier() {
   if (!acRacingMobileDevice || acMobileFallbackApplied) return false;
   acMobileFallbackApplied = true;
@@ -7541,29 +7543,69 @@ function acApplyMobilePerformanceTier() {
   return true;
 }
 
+function acApplyMobileSeverePerformanceTier() {
+  if (!acRacingMobileDevice || !acMobileFallbackApplied || acMobileSevereFallbackApplied) return false;
+  acMobileSevereFallbackApplied = true;
+
+  // Keep the VAZ, asphalt, roadside boundary and recognizable building silhouettes.
+  // Hide only detailed facade meshes and non-essential scenery on critically slow phones.
+  for (const building of city) {
+    const baseShell = building.children.find(child => child.userData?.acMobileBaseShell);
+    for (const child of building.children) child.visible = child === baseShell;
+  }
+  distantHills.visible = false;
+  acCityShrubs.visible = false;
+  acSidewalkDetails.visible = false;
+  acTrackGrass.visible = false;
+  for (const layer of acTrackTreeLayers) layer.visible = false;
+  acTrackHouseGroup.visible = false;
+  acV5WetBlue.visible = false;
+  acV5WetWarm.visible = false;
+  acLampPools.visible = false;
+  acRain.visible = false;
+  for (const record of acLampRecords) {
+    record.bulb.visible = false;
+    record.light.visible = false;
+    record.halo.visible = false;
+  }
+
+  // Remove active smoke from the render list and stop generating more until reload.
+  for (const particle of smokeParticles) particle.mesh.visible = false;
+  smokeParticles.length = 0;
+  smokeParticlePool.length = 0;
+
+  // A smaller render target is a last-resort GPU safeguard for devices below 18 FPS.
+  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .38));
+  renderer.setSize(innerWidth, innerHeight, false);
+  window.__allcoinsRacingQualityFallback = "critical-mobile-low-load";
+  return true;
+}
+
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,worldDelta){
-  // Дождь живёт по времени, а дорожное окружение — строго по пройденной дистанции.
-  const rain=acRainGeometry.attributes.position.array;
-  for(let i=0;i<acRainCount;i++){
-    const k=i*6;
-    rain[k]-=dt*2.8;
-    rain[k+1]-=dt*13;
-    rain[k+3]-=dt*2.8;
-    rain[k+4]-=dt*13;
-    if(rain[k+1]<-2){
-      const x=(Math.random()-.5)*55;
-      const y=11+Math.random()*6;
-      const z=9+Math.random()*15;
-      rain[k]=x;
-      rain[k+1]=y;
-      rain[k+2]=z;
-      rain[k+3]=x+.13;
-      rain[k+4]=y-.78;
-      rain[k+5]=z;
+  // Rain is skipped entirely in the critical mobile tier; the mesh is hidden too.
+  if(!acMobileSevereFallbackApplied){
+    const rain=acRainGeometry.attributes.position.array;
+    for(let i=0;i<acRainCount;i++){
+      const k=i*6;
+      rain[k]-=dt*2.8;
+      rain[k+1]-=dt*13;
+      rain[k+3]-=dt*2.8;
+      rain[k+4]-=dt*13;
+      if(rain[k+1]<-2){
+        const x=(Math.random()-.5)*55;
+        const y=11+Math.random()*6;
+        const z=9+Math.random()*15;
+        rain[k]=x;
+        rain[k+1]=y;
+        rain[k+2]=z;
+        rain[k+3]=x+.13;
+        rain[k+4]=y-.78;
+        rain[k+5]=z;
+      }
     }
+    acRainGeometry.attributes.position.needsUpdate=true;
   }
-  acRainGeometry.attributes.position.needsUpdate=true;
 
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
   // Блики на мокром асфальте и фонари используют тот же delta, что и разметка.
@@ -7645,6 +7687,7 @@ function acAcquireSmokeParticle(){
 }
 
 function addSmoke(position,kind='exhaust'){
+  if(acMobileSevereFallbackApplied)return false;
   const tire=kind==='tire';
   const now=performance.now();
   const minimumInterval=acRacingMobileDevice?(tire?70:95):(tire?42:58);
@@ -9312,6 +9355,9 @@ function animate(now){
       if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
         acApplyMobilePerformanceTier();
       }
+      if (measuredFps < 18 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
+        acApplyMobileSeverePerformanceTier();
+      }
       let currentPixelRatio=renderer.getPixelRatio();
       if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
       else acMobileShadowLowFpsSamples=0;
@@ -9359,7 +9405,8 @@ function animate(now){
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
         shadows:renderer.shadowMap.enabled,
-        mobileQualityProfile:acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high"),
+        mobileQualityProfile:acMobileSevereFallbackApplied?"mobile-critical-low-load":(acMobileFallbackApplied?"mobile-low-load":(acRacingMobileDevice?"high-adaptive":"desktop-high")),
+         mobileSevereFallback:acMobileSevereFallbackApplied,
          mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         adaptiveResolution:true,
