@@ -249,6 +249,7 @@ try {
   });
   const page = await browser.newPage({
     viewport: { width: 1365, height: 768 },
+    userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
     isMobile: true,
     hasTouch: true
   });
