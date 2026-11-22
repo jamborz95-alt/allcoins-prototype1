@@ -126,7 +126,7 @@ jobs:
           cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-VAZ2107-Garage.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
-          apk = pathlib.Path("release-assets/ALLCOINS-Drag-Racing.apk")
+          apk = pathlib.Path("release-assets/ALLCOINS-VAZ2107-Garage.apk")
           with zipfile.ZipFile(apk) as z:
               names = set(z.namelist())
               required = [
@@ -152,13 +152,13 @@ jobs:
           print("APK SHA-256:", hashlib.sha256(apk.read_bytes()).hexdigest())
           PY
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Drag-Racing.apk
-          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Drag-Racing.apk | head -n 8
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-VAZ2107-Garage.apk
+          "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-VAZ2107-Garage.apk | head -n 8
 
       - name: Upload ALLCOINS Drag Racing APK
         uses: actions/upload-artifact@v4
         with:
           name: allcoins-vaz2107-garage-apk
-          path: release-assets/ALLCOINS-Drag-Racing.apk
+          path: release-assets/ALLCOINS-VAZ2107-Garage.apk
           if-no-files-found: error
           retention-days: 30
