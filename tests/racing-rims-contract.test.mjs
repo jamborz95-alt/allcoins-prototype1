@@ -521,10 +521,11 @@ test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel 
   const attachEnd = page.indexOf("\\nfunction loadGlbBuffer", attachStart);
   assert.ok(attachStart >= 0 && attachEnd > attachStart, "attachVehicle must remain present");
   const attach = page.slice(attachStart, attachEnd);
-  assert.match(attach, /const collectMeshAudit=!acRacingMobileDevice\\|\\|window\\.__ALLCOINS_RACING_DEBUG__===true/);
-  assert.match(attach, /if\\(collectMeshAudit\\)\\{[\\s\\S]*?new THREE\\.Box3\\(\\)\\.setFromObject\\(object\\)/);
-  assert.match(attach, /if\\(exhaustNamed\\)namedTailFound=true/);
-  assert.match(attach, /if\\(!wheelSourceMesh&&\\/Car_Bottom_0\\/i\\.test\\(namePath\\)\\)wheelSourceMesh=object/);
-  assert.match(attach, /const namedTail=namedTailFound/);
-  assert.match(attach, /if\\(collectMeshAudit\\)console\\.table\\(meshAudit\\)/);
+  assert.ok(attach.includes("const collectMeshAudit=!acRacingMobileDevice||window.__ALLCOINS_RACING_DEBUG__===true"));
+  assert.ok(attach.includes("if(collectMeshAudit){"));
+  assert.ok(attach.includes("new THREE.Box3().setFromObject(object)"));
+  assert.ok(attach.includes("if(exhaustNamed)namedTailFound=true"));
+  assert.ok(attach.includes("if(!wheelSourceMesh&&/Car_Bottom_0/i.test(namePath))wheelSourceMesh=object"));
+  assert.ok(attach.includes("const namedTail=namedTailFound"));
+  assert.ok(attach.includes("if(collectMeshAudit)console.table(meshAudit)"));
 });
