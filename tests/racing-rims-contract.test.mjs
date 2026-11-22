@@ -52,7 +52,7 @@ test("all tuning rims use high quality OEM-style cast alloy geometry", () => {
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
   assert.match(page, /if \(rimId === "stock"\) \{/);
   assert.match(page, /wheel\.originalRimMesh\.visible = true/);
-  assert.match(page, /const overlay = acGarageBuildRimOverlay\(wheel,style,rimId\)/);
+  assert.match(page, /const overlay\s*=\s*acGarageBuildRimOverlay\(wheel,\s*style,\s*rimId\)/);
   assert.doesNotMatch(page, /makeStampRibShape|kind:"stamped"/);
 });
 
@@ -236,7 +236,7 @@ test("VAZ-2107 road speed, wheel rotation and finish distance share one world sc
   assert.match(page, /let WORLD_UNITS_PER_METER = 1/);
   assert.match(page, /worldUnitsPerRealMeter=vehicleLength\/4\.57/);
   assert.match(page, /WORLD_UNITS_PER_METER=worldUnitsPerRealMeter/);
-  assert.match(page, /const scroll=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
+  assert.match(page, /const scroll=\(signedTravelSpeed\/3\.6\)\*worldUnitsPerRealMeter\*dt/);
   assert.match(page, /const roadWheelRate=\(signedSpeed\/3\.6\)\*worldUnitsPerRealMeter\/Math\.max/);
   assert.match(page, /finishLine\.position\.x=finishStartX-distance\*WORLD_UNITS_PER_METER/);
   assert.match(page, /PlaneGeometry\(2400, 25\.6\)/);
@@ -417,7 +417,7 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
   assert.match(page, /AC_RACING_FACTORY_RIM_DETAIL_STYLE/);
   assert.match(page, /if \(rimId === "stock"\) \{/);
   assert.match(page, /wheel\.originalRimMesh\.visible = true/);
-  assert.match(page, /const overlay = acGarageBuildRimOverlay\(wheel,style,rimId\)/);
+  assert.match(page, /const overlay\s*=\s*acGarageBuildRimOverlay\(wheel,\s*style,\s*rimId\)/);
   assert.match(page, /wheel\.node\.add\(overlay\)/);
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
