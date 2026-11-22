@@ -542,7 +542,7 @@ test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel 
 test("Android VAZ materials use standard PBR and obey the active texture filtering tier", () => {
   assert.match(page, /const VehicleMaterialClass = acRacingMobileDevice[\s\S]*?THREE\.MeshStandardMaterial[\s\S]*?THREE\.MeshPhysicalMaterial/);
   assert.match(page, /acMobileUltraFallbackApplied \? 1 : acMobileFallbackApplied \? 2 : 4/);
-  assert.match(page, /texture\.anisotropy=Math\.max\(texture\.anisotropy\|\|1,carTextureAnisotropy\)/);
+  assert.match(page, /texture\.anisotropy=Math\.min\(texture\.anisotropy\|\|1,carTextureAnisotropy\)/);
 });
 
 test("Android dashboard and environment updates avoid unnecessary 60Hz DOM and buffer work", () => {
