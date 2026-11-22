@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - build/drag-racing-glb-probe
+      - android/vaz2107-optimized-garage
     paths:
       - "android-racing-apk/**"
       - ".github/workflows/fetch-vaz-model.yml"
