@@ -8612,7 +8612,12 @@ function acRacingEnhanceCarSurface(root) {
     }
     if (variants.has(preset)) return variants.get(preset);
 
-    const material = new THREE.MeshPhysicalMaterial();
+    // Physical clearcoat adds costly mobile shader layers. Standard PBR keeps the
+    // source maps, metallic/roughness response and environment reflections on phones.
+    const VehicleMaterialClass = acRacingMobileDevice
+      ? THREE.MeshStandardMaterial
+      : THREE.MeshPhysicalMaterial;
+    const material = new VehicleMaterialClass();
     material.copy(source);
     material.name = (source.name || "Car material") + " · ALLCOINS " + preset;
     material.userData = Object.assign({}, source.userData || {}, { acRacingSurfacePreset: preset });
@@ -8710,7 +8715,13 @@ function attachVehicle(root,label='сохранённая модель'){
   root.visible = true;
   root.traverse(object => { object.visible = true; });
   // Улучшаем читаемость текстур кузова и деталей под углом без тяжёлых постэффектов.
-  const carTextureAnisotropy=Math.min(acRacingMobileDevice?8:12,renderer.capabilities.getMaxAnisotropy());
+  // Respect the live mobile tier when the GLB arrives after fallback was applied.
+  // The previous fixed mobile value of 8 silently re-enabled expensive filtering
+  // on the VAZ textures after the scene had already reduced filtering to 1 or 2.
+  const carTextureAnisotropyLimit = acRacingMobileDevice
+    ? (acMobileUltraFallbackApplied ? 1 : acMobileFallbackApplied ? 2 : 4)
+    : 12;
+  const carTextureAnisotropy = Math.min(carTextureAnisotropyLimit, renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
     if(!object.isMesh)return;
@@ -9446,7 +9457,10 @@ let acPerfStableFpsSamples = 0;
 let acMobileShadowLowFpsSamples = 0;
 let acNextRaceProgressUpdateAt = 0;
 let acIdleRenderFrame = 0;
-let acNextUltraInstrumentUpdateAt = 0;
+let acNextMobileInstrumentUpdateAt = 0;
+let acNextMobileEnvironmentUpdateAt = 0;
+let acMobileEnvironmentElapsed = 0;
+let acMobileEnvironmentWorldDelta = 0;
 function animate(now){
   requestAnimationFrame(animate);
   const rawFrameMs=Math.max(0,now-last);
@@ -9541,9 +9555,13 @@ function animate(now){
       acPerfSampleStart=now;
     }
   }
-  if (!acMobileUltraFallbackApplied || now >= acNextUltraInstrumentUpdateAt) {
+  // The animated SVG dashboard does not need 60 DOM/style updates per second.
+  // Keep 30 Hz on phones (10 Hz only in the emergency ultra tier).
+  if (!acRacingMobileDevice || now >= acNextMobileInstrumentUpdateAt) {
     updateInstrumentCluster(now);
-    if (acMobileUltraFallbackApplied) acNextUltraInstrumentUpdateAt = now + 100;
+    if (acRacingMobileDevice) {
+      acNextMobileInstrumentUpdateAt = now + (acMobileUltraFallbackApplied ? 100 : 33);
+    }
   }
   let frameWorldDelta=0;
   updateEngineAudio();
@@ -9771,7 +9789,25 @@ if(distance>=RACE_DISTANCE_METERS){
     onlineUpdateRaceProgress();
     acNextRaceProgressUpdateAt=now+100;
   }
-  if(document.body.classList.contains('race-mode'))updateRaceEnvironment(dt,frameWorldDelta);
+  if(document.body.classList.contains('race-mode')){
+    if(!acRacingMobileDevice){
+      updateRaceEnvironment(dt,frameWorldDelta);
+    }else if(acMobileUltraFallbackApplied){
+      acMobileEnvironmentElapsed=0;
+      acMobileEnvironmentWorldDelta=0;
+    }else{
+      // Rain buffers, wet-road highlights and lamp transforms are refreshed at
+      // 30 Hz on phones; accumulated deltas preserve their world-space motion.
+      acMobileEnvironmentElapsed+=dt;
+      acMobileEnvironmentWorldDelta+=frameWorldDelta;
+      if(now>=acNextMobileEnvironmentUpdateAt){
+        updateRaceEnvironment(acMobileEnvironmentElapsed,acMobileEnvironmentWorldDelta);
+        acMobileEnvironmentElapsed=0;
+        acMobileEnvironmentWorldDelta=0;
+        acNextMobileEnvironmentUpdateAt=now+33;
+      }
+    }
+  }
   // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
   // это снижает нагрев и оставляет полный FPS во время движения.
   const staticScene=document.body.classList.contains('garage-mode')||paused;
