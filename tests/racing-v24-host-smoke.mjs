@@ -300,8 +300,21 @@ try {
       });
     }
 
+    if (url.pathname === "/api/racing/vaz-2107.glb" && url.searchParams.get("info") === "1" && request.method() === "GET") {
+      return route.fulfill({
+        status: 200,
+        headers: { "access-control-allow-origin": "*", "content-type": "application/json" },
+        body: JSON.stringify({
+          status: "ok",
+          updatedAt: "2026-11-22T11:00:00.000Z",
+          bytes: testCarGlb.length,
+          fileName: "test-vaz-2107.glb"
+        })
+      });
+    }
+
     if (["/api/racing/vaz-2107.glb", "/api/racing/shared-model-asset"].includes(url.pathname) && request.method() === "GET") {
-      // Both the current public Amvera asset path and the legacy authenticated PC tunnel are supported.
+      // Actual model-byte requests must be range requests; the info=1 metadata request is handled above.
       assert.match(request.headers().range || "", /^bytes=0-/);
       return route.fulfill({
         status: 206,
