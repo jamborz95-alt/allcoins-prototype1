@@ -314,7 +314,7 @@ test("Android Telegram uses a lightweight mobile render profile while desktop ke
   assert.match(page, /const acMobilePixelRatioCap = \.98/);
   assert.match(page, /renderer\.shadowMap\.enabled = !acRacingMobileDevice/);
   assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
-  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
+  assert.match(page, /const carTextureAnisotropyLimit = acRacingMobileDevice[\s\S]*?acMobileUltraFallbackApplied \? 1 : acMobileFallbackApplied \? 2 : 4/);
   assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
   assert.match(page, /acNextRaceProgressUpdateAt=now\+100/);
   assert.match(page, /acWheelSpinScratchQuaternion\.setFromAxisAngle/);
@@ -403,7 +403,7 @@ test("V160 improves VAZ body paint, glass, rubber and chrome without changing ca
   assert.match(page, /material\.envMapIntensity = \.58/);
   assert.match(page, /material\.roughness = Math\.max\(originalRoughness, \.84\)/);
   assert.match(page, /acRacingEnhanceCarSurface\(vehicle\)/);
-  assert.match(page, /Math\.min\(acRacingMobileDevice\?8:12,renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
+  assert.match(page, /const carTextureAnisotropy = Math\.min\(carTextureAnisotropyLimit, renderer\.capabilities\.getMaxAnisotropy\(\)\)/);
   assert.match(page, /sourceGeometryPreserved: true/);
   assert.match(page, /ALLCOINS RACING V160/);
 });
@@ -421,7 +421,7 @@ test("V162 enlarges the race car and makes the rotating factory wheels more deta
   assert.match(page, /wheel\.node\.add\(overlay\)/);
   assert.match(page, /spinWheelSet\(frontWheelNodes,wheelSpinAngle\)/);
   assert.match(page, /spinWheelSet\(rearWheelNodes,rearWheelSpinAngle\)/);
-  assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
+  assert.match(page, /const carTextureAnisotropyLimit = acRacingMobileDevice[\s\S]*?acMobileUltraFallbackApplied \? 1 : acMobileFallbackApplied \? 2 : 4/);
 });
 
 test("V164 frames the car prominently on the road above the dashboard", () => {
@@ -538,6 +538,19 @@ test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel 
   assert.ok(attach.includes("if(collectMeshAudit)console.table(meshAudit)"));
 });
 
+
+test("Android VAZ materials use standard PBR and obey the active texture filtering tier", () => {
+  assert.match(page, /const VehicleMaterialClass = acRacingMobileDevice[\s\S]*?THREE\.MeshStandardMaterial[\s\S]*?THREE\.MeshPhysicalMaterial/);
+  assert.match(page, /acMobileUltraFallbackApplied \? 1 : acMobileFallbackApplied \? 2 : 4/);
+  assert.match(page, /texture\.anisotropy=Math\.max\(texture\.anisotropy\|\|1,carTextureAnisotropy\)/);
+});
+
+test("Android dashboard and environment updates avoid unnecessary 60Hz DOM and buffer work", () => {
+  assert.match(page, /acNextMobileInstrumentUpdateAt = now \+ \(acMobileUltraFallbackApplied \? 100 : 33\)/);
+  assert.match(page, /acMobileEnvironmentElapsed\+=dt/);
+  assert.match(page, /acMobileEnvironmentWorldDelta\+=frameWorldDelta/);
+  assert.match(page, /acNextMobileEnvironmentUpdateAt=now\+33/);
+});
 
 test("mobile FPS tiers lower texture filtering without replacing source textures", () => {
   assert.match(page, /function acSetMobileTextureAnisotropy\(maxAnisotropy\)/);
