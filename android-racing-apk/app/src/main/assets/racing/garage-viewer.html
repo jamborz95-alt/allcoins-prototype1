@@ -112,11 +112,11 @@ h1{font-size:20px;margin:13px 0 8px}
  function setZoom(v){
    zoomValue=clamp(v,0,1);
    zoomSlider.value=String(Math.round(zoomValue*100));
-   resizeCamera();
+   updateCameraFrustum();
    scheduleRender();
  }
- function resizeCamera(){
-   if(!camera||!renderer)return;
+ function updateCameraFrustum(){
+   if(!camera)return;
    const w=Math.max(1,window.innerWidth),h=Math.max(1,window.innerHeight);
    const aspect=w/h;
    const viewH=baseViewHeight*(1.45-zoomValue*.72);
@@ -125,7 +125,11 @@ h1{font-size:20px;margin:13px 0 8px}
    camera.top=viewH/2;
    camera.bottom=-viewH/2;
    camera.updateProjectionMatrix();
-   renderer.setSize(w,h,false);
+ }
+ function resizeRenderer(){
+   if(!renderer)return;
+   renderer.setSize(Math.max(1,window.innerWidth),Math.max(1,window.innerHeight),false);
+   updateCameraFrustum();
  }
  function initScene(){
    scene=new THREE.Scene();
@@ -163,7 +167,7 @@ h1{font-size:20px;margin:13px 0 8px}
    const shadowTex=new THREE.CanvasTexture(shadowCanvas);
    const fakeShadow=new THREE.Mesh(new THREE.PlaneGeometry(9.5,3.2),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,toneMapped:false}));
    fakeShadow.rotation.x=-Math.PI/2;fakeShadow.position.set(0,.005,0);scene.add(fakeShadow);
-   resizeCamera();
+   resizeRenderer();
  }
  function prepareCar(root){
    root.updateMatrixWorld(true);
@@ -270,7 +274,7 @@ h1{font-size:20px;margin:13px 0 8px}
  canvas.addEventListener("pointerup",endPointer);
  canvas.addEventListener("pointercancel",endPointer);
  canvas.addEventListener("lostpointercapture",endPointer);
- window.addEventListener("resize",()=>{resizeCamera();scheduleRender();});
+ window.addEventListener("resize",()=>{resizeRenderer();scheduleRender();});
  document.getElementById("retry").addEventListener("click",loadCar);
  try{initScene();loadCar();}
  catch(error){console.error(error);showError("3D-движок не смог запуститься: "+(error.message||error));}
