@@ -1,0 +1,40 @@
+name: Build faithful high-resolution VAZ-2107 sprite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cars/lada-2107-side.png"
+      - "scripts/upscale_lada2107.py"
+      - ".github/workflows/upscale-lada2107.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upscale-car-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install image processing tools
+        run: python -m pip install --disable-pip-version-check pillow numpy
+      - name: Upscale the existing exact VAZ-2107 sprite
+        run: python scripts/upscale_lada2107.py
+      - name: Commit the new sprite only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cars/lada-2107-side-hq.webp
+          if git diff --cached --quiet; then
+            echo "No asset changes"
+          else
+            git commit -m "Add higher-resolution VAZ-2107 sprite"
+            git push
+          fi
