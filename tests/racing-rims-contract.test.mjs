@@ -483,3 +483,13 @@ test("critically slow Android races enter a lower-load scene tier while keeping 
   assert.match(page, /if\(acMobileSevereFallbackApplied\)return false/);
   assert.match(page, /mobileSevereFallback:acMobileSevereFallbackApplied/);
 });
+
+test("ultra-low FPS Android mode reduces GPU work without changing vehicle physics", () => {
+  assert.match(page, /function acApplyMobileUltraPerformanceTier\\(\\)/);
+  assert.match(page, /measuredFps < 30[\\s\\S]*?acApplyMobileUltraPerformanceTier\\(\\)/);
+  assert.match(page, /renderer\\.setPixelRatio\\(Math\\.min\\(renderer\\.getPixelRatio\\(\\), \\.30\\)\\)/);
+  assert.match(page, /renderer\\.toneMapping = THREE\\.NoToneMapping/);
+  assert.match(page, /scene\\.fog = null/);
+  assert.match(page, /if \\(!acMobileSevereFallbackApplied\\) acV5UpdateWetReflections\\(worldDelta\\)/);
+  assert.match(page, /mobileUltraFallback:acMobileUltraFallbackApplied/);
+});
