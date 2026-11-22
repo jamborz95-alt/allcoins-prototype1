@@ -17,7 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(8px,2vw,20px);padding-top:max(9px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .brand,.stats,.gearbox,.actions{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px #0005;backdrop-filter:blur(10px);border-radius:14px}
-.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}
+.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}.brand .perf-badge{display:none;margin-top:4px;font-size:10px;line-height:1.2;color:#c7d3df;font-variant-numeric:tabular-nums;white-space:nowrap}.ac-racing-mobile .brand .perf-badge{display:block}.ac-racing-mobile .brand,.ac-racing-mobile .stats,.ac-racing-mobile .gearbox,.ac-racing-mobile .actions,.ac-racing-mobile #raceProgress,.ac-racing-mobile .garage-topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
 .stats{display:flex;gap:clamp(10px,3vw,25px);padding:8px 13px;align-items:center}.metric{text-align:center;min-width:54px}.metric strong{display:block;font-size:clamp(18px,3.4vw,27px);font-variant-numeric:tabular-nums;line-height:1.05}.metric small{font-size:9px;letter-spacing:.12em;color:var(--muted)}
 .actions{pointer-events:auto;display:flex;gap:6px;padding:5px}.small-btn{border:1px solid #ffffff18;background:#202a36;color:#f6f7fa;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px}
 .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.pedals{display:flex;gap:10px;pointer-events:auto;align-items:flex-end}.pedal{width:clamp(82px,15vw,130px);height:clamp(74px,13vw,104px);border-radius:16px;border:1px solid #ffffff35;background:linear-gradient(145deg,#263341,#111821);color:#fff;font-weight:900;font-size:15px;box-shadow:0 8px 20px #0006;touch-action:none;user-select:none}.pedal span{display:block;font-size:10px;letter-spacing:.16em;color:#bcc8d5;margin-top:5px}.pedal.gas{border-color:#56b88a88;background:linear-gradient(145deg,#245340,#10251e)}.pedal.brake{border-color:#d66a5d88;background:linear-gradient(145deg,#63332f,#271615)}.pedal.active{transform:translateY(3px);filter:brightness(1.3)}
@@ -2312,7 +2312,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
 </div>
 <div class="hud">
   <div class="top">
-    <div class="brand"><b>ALLCOINS</b><span>RACING · RWD 5MT · V5</span></div>
+    <div class="brand"><b>ALLCOINS</b><span>RACING · RWD 5MT · V5</span><small class="perf-badge" id="racingPerfBadge">FPS --</small></div>
     <div class="stats">
       <div class="metric"><strong id="speed">0</strong><small>КМ/Ч</small></div>
       <div class="metric"><strong id="rpm">900</strong><small>ОБ/МИН</small></div>
@@ -5243,32 +5243,34 @@ scene.fog = new THREE.Fog(0x829caf, 88, 238);
 const camera = new THREE.OrthographicCamera(-15,15,7,-7,.1,300);
 // Камера смотрит почти параллельно полотну, как на референсе.
 camera.position.set(0,4.2,38); camera.lookAt(0,0.2,AC_PLAYER_LANE_Z);
-const acRacingMobileDevice = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
+const acRacingMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.matchMedia("(pointer: coarse)").matches && window.matchMedia("(max-width: 900px)").matches);
+if(acRacingMobileDevice)document.documentElement.classList.add("ac-racing-mobile");
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  // Умеренное сглаживание вместе с повышенной плотностью пикселей делает кузов и приборы чётче.
-  antialias: true,
+  // Disable MSAA on phones; desktop keeps full antialiasing.
+  antialias: !acRacingMobileDevice,
   alpha: false,
   powerPreference: "high-performance",
-  precision: "highp"
+  precision: acRacingMobileDevice ? "mediump" : "highp"
 });
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
 }
-// V165: favour stable frame pacing on phones; resolution rises only after sustained headroom.
-// V164: high-detail mobile rendering; adaptive scaling protects frame pacing on slower phones.
-const acMobilePixelRatioCap = 1.32;
-const acMobilePixelRatioInitial = 1.12;
-const acMobilePixelRatioFloor = .76;
+// Android Telegram WebView profile: start with a lighter render target and scale up only
+// after sustained frame-rate headroom. Desktop remains at its existing quality settings.
+const acMobilePixelRatioCap = .98;
+const acMobilePixelRatioInitial = .78;
+const acMobilePixelRatioFloor = .48;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
-renderer.shadowMap.enabled = true;
+// Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
+renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
 // V27: balanced daylight fill and warm highlights; preserve material contrast on mobile.
 scene.add(new THREE.HemisphereLight(0x9fc9f2,0x30353c,.40));
-const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=true;
+const sun = new THREE.DirectionalLight(0xffd7a8,.46); sun.position.set(-7,15,12); sun.castShadow=!acRacingMobileDevice;
 sun.shadow.mapSize.set(acRacingMobileDevice ? 768 : 1024, acRacingMobileDevice ? 768 : 1024);
 if(acRacingMobileDevice){
   sun.shadow.camera.left=-18; sun.shadow.camera.right=18;
@@ -5431,10 +5433,13 @@ function acCreateAsphaltMaps() {
   const roughnessMap = new THREE.CanvasTexture(roughCanvas);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
   roughnessMap.repeat.copy(colorMap.repeat);
-  const bumpMap = colorMap.clone();
-  bumpMap.repeat.copy(colorMap.repeat);
-  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  colorMap.anisotropy = roughnessMap.anisotropy = bumpMap.anisotropy = anisotropy;
+  // The asphalt height/bump map costs an extra texture sample per fragment.
+  // Keep it on desktop; mobile uses the same color and roughness maps without the bump pass.
+  const bumpMap = acRacingMobileDevice ? null : colorMap.clone();
+  if (bumpMap) bumpMap.repeat.copy(colorMap.repeat);
+  const anisotropy = Math.min(acRacingMobileDevice ? 4 : 8, renderer.capabilities.getMaxAnisotropy());
+  colorMap.anisotropy = roughnessMap.anisotropy = anisotropy;
+  if (bumpMap) bumpMap.anisotropy = anisotropy;
   return { colorMap, roughnessMap, bumpMap };
 }
 
@@ -6969,7 +6974,7 @@ acLampPools.visible = false;
 scene.add(acLampPools);
 
 /* Дождь перед камерой */
-const acRainCount=acRacingMobileDevice ? 110 : 180;
+const acRainCount=acRacingMobileDevice ? 55 : 180;
 const acRainPositions=new Float32Array(acRainCount*6);
 
 for(let i=0;i<acRainCount;i++){
@@ -9311,6 +9316,11 @@ function animate(now){
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfStableFpsSamples=0;
+      }
+      const perfBadge=document.getElementById("racingPerfBadge");
+      if(perfBadge){
+        const averageFrameMs=sampleDuration/acPerfFrameCount;
+        perfBadge.textContent="FPS "+Math.round(measuredFps)+" · "+averageFrameMs.toFixed(0)+"ms · DPR "+currentPixelRatio.toFixed(2);
       }
       window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
         fps:Number(measuredFps.toFixed(1)),
