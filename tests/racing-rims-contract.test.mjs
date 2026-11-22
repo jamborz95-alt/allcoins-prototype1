@@ -538,6 +538,16 @@ test("V175 skips expensive per-mesh GLB audit on Android while preserving wheel 
   assert.ok(attach.includes("if(collectMeshAudit)console.table(meshAudit)"));
 });
 
+
+test("mobile FPS tiers lower texture filtering without replacing source textures", () => {
+  assert.match(page, /function acSetMobileTextureAnisotropy\(maxAnisotropy\)/);
+  assert.match(page, /acSetMobileTextureAnisotropy\(2\)/);
+  assert.match(page, /acSetMobileTextureAnisotropy\(1\)/);
+  assert.match(page, /texture\.anisotropy = maxAnisotropy/);
+  assert.match(page, /texture\.needsUpdate = true/);
+  assert.match(page, /texture\.anisotropy > maxAnisotropy/);
+});
+
 test("V176 adds a last-resort Android FPS tier without hiding the player car or road", () => {
   assert.ok(page.includes("function acApplyMobileExtremePerformanceTier()"));
   assert.ok(page.includes("measuredFps < 24") && page.includes("acApplyMobileExtremePerformanceTier();"));
