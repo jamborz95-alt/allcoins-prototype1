@@ -184,9 +184,9 @@ function buildBoard(){
 function addToken(x,z){
  const group=new THREE.Group();
  const coin=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.09,24),new THREE.MeshStandardMaterial({color:0xf5c85f,metalness:.7,roughness:.24,emissive:0x6b3a05,emissiveIntensity:.42}));
- coin.rotation.x=Math.PI/2;group.add(coin);
+ group.add(coin);
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.37,.055,8,24),new THREE.MeshBasicMaterial({color:0xffe8a6}));
- group.add(ring);group.position.set(worldX(x),.72,worldZ(z));scene.add(group);
+ ring.rotation.x=Math.PI/2;group.add(ring);group.position.set(worldX(x),.72,worldZ(z));scene.add(group);
  tokens.push({x,z,group,baseY:.72});tokenMeshes.push(group);
 }
 function addSkyAndLighting(){
