@@ -2599,7 +2599,7 @@ let carSvgInstance=0;
 const ladaPaintImageCache=new Map();
 function ladaPngMarkup(imgClass,vinylId){
   const vinyl=carVinylMarkup(vinylId||'none');
-  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side.png?v=20261101-png-paint12" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
+  return '<div class="lada-png-art"><img class="'+imgClass+'" src="./cars/lada-2107-side-hq.svg?v=20261122-hq-v1" alt="ВАЗ-2107, вид сбоку" decoding="async" draggable="false">'+(vinyl?'<svg class="lada-png-vinyl" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">'+vinyl+'</svg>':'')+'</div>';
 }
 function lada2101WheelSvgMarkup(){
   // Period-correct stamped-steel rim and small chrome hubcap, drawn as a separate rotor.
@@ -2764,7 +2764,7 @@ function ladaPointInsidePolygon(x,y,poly){
 }
 function ladaPaintedPng(color){
   const target=String(color||'#dfe3e6').toLowerCase();
-  const original='./cars/lada-2107-side.png?v=20261101-png-paint15';
+  const original='./cars/lada-2107-side-hq.svg?v=20261122-hq-v1';
   if(!/^#[0-9a-f]{6}$/.test(target)||target==='#dfe3e6')return Promise.resolve(original);
   if(ladaPaintImageCache.has(target))return ladaPaintImageCache.get(target);
   const promise=new Promise(resolve=>{
@@ -3217,7 +3217,7 @@ async function syncOnlineOpponentCar(){
   const token=++onlineOpponentRenderToken;
   opponent.dataset.pendingCarArtKey=key;
   const source=modelId==='2107'
-    ?'./cars/lada-2107-side.png?v=20261029-opponent-entry1'
+    ?'./cars/lada-2107-side-hq.svg?v=20261122-hq-v1'
     :modelId==='2101'?'./cars/lada-2101-side.png?v=20261101-lada2101-body-v3'
     :modelId==='2110'?'./cars/vaz-2110-body.png?v=20261103-vaz2110-body-v2'
     :await carSvgToPngDataUrl(modelId,carPaintCss(modelId));
