@@ -321,12 +321,12 @@
     }
   }
 
-  async function readCachedModel() {
+  async function readCachedModel(cacheKey = MODEL_CACHE_KEY) {
     const db = await openModelCache();
     try {
       return await new Promise((resolve, reject) => {
         const transaction = db.transaction(MODEL_CACHE_STORE, "readonly");
-        const request = transaction.objectStore(MODEL_CACHE_STORE).get(MODEL_CACHE_KEY);
+        const request = transaction.objectStore(MODEL_CACHE_STORE).get(cacheKey);
         let value = null;
         request.onsuccess = () => { value = request.result || null; };
         request.onerror = () => reject(request.error || new Error("Не удалось прочитать кэш модели"));
@@ -374,22 +374,39 @@
       // Amvera GLB was replaced with a different import, so version mismatch must
       // not evict the older known-good Racing car.
       setStatus("Восстанавливаем прежнюю ВАЗ-2107 с устройства…", false);
-      try {
-        const savedPrevious = await readCachedModel();
-        if (savedPrevious && isValidGlbBuffer(savedPrevious.buffer)) {
-          const previousModel = {
-            buffer: savedPrevious.buffer,
-            fileName: savedPrevious.fileName || "vaz-2107-previous.glb",
-            remoteVersion: savedPrevious.remoteVersion || null,
-            source: "previous-device-cache"
-          };
-          cachedModel = previousModel;
-          setStatus("Прежняя ВАЗ-2107 восстановлена с устройства", false);
-          hideModelProgress();
-          return previousModel;
+      const previousCacheKeys = [
+        MODEL_CACHE_KEY,
+        "v24-vaz-2107-glb-63426260-v1"
+      ];
+      let savedPrevious = null;
+      let savedPreviousKey = null;
+      for (const cacheKey of [...new Set(previousCacheKeys)]) {
+        try {
+          const candidate = await readCachedModel(cacheKey);
+          if (candidate && isValidGlbBuffer(candidate.buffer)) {
+            savedPrevious = candidate;
+            savedPreviousKey = cacheKey;
+            break;
+          }
+        } catch (error) {
+          console.warn("ALLCOINS Racing: cached VAZ lookup failed for", cacheKey, error);
         }
-      } catch (error) {
-        console.warn("ALLCOINS Racing: previous local VAZ cache could not be restored:", error);
+      }
+      if (savedPrevious) {
+        const previousModel = {
+          buffer: savedPrevious.buffer,
+          fileName: savedPrevious.fileName || "vaz-2107-previous.glb",
+          remoteVersion: savedPrevious.remoteVersion || null,
+          source: "previous-device-cache",
+          cacheKey: savedPreviousKey
+        };
+        cachedModel = previousModel;
+        // Migrate the recovered known-good GLB into the active cache key so the
+        // next launch restores it immediately, without downloading the newer import.
+        if (savedPreviousKey !== MODEL_CACHE_KEY) await writeCachedModel(previousModel);
+        setStatus("Прежняя ВАЗ-2107 восстановлена с устройства", false);
+        hideModelProgress();
+        return previousModel;
       }
 
       setStatus("Проверяем актуальность 3D-модели…", false);
@@ -916,7 +933,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261122-android-render-workload-v180", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261122-vaz-glb-restore-v181", document.baseURI);
       const restoreFactoryRims = new URLSearchParams(window.location.search).get("restoreFactoryRims") === "1";
       if (restoreFactoryRims) {
         sceneUrl.searchParams.set("restoreFactoryRims","1");
