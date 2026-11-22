@@ -8627,24 +8627,24 @@ function acRacingEnhanceCarSurface(root) {
     if (preset === "body-clearcoat") {
       material.clearcoat = .94;
       material.clearcoatRoughness = .14;
-      material.roughness = Math.max(.17, Math.min(originalRoughness, .28));
-      material.metalness = Math.max(originalMetalness, .16);
+      material.roughness = Math.max(.16, Math.min(originalRoughness, .24));
+      material.metalness = Math.max(originalMetalness, .18);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .48;
+      material.envMapIntensity = .56;
     } else if (preset === "chrome-metal") {
       material.clearcoat = .16;
       material.clearcoatRoughness = .23;
-      material.roughness = Math.max(.18, Math.min(originalRoughness, .34));
+      material.roughness = Math.max(.16, Math.min(originalRoughness, .30));
       material.metalness = Math.max(originalMetalness, .76);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .68;
+      material.envMapIntensity = .76;
     } else if (preset === "window-glass") {
       material.clearcoat = .68;
       material.clearcoatRoughness = .12;
       material.roughness = Math.max(.08, Math.min(originalRoughness, .2));
       material.metalness = Math.min(originalMetalness, .08);
       material.envMap = reflectionMap;
-      material.envMapIntensity = .58;
+      material.envMapIntensity = .64;
     } else if (preset === "tire-rubber") {
       material.clearcoat = .025;
       material.clearcoatRoughness = .7;
@@ -8732,7 +8732,7 @@ function attachVehicle(root,label='сохранённая модель'){
         const texture=material[key];
         if(texture?.isTexture&&!preparedCarTextures.has(texture)){
           preparedCarTextures.add(texture);
-          texture.anisotropy=Math.min(texture.anisotropy||1,carTextureAnisotropy);
+          texture.anisotropy=carTextureAnisotropy;
         }
       }
     }
