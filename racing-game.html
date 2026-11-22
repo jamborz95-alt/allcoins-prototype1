@@ -5433,10 +5433,13 @@ function acCreateAsphaltMaps() {
   const roughnessMap = new THREE.CanvasTexture(roughCanvas);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
   roughnessMap.repeat.copy(colorMap.repeat);
-  const bumpMap = colorMap.clone();
-  bumpMap.repeat.copy(colorMap.repeat);
-  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  colorMap.anisotropy = roughnessMap.anisotropy = bumpMap.anisotropy = anisotropy;
+  // The asphalt height/bump map costs an extra texture sample per fragment.
+  // Keep it on desktop; mobile uses the same color and roughness maps without the bump pass.
+  const bumpMap = acRacingMobileDevice ? null : colorMap.clone();
+  if (bumpMap) bumpMap.repeat.copy(colorMap.repeat);
+  const anisotropy = Math.min(acRacingMobileDevice ? 4 : 8, renderer.capabilities.getMaxAnisotropy());
+  colorMap.anisotropy = roughnessMap.anisotropy = anisotropy;
+  if (bumpMap) bumpMap.anisotropy = anisotropy;
   return { colorMap, roughnessMap, bumpMap };
 }
 
