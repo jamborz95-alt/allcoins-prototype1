@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101b29">
+<title>ALLCOINS · VAZ 2107 Toy Arcade</title>
+<script src="./vendor/three-r147.min.js"></script>
+<script src="./vendor/GLTFLoader-r147.js"></script>
+<style>
+:root{color-scheme:dark;--gold:#f1c76d;--muted:#c1cad5;--panel:rgba(7,14,24,.84)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b29;color:#fff;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;touch-action:none}
+#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(4,10,18,.36),transparent 25%,transparent 70%,rgba(4,10,18,.56))}
+.top{position:fixed;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+.panel{background:var(--panel);border:1px solid rgba(241,199,109,.29);box-shadow:0 8px 26px #0006;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:13px}
+.brand{padding:8px 11px}.brand b{display:block;color:var(--gold);font-size:12px;letter-spacing:.16em}.brand span{display:block;margin-top:3px;color:#d5dce5;font-size:9px}
+.stats{display:flex;gap:clamp(10px,3vw,24px);padding:8px 12px}
+.stat{text-align:center;min-width:42px}.stat strong{display:block;font-size:16px;line-height:1.15;color:#fff;font-variant-numeric:tabular-nums}.stat span{font-size:8px;letter-spacing:.1em;color:var(--muted);font-weight:800}
+.message{position:fixed;left:50%;top:calc(max(60px,env(safe-area-inset-top) + 53px));transform:translateX(-50%);padding:8px 13px;border-radius:18px;background:#081321ce;color:#f1e4c8;border:1px solid #e6bf6644;white-space:nowrap;font-size:10px;pointer-events:none;text-align:center}
+.controls{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,48px);gap:5px;pointer-events:auto}
+.pad{border:1px solid #f1c76d66;border-radius:12px;background:linear-gradient(145deg,#29384b,#121e2d);color:#fff;font-size:23px;font-weight:900;box-shadow:0 5px 14px #0007;touch-action:none;user-select:none}
+.pad:active,.pad.active{background:linear-gradient(145deg,#87652d,#403019);transform:translateY(1px)}
+.pad.up{grid-column:2;grid-row:1}.pad.left{grid-column:1;grid-row:2}.pad.down{grid-column:2;grid-row:2}.pad.right{grid-column:3;grid-row:2}
+#restart{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));height:42px;padding:0 12px;border:1px solid #f1c76d55;border-radius:11px;background:#0c1725df;color:#f1d99e;font-size:10px;font-weight:900;letter-spacing:.06em}
+.overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at 50% 40%,#29415aee,#091320f5 80%)}
+.overlay.hidden{display:none}
+.card{width:min(430px,94vw);padding:24px 22px;border-radius:20px;border:1px solid #f1c76d77;background:linear-gradient(145deg,#23364b,#0b1522);box-shadow:0 22px 70px #000b;text-align:center}
+.logo{font-size:11px;letter-spacing:.23em;color:var(--gold);font-weight:1000}
+h1{font-size:24px;margin:12px 0 8px}
+p{font-size:13px;line-height:1.55;color:#d0d9e4;margin:8px 0 18px}
+.primary{border:0;border-radius:12px;padding:14px 26px;background:linear-gradient(120deg,#f1c76d,#d89d3f);color:#1a1c21;font-weight:1000;font-size:13px;letter-spacing:.08em;min-width:160px}
+.secondary{margin-left:7px;border:1px solid #f1c76d66;border-radius:12px;padding:13px 17px;background:#ffffff0b;color:#f1d99e;font-weight:900;font-size:11px}
+.small{font-size:10px;color:#9eacbd;margin-top:14px}
+#load{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:#0a1421f5;padding:20px}
+#load.hidden{display:none}
+.loadcard{width:min(400px,92vw);padding:22px;border:1px solid #f1c76d66;border-radius:18px;background:linear-gradient(145deg,#203249,#0a1421);text-align:center}
+#loadText{font-size:12px;color:#d2dbe6;min-height:36px;margin:12px 0}
+.track{height:6px;border-radius:8px;background:#2c3e51;overflow:hidden}
+#fill{height:100%;width:10%;background:linear-gradient(90deg,#c38b35,#ffe7a4);transition:width .2s}
+#error{font-size:10px;color:#ffb4a8;margin-top:10px;display:none}
+#retry{display:none;margin-top:14px;border:0;border-radius:10px;padding:10px 18px;background:var(--gold);font-weight:900}
+@media(max-width:520px){
+ .top{gap:5px}.brand{padding:7px 9px}.brand b{font-size:10px}.brand span{font-size:8px}
+ .stats{gap:9px;padding:7px 9px}.stat{min-width:33px}.stat strong{font-size:14px}
+ .message{font-size:9px;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+ .controls{grid-template-columns:repeat(3,49px);grid-template-rows:repeat(2,44px);gap:4px}
+ .pad{font-size:20px}#restart{height:38px;padding:0 9px;font-size:9px;bottom:120px}
+}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="shade"></div>
+<div class="top">
+ <div class="brand panel"><b>ALLCOINS</b><span>ВАЗ-2107 · TOY ARCADE</span></div>
+ <div class="stats panel">
+  <div class="stat"><strong id="collected">0/8</strong><span>ЖЕТОНЫ</span></div>
+  <div class="stat"><strong id="level">01</strong><span>УРОВЕНЬ</span></div>
+  <div class="stat"><strong id="fps">—</strong><span>FPS</span></div>
+ </div>
+</div>
+<div class="message" id="message">Собери 8 жетонов и вернись на стартовую площадку</div>
+<div class="controls" id="controls" aria-label="Управление">
+ <button class="pad up" data-dir="up" aria-label="Вверх">▲</button>
+ <button class="pad left" data-dir="left" aria-label="Влево">◀</button>
+ <button class="pad down" data-dir="down" aria-label="Вниз">▼</button>
+ <button class="pad right" data-dir="right" aria-label="Вправо">▶</button>
+</div>
+<button id="restart">ЗАНОВО</button>
+<div class="overlay" id="intro">
+ <div class="card">
+  <div class="logo">ALLCOINS MINI GAME</div>
+  <h1>ВАЗ-2107: СБОР ЖЕТОНОВ</h1>
+  <p>Управляй миниатюрной машинкой на игрушечной карте. Собери все 8 золотых жетонов и вернись на стартовую площадку.</p>
+  <button class="primary" id="play">ИГРАТЬ</button>
+  <div class="small">Кнопки на экране или стрелки клавиатуры. Это аркадная настольная игра, а не симулятор реального вождения.</div>
+ </div>
+</div>
+<div class="overlay hidden" id="win">
+ <div class="card">
+  <div class="logo">УРОВЕНЬ ПРОЙДЕН</div>
+  <h1>ВСЕ ЖЕТОНЫ СОБРАНЫ!</h1>
+  <p>Ты завершил маршрут на миниатюрной карте. Отличная работа!</p>
+  <button class="primary" id="again">ЕЩЁ РАЗ</button>
+ </div>
+</div>
+<div id="load">
+ <div class="loadcard">
+  <div class="logo">ALLCOINS 3D</div>
+  <h1>Загрузка ВАЗ-2107</h1>
+  <div id="loadText">Загружаем настоящую модель автомобиля из APK…</div>
+  <div class="track"><div id="fill"></div></div>
+  <div id="error"></div>
+  <button id="retry">ПОВТОРИТЬ</button>
+ </div>
+</div>
+<script>
+(() => {
+"use strict";
+const canvas=document.getElementById("view");
+const load=document.getElementById("load"),loadText=document.getElementById("loadText"),fill=document.getElementById("fill");
+const errorBox=document.getElementById("error"),retry=document.getElementById("retry");
+const message=document.getElementById("message"),collectedLabel=document.getElementById("collected"),fpsLabel=document.getElementById("fps");
+const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const MAX_DPR=mobile?.95:1.35;
+let renderer,scene,camera,carRoot,carModel;
+let lastTime=0,fpsFrames=0,fpsTime=0,qualityDpr=Math.min(devicePixelRatio||1,MAX_DPR);
+let playing=false,won=false,heldDirection=null,moveFrom=null,moveTo=null,moveT=1,grid={x:1,z:1};
+const CELL=2.15,BOARD=11,ROAD=new Set(),tokens=[],tokenMeshes=[],clock=new THREE.Clock();
+const tokenPositions=[[5,1],[9,1],[9,5],[9,9],[5,9],[1,9],[1,5],[5,5]];
+const cellKey=(x,z)=>x+","+z;
+const worldX=x=>(x-(BOARD-1)/2)*CELL;
+const worldZ=z=>(z-(BOARD-1)/2)*CELL;
+let collected=new Set();
+const dirs={up:{x:0,z:-1,yaw:Math.PI/2},down:{x:0,z:1,yaw:-Math.PI/2},left:{x:-1,z:0,yaw:Math.PI},right:{x:1,z:0,yaw:0}};
+let currentYaw=0,targetYaw=0;
+
+function setLoad(text,pct,err=false){
+ loadText.textContent=text;fill.style.width=Math.max(4,Math.min(100,pct))+"%";
+ errorBox.style.display=err?"block":"none";retry.style.display=err?"inline-block":"none";
+}
+function initRenderer(){
+ renderer=new THREE.WebGLRenderer({canvas,antialias:!mobile,powerPreference:"high-performance",precision:"mediump",stencil:false,depth:true});
+ renderer.setPixelRatio(qualityDpr);renderer.setSize(innerWidth,innerHeight,false);
+ renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
+ renderer.shadowMap.enabled=false;
+}
+function addInstancedBuildings(){
+ const colors=[0x536b83,0x768b9a,0x596f82,0x9b9b91,0x4c6174,0xa4a394];
+ const geometry=new THREE.BoxGeometry(1,1,1);
+ const mat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:.02});
+ const buildings=new THREE.InstancedMesh(geometry,mat,22);
+ const dummy=new THREE.Object3D();
+ let i=0;
+ for(let z=-1;z<=1;z++)for(let x=-1;x<=1;x++){
+  if(Math.abs(x)+Math.abs(z)<2)continue;
+  const px=x*12.8,pz=z*12.8,w=2.8+(i%3)*.65,h=3.5+(i%5)*1.1,d=2.8+(i%2)*.8;
+  dummy.position.set(px,h/2-.25,pz);dummy.scale.set(w,h,d);dummy.rotation.y=(i%4)*Math.PI/4;dummy.updateMatrix();
+  buildings.setMatrixAt(i,dummy.matrix);buildings.setColorAt(i,new THREE.Color(colors[i%colors.length]));i++;
+ }
+ buildings.count=i;buildings.instanceMatrix.needsUpdate=true;if(buildings.instanceColor)buildings.instanceColor.needsUpdate=true;
+ scene.add(buildings);
+}
+function buildBoard(){
+ const grass=new THREE.Mesh(new THREE.BoxGeometry(BOARD*CELL+3,.35,BOARD*CELL+3),new THREE.MeshStandardMaterial({color:0x5a8c68,roughness:1}));
+ grass.position.y=-.35;scene.add(grass);
+ const groundMark=new THREE.Mesh(new THREE.PlaneGeometry(BOARD*CELL+3,BOARD*CELL+3),new THREE.MeshBasicMaterial({color:0x85ad77}));
+ groundMark.rotation.x=-Math.PI/2;groundMark.position.y=-.17;scene.add(groundMark);
+ for(let z=0;z<BOARD;z++)for(let x=0;x<BOARD;x++){
+  if(x===1||x===5||x===9||z===1||z===5||z===9)ROAD.add(cellKey(x,z));
+ }
+ const roadGeo=new THREE.BoxGeometry(CELL-.08,.12,CELL-.08);
+ const roadMat=new THREE.MeshStandardMaterial({color:0x3e4c5a,roughness:.93,metalness:.02});
+ const roadMesh=new THREE.InstancedMesh(roadGeo,roadMat,ROAD.size);
+ const dummy=new THREE.Object3D();let k=0;
+ for(const key of ROAD){
+  const [x,z]=key.split(",").map(Number);
+  dummy.position.set(worldX(x),-.065,worldZ(z));dummy.updateMatrix();roadMesh.setMatrixAt(k++,dummy.matrix);
+ }
+ roadMesh.instanceMatrix.needsUpdate=true;scene.add(roadMesh);
+ const curbMat=new THREE.MeshStandardMaterial({color:0xe3bb66,roughness:.75});
+ const curbGeo=new THREE.BoxGeometry(CELL-.1,.16,.18);
+ const curb=new THREE.InstancedMesh(curbGeo,curbMat,ROAD.size*4);let ci=0;
+ for(const key of ROAD){
+  const [x,z]=key.split(",").map(Number);const px=worldX(x),pz=worldZ(z);
+  const neighbors=[[x+1,z],[x-1,z],[x,z+1],[x,z-1]];
+  for(let n=0;n<4;n++){
+   const [nx,nz]=neighbors[n];if(ROAD.has(cellKey(nx,nz)))continue;
+   dummy.position.set(px,-.02,pz);
+   dummy.rotation.y=(n<2)?Math.PI/2:0;
+   dummy.scale.set(1,1,1);dummy.updateMatrix();curb.setMatrixAt(ci++,dummy.matrix);
+  }
+ }
+ curb.count=ci;curb.instanceMatrix.needsUpdate=true;scene.add(curb);
+ const start=new THREE.Mesh(new THREE.CylinderGeometry(.68,.72,.08,32),new THREE.MeshStandardMaterial({color:0xf0c66b,metalness:.25,roughness:.45,emissive:0x55320a,emissiveIntensity:.25}));
+ start.position.set(worldX(1),.03,worldZ(1));scene.add(start);
+ const startRing=new THREE.Mesh(new THREE.TorusGeometry(.56,.04,8,32),new THREE.MeshBasicMaterial({color:0xffe4a0}));
+ startRing.rotation.x=Math.PI/2;startRing.position.set(worldX(1),.1,worldZ(1));scene.add(startRing);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.08,1.2),new THREE.MeshStandardMaterial({color:0x24394a,metalness:.25,roughness:.5}));
+ base.position.set(worldX(1),.08,worldZ(1));scene.add(base); // car starts just above the base
+}
+function addToken(x,z){
+ const group=new THREE.Group();
+ const coin=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.09,24),new THREE.MeshStandardMaterial({color:0xf5c85f,metalness:.7,roughness:.24,emissive:0x6b3a05,emissiveIntensity:.42}));
+ coin.rotation.x=Math.PI/2;group.add(coin);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.37,.055,8,24),new THREE.MeshBasicMaterial({color:0xffe8a6}));
+ group.add(ring);group.position.set(worldX(x),.72,worldZ(z));scene.add(group);
+ tokens.push({x,z,group,baseY:.72});tokenMeshes.push(group);
+}
+function addSkyAndLighting(){
+ scene.background=new THREE.Color(0x8da9bd);scene.fog=new THREE.Fog(0x8da9bd,40,72);
+ const hemi=new THREE.HemisphereLight(0xf1f6ff,0x425a43,2.1);scene.add(hemi);
+ const key=new THREE.DirectionalLight(0xffe6b9,2.6);key.position.set(-9,18,12);scene.add(key);
+ const fillLight=new THREE.DirectionalLight(0xb9dcff,1.1);fillLight.position.set(12,8,-10);scene.add(fillLight);
+}
+function initScene(){
+ scene=new THREE.Scene();addSkyAndLighting();
+ camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,120);
+ camera.position.set(0,21,24);camera.lookAt(0,0,0);
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(150,150),new THREE.MeshStandardMaterial({color:0x293845,roughness:1}));
+ floor.rotation.x=-Math.PI/2;floor.position.y=-.6;scene.add(floor);
+ addInstancedBuildings();buildBoard();
+ for(const p of tokenPositions)addToken(p[0],p[1]);
+}
+function loadCar(){
+ setLoad("Загружаем настоящую модель ВАЗ-2107…",12,false);
+ const loader=new THREE.GLTFLoader();
+ loader.load("./vaz-2107.glb",gltf=>{
+  carModel=gltf.scene;
+  const box=new THREE.Box3().setFromObject(carModel);
+  const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+  const longest=Math.max(size.x,size.z,.01);
+  const scale=1.72/longest;
+  carModel.scale.setScalar(scale);
+  carModel.position.set(-center.x*scale,-box.min.y*scale+.14,-center.z*scale);
+  carRoot=new THREE.Group();carRoot.add(carModel);scene.add(carRoot);
+  carRoot.position.set(worldX(1),0,worldZ(1));
+  carRoot.rotation.y=currentYaw;
+  setLoad("Модель готова. Можно играть!",100,false);
+  setTimeout(()=>load.classList.add("hidden"),350);
+ },xhr=>{
+  if(xhr&&xhr.total>0)setLoad("Загрузка модели · "+Math.round(xhr.loaded/xhr.total*100)+"%",Math.round(xhr.loaded/xhr.total*85)+10,false);
+ },err=>{
+  console.error(err);setLoad("Не удалось загрузить GLB. Проверь встроенный файл модели.",5,true);
+ });
+}
+function cameraFollow(){
+ const tx=carRoot?carRoot.position.x:worldX(1),tz=carRoot?carRoot.position.z:worldZ(1);
+ const desired=new THREE.Vector3(tx+2,18.5,tz+20);
+ camera.position.lerp(desired,.055);camera.lookAt(tx,0,tz);
+}
+function resetGame(){
+ playing=false;won=false;heldDirection=null;moveFrom=null;moveTo=null;moveT=1;
+ grid={x:1,z:1};collected.clear();
+ for(const token of tokens){token.group.visible=true;}
+ if(carRoot){carRoot.position.set(worldX(1),0,worldZ(1));carRoot.rotation.y=0;}
+ currentYaw=0;targetYaw=0;
+ collectedLabel.textContent="0/8";message.textContent="Собери 8 жетонов и вернись на стартовую площадку";
+ document.getElementById("win").classList.add("hidden");
+}
+function updateCount(){collectedLabel.textContent=collected.size+"/8";}
+function startGame(){resetGame();playing=true;document.getElementById("intro").classList.add("hidden");}
+function tryMove(direction){
+ if(!playing||won||moveT<1)return;
+ const d=dirs[direction];if(!d)return;
+ const nx=grid.x+d.x,nz=grid.z+d.z;
+ if(!ROAD.has(cellKey(nx,nz)))return;
+ moveFrom={x:grid.x,z:grid.z};moveTo={x:nx,z:nz};moveT=0;
+ targetYaw=d.yaw;
+}
+function finishCell(){
+ grid={x:moveTo.x,z:moveTo.z};moveFrom=null;moveTo=null;moveT=1;
+ for(const token of tokens){
+  if(token.x===grid.x&&token.z===grid.z&&token.group.visible){
+   token.group.visible=false;collected.add(cellKey(token.x,token.z));updateCount();
+   message.textContent="Жетон найден! Осталось: "+(8-collected.size);
+  }
+ }
+ if(collected.size===8&&grid.x===1&&grid.z===1){
+  won=true;playing=false;heldDirection=null;
+  message.textContent="Все жетоны собраны — уровень пройден!";
+  document.getElementById("win").classList.remove("hidden");
+ }
+}
+function stepGame(dt){
+ if(!playing||!carRoot)return;
+ if(moveT<1){
+  moveT=Math.min(1,moveT+dt/.24);
+  const t=moveT<.5?2*moveT*moveT:1-Math.pow(-2*moveT+2,2)/2;
+  carRoot.position.x=worldX(moveFrom.x)+(worldX(moveTo.x)-worldX(moveFrom.x))*t;
+  carRoot.position.z=worldZ(moveFrom.z)+(worldZ(moveTo.z)-worldZ(moveFrom.z))*t;
+  let delta=targetYaw-currentYaw;while(delta>Math.PI)delta-=Math.PI*2;while(delta< -Math.PI)delta+=Math.PI*2;
+  currentYaw+=delta*Math.min(1,dt*10);carRoot.rotation.y=currentYaw;
+  if(moveT>=1)finishCell();
+ }else if(heldDirection){tryMove(heldDirection);}
+}
+function bindControl(button){
+ const direction=button.dataset.dir;
+ const down=e=>{e.preventDefault();heldDirection=direction;button.classList.add("active");if(moveT>=1)tryMove(direction);};
+ const up=e=>{if(e)e.preventDefault();if(heldDirection===direction)heldDirection=null;button.classList.remove("active");};
+ button.addEventListener("pointerdown",down);
+ ["pointerup","pointercancel","lostpointercapture","pointerleave"].forEach(ev=>button.addEventListener(ev,up));
+}
+document.querySelectorAll(".pad").forEach(bindControl);
+const keyMap={ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"};
+window.addEventListener("keydown",e=>{
+ const d=keyMap[e.code];if(!d)return;e.preventDefault();heldDirection=d;if(moveT>=1)tryMove(d);
+});
+window.addEventListener("keyup",e=>{const d=keyMap[e.code];if(d&&heldDirection===d)heldDirection=null;});
+document.getElementById("play").addEventListener("click",startGame);
+document.getElementById("again").addEventListener("click",startGame);
+document.getElementById("restart").addEventListener("click",()=>{resetGame();if(!document.getElementById("intro").classList.contains("hidden"))return;playing=true;});
+retry.addEventListener("click",()=>loadCar());
+function resize(){
+ if(!renderer||!camera)return;
+ camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,qualityDpr));renderer.setSize(innerWidth,innerHeight,false);
+}
+function animate(now){
+ requestAnimationFrame(animate);
+ if(!renderer||!scene||!camera)return;
+ const dt=Math.min(.05,clock.getDelta());
+ stepGame(dt);
+ for(let i=0;i<tokens.length;i++){
+  const t=tokens[i];if(t.group.visible){t.group.rotation.y+=dt*1.45;t.group.position.y=t.baseY+Math.sin(now*.0025+i)*.09;}
+ }
+ if(carRoot)cameraFollow();
+ renderer.render(scene,camera);
+ fpsFrames++;
+ if(now-fpsTime>1400){
+  if(fpsTime){
+   const fps=fpsFrames*1000/(now-fpsTime);fpsLabel.textContent=fps.toFixed(0);
+   if(mobile&&fps<32&&qualityDpr>.62){qualityDpr=Math.max(.62,qualityDpr-.07);resize();}
+   else if(mobile&&fps>55&&qualityDpr<MAX_DPR){qualityDpr=Math.min(MAX_DPR,qualityDpr+.025);resize();}
+  }
+  fpsFrames=0;fpsTime=now;
+ }
+}
+try{
+ if(!window.THREE||!THREE.GLTFLoader)throw new Error("Не найден локальный 3D-движок.");
+ initRenderer();initScene();loadCar();requestAnimationFrame(animate);
+}catch(err){console.error(err);setLoad("Ошибка запуска 3D-игры: "+err.message,5,true);}
+window.addEventListener("resize",resize,{passive:true});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)heldDirection=null;});
+})();
+</script>
+</body>
+</html>
