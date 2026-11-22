@@ -303,9 +303,12 @@ test("landscape cockpit keeps the VAZ visible and leaves only + / − gear contr
 });
 
 
-test("mobile racing quality is sharper and idle rendering is throttled to reduce frame-time pressure", () => {
-  assert.match(page, /antialias: true/);
-  assert.match(page, /const acMobilePixelRatioCap = 1\.10/);
+test("Android Telegram uses a lightweight mobile render profile while desktop keeps its quality settings", () => {
+  assert.match(page, /const acRacingMobileDevice = \/Android\|iPhone\|iPad\|iPod\/i\.test\(navigator\.userAgent\)/);
+  assert.match(page, /antialias: !acRacingMobileDevice/);
+  assert.match(page, /precision: acRacingMobileDevice \? "mediump" : "highp"/);
+  assert.match(page, /const acMobilePixelRatioCap = \.98/);
+  assert.match(page, /renderer\.shadowMap\.enabled = !acRacingMobileDevice/);
   assert.match(page, /const anisotropy = Math\.min\(acRacingMobileDevice \? 4 : 8/);
   assert.match(page, /carTextureAnisotropy=Math\.min\(acRacingMobileDevice\?8:12/);
   assert.match(page, /adaptiveResolution:true,[\s\S]*?renderCalls:renderer\.info\.render\.calls/);
@@ -323,12 +326,13 @@ test("camera is recalculated after the VAZ loads and after phone rotation", () =
   assert.match(page, /acOnlineSetCameraMode\(document\.body\.classList\.contains\("garage-mode"\)[\s\S]*?true\)/);
 });
 
-test("mobile rendering reduces resolution quickly under load and restores it gradually", () => {
-  assert.match(page, /const acMobilePixelRatioInitial = \.94/);
-  assert.match(page, /if\(measuredFps<50\)/);
-  assert.match(page, /if\(acPerfLowFpsSamples>=1&&currentPixelRatio>\.78\)/);
-  assert.match(page, /Math\.max\(\.78,currentPixelRatio-\.08\)/);
-  assert.match(page, /Math\.min\(acMobilePixelRatioCap,currentPixelRatio\+\.025\)/);
+test("mobile rendering drops resolution under load and restores it gradually", () => {
+  assert.match(page, /const acMobilePixelRatioInitial = \.78/);
+  assert.match(page, /const acMobilePixelRatioFloor = \.48/);
+  assert.match(page, /if\(measuredFps<53\)/);
+  assert.match(page, /if\(acPerfLowFpsSamples>=1&&currentPixelRatio>acMobilePixelRatioFloor\)/);
+  assert.match(page, /Math\.max\(acMobilePixelRatioFloor,currentPixelRatio-reduction\)/);
+  assert.match(page, /Math\.min\(acMobilePixelRatioCap,currentPixelRatio\+\.02\)/);
   assert.match(page, /const dt=Math\.min\(\.06,rawFrameMs\/1000\|\|0\)/);
 });
 
