@@ -1,9 +1,10 @@
-name: Build ALLCOINS Drag Racing APK
+name: Build ALLCOINS Full Game Performance APK
 
 on:
   push:
     branches:
       - build/drag-racing-glb-probe
+      - android/vaz2107-fullgame-performance
     paths:
       - "android-racing-apk/**"
       - ".github/workflows/fetch-vaz-model.yml"
@@ -90,6 +91,7 @@ jobs:
           PY
           cp model-artifact/vaz-2107.glb android-racing-apk/app/src/main/assets/racing/vaz-2107.glb
           cp model-artifact/model-info.json android-racing-apk/app/src/main/assets/racing/model-info.json
+          test -s android-racing-apk/app/src/main/assets/racing/launcher.html
           test -s android-racing-apk/app/src/main/assets/racing/racing-game.html
           test -s android-racing-apk/app/src/main/assets/racing/vendor/three-r147.min.js
           test -s android-racing-apk/app/src/main/assets/racing/vendor/GLTFLoader-r147.js
@@ -121,7 +123,7 @@ jobs:
           set -euo pipefail
           gradle -p android-racing-apk :app:assembleDebug
           mkdir -p release-assets
-          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Drag-Racing.apk
+          cp android-racing-apk/app/build/outputs/apk/debug/app-debug.apk release-assets/ALLCOINS-Full-Game-Android.apk
           python3 - <<'PY'
           import hashlib, pathlib, struct, zipfile
           apk = pathlib.Path("release-assets/ALLCOINS-Drag-Racing.apk")
@@ -152,10 +154,10 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs release-assets/ALLCOINS-Drag-Racing.apk
           "$BUILD_TOOLS/aapt" dump badging release-assets/ALLCOINS-Drag-Racing.apk | head -n 8
 
-      - name: Upload ALLCOINS Drag Racing APK
+      - name: Upload ALLCOINS Full Game Performance APK
         uses: actions/upload-artifact@v4
         with:
-          name: allcoins-drag-racing-apk
+          name: allcoins-full-game-performance-apk
           path: release-assets/ALLCOINS-Drag-Racing.apk
           if-no-files-found: error
           retention-days: 30
