@@ -8732,7 +8732,7 @@ function attachVehicle(root,label='сохранённая модель'){
         const texture=material[key];
         if(texture?.isTexture&&!preparedCarTextures.has(texture)){
           preparedCarTextures.add(texture);
-          texture.anisotropy=Math.max(texture.anisotropy||1,carTextureAnisotropy);
+          texture.anisotropy=Math.min(texture.anisotropy||1,carTextureAnisotropy);
         }
       }
     }
