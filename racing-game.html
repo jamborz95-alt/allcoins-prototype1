@@ -5945,15 +5945,17 @@ let acRoadTextureTravel = 0;
 function acAdvanceRoadSurface(scroll) {
   if (!Number.isFinite(scroll) || scroll === 0) return;
   const roadWidth = Math.max(1, Number(road.geometry.parameters.width) || 900);
-  const repeatX = Number(roadMat.map && roadMat.map.repeat.x) || 1;
+  const activeRoadMaterial=road.material||roadMat;
+  const colorTexture=activeRoadMaterial.map||null;
+  const repeatX = Number(colorTexture && colorTexture.repeat.x) || 1;
   // Положительный U-offset перемещает видимые детали текстуры в сторону -X (влево).
   const textureDelta = scroll * repeatX / roadWidth;
   acRoadTextureTravel += textureDelta;
-  const colorTexture=roadMat.map;
   if(colorTexture)colorTexture.offset.x=((colorTexture.offset.x+textureDelta)%1+1)%1;
-  const roughnessTexture=roadMat.roughnessMap;
+  // Mobile uses an unlit road material, so unused PBR maps are not dirtied each frame.
+  const roughnessTexture=activeRoadMaterial.roughnessMap||null;
   if(roughnessTexture)roughnessTexture.offset.x=((roughnessTexture.offset.x+textureDelta)%1+1)%1;
-  const bumpTexture=roadMat.bumpMap;
+  const bumpTexture=activeRoadMaterial.bumpMap||null;
   if(bumpTexture)bumpTexture.offset.x=((bumpTexture.offset.x+textureDelta)%1+1)%1;
   road.userData.lastLeftwardScroll = scroll > 0 ? scroll : 0;
   road.userData.textureTravel = acRoadTextureTravel;
@@ -7961,10 +7963,11 @@ function acApplyMobileExtremePerformanceTier() {
 
 /* Обновление окружения — не затрагивает физику машины */
 function updateRaceEnvironment(dt,worldDelta){
-  // All environment animation is frozen in ultra mode; the car and road remain active.
-  if (acMobileUltraFallbackApplied) return;
+  // Critical mobile mode hides rain, wet reflections and all lamp effects.
+  // Do not keep uploading their buffers or updating hidden light transforms.
+  if (acMobileSevereFallbackApplied) return;
   // Rain is skipped entirely in the critical mobile tier; the mesh is hidden too.
-  if(!acMobileSevereFallbackApplied){
+  if(true){
     const rain=acRainGeometry.attributes.position.array;
     for(let i=0;i<acRainCount;i++){
       const k=i*6;
@@ -7989,7 +7992,7 @@ function updateRaceEnvironment(dt,worldDelta){
 
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
   // Блики на мокром асфальте и фонари используют тот же delta, что и разметка.
-  if (!acMobileSevereFallbackApplied) acV5UpdateWetReflections(worldDelta);
+  acV5UpdateWetReflections(worldDelta);
   for(let index=0;index<acLampRecords.length;index++){
     const lamp=acLampRecords[index];
     lamp.x-=worldDelta*.17;
