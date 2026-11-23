@@ -5259,8 +5259,8 @@ if (window.__allcoinsRacingBoot) {
 }
 // Android Telegram WebView profile: start with a lighter render target and scale up only
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
-const acMobilePixelRatioCap = .98;
-const acMobilePixelRatioInitial = .78;
+const acMobilePixelRatioCap = 1.18;
+const acMobilePixelRatioInitial = .92;
 const acMobilePixelRatioFloor = .48;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
