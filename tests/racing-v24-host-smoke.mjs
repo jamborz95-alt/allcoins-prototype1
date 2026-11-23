@@ -177,6 +177,13 @@ function buildTestCarGlb() {
   part("Car_Rear_Bumper",box(.12,.15,1.55),4,[-2.28,.52,0]);
   part("Car_Headlamp_Left",box(.035,.16,.22),5,[2.27,.78,-.47]);
   part("Car_Headlamp_Right",box(.035,.16,.22),5,[2.27,.78,.47]);
+  // Exercise batching of a mesh that owns a nested static detail mesh.
+  part("Car_Static_Detail_Parent_0",box(.12,.06,.05),4,[-.72,1.15,.2]);
+  part("Car_Static_Detail_Child_0",box(.08,.04,.05),4,[.16,.04,.04]);
+  const detailParentNodeIndex=nodes.findIndex(node=>node.name==="Car_Static_Detail_Parent_0");
+  const detailChildNodeIndex=nodes.findIndex(node=>node.name==="Car_Static_Detail_Child_0");
+  nodes[0].children=nodes[0].children.filter(index=>index!==detailChildNodeIndex);
+  nodes[detailParentNodeIndex].children=[detailChildNodeIndex];
 
   const binary=Buffer.concat(binaryParts);
   const doc={asset:{version:"2.0",generator:"ALLCOINS browser visual fixture"},scene:0,scenes:[{nodes:[0]}],nodes,meshes,materials,accessors,bufferViews,buffers:[{byteLength:binary.length}]};
@@ -603,9 +610,11 @@ try {
   assert.equal(vehicleDiagnostics.frontWheelCount, 2, "Both front wheels must be assigned to the front axle.");
   assert.equal(vehicleDiagnostics.rearWheelCount, 2, "Both rear wheels must be assigned to the rear axle.");
   if (graphicsProfile.mobileOptimized) {
-    assert.ok(vehicleDiagnostics.mobileStaticMeshesMerged >= 4,
-      "Mobile static-mesh batching must merge repeated opaque VAZ detail meshes. Diagnostics: " +
+    assert.ok(vehicleDiagnostics.mobileStaticMeshesMerged >= 6,
+      "Mobile static-mesh batching must merge repeated opaque and nested VAZ detail meshes. Diagnostics: " +
       JSON.stringify(await gameFrame.evaluate(() => window.__allcoinsRacingMobileBatchDiagnostics || null)));
+    assert.ok(vehicleDiagnostics.renderMeshCount > 0 && vehicleDiagnostics.renderTriangleCount > 0,
+      "The VAZ render-cost counters must report actual vehicle meshes and triangles.");
     assert.ok(vehicleDiagnostics.mobileStaticBatchesCreated >= 2,
       "Mobile static-mesh batching must keep matching materials in separate visual batches.");
   }
