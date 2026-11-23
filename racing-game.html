@@ -7665,9 +7665,13 @@ function setGarageMode(enabled) {
   resize();
   acGarageWorld.visible = active;
   const trackVisible = !active;
+  // Do not let the garage/race visibility switch undo the mobile performance
+  // tiers. V201 applied these hides first, but the assignments below turned
+  // several expensive effects back on for every race transition.
+  const mobileSevereScene = acMobileSevereFallbackApplied;
   acRaceSkyBackdrop.visible = trackVisible;
   for (const building of city) building.visible = trackVisible;
-  distantHills.visible = trackVisible;
+  distantHills.visible = trackVisible && !mobileSevereScene;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
   acRoadsideShoulders.visible = trackVisible;
@@ -7676,24 +7680,23 @@ function setGarageMode(enabled) {
   acTrackCurbMesh.visible = trackVisible;
   acNearGuardrail.visible = trackVisible;
   acCityFence.visible = trackVisible;
-  acCityShrubs.visible = trackVisible;
-  acTrackGrass.visible = trackVisible;
-  acTrackTreeTrunks.visible = trackVisible;
-  acTrackTreeLower.visible = trackVisible;
-  acTrackTreeUpper.visible = trackVisible;
-  acTrackTreeSnow.visible = trackVisible;
-  acTrackHouseGroup.visible = trackVisible;
-  distantHills.visible = trackVisible;
+  acCityShrubs.visible = trackVisible && !mobileSevereScene;
+  acTrackGrass.visible = trackVisible && !mobileSevereScene;
+  acTrackTreeTrunks.visible = trackVisible && !mobileSevereScene;
+  acTrackTreeLower.visible = trackVisible && !mobileSevereScene;
+  acTrackTreeUpper.visible = trackVisible && !mobileSevereScene;
+  acTrackTreeSnow.visible = trackVisible && !mobileSevereScene;
+  acTrackHouseGroup.visible = trackVisible && !mobileSevereScene;
   finishLine.visible = trackVisible;
-  acV5WetBlue.visible = trackVisible;
-  acV5WetWarm.visible = trackVisible;
-  acLampPools.visible = trackVisible;
+  acV5WetBlue.visible = trackVisible && !mobileSevereScene;
+  acV5WetWarm.visible = trackVisible && !mobileSevereScene;
+  acLampPools.visible = trackVisible && !mobileSevereScene;
   acVehicleShadow.visible = trackVisible && Boolean(vehicle);
-  acRain.visible = trackVisible;
+  acRain.visible = trackVisible && !mobileSevereScene;
   for (const record of acLampRecords) {
-    record.bulb.visible = trackVisible;
+    record.bulb.visible = trackVisible && !mobileSevereScene;
     record.light.visible = trackVisible && !acMobileFallbackApplied;
-    record.halo.visible = trackVisible;
+    record.halo.visible = trackVisible && !mobileSevereScene;
   }
 }
 
