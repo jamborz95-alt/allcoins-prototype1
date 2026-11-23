@@ -604,7 +604,8 @@ try {
   assert.equal(vehicleDiagnostics.rearWheelCount, 2, "Both rear wheels must be assigned to the rear axle.");
   if (graphicsProfile.mobileOptimized) {
     assert.ok(vehicleDiagnostics.mobileStaticMeshesMerged >= 4,
-      "Mobile static-mesh batching must merge repeated opaque VAZ detail meshes.");
+      "Mobile static-mesh batching must merge repeated opaque VAZ detail meshes. Diagnostics: " +
+      JSON.stringify(await gameFrame.evaluate(() => window.__allcoinsRacingMobileBatchDiagnostics || null)));
     assert.ok(vehicleDiagnostics.mobileStaticBatchesCreated >= 2,
       "Mobile static-mesh batching must keep matching materials in separate visual batches.");
   }
