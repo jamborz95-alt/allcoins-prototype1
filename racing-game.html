@@ -7787,6 +7787,7 @@ let acMobileVehicleShaderWarmupActive = false;
 function acSimplifyMobileEnvironmentShaders() {
   if (!acRacingMobileDevice || acMobileEnvironmentShaderPreparationComplete) return 0;
   const converted = new WeakMap();
+  const originalMaterials = new Set();
   let lambertCount = 0;
   let basicCount = 0;
   const isInsideVehicle = object => {
@@ -7816,6 +7817,7 @@ function acSimplifyMobileEnvironmentShaders() {
     const convert = material => {
       if (!material || !material.isMeshStandardMaterial) return material;
       if (converted.has(material)) return converted.get(material);
+      originalMaterials.add(material);
       const hasEmissive = Boolean(material.emissiveMap) ||
         Boolean(material.emissive && (material.emissive.r > .002 || material.emissive.g > .002 || material.emissive.b > .002));
       const cheap = hasEmissive
@@ -7836,6 +7838,17 @@ function acSimplifyMobileEnvironmentShaders() {
     if (Array.isArray(object.material)) object.material = object.material.map(convert);
     else if (object.material) object.material = convert(object.material);
   });
+  // Release obsolete scene material programs; their textures stay alive because
+  // the replacement materials still reference the same color/emissive maps.
+  for (const material of originalMaterials) material.dispose();
+  // The road no longer samples bump/roughness maps on mobile. Release those
+  // unused GPU textures while keeping its original color/albedo map.
+  if (road.material && road.material.isMeshBasicMaterial) {
+    roadMat.roughnessMap?.dispose?.();
+    roadMat.bumpMap?.dispose?.();
+    roadMat.roughnessMap = null;
+    roadMat.bumpMap = null;
+  }
   acMobileLambertMaterialsConverted += lambertCount;
   acMobileBasicMaterialsConverted += basicCount;
   acMobileEnvironmentShaderPreparationComplete = true;
@@ -7966,29 +7979,26 @@ function updateRaceEnvironment(dt,worldDelta){
   // Critical mobile mode hides rain, wet reflections and all lamp effects.
   // Do not keep uploading their buffers or updating hidden light transforms.
   if (acMobileSevereFallbackApplied) return;
-  // Rain is skipped entirely in the critical mobile tier; the mesh is hidden too.
-  if(true){
-    const rain=acRainGeometry.attributes.position.array;
-    for(let i=0;i<acRainCount;i++){
-      const k=i*6;
-      rain[k]-=dt*2.8;
-      rain[k+1]-=dt*13;
-      rain[k+3]-=dt*2.8;
-      rain[k+4]-=dt*13;
-      if(rain[k+1]<-2){
-        const x=(Math.random()-.5)*55;
-        const y=11+Math.random()*6;
-        const z=9+Math.random()*15;
-        rain[k]=x;
-        rain[k+1]=y;
-        rain[k+2]=z;
-        rain[k+3]=x+.13;
-        rain[k+4]=y-.78;
-        rain[k+5]=z;
-      }
+  const rain=acRainGeometry.attributes.position.array;
+  for(let i=0;i<acRainCount;i++){
+    const k=i*6;
+    rain[k]-=dt*2.8;
+    rain[k+1]-=dt*13;
+    rain[k+3]-=dt*2.8;
+    rain[k+4]-=dt*13;
+    if(rain[k+1]<-2){
+      const x=(Math.random()-.5)*55;
+      const y=11+Math.random()*6;
+      const z=9+Math.random()*15;
+      rain[k]=x;
+      rain[k+1]=y;
+      rain[k+2]=z;
+      rain[k+3]=x+.13;
+      rain[k+4]=y-.78;
+      rain[k+5]=z;
     }
-    acRainGeometry.attributes.position.needsUpdate=true;
   }
+  acRainGeometry.attributes.position.needsUpdate=true;
 
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
   // Блики на мокром асфальте и фонари используют тот же delta, что и разметка.
