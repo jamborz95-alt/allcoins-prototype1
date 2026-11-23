@@ -8727,6 +8727,129 @@ function acRacingEnhanceCarSurface(root) {
   return Object.values(counts).reduce((sum, value) => sum + value, 0);
 }
 
+function acRacingBatchStaticVehicleMeshes(){
+  if(!acRacingMobileDevice||!vehicleChassis||!vehicle)return {merged:0,batches:0};
+  // Merge only static opaque detail meshes that share the exact same material.
+  // Keep the body (paint), glass, wheel pivots, headlight rig and all animated parts separate.
+  vehicle.updateWorldMatrix(true,true);
+  const chassisInverse=vehicleChassis.matrixWorld.clone().invert();
+  const buckets=new Map();
+  const skipName=/car[_ -]?carbody_0|car[_ -]?bottom_0|wheel|tire|tyre|reifen|llanta|pneu|шина|колес|disk|rim|window|glass|windscreen|windshield|стекл/i;
+  const isInsideProtectedNode=object=>{
+    for(let node=object;node&&node!==vehicleChassis;node=node.parent){
+      if(node===headlightRig)return true;
+      if(skipName.test(String(node.name||"")))return true;
+    }
+    return false;
+  };
+  vehicleChassis.traverse(object=>{
+    if(!object.isMesh||object.isSkinnedMesh||object.isInstancedMesh||
+       !object.geometry||!object.material||Array.isArray(object.material)||
+       object.children.length||object.morphTargetInfluences||
+       Object.keys(object.geometry.morphAttributes||{}).length||
+       object.onBeforeRender||object.customDepthMaterial||object.customDistanceMaterial||
+       !object.visible||isInsideProtectedNode(object))return;
+    const material=object.material;
+    if(material.transparent||material.opacity<.999||material.alphaTest>0||
+       material.depthWrite===false||material.blending!==THREE.NormalBlending||
+       material.visible===false)return;
+    const geometry=object.geometry;
+    const position=geometry.getAttribute("position");
+    if(!position||position.count<3)return;
+    const elementCount=geometry.index?geometry.index.count:position.count;
+    const groups=geometry.groups||[];
+    if(groups.length>1||(groups.length===1&&
+       (groups[0].start!==0||groups[0].count<elementCount||groups[0].materialIndex!==0)))return;
+    const drawRange=geometry.drawRange||{start:0,count:Infinity};
+    if(drawRange.start!==0||(drawRange.count!==Infinity&&drawRange.count<elementCount))return;
+    const attributes=Object.keys(geometry.attributes).sort();
+    const layout=attributes.map(name=>{
+      const a=geometry.getAttribute(name);
+      const array=a.isInterleavedBufferAttribute?a.data.array:a.array;
+      return name+":"+a.itemSize+":"+Number(a.normalized)+":"+array.constructor.name;
+    }).join(",");
+    const key=[material.uuid,object.renderOrder,Number(object.castShadow),Number(object.receiveShadow),layout].join("|");
+    let bucket=buckets.get(key);
+    if(!bucket){
+      bucket={material,renderOrder:object.renderOrder,castShadow:object.castShadow,
+        receiveShadow:object.receiveShadow,layers:object.layers.mask,attributes,parts:[]};
+      buckets.set(key,bucket);
+    }
+    const localMatrix=new THREE.Matrix4().multiplyMatrices(chassisInverse,object.matrixWorld);
+    if(localMatrix.determinant()<0)return;
+    const transformed=geometry.clone();
+    transformed.applyMatrix4(localMatrix);
+    bucket.parts.push({object,sourceGeometry:geometry,geometry:transformed});
+  });
+
+  let merged=0,batches=0;
+  for(const bucket of buckets.values()){
+    if(bucket.parts.length<2){
+      for(const part of bucket.parts)part.geometry.dispose();
+      continue;
+    }
+    try{
+      const totalVertices=bucket.parts.reduce((sum,part)=>sum+part.geometry.getAttribute("position").count,0);
+      const totalElements=bucket.parts.reduce((sum,part)=>{
+        const p=part.geometry.getAttribute("position");
+        return sum+(part.geometry.index?part.geometry.index.count:p.count);
+      },0);
+      const mergedGeometry=new THREE.BufferGeometry();
+      for(const name of bucket.attributes){
+        const first=bucket.parts[0].geometry.getAttribute(name);
+        const ArrayType=(first.isInterleavedBufferAttribute?first.data.array:first.array).constructor;
+        const values=new ArrayType(totalVertices*first.itemSize);
+        let write=0;
+        for(const part of bucket.parts){
+          const attribute=part.geometry.getAttribute(name);
+          const source=attribute.isInterleavedBufferAttribute?attribute.data.array:attribute.array;
+          const stride=attribute.isInterleavedBufferAttribute?attribute.data.stride:attribute.itemSize;
+          const offset=attribute.isInterleavedBufferAttribute?attribute.offset:0;
+          for(let vertex=0;vertex<attribute.count;vertex++){
+            const base=vertex*stride+offset;
+            for(let component=0;component<attribute.itemSize;component++)values[write++]=source[base+component];
+          }
+        }
+        mergedGeometry.setAttribute(name,new THREE.BufferAttribute(values,first.itemSize,first.normalized));
+      }
+      const IndexType=totalVertices>65535?Uint32Array:Uint16Array;
+      const mergedIndices=new IndexType(totalElements);
+      let indexWrite=0,vertexOffset=0;
+      for(const part of bucket.parts){
+        const geometry=part.geometry;
+        const position=geometry.getAttribute("position");
+        if(geometry.index){
+          for(let i=0;i<geometry.index.count;i++)mergedIndices[indexWrite++]=geometry.index.getX(i)+vertexOffset;
+        }else{
+          for(let i=0;i<position.count;i++)mergedIndices[indexWrite++]=i+vertexOffset;
+        }
+        vertexOffset+=position.count;
+      }
+      mergedGeometry.setIndex(new THREE.BufferAttribute(mergedIndices,1));
+      mergedGeometry.computeBoundingBox();
+      mergedGeometry.computeBoundingSphere();
+      const batchMesh=new THREE.Mesh(mergedGeometry,bucket.material);
+      batchMesh.name="ALLCOINS_VAZ2107_Mobile_StaticBatch_"+(++batches);
+      batchMesh.renderOrder=bucket.renderOrder;
+      batchMesh.castShadow=bucket.castShadow;
+      batchMesh.receiveShadow=bucket.receiveShadow;
+      batchMesh.layers.mask=bucket.layers;
+      vehicleChassis.add(batchMesh);
+      for(const part of bucket.parts){
+        part.object.parent?.remove(part.object);
+        part.sourceGeometry.dispose();
+        part.geometry.dispose();
+        merged++;
+      }
+    }catch(error){
+      console.warn("ALLCOINS Racing: mobile static mesh batch skipped",error);
+      for(const part of bucket.parts)part.geometry.dispose();
+    }
+  }
+  if(merged)console.info("ALLCOINS Racing · mobile static geometry batches",{mergedMeshes:merged,batchesCreated:batches});
+  return {merged,batches};
+}
+
 function attachVehicle(root,label='сохранённая модель'){
   onlineClearOpponentCars();
   if(vehicle){scene.remove(vehicle);vehicle.traverse(o=>{if(o.geometry)o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.();});}
@@ -8935,6 +9058,7 @@ function attachVehicle(root,label='сохранённая модель'){
   const rimToApply = document.body.classList.contains("tuning-preview-mode") && acGaragePendingRimId
     ? acGaragePendingRimId : acGarageSelectedRimId;
   acGarageApplyRimStyle(rimToApply,{refresh:false});
+  const mobileGeometryBatch=acRacingBatchStaticVehicleMeshes();
   acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
@@ -8956,6 +9080,8 @@ function attachVehicle(root,label='сохранённая модель'){
     wheelCount: wheelNodes.length,
     frontWheelCount: frontWheelNodes.length,
     rearWheelCount: rearWheelNodes.length,
+    mobileStaticMeshesMerged: mobileGeometryBatch.merged,
+    mobileStaticBatchesCreated: mobileGeometryBatch.batches,
     worldCenter: [visibleCenter.x, visibleCenter.y, visibleCenter.z].map(value => Number(value.toFixed(3))),
     cameraTarget: [camera.position.x, camera.position.y, camera.position.z].map(value => Number(value.toFixed(3))),
     playerLaneZ: AC_PLAYER_LANE_Z
