@@ -17,7 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 .hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(8px,2vw,20px);padding-top:max(9px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom))}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .brand,.stats,.gearbox,.actions{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px #0005;backdrop-filter:blur(10px);border-radius:14px}
-.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}.brand .perf-badge{display:none;margin-top:4px;font-size:10px;line-height:1.2;color:#c7d3df;font-variant-numeric:tabular-nums;white-space:nowrap}.ac-racing-mobile .brand .perf-badge{display:block}.ac-racing-mobile .brand,.ac-racing-mobile .stats,.ac-racing-mobile .gearbox,.ac-racing-mobile .actions,.ac-racing-mobile #raceProgress,.ac-racing-mobile .garage-topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+.brand{padding:9px 13px;min-width:125px}.brand b{display:block;font-size:13px;letter-spacing:.14em;color:var(--gold)}.brand span{font-size:11px;color:var(--muted)}.brand .perf-badge{display:none;margin-top:4px;font-size:10px;line-height:1.2;color:#c7d3df;font-variant-numeric:tabular-nums;white-space:pre-line}.ac-racing-mobile .brand .perf-badge{display:block}.ac-racing-mobile .brand,.ac-racing-mobile .stats,.ac-racing-mobile .gearbox,.ac-racing-mobile .actions,.ac-racing-mobile #raceProgress,.ac-racing-mobile .garage-topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
 .stats{display:flex;gap:clamp(10px,3vw,25px);padding:8px 13px;align-items:center}.metric{text-align:center;min-width:54px}.metric strong{display:block;font-size:clamp(18px,3.4vw,27px);font-variant-numeric:tabular-nums;line-height:1.05}.metric small{font-size:9px;letter-spacing:.12em;color:var(--muted)}
 .actions{pointer-events:auto;display:flex;gap:6px;padding:5px}.small-btn{border:1px solid #ffffff18;background:#202a36;color:#f6f7fa;border-radius:9px;padding:8px 10px;font-weight:700;font-size:11px}
 .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.pedals{display:flex;gap:10px;pointer-events:auto;align-items:flex-end}.pedal{width:clamp(82px,15vw,130px);height:clamp(74px,13vw,104px);border-radius:16px;border:1px solid #ffffff35;background:linear-gradient(145deg,#263341,#111821);color:#fff;font-weight:900;font-size:15px;box-shadow:0 8px 20px #0006;touch-action:none;user-select:none}.pedal span{display:block;font-size:10px;letter-spacing:.16em;color:#bcc8d5;margin-top:5px}.pedal.gas{border-color:#56b88a88;background:linear-gradient(145deg,#245340,#10251e)}.pedal.brake{border-color:#d66a5d88;background:linear-gradient(145deg,#63332f,#271615)}.pedal.active{transform:translateY(3px);filter:brightness(1.3)}
@@ -8744,18 +8744,22 @@ function acRacingBatchStaticVehicleMeshes(){
     }
     return false;
   };
+  const isEffectivelyVisible=object=>{
+    for(let node=object;node&&node!==vehicleChassis;node=node.parent)if(!node.visible)return false;
+    return true;
+  };
   vehicleChassis.traverse(object=>{
     if(!object.isMesh)return;
     audit.visitedMeshes++;
     if(object.isSkinnedMesh||object.isInstancedMesh||!object.geometry||!object.material||
-       Array.isArray(object.material)||object.children.length||object.morphTargetInfluences||
+       Array.isArray(object.material)||object.morphTargetInfluences||
        Object.keys(object.geometry.morphAttributes||{}).length||
        Object.prototype.hasOwnProperty.call(object,"onBeforeRender")||
        object.customDepthMaterial||object.customDistanceMaterial){
       audit.skippedStructure++;
       return;
     }
-    if(!object.visible||isInsideProtectedNode(object)){
+    if(!isEffectivelyVisible(object)||isInsideProtectedNode(object)){
       audit.skippedHiddenOrProtected++;
       return;
     }
@@ -8874,6 +8878,8 @@ function acRacingBatchStaticVehicleMeshes(){
       batchMesh.layers.mask=bucket.layers;
       vehicleChassis.add(batchMesh);
       for(const part of bucket.parts){
+        // Preserve child details in world space before removing a parent mesh.
+        for(const child of [...part.object.children]) vehicleChassis.attach(child);
         part.object.parent?.remove(part.object);
         part.sourceGeometry.dispose();
         part.geometry.dispose();
@@ -8888,6 +8894,33 @@ function acRacingBatchStaticVehicleMeshes(){
   window.__allcoinsRacingMobileBatchDiagnostics=Object.freeze(result);
   console.info("ALLCOINS Racing · mobile static geometry audit",result);
   return {merged,batches,candidates:audit.candidates,bucketCount:buckets.size};
+}
+
+function acRacingCollectVehicleRenderStats(){
+  const stats={meshes:0,visibleMeshes:0,triangles:0,materials:0,textures:0};
+  if(!vehicle)return Object.freeze(stats);
+  const materials=new Set(),textures=new Set();
+  const textureKeys=["map","normalMap","roughnessMap","metalnessMap","aoMap","emissiveMap","alphaMap","bumpMap","envMap"];
+  vehicle.traverse(object=>{
+    if(!object.isMesh||!object.geometry)return;
+    stats.meshes++;
+    let visible=true;
+    for(let node=object;node&&node!==vehicle;node=node.parent)if(!node.visible){visible=false;break;}
+    if(visible)stats.visibleMeshes++;
+    const geometry=object.geometry;
+    const position=geometry.getAttribute("position");
+    const elements=geometry.index?geometry.index.count:(position?.count||0);
+    stats.triangles+=Math.floor(elements/3);
+    const slots=Array.isArray(object.material)?object.material:(object.material?[object.material]:[]);
+    for(const material of slots){
+      if(!material)continue;
+      materials.add(material);
+      for(const key of textureKeys)if(material[key]?.isTexture)textures.add(material[key]);
+    }
+  });
+  stats.materials=materials.size;
+  stats.textures=textures.size;
+  return Object.freeze(stats);
 }
 
 function attachVehicle(root,label='сохранённая модель'){
@@ -9099,6 +9132,8 @@ function attachVehicle(root,label='сохранённая модель'){
     ? acGaragePendingRimId : acGarageSelectedRimId;
   acGarageApplyRimStyle(rimToApply,{refresh:false});
   const mobileGeometryBatch=acRacingBatchStaticVehicleMeshes();
+  const vehicleRenderStats=acRacingCollectVehicleRenderStats();
+  window.__allcoinsRacingVehicleRenderStats=vehicleRenderStats;
   acGarageRefreshLoadedCarPreview();
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
@@ -9124,6 +9159,11 @@ function attachVehicle(root,label='сохранённая модель'){
     mobileStaticBatchesCreated: mobileGeometryBatch.batches,
     mobileStaticMeshCandidates: mobileGeometryBatch.candidates,
     mobileStaticMaterialBuckets: mobileGeometryBatch.bucketCount,
+    renderMeshCount: vehicleRenderStats.meshes,
+    renderVisibleMeshCount: vehicleRenderStats.visibleMeshes,
+    renderTriangleCount: vehicleRenderStats.triangles,
+    renderMaterialCount: vehicleRenderStats.materials,
+    renderTextureCount: vehicleRenderStats.textures,
     worldCenter: [visibleCenter.x, visibleCenter.y, visibleCenter.z].map(value => Number(value.toFixed(3))),
     cameraTarget: [camera.position.x, camera.position.y, camera.position.z].map(value => Number(value.toFixed(3))),
     playerLaneZ: AC_PLAYER_LANE_Z
@@ -9719,7 +9759,8 @@ function animate(now){
       const perfBadge=document.getElementById("racingPerfBadge");
       if(perfBadge){
         const averageFrameMs=sampleDuration/acPerfFrameCount;
-        perfBadge.textContent="FPS "+Math.round(measuredFps)+" · "+averageFrameMs.toFixed(0)+"ms · DPR "+currentPixelRatio.toFixed(2);
+        perfBadge.textContent="FPS "+Math.round(measuredFps)+" · "+averageFrameMs.toFixed(0)+"ms · DPR "+currentPixelRatio.toFixed(2)+
+        "\\nDRAW "+renderer.info.render.calls+" · TRI "+Math.round(renderer.info.render.triangles/1000)+"k";
       }
       window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
         fps:Number(measuredFps.toFixed(1)),
@@ -9741,6 +9782,12 @@ function animate(now){
         pooledSmokeParticles:smokeParticlePool.length,
         geometries:renderer.info.memory.geometries,
         textures:renderer.info.memory.textures,
+         vehicleMeshes:window.__allcoinsRacingVehicleRenderStats?.meshes||0,
+         vehicleTriangles:window.__allcoinsRacingVehicleRenderStats?.triangles||0,
+         vehicleMaterials:window.__allcoinsRacingVehicleRenderStats?.materials||0,
+         vehicleTextures:window.__allcoinsRacingVehicleRenderStats?.textures||0,
+         mobileBatchMergedMeshes:window.__allcoinsRacingMobileBatchDiagnostics?.merged||0,
+         mobileBatchCount:window.__allcoinsRacingMobileBatchDiagnostics?.batches||0,
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
         wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
