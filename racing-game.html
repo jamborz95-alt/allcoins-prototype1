@@ -2530,6 +2530,58 @@ if (window.__allcoinsRacingBoot) {
 }
 const $ = id => document.getElementById(id);
 
+// Isolated performance runs are activated by the parent ALLCOINS app URL:
+// ?perfTest=render | physics | full. The normal game is unchanged without this parameter.
+const AC_PERF_TEST_MODE = new URLSearchParams(window.location.search).get("perfTest");
+let acPerfBenchmark = null;
+function acPerfStartBenchmarkAfterCarReady() {
+  const mode = AC_PERF_TEST_MODE;
+  if (!["render","physics","full"].includes(mode) || acPerfBenchmark) return false;
+
+  try {
+    setGarageMode(false);
+    onlineMode = false;
+    onlineRaceStarted = false;
+    onlineTestBotActive = false;
+    onlineTestBotRunning = false;
+    onlineRemoteStates.clear();
+    onlineClearOpponentCars();
+
+    speed = 0; rpm = 900; gear = 1; distance = 0; elapsed = 0;
+    burnout = 0; rearSlip = 0; shiftCutRemaining = 0;
+    acRacingResetMotionSmoothing();
+    finished = false;
+    braking = false;
+    throttle = mode !== "render";
+    paused = mode === "render";
+    raceStarted = mode !== "render";
+
+    for (const particle of smokeParticles) particle.mesh.visible = false;
+    smokeParticles.length = 0;
+
+    const startedAt = performance.now();
+    acPerfBenchmark = {
+      mode, startedAt, durationMs: 18000,
+      frames: 0, frameMsTotal: 0, maxFrameMs: 0, framesOver50Ms: 0,
+      updateMsTotal: 0, renderSubmitMsTotal: 0, measuredFrames: 0, renderFrames: 0
+    };
+    window.__allcoinsRacingBenchmarkResult = null;
+    window.__allcoinsRacingBenchmarkState = {
+      mode, startedAt, durationMs: acPerfBenchmark.durationMs, completed: false
+    };
+    updateInstrumentCluster(startedAt);
+    hideMessage();
+    console.info("ALLCOINS isolated performance benchmark started:", mode);
+    return true;
+  } catch (error) {
+    console.error("ALLCOINS performance benchmark could not start:", error);
+    window.__allcoinsRacingBenchmarkState = {
+      mode, completed: true, error: String(error?.message || error)
+    };
+    return false;
+  }
+}
+
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
 let onlineSocket = null;
@@ -9302,6 +9354,8 @@ async function acInstallReceivedCarModel(buffer, details) {
       throw new Error('Получен неполный GLB-файл после передачи фрагментов.');
     }
     await loadGlbBuffer(buffer, modelFileName + ' · Amvera PostgreSQL');
+    // Run the requested isolated test only after the real GLB car has loaded.
+    acPerfStartBenchmarkAfterCarReady();
     window.__allcoinsRacingModelDiagnostics = Object.freeze({
       loaded: true,
       source: 'Amvera PostgreSQL',
@@ -9806,13 +9860,48 @@ function animate(now){
     acPerfMaxFrameMs=Math.max(acPerfMaxFrameMs,rawFrameMs);
     acPerfRafIntervals.push(rawFrameMs);
     if(rawFrameMs>50)acPerfLongFrameCount++;
+    if(acPerfBenchmark && !acPerfBenchmark.completed){
+      acPerfBenchmark.frames++;
+      acPerfBenchmark.frameMsTotal+=rawFrameMs;
+      acPerfBenchmark.maxFrameMs=Math.max(acPerfBenchmark.maxFrameMs,rawFrameMs);
+      if(rawFrameMs>50)acPerfBenchmark.framesOver50Ms++;
+      if(now-acPerfBenchmark.startedAt>=acPerfBenchmark.durationMs){
+        acPerfBenchmark.completed=true;
+        throttle=false;
+        braking=false;
+        paused=true;
+        raceStarted=false;
+        const averageFrameMs=acPerfBenchmark.frameMsTotal/Math.max(1,acPerfBenchmark.frames);
+        const elapsedMs=now-acPerfBenchmark.startedAt;
+        window.__allcoinsRacingBenchmarkResult=Object.freeze({
+          mode:acPerfBenchmark.mode,
+          durationMs:Number(elapsedMs.toFixed(0)),
+          frames:acPerfBenchmark.frames,
+          averageFps:Number((1000/Math.max(.001,averageFrameMs)).toFixed(1)),
+          averageFrameMs:Number(averageFrameMs.toFixed(2)),
+          maxFrameMs:Number(acPerfBenchmark.maxFrameMs.toFixed(1)),
+          framesOver50Ms:acPerfBenchmark.framesOver50Ms,
+          averageUpdateMs:Number((acPerfBenchmark.updateMsTotal/Math.max(1,acPerfBenchmark.measuredFrames)).toFixed(2)),
+          averageRenderSubmitMs:Number((acPerfBenchmark.renderSubmitMsTotal/Math.max(1,acPerfBenchmark.renderFrames)).toFixed(2)),
+          renderFrames:acPerfBenchmark.renderFrames,
+          renderCalls:renderer.info.render.calls,
+          triangles:renderer.info.render.triangles,
+          pixelRatio:renderer.getPixelRatio()
+        });
+        window.__allcoinsRacingBenchmarkState={
+          mode:acPerfBenchmark.mode,startedAt:acPerfBenchmark.startedAt,
+          durationMs:elapsedMs,completed:true
+        };
+        console.info("ALLCOINS isolated performance benchmark complete:",window.__allcoinsRacingBenchmarkResult);
+      }
+    }
     acPerfRafIntervalMax=Math.max(acPerfRafIntervalMax,rawFrameMs);
     const sampleDuration=now-acPerfSampleStart;
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       // Escalate one scenery tier per measurement. Do not blank the whole city
       // from a single short startup dip; retain detail whenever a lighter tier recovers FPS.
-      if (document.body.classList.contains("race-mode")) {
+      if (!acPerfBenchmark && document.body.classList.contains("race-mode")) {
         if (measuredFps < 12 && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
           acApplyMobileExtremePerformanceTier();
         } else if (measuredFps < 18 && acMobileSevereFallbackApplied && !acMobileUltraFallbackApplied) {
@@ -9824,7 +9913,7 @@ function animate(now){
         }
       }
       let currentPixelRatio=renderer.getPixelRatio();
-      if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
+      if(!acPerfBenchmark && acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
       else acMobileShadowLowFpsSamples=0;
       if(acMobileShadowLowFpsSamples>=2 && renderer.shadowMap.enabled){
         // Last-resort fallback only after sustained very low FPS on a phone.
@@ -9835,7 +9924,7 @@ function animate(now){
       }
       // Keep native-looking car detail at normal 25-40 FPS.
       // Lower resolution only during a sustained severe drop, never merely because FPS is below 53.
-      if(measuredFps<24){
+      if(!acPerfBenchmark && measuredFps<24){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
       }else if(measuredFps>45){
@@ -9909,6 +9998,8 @@ function animate(now){
          mobileBatchCount:window.__allcoinsRacingMobileBatchDiagnostics?.batches||0,
         renderedOpponentCars:onlineRemoteCars.size,
         testBotProgressOnly:onlineTestBotActive,
+        benchmarkMode:acPerfBenchmark?.mode||null,
+        benchmarkCompleted:Boolean(window.__allcoinsRacingBenchmarkState?.completed),
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
         wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
@@ -9929,16 +10020,17 @@ function animate(now){
       acPerfSampleStart=now;
     }
   }
-  // The animated SVG dashboard does not need 60 DOM/style updates per second.
-  // Keep 30 Hz on phones (10 Hz only in the emergency ultra tier).
-  if (!acRacingMobileDevice || now >= acNextMobileInstrumentUpdateAt) {
+  // The render-only benchmark freezes DOM instruments so it measures the 3D scene.
+  // Normal gameplay keeps the existing 30 Hz mobile dashboard update.
+  if (acPerfBenchmark?.mode !== "render" &&
+      (!acRacingMobileDevice || now >= acNextMobileInstrumentUpdateAt)) {
     updateInstrumentCluster(now);
     if (acRacingMobileDevice) {
       acNextMobileInstrumentUpdateAt = now + (acMobileUltraFallbackApplied ? 100 : 33);
     }
   }
   let frameWorldDelta=0;
-  updateEngineAudio();
+  if (acPerfBenchmark?.mode !== "render") updateEngineAudio();
   rearSmokeCooldown=Math.max(0,rearSmokeCooldown-dt);
   if(!paused&&raceStarted&&!finished&&vehicle){
     elapsed+=dt;
@@ -10165,13 +10257,15 @@ if(distance>=RACE_DISTANCE_METERS){
       smokeParticlePool.push(particle);
     }
   }
-  onlineUpdateTestBot();
-  onlineUpdateOpponentCars(dt);
-  if(now>=acNextRaceProgressUpdateAt){
+  if (acPerfBenchmark?.mode !== "render") {
+    onlineUpdateTestBot();
+    onlineUpdateOpponentCars(dt);
+  }
+  if(acPerfBenchmark?.mode !== "render" && now>=acNextRaceProgressUpdateAt){
     onlineUpdateRaceProgress();
     acNextRaceProgressUpdateAt=now+100;
   }
-  if(document.body.classList.contains('race-mode')){
+  if(document.body.classList.contains('race-mode') && acPerfBenchmark?.mode !== "render"){
     if(!acRacingMobileDevice){
       updateRaceEnvironment(dt,frameWorldDelta);
     }else if(acMobileUltraFallbackApplied){
@@ -10193,15 +10287,27 @@ if(distance>=RACE_DISTANCE_METERS){
   // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
   // это снижает нагрев и оставляет полный FPS во время движения.
   const staticScene=document.body.classList.contains('garage-mode')||paused;
-  const renderThisFrame=!document.hidden && (!staticScene || (acIdleRenderFrame++%2===0));
+  const renderThisFrame=acPerfBenchmark?.mode === "physics"
+    ? false
+    : (!document.hidden && (acPerfBenchmark?.mode === "render" || !staticScene || (acIdleRenderFrame++%2===0)));
   if(acRacingMobileDevice){
     const renderStart=performance.now();
-    acPerfUpdateMsTotal+=renderStart-acPerfFrameStart;
+    const updateCost=renderStart-acPerfFrameStart;
+    acPerfUpdateMsTotal+=updateCost;
+    if(acPerfBenchmark && !acPerfBenchmark.completed){
+      acPerfBenchmark.updateMsTotal+=updateCost;
+      acPerfBenchmark.measuredFrames++;
+    }
     if(renderThisFrame){
       const gpuQuery=acGpuTimerBegin();
       renderer.render(scene,camera);
       acGpuTimerEnd(gpuQuery);
-      acPerfRenderSubmitMsTotal+=performance.now()-renderStart;
+      const renderCost=performance.now()-renderStart;
+      acPerfRenderSubmitMsTotal+=renderCost;
+      if(acPerfBenchmark && !acPerfBenchmark.completed){
+        acPerfBenchmark.renderSubmitMsTotal+=renderCost;
+        acPerfBenchmark.renderFrames++;
+      }
     }
     acPerfMeasuredFrames++;
   }else if(renderThisFrame){
@@ -11176,6 +11282,13 @@ body.race-mode #gearSelector { display:grid!important; }
       "Кадров >50 мс: "+d.framesOver50Ms+" | максимум: "+d.rafIntervalMaxMs+" мс",
       "GPU: "+(d.gpuMs===null?(d.gpuTimerSupported?"ожидание":"таймер не поддерживается"):d.gpuMs+" мс")+" | максимум: "+(d.gpuMaxMs===null?"—":d.gpuMaxMs+" мс"),
       "API: "+d.webglVersion+" · "+d.gpuTimerApi,
+      "РЕЖИМ ТЕСТА: "+(window.__allcoinsRacingBenchmarkState?.mode||"обычная игра"),
+      "СТАТУС: "+(window.__allcoinsRacingBenchmarkState?.completed?"тест завершён":window.__allcoinsRacingBenchmarkState?"тест выполняется 18 секунд":"ожидание теста"),
+      ...(window.__allcoinsRacingBenchmarkResult?[
+        "ИТОГ FPS: "+window.__allcoinsRacingBenchmarkResult.averageFps+" | кадр: "+window.__allcoinsRacingBenchmarkResult.averageFrameMs+" мс",
+        "ИТОГ JS: "+window.__allcoinsRacingBenchmarkResult.averageUpdateMs+" мс | WebGL: "+window.__allcoinsRacingBenchmarkResult.averageRenderSubmitMs+" мс",
+        "ИТОГ кадров >50 мс: "+window.__allcoinsRacingBenchmarkResult.framesOver50Ms+" | максимум: "+window.__allcoinsRacingBenchmarkResult.maxFrameMs+" мс"
+      ]:[]),
       "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
