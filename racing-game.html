@@ -8768,7 +8768,22 @@ function acRacingBatchStaticVehicleMeshes(){
       const array=a.isInterleavedBufferAttribute?a.data.array:a.array;
       return name+":"+a.itemSize+":"+Number(a.normalized)+":"+array.constructor.name;
     }).join(",");
-    const key=[material.uuid,object.renderOrder,Number(object.castShadow),Number(object.receiveShadow),layout].join("|");
+    // GLTF loaders may create separate material objects for primitives that
+    // are visually identical. Batch by the complete visible material signature,
+    // including texture identities, rather than by THREE.Material UUID.
+    const textureKeys=["map","normalMap","roughnessMap","metalnessMap","aoMap","emissiveMap","alphaMap","bumpMap","envMap"];
+    const textureSignature=textureKeys.map(name=>name+":"+(material[name]?.uuid||"none")).join(",");
+    const materialSignature=[
+      material.type,
+      material.color?.getHexString?.()||"none",
+      material.emissive?.getHexString?.()||"none",
+      material.emissiveIntensity,material.roughness,material.metalness,
+      material.opacity,material.transparent,material.alphaTest,
+      material.side,material.depthWrite,material.blending,
+      material.vertexColors,material.flatShading,material.toneMapped,
+      material.envMapIntensity,textureSignature
+    ].join(":");
+    const key=[materialSignature,object.renderOrder,Number(object.castShadow),Number(object.receiveShadow),layout].join("|");
     let bucket=buckets.get(key);
     if(!bucket){
       bucket={material,renderOrder:object.renderOrder,castShadow:object.castShadow,
