@@ -5263,7 +5263,8 @@ const acMobilePixelRatioCap = 1.0;
 const acMobilePixelRatioInitial = 1.0;
 // Allow a controlled lower render resolution on weak Android GPUs.
 // The vehicle model and materials stay unchanged; only the render target shrinks.
-const acMobilePixelRatioFloor = 0.58;
+// Preserve car detail on Android: never render below 85% of the CSS pixel ratio.
+const acMobilePixelRatioFloor = 0.85;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
@@ -9730,26 +9731,27 @@ function animate(now){
         window.__allcoinsRacingQualityFallback="real-time-shadows-disabled-for-stability";
         acMobileShadowLowFpsSamples=0;
       }
-      if(measuredFps<53){
+      // Keep native-looking car detail at normal 25-40 FPS.
+      // Lower resolution only during a sustained severe drop, never merely because FPS is below 53.
+      if(measuredFps<24){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
-      }else if(measuredFps>59){
+      }else if(measuredFps>45){
         acPerfStableFpsSamples++;
         acPerfLowFpsSamples=0;
       }else{
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(acPerfLowFpsSamples>=1&&currentPixelRatio>acMobilePixelRatioFloor){
-        // Larger reductions are applied only when the measured frame rate is poor.
-        const reduction=measuredFps<20?.10:measuredFps<30?.07:measuredFps<43?.04:.02;
+      if(acPerfLowFpsSamples>=2&&currentPixelRatio>acMobilePixelRatioFloor){
+        const reduction=measuredFps<16?.06:.035;
         const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
-      }else if(acPerfStableFpsSamples>=8&&currentPixelRatio<acMobilePixelRatioCap){
-        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.02);
+      }else if(acPerfStableFpsSamples>=4&&currentPixelRatio<acMobilePixelRatioCap){
+        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.04);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
