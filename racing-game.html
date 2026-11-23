@@ -9738,7 +9738,15 @@ function animate(now){
       acVehicleSuspensionWorldScratch.copy(vehicleChassisBasePosition).applyMatrix4(vehicle.matrixWorld);
       acVehicleSuspensionWorldScratch.y+=suspensionOffset+roadBounce;
       vehicleChassis.position.copy(acVehicleSuspensionWorldScratch.applyMatrix4(acVehicleWorldInverseScratch));
-      vehicle.updateWorldMatrix(false,true);
+      // The renderer will update the complete static GLB subtree once during
+      // render(). Update only the moving chassis pivot and the four detached
+      // wheel pivots here; avoid a second full walk through every car mesh.
+      vehicleChassis.updateWorldMatrix(false,false);
+      for (const wheel of wheelNodes) {
+        if (!wheel.node) continue;
+        if (wheel.node.parent === vehicle) wheel.node.updateWorldMatrix(false,false);
+        else wheel.node.updateWorldMatrix(true,false);
+      }
     }else vehicle.position.y=vehicleBaseY+suspensionOffset+roadBounce;
     // Positive world-Z pitch lifts the nose (+X) and lets the rear settle under acceleration.
     const pitchTarget=.0025*raceThrottleBlend*(1-raceBrakeBlend)-.014*raceBrakeBlend;
