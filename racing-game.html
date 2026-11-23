@@ -5415,69 +5415,15 @@ const acMobilePixelRatioInitial = 1.0;
 const acMobilePixelRatioFloor = 1.0;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 
-// Mobile split-resolution renderer: the environment is rendered to a smaller
-// target; the VAZ-2107 and its moving parts are drawn over it at full resolution.
-let acMobileBackgroundScale = .66;
-let acMobileBackgroundTarget = null;
-let acMobileCompositeScene = null;
-let acMobileCompositeCamera = null;
-let acMobileSplitRendererReady = false;
-if (acRacingMobileDevice) {
-  acMobileBackgroundTarget = new THREE.WebGLRenderTarget(2, 2, { depthBuffer: true, stencilBuffer: false });
-  acMobileBackgroundTarget.texture.minFilter = THREE.LinearFilter;
-  acMobileBackgroundTarget.texture.magFilter = THREE.LinearFilter;
-  acMobileBackgroundTarget.texture.generateMipmaps = false;
-  acMobileCompositeScene = new THREE.Scene();
-  acMobileCompositeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
-  acMobileCompositeCamera.position.z = 1;
-  const compositeMaterial = new THREE.MeshBasicMaterial({
-    map: acMobileBackgroundTarget.texture, toneMapped: false, depthTest: false, depthWrite: false
-  });
-  const compositeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compositeMaterial);
-  compositeQuad.frustumCulled = false;
-  acMobileCompositeScene.add(compositeQuad);
-  acMobileSplitRendererReady = true;
-}
-function acResizeMobileBackgroundTarget() {
-  if (!acMobileSplitRendererReady || !acMobileBackgroundTarget) return;
-  const canvas = renderer.domElement;
-  const width = Math.max(2, Math.round(canvas.width * acMobileBackgroundScale));
-  const height = Math.max(2, Math.round(canvas.height * acMobileBackgroundScale));
-  if (acMobileBackgroundTarget.width !== width || acMobileBackgroundTarget.height !== height) {
-    acMobileBackgroundTarget.setSize(width, height);
-  }
-}
+// Mobile single-pass rendering.
+// The split-resolution path added extra WebGL passes each frame. Keep the full
+// scene in one pass so the phone GPU/driver does not pay repeated submission cost.
+const acMobileBackgroundScale = 1;
+const acMobileBackgroundTarget = null;
+const acMobileSplitRendererReady = false;
+function acResizeMobileBackgroundTarget() {}
 function acRenderMobileSplitScene() {
-  if (!acMobileSplitRendererReady) { renderer.render(scene, camera); return; }
-  const previousMask = camera.layers.mask;
-  const previousTarget = renderer.getRenderTarget();
-  const previousAutoClear = renderer.autoClear;
-  const previousInfoAutoReset = renderer.info.autoReset;
-  const previousBackground = scene.background;
-  try {
-    renderer.info.autoReset = false;
-    renderer.info.reset();
-
-    renderer.setRenderTarget(acMobileBackgroundTarget);
-    renderer.clear(true, true, true);
-    camera.layers.set(0);
-    renderer.render(scene, camera);
-
-    renderer.setRenderTarget(null);
-    renderer.clear(true, true, true);
-    renderer.autoClear = false;
-    renderer.render(acMobileCompositeScene, acMobileCompositeCamera);
-
-    camera.layers.set(1);
-    scene.background = null;
-    renderer.render(scene, camera);
-  } finally {
-    scene.background = previousBackground;
-    camera.layers.mask = previousMask;
-    renderer.autoClear = previousAutoClear;
-    renderer.info.autoReset = previousInfoAutoReset;
-    renderer.setRenderTarget(previousTarget);
-  }
+  renderer.render(scene, camera);
 }
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
@@ -9460,7 +9406,7 @@ function attachVehicle(root,label='сохранённая модель'){
     ? "garage"
     : (onlineMode && onlineRaceStarted ? "online" : "solo"), true);
   // Layer 1 contains the full-resolution car. Track and city meshes remain on layer 0.
-  vehicle.traverse(object => object.layers.set(1));
+  vehicle.traverse(object => object.layers.set(0));
   const visibleMeshes = [];
   vehicle.traverse(object => { if (object.isMesh) visibleMeshes.push(object); });
   const visibleBounds = new THREE.Box3().setFromObject(vehicle);
@@ -10128,18 +10074,7 @@ function animate(now){
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      // Preserve the VAZ at full resolution. Adapt only the background render target.
-      if(!acPerfBenchmark && acRacingMobileDevice && acPerfLowFpsSamples>=2 && acMobileBackgroundScale>.42){
-        const reduction=measuredFps<16?.08:.04;
-        acMobileBackgroundScale=Math.max(.42,acMobileBackgroundScale-reduction);
-        acResizeMobileBackgroundTarget();
-        acPerfLowFpsSamples=0;
-      }else if(!acPerfBenchmark && acRacingMobileDevice && acPerfStableFpsSamples>=4 && acMobileBackgroundScale<.70){
-        acMobileBackgroundScale=Math.min(.70,acMobileBackgroundScale+.025);
-        acResizeMobileBackgroundTarget();
-        acPerfStableFpsSamples=0;
-      }
-      const perfBadge=document.getElementById("racingPerfBadge");
+const perfBadge=document.getElementById("racingPerfBadge");
       if(perfBadge){
         const averageFrameMs=sampleDuration/acPerfFrameCount;
         perfBadge.textContent="FPS "+Math.round(measuredFps)+" · "+averageFrameMs.toFixed(0)+"ms · DPR "+currentPixelRatio.toFixed(2)+
@@ -10745,27 +10680,17 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 // Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
 
-// Do mobile material conversion and compile the environment once during startup,
-// not in the middle of a race after the first low-FPS sample.
+// Compile the mobile environment before gameplay using the same single scene
+// that is rendered during the race; no offscreen compositor pass.
 if(acRacingMobileDevice){
   acSimplifyMobileEnvironmentShaders();
-  scene.traverse(object=>{if(object.isLight)object.layers.enable(1);});
-  acResizeMobileBackgroundTarget();
-  const previousLayerMask=camera.layers.mask;
-  camera.layers.enable(1);
   acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
-    ? Promise.all([
-        renderer.compileAsync(scene,camera),
-        renderer.compileAsync(acMobileCompositeScene,acMobileCompositeCamera)
-      ])
+    ? renderer.compileAsync(scene,camera)
     : Promise.resolve())
     .catch(error=>{
       console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
     })
-    .finally(()=>{
-      camera.layers.mask=previousLayerMask;
-      requestAnimationFrame(animate);
-    });
+    .finally(()=>requestAnimationFrame(animate));
 }else{
   requestAnimationFrame(animate);
 }
