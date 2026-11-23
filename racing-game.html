@@ -5251,7 +5251,7 @@ const renderer = new THREE.WebGLRenderer({
   antialias: !acRacingMobileDevice,
   alpha: false,
   powerPreference: "high-performance",
-  precision: acRacingMobileDevice ? "mediump" : "highp"
+  precision: "highp"
 });
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
@@ -5260,8 +5260,8 @@ if (window.__allcoinsRacingBoot) {
 // Android Telegram WebView profile: start with a lighter render target and scale up only
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
 const acMobilePixelRatioCap = 1.18;
-const acMobilePixelRatioInitial = .92;
-const acMobilePixelRatioFloor = .48;
+const acMobilePixelRatioInitial = 1.0;
+const acMobilePixelRatioFloor = .90;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
@@ -7524,14 +7524,30 @@ function setGarageMode(enabled) {
 
 function acSetMobileTextureAnisotropy(maxAnisotropy) {
   if (!acRacingMobileDevice) return 0;
+  const textureKeys = ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap','bumpMap'];
+  // Keep every GLB texture on the player's VAZ untouched by scenery fallbacks.
+  const protectedVehicleTextures = new Set();
+  if (vehicle) {
+    vehicle.traverse(object => {
+      const materials = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
+      for (const material of materials) {
+        if (!material) continue;
+        for (const key of textureKeys) {
+          const texture = material[key];
+          if (texture?.isTexture) protectedVehicleTextures.add(texture);
+        }
+      }
+    });
+  }
   const adjustedTextures = new Set();
   scene.traverse(object => {
     const materials = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
     for (const material of materials) {
       if (!material) continue;
-      for (const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap','bumpMap']) {
+      for (const key of textureKeys) {
         const texture = material[key];
-        if (texture?.isTexture && !adjustedTextures.has(texture) && texture.anisotropy > maxAnisotropy) {
+        if (texture?.isTexture && !protectedVehicleTextures.has(texture) &&
+            !adjustedTextures.has(texture) && texture.anisotropy > maxAnisotropy) {
           adjustedTextures.add(texture);
           texture.anisotropy = maxAnisotropy;
           texture.needsUpdate = true;
@@ -7551,12 +7567,9 @@ function acApplyMobilePerformanceTier() {
   // Preserve the VAZ, wheels, roadway and illuminated windows; remove only
   // secondary city trim and costly per-fragment lights on low-FPS Android devices.
   for (const mesh of acMobileCityDetailMeshes) mesh.visible = false;
+  // Simplify environment lighting, but keep the VAZ key/rim/warm body lights.
   acV4SkyFill.visible = false;
-  acV4CarRim.visible = false;
-  acV5BodyLight.visible = false;
   fill.visible = false;
-  acV4WarmFill.visible = false;
-  acV5WarmBodyFill.visible = false;
   for (const record of acLampRecords) record.light.visible = false;
 
   // Keep full-size textures, but reduce costly anisotropic sampling on weak phones.
@@ -7597,7 +7610,7 @@ function acApplyMobileSeverePerformanceTier() {
   smokeParticlePool.length = 0;
 
   // A smaller render target is a last-resort GPU safeguard for devices below 18 FPS.
-  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .38));
+  renderer.setPixelRatio(Math.max(renderer.getPixelRatio(), acMobilePixelRatioFloor));
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "critical-mobile-low-load";
   return true;
@@ -7612,11 +7625,10 @@ function acApplyMobileUltraPerformanceTier() {
 
   // Final GPU-load reduction for phones that remain below the 30 FPS target.
   // This changes only rendering quality; vehicle physics and input remain untouched.
-  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .30));
+  renderer.setPixelRatio(Math.max(renderer.getPixelRatio(), acMobilePixelRatioFloor));
   renderer.shadowMap.enabled = false;
   sun.castShadow = false;
-  renderer.toneMapping = THREE.NoToneMapping;
-  scene.fog = null;
+  // Keep ACES tone mapping and fog for stable vehicle paint and material contrast.
 
   // Keep source texture resolution but reduce filtering to the lightest mode.
   acSetMobileTextureAnisotropy(1);
@@ -7649,7 +7661,7 @@ function acApplyMobileExtremePerformanceTier() {
   acRain.visible = false;
 
   // A small additional resolution step is limited to critically slow devices.
-  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), .28));
+  renderer.setPixelRatio(Math.max(renderer.getPixelRatio(), acMobilePixelRatioFloor));
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "extreme-mobile-low-load";
   return true;
@@ -8728,9 +8740,7 @@ function attachVehicle(root,label='сохранённая модель'){
   // Respect the live mobile tier when the GLB arrives after fallback was applied.
   // The previous fixed mobile value of 8 silently re-enabled expensive filtering
   // on the VAZ textures after the scene had already reduced filtering to 1 or 2.
-  const carTextureAnisotropyLimit = acRacingMobileDevice
-    ? (acMobileUltraFallbackApplied ? 1 : acMobileFallbackApplied ? 2 : 4)
-    : 12;
+  const carTextureAnisotropyLimit = acRacingMobileDevice ? 4 : 12;
   const carTextureAnisotropy = Math.min(carTextureAnisotropyLimit, renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
@@ -9484,16 +9494,17 @@ function animate(now){
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       // A low-FPS phone needs fewer shader light calculations, not only fewer pixels.
+      // Apply only one scenery fallback per measurement; prevent cascading quality loss.
       if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
         acApplyMobilePerformanceTier();
-      }
-      if (measuredFps < 18 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
+      } else if (measuredFps < 26 && document.body.classList.contains("race-mode") &&
+                 acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
         acApplyMobileSeverePerformanceTier();
-      }
-      if (measuredFps < 30 && document.body.classList.contains("race-mode") && acMobileFallbackApplied && !acMobileUltraFallbackApplied) {
+      } else if (measuredFps < 18 && document.body.classList.contains("race-mode") &&
+                 acMobileSevereFallbackApplied && !acMobileUltraFallbackApplied) {
         acApplyMobileUltraPerformanceTier();
-      }
-      if (measuredFps < 24 && document.body.classList.contains("race-mode") && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
+      } else if (measuredFps < 12 && document.body.classList.contains("race-mode") &&
+                 acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
         acApplyMobileExtremePerformanceTier();
       }
       let currentPixelRatio=renderer.getPixelRatio();
@@ -9518,7 +9529,7 @@ function animate(now){
       }
       if(acPerfLowFpsSamples>=1&&currentPixelRatio>acMobilePixelRatioFloor){
         // Larger reductions are applied only when the measured frame rate is poor.
-        const reduction=measuredFps<38?.20:measuredFps<46?.14:.08;
+        const reduction=measuredFps<38?.08:measuredFps<46?.05:.025;
         const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
