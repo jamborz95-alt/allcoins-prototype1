@@ -5253,6 +5253,60 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
   precision: "highp"
 });
+
+// Non-blocking GPU timer queries: measure actual GPU execution separately from
+// JavaScript submission time. Results are read only after the GPU reports ready.
+const acGpuTimer = (() => {
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension("EXT_disjoint_timer_query_webgl2");
+    if (!ext || typeof gl.createQuery !== "function") return null;
+    return { gl, ext, pending: [], frame: 0, totalMs: 0, samples: 0, lastMs: 0, maxMs: 0 };
+  } catch (_) { return null; }
+})();
+function acGpuTimerPoll() {
+  if (!acGpuTimer) return;
+  const {gl,ext,pending}=acGpuTimer;
+  const disjoint=gl.getParameter(ext.GPU_DISJOINT_EXT);
+  for(let i=pending.length-1;i>=0;i--){
+    const query=pending[i];
+    if(!gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE))continue;
+    if(!disjoint){
+      const ms=gl.getQueryParameter(query,gl.QUERY_RESULT)/1e6;
+      if(Number.isFinite(ms)&&ms>=0&&ms<1000){
+        acGpuTimer.lastMs=ms;
+        acGpuTimer.maxMs=Math.max(acGpuTimer.maxMs,ms);
+        acGpuTimer.totalMs+=ms;
+        acGpuTimer.samples++;
+      }
+    }
+    gl.deleteQuery(query);
+    pending.splice(i,1);
+  }
+}
+function acGpuTimerBegin() {
+  if(!acGpuTimer)return null;
+  acGpuTimerPoll();
+  if(acGpuTimer.pending.length>=6 || (++acGpuTimer.frame%4)!==0)return null;
+  const query=acGpuTimer.gl.createQuery();
+  if(!query)return null;
+  try{
+    acGpuTimer.gl.beginQuery(acGpuTimer.ext.TIME_ELAPSED_EXT,query);
+    return query;
+  }catch(_){
+    acGpuTimer.gl.deleteQuery(query);
+    return null;
+  }
+}
+function acGpuTimerEnd(query) {
+  if(!query||!acGpuTimer)return;
+  try{
+    acGpuTimer.gl.endQuery(acGpuTimer.ext.TIME_ELAPSED_EXT);
+    acGpuTimer.pending.push(query);
+  }catch(_){
+    try{acGpuTimer.gl.deleteQuery(query);}catch(__){}
+  }
+}
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
   window.__allcoinsRacingBootShow?.("3D-сцена запущена", "Подключаю автомобиль из Amvera PostgreSQL…");
@@ -9768,6 +9822,10 @@ function animate(now){
         averageFrameMs:Number((sampleDuration/acPerfFrameCount).toFixed(1)),
         frameUpdateMs:Number((acPerfUpdateMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
         renderSubmitMs:Number((acPerfRenderSubmitMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
+        gpuMs:acGpuTimer&&acGpuTimer.samples?Number((acGpuTimer.totalMs/acGpuTimer.samples).toFixed(2)):null,
+        gpuLastMs:acGpuTimer&&acGpuTimer.samples?Number(acGpuTimer.lastMs.toFixed(2)):null,
+        gpuMaxMs:acGpuTimer&&acGpuTimer.samples?Number(acGpuTimer.maxMs.toFixed(2)):null,
+        gpuTimerSupported:Boolean(acGpuTimer),
         lastFrameMs:Number(acPerfLastFrameMs.toFixed(1)),
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
@@ -9798,6 +9856,11 @@ function animate(now){
       acPerfUpdateMsTotal=0;
       acPerfRenderSubmitMsTotal=0;
       acPerfMeasuredFrames=0;
+      if(acGpuTimer){
+        acGpuTimer.totalMs=0;
+        acGpuTimer.samples=0;
+        acGpuTimer.maxMs=0;
+      }
       acPerfFrameCount=0;
       acPerfMaxFrameMs=0;
       acPerfSampleStart=now;
@@ -10072,7 +10135,9 @@ if(distance>=RACE_DISTANCE_METERS){
     const renderStart=performance.now();
     acPerfUpdateMsTotal+=renderStart-acPerfFrameStart;
     if(renderThisFrame){
+      const gpuQuery=acGpuTimerBegin();
       renderer.render(scene,camera);
+      acGpuTimerEnd(gpuQuery);
       acPerfRenderSubmitMsTotal+=performance.now()-renderStart;
     }
     acPerfMeasuredFrames++;
@@ -11044,6 +11109,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "ПРОИЗВОДИТЕЛЬНОСТЬ ANDROID",
       "FPS: "+d.fps+" | кадр: "+d.averageFrameMs+" мс",
       "JS-обновление: "+d.frameUpdateMs+" мс | WebGL-вызов: "+d.renderSubmitMs+" мс",
+      "GPU: "+(d.gpuMs===null?(d.gpuTimerSupported?"ожидание":"таймер не поддерживается"):d.gpuMs+" мс")+" | максимум: "+(d.gpuMaxMs===null?"—":d.gpuMaxMs+" мс"),
       "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
