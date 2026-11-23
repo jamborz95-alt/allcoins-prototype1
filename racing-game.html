@@ -5374,8 +5374,11 @@ function acGpuTimerPoll() {
 }
 function acGpuTimerBegin() {
   if(!acGpuTimer)return null;
+  // Poll timer-query availability less often; frequent GL parameter reads can
+  // add avoidable driver work on mobile WebViews.
+  if ((++acGpuTimer.frame % 8) !== 0) return null;
   acGpuTimerPoll();
-  if(acGpuTimer.pending.length>=6 || (++acGpuTimer.frame%4)!==0)return null;
+  if(acGpuTimer.pending.length>=6)return null;
   const {gl,ext,isWebGL2}=acGpuTimer;
   const query=isWebGL2?gl.createQuery():ext.createQueryEXT();
   if(!query)return null;
@@ -7649,6 +7652,12 @@ function setGarageMode(enabled) {
   document.body.classList.toggle("garage-mode", active);
   document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
+  // Apply the first scenery-only mobile tier before the first race frame.
+  // This avoids spending the opening seconds at full city load while the
+  // 1.5-second FPS sampler waits for its first measurement. The VAZ is untouched.
+  if (!active && acRacingMobileDevice && !acPerfBenchmark && !acMobileFallbackApplied) {
+    acApplyMobilePerformanceTier();
+  }
   acOnlineSetCameraMode(active ? 'garage' : 'solo');
   resize();
   acGarageWorld.visible = active;
