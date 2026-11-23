@@ -5261,7 +5261,9 @@ if (window.__allcoinsRacingBoot) {
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
 const acMobilePixelRatioCap = 1.0;
 const acMobilePixelRatioInitial = 1.0;
-const acMobilePixelRatioFloor = 1.0;
+// Allow a controlled lower render resolution on weak Android GPUs.
+// The vehicle model and materials stay unchanged; only the render target shrinks.
+const acMobilePixelRatioFloor = 0.58;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
@@ -7610,7 +7612,7 @@ function acApplyMobileSeverePerformanceTier() {
   smokeParticlePool.length = 0;
 
   // A smaller render target is a last-resort GPU safeguard for devices below 18 FPS.
-  renderer.setPixelRatio(Math.max(renderer.getPixelRatio(), acMobilePixelRatioFloor));
+  renderer.setPixelRatio(Math.max(acMobilePixelRatioFloor, renderer.getPixelRatio() - .08));
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "critical-mobile-low-load";
   return true;
@@ -9688,8 +9690,13 @@ let acNextMobileInstrumentUpdateAt = 0;
 let acNextMobileEnvironmentUpdateAt = 0;
 let acMobileEnvironmentElapsed = 0;
 let acMobileEnvironmentWorldDelta = 0;
+// Rolling CPU-side timings help separate game-update cost from WebGL submission cost.
+let acPerfUpdateMsTotal = 0;
+let acPerfRenderSubmitMsTotal = 0;
+let acPerfMeasuredFrames = 0;
 function animate(now){
   requestAnimationFrame(animate);
+  const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
   last=now;
@@ -9700,26 +9707,18 @@ function animate(now){
     const sampleDuration=now-acPerfSampleStart;
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
-      // A low-FPS phone needs fewer shader light calculations, not only fewer pixels.
-      // Apply only one scenery fallback per measurement; prevent cascading quality loss.
-      if (document.body.classList.contains("race-mode") && measuredFps < 20) {
-        // Apply the scenery-only emergency profile in one sample instead of
-        // spending several seconds below target while stepping through tiers.
-        if (!acMobileFallbackApplied) acApplyMobilePerformanceTier();
-        if (!acMobileSevereFallbackApplied) acApplyMobileSeverePerformanceTier();
-        if (!acMobileUltraFallbackApplied) acApplyMobileUltraPerformanceTier();
-        if (!acMobileExtremeFallbackApplied) acApplyMobileExtremePerformanceTier();
-      } else if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
-        acApplyMobilePerformanceTier();
-      } else if (measuredFps < 26 && document.body.classList.contains("race-mode") &&
-                 acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
-        acApplyMobileSeverePerformanceTier();
-      } else if (measuredFps < 18 && document.body.classList.contains("race-mode") &&
-                 acMobileSevereFallbackApplied && !acMobileUltraFallbackApplied) {
-        acApplyMobileUltraPerformanceTier();
-      } else if (measuredFps < 12 && document.body.classList.contains("race-mode") &&
-                 acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
-        acApplyMobileExtremePerformanceTier();
+      // Escalate one scenery tier per measurement. Do not blank the whole city
+      // from a single short startup dip; retain detail whenever a lighter tier recovers FPS.
+      if (document.body.classList.contains("race-mode")) {
+        if (measuredFps < 12 && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
+          acApplyMobileExtremePerformanceTier();
+        } else if (measuredFps < 18 && acMobileSevereFallbackApplied && !acMobileUltraFallbackApplied) {
+          acApplyMobileUltraPerformanceTier();
+        } else if (measuredFps < 26 && acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
+          acApplyMobileSeverePerformanceTier();
+        } else if (measuredFps < 38 && !acMobileFallbackApplied) {
+          acApplyMobilePerformanceTier();
+        }
       }
       let currentPixelRatio=renderer.getPixelRatio();
       if(acRacingMobileDevice && measuredFps<43) acMobileShadowLowFpsSamples++;
@@ -9743,7 +9742,7 @@ function animate(now){
       }
       if(acPerfLowFpsSamples>=1&&currentPixelRatio>acMobilePixelRatioFloor){
         // Larger reductions are applied only when the measured frame rate is poor.
-        const reduction=measuredFps<38?.08:measuredFps<46?.05:.025;
+        const reduction=measuredFps<20?.10:measuredFps<30?.07:measuredFps<43?.04:.02;
         const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
@@ -9765,6 +9764,8 @@ function animate(now){
       window.__allcoinsRacingPerformanceDiagnostics=Object.freeze({
         fps:Number(measuredFps.toFixed(1)),
         averageFrameMs:Number((sampleDuration/acPerfFrameCount).toFixed(1)),
+        frameUpdateMs:Number((acPerfUpdateMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
+        renderSubmitMs:Number((acPerfRenderSubmitMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
         lastFrameMs:Number(acPerfLastFrameMs.toFixed(1)),
         maxFrameMs:Number(acPerfMaxFrameMs.toFixed(1)),
         pixelRatio:currentPixelRatio,
@@ -9792,6 +9793,9 @@ function animate(now){
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
         wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
       });
+      acPerfUpdateMsTotal=0;
+      acPerfRenderSubmitMsTotal=0;
+      acPerfMeasuredFrames=0;
       acPerfFrameCount=0;
       acPerfMaxFrameMs=0;
       acPerfSampleStart=now;
@@ -10061,7 +10065,18 @@ if(distance>=RACE_DISTANCE_METERS){
   // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
   // это снижает нагрев и оставляет полный FPS во время движения.
   const staticScene=document.body.classList.contains('garage-mode')||paused;
-  if(!document.hidden && (!staticScene || (acIdleRenderFrame++%2===0)))renderer.render(scene,camera);
+  const renderThisFrame=!document.hidden && (!staticScene || (acIdleRenderFrame++%2===0));
+  if(acRacingMobileDevice){
+    const renderStart=performance.now();
+    acPerfUpdateMsTotal+=renderStart-acPerfFrameStart;
+    if(renderThisFrame){
+      renderer.render(scene,camera);
+      acPerfRenderSubmitMsTotal+=performance.now()-renderStart;
+    }
+    acPerfMeasuredFrames++;
+  }else if(renderThisFrame){
+    renderer.render(scene,camera);
+  }
 }
 
 let acPausedByVisibility = false;
@@ -11026,6 +11041,7 @@ body.race-mode #gearSelector { display:grid!important; }
     panel.textContent=[
       "ПРОИЗВОДИТЕЛЬНОСТЬ ANDROID",
       "FPS: "+d.fps+" | кадр: "+d.averageFrameMs+" мс",
+      "JS-обновление: "+d.frameUpdateMs+" мс | WebGL-вызов: "+d.renderSubmitMs+" мс",
       "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
