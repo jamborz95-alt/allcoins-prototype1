@@ -7705,61 +7705,79 @@ function acSetMobileTextureAnisotropy(maxAnisotropy) {
   return adjustedTextures.size;
 }
 
-// Mobile GPU shader simplification: keep the imported VAZ materials untouched,
-// but replace environment-only PBR materials with cheaper Lambert shading.
-// This preserves the road/building albedo textures while removing per-fragment
-// roughness/metalness/normal/bump work from the large background surfaces.
+// Prepare mobile environment materials before the race starts. The imported
+// VAZ keeps its original PBR materials; unlit Basic shaders are used for broad
+// scenery surfaces, while emissive materials retain Lambert lighting.
 let acMobileLambertMaterialsConverted = 0;
+let acMobileBasicMaterialsConverted = 0;
+let acMobileEnvironmentShaderPreparationComplete = false;
+let acMobileEnvironmentShaderWarmupPromise = Promise.resolve();
+let acMobileVehicleShaderWarmupActive = false;
 function acSimplifyMobileEnvironmentShaders() {
-  if (!acRacingMobileDevice) return 0;
+  if (!acRacingMobileDevice || acMobileEnvironmentShaderPreparationComplete) return 0;
   const converted = new WeakMap();
-  let count = 0;
+  let lambertCount = 0;
+  let basicCount = 0;
   const isInsideVehicle = object => {
     for (let node = object; node; node = node.parent) {
       if (vehicle && node === vehicle) return true;
     }
     return false;
   };
+  const copyCommon = material => ({
+    color: material.color ? material.color.clone() : 0xffffff,
+    map: material.map || null,
+    alphaMap: material.alphaMap || null,
+    opacity: material.opacity,
+    transparent: material.transparent,
+    alphaTest: material.alphaTest,
+    side: material.side,
+    vertexColors: material.vertexColors,
+    wireframe: material.wireframe,
+    fog: material.fog,
+    toneMapped: material.toneMapped,
+    depthTest: material.depthTest,
+    depthWrite: material.depthWrite,
+    blending: material.blending
+  });
   scene.traverse(object => {
     if (!object.isMesh || isInsideVehicle(object)) return;
     const convert = material => {
       if (!material || !material.isMeshStandardMaterial) return material;
       if (converted.has(material)) return converted.get(material);
-      const cheap = new THREE.MeshLambertMaterial({
-        color: material.color ? material.color.clone() : 0xffffff,
-        map: material.map || null,
-        emissive: material.emissive ? material.emissive.clone() : 0x000000,
-        emissiveMap: material.emissiveMap || null,
-        emissiveIntensity: Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 1,
-        alphaMap: material.alphaMap || null,
-        opacity: material.opacity,
-        transparent: material.transparent,
-        alphaTest: material.alphaTest,
-        side: material.side,
-        vertexColors: material.vertexColors,
-        wireframe: material.wireframe,
-        fog: material.fog,
-        toneMapped: material.toneMapped,
-        depthTest: material.depthTest,
-        depthWrite: material.depthWrite,
-        blending: material.blending
-      });
-      cheap.name = (material.name || "environment") + "_mobile_lambert";
+      const hasEmissive = Boolean(material.emissiveMap) ||
+        Boolean(material.emissive && (material.emissive.r > .002 || material.emissive.g > .002 || material.emissive.b > .002));
+      const cheap = hasEmissive
+        ? new THREE.MeshLambertMaterial({
+            ...copyCommon(material),
+            emissive: material.emissive ? material.emissive.clone() : 0x000000,
+            emissiveMap: material.emissiveMap || null,
+            emissiveIntensity: Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 1
+          })
+        : new THREE.MeshBasicMaterial(copyCommon(material));
+      cheap.name = (material.name || "environment") + (hasEmissive ? "_mobile_lambert" : "_mobile_basic");
+      cheap.userData.acMobileEnvironmentShader = hasEmissive ? "lambert" : "basic";
       converted.set(material, cheap);
-      count++;
+      if (hasEmissive) lambertCount++;
+      else basicCount++;
       return cheap;
     };
     if (Array.isArray(object.material)) object.material = object.material.map(convert);
     else if (object.material) object.material = convert(object.material);
   });
-  acMobileLambertMaterialsConverted += count;
+  acMobileLambertMaterialsConverted += lambertCount;
+  acMobileBasicMaterialsConverted += basicCount;
+  acMobileEnvironmentShaderPreparationComplete = true;
   window.__allcoinsRacingMobileShaderOptimization = Object.freeze({
-    environmentMaterialsConverted: acMobileLambertMaterialsConverted,
+    environmentMaterialsConverted: acMobileLambertMaterialsConverted + acMobileBasicMaterialsConverted,
+    environmentBasicMaterials: acMobileBasicMaterialsConverted,
+    environmentLambertMaterials: acMobileLambertMaterialsConverted,
     vehicleMaterialsPreserved: true,
     asphaltColorTexturePreserved: Boolean(roadMat.map),
-    asphaltBumpAndRoughnessSamplingRemoved: true
+    asphaltBumpAndRoughnessSamplingRemoved: true,
+    preparedBeforeRace: true
   });
-  return count;
+  return lambertCount + basicCount;
 }
 
 let acMobileFallbackApplied = false;
@@ -9390,7 +9408,30 @@ function attachVehicle(root,label='сохранённая модель'){
   if(collectMeshAudit)console.table(meshAudit);
 }
 
-function loadGlbBuffer(buffer,label){return new Promise((resolve,reject)=>loader.parse(buffer,'',gltf=>{try{attachVehicle(gltf.scene,label);resolve();}catch(e){reject(e);}},reject));}
+function loadGlbBuffer(buffer,label){
+  return new Promise((resolve,reject)=>loader.parse(buffer,'',async gltf=>{
+    try{
+      await acMobileEnvironmentShaderWarmupPromise;
+      attachVehicle(gltf.scene,label);
+      if(acRacingMobileDevice && typeof renderer.compileAsync==="function"){
+        acMobileVehicleShaderWarmupActive=true;
+        setMessage("Подготовка графики ВАЗ-2107","Компилирую материалы автомобиля до начала заезда…",false);
+        try{
+          await renderer.compileAsync(scene,camera);
+        }catch(error){
+          console.warn("ALLCOINS Racing: vehicle shader warmup failed; first visible frame will compile normally.",error);
+        }finally{
+          acMobileVehicleShaderWarmupActive=false;
+          hideMessage();
+        }
+      }
+      resolve();
+    }catch(e){
+      acMobileVehicleShaderWarmupActive=false;
+      reject(e);
+    }
+  },reject));
+}
 function requestSavedModel(){
   $("garageCarStatus").textContent = "ВАЗ-2107";
   $("garageCarStatus").classList.remove("error");
@@ -10049,6 +10090,9 @@ function animate(now){
          mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
         mobileEnvironmentLambertMaterials:acMobileLambertMaterialsConverted,
+        mobileEnvironmentBasicMaterials:acMobileBasicMaterialsConverted,
+        mobileEnvironmentShadersPrepared:acMobileEnvironmentShaderPreparationComplete,
+        mobileVehicleShaderWarmupActive:acMobileVehicleShaderWarmupActive,
         mobileVehiclePbrPreserved:true,
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
@@ -10354,9 +10398,11 @@ if(distance>=RACE_DISTANCE_METERS){
   // Когда машина стоит в гараже или гонка поставлена на паузу, 30 FPS достаточно:
   // это снижает нагрев и оставляет полный FPS во время движения.
   const staticScene=document.body.classList.contains('garage-mode')||paused;
-  const renderThisFrame=acPerfBenchmark?.mode === "physics"
+  const renderThisFrame=acMobileVehicleShaderWarmupActive
     ? false
-    : (!document.hidden && (acPerfBenchmark?.mode === "render" || !staticScene || (acIdleRenderFrame++%2===0)));
+    : (acPerfBenchmark?.mode === "physics"
+      ? false
+      : (!document.hidden && (acPerfBenchmark?.mode === "render" || !staticScene || (acIdleRenderFrame++%2===0))));
   if(acRacingMobileDevice){
     const renderStart=performance.now();
     const updateCost=renderStart-acPerfFrameStart;
@@ -10611,7 +10657,21 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 // Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
 
-requestAnimationFrame(animate);requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});void acFuelLoadProfile({silent:true});
+// Do mobile material conversion and compile the environment once during startup,
+// not in the middle of a race after the first low-FPS sample.
+if(acRacingMobileDevice){
+  acSimplifyMobileEnvironmentShaders();
+  acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
+    ? renderer.compileAsync(scene,camera)
+    : Promise.resolve())
+    .catch(error=>{
+      console.warn("ALLCOINS Racing: environment shader warmup failed; fallback compilation will run on first draw.",error);
+    });
+  void acMobileEnvironmentShaderWarmupPromise.finally(()=>requestAnimationFrame(animate));
+}else{
+  requestAnimationFrame(animate);
+}
+requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});void acFuelLoadProfile({silent:true});
 </script>
 
 <style id="allcoins-racing-camera-controls-v144">
@@ -11360,6 +11420,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
       "Геометрия: "+d.geometries+" | текстуры: "+d.textures,
+      "Шейдеры окружения: Basic "+d.mobileEnvironmentBasicMaterials+" / Lambert "+d.mobileEnvironmentLambertMaterials,
       "3D-соперники: "+d.renderedOpponentCars+" | тест-бот без 3D: "+(d.testBotProgressOnly?"да":"нет"),
       "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
       "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
