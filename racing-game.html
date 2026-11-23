@@ -7698,6 +7698,9 @@ function setGarageMode(enabled) {
     record.light.visible = trackVisible && !acMobileFallbackApplied;
     record.halo.visible = trackVisible && !mobileSevereScene;
   }
+  // Start the FPS sampling window at the actual transition onto the race track,
+  // not during garage idle time or earlier page initialization.
+  if (!active && acRacingMobileDevice) acResetMobilePerfSampleWindow();
 }
 
 
@@ -10003,8 +10006,32 @@ let acPerfMeasuredFrames = 0;
 let acPerfRafIntervals = [];
 let acPerfLongFrameCount = 0;
 let acPerfRafIntervalMax = 0;
+let acPerfHasStarted = false;
+function acResetMobilePerfSampleWindow(now = performance.now()) {
+  acPerfFrameCount = 0;
+  acPerfSampleStart = now;
+  acPerfLastFrameMs = 0;
+  acPerfMaxFrameMs = 0;
+  acPerfRafIntervals.length = 0;
+  acPerfLongFrameCount = 0;
+  acPerfRafIntervalMax = 0;
+  acPerfUpdateMsTotal = 0;
+  acPerfRenderSubmitMsTotal = 0;
+  acPerfMeasuredFrames = 0;
+  if (acGpuTimer) {
+    acGpuTimer.totalMs = 0;
+    acGpuTimer.samples = 0;
+    acGpuTimer.maxMs = 0;
+  }
+}
 function animate(now){
   requestAnimationFrame(animate);
+  // Ignore the page-load / shader-warmup delay before the first RAF callback.
+  if (acRacingMobileDevice && !acPerfHasStarted) {
+    acPerfHasStarted = true;
+    last = now;
+    acResetMobilePerfSampleWindow(now);
+  }
   const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
@@ -10695,16 +10722,49 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 // Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
 
-// Compile the mobile environment before gameplay using the same single scene
-// that is rendered during the race; no offscreen compositor pass.
+// Warm the actual mobile race scene before the first drive. The old warmup
+// compiled only the garage because every track object was hidden at that point.
+async function acWarmupMobileRaceSceneShaders() {
+  // Apply the same scenery-only quality profile that will be used in the race.
+  // This leaves the imported VAZ, its textures and its materials untouched.
+  acApplyMobilePerformanceTier();
+  acApplyMobileSeverePerformanceTier();
+
+  const roots = [
+    acRaceSkyBackdrop, ...city, road, shoulder, acRoadsideShoulders,
+    ...laneMarks, ...acRoadEdgeMeshes, acTrackCurbMesh, acNearGuardrail,
+    acCityFence, finishLine, acVehicleShadow
+  ].filter(Boolean);
+  const visibilitySnapshot = [];
+  const cullingSnapshot = [];
+
+  for (const root of roots) {
+    visibilitySnapshot.push([root, root.visible]);
+    root.visible = true;
+    root.traverse(object => {
+      if (!object.isMesh) return;
+      cullingSnapshot.push([object, object.frustumCulled]);
+      // Compile materials even though the garage camera is aimed elsewhere.
+      object.frustumCulled = false;
+    });
+  }
+
+  try {
+    if (typeof renderer.compileAsync === "function") {
+      await renderer.compileAsync(scene, camera);
+    } else if (typeof renderer.compile === "function") {
+      renderer.compile(scene, camera);
+    }
+  } catch (error) {
+    console.warn("ALLCOINS Racing: race-scene shader warmup failed; first visible frame will compile normally.", error);
+  } finally {
+    for (const [object, wasCulled] of cullingSnapshot) object.frustumCulled = wasCulled;
+    for (const [root, wasVisible] of visibilitySnapshot) root.visible = wasVisible;
+  }
+}
+
 if(acRacingMobileDevice){
-  acSimplifyMobileEnvironmentShaders();
-  acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
-    ? renderer.compileAsync(scene,camera)
-    : Promise.resolve())
-    .catch(error=>{
-      console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
-    })
+  acMobileEnvironmentShaderWarmupPromise = acWarmupMobileRaceSceneShaders()
     .finally(()=>requestAnimationFrame(animate));
 }else{
   requestAnimationFrame(animate);
