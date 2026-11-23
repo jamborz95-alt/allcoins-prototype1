@@ -2539,6 +2539,9 @@ function acPerfStartBenchmarkAfterCarReady() {
   if (!["render","physics","full"].includes(mode) || acPerfBenchmark) return false;
 
   try {
+    // Every benchmark starts from the same native mobile render scale.
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, acMobilePixelRatioInitial));
+    renderer.setSize(innerWidth, innerHeight, false);
     setGarageMode(false);
     onlineMode = false;
     onlineRaceStarted = false;
