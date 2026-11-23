@@ -8749,7 +8749,8 @@ function acRacingBatchStaticVehicleMeshes(){
     audit.visitedMeshes++;
     if(object.isSkinnedMesh||object.isInstancedMesh||!object.geometry||!object.material||
        Array.isArray(object.material)||object.children.length||object.morphTargetInfluences||
-       Object.keys(object.geometry.morphAttributes||{}).length||object.onBeforeRender||
+       Object.keys(object.geometry.morphAttributes||{}).length||
+       Object.prototype.hasOwnProperty.call(object,"onBeforeRender")||
        object.customDepthMaterial||object.customDistanceMaterial){
       audit.skippedStructure++;
       return;
