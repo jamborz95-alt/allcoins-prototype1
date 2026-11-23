@@ -602,6 +602,12 @@ try {
   assert.equal(vehicleDiagnostics.wheelCount, 4, "The GLB must produce four independently extracted wheel assemblies.");
   assert.equal(vehicleDiagnostics.frontWheelCount, 2, "Both front wheels must be assigned to the front axle.");
   assert.equal(vehicleDiagnostics.rearWheelCount, 2, "Both rear wheels must be assigned to the rear axle.");
+  if (graphicsProfile.mobileOptimized) {
+    assert.ok(vehicleDiagnostics.mobileStaticMeshesMerged >= 4,
+      "Mobile static-mesh batching must merge repeated opaque VAZ detail meshes.");
+    assert.ok(vehicleDiagnostics.mobileStaticBatchesCreated >= 2,
+      "Mobile static-mesh batching must keep matching materials in separate visual batches.");
+  }
 
   await page.setViewportSize({ width: 844, height: 390 });
   assert.equal(
