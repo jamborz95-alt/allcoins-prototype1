@@ -7720,8 +7720,7 @@ function acApplyMobileExtremePerformanceTier() {
 
   // Last resort for phones that remain below 24 FPS after the ultra tier.
   // Preserve the player car, road, lane markings and near guardrail.
-  // Remove the distant city fence as well; it is a dense, multi-part foreground layer.
-  acCityFence.visible = false;
+  // The distant fence remains visible; only the far city/building meshes are hidden.
   for (const building of city) building.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
@@ -7795,9 +7794,10 @@ const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTr
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
-  // In the extreme mobile profile only the road edge and near guardrail remain animated.
-  // Skip all distant-scene transforms, including the hidden city/building collection.
+  // In the extreme mobile profile, skip transforms for the hidden city/building collection.
+  // Keep the visible fence moving with its distant-scene parallax.
   if (acMobileExtremeFallbackApplied) {
+    acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
