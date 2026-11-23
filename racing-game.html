@@ -5410,6 +5410,71 @@ const acMobilePixelRatioInitial = 1.0;
 // Preserve car detail on Android: never render below 85% of the CSS pixel ratio.
 const acMobilePixelRatioFloor = 0.85;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
+
+// Mobile split-resolution renderer: the environment is rendered to a smaller
+// target; the VAZ-2107 and its moving parts are drawn over it at full resolution.
+const AC_MOBILE_BACKGROUND_SCALE = .62;
+let acMobileBackgroundTarget = null;
+let acMobileCompositeScene = null;
+let acMobileCompositeCamera = null;
+let acMobileSplitRendererReady = false;
+if (acRacingMobileDevice) {
+  acMobileBackgroundTarget = new THREE.WebGLRenderTarget(2, 2, { depthBuffer: true, stencilBuffer: false });
+  acMobileBackgroundTarget.texture.minFilter = THREE.LinearFilter;
+  acMobileBackgroundTarget.texture.magFilter = THREE.LinearFilter;
+  acMobileBackgroundTarget.texture.generateMipmaps = false;
+  acMobileCompositeScene = new THREE.Scene();
+  acMobileCompositeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
+  acMobileCompositeCamera.position.z = 1;
+  const compositeMaterial = new THREE.MeshBasicMaterial({
+    map: acMobileBackgroundTarget.texture, toneMapped: false, depthTest: false, depthWrite: false
+  });
+  const compositeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compositeMaterial);
+  compositeQuad.frustumCulled = false;
+  acMobileCompositeScene.add(compositeQuad);
+  acMobileSplitRendererReady = true;
+}
+function acResizeMobileBackgroundTarget() {
+  if (!acMobileSplitRendererReady || !acMobileBackgroundTarget) return;
+  const canvas = renderer.domElement;
+  const width = Math.max(2, Math.round(canvas.width * AC_MOBILE_BACKGROUND_SCALE));
+  const height = Math.max(2, Math.round(canvas.height * AC_MOBILE_BACKGROUND_SCALE));
+  if (acMobileBackgroundTarget.width !== width || acMobileBackgroundTarget.height !== height) {
+    acMobileBackgroundTarget.setSize(width, height);
+  }
+}
+function acRenderMobileSplitScene() {
+  if (!acMobileSplitRendererReady) { renderer.render(scene, camera); return; }
+  const previousMask = camera.layers.mask;
+  const previousTarget = renderer.getRenderTarget();
+  const previousAutoClear = renderer.autoClear;
+  const previousInfoAutoReset = renderer.info.autoReset;
+  const previousBackground = scene.background;
+  try {
+    renderer.info.autoReset = false;
+    renderer.info.reset();
+
+    renderer.setRenderTarget(acMobileBackgroundTarget);
+    renderer.clear(true, true, true);
+    camera.layers.set(0);
+    renderer.render(scene, camera);
+
+    renderer.setRenderTarget(null);
+    renderer.clear(true, true, true);
+    renderer.autoClear = false;
+    renderer.render(acMobileCompositeScene, acMobileCompositeCamera);
+
+    camera.layers.set(1);
+    scene.background = null;
+    renderer.render(scene, camera);
+  } finally {
+    scene.background = previousBackground;
+    camera.layers.mask = previousMask;
+    renderer.autoClear = previousAutoClear;
+    renderer.info.autoReset = previousInfoAutoReset;
+    renderer.setRenderTarget(previousTarget);
+  }
+}
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -9377,6 +9442,8 @@ function attachVehicle(root,label='сохранённая модель'){
   acOnlineSetCameraMode(document.body.classList.contains("garage-mode")
     ? "garage"
     : (onlineMode && onlineRaceStarted ? "online" : "solo"), true);
+  // Layer 1 contains the full-resolution car. Track and city meshes remain on layer 0.
+  vehicle.traverse(object => object.layers.set(1));
   const visibleMeshes = [];
   vehicle.traverse(object => { if (object.isMesh) visibleMeshes.push(object); });
   const visibleBounds = new THREE.Box3().setFromObject(vehicle);
@@ -9416,11 +9483,14 @@ function loadGlbBuffer(buffer,label){
       if(acRacingMobileDevice && typeof renderer.compileAsync==="function"){
         acMobileVehicleShaderWarmupActive=true;
         setMessage("Подготовка графики ВАЗ-2107","Компилирую материалы автомобиля до начала заезда…",false);
+        const previousLayerMask=camera.layers.mask;
+        camera.layers.enable(1);
         try{
           await renderer.compileAsync(scene,camera);
         }catch(error){
           console.warn("ALLCOINS Racing: vehicle shader warmup failed; first visible frame will compile normally.",error);
         }finally{
+          camera.layers.mask=previousLayerMask;
           acMobileVehicleShaderWarmupActive=false;
           hideMessage();
         }
@@ -9917,6 +9987,7 @@ let acFuelLastGameplayRenderAt = -Infinity;
 function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
+  acResizeMobileBackgroundTarget();
   const aspect=w/Math.max(1,h);
   // V164: frame the actual 3D car prominently on the road, while leaving the garage fit and game physics unchanged.
   const viewH=document.body.classList.contains('garage-mode') && h>w
@@ -10045,12 +10116,14 @@ function animate(now){
         const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
+  acResizeMobileBackgroundTarget();
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
       }else if(!acPerfBenchmark && acPerfStableFpsSamples>=4&&currentPixelRatio<acMobilePixelRatioCap){
         const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.04);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
+  acResizeMobileBackgroundTarget();
         currentPixelRatio=nextPixelRatio;
         acPerfStableFpsSamples=0;
       }
@@ -10093,6 +10166,8 @@ function animate(now){
         mobileEnvironmentBasicMaterials:acMobileBasicMaterialsConverted,
         mobileEnvironmentShadersPrepared:acMobileEnvironmentShaderPreparationComplete,
         mobileVehicleShaderWarmupActive:acMobileVehicleShaderWarmupActive,
+        mobileSplitResolutionRendering:acMobileSplitRendererReady,
+        mobileBackgroundScale:AC_MOBILE_BACKGROUND_SCALE,
         mobileVehiclePbrPreserved:true,
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
@@ -10413,7 +10488,8 @@ if(distance>=RACE_DISTANCE_METERS){
     }
     if(renderThisFrame){
       const gpuQuery=acGpuTimerBegin();
-      renderer.render(scene,camera);
+      if(acRacingMobileDevice) acRenderMobileSplitScene();
+      else renderer.render(scene,camera);
       acGpuTimerEnd(gpuQuery);
       const renderCost=performance.now()-renderStart;
       acPerfRenderSubmitMsTotal+=renderCost;
@@ -10661,13 +10737,20 @@ setGarageMode(true);
 // not in the middle of a race after the first low-FPS sample.
 if(acRacingMobileDevice){
   acSimplifyMobileEnvironmentShaders();
+  scene.traverse(object=>{if(object.isLight)object.layers.enable(1);});
+  acResizeMobileBackgroundTarget();
+  const previousLayerMask=camera.layers.mask;
+  camera.layers.enable(1);
   acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
     ? renderer.compileAsync(scene,camera)
     : Promise.resolve())
     .catch(error=>{
       console.warn("ALLCOINS Racing: environment shader warmup failed; fallback compilation will run on first draw.",error);
+    })
+    .finally(()=>{
+      camera.layers.mask=previousLayerMask;
+      requestAnimationFrame(animate);
     });
-  void acMobileEnvironmentShaderWarmupPromise.finally(()=>requestAnimationFrame(animate));
 }else{
   requestAnimationFrame(animate);
 }
@@ -11421,6 +11504,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
       "Геометрия: "+d.geometries+" | текстуры: "+d.textures,
       "Шейдеры окружения: Basic "+d.mobileEnvironmentBasicMaterials+" / Lambert "+d.mobileEnvironmentLambertMaterials,
+      "Раздельный рендер: "+(d.mobileSplitResolutionRendering?"вкл · фон "+Math.round(d.mobileBackgroundScale*100)+"%":"нет"),
       "3D-соперники: "+d.renderedOpponentCars+" | тест-бот без 3D: "+(d.testBotProgressOnly?"да":"нет"),
       "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
       "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
