@@ -2560,6 +2560,8 @@ function acPerfStartBenchmarkAfterCarReady() {
     smokeParticles.length = 0;
 
     const startedAt = performance.now();
+    acPerfLowFpsSamples = 0;
+    acPerfStableFpsSamples = 0;
     acPerfBenchmark = {
       mode, startedAt, durationMs: 18000,
       frames: 0, frameMsTotal: 0, maxFrameMs: 0, framesOver50Ms: 0,
@@ -9927,21 +9929,21 @@ function animate(now){
       if(!acPerfBenchmark && measuredFps<24){
         acPerfLowFpsSamples++;
         acPerfStableFpsSamples=0;
-      }else if(measuredFps>45){
+      }else if(!acPerfBenchmark && measuredFps>45){
         acPerfStableFpsSamples++;
         acPerfLowFpsSamples=0;
       }else{
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(acPerfLowFpsSamples>=2&&currentPixelRatio>acMobilePixelRatioFloor){
+      if(!acPerfBenchmark && acPerfLowFpsSamples>=2&&currentPixelRatio>acMobilePixelRatioFloor){
         const reduction=measuredFps<16?.06:.035;
         const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
         currentPixelRatio=nextPixelRatio;
         acPerfLowFpsSamples=0;
-      }else if(acPerfStableFpsSamples>=4&&currentPixelRatio<acMobilePixelRatioCap){
+      }else if(!acPerfBenchmark && acPerfStableFpsSamples>=4&&currentPixelRatio<acMobilePixelRatioCap){
         const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.04);
         renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(innerWidth,innerHeight,false);
