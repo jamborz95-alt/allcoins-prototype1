@@ -5259,9 +5259,9 @@ if (window.__allcoinsRacingBoot) {
 }
 // Android Telegram WebView profile: start with a lighter render target and scale up only
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
-const acMobilePixelRatioCap = 1.18;
+const acMobilePixelRatioCap = 1.0;
 const acMobilePixelRatioInitial = 1.0;
-const acMobilePixelRatioFloor = .90;
+const acMobilePixelRatioFloor = 1.0;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
@@ -7649,10 +7649,9 @@ function acApplyMobileExtremePerformanceTier() {
 
   // Last resort for phones that remain below 24 FPS after the ultra tier.
   // Keep the player car, asphalt, lane markings and near guardrail untouched.
-  // Retain a quarter of the simple distant building shells to preserve depth.
-  for (let index = 0; index < city.length; index++) {
-    city[index].visible = index % 4 === 0;
-  }
+  // At emergency FPS, remove the remaining city shells too. The road, sky,
+  // guardrail, car model, car materials, car lights and contact shadow stay intact.
+  for (const building of city) building.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
   acTrackHouseGroup.visible = false;
@@ -9495,7 +9494,14 @@ function animate(now){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
       // A low-FPS phone needs fewer shader light calculations, not only fewer pixels.
       // Apply only one scenery fallback per measurement; prevent cascading quality loss.
-      if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
+      if (document.body.classList.contains("race-mode") && measuredFps < 20) {
+        // Apply the scenery-only emergency profile in one sample instead of
+        // spending several seconds below target while stepping through tiers.
+        if (!acMobileFallbackApplied) acApplyMobilePerformanceTier();
+        if (!acMobileSevereFallbackApplied) acApplyMobileSeverePerformanceTier();
+        if (!acMobileUltraFallbackApplied) acApplyMobileUltraPerformanceTier();
+        if (!acMobileExtremeFallbackApplied) acApplyMobileExtremePerformanceTier();
+      } else if (measuredFps < 38 && document.body.classList.contains("race-mode") && !acMobileFallbackApplied) {
         acApplyMobilePerformanceTier();
       } else if (measuredFps < 26 && document.body.classList.contains("race-mode") &&
                  acMobileFallbackApplied && !acMobileSevereFallbackApplied) {
