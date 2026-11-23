@@ -5410,15 +5410,14 @@ if (window.__allcoinsRacingBoot) {
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
 const acMobilePixelRatioCap = 1.0;
 const acMobilePixelRatioInitial = 1.0;
-// Allow a controlled lower render resolution on weak Android GPUs.
-// The vehicle model and materials stay unchanged; only the render target shrinks.
-// Preserve car detail on Android: never render below 85% of the CSS pixel ratio.
-const acMobilePixelRatioFloor = 0.85;
+// Keep the car canvas at full CSS-pixel resolution on Android.
+// Adaptive quality now scales only the environment target, never the vehicle.
+const acMobilePixelRatioFloor = 1.0;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
 
 // Mobile split-resolution renderer: the environment is rendered to a smaller
 // target; the VAZ-2107 and its moving parts are drawn over it at full resolution.
-const AC_MOBILE_BACKGROUND_SCALE = .62;
+let acMobileBackgroundScale = .66;
 let acMobileBackgroundTarget = null;
 let acMobileCompositeScene = null;
 let acMobileCompositeCamera = null;
@@ -5442,8 +5441,8 @@ if (acRacingMobileDevice) {
 function acResizeMobileBackgroundTarget() {
   if (!acMobileSplitRendererReady || !acMobileBackgroundTarget) return;
   const canvas = renderer.domElement;
-  const width = Math.max(2, Math.round(canvas.width * AC_MOBILE_BACKGROUND_SCALE));
-  const height = Math.max(2, Math.round(canvas.height * AC_MOBILE_BACKGROUND_SCALE));
+  const width = Math.max(2, Math.round(canvas.width * acMobileBackgroundScale));
+  const height = Math.max(2, Math.round(canvas.height * acMobileBackgroundScale));
   if (acMobileBackgroundTarget.width !== width || acMobileBackgroundTarget.height !== height) {
     acMobileBackgroundTarget.setSize(width, height);
   }
@@ -10116,20 +10115,15 @@ function animate(now){
         acPerfLowFpsSamples=0;
         acPerfStableFpsSamples=0;
       }
-      if(!acPerfBenchmark && acPerfLowFpsSamples>=2&&currentPixelRatio>acMobilePixelRatioFloor){
-        const reduction=measuredFps<16?.06:.035;
-        const nextPixelRatio=Math.max(acMobilePixelRatioFloor,currentPixelRatio-reduction);
-        renderer.setPixelRatio(nextPixelRatio);
-        renderer.setSize(innerWidth,innerHeight,false);
-  acResizeMobileBackgroundTarget();
-        currentPixelRatio=nextPixelRatio;
+      // Preserve the VAZ at full resolution. Adapt only the background render target.
+      if(!acPerfBenchmark && acRacingMobileDevice && acPerfLowFpsSamples>=2 && acMobileBackgroundScale>.42){
+        const reduction=measuredFps<16?.08:.04;
+        acMobileBackgroundScale=Math.max(.42,acMobileBackgroundScale-reduction);
+        acResizeMobileBackgroundTarget();
         acPerfLowFpsSamples=0;
-      }else if(!acPerfBenchmark && acPerfStableFpsSamples>=4&&currentPixelRatio<acMobilePixelRatioCap){
-        const nextPixelRatio=Math.min(acMobilePixelRatioCap,currentPixelRatio+.04);
-        renderer.setPixelRatio(nextPixelRatio);
-        renderer.setSize(innerWidth,innerHeight,false);
-  acResizeMobileBackgroundTarget();
-        currentPixelRatio=nextPixelRatio;
+      }else if(!acPerfBenchmark && acRacingMobileDevice && acPerfStableFpsSamples>=4 && acMobileBackgroundScale<.70){
+        acMobileBackgroundScale=Math.min(.70,acMobileBackgroundScale+.025);
+        acResizeMobileBackgroundTarget();
         acPerfStableFpsSamples=0;
       }
       const perfBadge=document.getElementById("racingPerfBadge");
@@ -10172,7 +10166,7 @@ function animate(now){
         mobileEnvironmentShadersPrepared:acMobileEnvironmentShaderPreparationComplete,
         mobileVehicleShaderWarmupActive:acMobileVehicleShaderWarmupActive,
         mobileSplitResolutionRendering:acMobileSplitRendererReady,
-        mobileBackgroundScale:AC_MOBILE_BACKGROUND_SCALE,
+        mobileBackgroundScale:acMobileBackgroundScale,
         mobileVehiclePbrPreserved:true,
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
