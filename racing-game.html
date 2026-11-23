@@ -10042,7 +10042,7 @@ function animate(now){
       // Escalate one scenery tier per measurement. Do not blank the whole city
       // from a single short startup dip; retain detail whenever a lighter tier recovers FPS.
       if (!acPerfBenchmark && document.body.classList.contains("race-mode")) {
-        if (measuredFps < 12 && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
+        if (measuredFps < 18 && acMobileUltraFallbackApplied && !acMobileExtremeFallbackApplied) {
           acApplyMobileExtremePerformanceTier();
         } else if (measuredFps < 18 && acMobileSevereFallbackApplied && !acMobileUltraFallbackApplied) {
           acApplyMobileUltraPerformanceTier();
