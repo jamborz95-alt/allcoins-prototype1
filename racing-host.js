@@ -933,8 +933,13 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261123-vaz-fps-nested-v194", document.baseURI);
-      const restoreFactoryRims = new URLSearchParams(window.location.search).get("restoreFactoryRims") === "1";
+      const sceneUrl = new URL("./racing-game.html?v=20261123-perf-isolation-v195", document.baseURI);
+      const launchParams = new URLSearchParams(window.location.search);
+      const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
+      const perfTestMode = launchParams.get("perfTest");
+      if (["render","physics","full"].includes(perfTestMode)) {
+        sceneUrl.searchParams.set("perfTest", perfTestMode);
+      }
       if (restoreFactoryRims) {
         sceneUrl.searchParams.set("restoreFactoryRims","1");
         const cleanLaunchUrl = new URL(window.location.href);
