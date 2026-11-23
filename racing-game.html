@@ -7705,6 +7705,63 @@ function acSetMobileTextureAnisotropy(maxAnisotropy) {
   return adjustedTextures.size;
 }
 
+// Mobile GPU shader simplification: keep the imported VAZ materials untouched,
+// but replace environment-only PBR materials with cheaper Lambert shading.
+// This preserves the road/building albedo textures while removing per-fragment
+// roughness/metalness/normal/bump work from the large background surfaces.
+let acMobileLambertMaterialsConverted = 0;
+function acSimplifyMobileEnvironmentShaders() {
+  if (!acRacingMobileDevice) return 0;
+  const converted = new WeakMap();
+  let count = 0;
+  const isInsideVehicle = object => {
+    for (let node = object; node; node = node.parent) {
+      if (vehicle && node === vehicle) return true;
+    }
+    return false;
+  };
+  scene.traverse(object => {
+    if (!object.isMesh || isInsideVehicle(object)) return;
+    const convert = material => {
+      if (!material || !material.isMeshStandardMaterial) return material;
+      if (converted.has(material)) return converted.get(material);
+      const cheap = new THREE.MeshLambertMaterial({
+        color: material.color ? material.color.clone() : 0xffffff,
+        map: material.map || null,
+        emissive: material.emissive ? material.emissive.clone() : 0x000000,
+        emissiveMap: material.emissiveMap || null,
+        emissiveIntensity: Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 1,
+        alphaMap: material.alphaMap || null,
+        opacity: material.opacity,
+        transparent: material.transparent,
+        alphaTest: material.alphaTest,
+        side: material.side,
+        vertexColors: material.vertexColors,
+        wireframe: material.wireframe,
+        fog: material.fog,
+        toneMapped: material.toneMapped,
+        depthTest: material.depthTest,
+        depthWrite: material.depthWrite,
+        blending: material.blending
+      });
+      cheap.name = (material.name || "environment") + "_mobile_lambert";
+      converted.set(material, cheap);
+      count++;
+      return cheap;
+    };
+    if (Array.isArray(object.material)) object.material = object.material.map(convert);
+    else if (object.material) object.material = convert(object.material);
+  });
+  acMobileLambertMaterialsConverted += count;
+  window.__allcoinsRacingMobileShaderOptimization = Object.freeze({
+    environmentMaterialsConverted: acMobileLambertMaterialsConverted,
+    vehicleMaterialsPreserved: true,
+    asphaltColorTexturePreserved: Boolean(roadMat.map),
+    asphaltBumpAndRoughnessSamplingRemoved: true
+  });
+  return count;
+}
+
 let acMobileFallbackApplied = false;
 let acMobileSevereFallbackApplied = false;
 function acApplyMobilePerformanceTier() {
@@ -7719,9 +7776,12 @@ function acApplyMobilePerformanceTier() {
   fill.visible = false;
   for (const record of acLampRecords) record.light.visible = false;
 
+  // Preserve the VAZ's original PBR materials and textures; simplify only
+  // the road and static environment shaders to reduce Android GPU fragment cost.
+  acSimplifyMobileEnvironmentShaders();
   // Keep full-size textures, but reduce costly anisotropic sampling on weak phones.
   acSetMobileTextureAnisotropy(2);
-  window.__allcoinsRacingQualityFallback = "reduced-mobile-lighting-and-city-details";
+  window.__allcoinsRacingQualityFallback = "reduced-mobile-lighting-and-city-details-lambert-environment";
   return true;
 }
 
@@ -9988,6 +10048,8 @@ function animate(now){
         mobileExtremeFallback:acMobileExtremeFallbackApplied,
          mobileCityDetailMeshesHidden:acMobileFallbackApplied?acMobileCityDetailMeshes.length:0,
         qualityFallback:window.__allcoinsRacingQualityFallback||"none",
+        mobileEnvironmentLambertMaterials:acMobileLambertMaterialsConverted,
+        mobileVehiclePbrPreserved:true,
         adaptiveResolution:true,
         renderCalls:renderer.info.render.calls,
         triangles:renderer.info.render.triangles,
