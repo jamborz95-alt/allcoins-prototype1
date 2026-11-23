@@ -7652,11 +7652,14 @@ function setGarageMode(enabled) {
   document.body.classList.toggle("garage-mode", active);
   document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
-  // Apply the first scenery-only mobile tier before the first race frame.
-  // This avoids spending the opening seconds at full city load while the
-  // 1.5-second FPS sampler waits for its first measurement. The VAZ is untouched.
-  if (!active && acRacingMobileDevice && !acPerfBenchmark && !acMobileFallbackApplied) {
-    acApplyMobilePerformanceTier();
+  // Apply the mobile scenery tiers before the first race frame.
+  // The previous first tier left rain, wet reflections, lit window meshes and
+  // lamp pools active. Apply the severe scenery-only tier immediately too:
+  // keep every building shell, the complete track and the full-resolution VAZ.
+  // This prevents brief 15-FPS drops from waiting for a 1.5-second average.
+  if (!active && acRacingMobileDevice && !acPerfBenchmark) {
+    if (!acMobileFallbackApplied) acApplyMobilePerformanceTier();
+    if (!acMobileSevereFallbackApplied) acApplyMobileSeverePerformanceTier();
   }
   acOnlineSetCameraMode(active ? 'garage' : 'solo');
   resize();
