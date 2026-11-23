@@ -5273,20 +5273,31 @@ const renderer = new THREE.WebGLRenderer({
 const acGpuTimer = (() => {
   try {
     const gl = renderer.getContext();
-    const ext = gl.getExtension("EXT_disjoint_timer_query_webgl2");
-    if (!ext || typeof gl.createQuery !== "function") return null;
-    return { gl, ext, pending: [], frame: 0, totalMs: 0, samples: 0, lastMs: 0, maxMs: 0 };
+    const isWebGL2 = Boolean(renderer.capabilities.isWebGL2);
+    const ext = gl.getExtension(isWebGL2
+      ? "EXT_disjoint_timer_query_webgl2"
+      : "EXT_disjoint_timer_query");
+    if (!ext) return null;
+    if (isWebGL2 && typeof gl.createQuery !== "function") return null;
+    if (!isWebGL2 && typeof ext.createQueryEXT !== "function") return null;
+    return { gl, ext, isWebGL2, pending: [], frame: 0, totalMs: 0, samples: 0, lastMs: 0, maxMs: 0 };
   } catch (_) { return null; }
 })();
 function acGpuTimerPoll() {
   if (!acGpuTimer) return;
-  const {gl,ext,pending}=acGpuTimer;
+  const {gl,ext,isWebGL2,pending}=acGpuTimer;
   const disjoint=gl.getParameter(ext.GPU_DISJOINT_EXT);
   for(let i=pending.length-1;i>=0;i--){
     const query=pending[i];
-    if(!gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE))continue;
+    const available=isWebGL2
+      ? gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE)
+      : ext.getQueryObjectEXT(query,ext.QUERY_RESULT_AVAILABLE_EXT);
+    if(!available)continue;
     if(!disjoint){
-      const ms=gl.getQueryParameter(query,gl.QUERY_RESULT)/1e6;
+      const ns=isWebGL2
+        ? gl.getQueryParameter(query,gl.QUERY_RESULT)
+        : ext.getQueryObjectEXT(query,ext.QUERY_RESULT_EXT);
+      const ms=Number(ns)/1e6;
       if(Number.isFinite(ms)&&ms>=0&&ms<1000){
         acGpuTimer.lastMs=ms;
         acGpuTimer.maxMs=Math.max(acGpuTimer.maxMs,ms);
@@ -5294,7 +5305,8 @@ function acGpuTimerPoll() {
         acGpuTimer.samples++;
       }
     }
-    gl.deleteQuery(query);
+    if(isWebGL2)gl.deleteQuery(query);
+    else ext.deleteQueryEXT(query);
     pending.splice(i,1);
   }
 }
@@ -5302,23 +5314,30 @@ function acGpuTimerBegin() {
   if(!acGpuTimer)return null;
   acGpuTimerPoll();
   if(acGpuTimer.pending.length>=6 || (++acGpuTimer.frame%4)!==0)return null;
-  const query=acGpuTimer.gl.createQuery();
+  const {gl,ext,isWebGL2}=acGpuTimer;
+  const query=isWebGL2?gl.createQuery():ext.createQueryEXT();
   if(!query)return null;
   try{
-    acGpuTimer.gl.beginQuery(acGpuTimer.ext.TIME_ELAPSED_EXT,query);
+    if(isWebGL2)gl.beginQuery(ext.TIME_ELAPSED_EXT,query);
+    else ext.beginQueryEXT(ext.TIME_ELAPSED_EXT,query);
     return query;
   }catch(_){
-    acGpuTimer.gl.deleteQuery(query);
+    if(isWebGL2)gl.deleteQuery(query);
+    else ext.deleteQueryEXT(query);
     return null;
   }
 }
 function acGpuTimerEnd(query) {
   if(!query||!acGpuTimer)return;
   try{
-    acGpuTimer.gl.endQuery(acGpuTimer.ext.TIME_ELAPSED_EXT);
+    if(acGpuTimer.isWebGL2)acGpuTimer.gl.endQuery(acGpuTimer.ext.TIME_ELAPSED_EXT);
+    else acGpuTimer.ext.endQueryEXT(acGpuTimer.ext.TIME_ELAPSED_EXT);
     acGpuTimer.pending.push(query);
   }catch(_){
-    try{acGpuTimer.gl.deleteQuery(query);}catch(__){}
+    try{
+      if(acGpuTimer.isWebGL2)acGpuTimer.gl.deleteQuery(query);
+      else acGpuTimer.ext.deleteQueryEXT(query);
+    }catch(__){}
   }
 }
 if (window.__allcoinsRacingBoot) {
@@ -9772,6 +9791,9 @@ let acMobileEnvironmentWorldDelta = 0;
 let acPerfUpdateMsTotal = 0;
 let acPerfRenderSubmitMsTotal = 0;
 let acPerfMeasuredFrames = 0;
+let acPerfRafIntervals = [];
+let acPerfLongFrameCount = 0;
+let acPerfRafIntervalMax = 0;
 function animate(now){
   requestAnimationFrame(animate);
   const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
@@ -9782,6 +9804,9 @@ function animate(now){
     acPerfFrameCount++;
     acPerfLastFrameMs=rawFrameMs;
     acPerfMaxFrameMs=Math.max(acPerfMaxFrameMs,rawFrameMs);
+    acPerfRafIntervals.push(rawFrameMs);
+    if(rawFrameMs>50)acPerfLongFrameCount++;
+    acPerfRafIntervalMax=Math.max(acPerfRafIntervalMax,rawFrameMs);
     const sampleDuration=now-acPerfSampleStart;
     if(sampleDuration>=1500){
       const measuredFps=acPerfFrameCount*1000/sampleDuration;
@@ -9845,6 +9870,16 @@ function animate(now){
         averageFrameMs:Number((sampleDuration/acPerfFrameCount).toFixed(1)),
         frameUpdateMs:Number((acPerfUpdateMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
         renderSubmitMs:Number((acPerfRenderSubmitMsTotal/Math.max(1,acPerfMeasuredFrames)).toFixed(2)),
+        schedulerGapMs:Number(Math.max(0,(sampleDuration/acPerfFrameCount)-
+          (acPerfUpdateMsTotal/Math.max(1,acPerfMeasuredFrames))-
+          (acPerfRenderSubmitMsTotal/Math.max(1,acPerfMeasuredFrames))).toFixed(1)),
+        rafIntervalP95Ms:Number((acPerfRafIntervals.slice().sort((a,b)=>a-b)[
+          Math.min(acPerfRafIntervals.length-1,Math.floor(acPerfRafIntervals.length*.95))
+        ]||0).toFixed(1)),
+        framesOver50Ms:acPerfLongFrameCount,
+        rafIntervalMaxMs:Number(acPerfRafIntervalMax.toFixed(1)),
+        webglVersion:renderer.capabilities.isWebGL2?"WebGL 2":"WebGL 1",
+        gpuTimerApi:acGpuTimer?(acGpuTimer.isWebGL2?"timer-query WebGL2":"timer-query WebGL1"):"недоступен",
         gpuMs:acGpuTimer&&acGpuTimer.samples?Number((acGpuTimer.totalMs/acGpuTimer.samples).toFixed(2)):null,
         gpuLastMs:acGpuTimer&&acGpuTimer.samples?Number(acGpuTimer.lastMs.toFixed(2)):null,
         gpuMaxMs:acGpuTimer&&acGpuTimer.samples?Number(acGpuTimer.maxMs.toFixed(2)):null,
@@ -9881,6 +9916,9 @@ function animate(now){
       acPerfUpdateMsTotal=0;
       acPerfRenderSubmitMsTotal=0;
       acPerfMeasuredFrames=0;
+      acPerfRafIntervals=[];
+      acPerfLongFrameCount=0;
+      acPerfRafIntervalMax=0;
       if(acGpuTimer){
         acGpuTimer.totalMs=0;
         acGpuTimer.samples=0;
@@ -11134,7 +11172,10 @@ body.race-mode #gearSelector { display:grid!important; }
       "ПРОИЗВОДИТЕЛЬНОСТЬ ANDROID",
       "FPS: "+d.fps+" | кадр: "+d.averageFrameMs+" мс",
       "JS-обновление: "+d.frameUpdateMs+" мс | WebGL-вызов: "+d.renderSubmitMs+" мс",
+      "Вне JS/WebGL: "+d.schedulerGapMs+" мс | p95 интервал: "+d.rafIntervalP95Ms+" мс",
+      "Кадров >50 мс: "+d.framesOver50Ms+" | максимум: "+d.rafIntervalMaxMs+" мс",
       "GPU: "+(d.gpuMs===null?(d.gpuTimerSupported?"ожидание":"таймер не поддерживается"):d.gpuMs+" мс")+" | максимум: "+(d.gpuMaxMs===null?"—":d.gpuMaxMs+" мс"),
+      "API: "+d.webglVersion+" · "+d.gpuTimerApi,
       "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
