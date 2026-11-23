@@ -5251,7 +5251,7 @@ const renderer = new THREE.WebGLRenderer({
   antialias: !acRacingMobileDevice,
   alpha: false,
   powerPreference: "high-performance",
-  precision: acRacingMobileDevice ? "mediump" : "highp"
+  precision: "highp"
 });
 if (window.__allcoinsRacingBoot) {
   window.__allcoinsRacingBoot.webglReady = true;
@@ -5259,10 +5259,10 @@ if (window.__allcoinsRacingBoot) {
 }
 // Android Telegram WebView profile: start with a lighter render target and scale up only
 // after sustained frame-rate headroom. Desktop remains at its existing quality settings.
-const acMobilePixelRatioCap = 1.18;
-const acMobilePixelRatioInitial = .92;
-const acMobilePixelRatioFloor = .68;
-renderer.setPixelRatio(Math.min(devicePixelRatio||1, acRacingMobileDevice ? acMobilePixelRatioInitial : 1.9));
+const acMobilePixelRatioCap = 1.35;
+const acMobilePixelRatioInitial = 1.15;
+const acMobilePixelRatioFloor = 1.0;
+renderer.setPixelRatio(acRacingMobileDevice ? Math.min(Math.max(devicePixelRatio||1, 1), acMobilePixelRatioInitial) : Math.min(devicePixelRatio||1, 1.9));
 // Keep the baked/contact shadow under the car; skip the expensive live shadow-map pass on phones.
 renderer.shadowMap.enabled = !acRacingMobileDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -8743,7 +8743,7 @@ function attachVehicle(root,label='сохранённая модель'){
   // Respect the live mobile tier when the GLB arrives after fallback was applied.
   // The previous fixed mobile value of 8 silently re-enabled expensive filtering
   // on the VAZ textures after the scene had already reduced filtering to 1 or 2.
-  const carTextureAnisotropyLimit = acRacingMobileDevice ? 4 : 12;
+  const carTextureAnisotropyLimit = acRacingMobileDevice ? 8 : 12;
   const carTextureAnisotropy = Math.min(carTextureAnisotropyLimit, renderer.capabilities.getMaxAnisotropy());
   const preparedCarTextures=new Set();
   root.traverse(object => {
