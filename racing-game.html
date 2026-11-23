@@ -5169,6 +5169,7 @@ function updateAnchoredEffects(){
 const acWheelSpinScratchQuaternion = new THREE.Quaternion();
 const AC_WHEEL_SPIN_RESPONSE_SECONDS = .12;
 const AC_WHEEL_SPIN_FULL_TURN = Math.PI * 2;
+let acWheelSpinDiagnosticsNextAt = 0;
 function spinWheelSet(nodes,angle){
   for(const wheel of nodes){
     /* ALLCOINS RACING V7 · WHEEL ROTATION DIRECTION */
@@ -5217,14 +5218,18 @@ function acAdvanceWheelSpin(dt,signedSpeed,burnoutActive){
   spinWheelSet(frontWheelNodes,wheelSpinAngle);
   spinWheelSet(rearWheelNodes,rearWheelSpinAngle);
 
-  window.__allcoinsRacingWheelSpinDiagnostics=Object.freeze({
-    roadRate:Number(roadWheelRate.toFixed(2)),
-    drivenRate:Number(drivenWheelRate.toFixed(2)),
-    visualLimit:Number(visibleRateLimit.toFixed(2)),
-    appliedFrontRate:Number(wheelSpinAngularVelocity.toFixed(2)),
-    appliedRearRate:Number(rearWheelSpinAngularVelocity.toFixed(2)),
-    frameStep:Number(step.toFixed(4))
-  });
+  const diagnosticNow=performance.now();
+  if(diagnosticNow>=acWheelSpinDiagnosticsNextAt){
+    acWheelSpinDiagnosticsNextAt=diagnosticNow+250;
+    window.__allcoinsRacingWheelSpinDiagnostics=Object.freeze({
+      roadRate:Number(roadWheelRate.toFixed(2)),
+      drivenRate:Number(drivenWheelRate.toFixed(2)),
+      visualLimit:Number(visibleRateLimit.toFixed(2)),
+      appliedFrontRate:Number(wheelSpinAngularVelocity.toFixed(2)),
+      appliedRearRate:Number(rearWheelSpinAngularVelocity.toFixed(2)),
+      frameStep:Number(step.toFixed(4))
+    });
+  }
 }
 function createHeadlightRig(actual,actualSize){
   if(headlightRig&&headlightRig.parent)headlightRig.parent.remove(headlightRig);
@@ -10742,10 +10747,13 @@ if(acRacingMobileDevice){
   const previousLayerMask=camera.layers.mask;
   camera.layers.enable(1);
   acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
-    ? renderer.compileAsync(scene,camera)
+    ? Promise.all([
+        renderer.compileAsync(scene,camera),
+        renderer.compileAsync(acMobileCompositeScene,acMobileCompositeCamera)
+      ])
     : Promise.resolve())
     .catch(error=>{
-      console.warn("ALLCOINS Racing: environment shader warmup failed; fallback compilation will run on first draw.",error);
+      console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
     })
     .finally(()=>{
       camera.layers.mask=previousLayerMask;
