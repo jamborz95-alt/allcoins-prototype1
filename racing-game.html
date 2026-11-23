@@ -2605,16 +2605,19 @@ function onlineUpdateTestBot() {
     : Math.min(260, (totalDistance / targetSeconds) * 3.6 * 1.12 * Math.pow(t, 0.12));
   const botGear = t < .08 ? 1 : t < .25 ? 2 : t < .48 ? 3 : t < .72 ? 4 : 5;
 
-  onlineRemoteStates.set(ONLINE_TEST_BOT_ID, {
-    userId: ONLINE_TEST_BOT_ID,
-    name: "ТЕСТ-БОТ",
-    distanceM: botDistance,
-    speedKmh,
-    gear: botGear,
-    progress: curve,
-    updatedAt: Date.now(),
-    fresh: true
-  });
+  // Reuse one progress record; the test bot is a timing/progress opponent,
+  // not a second 3D vehicle that should be cloned into the scene.
+  let botState = onlineRemoteStates.get(ONLINE_TEST_BOT_ID);
+  if (!botState) {
+    botState = { userId: ONLINE_TEST_BOT_ID, name: "ТЕСТ-БОТ" };
+    onlineRemoteStates.set(ONLINE_TEST_BOT_ID, botState);
+  }
+  botState.distanceM = botDistance;
+  botState.speedKmh = speedKmh;
+  botState.gear = botGear;
+  botState.progress = curve;
+  botState.updatedAt = Date.now();
+  botState.fresh = true;
 }
 
 async function onlineStartTestBotRace() {
@@ -3354,7 +3357,17 @@ function onlineUpdateRaceProgress() {
 
 function onlineUpdateOpponentCars(dt) {
   const inGarage = document.body.classList.contains('garage-mode');
-  const hasRealOpponent = !inGarage && onlineMode && onlineRaceStarted && onlineRemoteStates.size > 0;
+  // Progress-only test bots must not instantiate a cloned GLB vehicle.
+  // Render a second car only for an actual remote participant.
+  let hasRealOpponent = false;
+  if (!inGarage && onlineMode && onlineRaceStarted) {
+    for (const userId of onlineRemoteStates.keys()) {
+      if (userId !== ONLINE_TEST_BOT_ID) {
+        hasRealOpponent = true;
+        break;
+      }
+    }
+  }
   const targetCameraMode = inGarage ? 'garage' : (hasRealOpponent ? 'online' : 'solo');
   // В одиночной гонке не пересоздаём служебные списки и не обрабатываем пустой список соперников каждый кадр.
   if (!hasRealOpponent && onlineRemoteCars.size === 0 &&
@@ -3371,6 +3384,7 @@ function onlineUpdateOpponentCars(dt) {
   let slot = 0;
 
   for (const [userId, state] of onlineRemoteStates) {
+    if (userId === ONLINE_TEST_BOT_ID) continue;
     const remoteDistance = Number(state.distanceM);
     if (!userId || !Number.isFinite(remoteDistance)) continue;
 
@@ -7705,9 +7719,9 @@ function acApplyMobileExtremePerformanceTier() {
   acMobileExtremeFallbackApplied = true;
 
   // Last resort for phones that remain below 24 FPS after the ultra tier.
-  // Keep the player car, asphalt, lane markings and near guardrail untouched.
-  // At emergency FPS, remove the remaining city shells too. The road, sky,
-  // guardrail, car model, car materials, car lights and contact shadow stay intact.
+  // Preserve the player car, road, lane markings and near guardrail.
+  // Remove the distant city fence as well; it is a dense, multi-part foreground layer.
+  acCityFence.visible = false;
   for (const building of city) building.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
@@ -7780,6 +7794,15 @@ function acAdvanceWrappedSceneObject(object,worldDelta,factor,minX=-130,maxX=130
 const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTrackTreeUpper,acTrackTreeSnow]);
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
+
+  // In the extreme mobile profile only the road edge and near guardrail remain animated.
+  // Skip all distant-scene transforms, including the hidden city/building collection.
+  if (acMobileExtremeFallbackApplied) {
+    acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
+    acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
+    acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
+    return;
+  }
 
   if (acMobileUltraFallbackApplied) {
     for (const building of city) {
@@ -9849,6 +9872,8 @@ function animate(now){
          vehicleTextures:window.__allcoinsRacingVehicleRenderStats?.textures||0,
          mobileBatchMergedMeshes:window.__allcoinsRacingMobileBatchDiagnostics?.merged||0,
          mobileBatchCount:window.__allcoinsRacingMobileBatchDiagnostics?.batches||0,
+        renderedOpponentCars:onlineRemoteCars.size,
+        testBotProgressOnly:onlineTestBotActive,
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
         wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
@@ -11114,6 +11139,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
       "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
       "Геометрия: "+d.geometries+" | текстуры: "+d.textures,
+      "3D-соперники: "+d.renderedOpponentCars+" | тест-бот без 3D: "+(d.testBotProgressOnly?"да":"нет"),
       "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
       "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
       "Профиль: "+d.mobileQualityProfile,
