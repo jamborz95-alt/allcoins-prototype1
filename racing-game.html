@@ -8734,6 +8734,8 @@ function acRacingBatchStaticVehicleMeshes(){
   vehicle.updateWorldMatrix(true,true);
   const chassisInverse=vehicleChassis.matrixWorld.clone().invert();
   const buckets=new Map();
+  const audit={visitedMeshes:0,skippedStructure:0,skippedHiddenOrProtected:0,
+    skippedMaterial:0,skippedGeometry:0,skippedGroups:0,skippedRange:0,candidates:0};
   const skipName=/car[_ -]?carbody_0|car[_ -]?bottom_0|wheel|tire|tyre|reifen|llanta|pneu|шина|колес|disk|rim|window|glass|windscreen|windshield|стекл/i;
   const isInsideProtectedNode=object=>{
     for(let node=object;node&&node!==vehicleChassis;node=node.parent){
@@ -8743,25 +8745,45 @@ function acRacingBatchStaticVehicleMeshes(){
     return false;
   };
   vehicleChassis.traverse(object=>{
-    if(!object.isMesh||object.isSkinnedMesh||object.isInstancedMesh||
-       !object.geometry||!object.material||Array.isArray(object.material)||
-       object.children.length||object.morphTargetInfluences||
-       Object.keys(object.geometry.morphAttributes||{}).length||
-       object.onBeforeRender||object.customDepthMaterial||object.customDistanceMaterial||
-       !object.visible||isInsideProtectedNode(object))return;
+    if(!object.isMesh)return;
+    audit.visitedMeshes++;
+    if(object.isSkinnedMesh||object.isInstancedMesh||!object.geometry||!object.material||
+       Array.isArray(object.material)||object.children.length||object.morphTargetInfluences||
+       Object.keys(object.geometry.morphAttributes||{}).length||object.onBeforeRender||
+       object.customDepthMaterial||object.customDistanceMaterial){
+      audit.skippedStructure++;
+      return;
+    }
+    if(!object.visible||isInsideProtectedNode(object)){
+      audit.skippedHiddenOrProtected++;
+      return;
+    }
     const material=object.material;
     if(material.transparent||material.opacity<.999||material.alphaTest>0||
        material.depthWrite===false||material.blending!==THREE.NormalBlending||
-       material.visible===false)return;
+       material.visible===false){
+      audit.skippedMaterial++;
+      return;
+    }
     const geometry=object.geometry;
     const position=geometry.getAttribute("position");
-    if(!position||position.count<3)return;
+    if(!position||position.count<3){
+      audit.skippedGeometry++;
+      return;
+    }
     const elementCount=geometry.index?geometry.index.count:position.count;
     const groups=geometry.groups||[];
     if(groups.length>1||(groups.length===1&&
-       (groups[0].start!==0||groups[0].count<elementCount||groups[0].materialIndex!==0)))return;
+       (groups[0].start!==0||groups[0].count<elementCount||groups[0].materialIndex!==0))){
+      audit.skippedGroups++;
+      return;
+    }
     const drawRange=geometry.drawRange||{start:0,count:Infinity};
-    if(drawRange.start!==0||(drawRange.count!==Infinity&&drawRange.count<elementCount))return;
+    if(drawRange.start!==0||(drawRange.count!==Infinity&&drawRange.count<elementCount)){
+      audit.skippedRange++;
+      return;
+    }
+    audit.candidates++;
     const attributes=Object.keys(geometry.attributes).sort();
     const layout=attributes.map(name=>{
       const a=geometry.getAttribute(name);
@@ -8861,8 +8883,10 @@ function acRacingBatchStaticVehicleMeshes(){
       for(const part of bucket.parts)part.geometry.dispose();
     }
   }
-  if(merged)console.info("ALLCOINS Racing · mobile static geometry batches",{mergedMeshes:merged,batchesCreated:batches});
-  return {merged,batches};
+  const result={...audit,merged,batches,bucketCount:buckets.size};
+  window.__allcoinsRacingMobileBatchDiagnostics=Object.freeze(result);
+  console.info("ALLCOINS Racing · mobile static geometry audit",result);
+  return {merged,batches,candidates:audit.candidates,bucketCount:buckets.size};
 }
 
 function attachVehicle(root,label='сохранённая модель'){
@@ -9097,6 +9121,8 @@ function attachVehicle(root,label='сохранённая модель'){
     rearWheelCount: rearWheelNodes.length,
     mobileStaticMeshesMerged: mobileGeometryBatch.merged,
     mobileStaticBatchesCreated: mobileGeometryBatch.batches,
+    mobileStaticMeshCandidates: mobileGeometryBatch.candidates,
+    mobileStaticMaterialBuckets: mobileGeometryBatch.bucketCount,
     worldCenter: [visibleCenter.x, visibleCenter.y, visibleCenter.z].map(value => Number(value.toFixed(3))),
     cameraTarget: [camera.position.x, camera.position.y, camera.position.z].map(value => Number(value.toFixed(3))),
     playerLaneZ: AC_PLAYER_LANE_Z
