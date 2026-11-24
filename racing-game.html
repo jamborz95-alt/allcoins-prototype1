@@ -8121,7 +8121,7 @@ function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
   // The static city batch moves as one root; its instance matrices change only on wrap.
-  if (acMobileCityShellRoot && acMobileSevereFallbackApplied) {
+  if (acMobileCityShellRoot) {
     acAdvanceMobileCityShellBatch(worldDelta);
   } else {
     for (const building of city) {
