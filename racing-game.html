@@ -2534,9 +2534,10 @@ const $ = id => document.getElementById(id);
 // ?perfTest=render | physics | full. The normal game is unchanged without this parameter.
 const AC_PERF_TEST_MODE = new URLSearchParams(window.location.search).get("perfTest");
 let acPerfBenchmark = null;
+let acPerfBenchmarkRunId = 0;
 function acPerfStartBenchmarkAfterCarReady() {
   const mode = AC_PERF_TEST_MODE;
-  if (!["render","physics","full"].includes(mode) || acPerfBenchmark) return false;
+  if (!["render","physics","full"].includes(mode) || (acPerfBenchmark && !acPerfBenchmark.completed)) return false;
 
   try {
     // Every benchmark starts from the same native mobile render scale.
@@ -2563,16 +2564,27 @@ function acPerfStartBenchmarkAfterCarReady() {
     smokeParticles.length = 0;
 
     const startedAt = performance.now();
+    const runId = ++acPerfBenchmarkRunId;
+    last = startedAt;
+    acPerfFrameCount = 0;
+    acPerfMaxFrameMs = 0;
+    acPerfRafIntervals = [];
+    acPerfLongFrameCount = 0;
+    acPerfRafIntervalMax = 0;
+    acPerfUpdateMsTotal = 0;
+    acPerfRenderSubmitMsTotal = 0;
+    acPerfMeasuredFrames = 0;
+    acPerfSampleStart = startedAt;
     acPerfLowFpsSamples = 0;
     acPerfStableFpsSamples = 0;
     acPerfBenchmark = {
-      mode, startedAt, durationMs: 18000,
+      mode, runId, startedAt, durationMs: 18000, hiddenDurationMs: 0,
       frames: 0, frameMsTotal: 0, maxFrameMs: 0, framesOver50Ms: 0,
       updateMsTotal: 0, renderSubmitMsTotal: 0, measuredFrames: 0, renderFrames: 0
     };
     window.__allcoinsRacingBenchmarkResult = null;
     window.__allcoinsRacingBenchmarkState = {
-      mode, startedAt, durationMs: acPerfBenchmark.durationMs, completed: false
+      mode, runId, startedAt, durationMs: acPerfBenchmark.durationMs, completed: false
     };
     updateInstrumentCluster(startedAt);
     hideMessage();
@@ -2587,6 +2599,7 @@ function acPerfStartBenchmarkAfterCarReady() {
   }
 }
 
+window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarReady();
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
 let onlineSocket = null;
@@ -10009,6 +10022,7 @@ function animate(now){
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
   last=now;
+  if(document.hidden)return;
   if(acRacingMobileDevice){
     acPerfFrameCount++;
     acPerfLastFrameMs=rawFrameMs;
@@ -10030,7 +10044,9 @@ function animate(now){
         const elapsedMs=now-acPerfBenchmark.startedAt;
         window.__allcoinsRacingBenchmarkResult=Object.freeze({
           mode:acPerfBenchmark.mode,
+          runId:acPerfBenchmark.runId,
           durationMs:Number(elapsedMs.toFixed(0)),
+          hiddenDurationMs:Number(acPerfBenchmark.hiddenDurationMs.toFixed(0)),
           frames:acPerfBenchmark.frames,
           averageFps:Number((1000/Math.max(.001,averageFrameMs)).toFixed(1)),
           averageFrameMs:Number(averageFrameMs.toFixed(2)),
@@ -10264,7 +10280,7 @@ const perfBadge=document.getElementById("racingPerfBadge");
     const travelSpeed=Math.max(0,(speedBeforeStep+speed)*.5);
     const signedTravelSpeed=travelSpeed*(gear===-1?-1:1);
     distance+=signedTravelSpeed/3.6*dt;
-    if(acFuelProfileReady){
+    if(acFuelProfileReady && !acPerfBenchmark){
       const fuelDistanceKm=Math.max(0,(speedBeforeStep+speed)*.5)*dt/3600;
       const idleFuel=throttle&&speed<1?.00008*dt:0;
       const fuelUsed=fuelDistanceKm*AC_FUEL_CONSUMPTION_L_PER_100KM/100+idleFuel;
@@ -10467,7 +10483,30 @@ if(distance>=RACE_DISTANCE_METERS){
 }
 
 let acPausedByVisibility = false;
+let acPerfBenchmarkHiddenAt = 0;
 document.addEventListener('visibilitychange',()=>{
+  const visibilityNow = performance.now();
+  if(acPerfBenchmark && !acPerfBenchmark.completed){
+    if(document.hidden){
+      if(!acPerfBenchmarkHiddenAt)acPerfBenchmarkHiddenAt=visibilityNow;
+    }else if(acPerfBenchmarkHiddenAt){
+      const hiddenMs=Math.max(0,visibilityNow-acPerfBenchmarkHiddenAt);
+      acPerfBenchmark.hiddenDurationMs+=hiddenMs;
+      acPerfBenchmark.startedAt+=hiddenMs;
+      last=visibilityNow;
+      acPerfSampleStart=visibilityNow;
+      acPerfFrameCount=0;
+      acPerfRafIntervals=[];
+      acPerfLongFrameCount=0;
+      acPerfRafIntervalMax=0;
+      acPerfUpdateMsTotal=0;
+      acPerfRenderSubmitMsTotal=0;
+      acPerfMeasuredFrames=0;
+      if(window.__allcoinsRacingBenchmarkState)window.__allcoinsRacingBenchmarkState.startedAt=acPerfBenchmark.startedAt;
+      if(acPerfBenchmark.mode!=="render"){throttle=true;raceStarted=true;}
+      acPerfBenchmarkHiddenAt=0;
+    }
+  }
   if(document.hidden){
     throttle=false;
     braking=false;
@@ -11416,6 +11455,7 @@ body.race-mode #gearSelector { display:grid!important; }
 </style>
 <div id="acPerfHud" aria-live="polite">
   <button id="acPerfHudToggle" type="button">FPS · собираем</button>
+  <button id="acPerfHudRestart" type="button" style="display:none;margin-left:4px">ПОВТОРИТЬ ТЕСТ</button>
   <div id="acPerfHudPanel">Собираем показатели…</div>
 </div>
 <script id="acPerfHudScript">
@@ -11423,8 +11463,13 @@ body.race-mode #gearSelector { display:grid!important; }
   const root=document.getElementById("acPerfHud");
   const toggle=document.getElementById("acPerfHudToggle");
   const panel=document.getElementById("acPerfHudPanel");
+  const restart=document.getElementById("acPerfHudRestart");
   if(!root||!toggle||!panel)return;
   toggle.addEventListener("click",function(){root.classList.toggle("open");});
+  if(restart && new URLSearchParams(window.location.search).has("perfTest")){
+    restart.style.display="inline-block";
+    restart.addEventListener("click",function(){window.__allcoinsRacingRestartBenchmark?.();});
+  }
   let longTaskMs=0;
   try{
     if("PerformanceObserver" in window){
@@ -11448,6 +11493,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "GPU: "+(d.gpuMs===null?(d.gpuTimerSupported?"ожидание":"таймер не поддерживается"):d.gpuMs+" мс")+" | максимум: "+(d.gpuMaxMs===null?"—":d.gpuMaxMs+" мс"),
       "API: "+d.webglVersion+" · "+d.gpuTimerApi,
       "РЕЖИМ ТЕСТА: "+(window.__allcoinsRacingBenchmarkState?.mode||"обычная игра"),
+       "ЗАПУСК: "+(window.__allcoinsRacingBenchmarkState?.runId||"—"),
       "СТАТУС: "+(window.__allcoinsRacingBenchmarkState?.completed?"тест завершён":window.__allcoinsRacingBenchmarkState?"тест выполняется 18 секунд":"ожидание теста"),
       ...(window.__allcoinsRacingBenchmarkResult?[
         "ИТОГ FPS: "+window.__allcoinsRacingBenchmarkResult.averageFps+" | кадр: "+window.__allcoinsRacingBenchmarkResult.averageFrameMs+" мс",
