@@ -8012,21 +8012,6 @@ function acAdvanceRaceScenery(worldDelta){
     return;
   }
 
-  // The severe mobile profile keeps only building shells, the distant fence,
-  // curbs and the near guardrail visible. Do not spend a transform/wrap pass on
-  // the hidden shrubs, pavement trim, tree layers, house group or distant hills.
-  // Their positions are irrelevant until a non-mobile full-detail scene is used.
-  if (acMobileSevereFallbackApplied) {
-    for (const building of city) {
-      if (building.visible) acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
-    }
-    acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
-    acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
-    acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
-    acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
-    return;
-  }
-
   for(const building of city){
     if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
   }
