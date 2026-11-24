@@ -10003,8 +10003,22 @@ let acPerfMeasuredFrames = 0;
 let acPerfRafIntervals = [];
 let acPerfLongFrameCount = 0;
 let acPerfRafIntervalMax = 0;
+let acPerfFirstFrameStarted = false;
 function animate(now){
   requestAnimationFrame(animate);
+  // The RAF loop starts only after mobile shader preparation. Start the FPS
+  // sampling clock on its first real frame, not before that asynchronous wait.
+  if (acRacingMobileDevice && !acPerfFirstFrameStarted) {
+    acPerfFirstFrameStarted = true;
+    last = now;
+    acPerfFrameCount = 0;
+    acPerfSampleStart = now;
+    acPerfLastFrameMs = 0;
+    acPerfMaxFrameMs = 0;
+    acPerfRafIntervals.length = 0;
+    acPerfLongFrameCount = 0;
+    acPerfRafIntervalMax = 0;
+  }
   const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
