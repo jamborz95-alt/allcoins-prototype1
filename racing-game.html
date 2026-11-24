@@ -5912,9 +5912,6 @@ function acAdvanceRoadSurface(scroll) {
 
 // Центральная разметка остаётся штатной: пунктир laneMarks движется вместе с трассой.
 const city = [];
-// Mobile city shells are rendered as six instanced batches instead of 33 separate meshes.
-const acMobileCityShellRecords = [];
-let acMobileCityShellBatch = null;
 const facadeTextures = [0, 1, 2].map(acCreateFacadeTexture);
 // Ночная городская палитра: глубокие сине-серые фасады, чтобы светящиеся окна и фонари читались контрастно.
 const buildingPalette = [0xcbb494, 0xd8bea0, 0xbfa280, 0xc1b7a6, 0xd4c1a0, 0x9db0b8];
@@ -5984,10 +5981,7 @@ for (let i = 0; i < 33; i++) {
   shell.position.y = height / 2;
   shell.userData.acMobileBaseShell = true;
   shell.receiveShadow = true;
-  // On mobile the original shell is replaced by an equivalent instanced box.
-  if (acRacingMobileDevice) shell.visible = false;
   building.add(shell);
-  if (acRacingMobileDevice) acMobileCityShellRecords.push({ building, shell, width, height, depth });
 
   const frontZ = depth / 2 + .08;
   const columns = Math.max(6, Math.floor(width / .90));
@@ -6162,86 +6156,6 @@ for (let i = 0; i < 33; i++) {
 
 // V27: keep the detailed city blocks active in race mode; they scroll at distant-scene parallax.
 for (const building of city) building.visible = true;
-
-// Reduce mobile city-shell draw calls from 33 individual meshes to one instance
-// batch per facade material. Unit-box UVs match BoxGeometry(width,height,depth),
-// so the original facade maps, colors, proportions and placement are preserved.
-function acBuildMobileCityShellBatch() {
-  if (!acRacingMobileDevice || acMobileCityShellBatch || !acMobileCityShellRecords.length) return 0;
-  const byMaterial = new Map();
-  for (const record of acMobileCityShellRecords) {
-    const material = record.shell.material;
-    if (!byMaterial.has(material)) byMaterial.set(material, []);
-    byMaterial.get(material).push(record);
-  }
-  const root = new THREE.Group();
-  root.name = "ALLCOINS mobile instanced city shells";
-  const unitBox = new THREE.BoxGeometry(1, 1, 1);
-  const dummy = new THREE.Object3D();
-  let batchCount = 0;
-  for (const [material, records] of byMaterial) {
-    const mesh = new THREE.InstancedMesh(unitBox, material, records.length);
-    mesh.name = "ALLCOINS city shell batch " + batchCount;
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    mesh.frustumCulled = false;
-    mesh.castShadow = false;
-    mesh.receiveShadow = true;
-    for (let index = 0; index < records.length; index++) {
-      const record = records[index];
-      record.batchMesh = mesh;
-      record.instanceIndex = index;
-      dummy.position.set(
-        record.building.position.x,
-        record.building.position.y + record.height * .5,
-        record.building.position.z
-      );
-      dummy.rotation.copy(record.building.rotation);
-      dummy.scale.set(record.width, record.height, record.depth);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(index, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    root.add(mesh);
-    batchCount++;
-  }
-  scene.add(root);
-  acMobileCityShellBatch = root;
-  for (const record of acMobileCityShellRecords) {
-    record.shell.visible = false;
-    record.shell.geometry.dispose();
-  }
-  root.visible = !document.body.classList.contains("garage-mode");
-  acUpdateMobileCityShellBatch();
-  window.__allcoinsRacingMobileCityShellBatches = Object.freeze({
-    batches: batchCount,
-    instances: acMobileCityShellRecords.length,
-    originalShellDrawCallsRemoved: acMobileCityShellRecords.length
-  });
-  return batchCount;
-}
-
-function acUpdateMobileCityShellBatch() {
-  if (!acMobileCityShellBatch) return;
-  for (const record of acMobileCityShellRecords) {
-    const visible = !acMobileExtremeFallbackApplied &&
-      (!acMobileUltraFallbackApplied || record.building.visible);
-    acMobileCityShellDummy.position.set(
-      record.building.position.x,
-      record.building.position.y + record.height * .5,
-      record.building.position.z
-    );
-    acMobileCityShellDummy.rotation.copy(record.building.rotation);
-    acMobileCityShellDummy.scale.set(
-      visible ? record.width : 0,
-      visible ? record.height : 0,
-      visible ? record.depth : 0
-    );
-    acMobileCityShellDummy.updateMatrix();
-    record.batchMesh.setMatrixAt(record.instanceIndex, acMobileCityShellDummy.matrix);
-  }
-  for (const mesh of acMobileCityShellBatch.children) mesh.instanceMatrix.needsUpdate = true;
-}
-const acMobileCityShellDummy = new THREE.Object3D();
 
 /* ALLCOINS RACING CITY-SIDE FENCE — секционное металлическое ограждение с диагональными распорками. */
 const acCityFence = new THREE.Group();
@@ -7756,17 +7670,7 @@ function setGarageMode(enabled) {
   // several expensive effects back on for every race transition.
   const mobileSevereScene = acMobileSevereFallbackApplied;
   acRaceSkyBackdrop.visible = trackVisible;
-  for (const building of city) building.visible = trackVisible && !mobileSevereScene;
-  if (acMobileUltraFallbackApplied) {
-    for (let index = 0; index < city.length; index++) city[index].visible = trackVisible && index % 2 === 0;
-  }
-  if (acMobileExtremeFallbackApplied) {
-    for (const building of city) building.visible = false;
-  }
-  if (acMobileCityShellBatch) {
-    acMobileCityShellBatch.visible = trackVisible && !acMobileExtremeFallbackApplied;
-    acUpdateMobileCityShellBatch();
-  }
+  for (const building of city) building.visible = trackVisible;
   distantHills.visible = trackVisible && !mobileSevereScene;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
@@ -7950,13 +7854,10 @@ function acApplyMobileSeverePerformanceTier() {
 
   // Keep the VAZ, asphalt, roadside boundary and recognizable building silhouettes.
   // Hide only detailed facade meshes and non-essential scenery on critically slow phones.
-  // The recognizable building shells are rendered by the instanced batch.
-  // Hide whole detail groups so Three.js can prune their entire child trees.
   for (const building of city) {
-    for (const child of building.children) child.visible = false;
-    building.visible = false;
+    const baseShell = building.children.find(child => child.userData?.acMobileBaseShell);
+    for (const child of building.children) child.visible = child === baseShell;
   }
-  if (acMobileCityShellBatch) acMobileCityShellBatch.visible = true;
   distantHills.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
@@ -8006,7 +7907,6 @@ function acApplyMobileUltraPerformanceTier() {
   for (let index = 0; index < city.length; index++) {
     city[index].visible = index % 2 === 0;
   }
-  acUpdateMobileCityShellBatch();
 
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "ultra-mobile-performance";
@@ -8021,7 +7921,6 @@ function acApplyMobileExtremePerformanceTier() {
   // Preserve the player car, road, lane markings and near guardrail.
   // The distant fence remains visible; only the far city/building meshes are hidden.
   for (const building of city) building.visible = false;
-  if (acMobileCityShellBatch) acMobileCityShellBatch.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
   acTrackHouseGroup.visible = false;
@@ -8092,28 +7991,30 @@ const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTr
 function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
 
-  // Move the lightweight city parents; the mobile shell batch is refreshed below.
-  for (const building of city) acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
-
-  // In the extreme mobile profile, skip transforms for all other hidden scenery.
+  // In the extreme mobile profile, skip transforms for the hidden city/building collection.
+  // Keep the visible fence moving with its distant-scene parallax.
   if (acMobileExtremeFallbackApplied) {
     acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
-    acUpdateMobileCityShellBatch();
     return;
   }
 
   if (acMobileUltraFallbackApplied) {
+    for (const building of city) {
+      if (building.visible) acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
+    }
     acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
-    acUpdateMobileCityShellBatch();
     return;
   }
 
+  for(const building of city){
+    if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
+  }
   acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acCityShrubs,worldDelta,.19,-132,104,236);
   acAdvanceWrappedSceneObject(acSidewalkDetails,worldDelta,.19,-132,104,236);
@@ -8127,7 +8028,6 @@ function acAdvanceRaceScenery(worldDelta){
   for(const mesh of acTrackTreeLayers)acAdvanceWrappedSceneObject(mesh,worldDelta,.14);
   acAdvanceWrappedSceneObject(acTrackHouseGroup,worldDelta,.075);
   acAdvanceWrappedSceneObject(distantHills,worldDelta,.035,-260,0,260);
-  acUpdateMobileCityShellBatch();
 }
 
 let vehicle=null, wheelNodes=[], frontWheelNodes=[], rearWheelNodes=[], exhaustPoint=new THREE.Vector3(carAnchor-2.2,.55,-.2), rearWheelPoint=new THREE.Vector3(carAnchor-1.45,.42,.15);
@@ -10244,8 +10144,6 @@ const perfBadge=document.getElementById("racingPerfBadge");
          vehicleTextures:window.__allcoinsRacingVehicleRenderStats?.textures||0,
          mobileBatchMergedMeshes:window.__allcoinsRacingMobileBatchDiagnostics?.merged||0,
          mobileBatchCount:window.__allcoinsRacingMobileBatchDiagnostics?.batches||0,
-        mobileCityShellBatches:window.__allcoinsRacingMobileCityShellBatches?.batches||0,
-        mobileCityShellInstances:window.__allcoinsRacingMobileCityShellBatches?.instances||0,
         renderedOpponentCars:onlineRemoteCars.size,
         testBotProgressOnly:onlineTestBotActive,
         benchmarkMode:acPerfBenchmark?.mode||null,
@@ -10801,22 +10699,13 @@ setGarageMode(true);
 // that is rendered during the race; no offscreen compositor pass.
 if(acRacingMobileDevice){
   acSimplifyMobileEnvironmentShaders();
-  acBuildMobileCityShellBatch();
-  // Compile the instanced city shader while still in the garage, avoiding a
-  // first-race compilation hitch. The batch is hidden again after compilation.
-  if (acMobileCityShellBatch) acMobileCityShellBatch.visible = true;
   acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
     ? renderer.compileAsync(scene,camera)
     : Promise.resolve())
     .catch(error=>{
       console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
     })
-    .finally(()=>{
-      if (acMobileCityShellBatch) {
-        acMobileCityShellBatch.visible = document.body.classList.contains("race-mode") && !acMobileExtremeFallbackApplied;
-      }
-      requestAnimationFrame(animate);
-    });
+    .finally(()=>requestAnimationFrame(animate));
 }else{
   requestAnimationFrame(animate);
 }
