@@ -7793,7 +7793,7 @@ function setGarageMode(enabled) {
   // several expensive effects back on for every race transition.
   const mobileSevereScene = acMobileSevereFallbackApplied;
   acRaceSkyBackdrop.visible = trackVisible;
-  for (const building of city) building.visible = trackVisible;
+  for (const building of city) building.visible = trackVisible && !acMobileCityShellRoot;
   distantHills.visible = trackVisible && !mobileSevereScene;
   road.visible = trackVisible;
   shoulder.visible = trackVisible;
