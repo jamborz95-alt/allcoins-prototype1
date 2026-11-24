@@ -10840,13 +10840,22 @@ setGarageMode(true);
 if(acRacingMobileDevice){
   acSimplifyMobileEnvironmentShaders();
   acBuildMobileCityShellBatch();
+  // Make the instanced city visible only during shader compilation; no animation
+  // frame is running yet, so this avoids a first-race-frame shader compile.
+  if (acMobileCityShellRoot) acMobileCityShellRoot.visible = true;
   acMobileEnvironmentShaderWarmupPromise = (typeof renderer.compileAsync==="function"
     ? renderer.compileAsync(scene,camera)
     : Promise.resolve())
     .catch(error=>{
       console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
     })
-    .finally(()=>requestAnimationFrame(animate));
+    .finally(()=>{
+      if (acMobileCityShellRoot) {
+        acMobileCityShellRoot.visible =
+          document.body.classList.contains("race-mode") && !acMobileExtremeFallbackApplied;
+      }
+      requestAnimationFrame(animate);
+    });
 }else{
   requestAnimationFrame(animate);
 }
