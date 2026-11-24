@@ -933,7 +933,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261124-first-frame-fps-v205", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261124-startup-fallback-v206", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
