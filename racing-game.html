@@ -10003,22 +10003,8 @@ let acPerfMeasuredFrames = 0;
 let acPerfRafIntervals = [];
 let acPerfLongFrameCount = 0;
 let acPerfRafIntervalMax = 0;
-let acPerfFirstFrameStarted = false;
 function animate(now){
   requestAnimationFrame(animate);
-  // The RAF loop starts only after mobile shader preparation. Start the FPS
-  // sampling clock on its first real frame, not before that asynchronous wait.
-  if (acRacingMobileDevice && !acPerfFirstFrameStarted) {
-    acPerfFirstFrameStarted = true;
-    last = now;
-    acPerfFrameCount = 0;
-    acPerfSampleStart = now;
-    acPerfLastFrameMs = 0;
-    acPerfMaxFrameMs = 0;
-    acPerfRafIntervals.length = 0;
-    acPerfLongFrameCount = 0;
-    acPerfRafIntervalMax = 0;
-  }
   const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
@@ -10708,16 +10694,6 @@ document.querySelectorAll('[data-gear-target]').forEach(button => {
 
 // Панель приборов уже обновляется общим циклом updateInstrumentCluster().
 setGarageMode(true);
-
-// Perform the one-time mobile scenery/material simplification while the player
-// is still in the garage. Running these scene-wide loops during setGarageMode(false)
-// caused a CPU hitch on the first race frame (the observed initial FPS collapse).
-// The VAZ is loaded afterwards, so its original PBR materials and textures remain
-// untouched; attachVehicle applies its own car-texture settings when the GLB arrives.
-if(acRacingMobileDevice && !acPerfBenchmark){
-  acApplyMobilePerformanceTier();
-  acApplyMobileSeverePerformanceTier();
-}
 
 // Compile the mobile environment before gameplay using the same single scene
 // that is rendered during the race; no offscreen compositor pass.
