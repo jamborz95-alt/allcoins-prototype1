@@ -6230,6 +6230,7 @@ for (const bucket of acCityShellBuckets) {
   mesh.name = "ALLCOINS · city shell batch · material " + bucket.materialIndex;
   mesh.receiveShadow = true;
   mesh.castShadow = false;
+  mesh.frustumCulled = false;
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   bucket.records.forEach(record => {
     record.mesh = mesh;
@@ -6258,7 +6259,6 @@ function acUpdateCityShellInstanceMatrices() {
   }
   for (const mesh of acCityShellInstanceMeshes) {
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere();
   }
 }
 
