@@ -1,7 +1,7 @@
 import express from "express";
 
 const ROOM_PREFIX = "DR-";
-const MAX_STAKE = BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 5));
+const RACE_WINNER_REWARD = 120000n;
 const MIN_RACE_FINISH_MS = 7000;
 const MAX_FINISH_TIME_DRIFT_MS = 2500;
 const VALID_MODES = new Set(["quarter", "half", "sprint"]);
@@ -95,16 +95,6 @@ class DragRacingError extends Error {
 function parseRoomId(value) {
   const match = String(value ?? "").trim().match(/^(?:DR-)?([1-9]\d{0,17})$/);
   return match ? match[1] : null;
-}
-
-function safeStake(value) {
-  const raw = String(value ?? "").trim().replace(/[\s,_]/g, "");
-  if (!/^\d+$/.test(raw)) return null;
-  try {
-    const amount = BigInt(raw);
-    if (amount < 100n || amount > MAX_STAKE) return null;
-    return amount.toString();
-  } catch { return null; }
 }
 
 function displayName(user) {
@@ -300,23 +290,15 @@ async function roomPayload(client, roomId, userId) {
   };
 }
 
-async function settleRoomIfReady(client, room, players, game, recordGameCommission) {
+async function settleRoomIfReady(client, room, players, game) {
   if (game.phase === "finished") return;
   const ids = players.map(player => String(player.telegram_id));
   if (!ids.length || !ids.every(id => game.results?.[id])) return;
   const times = ids.map(id => Number(game.results[id].timeMs));
   const bestTime = Math.min(...times);
   const winners = ids.filter(id => Number(game.results[id].timeMs) === bestTime);
-  const grossBig = BigInt(String(room.stake)) * BigInt(ids.length);
-  const commissionRow = await recordGameCommission(client, {
-    game: "drag-racing",
-    eventKey: "drag-racing:" + String(room.id),
-    grossAmount: Number(grossBig)
-  });
-  const commission = Math.min(Number(grossBig), Math.max(0, Math.floor(Number(commissionRow?.amount) || 0)));
-  const payoutBig = grossBig - BigInt(commission);
-  let remainder = payoutBig % BigInt(winners.length);
-  const base = payoutBig / BigInt(winners.length);
+  let remainder = RACE_WINNER_REWARD % BigInt(winners.length);
+  const base = RACE_WINNER_REWARD / BigInt(winners.length);
   const winnerDetails = [];
   for (const id of winners) {
     const amount = base + (remainder > 0n ? 1n : 0n);
@@ -338,16 +320,17 @@ async function settleRoomIfReady(client, room, players, game, recordGameCommissi
   game.finishedAt = Date.now();
   game.winnerIds = winners;
   game.winners = winnerDetails;
-  game.grossPot = Number(grossBig);
-  game.commission = commission;
-  game.payout = Number(payoutBig);
+  game.grossPot = Number(RACE_WINNER_REWARD);
+  game.commission = 0;
+  game.payout = Number(RACE_WINNER_REWARD);
   game.message = winners.length === 1
-    ? "Заезд завершён. Победитель получил призовой фонд за вычетом комиссии 5%."
-    : "Финиш почти одновременно! Призовой фонд разделён между победителями за вычетом комиссии 5%.";
+    ? "Заезд завершён. Система начислила победителю 120 000 AC."
+    : "Ничья! Система разделила 120 000 AC поровну между победителями.";
   await client.query(
     "UPDATE drag_racing_rooms SET status = 'finished', game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
     [String(room.id), JSON.stringify(game)]
   );
+}
 }
 
 export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommission }) {
@@ -375,13 +358,17 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_rooms (" +
       "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, owner_telegram_id BIGINT NOT NULL, " +
-      "owner_name TEXT NOT NULL DEFAULT 'Игрок', stake BIGINT NOT NULL CHECK (stake >= 100), " +
+      "owner_name TEXT NOT NULL DEFAULT 'Игрок', stake BIGINT NOT NULL DEFAULT 0 CHECK (stake >= 0), " +
       "max_players INTEGER NOT NULL CHECK (max_players BETWEEN 2 AND 5), " +
       "mode TEXT NOT NULL CHECK (mode IN ('quarter','half','sprint')), " +
       "status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','racing','finished')), " +
       "game_state JSONB NOT NULL DEFAULT '{\"phase\":\"waiting\",\"results\":{}}'::jsonb, " +
       "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
     );
+    await pool.query("ALTER TABLE drag_racing_rooms DROP CONSTRAINT IF EXISTS drag_racing_rooms_stake_check");
+    await pool.query("ALTER TABLE drag_racing_rooms DROP CONSTRAINT IF EXISTS drag_racing_rooms_stake_nonnegative_check");
+    await pool.query("ALTER TABLE drag_racing_rooms ALTER COLUMN stake SET DEFAULT 0");
+    await pool.query("ALTER TABLE drag_racing_rooms ADD CONSTRAINT drag_racing_rooms_stake_nonnegative_check CHECK (stake >= 0)");
     await pool.query(
       "CREATE TABLE IF NOT EXISTS drag_racing_room_players (" +
       "room_id BIGINT NOT NULL REFERENCES drag_racing_rooms(id) ON DELETE CASCADE, " +
@@ -460,6 +447,51 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       throw error;
     } finally {
       migrationClient.release();
+    }
+
+    // One-time conversion of legacy paid rooms: refund old entry amounts and close those rooms.
+    const freeEntryClient = await pool.connect();
+    try {
+      await freeEntryClient.query("BEGIN");
+      const migration = await freeEntryClient.query(
+        "INSERT INTO drag_racing_migrations (migration_key) VALUES ('racing-free-entry-fixed-prize-v1') " +
+        "ON CONFLICT DO NOTHING RETURNING migration_key"
+      );
+      if (migration.rowCount > 0) {
+        const legacyRooms = await freeEntryClient.query(
+          "SELECT id::TEXT AS id, stake::TEXT AS stake FROM drag_racing_rooms " +
+          "WHERE status IN ('waiting','racing') FOR UPDATE"
+        );
+        for (const legacyRoom of legacyRooms.rows) {
+          const members = await freeEntryClient.query(
+            "SELECT telegram_id::TEXT AS telegram_id FROM drag_racing_room_players WHERE room_id = $1::BIGINT",
+            [String(legacyRoom.id)]
+          );
+          const oldStake = BigInt(String(legacyRoom.stake || "0"));
+          if (oldStake > 0n) {
+            for (const member of members.rows) {
+              await freeEntryClient.query(
+                "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
+                [oldStake.toString(), String(member.telegram_id)]
+              );
+            }
+          }
+          await freeEntryClient.query(
+            "UPDATE drag_racing_rooms SET status = 'finished', stake = 0, " +
+            "game_state = jsonb_build_object('phase','finished','results','{}'::jsonb," +
+            "'message','Старый заезд отменён при переходе на бесплатные комнаты; взносы возвращены.'), updated_at = NOW() " +
+            "WHERE id = $1::BIGINT",
+            [String(legacyRoom.id)]
+          );
+        }
+        await freeEntryClient.query("UPDATE drag_racing_rooms SET stake = 0");
+      }
+      await freeEntryClient.query("COMMIT");
+    } catch (error) {
+      try { await freeEntryClient.query("ROLLBACK"); } catch (_) {}
+      throw error;
+    } finally {
+      freeEntryClient.release();
     }
   };
 
@@ -1336,28 +1368,17 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     let maintenanceClient;
     let maintenanceOpen = false;
     try {
-      // Clean up abandoned waiting rooms only when no member has sent a heartbeat
-      // for two minutes. Refund each paid stake in the same transaction before deletion.
+      // Remove abandoned free rooms after two minutes without player activity.
       maintenanceClient = await pool.connect();
       await maintenanceClient.query("BEGIN"); maintenanceOpen = true;
       const staleRooms = await maintenanceClient.query(
-        "SELECT r.id::TEXT AS id, r.stake::TEXT AS stake FROM drag_racing_rooms r " +
+        "SELECT r.id::TEXT AS id FROM drag_racing_rooms r " +
         "WHERE r.status = 'waiting' AND NOT EXISTS (" +
           "SELECT 1 FROM drag_racing_room_players p WHERE p.room_id = r.id " +
           "AND p.last_seen_at >= NOW() - INTERVAL '2 minutes') " +
         "FOR UPDATE SKIP LOCKED"
       );
       for (const staleRoom of staleRooms.rows) {
-        const members = await maintenanceClient.query(
-          "SELECT telegram_id::TEXT AS telegram_id FROM drag_racing_room_players WHERE room_id = $1::BIGINT",
-          [String(staleRoom.id)]
-        );
-        for (const member of members.rows) {
-          await maintenanceClient.query(
-            "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-            [String(staleRoom.stake), String(member.telegram_id)]
-          );
-        }
         await maintenanceClient.query("DELETE FROM drag_racing_rooms WHERE id = $1::BIGINT AND status = 'waiting'", [String(staleRoom.id)]);
       }
       // Finished-room payout was committed already; remove only its old room record and result.
@@ -1403,17 +1424,15 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   router.post("/rooms/create", async (req, res) => {
     const user = requireUser(req, res, verifyTelegram);
     if (!user) return;
-    const stake = safeStake(req.body?.stake);
     const maxPlayers = Number(req.body?.maxPlayers ?? req.body?.players);
     const mode = String(req.body?.mode || "quarter");
-    if (stake === null) return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом не меньше 100 AC." });
     if (maxPlayers !== 2) return res.status(400).json({ ok: false, error: "В ALLCOINS Racing доступны комнаты строго на 2 игроков." });
     if (!VALID_MODES.has(mode)) return res.status(400).json({ ok: false, error: "Выбран неизвестный режим гонки." });
     const client = await pool.connect();
     let open = false;
     try {
       await client.query("BEGIN"); open = true;
-      const balance = await lockPlayerBalance(client, user);
+      await lockPlayerBalance(client, user);
       await ensureProfile(client, user.id);
       const active = await client.query(
         "SELECT r.id FROM drag_racing_rooms r JOIN drag_racing_room_players p ON p.room_id = r.id " +
@@ -1421,14 +1440,9 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         [user.id]
       );
       if (active.rows.length) throw new DragRacingError(409, "Сначала выйди из своей текущей комнаты.");
-      if (balance < BigInt(stake)) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       const profile = await readProfile(client, user.id);
       const requestedCar = String(req.body?.carId || profile.selectedCarId);
       const carId = profile.ownedCars.includes(requestedCar) ? requestedCar : profile.selectedCarId;
-      await client.query(
-        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-        [stake, user.id]
-      );
       const roomResult = await client.query(
         "INSERT INTO drag_racing_rooms (owner_telegram_id, owner_name, stake, max_players, mode, status, game_state) " +
         "VALUES ($1::BIGINT, $2, $3::BIGINT, $4, $5, 'waiting', '{\"phase\":\"waiting\",\"results\":{}}'::jsonb) RETURNING id::TEXT AS id",
@@ -1477,14 +1491,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       if (room.status !== "waiting") throw new DragRacingError(409, "Заезд уже начался. Найди другую комнату.");
       // Lock the shared player balance before checking active rooms. Concurrent joins
       // then serialize on this row and the second transaction sees the first room membership.
-      const balance = await lockPlayerBalance(client, user);
+      await lockPlayerBalance(client, user);
       const active = await client.query(
         "SELECT r.id FROM drag_racing_rooms r JOIN drag_racing_room_players p ON p.room_id = r.id " +
         "WHERE p.telegram_id = $1::BIGINT AND r.status IN ('waiting','racing') LIMIT 1",
         [user.id]
       );
       if (active.rows.length) throw new DragRacingError(409, "Сначала выйди из своей текущей комнаты.");
-      if (balance < BigInt(String(room.stake))) throw new DragRacingError(400, "На балансе недостаточно Allcoins для этой суммы Allcoins.");
       await ensureProfile(client, user.id);
       const profile = await readProfile(client, user.id);
       const requestedCar = String(req.body?.carId || profile.selectedCarId);
@@ -1494,10 +1507,6 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         [roomId]
       );
       if (Number(countResult.rows[0]?.n || 0) >= Number(room.max_players)) throw new DragRacingError(409, "Комната уже заполнена.");
-      await client.query(
-        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-        [String(room.stake), user.id]
-      );
       await client.query(
         "INSERT INTO drag_racing_room_players (room_id, telegram_id, display_name, car_id) VALUES ($1::BIGINT, $2::BIGINT, $3, $4)",
         [roomId, user.id, user.name, carId]
@@ -1610,7 +1619,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         name: String(player.display_name || user.name).slice(0, 40),
         submittedAt: Date.now()
       };
-      await settleRoomIfReady(client, { ...room, id: roomId }, playerResult.rows, game, recordGameCommission);
+      await settleRoomIfReady(client, { ...room, id: roomId }, playerResult.rows, game);
       if (game.phase !== "finished") {
         await client.query(
           "UPDATE drag_racing_rooms SET game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
@@ -1657,17 +1666,11 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
           game.results = objectValue(game.results);
           const previousFinishes = Object.keys(game.results).length;
           if (!previousFinishes) {
-            for (const participant of players.rows) {
-              await client.query(
-                "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-                [String(room.stake), String(participant.telegram_id)]
-              );
-            }
             game.phase = "finished";
             game.finishedAt = Date.now();
             game.payout = 0;
             game.commission = 0;
-            game.message = "Заезд отменён из-за отсутствия результатов. суммы Allcoins возвращены всем игрокам.";
+            game.message = "Заезд отменён из-за отсутствия результатов. Награда не начислена.";
             await client.query(
               "UPDATE drag_racing_rooms SET status = 'finished', game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
               [roomId, JSON.stringify(game)]
@@ -1685,7 +1688,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
                 };
               }
             }
-            await settleRoomIfReady(client, { ...room, id: roomId }, players.rows, game, recordGameCommission);
+            await settleRoomIfReady(client, { ...room, id: roomId }, players.rows, game);
             if (game.phase !== "finished") {
               await client.query(
                 "UPDATE drag_racing_rooms SET game_state = $2::jsonb WHERE id = $1::BIGINT",
@@ -1755,18 +1758,12 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       );
       const room = roomResult.rows[0];
       if (!room) throw new DragRacingError(404, "Комната уже закрыта.");
-      if (room.status === "racing") throw new DragRacingError(409, "Заезд уже идёт. Дождись результата; суммы Allcoins защищены сервером.");
+      if (room.status === "racing") throw new DragRacingError(409, "Заезд уже идёт. Дождись результата.");
       const membership = await client.query(
         "SELECT 1 FROM drag_racing_room_players WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT",
         [roomId, user.id]
       );
       if (!membership.rows.length) throw new DragRacingError(403, "Ты не состоишь в этой комнате.");
-      if (room.status === "waiting") {
-        await client.query(
-          "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() WHERE telegram_id = $2::BIGINT",
-          [String(room.stake), user.id]
-        );
-      }
       await client.query(
         "DELETE FROM drag_racing_room_players WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT",
         [roomId, user.id]
@@ -1785,7 +1782,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       }
       const balance = await readBalance(client, user.id);
       await client.query("COMMIT"); open = false;
-      return res.json({ ok: true, balance, message: room.status === "waiting" ? "Ты вышел из комнаты. сумма Allcoins возвращена." : "Ты вышел из комнаты." });
+      return res.json({ ok: true, balance, message: "Ты вышел из комнаты. Вход бесплатный." });
     } catch (error) {
       if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
       const status = error instanceof DragRacingError ? error.status : 500;
