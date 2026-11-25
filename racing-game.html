@@ -2616,6 +2616,7 @@ let onlineMode = false;
 let onlineRaceStarted = false;
 let onlineIsHost = false;
 let onlineIsReady = false;
+let onlineModeActionBusy = false;
 let onlineRoomStatus = "waiting";
 let onlineCountdownInterval = null;
 let onlineCountdownToken = 0;
@@ -2936,8 +2937,8 @@ async function onlineRefreshRoom() {
   const modeReady = sameChoice && (sharedMode !== "ad" || bothAdsConfirmed);
 
   modePanel.hidden = !hasTwoPlayers || room.status !== "waiting";
-  freeButton.disabled = room.status !== "waiting" || !hasTwoPlayers;
-  adButton.disabled = room.status !== "waiting" || !hasTwoPlayers;
+  freeButton.disabled = onlineModeActionBusy || room.status !== "waiting" || !hasTwoPlayers;
+  adButton.disabled = onlineModeActionBusy || room.status !== "waiting" || !hasTwoPlayers;
   freeButton.style.border = myChoice === "free" ? "2px solid #7de6b0" : "";
   adButton.style.border = myChoice === "ad" ? "2px solid #7de6b0" : "";
   adButton.textContent = myPlayer?.ad_rewarded
@@ -3264,9 +3265,10 @@ async function onlineToggleReady() {
 }
 
 async function onlineSelectMode(modeChoice) {
-  if (!onlineRoomCode || onlineRoomStatus !== "waiting") return;
+  if (!onlineRoomCode || onlineRoomStatus !== "waiting" || onlineModeActionBusy) return;
   const freeButton = $("onlineFreeMode");
   const adButton = $("onlineAdMode");
+  onlineModeActionBusy = true;
   freeButton.disabled = true;
   adButton.disabled = true;
   try {
@@ -3278,13 +3280,13 @@ async function onlineSelectMode(modeChoice) {
   } catch (error) {
     onlineSetStatus(error.message || "Не удалось выбрать режим участия.");
   } finally {
-    freeButton.disabled = false;
-    adButton.disabled = false;
+    onlineModeActionBusy = false;
+    await onlineRefreshRoom().catch(() => {});
   }
 }
 
 async function onlineWatchRewardedAdAndSelectMode() {
-  if (!onlineRoomCode || onlineRoomStatus !== "waiting") return;
+  if (!onlineRoomCode || onlineRoomStatus !== "waiting" || onlineModeActionBusy) return;
   const adsWindow = window.parent && window.parent.Adsgram ? window.parent : window;
   if (!adsWindow.Adsgram || typeof adsWindow.Adsgram.init !== "function") {
     onlineSetStatus("Рекламный сервис ещё не загрузился. Попробуй позже.");
@@ -3293,6 +3295,7 @@ async function onlineWatchRewardedAdAndSelectMode() {
 
   const freeButton = $("onlineFreeMode");
   const adButton = $("onlineAdMode");
+  onlineModeActionBusy = true;
   freeButton.disabled = true;
   adButton.disabled = true;
   let controller = null;
@@ -3328,8 +3331,8 @@ async function onlineWatchRewardedAdAndSelectMode() {
     if (controller && typeof controller.removeEventListener === "function") {
       try { controller.removeEventListener("onReward", onReward); } catch (_) {}
     }
-    freeButton.disabled = false;
-    adButton.disabled = false;
+    onlineModeActionBusy = false;
+    await onlineRefreshRoom().catch(() => {});
   }
 }
 
