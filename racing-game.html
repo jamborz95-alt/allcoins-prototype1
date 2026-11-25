@@ -2611,6 +2611,7 @@ window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarRead
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
 let onlinePollTimer = null;
+let onlineRewardClaimInProgress = false;
 let onlinePollBusy = false;
 let onlineCountdownPending = false;
 let onlineTelemetryBusy = false;
@@ -2968,7 +2969,10 @@ async function onlineRefreshRoom() {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = "СМОТРЕТЬ РЕКЛАМУ · +100 RP";
+        button.disabled = onlineRewardClaimInProgress;
         button.addEventListener("click", async () => {
+          if (onlineRewardClaimInProgress) return;
+          onlineRewardClaimInProgress = true;
           button.disabled = true;
           try {
             const reward = await onlineHostRequest("room:claim-ad-reward", { code: onlineRoomCode });
@@ -2976,7 +2980,9 @@ async function onlineRefreshRoom() {
             await onlineRefreshRoom();
           } catch (error) {
             onlineSetStatus(error.message || "Не удалось получить бонус.");
-            button.disabled = false;
+          } finally {
+            onlineRewardClaimInProgress = false;
+            if (!game.rewardClaims?.[String(me.id)]) void onlineRefreshRoom().catch(() => {});
           }
         });
         rewardBox.append(note, button);
