@@ -341,7 +341,6 @@ async function settleRoomIfReady(client, room, players, game) {
     [String(room.id), JSON.stringify(game)]
   );
 }
-}
 
 export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommission }) {
   const router = express.Router();
