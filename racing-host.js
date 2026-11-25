@@ -37,10 +37,10 @@
   let oldRootOverflow = "";
 
   function apiUrl(path) {
-    if (!/^https:\/\/[a-z0-9.-]+(?::\\d+)?$/i.test(RACING_API_BASE)) {
+    if (!RACING_API_BASE || !RACING_API_BASE.startsWith("https://")) {
       throw new Error("Адрес гоночного сервера ещё не настроен.");
     }
-    return RACING_API_BASE.replace(/\\/+$/, "") + path;
+    return RACING_API_BASE.replace(/\/+$/, "") + path;
   }
 
   function setStatus(message, isError) {
@@ -466,7 +466,7 @@
             const modelHeaders = { Range: "bytes=" + start + "-" + end };
             // The fixed VAZ-2107 game asset is read-only/public; Amvera does not need a PC tunnel token.
             // Keep the bearer token only for backward compatibility with the legacy tunnel endpoint.
-            if (!useAmveraAsset) modelHeaders.Authorization = "Bearer " + engineToken;
+            // Public Amvera GLB asset; no separate racing token is used.
             response = await fetch(assetUrl, {
               method: "GET",
               headers: modelHeaders,
@@ -850,13 +850,8 @@
       console.warn("ALLCOINS Racing: Telegram fullscreen exit was not available:", error);
     }
     const code = activeRoomCode;
-    if (code && engineToken) {
-      try {
-        await requestApi("/api/racing/rooms/" + encodeURIComponent(code) + "/leave", {
-          method: "POST",
-          body: {}
-        });
-      } catch (_) {}
+    if (code) {
+      try { await dragRacingPost("/rooms/leave", { roomId: code.replace(/^DR-/, "") }); } catch (_) {}
     }
     activeRoomCode = "";
     cachedModel = null;
