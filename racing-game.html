@@ -2431,7 +2431,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
         <option value="2" selected>2 игрока · максимум</option>
       </select>
-      <input id="onlineStake" type="number" min="100" step="1" value="100" inputmode="numeric" aria-label="Ставка в AC" placeholder="Ставка AC">
+      <span class="online-prize-note">Вход свободный · без ставок и денежных призов</span>
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
@@ -2943,7 +2943,7 @@ async function onlineRefreshRooms() {
       const button = document.createElement("button");
       button.textContent =
         room.code + " · " + room.host_name + " · " +
-        room.players + "/" + room.max_players + " · " + Number(room.stake || 0).toLocaleString("ru-RU") + " AC";
+        room.players + "/" + room.max_players + " · вход свободный";
 
       button.addEventListener("click", () => {
         $("onlineCode").value = room.code;
@@ -3134,13 +3134,8 @@ async function onlineConnectRoom(code) {
 async function onlineCreateRoom() {
   try {
     $("onlineCreate").disabled = true;
-    const stake = Number($("onlineStake").value);
-    if (!Number.isSafeInteger(stake) || stake < 100) {
-      throw new Error("Минимальная ставка комнаты — 100 AC.");
-    }
     const result = await onlineHostRequest("room:create", {
       maxPlayers: 2,
-      stake,
       mode: "quarter"
     });
     await onlineConnectRoom(result.room.code);
