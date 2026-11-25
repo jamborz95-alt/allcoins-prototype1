@@ -40,6 +40,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151d;col
 #onlineRoom{margin-top:14px;padding-top:12px;border-top:1px solid #ffffff25}
 #onlineRoomCodeText{color:#e9b94f;font-size:20px;letter-spacing:.14em}
 .online-player{padding:8px 10px;border-radius:8px;background:#ffffff0c;color:#dce5ef;font-size:12px}
+#onlineModeChoices button.selected{border-color:#e9b94f;background:linear-gradient(145deg,#7b5a20,#3a2b16);color:#ffe8af}
+#onlineModeStatus{min-height:20px;margin:6px 0;color:#c4cfdb;font-size:12px;line-height:1.4}
+#onlineRewardClaim{display:grid;gap:8px;margin:10px 0;padding:12px;border:1px solid #e9b94f66;border-radius:10px;background:#ffffff08}
+#onlineRewardClaim button{background:linear-gradient(145deg,#e9b94f,#b67c24);color:#17120a}
+#onlineRewardClaim[hidden]{display:none!important}
 .meter{position:fixed;left:50%;bottom:clamp(92px,15vh,126px);transform:translateX(-50%);width:min(300px,50vw);height:5px;background:#111a;border-radius:9px;overflow:hidden;pointer-events:none}.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#57bd8e,#e8bd55,#dc6656)}
 #rotateHint{display:none;position:fixed;inset:0;background:#0b1018ed;z-index:20;place-items:center;text-align:center;padding:25px;font-weight:700}#rotateHint span{display:block;color:var(--gold);font-size:32px;margin-bottom:12px}
 @media(orientation:portrait){body.race-mode #rotateHint{display:grid}body.race-mode .hud{opacity:.28}}
@@ -2431,7 +2436,6 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
         <option value="2" selected>2 игрока · максимум</option>
       </select>
-      <input id="onlineStake" type="number" min="100" step="1" value="100" inputmode="numeric" aria-label="Ставка в AC" placeholder="Ставка AC">
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
@@ -2445,6 +2449,12 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
     <div id="onlineRoom" hidden>
       <p>ТВОЯ КОМНАТА: <strong id="onlineRoomCodeText"></strong></p>
       <div id="onlinePlayerList"></div>
+      <div class="online-row" id="onlineModeChoices">
+        <button id="onlineModeStandard" type="button">ОБЫЧНАЯ ГОНКА</button>
+        <button id="onlineModeRewarded" type="button">ГОНКА С БОНУСОМ</button>
+      </div>
+      <p id="onlineModeStatus">Оба игрока выбирают режим независимо. Для старта выборы должны совпасть.</p>
+      <div id="onlineRewardClaim" hidden></div>
       <div class="online-row">
         <button id="onlineReady">ГОТОВ</button>
         <button id="onlineStart" hidden disabled>НАЧАТЬ ГОНКУ</button>
@@ -2601,6 +2611,7 @@ window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarRead
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
 let onlinePollTimer = null;
+let onlineRewardClaimInProgress = false;
 let onlinePollBusy = false;
 let onlineCountdownPending = false;
 let onlineTelemetryBusy = false;
@@ -2885,7 +2896,8 @@ function onlineRenderPlayers(players) {
       stateText = " · В ГОНКЕ";
     }
 
-    row.textContent = (player.name || "Игрок") + host + stateText;
+    const choice = player.modeSelection === "rewarded" ? " · БОНУС" : player.modeSelection === "standard" ? " · ОБЫЧНАЯ" : "";
+    row.textContent = (player.name || "Игрок") + host + stateText + choice;
     list.appendChild(row);
   }
 }
@@ -2894,6 +2906,7 @@ async function onlineRefreshRoom() {
   const result = await onlineHostRequest("room:info", { code: onlineRoomCode });
   const room = result.room || {};
   const players = result.players || [];
+  const game = result.game || {};
   onlineRoomStatus = room.status || "waiting";
   onlineIsHost = Boolean(result.isHost);
   onlineIsReady = true;
@@ -2903,16 +2916,36 @@ async function onlineRefreshRoom() {
   const readyButton = $("onlineReady");
   readyButton.hidden = true;
   readyButton.disabled = true;
-  const hasTwoPlayers = players.length >= 2;
+  const me = players.find(player => player.is_me);
+  const opponent = players.find(player => !player.is_me);
+  const myChoice = String(me?.modeSelection || "");
+  const opponentChoice = String(opponent?.modeSelection || "");
+  const modeChoices = $("onlineModeChoices");
+  modeChoices.hidden = room.status !== "waiting";
+  $("onlineModeStandard").classList.toggle("selected", myChoice === "standard");
+  $("onlineModeRewarded").classList.toggle("selected", myChoice === "rewarded");
+  $("onlineModeStandard").disabled = room.status !== "waiting";
+  $("onlineModeRewarded").disabled = room.status !== "waiting";
+  let modeMessage = "Выбери режим гонки.";
+  if (players.length < 2) modeMessage = "Выбери режим. Ожидаем второго игрока.";
+  else if (!myChoice) modeMessage = "Выбери режим; соперник уже в комнате.";
+  else if (!opponentChoice) modeMessage = "Твой выбор сохранён. Ждём выбор соперника.";
+  else if (myChoice !== opponentChoice) modeMessage = "Вы выбрали разные режимы. Измени свой выбор, чтобы совпало.";
+  else modeMessage = myChoice === "rewarded" ? "Оба выбрали гонку с бонусом. Победитель сможет посмотреть рекламу и получить 100 Racing Points." : "Оба выбрали обычную гонку без рекламы.";
+  $("onlineModeStatus").textContent = modeMessage;
+  const choicesMatch = players.length === 2 && ["standard", "rewarded"].includes(myChoice) && myChoice === opponentChoice;
   const start = $("onlineStart");
   start.hidden = !onlineIsHost || room.status !== "waiting";
-  start.disabled = !hasTwoPlayers;
+  start.disabled = !choicesMatch;
   if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive && !onlineCountdownPending) {
     onlineCountdownPending = true;
-    const startedAt = Number(result.game?.startedAt || Date.now());
+    const startedAt = Number(game.startedAt || Date.now());
     const serverNow = Number(result.serverNow || Date.now());
     onlinePrepareCountdown({ startedAtMs: startedAt + 3000, serverTimeMs: serverNow });
   }
+  const rewardBox = $("onlineRewardClaim");
+  rewardBox.replaceChildren();
+  rewardBox.hidden = true;
   if (room.status === "finished") {
     onlineRaceStarted = false;
     const finishers = players
@@ -2922,15 +2955,51 @@ async function onlineRefreshRoom() {
     onlineSetStatus(winner
       ? "ГОНКА ЗАВЕРШЕНА · Победитель: " + (winner.name || "Игрок") +
         " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с"
-      : (result.game?.message || "Гонка завершена."));
+      : (game.message || "Гонка завершена."));
+    if (game.raceMode === "rewarded" && me && Array.isArray(game.winnerIds) && game.winnerIds.map(String).includes(String(me.id))) {
+      rewardBox.hidden = false;
+      const claim = (game.rewardClaims || {})[String(me.id)];
+      if (claim) {
+        const note = document.createElement("p");
+        note.textContent = "Получено +" + Number(claim.points || 100) + " Racing Points. Всего: " + Number(result.racePoints || 0) + ".";
+        rewardBox.appendChild(note);
+      } else {
+        const note = document.createElement("p");
+        note.textContent = "Ты победил! Посмотри rewarded-рекламу, чтобы получить 100 Racing Points. Лимит — 3 бонуса в сутки.";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "СМОТРЕТЬ РЕКЛАМУ · +100 RP";
+        button.disabled = onlineRewardClaimInProgress;
+        button.addEventListener("click", async () => {
+          if (onlineRewardClaimInProgress) return;
+          onlineRewardClaimInProgress = true;
+          button.disabled = true;
+          try {
+            const reward = await onlineHostRequest("room:claim-ad-reward", { code: onlineRoomCode });
+            onlineSetStatus("Начислено +" + Number(reward.pointsAwarded || 100) + " Racing Points. Сегодня использовано " + Number(reward.dailyUsed || 1) + "/3.");
+            await onlineRefreshRoom();
+          } catch (error) {
+            onlineSetStatus(error.message || "Не удалось получить бонус.");
+          } finally {
+            onlineRewardClaimInProgress = false;
+            if (!game.rewardClaims?.[String(me.id)]) void onlineRefreshRoom().catch(() => {});
+          }
+        });
+        rewardBox.append(note, button);
+      }
+    } else if (game.raceMode === "rewarded") {
+      const note = document.createElement("p");
+      note.textContent = "Рекламный бонус доступен победителю. Твои Racing Points: " + Number(result.racePoints || 0) + ".";
+      rewardBox.hidden = false;
+      rewardBox.appendChild(note);
+    }
   } else if (room.status === "waiting") {
-    onlineSetStatus(players.length + " из 2 игроков. " +
-      (hasTwoPlayers ? "Создатель может начать гонку." : "Ожидаем второго игрока."));
+    onlineSetStatus(players.length + " из 2 игроков. " + (choicesMatch ? "Создатель может начать гонку." : "Оба игрока должны выбрать одинаковый режим."));
   } else {
     const done = players.filter(player => player.finish_time_ms != null).length;
     onlineSetStatus(done
       ? "Заезд идёт · финишировали " + done + " из " + players.length + "."
-      : "Заезд идёт. Синхронизация через Amvera.");
+      : "Заезд идёт. Синхронизация через сервер ALLCOINS.");
   }
 }
 async function onlineRefreshRooms() {
@@ -2942,8 +3011,7 @@ async function onlineRefreshRooms() {
     for (const room of result.rooms || []) {
       const button = document.createElement("button");
       button.textContent =
-        room.code + " · " + room.host_name + " · " +
-        room.players + "/" + room.max_players + " · " + Number(room.stake || 0).toLocaleString("ru-RU") + " AC";
+        room.code + " · " + room.host_name + " · " + room.players + "/" + room.max_players + " · бесплатно";
 
       button.addEventListener("click", () => {
         $("onlineCode").value = room.code;
@@ -3131,16 +3199,28 @@ async function onlineConnectRoom(code) {
   }, 350);
 }
 
+async function onlineChooseMode(mode) {
+  if (!onlineRoomCode || onlineRoomStatus !== "waiting") return;
+  const standard = $("onlineModeStandard");
+  const rewarded = $("onlineModeRewarded");
+  standard.disabled = true;
+  rewarded.disabled = true;
+  try {
+    await onlineHostRequest("room:choose-mode", { code: onlineRoomCode, mode });
+    await onlineRefreshRoom();
+  } catch (error) {
+    onlineSetStatus(error.message || "Не удалось сохранить выбор режима.");
+  } finally {
+    standard.disabled = onlineRoomStatus !== "waiting";
+    rewarded.disabled = onlineRoomStatus !== "waiting";
+  }
+}
+
 async function onlineCreateRoom() {
   try {
     $("onlineCreate").disabled = true;
-    const stake = Number($("onlineStake").value);
-    if (!Number.isSafeInteger(stake) || stake < 100) {
-      throw new Error("Минимальная ставка комнаты — 100 AC.");
-    }
     const result = await onlineHostRequest("room:create", {
       maxPlayers: 2,
-      stake,
       mode: "quarter"
     });
     await onlineConnectRoom(result.room.code);
@@ -4900,6 +4980,8 @@ $("onlineToggle").addEventListener("click", () => {
   if (onlineRoomCode) void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
 });
 $("onlineClose").addEventListener("click", () => $("onlinePanel").hidden = true);
+$("onlineModeStandard").addEventListener("click", () => onlineChooseMode("standard"));
+$("onlineModeRewarded").addEventListener("click", () => onlineChooseMode("rewarded"));
 $("onlineCreate").addEventListener("click", onlineCreateRoom);
 $("onlineJoin").addEventListener("click", onlineJoinRoom);
 $("onlineRefresh").addEventListener("click", onlineRefreshRooms);
