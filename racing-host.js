@@ -1,13 +1,13 @@
 (() => {
   "use strict";
 
-  // Set this to the public HTTPS Cloudflare Tunnel address for the local Engine.
-  const RACING_API_BASE = "https://pharmaceuticals-coordinator-brochure-becomes.trycloudflare.com";
+  // Единственный API-адрес ALLCOINS Racing: Amvera (авторизация, комнаты и игровой API).
+  const RACING_API_BASE = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
   const CHUNK_SIZE = 4 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
-  // The multiplayer-room API remains on RACING_API_BASE; only the GLB source moves to Amvera.
+  // GLB-модель также загружается с Amvera через отдельную настройку ниже.
   const RACING_AMVERA_API_META = document.querySelector('meta[name="allcoins-racing-amvera-api"]');
-  // A present-but-empty meta tag intentionally selects the legacy PC tunnel for local bridge tests.
+  // Пустой meta не меняет адрес игрового API: он всегда остаётся на Amvera.
   const RACING_AMVERA_API_BASE = String(
     RACING_AMVERA_API_META
       ? RACING_AMVERA_API_META.content
