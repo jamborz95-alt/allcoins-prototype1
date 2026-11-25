@@ -1422,7 +1422,6 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
   router.post("/rooms/create", async (req, res) => {
     const user = requireUser(req, res, verifyTelegram);
     if (!user) return;
-    const stake = "0";
     const maxPlayers = Number(req.body?.maxPlayers ?? req.body?.players);
     const mode = String(req.body?.mode || "quarter");
     if (maxPlayers !== 2) return res.status(400).json({ ok: false, error: "В ALLCOINS Racing доступны комнаты строго на 2 игроков." });
