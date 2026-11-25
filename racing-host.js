@@ -168,6 +168,8 @@
 
   function createOverlay() {
     if (overlay) return;
+    window.__allcoinsRacingActive = true;
+    document.documentElement.classList.add("allcoins-racing-overlay-active");
 
     overlay = makeElement("div",
       "position:fixed;inset:0;z-index:2147483000;display:block;width:100vw;height:100vh;height:100dvh;" +
@@ -894,6 +896,8 @@
       frame.src = "about:blank";
     }
     overlay.remove();
+    window.__allcoinsRacingActive = false;
+    document.documentElement.classList.remove("allcoins-racing-overlay-active");
     overlay = null;
     frame = null;
     statusNode = null;
