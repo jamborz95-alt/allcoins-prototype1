@@ -1407,7 +1407,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     const maxPlayers = Number(req.body?.maxPlayers ?? req.body?.players);
     const mode = String(req.body?.mode || "quarter");
     if (stake === null) return res.status(400).json({ ok: false, error: "сумма Allcoins должна быть целым числом не меньше 100 AC." });
-    if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 5) return res.status(400).json({ ok: false, error: "В комнате должно быть от 2 до 5 игроков." });
+    if (maxPlayers !== 2) return res.status(400).json({ ok: false, error: "В ALLCOINS Racing доступны комнаты строго на 2 игроков." });
     if (!VALID_MODES.has(mode)) return res.status(400).json({ ok: false, error: "Выбран неизвестный режим гонки." });
     const client = await pool.connect();
     let open = false;
