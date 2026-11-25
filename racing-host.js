@@ -2,7 +2,7 @@
   "use strict";
 
   // Единственный API-адрес ALLCOINS Racing: Amvera (авторизация, комнаты и игровой API).
-  const RACING_API_BASE = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
+  const RACING_API_BASE = "https://allcoins-telegram-allcoins95.mia0.amvera.tech";
   const CHUNK_SIZE = 4 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
   // GLB-модель также загружается с Amvera через отдельную настройку ниже.
@@ -609,10 +609,10 @@
     hideModelProgress();
   }
 
-  async function handleRacingAction(data) {
+  async function claimRacingRewardAfterAd(data) {\n    await ensureTelegramAuthentication();\n    const code = String(data.code || data.roomId || activeRoomCode || "").trim().toUpperCase();\n    const roomId = code.replace(/^DR-/, "");\n    if (!/^[1-9]\\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");\n    const eligibility = await dragRacingPost("/rooms/ad-reward-status", { roomId });\n    if (!eligibility.eligible) {\n      if (eligibility.alreadyClaimed) throw new Error("Бонус за эту гонку уже получен.");\n      throw new Error("Сегодня больше нет доступных рекламных бонусов.");\n    }\n    if (!window.Adsgram || typeof window.Adsgram.init !== "function") {\n      throw new Error("Реклама пока не загрузилась. Попробуй позже.");\n    }\n    const controller = window.Adsgram.init({ blockId: "54021" });\n    let rewardConfirmed = false;\n    const onReward = () => { rewardConfirmed = true; };\n    controller.addEventListener("onReward", onReward);\n    try {\n      await controller.show();\n      if (!rewardConfirmed) throw new Error("Просмотр рекламы не подтверждён. Бонус не начислен.");\n      return await dragRacingPost("/rooms/claim-ad-reward", { roomId });\n    } finally {\n      try { controller.removeEventListener("onReward", onReward); } catch (_) {}\n    }\n  }\n\n  async function handleRacingAction(data) {
     const action = String(data.action || "");
 
-    // Paint purchases use the main ALLCOINS wallet API, not the racing-room server.
+    if (action === "room:claim-ad-reward") return await claimRacingRewardAfterAd(data);
     if (action === "paint:profile") {
       if (!window.allcoinsRacingPaintApi || typeof window.allcoinsRacingPaintApi.profile !== "function") {
         throw new Error("Сервис гаража ALLCOINS ещё не готов.");
@@ -759,6 +759,7 @@
         const routes = {
           "room:info": "/rooms/state",
           "room:join": "/rooms/join",
+          "room:choose-mode": "/rooms/choose-mode",
           "room:start": "/rooms/start",
           "room:leave": "/rooms/leave",
           "room:state": "/rooms/state",
@@ -767,6 +768,7 @@
         const body = { roomId };
         if (action === "room:state" && data.telemetry) body.telemetry = data.telemetry;
         if (action === "room:finish") body.timeMs = data.timeMs;
+        if (action === "room:choose-mode") body.mode = data.mode;
         const payload = await dragRacingPost(routes[action], body);
         result = normalizeRoomPayload(payload);
         if (action === "room:leave") {
@@ -899,7 +901,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261125-gauge-compositor-v232", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261125-free-rewarded-v1", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
