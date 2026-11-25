@@ -2431,7 +2431,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
         <option value="2" selected>2 игрока · максимум</option>
       </select>
-      <span class="online-prize-note">Вход свободный · без ставок и денежных призов</span>
+      <span class="online-prize-note">Без взносов · в рекламном режиме приз победителю 120 000 AC</span>
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
@@ -2445,6 +2445,14 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
     <div id="onlineRoom" hidden>
       <p>ТВОЯ КОМНАТА: <strong id="onlineRoomCodeText"></strong></p>
       <div id="onlinePlayerList"></div>
+      <div id="onlineEntryModePanel" hidden style="margin:12px 0;padding:12px;border:1px solid rgba(233,185,79,.45);border-radius:12px;background:rgba(7,12,20,.72)">
+        <strong style="display:block;color:#f2d27c;font-size:12px;letter-spacing:.06em;margin-bottom:7px">ВЫБЕРИТЕ ОДИНАКОВЫЙ РЕЖИМ УЧАСТИЯ</strong>
+        <div class="online-row">
+          <button id="onlineFreeMode" type="button">БЕСПЛАТНО · БЕЗ ПРИЗА</button>
+          <button id="onlineAdMode" type="button">▶ РЕКЛАМА · 120 000 AC</button>
+        </div>
+        <p id="onlineModeStatus" style="margin:8px 0 0;color:#cbd5e1;font-size:12px;line-height:1.45">Каждый игрок выбирает режим самостоятельно. Для старта выборы должны совпасть.</p>
+      </div>
       <div class="online-row">
         <button id="onlineReady">ГОТОВ</button>
         <button id="onlineStart" hidden disabled>НАЧАТЬ ГОНКУ</button>
@@ -2876,6 +2884,12 @@ function onlineRenderPlayers(players) {
     const time = Number(player.finish_time_ms);
     const hasFinished = player.finish_time_ms != null && Number.isFinite(time);
 
+    let choiceText = " · РЕЖИМ НЕ ВЫБРАН";
+    if (player.mode_choice === "free") choiceText = " · БЕСПЛАТНО";
+    if (player.mode_choice === "ad") choiceText = player.ad_rewarded
+      ? " · РЕКЛАМА ПОДТВЕРЖДЕНА ✓"
+      : " · ОЖИДАЕТ РЕКЛАМУ";
+
     let stateText;
     if (hasFinished) {
       stateText = " · " + (++place) + " МЕСТО · ФИНИШ " + (time / 1000).toFixed(2) + " с";
@@ -2885,7 +2899,7 @@ function onlineRenderPlayers(players) {
       stateText = " · В ГОНКЕ";
     }
 
-    row.textContent = (player.name || "Игрок") + host + stateText;
+    row.textContent = (player.name || "Игрок") + host + choiceText + stateText;
     list.appendChild(row);
   }
 }
@@ -2906,7 +2920,44 @@ async function onlineRefreshRoom() {
   const hasTwoPlayers = players.length >= 2;
   const start = $("onlineStart");
   start.hidden = !onlineIsHost || room.status !== "waiting";
-  start.disabled = !hasTwoPlayers;
+
+  const modePanel = $("onlineEntryModePanel");
+  const freeButton = $("onlineFreeMode");
+  const adButton = $("onlineAdMode");
+  const modeStatus = $("onlineModeStatus");
+  const myPlayer = players.find(player => player.is_me);
+  const myChoice = myPlayer?.mode_choice || "";
+  const allChosen = hasTwoPlayers && players.every(player =>
+    player.mode_choice === "free" || player.mode_choice === "ad"
+  );
+  const sameChoice = allChosen && players.every(player => player.mode_choice === players[0].mode_choice);
+  const sharedMode = sameChoice ? players[0].mode_choice : "";
+  const bothAdsConfirmed = sharedMode === "ad" && players.every(player => player.ad_rewarded === true);
+  const modeReady = sameChoice && (sharedMode !== "ad" || bothAdsConfirmed);
+
+  modePanel.hidden = !hasTwoPlayers || room.status !== "waiting";
+  freeButton.disabled = room.status !== "waiting" || !hasTwoPlayers;
+  adButton.disabled = room.status !== "waiting" || !hasTwoPlayers;
+  freeButton.style.border = myChoice === "free" ? "2px solid #7de6b0" : "";
+  adButton.style.border = myChoice === "ad" ? "2px solid #7de6b0" : "";
+  adButton.textContent = myPlayer?.ad_rewarded
+    ? "✓ РЕКЛАМА ПРОСМОТРЕНА · 120 000 AC"
+    : "▶ РЕКЛАМА · 120 000 AC";
+
+  if (!hasTwoPlayers) {
+    modeStatus.textContent = "Ожидаем второго игрока.";
+  } else if (!allChosen) {
+    modeStatus.textContent = "Каждый игрок должен выбрать бесплатный режим или рекламный бонус.";
+  } else if (!sameChoice) {
+    modeStatus.textContent = "Выбраны разные режимы. Оба игрока должны выбрать один и тот же вариант.";
+  } else if (sharedMode === "free") {
+    modeStatus.textContent = "Оба выбрали бесплатный режим. Списаний и начислений AC не будет.";
+  } else if (!bothAdsConfirmed) {
+    modeStatus.textContent = "Оба выбрали рекламный режим. Каждый игрок должен завершить Rewarded-просмотр.";
+  } else {
+    modeStatus.textContent = "Оба просмотра подтверждены. Победителю будет начислено 120 000 AC.";
+  }
+  start.disabled = !modeReady;
   if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive && !onlineCountdownPending) {
     onlineCountdownPending = true;
     const startedAt = Number(result.game?.startedAt || Date.now());
@@ -2924,8 +2975,16 @@ async function onlineRefreshRoom() {
         " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с"
       : (result.game?.message || "Гонка завершена."));
   } else if (room.status === "waiting") {
+    const choices = players.map(player => player.mode_choice);
+    const same = players.length === 2 && choices.every(choice =>
+      (choice === "free" || choice === "ad") && choice === choices[0]
+    );
+    const adReady = same && choices[0] === "ad" && players.every(player => player.ad_rewarded === true);
+    const ready = same && (choices[0] === "free" || adReady);
     onlineSetStatus(players.length + " из 2 игроков. " +
-      (hasTwoPlayers ? "Создатель может начать гонку." : "Ожидаем второго игрока."));
+      (!hasTwoPlayers ? "Ожидаем второго игрока." :
+        !ready ? "Ожидаем одинаковый выбор режима и подтверждение рекламы." :
+          "Оба игрока выбрали режим. Создатель может начать гонку."));
   } else {
     const done = players.filter(player => player.finish_time_ms != null).length;
     onlineSetStatus(done
@@ -2943,7 +3002,7 @@ async function onlineRefreshRooms() {
       const button = document.createElement("button");
       button.textContent =
         room.code + " · " + room.host_name + " · " +
-        room.players + "/" + room.max_players + " · вход свободный";
+        room.players + "/" + room.max_players + " · без взносов";
 
       button.addEventListener("click", () => {
         $("onlineCode").value = room.code;
@@ -3201,6 +3260,76 @@ async function onlineToggleReady() {
   } finally {
     button.disabled = false;
     if (onlineRoomStatus !== "waiting") button.disabled = true;
+  }
+}
+
+async function onlineSelectMode(modeChoice) {
+  if (!onlineRoomCode || onlineRoomStatus !== "waiting") return;
+  const freeButton = $("onlineFreeMode");
+  const adButton = $("onlineAdMode");
+  freeButton.disabled = true;
+  adButton.disabled = true;
+  try {
+    await onlineHostRequest("room:select-mode", {
+      code: onlineRoomCode,
+      modeChoice
+    });
+    await onlineRefreshRoom();
+  } catch (error) {
+    onlineSetStatus(error.message || "Не удалось выбрать режим участия.");
+  } finally {
+    freeButton.disabled = false;
+    adButton.disabled = false;
+  }
+}
+
+async function onlineWatchRewardedAdAndSelectMode() {
+  if (!onlineRoomCode || onlineRoomStatus !== "waiting") return;
+  const adsWindow = window.parent && window.parent.Adsgram ? window.parent : window;
+  if (!adsWindow.Adsgram || typeof adsWindow.Adsgram.init !== "function") {
+    onlineSetStatus("Рекламный сервис ещё не загрузился. Попробуй позже.");
+    return;
+  }
+
+  const freeButton = $("onlineFreeMode");
+  const adButton = $("onlineAdMode");
+  freeButton.disabled = true;
+  adButton.disabled = true;
+  let controller = null;
+  let rewardReceived = false;
+  const onReward = () => { rewardReceived = true; };
+
+  try {
+    onlineSetStatus("Запускаем Rewarded-рекламу. Дождись полного просмотра…");
+    controller = adsWindow.Adsgram.init({blockId:"54021"});
+    if (!controller || typeof controller.show !== "function" ||
+        typeof controller.addEventListener !== "function") {
+      throw new Error("Не удалось подключить Rewarded-рекламу AdsGram.");
+    }
+    controller.addEventListener("onReward", onReward);
+    const result = await controller.show();
+    if (!rewardReceived || result?.error === true || result?.done === false) {
+      throw new Error("Просмотр не завершён. Рекламный режим не выбран.");
+    }
+
+    await onlineHostRequest("room:confirm-ad", {
+      code: onlineRoomCode,
+      rewarded: true
+    });
+    await onlineHostRequest("room:select-mode", {
+      code: onlineRoomCode,
+      modeChoice: "ad"
+    });
+    onlineSetStatus("Просмотр подтверждён. Теперь ожидаем выбор второго игрока.");
+    await onlineRefreshRoom();
+  } catch (error) {
+    onlineSetStatus(error.message || "Не удалось подтвердить рекламный просмотр.");
+  } finally {
+    if (controller && typeof controller.removeEventListener === "function") {
+      try { controller.removeEventListener("onReward", onReward); } catch (_) {}
+    }
+    freeButton.disabled = false;
+    adButton.disabled = false;
   }
 }
 
@@ -4899,6 +5028,8 @@ $("onlineCreate").addEventListener("click", onlineCreateRoom);
 $("onlineJoin").addEventListener("click", onlineJoinRoom);
 $("onlineRefresh").addEventListener("click", onlineRefreshRooms);
 $("onlineReady").addEventListener("click", onlineToggleReady);
+$("onlineFreeMode").addEventListener("click", () => { void onlineSelectMode("free"); });
+$("onlineAdMode").addEventListener("click", () => { void onlineWatchRewardedAdAndSelectMode(); });
 $("onlineStart").addEventListener("click", onlineStartRoom);
 $("onlineLeave").addEventListener("click", onlineLeaveRoom);
 
