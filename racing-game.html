@@ -2431,6 +2431,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
         <option value="2" selected>2 игрока · максимум</option>
       </select>
+      <input id="onlineStake" type="number" min="100" step="1" value="100" inputmode="numeric" aria-label="Ставка в AC" placeholder="Ставка AC">
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
@@ -2599,7 +2600,7 @@ function acPerfStartBenchmarkAfterCarReady() {
 window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarReady();
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
-let onlinePollTimer = null;\nlet onlinePollBusy = false;\nlet onlineTelemetryBusy = false;
+let onlinePollTimer = null;\nlet onlinePollBusy = false;\nlet onlineCountdownPending = false;\nlet onlineTelemetryBusy = false;
 let onlineMode = false;
 let onlineRaceStarted = false;
 let onlineIsHost = false;
@@ -2887,51 +2888,46 @@ function onlineRenderPlayers(players) {
 }
 async function onlineRefreshRoom() {
   if (!onlineRoomCode) return;
-
   const result = await onlineHostRequest("room:info", { code: onlineRoomCode });
-  const room = result.room;
+  const room = result.room || {};
   const players = result.players || [];
-
-  onlineRoomStatus = room.status;
+  onlineRoomStatus = room.status || "waiting";
   onlineIsHost = Boolean(result.isHost);
-  const me = players.find(player => player.is_me);
-  onlineIsReady = Boolean(me?.is_ready);
-
+  onlineIsReady = true;
   $("onlineRoom").hidden = false;
-  $("onlineRoomCodeText").textContent = room.code;
+  $("onlineRoomCodeText").textContent = room.code || onlineRoomCode;
   onlineRenderPlayers(players);
-
   const readyButton = $("onlineReady");
-  readyButton.hidden = room.status !== "waiting";
-  readyButton.disabled = room.status !== "waiting" || !me;
-  readyButton.textContent = onlineIsReady ? "ГОТОВ ✓ · ОТМЕНИТЬ" : "ГОТОВ";
-
-  const allReady = players.length >= 2;
+  readyButton.hidden = true;
+  readyButton.disabled = true;
+  const hasTwoPlayers = players.length >= 2;
   const start = $("onlineStart");
   start.hidden = !onlineIsHost || room.status !== "waiting";
-  start.disabled = players.length < 2 || !allReady;
-
-  if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive) {\n    void onlineBeginRace();\n  }\n\n  if (room.status === "finished") {
+  start.disabled = !hasTwoPlayers;
+  if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive && !onlineCountdownPending) {
+    onlineCountdownPending = true;
+    const startedAt = Number(result.game?.startedAt || Date.now());
+    const serverNow = Number(result.serverNow || Date.now());
+    onlinePrepareCountdown({ startedAtMs: startedAt + 3000, serverTimeMs: serverNow });
+  }
+  if (room.status === "finished") {
+    onlineRaceStarted = false;
     const finishers = players
       .filter(player => player.finish_time_ms != null && Number.isFinite(Number(player.finish_time_ms)))
       .sort((a, b) => Number(a.finish_time_ms) - Number(b.finish_time_ms));
     const winner = finishers[0];
-
     onlineSetStatus(winner
       ? "ГОНКА ЗАВЕРШЕНА · Победитель: " + (winner.name || "Игрок") +
         " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с"
-      : "Гонка завершена. Нет зафиксированных результатов.");
+      : (result.game?.message || "Гонка завершена."));
   } else if (room.status === "waiting") {
-    const readyCount = players.filter(player => player.is_ready).length;
-    onlineSetStatus(
-      "Готовы: " + readyCount + " из " + players.length +
-      (allReady ? ". Создатель может начать гонку." : ". Ожидаем готовности игроков.")
-    );
+    onlineSetStatus(players.length + " из 2 игроков. " +
+      (hasTwoPlayers ? "Создатель может начать гонку." : "Ожидаем второго игрока."));
   } else {
     const done = players.filter(player => player.finish_time_ms != null).length;
     onlineSetStatus(done
       ? "Заезд идёт · финишировали " + done + " из " + players.length + "."
-      : "Все готовы. Ожидайте общего старта.");
+      : "Заезд идёт. Синхронизация через Amvera.");
   }
 }
 async function onlineRefreshRooms() {
@@ -3135,8 +3131,14 @@ async function onlineConnectRoom(code) {
 async function onlineCreateRoom() {
   try {
     $("onlineCreate").disabled = true;
+    const stake = Number($("onlineStake").value);
+    if (!Number.isSafeInteger(stake) || stake < 100) {
+      throw new Error("Минимальная ставка комнаты — 100 AC.");
+    }
     const result = await onlineHostRequest("room:create", {
-      maxPlayers: Number($("onlineMaxPlayers").value)
+      maxPlayers: 2,
+      stake,
+      mode: "quarter"
     });
     await onlineConnectRoom(result.room.code);
     $("onlineCode").value = result.room.code;
@@ -3150,8 +3152,8 @@ async function onlineCreateRoom() {
 async function onlineJoinRoom() {
   try {
     const code = $("onlineCode").value.trim().toUpperCase();
-    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
-      throw new Error("Введи правильный восьмизначный код комнаты.");
+    if (!/^DR-[1-9]\\d{0,17}$/.test(code)) {
+      throw new Error("Введи номер комнаты в формате DR-123.");
     }
     $("onlineJoin").disabled = true;
     await onlineHostRequest("room:join", { code });
@@ -3163,22 +3165,16 @@ async function onlineJoinRoom() {
   }
 }
 
-
-/* ALLCOINS SHARED ROOM AUTO CONNECT 2026-11-12 */
+/* ALLCOINS SHARED ROOM AUTO CONNECT */
 window.addEventListener("message", async event => {
   const data = event.data;
   if (event.source !== window.parent || data?.type !== "allcoins:racing:join-room") return;
-
   const code = String(data.code || "").trim().toUpperCase();
-  if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
-    onlineSetStatus("В ссылке указан неправильный код гоночной комнаты.");
+  if (!/^DR-[1-9]\\d{0,17}$/.test(code)) {
+    onlineSetStatus("В ссылке указан неправильный номер гоночной комнаты.");
     return;
   }
-
-  if (onlineRoomCode === code && onlineSocket &&
-      (onlineSocket.readyState === WebSocket.CONNECTING ||
-       onlineSocket.readyState === WebSocket.OPEN)) return;
-
+  if (onlineRoomCode === code && onlinePollTimer) return;
   $("onlineCode").value = code;
   $("onlineJoin").disabled = true;
   try {
