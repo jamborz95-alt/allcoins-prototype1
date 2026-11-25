@@ -627,8 +627,9 @@
     const onReward = () => { rewardConfirmed = true; };
     controller.addEventListener("onReward", onReward);
     try {
-      await controller.show();
-      if (!rewardConfirmed) throw new Error("Просмотр рекламы не подтверждён. Бонус не начислен.");
+      const showResult = await controller.show();
+      const sdkConfirmed = Boolean(showResult && showResult.done === true && showResult.error !== true);
+      if (!rewardConfirmed && !sdkConfirmed) throw new Error("Просмотр рекламы не подтверждён. Бонус не начислен.");
       return await dragRacingPost("/rooms/claim-ad-reward", { roomId });
     } finally {
       try { controller.removeEventListener("onReward", onReward); } catch (_) {}
