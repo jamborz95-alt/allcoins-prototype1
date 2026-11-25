@@ -11585,3 +11585,14 @@ body.race-mode #gearSelector { display:grid!important; }
 </script>
 </body>
 </html>
+
+<style id="allcoins-racing-mobile-gauge-compositor-v232">
+/* Keep the animated needles on their own compositor layers on Android.
+   The dial gradients, masks, shadows, labels and gauge artwork remain unchanged. */
+.ac-racing-mobile .speedometer-needle,
+.ac-racing-mobile .tachometer-needle {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+</style>
