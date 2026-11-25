@@ -754,7 +754,6 @@
             host_name: String(room.ownerName || "Игрок"),
             players: Number(room.playersCount || 0),
             max_players: Number(room.maxPlayers || 2),
-            stake: Number(room.stake || 0),
             mode: String(room.mode || "quarter")
           })),
           currentRoom: data.currentRoom ? normalizeRoomPayload(data.currentRoom) : null
@@ -766,7 +765,6 @@
         if (maxPlayers !== 2) throw new Error("В ALLCOINS Racing доступны комнаты строго на 2 игроков.");
         const payload = await dragRacingPost("/rooms/create", {
           maxPlayers: 2,
-          stake: data.stake,
           mode: data.mode || "quarter",
           carId: data.carId
         });
