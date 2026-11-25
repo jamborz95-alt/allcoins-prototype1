@@ -10065,31 +10065,11 @@ let acPerfMeasuredFrames = 0;
 let acPerfRafIntervals = [];
 let acPerfLongFrameCount = 0;
 let acPerfRafIntervalMax = 0;
-// Android WebView iframe RAF fallback: ask the visible top-level app to schedule frames.
-// The callback uses this document's clock so game timing remains on one timeline.
-const acRacingFrameScheduler = (() => {
-  try {
-    const parentWindow = window.parent;
-    if (acRacingMobileDevice && parentWindow && parentWindow !== window &&
-        typeof parentWindow.requestAnimationFrame === "function") {
-      return {
-        name: "parent-window",
-        request(callback) {
-          parentWindow.requestAnimationFrame(() => callback(performance.now()));
-        }
-      };
-    }
-  } catch (_) {}
-  return {
-    name: "local-window",
-    request(callback) {
-      window.requestAnimationFrame(() => callback(performance.now()));
-    }
-  };
-})();
+// Use the iframe's own animation clock, matching the V228 baseline.
+const acRacingFrameScheduler = Object.freeze({name:"local-window"});
 window.__allcoinsRacingFrameScheduler = acRacingFrameScheduler.name;
 function acRequestRacingFrame(callback) {
-  acRacingFrameScheduler.request(callback);
+  window.requestAnimationFrame(() => callback(performance.now()));
 }
 
 function animate(now){
