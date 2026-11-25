@@ -740,9 +740,9 @@
         break;
 
       case "room:create": {
-        const maxPlayers = Number(data.maxPlayers === undefined ? 5 : data.maxPlayers);
-        if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 5) {
-          throw new Error("В комнате должно быть от 2 до 5 игроков.");
+        const maxPlayers = Number(data.maxPlayers === undefined ? 2 : data.maxPlayers);
+        if (maxPlayers !== 2) {
+          throw new Error("В ALLCOINS Racing доступны комнаты максимум на 2 игроков.");
         }
         result = await requestApi("/api/racing/rooms", {
           method: "POST",
