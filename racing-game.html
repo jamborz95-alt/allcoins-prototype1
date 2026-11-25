@@ -3392,7 +3392,6 @@ function acOnlineApplyLaneLayout(enabled) {
     acOnlinePlayerBaseZ = vehicle.position.z;
     acOnlineLaneLayoutActive = true;
     for (const mark of laneMarks) mark.position.z = 0;
-    acSyncCentralMarkingInstances();
     vehicle.updateMatrixWorld(true);
     return;
   }
@@ -3402,7 +3401,6 @@ function acOnlineApplyLaneLayout(enabled) {
     acOnlinePlayerBaseZ = null;
     acOnlineLaneLayoutActive = false;
     for (const mark of laneMarks) mark.position.z = 0;
-    acSyncCentralMarkingInstances();
     vehicle.updateMatrixWorld(true);
   }
 }
@@ -5854,28 +5852,12 @@ const stripeMat = new THREE.MeshStandardMaterial({
   emissiveIntensity: .025
 });
 const laneMarks = [];
-// Keep the same 42 dashed marks, but submit them as one instanced draw call.
-const acLaneMarkGeometry = new THREE.BoxGeometry(3.2, .026, .15);
-const acLaneMarkInstances = new THREE.InstancedMesh(acLaneMarkGeometry, stripeMat, 42);
-acLaneMarkInstances.name = "ALLCOINS · 42 instanced central lane marks";
-acLaneMarkInstances.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+// Короткая прерывистая разметка центральной линии, как на референсе.
 for (let i = 0; i < 42; i++) {
-  const mark = new THREE.Object3D();
+  const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
   mark.position.set(-126 + i * 6.2, -.085, 0);
-  mark.updateMatrix();
-  acLaneMarkInstances.setMatrixAt(i, mark.matrix);
+  scene.add(mark);
   laneMarks.push(mark);
-}
-acLaneMarkInstances.computeBoundingSphere();
-scene.add(acLaneMarkInstances);
-
-function acSyncCentralMarkingInstances() {
-  for (let i = 0; i < laneMarks.length; i++) {
-    const mark = laneMarks[i];
-    mark.updateMatrix();
-    acLaneMarkInstances.setMatrixAt(i, mark.matrix);
-  }
-  acLaneMarkInstances.instanceMatrix.needsUpdate = true;
 }
 
 // Центральный пунктир движется вместе с остальным миром: при ходе вперёд — влево, при заднем ходе — вправо.
@@ -5886,7 +5868,6 @@ function acAdvanceCentralMarkings(scroll) {
     while (mark.position.x > 135) mark.position.x -= 260.4;
     while (mark.position.x < -135) mark.position.x += 260.4;
   }
-  acSyncCentralMarkingInstances();
 }
 
 // Проверяем фактическое направление движения разметки на копии текущих координат,
@@ -5901,7 +5882,6 @@ function acMeasureCentralMarkingDirection() {
   acAdvanceCentralMarkings(-0.5);
   const reverseDelta = Number((laneMarks[sampleIndex].position.x - originalX[sampleIndex]).toFixed(3));
   laneMarks.forEach((mark, index) => { mark.position.x = originalX[index]; });
-  acSyncCentralMarkingInstances();
   return { forwardDelta, reverseDelta };
 }
 const acCentralMarkingDirection = acMeasureCentralMarkingDirection();
@@ -6185,81 +6165,6 @@ for (let i = 0; i < 33; i++) {
   building.position.set(-115 + i * 7.15, 0, -22.5);
   scene.add(building);
   city.push(building);
-}
-
-// Batch the 33 solid building shells by their existing facade material.
- // Shell dimensions, position, color and shading remain unchanged; only draw calls are merged.
-const acCityShellGeometry = new THREE.BoxGeometry(1, 1, 1);
-const acCityShellDummy = new THREE.Object3D();
-const acCityShellBuckets = buildingMaterials.map((material, materialIndex) => ({
-  material,
-  materialIndex,
-  records: []
-}));
-const acCityShellInstanceRecords = [];
-for (let buildingIndex = 0; buildingIndex < city.length; buildingIndex++) {
-  const building = city[buildingIndex];
-  const shell = building.children.find(child => child.userData?.acMobileBaseShell);
-  if (!shell) continue;
-  const params = shell.geometry.parameters || {};
-  const materialIndex = buildingIndex % buildingMaterials.length;
-  const bucket = acCityShellBuckets[materialIndex];
-  const record = {
-    building,
-    buildingIndex,
-    localPosition: shell.position.clone(),
-    localQuaternion: shell.quaternion.clone(),
-    dimensions: new THREE.Vector3(
-      Number(params.width) || 1,
-      Number(params.height) || 1,
-      Number(params.depth) || 1
-    ),
-    localScale: shell.scale.clone(),
-    mesh: null,
-    instanceIndex: bucket.records.length
-  };
-  bucket.records.push(record);
-  acCityShellInstanceRecords.push(record);
-  building.remove(shell);
-  shell.geometry.dispose();
-}
-const acCityShellInstanceMeshes = [];
-for (const bucket of acCityShellBuckets) {
-  if (!bucket.records.length) continue;
-  const mesh = new THREE.InstancedMesh(acCityShellGeometry, bucket.material, bucket.records.length);
-  mesh.name = "ALLCOINS · city shell batch · material " + bucket.materialIndex;
-  mesh.receiveShadow = true;
-  mesh.castShadow = false;
-  mesh.frustumCulled = false;
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  bucket.records.forEach(record => {
-    record.mesh = mesh;
-  });
-  mesh.visible = true;
-  scene.add(mesh);
-  acCityShellInstanceMeshes.push(mesh);
-}
-function acUpdateCityShellInstanceMatrices() {
-  for (const record of acCityShellInstanceRecords) {
-    const building = record.building;
-    const visible = building.visible &&
-      !acMobileExtremeFallbackApplied &&
-      !(acMobileUltraFallbackApplied && record.buildingIndex % 2 !== 0);
-    acCityShellDummy.position.copy(record.localPosition)
-      .multiply(building.scale)
-      .applyQuaternion(building.quaternion)
-      .add(building.position);
-    acCityShellDummy.quaternion.copy(building.quaternion).multiply(record.localQuaternion);
-    acCityShellDummy.scale.copy(record.dimensions)
-      .multiply(record.localScale)
-      .multiply(building.scale);
-    if (!visible) acCityShellDummy.scale.set(0, 0, 0);
-    acCityShellDummy.updateMatrix();
-    record.mesh.setMatrixAt(record.instanceIndex, acCityShellDummy.matrix);
-  }
-  for (const mesh of acCityShellInstanceMeshes) {
-    mesh.instanceMatrix.needsUpdate = true;
-  }
 }
 
 // V27: keep the detailed city blocks active in race mode; they scroll at distant-scene parallax.
@@ -7793,9 +7698,6 @@ function setGarageMode(enabled) {
   shoulder.visible = trackVisible;
   acRoadsideShoulders.visible = trackVisible;
   for (const mark of laneMarks) mark.visible = trackVisible;
-  acLaneMarkInstances.visible = trackVisible;
-  for (const mesh of acCityShellInstanceMeshes) mesh.visible = trackVisible && !acMobileExtremeFallbackApplied;
-  acUpdateCityShellInstanceMatrices();
   for (const edge of acRoadEdgeMeshes) edge.visible = trackVisible;
   acTrackCurbMesh.visible = trackVisible;
   acNearGuardrail.visible = trackVisible;
@@ -8027,7 +7929,6 @@ function acApplyMobileUltraPerformanceTier() {
   for (let index = 0; index < city.length; index++) {
     city[index].visible = index % 2 === 0;
   }
-  acUpdateCityShellInstanceMatrices();
 
   renderer.setSize(innerWidth, innerHeight, false);
   window.__allcoinsRacingQualityFallback = "ultra-mobile-performance";
@@ -8042,7 +7943,6 @@ function acApplyMobileExtremePerformanceTier() {
   // Preserve the player car, road, lane markings and near guardrail.
   // The distant fence remains visible; only the far city/building meshes are hidden.
   for (const building of city) building.visible = false;
-  for (const mesh of acCityShellInstanceMeshes) mesh.visible = false;
   acCityShrubs.visible = false;
   acSidewalkDetails.visible = false;
   acTrackHouseGroup.visible = false;
@@ -8131,7 +8031,6 @@ function acAdvanceRaceScenery(worldDelta){
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
-    acUpdateCityShellInstanceMatrices();
     return;
   }
 
@@ -8151,7 +8050,6 @@ function acAdvanceRaceScenery(worldDelta){
   for(const mesh of acTrackTreeLayers)acAdvanceWrappedSceneObject(mesh,worldDelta,.14);
   acAdvanceWrappedSceneObject(acTrackHouseGroup,worldDelta,.075);
   acAdvanceWrappedSceneObject(distantHills,worldDelta,.035,-260,0,260);
-  acUpdateCityShellInstanceMatrices();
 }
 
 let vehicle=null, wheelNodes=[], frontWheelNodes=[], rearWheelNodes=[], exhaustPoint=new THREE.Vector3(carAnchor-2.2,.55,-.2), rearWheelPoint=new THREE.Vector3(carAnchor-1.45,.42,.15);
@@ -9161,9 +9059,6 @@ function acRacingEnhanceCarSurface(root) {
 }
 
 function acRacingBatchStaticVehicleMeshes(){
-  // V223 safety rollback: keep every original GLB mesh intact on Android.
-  // The mobile vehicle-detail merge could leave the loaded car incomplete/invisible.
-  if(acRacingMobileDevice)return {merged:0,batches:0,disabled:true};
   if(!acRacingMobileDevice||!vehicleChassis||!vehicle)return {merged:0,batches:0};
   // Merge only static opaque detail meshes that share the exact same material.
   // Keep the body (paint), glass, wheel pivots, headlight rig and all animated parts separate.
@@ -10121,7 +10016,6 @@ const acRaceHudNodes = {
   rpmBar: $("rpmBar")
 };
 let acFuelLastGameplayRenderAt = -Infinity;
-let acNextMobileRaceHudUpdateAt = 0;
 function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
@@ -10448,19 +10342,16 @@ const perfBadge=document.getElementById("racingPerfBadge");
         if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
       }
     }
-    if(!acRacingMobileDevice || now>=acNextMobileRaceHudUpdateAt){
-      const speedText=String(kmh);
-      if(acRaceHudNodes.speed&&acRaceHudNodes.speed.textContent!==speedText)acRaceHudNodes.speed.textContent=speedText;
-      const rpmText=String(Math.round(rpm/100)*100);
-      if(acRaceHudNodes.rpm&&acRaceHudNodes.rpm.textContent!==rpmText)acRaceHudNodes.rpm.textContent=rpmText;
-      const distanceText=String(Math.floor(Math.max(0,distance)));
-      if(acRaceHudNodes.distance&&acRaceHudNodes.distance.textContent!==distanceText)acRaceHudNodes.distance.textContent=distanceText;
-      const timerText=clockText(elapsed);
-      if(acRaceHudNodes.timer&&acRaceHudNodes.timer.textContent!==timerText)acRaceHudNodes.timer.textContent=timerText;
-      const rpmBarWidth=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
-      if(acRaceHudNodes.rpmBar&&acRaceHudNodes.rpmBar.style.width!==rpmBarWidth)acRaceHudNodes.rpmBar.style.width=rpmBarWidth;
-      if(acRacingMobileDevice)acNextMobileRaceHudUpdateAt=now+50;
-    }
+    const speedText=String(kmh);
+    if(acRaceHudNodes.speed&&acRaceHudNodes.speed.textContent!==speedText)acRaceHudNodes.speed.textContent=speedText;
+    const rpmText=String(Math.round(rpm/100)*100);
+    if(acRaceHudNodes.rpm&&acRaceHudNodes.rpm.textContent!==rpmText)acRaceHudNodes.rpm.textContent=rpmText;
+    const distanceText=String(Math.floor(Math.max(0,distance)));
+    if(acRaceHudNodes.distance&&acRaceHudNodes.distance.textContent!==distanceText)acRaceHudNodes.distance.textContent=distanceText;
+    const timerText=clockText(elapsed);
+    if(acRaceHudNodes.timer&&acRaceHudNodes.timer.textContent!==timerText)acRaceHudNodes.timer.textContent=timerText;
+    const rpmBarWidth=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
+    if(acRaceHudNodes.rpmBar&&acRaceHudNodes.rpmBar.style.width!==rpmBarWidth)acRaceHudNodes.rpmBar.style.width=rpmBarWidth;
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
