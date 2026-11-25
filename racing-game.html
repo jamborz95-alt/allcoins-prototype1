@@ -2940,7 +2940,7 @@ async function onlineRefreshRooms() {
       const button = document.createElement("button");
       button.textContent =
         room.code + " · " + room.host_name + " · " +
-        room.players + "/" + room.max_players + " игроков";
+        room.players + "/" + room.max_players + " · " + Number(room.stake || 0).toLocaleString("ru-RU") + " AC";
 
       button.addEventListener("click", () => {
         $("onlineCode").value = room.code;
@@ -3152,7 +3152,7 @@ async function onlineCreateRoom() {
 async function onlineJoinRoom() {
   try {
     const code = $("onlineCode").value.trim().toUpperCase();
-    if (!/^DR-[1-9]\\d{0,17}$/.test(code)) {
+    if (!/^DR-[1-9]\d{0,17}$/.test(code)) {
       throw new Error("Введи номер комнаты в формате DR-123.");
     }
     $("onlineJoin").disabled = true;
@@ -3170,7 +3170,7 @@ window.addEventListener("message", async event => {
   const data = event.data;
   if (event.source !== window.parent || data?.type !== "allcoins:racing:join-room") return;
   const code = String(data.code || "").trim().toUpperCase();
-  if (!/^DR-[1-9]\\d{0,17}$/.test(code)) {
+  if (!/^DR-[1-9]\d{0,17}$/.test(code)) {
     onlineSetStatus("В ссылке указан неправильный номер гоночной комнаты.");
     return;
   }
@@ -3211,9 +3211,13 @@ async function onlineStartRoom() {
     $("onlineStart").disabled = true;
     const result = await onlineHostRequest("room:start", { code: onlineRoomCode });
     onlineRoomStatus = result.room?.status || "racing";
-    await onlineBeginRace();
-    onlineSetStatus("Заезд начался. Игровые состояния синхронизируются через Amvera.");
+    onlineCountdownPending = true;
+    const startedAt = Number(result.game?.startedAt || Date.now());
+    const serverNow = Number(result.serverNow || Date.now());
+    onlinePrepareCountdown({ startedAtMs: startedAt + 3000, serverTimeMs: serverNow });
+    onlineSetStatus("Комната запущена. Подготовка к общему старту…");
   } catch (error) {
+    onlineCountdownPending = false;
     onlineSetStatus(error.message);
   } finally {
     $("onlineStart").disabled = false;
