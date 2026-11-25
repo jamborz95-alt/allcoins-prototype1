@@ -2599,7 +2599,7 @@ function acPerfStartBenchmarkAfterCarReady() {
 window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarReady();
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
-let onlineSocket = null;\nlet onlinePollTimer = null;\nlet onlinePollBusy = false;\nlet onlineTelemetryBusy = false;
+let onlinePollTimer = null;\nlet onlinePollBusy = false;\nlet onlineTelemetryBusy = false;
 let onlineMode = false;
 let onlineRaceStarted = false;
 let onlineIsHost = false;
@@ -2694,7 +2694,7 @@ async function onlineStartTestBotRace() {
     if (status) status.textContent = "ЗАГРУЗКА ВАЗ-2107…";
     return;
   }
-  if (onlineRoomCode || onlineSocket) {
+  if (onlineRoomCode) {
     onlineSetStatus("Сначала выйди из настоящей онлайн-комнаты, чтобы запустить тестовый заезд.");
     $("onlinePanel").hidden = false;
     return;
