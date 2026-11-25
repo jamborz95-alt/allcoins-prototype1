@@ -609,7 +609,33 @@
     hideModelProgress();
   }
 
-  async function claimRacingRewardAfterAd(data) {\n    await ensureTelegramAuthentication();\n    const code = String(data.code || data.roomId || activeRoomCode || "").trim().toUpperCase();\n    const roomId = code.replace(/^DR-/, "");\n    if (!/^[1-9]\\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");\n    const eligibility = await dragRacingPost("/rooms/ad-reward-status", { roomId });\n    if (!eligibility.eligible) {\n      if (eligibility.alreadyClaimed) throw new Error("Бонус за эту гонку уже получен.");\n      throw new Error("Сегодня больше нет доступных рекламных бонусов.");\n    }\n    if (!window.Adsgram || typeof window.Adsgram.init !== "function") {\n      throw new Error("Реклама пока не загрузилась. Попробуй позже.");\n    }\n    const controller = window.Adsgram.init({ blockId: "54021" });\n    let rewardConfirmed = false;\n    const onReward = () => { rewardConfirmed = true; };\n    controller.addEventListener("onReward", onReward);\n    try {\n      await controller.show();\n      if (!rewardConfirmed) throw new Error("Просмотр рекламы не подтверждён. Бонус не начислен.");\n      return await dragRacingPost("/rooms/claim-ad-reward", { roomId });\n    } finally {\n      try { controller.removeEventListener("onReward", onReward); } catch (_) {}\n    }\n  }\n\n  async function handleRacingAction(data) {
+  async function claimRacingRewardAfterAd(data) {
+    await ensureTelegramAuthentication();
+    const code = String(data.code || data.roomId || activeRoomCode || "").trim().toUpperCase();
+    const roomId = code.replace(/^DR-/, "");
+    if (!/^[1-9]\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");
+    const eligibility = await dragRacingPost("/rooms/ad-reward-status", { roomId });
+    if (!eligibility.eligible) {
+      if (eligibility.alreadyClaimed) throw new Error("Бонус за эту гонку уже получен.");
+      throw new Error("Сегодня больше нет доступных рекламных бонусов.");
+    }
+    if (!window.Adsgram || typeof window.Adsgram.init !== "function") {
+      throw new Error("Реклама пока не загрузилась. Попробуй позже.");
+    }
+    const controller = window.Adsgram.init({ blockId: "54021" });
+    let rewardConfirmed = false;
+    const onReward = () => { rewardConfirmed = true; };
+    controller.addEventListener("onReward", onReward);
+    try {
+      await controller.show();
+      if (!rewardConfirmed) throw new Error("Просмотр рекламы не подтверждён. Бонус не начислен.");
+      return await dragRacingPost("/rooms/claim-ad-reward", { roomId });
+    } finally {
+      try { controller.removeEventListener("onReward", onReward); } catch (_) {}
+    }
+  }
+
+  async function handleRacingAction(data) {
     const action = String(data.action || "");
 
     if (action === "room:claim-ad-reward") return await claimRacingRewardAfterAd(data);
@@ -749,6 +775,7 @@
       }
       case "room:info":
       case "room:join":
+      case "room:choose-mode":
       case "room:start":
       case "room:leave":
       case "room:state":
