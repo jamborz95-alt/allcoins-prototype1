@@ -8006,19 +8006,17 @@ function acAdvanceWrappedSceneObject(object,worldDelta,factor,minX=-130,maxX=130
   while(object.position.x>maxX)object.position.x-=wrap;
 }
 
-// All distant scenery follows the same accumulated world distance.
- // On Android at 3rd gear and above, update only distant parallax at 30 Hz.
- // Near road details, road texture, lane marks, car and wheels still update every frame.
+// Все объекты обочины двигаются от одной величины пройденного пути.
+// Ближние детали идут почти со скоростью дорожной разметки, дальние — медленнее.
+// Static list avoids allocating a new array during every animation frame.
 const acTrackTreeLayers = Object.freeze([acTrackTreeTrunks,acTrackTreeLower,acTrackTreeUpper,acTrackTreeSnow]);
-let acMobileFarSceneryPendingDelta = 0;
-let acNextMobileFarSceneryUpdateAt = 0;
-function acAdvanceRaceScenery(worldDelta, farWorldDelta = worldDelta){
+function acAdvanceRaceScenery(worldDelta){
   if(!Number.isFinite(worldDelta)||Math.abs(worldDelta)<1e-8)return;
-  const hasFarDelta=Number.isFinite(farWorldDelta)&&Math.abs(farWorldDelta)>=1e-8;
 
-  // In the extreme mobile profile, only the fence remains as far scenery.
+  // In the extreme mobile profile, skip transforms for the hidden city/building collection.
+  // Keep the visible fence moving with its distant-scene parallax.
   if (acMobileExtremeFallbackApplied) {
-    if(hasFarDelta)acAdvanceWrappedSceneObject(acCityFence,farWorldDelta,.19,-132,104,236);
+    acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
@@ -8026,34 +8024,32 @@ function acAdvanceRaceScenery(worldDelta, farWorldDelta = worldDelta){
   }
 
   if (acMobileUltraFallbackApplied) {
-    if(hasFarDelta){
-      for (const building of city) {
-        if (building.visible) acAdvanceWrappedSceneObject(building,farWorldDelta,.19,-132,104,236);
-      }
-      acAdvanceWrappedSceneObject(acCityFence,farWorldDelta,.19,-132,104,236);
+    for (const building of city) {
+      if (building.visible) acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
     }
+    acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
     acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
     acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
     acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
     return;
   }
 
-  if(hasFarDelta){
-    for(const building of city){
-      if(building.visible)acAdvanceWrappedSceneObject(building,farWorldDelta,.19,-132,104,236);
-    }
-    acAdvanceWrappedSceneObject(acCityFence,farWorldDelta,.19,-132,104,236);
-    acAdvanceWrappedSceneObject(acCityShrubs,farWorldDelta,.19);
-    acAdvanceWrappedSceneObject(acSidewalkDetails,farWorldDelta,.19);
-    for(const mesh of acTrackTreeLayers)acAdvanceWrappedSceneObject(mesh,farWorldDelta,.14);
-    acAdvanceWrappedSceneObject(acTrackHouseGroup,farWorldDelta,.075);
-    acAdvanceWrappedSceneObject(distantHills,farWorldDelta,.035,-260,0,260);
+  for(const building of city){
+    if(building.visible)acAdvanceWrappedSceneObject(building,worldDelta,.19,-132,104,236);
   }
+  acAdvanceWrappedSceneObject(acCityFence,worldDelta,.19,-132,104,236);
+  acAdvanceWrappedSceneObject(acCityShrubs,worldDelta,.19);
+  acAdvanceWrappedSceneObject(acSidewalkDetails,worldDelta,.19);
 
-  // Kerbs and the near guardrail keep exact per-frame motion with the road.
+  // Бордюры и ближайшее металлическое ограждение.
   acAdvanceWrappedSceneObject(acTrackCurbMesh,worldDelta,.96);
   acAdvanceWrappedSceneObject(curbSegments,worldDelta,.96);
   acAdvanceWrappedSceneObject(acNearGuardrail,worldDelta,.96);
+
+  // Деревья и небольшие здания находятся дальше от трассы — параллакс слабее.
+  for(const mesh of acTrackTreeLayers)acAdvanceWrappedSceneObject(mesh,worldDelta,.14);
+  acAdvanceWrappedSceneObject(acTrackHouseGroup,worldDelta,.075);
+  acAdvanceWrappedSceneObject(distantHills,worldDelta,.035,-260,0,260);
 }
 
 let vehicle=null, wheelNodes=[], frontWheelNodes=[], rearWheelNodes=[], exhaustPoint=new THREE.Vector3(carAnchor-2.2,.55,-.2), rearWheelPoint=new THREE.Vector3(carAnchor-1.45,.42,.15);
@@ -10202,9 +10198,7 @@ const perfBadge=document.getElementById("racingPerfBadge");
         testBotProgressOnly:onlineTestBotActive,
         benchmarkMode:acPerfBenchmark?.mode||null,
         benchmarkCompleted:Boolean(window.__allcoinsRacingBenchmarkState?.completed),
-        mobileFarSceneryMode:acRacingMobileDevice&&gear>=3?"30Hz":"per-frame",
-        mobileFarSceneryPendingDelta:Number(acMobileFarSceneryPendingDelta.toFixed(3)),
-        garagePreviewRendererActive:Boolean(acGaragePreviewRenderer),
+remove V218 diagnostics        garagePreviewRendererActive:Boolean(acGaragePreviewRenderer),
         garagePreviewCloneActive:Boolean(acGaragePreviewCar),
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
@@ -10357,22 +10351,7 @@ const perfBadge=document.getElementById("racingPerfBadge");
     frameWorldDelta=scroll;
     acAdvanceRoadSurface(scroll);
     acAdvanceCentralMarkings(scroll);
-    let farSceneryDelta=scroll;
-    if(acRacingMobileDevice && gear>=3 && !acPerfBenchmark){
-      acMobileFarSceneryPendingDelta+=scroll;
-      if(now>=acNextMobileFarSceneryUpdateAt){
-        farSceneryDelta=acMobileFarSceneryPendingDelta;
-        acMobileFarSceneryPendingDelta=0;
-        acNextMobileFarSceneryUpdateAt=now+33;
-      }else{
-        farSceneryDelta=0;
-      }
-    }else{
-      farSceneryDelta+=acMobileFarSceneryPendingDelta;
-      acMobileFarSceneryPendingDelta=0;
-      acNextMobileFarSceneryUpdateAt=now+33;
-    }
-    acAdvanceRaceScenery(scroll,farSceneryDelta);
+    acAdvanceRaceScenery(scroll);
     finishLine.position.x=finishStartX-distance*WORLD_UNITS_PER_METER;
     const ride=rideModes[suspensionMode];
     /* ALLCOINS Racing V23 · reduced throttle squat */
@@ -11559,8 +11538,7 @@ body.race-mode #gearSelector { display:grid!important; }
       ]:[]),
       "Последний / худший кадр: "+d.lastFrameMs+" / "+d.maxFrameMs+" мс",
       "Разрешение: "+innerWidth+"×"+innerHeight+" | DPR: "+(devicePixelRatio||1),
-      "Дальний фон: "+(d.mobileFarSceneryMode||"per-frame")+" | накоплено: "+(d.mobileFarSceneryPendingDelta??0),
-      "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
+remove V218 HUD      "Render calls: "+d.renderCalls+" | треугольники: "+d.triangles,
       "Геометрия: "+d.geometries+" | текстуры: "+d.textures,
       "Шейдеры окружения: Basic "+d.mobileEnvironmentBasicMaterials+" / Lambert "+d.mobileEnvironmentLambertMaterials,
       "Раздельный рендер: "+(d.mobileSplitResolutionRendering?"вкл · фон "+Math.round(d.mobileBackgroundScale*100)+"%":"нет"),
