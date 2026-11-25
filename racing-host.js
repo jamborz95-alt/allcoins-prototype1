@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  // Единственный API-адрес ALLCOINS Racing: Amvera (авторизация, комнаты и игровой API).
+  // 3D-модель и её передача загружаются с Amvera; комнаты и баланс идут через API ALLCOINS.
   const RACING_API_BASE = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
   const CHUNK_SIZE = 4 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
