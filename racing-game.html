@@ -8091,7 +8091,12 @@ function addSmoke(position,kind='exhaust'){
   if(acMobileSevereFallbackApplied)return false;
   const tire=kind==='tire';
   const now=performance.now();
-  const minimumInterval=acRacingMobileDevice?(tire?70:95):(tire?42:58);
+  // High-speed exhaust is a recurring transparent effect. On mobile keep the
+  // exhaust visible but spawn fewer puffs once road speed becomes substantial.
+  const highSpeedExhaust=acRacingMobileDevice&&!tire&&speed>=85;
+  const minimumInterval=acRacingMobileDevice
+    ?(tire?70:(highSpeedExhaust?220:95))
+    :(tire?42:58);
   if(tire){
     if(now-acLastTireSmokeAt<minimumInterval)return false;
     acLastTireSmokeAt=now;
@@ -8099,7 +8104,9 @@ function addSmoke(position,kind='exhaust'){
     if(now-acLastExhaustSmokeAt<minimumInterval)return false;
     acLastExhaustSmokeAt=now;
   }
-  const life=tire?(acRacingMobileDevice?1.9:2.15):(acRacingMobileDevice?1.2:1.35);
+  const life=tire
+    ?(acRacingMobileDevice?1.9:2.15)
+    :(acRacingMobileDevice?(highSpeedExhaust?.9:1.2):1.35);
   const particle=acAcquireSmokeParticle();
   const material=particle.mesh.material;
   material.color.setHex(tire?0x202326:0x969fa3);
@@ -10186,6 +10193,8 @@ const perfBadge=document.getElementById("racingPerfBadge");
         triangles:renderer.info.render.triangles,
         activeSmokeParticles:smokeParticles.length,
         pooledSmokeParticles:smokeParticlePool.length,
+        highSpeedExhaustRateLimited:acRacingMobileDevice&&speed>=85,
+        exhaustParticleIntervalMs:acRacingMobileDevice&&speed>=85?220:95,
         geometries:renderer.info.memory.geometries,
         textures:renderer.info.memory.textures,
          vehicleMeshes:window.__allcoinsRacingVehicleRenderStats?.meshes||0,
@@ -11544,7 +11553,7 @@ remove V218 HUD      "Render calls: "+d.renderCalls+" | треугольники
       "Раздельный рендер: "+(d.mobileSplitResolutionRendering?"вкл · фон "+Math.round(d.mobileBackgroundScale*100)+"%":"нет"),
       "3D-соперники: "+d.renderedOpponentCars+" | тест-бот без 3D: "+(d.testBotProgressOnly?"да":"нет"),
       "Гаражный второй рендер: "+(d.garagePreviewRendererActive?"активен":"освобождён")+" | копия ВАЗ: "+(d.garagePreviewCloneActive?"в памяти":"нет"),
-      "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
+      "Дым: "+d.activeSmokeParticles+" | выхлоп на высокой скорости: "+(d.highSpeedExhaustRateLimited?"ограничен · 220 мс":"обычный")+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
       "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
       "Профиль: "+d.mobileQualityProfile,
       "Автооптимизация: "+(d.qualityFallback||"нет"),
