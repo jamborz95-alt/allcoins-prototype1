@@ -3392,7 +3392,6 @@ function acOnlineApplyLaneLayout(enabled) {
     acOnlinePlayerBaseZ = vehicle.position.z;
     acOnlineLaneLayoutActive = true;
     for (const mark of laneMarks) mark.position.z = 0;
-    acSyncCentralMarkingInstances();
     vehicle.updateMatrixWorld(true);
     return;
   }
@@ -3402,7 +3401,6 @@ function acOnlineApplyLaneLayout(enabled) {
     acOnlinePlayerBaseZ = null;
     acOnlineLaneLayoutActive = false;
     for (const mark of laneMarks) mark.position.z = 0;
-    acSyncCentralMarkingInstances();
     vehicle.updateMatrixWorld(true);
   }
 }
@@ -5854,30 +5852,12 @@ const stripeMat = new THREE.MeshStandardMaterial({
   emissiveIntensity: .025
 });
 const laneMarks = [];
-// 42 исходных штриха сохраняют ту же геометрию и материал,
-// но отправляются на GPU одним InstancedMesh вместо 42 отдельных draw calls.
-const acLaneMarkGeometry = new THREE.BoxGeometry(3.2, .026, .15);
-const acLaneMarkInstances = new THREE.InstancedMesh(acLaneMarkGeometry, stripeMat, 42);
-acLaneMarkInstances.name = "ALLCOINS · 42 central lane marks";
-acLaneMarkInstances.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+// Короткая прерывистая разметка центральной линии, как на референсе.
 for (let i = 0; i < 42; i++) {
-  const mark = new THREE.Object3D();
+  const mark = new THREE.Mesh(new THREE.BoxGeometry(3.2, .026, .15), stripeMat);
   mark.position.set(-126 + i * 6.2, -.085, 0);
-  mark.updateMatrix();
-  acLaneMarkInstances.setMatrixAt(i, mark.matrix);
+  scene.add(mark);
   laneMarks.push(mark);
-}
-acLaneMarkInstances.computeBoundingSphere();
-acLaneMarkInstances.frustumCulled = false;
-scene.add(acLaneMarkInstances);
-
-function acSyncCentralMarkingInstances() {
-  for (let i = 0; i < laneMarks.length; i++) {
-    const mark = laneMarks[i];
-    mark.updateMatrix();
-    acLaneMarkInstances.setMatrixAt(i, mark.matrix);
-  }
-  acLaneMarkInstances.instanceMatrix.needsUpdate = true;
 }
 
 // Центральный пунктир движется вместе с остальным миром: при ходе вперёд — влево, при заднем ходе — вправо.
@@ -5888,7 +5868,6 @@ function acAdvanceCentralMarkings(scroll) {
     while (mark.position.x > 135) mark.position.x -= 260.4;
     while (mark.position.x < -135) mark.position.x += 260.4;
   }
-  acSyncCentralMarkingInstances();
 }
 
 // Проверяем фактическое направление движения разметки на копии текущих координат,
@@ -5900,11 +5879,9 @@ function acMeasureCentralMarkingDirection() {
   acAdvanceCentralMarkings(0.5);
   const forwardDelta = Number((laneMarks[sampleIndex].position.x - originalX[sampleIndex]).toFixed(3));
   laneMarks.forEach((mark, index) => { mark.position.x = originalX[index]; });
-  acSyncCentralMarkingInstances();
   acAdvanceCentralMarkings(-0.5);
   const reverseDelta = Number((laneMarks[sampleIndex].position.x - originalX[sampleIndex]).toFixed(3));
   laneMarks.forEach((mark, index) => { mark.position.x = originalX[index]; });
-  acSyncCentralMarkingInstances();
   return { forwardDelta, reverseDelta };
 }
 const acCentralMarkingDirection = acMeasureCentralMarkingDirection();
@@ -7721,7 +7698,6 @@ function setGarageMode(enabled) {
   shoulder.visible = trackVisible;
   acRoadsideShoulders.visible = trackVisible;
   for (const mark of laneMarks) mark.visible = trackVisible;
-  acLaneMarkInstances.visible = trackVisible;
   for (const edge of acRoadEdgeMeshes) edge.visible = trackVisible;
   acTrackCurbMesh.visible = trackVisible;
   acNearGuardrail.visible = trackVisible;
@@ -10048,8 +10024,6 @@ const acRaceHudNodes = {
   rpmBar: $("rpmBar")
 };
 let acFuelLastGameplayRenderAt = -Infinity;
-// Числа на панели обновляются 20 раз/с на телефоне; расчёт физики остаётся покадровым.
-let acNextMobileRaceHudUpdateAt = 0;
 function resize(){
   const w=innerWidth,h=innerHeight;
   renderer.setSize(w,h,false);
@@ -10376,19 +10350,16 @@ const perfBadge=document.getElementById("racingPerfBadge");
         if(acFuelPendingUse>=.02&&now-acFuelLastSyncAt>=6500)void acFuelSyncUse();
       }
     }
-    if(!acRacingMobileDevice || now>=acNextMobileRaceHudUpdateAt){
-      const speedText=String(kmh);
-      if(acRaceHudNodes.speed&&acRaceHudNodes.speed.textContent!==speedText)acRaceHudNodes.speed.textContent=speedText;
-      const rpmText=String(Math.round(rpm/100)*100);
-      if(acRaceHudNodes.rpm&&acRaceHudNodes.rpm.textContent!==rpmText)acRaceHudNodes.rpm.textContent=rpmText;
-      const distanceText=String(Math.floor(Math.max(0,distance)));
-      if(acRaceHudNodes.distance&&acRaceHudNodes.distance.textContent!==distanceText)acRaceHudNodes.distance.textContent=distanceText;
-      const timerText=clockText(elapsed);
-      if(acRaceHudNodes.timer&&acRaceHudNodes.timer.textContent!==timerText)acRaceHudNodes.timer.textContent=timerText;
-      const rpmBarWidth=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
-      if(acRaceHudNodes.rpmBar&&acRaceHudNodes.rpmBar.style.width!==rpmBarWidth)acRaceHudNodes.rpmBar.style.width=rpmBarWidth;
-      if(acRacingMobileDevice)acNextMobileRaceHudUpdateAt=now+50;
-    }
+    const speedText=String(kmh);
+    if(acRaceHudNodes.speed&&acRaceHudNodes.speed.textContent!==speedText)acRaceHudNodes.speed.textContent=speedText;
+    const rpmText=String(Math.round(rpm/100)*100);
+    if(acRaceHudNodes.rpm&&acRaceHudNodes.rpm.textContent!==rpmText)acRaceHudNodes.rpm.textContent=rpmText;
+    const distanceText=String(Math.floor(Math.max(0,distance)));
+    if(acRaceHudNodes.distance&&acRaceHudNodes.distance.textContent!==distanceText)acRaceHudNodes.distance.textContent=distanceText;
+    const timerText=clockText(elapsed);
+    if(acRaceHudNodes.timer&&acRaceHudNodes.timer.textContent!==timerText)acRaceHudNodes.timer.textContent=timerText;
+    const rpmBarWidth=Math.min(100,rpm/AC_TACHOMETER_MAX*100)+'%';
+    if(acRaceHudNodes.rpmBar&&acRaceHudNodes.rpmBar.style.width!==rpmBarWidth)acRaceHudNodes.rpmBar.style.width=rpmBarWidth;
     // Мировое перемещение рассчитывается из фактической скорости и времени кадра.
     // Поэтому удвоение скорости даёт ровно вдвое больший сдвиг трассы за тот же интервал.
     // Keep asphalt, lane marks, scenery, finish marker and wheel rotation on
