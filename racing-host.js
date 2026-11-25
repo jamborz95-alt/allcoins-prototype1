@@ -22,7 +22,6 @@
     ? "v24-vaz-2107-amvera-glb-v2"
     : "v24-vaz-2107-glb-63426260-v1";
 
-  let engineToken = "";
   let authenticationPromise = null;
   let overlay = null;
   let frame = null;
@@ -38,10 +37,10 @@
   let oldRootOverflow = "";
 
   function apiUrl(path) {
-    if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(RACING_API_BASE)) {
+    if (!/^https:\/\/[a-z0-9.-]+(?::\\d+)?$/i.test(RACING_API_BASE)) {
       throw new Error("Адрес гоночного сервера ещё не настроен.");
     }
-    return RACING_API_BASE.replace(/\/+$/, "") + path;
+    return RACING_API_BASE.replace(/\\/+$/, "") + path;
   }
 
   function setStatus(message, isError) {
@@ -65,38 +64,14 @@
     if (modelProgressPanel) modelProgressPanel.style.display = "none";
   }
 
-  async function readModelResponse(response, start, total) {
-    // Keep the proven small-buffer download path; the visible bar animates while each range arrives.
-    const buffer = await response.arrayBuffer();
-    const loaded = start + buffer.byteLength;
-    const currentMb = (loaded / 1048576).toFixed(1);
-    const totalMb = total ? (total / 1048576).toFixed(1) : "";
-    const percent = total ? Math.min(100, loaded / total * 100) : null;
-    setModelProgress(
-      total ? "Загрузка автомобиля · " + currentMb + " / " + totalMb + " МБ" :
-        "Получено " + currentMb + " МБ. Подготавливаем автомобиль…",
-      percent
-    );
-    return buffer;
-  }
-
   async function requestApi(path, options) {
     const settings = options || {};
     const headers = Object.assign({}, settings.headers || {});
-    if (settings.authorized !== false) {
-      if (!engineToken) throw new Error("Сначала необходимо подтвердить вход через Telegram.");
-      headers.Authorization = "Bearer " + engineToken;
-    }
-    const request = {
-      method: settings.method || "GET",
-      headers,
-      cache: "no-store"
-    };
+    const request = { method: settings.method || "GET", headers, cache: "no-store" };
     if (settings.body !== undefined) {
       headers["Content-Type"] = "application/json";
       request.body = JSON.stringify(settings.body);
     }
-
     let response;
     const controller = new AbortController();
     const requestTimeout = setTimeout(() => controller.abort(), 20000);
@@ -105,58 +80,68 @@
       response = await fetch(apiUrl(path), request);
     } catch (error) {
       if (error && error.name === "AbortError") {
-        throw new Error("Гоночный сервер не ответил за 20 секунд. Проверь, запущен ли Engine на ПК.");
+        throw new Error("Гоночный сервер Amvera не ответил за 20 секунд.");
       }
-      throw new Error("Не удалось связаться с гоночным сервером. Проверь подключение к ПК.");
+      throw new Error("Не удалось связаться с гоночным сервером Amvera.");
     } finally {
       clearTimeout(requestTimeout);
     }
-
     const raw = await response.text();
     let data = {};
-    try {
-      data = raw ? JSON.parse(raw) : {};
-    } catch (_) {
-      throw new Error("Сервер вернул некорректный ответ.");
-    }
-
-    if (!response.ok) {
-      if (response.status === 401) engineToken = "";
+    try { data = raw ? JSON.parse(raw) : {}; }
+    catch (_) { throw new Error("Сервер Amvera вернул не JSON. Проверь адрес API."); }
+    if (!response.ok || data.ok === false) {
       throw new Error(data.error || ("Ошибка гоночного сервера: HTTP " + response.status));
     }
     return data;
   }
 
-  async function authenticateTelegram() {
+  function telegramInitData() {
     const tg = window.Telegram && window.Telegram.WebApp;
     if (!tg || !tg.initData) {
       throw new Error("Открой ALLCOINS через Telegram, чтобы войти в гонку.");
     }
-    try {
-      tg.ready();
-      tg.expand();
-    } catch (_) {}
-
-    const result = await requestApi("/api/auth/telegram", {
-      method: "POST",
-      body: { initData: tg.initData },
-      authorized: false
-    });
-    if (!result || typeof result.token !== "string" || !result.token) {
-      throw new Error("Сервер не выдал игровую сессию Telegram.");
-    }
-    engineToken = result.token;
-    return result.user || null;
+    try { tg.ready(); tg.expand(); } catch (_) {}
+    return tg.initData;
   }
 
-  function ensureTelegramAuthentication() {
-    if (engineToken) return Promise.resolve(null);
-    if (!authenticationPromise) {
-      authenticationPromise = authenticateTelegram().finally(() => {
-        authenticationPromise = null;
-      });
-    }
-    return authenticationPromise;
+  async function ensureTelegramAuthentication() {
+    telegramInitData();
+    return true;
+  }
+
+  async function dragRacingPost(path, body = {}) {
+    const initData = telegramInitData();
+    return requestApi("/api/drag-racing" + path, {
+      method: "POST",
+      body: Object.assign({}, body, { initData })
+    });
+  }
+
+  function normalizeRoomPayload(payload) {
+    const room = payload.room || {};
+    return Object.assign({}, payload, {
+      isHost: Boolean(room.isOwner),
+      room: Object.assign({}, room, {
+        code: String(room.id || ""),
+        host_name: String(room.ownerName || "Игрок"),
+        players: Number(room.playersCount || 0),
+        max_players: Number(room.maxPlayers || 2)
+      }),
+      players: (payload.players || []).map(player => ({
+        ...player,
+        is_me: Boolean(player.isYou),
+        is_host: Boolean(player.isOwner),
+        finish_time_ms: player.finishTimeMs == null ? null : Number(player.finishTimeMs),
+        is_ready: true,
+        speedKmh: player.motion?.speedKmh ?? 0,
+        distanceM: player.motion?.distanceM ?? 0,
+        gear: player.motion?.gear ?? 0,
+        progress: player.motion?.progress ?? 0,
+        updatedAt: player.motion?.updatedAt ?? 0,
+        fresh: Boolean(player.motion?.fresh)
+      }))
+    });
   }
 
   function makeElement(tag, styles, text) {
@@ -733,83 +718,70 @@
 
     await ensureTelegramAuthentication();
     let result;
-
     switch (action) {
-      case "rooms:list":
-        result = await requestApi("/api/racing/rooms");
+      case "rooms:list": {
+        const data = await dragRacingPost("/rooms/list");
+        result = {
+          rooms: (data.rooms || []).map(room => ({
+            code: String(room.id || ""),
+            host_name: String(room.ownerName || "Игрок"),
+            players: Number(room.playersCount || 0),
+            max_players: Number(room.maxPlayers || 2),
+            stake: Number(room.stake || 0),
+            mode: String(room.mode || "quarter")
+          })),
+          currentRoom: data.currentRoom ? normalizeRoomPayload(data.currentRoom) : null
+        };
         break;
-
+      }
       case "room:create": {
         const maxPlayers = Number(data.maxPlayers === undefined ? 2 : data.maxPlayers);
-        if (maxPlayers !== 2) {
-          throw new Error("В ALLCOINS Racing доступны комнаты максимум на 2 игроков.");
+        if (maxPlayers !== 2) throw new Error("В ALLCOINS Racing доступны комнаты строго на 2 игроков.");
+        const payload = await dragRacingPost("/rooms/create", {
+          maxPlayers: 2,
+          stake: data.stake,
+          mode: data.mode || "quarter",
+          carId: data.carId
+        });
+        result = normalizeRoomPayload(payload);
+        activeRoomCode = String(result.room?.code || "");
+        break;
+      }
+      case "room:info":
+      case "room:join":
+      case "room:start":
+      case "room:leave":
+      case "room:state":
+      case "room:finish": {
+        const code = String(data.code || data.roomId || activeRoomCode || "").trim().toUpperCase();
+        const roomId = code.replace(/^DR-/, "");
+        if (!/^[1-9]\\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");
+        const routes = {
+          "room:info": "/rooms/state",
+          "room:join": "/rooms/join",
+          "room:start": "/rooms/start",
+          "room:leave": "/rooms/leave",
+          "room:state": "/rooms/state",
+          "room:finish": "/rooms/finish"
+        };
+        const body = { roomId };
+        if (action === "room:state" && data.telemetry) body.telemetry = data.telemetry;
+        if (action === "room:finish") body.timeMs = data.timeMs;
+        const payload = await dragRacingPost(routes[action], body);
+        result = normalizeRoomPayload(payload);
+        if (action === "room:leave") {
+          if (activeRoomCode === "DR-" + roomId) activeRoomCode = "";
+        } else {
+          activeRoomCode = "DR-" + roomId;
         }
-        result = await requestApi("/api/racing/rooms", {
-          method: "POST",
-          body: { maxPlayers }
-        });
-        activeRoomCode = result.room && result.room.code ? String(result.room.code) : "";
         break;
       }
-
-      case "room:info": {
-        const code = roomCode(data.code);
-        result = await requestApi("/api/racing/rooms/" + encodeURIComponent(code));
-        activeRoomCode = code;
+      case "room:ready":
+        // The HTTP room API has no ready flag; a room starts when both players joined.
+        result = { ok: true };
         break;
-      }
-
-      case "room:join": {
-        const code = roomCode(data.code);
-        result = await requestApi("/api/racing/rooms/" + encodeURIComponent(code) + "/join", {
-          method: "POST",
-          body: {}
-        });
-        activeRoomCode = code;
-        break;
-      }
-
-      case "room:ready": {
-        const code = roomCode(data.code);
-        result = await requestApi("/api/racing/rooms/" + encodeURIComponent(code) + "/ready", {
-          method: "POST",
-          body: { ready: data.ready === true }
-        });
-        activeRoomCode = code;
-        break;
-      }
-
-      case "room:leave": {
-        const code = roomCode(data.code || activeRoomCode);
-        result = await requestApi("/api/racing/rooms/" + encodeURIComponent(code) + "/leave", {
-          method: "POST",
-          body: {}
-        });
-        if (activeRoomCode === code) activeRoomCode = "";
-        break;
-      }
-
-      case "room:start": {
-        const code = roomCode(data.code);
-        result = await requestApi("/api/racing/rooms/" + encodeURIComponent(code) + "/start", {
-          method: "POST",
-          body: {}
-        });
-        activeRoomCode = code;
-        break;
-      }
-
-      case "room:ticket": {
-        result = await requestApi("/api/racing/ticket", {
-          method: "POST",
-          body: {}
-        });
-        const socketUrl = new URL("/ws/racing", RACING_API_BASE);
-        socketUrl.protocol = socketUrl.protocol === "https:" ? "wss:" : "ws:";
-        result.wsUrl = socketUrl.toString();
-        break;
-      }
-
+      case "room:ticket":
+        throw new Error("WebSocket отключён. Используется HTTP-синхронизация.");
       default:
         throw new Error("Неизвестная операция гоночного режима.");
     }
