@@ -5362,6 +5362,24 @@ const responseText = await response.text();
   return result;
 }
 
+// ALLCOINS Racing rooms use the main ALLCOINS API so rewards change the same
+// wallet balance as the clicker. The separate Engine host remains responsible
+// for 3D assets and model delivery only.
+window.allcoinsRacingRoomsApi = Object.freeze({
+  async post(path, body = {}) {
+    const allowed = new Set([
+      "/rooms/list", "/rooms/create", "/rooms/join", "/rooms/start",
+      "/rooms/state", "/rooms/finish", "/rooms/leave",
+      "/rooms/confirm-ad", "/rooms/select-mode"
+    ]);
+    if (!allowed.has(String(path))) throw new Error("Недопустимый запрос гоночной комнаты.");
+    const result = await apiRequest("/api/drag-racing" + path, body);
+    if (Number.isFinite(Number(result.balance))) state.balance = Number(result.balance);
+    if (result.balance !== undefined) render();
+    return result;
+  }
+});
+
 // Bridge for Drag Racing paint purchases: authoritative balance and owned paints live on the ALLCOINS API.
 window.allcoinsRacingPaintApi = Object.freeze({
   async profile() {
