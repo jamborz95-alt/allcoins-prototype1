@@ -1,7 +1,7 @@
 import express from "express";
 
 const ROOM_PREFIX = "DR-";
-const RACE_WINNER_REWARD = 120000n;
+const RACE_WINNER_REWARD = 0n;
 const MIN_RACE_FINISH_MS = 7000;
 const MAX_FINISH_TIME_DRIFT_MS = 2500;
 const VALID_MODES = new Set(["quarter", "half", "sprint"]);
@@ -324,8 +324,8 @@ async function settleRoomIfReady(client, room, players, game) {
   game.commission = 0;
   game.payout = Number(RACE_WINNER_REWARD);
   game.message = winners.length === 1
-    ? "Заезд завершён. Система начислила победителю 120 000 AC."
-    : "Ничья! Система разделила 120 000 AC поровну между победителями.";
+    ? "Заезд завершён. Результат победителя сохранён."
+    : "Ничья! Результаты заезда сохранены.";
   await client.query(
     "UPDATE drag_racing_rooms SET status = 'finished', game_state = $2::jsonb, updated_at = NOW() WHERE id = $1::BIGINT",
     [String(room.id), JSON.stringify(game)]
