@@ -1446,7 +1446,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       const roomResult = await client.query(
         "INSERT INTO drag_racing_rooms (owner_telegram_id, owner_name, stake, max_players, mode, status, game_state) " +
         "VALUES ($1::BIGINT, $2, $3::BIGINT, $4, $5, 'waiting', '{\"phase\":\"waiting\",\"results\":{}}'::jsonb) RETURNING id::TEXT AS id",
-        [user.id, user.name, stake, maxPlayers, mode]
+        [user.id, user.name, 0n, maxPlayers, mode]
       );
       const roomId = String(roomResult.rows[0].id);
       await client.query(
