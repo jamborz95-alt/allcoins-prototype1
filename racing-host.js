@@ -760,7 +760,7 @@
       case "room:finish": {
         const code = String(data.code || data.roomId || activeRoomCode || "").trim().toUpperCase();
         const roomId = code.replace(/^DR-/, "");
-        if (!/^[1-9]\\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");
+        if (!/^[1-9]\d{0,17}$/.test(roomId)) throw new Error("Номер комнаты указан неверно.");
         const routes = {
           "room:info": "/rooms/state",
           "room:join": "/rooms/join",
