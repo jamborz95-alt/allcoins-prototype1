@@ -2434,7 +2434,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
-      <input id="onlineCode" maxlength="8" placeholder="КОД КОМНАТЫ">
+      <input id="onlineCode" maxlength="21" placeholder="DR-НОМЕР КОМНАТЫ">
       <button id="onlineJoin">ПОДКЛЮЧИТЬСЯ</button>
     </div>
     <div class="online-row">
@@ -2599,7 +2599,7 @@ function acPerfStartBenchmarkAfterCarReady() {
 window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarReady();
 /* ALLCOINS RACING ONLINE CLIENT */
 let onlineRoomCode = "";
-let onlineSocket = null;
+let onlineSocket = null;\nlet onlinePollTimer = null;\nlet onlinePollBusy = false;\nlet onlineTelemetryBusy = false;
 let onlineMode = false;
 let onlineRaceStarted = false;
 let onlineIsHost = false;
@@ -2906,12 +2906,12 @@ async function onlineRefreshRoom() {
   readyButton.disabled = room.status !== "waiting" || !me;
   readyButton.textContent = onlineIsReady ? "ГОТОВ ✓ · ОТМЕНИТЬ" : "ГОТОВ";
 
-  const allReady = players.length >= 2 && players.every(player => player.is_ready === true);
+  const allReady = players.length >= 2;
   const start = $("onlineStart");
   start.hidden = !onlineIsHost || room.status !== "waiting";
   start.disabled = players.length < 2 || !allReady;
 
-  if (room.status === "finished") {
+  if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive) {\n    void onlineBeginRace();\n  }\n\n  if (room.status === "finished") {
     const finishers = players
       .filter(player => player.finish_time_ms != null && Number.isFinite(Number(player.finish_time_ms)))
       .sort((a, b) => Number(a.finish_time_ms) - Number(b.finish_time_ms));
@@ -3090,92 +3090,46 @@ function onlinePrepareCountdown(payload = {}) {
 async function onlineConnectRoom(code) {
   onlineRoomCode = code;
   onlineMode = true;
-
-  if (onlineSocket) {
-    const old = onlineSocket;
-    onlineSocket = null;
-    old.close();
-  }
-
-  const auth = await onlineHostRequest("room:ticket");
-  const ws = new WebSocket(auth.wsUrl);
-  onlineSocket = ws;
-  let socketError = "";
-  onlineSetStatus("Подключаемся к комнате " + code + "…");
-
-  ws.addEventListener("open", () => {
-    ws.send(JSON.stringify({
-      type: "auth",
-      ticket: auth.ticket,
-      roomCode: code
-    }));
-  });
-
-  ws.addEventListener("message", event => {
-    let message;
-    try {
-      message = JSON.parse(event.data);
-    } catch {
-      return;
-    }
-
-    if (message.type === "welcome") {
-      onlineSetStatus("Подключено к комнате " + code + ".");
-      for (const player of message.players || []) {
-        if (player.userId) onlineRemoteStates.set(player.userId, player);
-      }
-      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
-      if (message.room?.status === "racing") onlinePrepareCountdown({ startedAt: message.room.startedAt, serverTimeMs: message.serverTime });
-    } else if (message.type === "player-state" && message.player?.userId) {
-      onlineRemoteStates.set(message.player.userId, message.player);
-    } else if (message.type === "player-left") {
-      const userId = message.player?.userId;
-      if (userId) {
-        onlineRemoteStates.delete(userId);
-        onlineRemoveOpponentCar(userId);
-      }
-      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
-    } else if (
-      message.type === "lobby-updated" ||
-      message.type === "player-joined"
-    ) {
-      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
-    } else if (message.type === "race-countdown") {
-      onlinePrepareCountdown(message);
-    } else if (message.type === "race-start") {
-      onlineBeginRace();
-    } else if (message.type === "finish-ack") {
-      onlineSetStatus(
-        "Сервер подтвердил финиш: " +
-        (Number(message.finishTimeMs || 0) / 1000).toFixed(2) + " с."
-      );
-      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
-    } else if (message.type === "player-finished") {
-      onlineSetStatus("Финишировал игрок: " + (message.player?.name || "Участник"));
-      void onlineRefreshRoom().catch(() => {});
-    } else if (message.type === "race-finished") {
-      void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
-    } else if (message.type === "error") {
-      socketError = String(message.message || "Ошибка онлайн-соединения.");
-      onlineSetStatus("Ошибка онлайн-подключения: " + socketError);
-    }
-  });
-
-  /* ALLCOINS WS ERROR DIAGNOSTICS 2026-11-12 */
-  ws.addEventListener("close", event => {
-    if (onlineSocket === ws) {
-      onlineSocket = null;
-      const detail = socketError
-        ? "Ошибка онлайн-подключения: " + socketError
-        : "Соединение закрыто (код " + event.code +
-          (event.reason ? ", " + event.reason : "") + ").";
-      onlineSetStatus(detail);
-    }
-  });
-
-  ws.addEventListener("error", () => {
-    onlineSetStatus(socketError || "Ошибка сети WebSocket. Проверь код закрытия.");
-  });
+  onlineRaceStarted = false;
+  onlineRemoteStates.clear();
+  if (onlinePollTimer) clearInterval(onlinePollTimer);
+  onlinePollTimer = null;
+  onlineSetStatus("Подключаемся к комнате " + code + " через HTTP…");
+  await onlineRefreshRoom();
+  onlinePollTimer = window.setInterval(() => {
+    if (onlinePollBusy || !onlineRoomCode) return;
+    onlinePollBusy = true;
+    const telemetry = onlineRaceStarted ? {
+      speedKmh: Number(speed) || 0,
+      distanceM: Number(distance) || 0,
+      gear: Number(gear) || 0
+    } : null;
+    onlineHostRequest("room:state", { code: onlineRoomCode, telemetry })
+      .then(result => {
+        for (const player of result.players || []) {
+          if (player.is_me || !player.id) continue;
+          onlineRemoteStates.set(String(player.id), {
+            userId: String(player.id),
+            name: player.name,
+            carId: player.carId,
+            speedKmh: player.speedKmh,
+            distanceM: player.distanceM,
+            gear: player.gear,
+            progress: player.progress,
+            updatedAt: player.updatedAt,
+            fresh: player.fresh
+          });
+        }
+        if (result.room?.status === "finished") {
+          onlineRaceStarted = false;
+          void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+        } else {
+          void onlineRefreshRoom().catch(() => {});
+        }
+      })
+      .catch(error => onlineSetStatus(error.message))
+      .finally(() => { onlinePollBusy = false; });
+  }, 350);
 }
 
 async function onlineCreateRoom() {
@@ -3259,8 +3213,10 @@ async function onlineToggleReady() {
 async function onlineStartRoom() {
   try {
     $("onlineStart").disabled = true;
-    await onlineHostRequest("room:start", { code: onlineRoomCode });
-    onlineSetStatus("Команда старта отправлена всем участникам.");
+    const result = await onlineHostRequest("room:start", { code: onlineRoomCode });
+    onlineRoomStatus = result.room?.status || "racing";
+    await onlineBeginRace();
+    onlineSetStatus("Заезд начался. Игровые состояния синхронизируются через Amvera.");
   } catch (error) {
     onlineSetStatus(error.message);
   } finally {
@@ -3278,8 +3234,8 @@ async function onlineLeaveRoom() {
     return;
   }
 
-  if (onlineSocket) onlineSocket.close();
-  onlineSocket = null;
+  if (onlinePollTimer) clearInterval(onlinePollTimer);
+  onlinePollTimer = null;
   onlineRoomCode = "";
   onlineMode = false;
   onlineRaceStarted = false;
@@ -3296,20 +3252,32 @@ async function onlineLeaveRoom() {
 }
 
 function onlineSendState(now, force = false) {
-  if (!onlineRaceStarted || !onlineSocket || onlineSocket.readyState !== WebSocket.OPEN) return;
-  if (!force && now - onlineLastStateAt < 50) return;
-
+  if (!onlineRaceStarted || !onlineRoomCode || onlineTelemetryBusy) return;
+  if (!force && now - onlineLastStateAt < 120) return;
   onlineLastStateAt = now;
-  onlineSocket.send(JSON.stringify({
-    type: "state",
-    distanceM: distance,
-    speedKmh: speed,
-    rpm,
-    gear,
-    elapsedMs: elapsed * 1000,
-    throttle,
-    braking
-  }));
+  onlineTelemetryBusy = true;
+  onlineHostRequest("room:state", {
+    code: onlineRoomCode,
+    telemetry: {
+      distanceM: Number(distance) || 0,
+      speedKmh: Number(speed) || 0,
+      gear: Number(gear) || 0
+    }
+  }).then(result => {
+    for (const player of result.players || []) {
+      if (player.is_me || !player.id) continue;
+      onlineRemoteStates.set(String(player.id), {
+        userId: String(player.id), name: player.name, carId: player.carId,
+        speedKmh: player.speedKmh, distanceM: player.distanceM, gear: player.gear,
+        progress: player.progress, updatedAt: player.updatedAt, fresh: player.fresh
+      });
+    }
+    if (result.room?.status === "finished") {
+      onlineRaceStarted = false;
+      void onlineRefreshRoom().catch(() => {});
+    }
+  }).catch(error => onlineSetStatus(error.message))
+    .finally(() => { onlineTelemetryBusy = false; });
 }
 
 
@@ -10440,13 +10408,17 @@ if(distance>=RACE_DISTANCE_METERS){
         onlineMode = false;
         onlineRemoteStates.delete(ONLINE_TEST_BOT_ID);
       } else if(onlineMode){
-        if(onlineRaceStarted) onlineSendState(now,true);
-        if(onlineSocket&&onlineSocket.readyState===WebSocket.OPEN){
-          onlineSocket.send(JSON.stringify({type:'finish',distanceM:distance}));
-          onlineSetStatus('Финиш отправлен серверу. Ожидаем подтверждения...');
-        } else {
-          onlineSetStatus('Локальный финиш: нет соединения с сервером. Результат не подтверждён.');
-        }
+        onlineRaceStarted = false;
+        onlineSetStatus("Отправляем результат заезда на сервер Amvera…");
+        void onlineHostRequest("room:finish", {
+          code: onlineRoomCode,
+          timeMs: Math.max(1000, Math.round(elapsed * 1000))
+        }).then(result => {
+          onlineSetStatus(result.game?.phase === "finished"
+            ? (result.game.message || "Результат заезда сохранён.")
+            : "Финиш подтверждён. Ожидаем соперника.");
+          return onlineRefreshRoom();
+        }).catch(error => onlineSetStatus("Не удалось подтвердить финиш: " + error.message));
       }
       onlineRaceStarted=false;
       finished=true;speed=0;throttle=false;braking=false;acRacingResetMotionSmoothing();
