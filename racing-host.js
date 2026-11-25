@@ -111,11 +111,12 @@
   }
 
   async function dragRacingPost(path, body = {}) {
-    const initData = telegramInitData();
-    return requestApi("/api/drag-racing" + path, {
-      method: "POST",
-      body: Object.assign({}, body, { initData })
-    });
+    telegramInitData();
+    const walletApi = window.allcoinsRacingRoomsApi;
+    if (!walletApi || typeof walletApi.post !== "function") {
+      throw new Error("API комнат ALLCOINS не подключён к основному балансу.");
+    }
+    return walletApi.post(path, body);
   }
 
   function normalizeRoomPayload(payload) {
@@ -133,6 +134,8 @@
         is_me: Boolean(player.isYou),
         is_host: Boolean(player.isOwner),
         finish_time_ms: player.finishTimeMs == null ? null : Number(player.finishTimeMs),
+        mode_choice: player.modeChoice === "free" || player.modeChoice === "ad" ? player.modeChoice : null,
+        ad_rewarded: Boolean(player.adRewarded),
         is_ready: true,
         speedKmh: player.motion?.speedKmh ?? 0,
         distanceM: player.motion?.distanceM ?? 0,
@@ -749,6 +752,8 @@
       }
       case "room:info":
       case "room:join":
+      case "room:confirm-ad":
+      case "room:select-mode":
       case "room:start":
       case "room:leave":
       case "room:state":
@@ -759,6 +764,8 @@
         const routes = {
           "room:info": "/rooms/state",
           "room:join": "/rooms/join",
+          "room:confirm-ad": "/rooms/confirm-ad",
+          "room:select-mode": "/rooms/select-mode",
           "room:start": "/rooms/start",
           "room:leave": "/rooms/leave",
           "room:state": "/rooms/state",
@@ -767,6 +774,8 @@
         const body = { roomId };
         if (action === "room:state" && data.telemetry) body.telemetry = data.telemetry;
         if (action === "room:finish") body.timeMs = data.timeMs;
+        if (action === "room:confirm-ad") body.rewarded = data.rewarded === true;
+        if (action === "room:select-mode") body.modeChoice = data.modeChoice;
         const payload = await dragRacingPost(routes[action], body);
         result = normalizeRoomPayload(payload);
         if (action === "room:leave") {
