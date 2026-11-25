@@ -10070,7 +10070,7 @@ let acPerfRafIntervalMax = 0;
 const acRacingFrameScheduler = (() => {
   try {
     const parentWindow = window.parent;
-    if (parentWindow && parentWindow !== window &&
+    if (acRacingMobileDevice && parentWindow && parentWindow !== window &&
         typeof parentWindow.requestAnimationFrame === "function") {
       return {
         name: "parent-window",
