@@ -2428,11 +2428,8 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
     </div>
     <p id="onlineStatus">Создай комнату или подключись по коду. Нужно минимум два игрока.</p>
     <div class="online-row">
-      <select id="onlineMaxPlayers">
-        <option value="2">2 игрока</option>
-        <option value="3">3 игрока</option>
-        <option value="4">4 игрока</option>
-        <option value="5" selected>5 игроков</option>
+      <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
+        <option value="2" selected>2 игрока · максимум</option>
       </select>
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
@@ -4909,7 +4906,7 @@ $("garageTabClose").addEventListener("click", () => {
 $("garageCreateRoom").addEventListener("click", () => {
   $("garageTabPanel").hidden = true;
   $("onlinePanel").hidden = false;
-  $("onlineMaxPlayers").value = "5";
+  $("onlineMaxPlayers").value = "2";
   $("onlineStatus").textContent = "Создаём комнату ALLCOINS Racing…";
   void onlineRefreshRooms();
   void onlineCreateRoom();
