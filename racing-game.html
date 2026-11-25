@@ -9059,6 +9059,14 @@ function acRacingEnhanceCarSurface(root) {
 }
 
 function acRacingBatchStaticVehicleMeshes(){
+  // Keep the original GLB mesh hierarchy intact on every device.
+  // The mobile batching path has repeatedly caused the player car to disappear
+  // in Telegram WebView, so prefer reliable visibility over a small draw-call gain.
+  window.__allcoinsRacingMobileBatchDiagnostics=Object.freeze({
+    merged:0,batches:0,candidates:0,bucketCount:0,disabled:true,
+    reason:"original GLB meshes preserved"
+  });
+  return {merged:0,batches:0,candidates:0,bucketCount:0};
   if(!acRacingMobileDevice||!vehicleChassis||!vehicle)return {merged:0,batches:0};
   // Merge only static opaque detail meshes that share the exact same material.
   // Keep the body (paint), glass, wheel pivots, headlight rig and all animated parts separate.
