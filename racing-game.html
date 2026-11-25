@@ -10065,8 +10065,35 @@ let acPerfMeasuredFrames = 0;
 let acPerfRafIntervals = [];
 let acPerfLongFrameCount = 0;
 let acPerfRafIntervalMax = 0;
+// Android WebView iframe RAF fallback: ask the visible top-level app to schedule frames.
+// The callback uses this document's clock so game timing remains on one timeline.
+const acRacingFrameScheduler = (() => {
+  try {
+    const parentWindow = window.parent;
+    if (parentWindow && parentWindow !== window &&
+        typeof parentWindow.requestAnimationFrame === "function") {
+      return {
+        name: "parent-window",
+        request(callback) {
+          parentWindow.requestAnimationFrame(() => callback(performance.now()));
+        }
+      };
+    }
+  } catch (_) {}
+  return {
+    name: "local-window",
+    request(callback) {
+      window.requestAnimationFrame(() => callback(performance.now()));
+    }
+  };
+})();
+window.__allcoinsRacingFrameScheduler = acRacingFrameScheduler.name;
+function acRequestRacingFrame(callback) {
+  acRacingFrameScheduler.request(callback);
+}
+
 function animate(now){
-  requestAnimationFrame(animate);
+  acRequestRacingFrame(animate);
   const acPerfFrameStart = acRacingMobileDevice ? performance.now() : 0;
   const rawFrameMs=Math.max(0,now-last);
   const dt=Math.min(.06,rawFrameMs/1000||0);
@@ -10174,6 +10201,7 @@ const perfBadge=document.getElementById("racingPerfBadge");
         framesOver50Ms:acPerfLongFrameCount,
         rafIntervalMaxMs:Number(acPerfRafIntervalMax.toFixed(1)),
         webglVersion:renderer.capabilities.isWebGL2?"WebGL 2":"WebGL 1",
+        frameScheduler:acRacingFrameScheduler.name,
         gpuTimerApi:acGpuTimer?(acGpuTimer.isWebGL2?"timer-query WebGL2":"timer-query WebGL1"):"недоступен",
         gpuMs:acGpuTimer&&acGpuTimer.samples?Number((acGpuTimer.totalMs/acGpuTimer.samples).toFixed(2)):null,
         gpuLastMs:acGpuTimer&&acGpuTimer.samples?Number(acGpuTimer.lastMs.toFixed(2)):null,
@@ -10797,9 +10825,9 @@ if(acRacingMobileDevice){
     .catch(error=>{
       console.warn("ALLCOINS Racing: startup shader warmup failed; fallback compilation will run on first draw.",error);
     })
-    .finally(()=>requestAnimationFrame(animate));
+    .finally(()=>acRequestRacingFrame(animate));
 }else{
-  requestAnimationFrame(animate);
+  acRequestRacingFrame(animate);
 }
 requestSavedModel();void acGarageLoadPaintProfile();void acGarageLoadPartsProfile({silent:true});void acFuelLoadProfile({silent:true});
 </script>
@@ -11545,6 +11573,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "Кадров >50 мс: "+d.framesOver50Ms+" | максимум: "+d.rafIntervalMaxMs+" мс",
       "GPU: "+(d.gpuMs===null?(d.gpuTimerSupported?"ожидание":"таймер не поддерживается"):d.gpuMs+" мс")+" | максимум: "+(d.gpuMaxMs===null?"—":d.gpuMaxMs+" мс"),
       "API: "+d.webglVersion+" · "+d.gpuTimerApi,
+      "Планировщик кадров: "+(d.frameScheduler||"неизвестен"),
       "РЕЖИМ ТЕСТА: "+(window.__allcoinsRacingBenchmarkState?.mode||"обычная игра"),
        "ЗАПУСК: "+(window.__allcoinsRacingBenchmarkState?.runId||"—"),
       "СТАТУС: "+(window.__allcoinsRacingBenchmarkState?.completed?"тест завершён":window.__allcoinsRacingBenchmarkState?"тест выполняется 18 секунд":"ожидание теста"),
