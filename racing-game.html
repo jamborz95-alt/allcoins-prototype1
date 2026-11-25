@@ -7665,6 +7665,15 @@ function setGarageMode(enabled) {
   document.body.classList.toggle("garage-mode", active);
   document.body.classList.toggle("race-mode", !active);
   $("garageScreen").classList.toggle("hidden", !active);
+  // Release the garage's second WebGL renderer and cloned material tree during races.
+  if (!active) acGarageReleaseLoadedCarPreview();
+  else if (vehicle && !acGaragePreviewCar) {
+    requestAnimationFrame(() => {
+      if (document.body.classList.contains("garage-mode") && !acGaragePreviewCar) {
+        acGarageBuildLoadedCarPreview();
+      }
+    });
+  }
   // Apply the mobile scenery tiers before the first race frame.
   // The previous first tier left rain, wet reflections, lit window meshes and
   // lamp pools active. Apply the severe scenery-only tier immediately too:
@@ -8698,6 +8707,31 @@ let acGaragePreviewCar = null;
 let acGaragePreviewObserver = null;
 let acGaragePreviewSource = null;
 let acGaragePreviewObservedContainer = null;
+
+function acGarageReleaseLoadedCarPreview() {
+  if (acGaragePreviewObserver) {
+    acGaragePreviewObserver.disconnect();
+    acGaragePreviewObserver = null;
+  }
+  acGaragePreviewObservedContainer = null;
+
+  if (acGaragePreviewScene && acGaragePreviewCar) {
+    acGaragePreviewScene.remove(acGaragePreviewCar);
+    // Preview materials are clones; GLB geometries and textures remain vehicle-owned.
+    acGaragePreviewCar.traverse(object => {
+      if (!object.isMesh || !object.material) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) material?.dispose?.();
+    });
+  }
+  acGaragePreviewCar = null;
+  acGaragePreviewSource = null;
+
+  if (acGaragePreviewRenderer) {
+    acGaragePreviewRenderer.dispose();
+    acGaragePreviewRenderer = null;
+  }
+}
 
 function acGarageBuildLoadedCarPreview() {
   const canvas = $("garageCar3dPreview");
@@ -10164,6 +10198,8 @@ const perfBadge=document.getElementById("racingPerfBadge");
         testBotProgressOnly:onlineTestBotActive,
         benchmarkMode:acPerfBenchmark?.mode||null,
         benchmarkCompleted:Boolean(window.__allcoinsRacingBenchmarkState?.completed),
+        garagePreviewRendererActive:Boolean(acGaragePreviewRenderer),
+        garagePreviewCloneActive:Boolean(acGaragePreviewCar),
         frontWheelAngularVelocity:Number(wheelSpinAngularVelocity.toFixed(3)),
         rearWheelAngularVelocity:Number(rearWheelSpinAngularVelocity.toFixed(3)),
         wheelSpinResponseMs:AC_WHEEL_SPIN_RESPONSE_SECONDS*1000
@@ -11507,6 +11543,7 @@ body.race-mode #gearSelector { display:grid!important; }
       "Шейдеры окружения: Basic "+d.mobileEnvironmentBasicMaterials+" / Lambert "+d.mobileEnvironmentLambertMaterials,
       "Раздельный рендер: "+(d.mobileSplitResolutionRendering?"вкл · фон "+Math.round(d.mobileBackgroundScale*100)+"%":"нет"),
       "3D-соперники: "+d.renderedOpponentCars+" | тест-бот без 3D: "+(d.testBotProgressOnly?"да":"нет"),
+      "Гаражный второй рендер: "+(d.garagePreviewRendererActive?"активен":"освобождён")+" | копия ВАЗ: "+(d.garagePreviewCloneActive?"в памяти":"нет"),
       "Дым: "+d.activeSmokeParticles+" | дождь: "+((window.__allcoinsRacingVisualQualityDiagnostics||{}).mobileRainSegments??"н/д"),
       "Тени: "+(d.shadows?"вкл":"выкл")+" | масштаб: "+d.pixelRatio,
       "Профиль: "+d.mobileQualityProfile,
