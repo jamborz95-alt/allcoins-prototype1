@@ -2647,16 +2647,6 @@
 </style>
 <script src="./i18n-extra.js?v=20261027-balda-entry1"></script>
   <meta name="allcoins-racing-amvera-api" content="https://allcoins-engine-a-allcoins95.msk1.amvera.tech">
-<style id="allcoins-racing-overlay-performance">
-html.allcoins-racing-overlay-active body > :not(#allcoinsRacingV24Overlay) {
-  visibility: hidden !important;
-}
-html.allcoins-racing-overlay-active body > :not(#allcoinsRacingV24Overlay),
-html.allcoins-racing-overlay-active body > :not(#allcoinsRacingV24Overlay) * {
-  animation-play-state: paused !important;
-  transition: none !important;
-}
-</style>
 </head>
 <body>
 <div class="app">
@@ -7539,7 +7529,6 @@ function flushDurakGameReloadIfIdle() {
 }
 
 async function loadDurakGame(roomId) {
-  if (window.__allcoinsRacingActive) return;
   // Пока отбитые карты уходят за пределы экрана, не перестраиваем стол и не обрываем движение.
   if (durakDiscardAnimationActive &&
       String(roomId) === String(currentDurakRoomId)) {
@@ -10041,7 +10030,6 @@ async function openDurakWaitingRoom(room) {
 
 // Обновляем список игроков и их готовность
 async function refreshDurakWaitingRoom() {
-  if (window.__allcoinsRacingActive) return;
   if (!durakWaitingRoom || !durakWaitingRoom.id) {
     return;
   }
@@ -10458,7 +10446,6 @@ $("durakLeaveWaiting").onclick = async function (event) {
 
 // Загрузка комнат Дурак Онлайн с сервера
 async function loadDurakRooms() {
-  if (window.__allcoinsRacingActive) return;
   if (!tg?.initData) {
     showStatus(
       "durakGameStatus",
@@ -11017,7 +11004,6 @@ function closeOnlineLotto() {
 }
 
 async function loadOnlineLottoRooms() {
-  if (window.__allcoinsRacingActive) return;
   try {
     const result = await apiRequest("/api/lotto/rooms/list");
     onlineLottoLobbyRoomsCache = Array.isArray(result.rooms) ? result.rooms : [];
@@ -11240,7 +11226,6 @@ async function openOnlineLottoRoom(roomId) {
 }
 
 async function loadOnlineLottoState(silent) {
-  if (window.__allcoinsRacingActive) return;
   if (!onlineLottoRoomId) return;
   try {
     const result = await apiRequest("/api/lotto/room/state", {
@@ -12280,7 +12265,6 @@ function renderTwentyOneRoomBoard(result) {
 window.renderTwentyOneRoomBoard = renderTwentyOneRoomBoard;
 window.setTwentyOneVisibleView = setTwentyOneVisibleView;
 async function refreshTwentyOneRoomState() {
-  if (window.__allcoinsRacingActive) return;
   if (!currentTwentyOneRoomId) return;
   const result = await apiRequest("/api/twentyone/rooms/state", { roomId: currentTwentyOneRoomId });
   twentyOneRoomSnapshot = result;
@@ -14295,6 +14279,6 @@ $("refreshDurakRooms").onclick = async () => {
   }
 </style>
 
-<script src="./racing-host.js?v=20261125-racing-idle-pause-v215"></script>
+<script src="./racing-host.js?v=20261125-restore-v214-baseline-v216"></script>
 </body>
 </html>
