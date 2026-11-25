@@ -9161,6 +9161,9 @@ function acRacingEnhanceCarSurface(root) {
 }
 
 function acRacingBatchStaticVehicleMeshes(){
+  // V223 safety rollback: keep every original GLB mesh intact on Android.
+  // The mobile vehicle-detail merge could leave the loaded car incomplete/invisible.
+  if(acRacingMobileDevice)return {merged:0,batches:0,disabled:true};
   if(!acRacingMobileDevice||!vehicleChassis||!vehicle)return {merged:0,batches:0};
   // Merge only static opaque detail meshes that share the exact same material.
   // Keep the body (paint), glass, wheel pivots, headlight rig and all animated parts separate.
