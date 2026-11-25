@@ -386,6 +386,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), mode_choice TEXT, ad_rewarded BOOLEAN NOT NULL DEFAULT FALSE, " +
       "PRIMARY KEY (room_id, telegram_id))"
     );
+    await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()");
     await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS mode_choice TEXT");
     await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS ad_rewarded BOOLEAN NOT NULL DEFAULT FALSE");
     await pool.query("CREATE INDEX IF NOT EXISTS drag_racing_rooms_status_idx ON drag_racing_rooms (status, created_at DESC)");
