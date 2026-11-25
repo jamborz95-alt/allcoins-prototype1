@@ -2971,10 +2971,15 @@ async function onlineRefreshRoom() {
       .filter(player => player.finish_time_ms != null && Number.isFinite(Number(player.finish_time_ms)))
       .sort((a, b) => Number(a.finish_time_ms) - Number(b.finish_time_ms));
     const winner = finishers[0];
-    onlineSetStatus(winner
-      ? "ГОНКА ЗАВЕРШЕНА · Победитель: " + (winner.name || "Игрок") +
-        " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с"
-      : (result.game?.message || "Гонка завершена."));
+    const settlementMessage = String(result.game?.message || "");
+    const tied = Array.isArray(result.game?.winnerIds) && result.game.winnerIds.length > 1;
+    onlineSetStatus(tied
+      ? "ГОНКА ЗАВЕРШЕНА · НИЧЬЯ · " + settlementMessage
+      : winner
+        ? "ГОНКА ЗАВЕРШЕНА · Победитель: " + (winner.name || "Игрок") +
+          " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с" +
+          (settlementMessage ? " · " + settlementMessage : "")
+        : (settlementMessage || "Гонка завершена."));
   } else if (room.status === "waiting") {
     const choices = players.map(player => player.mode_choice);
     const same = players.length === 2 && choices.every(choice =>
