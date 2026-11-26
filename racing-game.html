@@ -2602,8 +2602,9 @@ window.__allcoinsRacingRestartBenchmark = () => acPerfStartBenchmarkAfterCarRead
 let onlineRoomCode = "";
 let onlinePollTimer = null;
 let onlinePollBusy = false;
+let onlinePollBackoffUntil = 0;
+let onlinePollBackoffMs = 0;
 let onlineCountdownPending = false;
-let onlineTelemetryBusy = false;
 let onlineMode = false;
 let onlineRaceStarted = false;
 let onlineIsHost = false;
@@ -2611,7 +2612,6 @@ let onlineIsReady = false;
 let onlineRoomStatus = "waiting";
 let onlineCountdownInterval = null;
 let onlineCountdownToken = 0;
-let onlineLastStateAt = 0;
 const onlineRemoteStates = new Map();
 const onlineRemoteCars = new Map();
 const onlinePendingRequests = new Map();
@@ -2891,9 +2891,9 @@ function onlineRenderPlayers(players) {
     list.appendChild(row);
   }
 }
-async function onlineRefreshRoom() {
+async function onlineRefreshRoom(snapshot = null) {
   if (!onlineRoomCode) return;
-  const result = await onlineHostRequest("room:info", { code: onlineRoomCode });
+  const result = snapshot || await onlineHostRequest("room:info", { code: onlineRoomCode });
   const room = result.room || {};
   const players = result.players || [];
   onlineRoomStatus = room.status || "waiting";
@@ -2994,7 +2994,6 @@ async function onlineBeginRace() {
   finished = false;
   paused = false;
   raceStarted = Boolean(vehicle);
-  onlineLastStateAt = 0;
   updateGear();
 
   if (vehicle) hideMessage();
@@ -3108,10 +3107,12 @@ async function onlineConnectRoom(code) {
   onlineRemoteStates.clear();
   if (onlinePollTimer) clearInterval(onlinePollTimer);
   onlinePollTimer = null;
+  onlinePollBackoffUntil = 0;
+  onlinePollBackoffMs = 0;
   onlineSetStatus("Подключаемся к комнате " + code + " через HTTP…");
   await onlineRefreshRoom();
   onlinePollTimer = window.setInterval(() => {
-    if (onlinePollBusy || !onlineRoomCode) return;
+    if (onlinePollBusy || !onlineRoomCode || Date.now() < onlinePollBackoffUntil) return;
     onlinePollBusy = true;
     const telemetry = onlineRaceStarted ? {
       speedKmh: Number(speed) || 0,
@@ -3136,16 +3137,23 @@ async function onlineConnectRoom(code) {
             receivedAt: performance.now()
           });
         }
-        if (result.room?.status === "finished") {
-          onlineRaceStarted = false;
-          void onlineRefreshRoom().catch(error => onlineSetStatus(error.message));
+        if (result.room?.status === "finished") onlineRaceStarted = false;
+        onlinePollBackoffMs = 0;
+        onlinePollBackoffUntil = 0;
+        void onlineRefreshRoom(result).catch(error => onlineSetStatus(error.message));
+      })
+      .catch(error => {
+        const message = String(error?.message || "");
+        if (/HTTP 429|Too many requests/i.test(message)) {
+          onlinePollBackoffMs = Math.min(12000, Math.max(1500, onlinePollBackoffMs * 2));
+          onlinePollBackoffUntil = Date.now() + onlinePollBackoffMs;
+          onlineSetStatus("Сервер временно ограничил частоту запросов. Пауза " + Math.ceil(onlinePollBackoffMs / 1000) + " с.");
         } else {
-          void onlineRefreshRoom().catch(() => {});
+          onlineSetStatus(message || "Потеряна связь с гоночным сервером.");
         }
       })
-      .catch(error => onlineSetStatus(error.message))
       .finally(() => { onlinePollBusy = false; });
-  }, 350);
+  }, 1000);
 }
 
 async function onlineCreateRoom() {
@@ -3265,38 +3273,6 @@ async function onlineLeaveRoom() {
   onlineSetStatus("Ты покинул комнату.");
   void onlineRefreshRooms();
 }
-
-function onlineSendState(now, force = false) {
-  if (!onlineRaceStarted || !onlineRoomCode || onlineTelemetryBusy) return;
-  if (!force && now - onlineLastStateAt < 120) return;
-  onlineLastStateAt = now;
-  onlineTelemetryBusy = true;
-  onlineHostRequest("room:state", {
-    code: onlineRoomCode,
-    telemetry: {
-      distanceM: Number(distance) || 0,
-      speedKmh: Number(speed) || 0,
-      progress: Math.max(0, Math.min(1, Number(distance) / RACE_DISTANCE_METERS)),
-      gear: Number(gear) || 0
-    }
-  }).then(result => {
-    for (const player of result.players || []) {
-      if (player.is_me || !player.id) continue;
-      onlineRemoteStates.set(String(player.id), {
-        userId: String(player.id), name: player.name, carId: player.carId,
-        speedKmh: player.speedKmh, distanceM: player.distanceM, gear: player.gear,
-        progress: player.progress, updatedAt: player.updatedAt, fresh: player.fresh,
-        receivedAt: performance.now()
-      });
-    }
-    if (result.room?.status === "finished") {
-      onlineRaceStarted = false;
-      void onlineRefreshRoom().catch(() => {});
-    }
-  }).catch(error => onlineSetStatus(error.message))
-    .finally(() => { onlineTelemetryBusy = false; });
-}
-
 
 function onlineRemoveOpponentCar(userId) {
   const entry = onlineRemoteCars.get(userId);
@@ -10420,7 +10396,6 @@ const perfBadge=document.getElementById("racingPerfBadge");
     updateAnchoredEffects();
     acAdvanceWheelSpin(dt,signedSpeed,burnoutActive);
     if(throttle&&speed>10&&Math.random()<Math.min(.55,speed/3200))addSmoke(exhaustPoint,'exhaust');
-    onlineSendState(now);
     /* ALLCOINS CLIENT FINISH SYNC 2026-11-12 */
 if(distance>=RACE_DISTANCE_METERS){
       void acFuelSyncUse(true);
