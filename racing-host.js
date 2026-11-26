@@ -136,7 +136,7 @@
         finish_time_ms: player.finishTimeMs == null ? null : Number(player.finishTimeMs),
         mode_choice: player.modeChoice === "free" || player.modeChoice === "ad" ? player.modeChoice : null,
         ad_rewarded: Boolean(player.adRewarded),
-        is_ready: true,
+        is_ready: Boolean(player.isReady),
         speedKmh: player.motion?.speedKmh ?? 0,
         distanceM: player.motion?.distanceM ?? 0,
         gear: player.motion?.gear ?? 0,
@@ -754,6 +754,7 @@
       case "room:join":
       case "room:confirm-ad":
       case "room:select-mode":
+      case "room:ready":
       case "room:start":
       case "room:leave":
       case "room:state":
@@ -766,6 +767,7 @@
           "room:join": "/rooms/join",
           "room:confirm-ad": "/rooms/confirm-ad",
           "room:select-mode": "/rooms/select-mode",
+          "room:ready": "/rooms/ready",
           "room:start": "/rooms/start",
           "room:leave": "/rooms/leave",
           "room:state": "/rooms/state",
@@ -776,6 +778,7 @@
         if (action === "room:finish") body.timeMs = data.timeMs;
         if (action === "room:confirm-ad") body.rewarded = data.rewarded === true;
         if (action === "room:select-mode") body.modeChoice = data.modeChoice;
+        if (action === "room:ready") body.ready = data.ready === true;
         const payload = await dragRacingPost(routes[action], body);
         result = normalizeRoomPayload(payload);
         if (action === "room:leave") {
@@ -785,10 +788,6 @@
         }
         break;
       }
-      case "room:ready":
-        // The HTTP room API has no ready flag; a room starts when both players joined.
-        result = { ok: true };
-        break;
       case "room:ticket":
         throw new Error("WebSocket отключён. Используется HTTP-синхронизация.");
       default:
@@ -908,7 +907,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261125-room-rewards-120k1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261127-player-ready1", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
