@@ -87,6 +87,9 @@
       clearTimeout(requestTimeout);
     }
     const raw = await response.text();
+    if (response.status === 429) {
+      throw new Error("Слишком много запросов к гоночному API (HTTP 429). Клиент автоматически сделает паузу и продолжит опрос.");
+    }
     let data = {};
     try {
       data = raw ? JSON.parse(raw) : {};
@@ -907,7 +910,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261127-opponent-motion-smooth1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261127-rate-limit-fix1", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
