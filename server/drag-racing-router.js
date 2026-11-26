@@ -227,7 +227,7 @@ async function roomPayload(client, roomId, userId) {
   const results = objectValue(gameState.results);
   const motionByPlayer = objectValue(gameState.motion);
   const playerRows = await client.query(
-    "SELECT telegram_id::TEXT AS telegram_id, display_name, car_id, joined_at, last_seen_at, mode_choice, ad_rewarded " +
+    "SELECT telegram_id::TEXT AS telegram_id, display_name, car_id, joined_at, last_seen_at, mode_choice, ad_rewarded, is_ready " +
     "FROM drag_racing_room_players WHERE room_id = $1::BIGINT ORDER BY joined_at ASC, telegram_id ASC",
     [String(roomId)]
   );
@@ -246,6 +246,7 @@ async function roomPayload(client, roomId, userId) {
       isOwner: playerId === String(row.owner_telegram_id),
       modeChoice: player.mode_choice === "free" || player.mode_choice === "ad" ? String(player.mode_choice) : null,
       adRewarded: Boolean(player.ad_rewarded),
+      isReady: Boolean(player.is_ready),
       connected: player.last_seen_at ? Date.now() - new Date(player.last_seen_at).getTime() < 15000 : false,
       joinedAt: player.joined_at,
       finishTimeMs: Number.isFinite(Number(result.timeMs)) ? Number(result.timeMs) : null,
@@ -384,11 +385,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       "telegram_id BIGINT NOT NULL, display_name TEXT NOT NULL DEFAULT 'Игрок', " +
       "car_id TEXT NOT NULL DEFAULT '2107', joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
       "last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), mode_choice TEXT, ad_rewarded BOOLEAN NOT NULL DEFAULT FALSE, " +
+      "is_ready BOOLEAN NOT NULL DEFAULT FALSE, " +
       "PRIMARY KEY (room_id, telegram_id))"
     );
     await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()");
     await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS mode_choice TEXT");
     await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS ad_rewarded BOOLEAN NOT NULL DEFAULT FALSE");
+    await pool.query("ALTER TABLE drag_racing_room_players ADD COLUMN IF NOT EXISTS is_ready BOOLEAN NOT NULL DEFAULT FALSE");
     await pool.query("CREATE INDEX IF NOT EXISTS drag_racing_rooms_status_idx ON drag_racing_rooms (status, created_at DESC)");
     await pool.query("CREATE INDEX IF NOT EXISTS drag_racing_room_players_presence_idx ON drag_racing_room_players (room_id, last_seen_at DESC)");
     await pool.query(
@@ -1535,6 +1538,42 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
     } finally { client.release(); }
   });
 
+
+  router.post("/rooms/ready", async (req, res) => {
+    const user = requireUser(req, res, verifyTelegram);
+    if (!user) return;
+    const roomId = parseRoomId(req.body?.roomId);
+    const ready = req.body?.ready;
+    if (!roomId) return res.status(400).json({ ok: false, error: "Номер комнаты указан неверно." });
+    if (typeof ready !== "boolean") return res.status(400).json({ ok: false, error: "Не указан статус готовности." });
+    const client = await pool.connect();
+    let open = false;
+    try {
+      await client.query("BEGIN"); open = true;
+      const roomResult = await client.query(
+        "SELECT status FROM drag_racing_rooms WHERE id = $1::BIGINT FOR UPDATE",
+        [roomId]
+      );
+      const room = roomResult.rows[0];
+      if (!room) throw new DragRacingError(404, "Комната не найдена.");
+      if (room.status !== "waiting") throw new DragRacingError(409, "Готовность закрыта: заезд уже начался.");
+      const member = await client.query(
+        "UPDATE drag_racing_room_players SET is_ready = $3, last_seen_at = NOW() " +
+        "WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT RETURNING telegram_id",
+        [roomId, user.id, ready]
+      );
+      if (!member.rowCount) throw new DragRacingError(403, "Ты не состоишь в этой комнате.");
+      await client.query("UPDATE drag_racing_rooms SET updated_at = NOW() WHERE id = $1::BIGINT", [roomId]);
+      await client.query("COMMIT"); open = false;
+      return res.json({ ok: true, ...(await roomPayload(pool, roomId, user.id)) });
+    } catch (error) {
+      if (open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      const status = error instanceof DragRacingError ? error.status : 500;
+      console.error("Set Drag Racing player readiness:", error.message || error);
+      return res.status(status).json({ ok: false, error: error instanceof DragRacingError ? error.message : "Не удалось сохранить готовность игрока." });
+    } finally { client.release(); }
+  });
+
   router.post("/rooms/confirm-ad", async (req, res) => {
     const user = requireUser(req, res, verifyTelegram);
     if (!user) return;
@@ -1603,7 +1642,7 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
         throw new DragRacingError(400, "Сначала полностью посмотри Rewarded-рекламу и дождись подтверждения AdsGram.");
       }
       await client.query(
-        "UPDATE drag_racing_room_players SET mode_choice = $3, ad_rewarded = CASE WHEN $3 = 'free' THEN FALSE ELSE ad_rewarded END, last_seen_at = NOW() " +
+        "UPDATE drag_racing_room_players SET mode_choice = $3, ad_rewarded = CASE WHEN $3 = 'free' THEN FALSE ELSE ad_rewarded END, is_ready = FALSE, last_seen_at = NOW() " +
         "WHERE room_id = $1::BIGINT AND telegram_id = $2::BIGINT",
         [roomId, user.id, modeChoice]
       );
@@ -1637,10 +1676,13 @@ export function createDragRacingRouter({ pool, verifyTelegram, recordGameCommiss
       if (String(room.owner_telegram_id) !== user.id) throw new DragRacingError(403, "Начать заезд может только создатель комнаты.");
       if (room.status !== "waiting") throw new DragRacingError(409, "Эта комната уже запущена.");
       const players = await client.query(
-        "SELECT telegram_id::TEXT AS telegram_id, mode_choice, ad_rewarded FROM drag_racing_room_players WHERE room_id = $1::BIGINT ORDER BY joined_at ASC",
+        "SELECT telegram_id::TEXT AS telegram_id, mode_choice, ad_rewarded, is_ready FROM drag_racing_room_players WHERE room_id = $1::BIGINT ORDER BY joined_at ASC",
         [roomId]
       );
       if (players.rows.length !== 2) throw new DragRacingError(400, "Для старта нужны оба игрока.");
+      if (players.rows.some(player => player.is_ready !== true)) {
+        throw new DragRacingError(409, "Оба игрока должны нажать «ГОТОВ» перед стартом.");
+      }
       const entryMode = String(players.rows[0].mode_choice || "");
       if ((entryMode !== "free" && entryMode !== "ad") || players.rows.some(player => String(player.mode_choice || "") !== entryMode)) {
         throw new DragRacingError(409, "Оба игрока должны выбрать одинаковый режим участия.");
