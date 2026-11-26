@@ -111,12 +111,11 @@
   }
 
   async function dragRacingPost(path, body = {}) {
-    telegramInitData();
-    const walletApi = window.allcoinsRacingRoomsApi;
-    if (!walletApi || typeof walletApi.post !== "function") {
-      throw new Error("API комнат ALLCOINS не подключён к основному балансу.");
-    }
-    return walletApi.post(path, body);
+    const initData = telegramInitData();
+    return requestApi("/api/drag-racing" + path, {
+      method: "POST",
+      body: Object.assign({}, body, { initData })
+    });
   }
 
   function normalizeRoomPayload(payload) {
@@ -752,8 +751,6 @@
       }
       case "room:info":
       case "room:join":
-      case "room:confirm-ad":
-      case "room:select-mode":
       case "room:ready":
       case "room:start":
       case "room:leave":
@@ -765,8 +762,6 @@
         const routes = {
           "room:info": "/rooms/state",
           "room:join": "/rooms/join",
-          "room:confirm-ad": "/rooms/confirm-ad",
-          "room:select-mode": "/rooms/select-mode",
           "room:ready": "/rooms/ready",
           "room:start": "/rooms/start",
           "room:leave": "/rooms/leave",
@@ -776,8 +771,6 @@
         const body = { roomId };
         if (action === "room:state" && data.telemetry) body.telemetry = data.telemetry;
         if (action === "room:finish") body.timeMs = data.timeMs;
-        if (action === "room:confirm-ad") body.rewarded = data.rewarded === true;
-        if (action === "room:select-mode") body.modeChoice = data.modeChoice;
         if (action === "room:ready") body.ready = data.ready === true;
         const payload = await dragRacingPost(routes[action], body);
         result = normalizeRoomPayload(payload);
@@ -907,7 +900,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261127-player-ready1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261127-engine-http-direct1", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
