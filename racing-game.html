@@ -2911,13 +2911,15 @@ async function onlineRefreshRoom() {
   const players = result.players || [];
   onlineRoomStatus = room.status || "waiting";
   onlineIsHost = Boolean(result.isHost);
-  onlineIsReady = true;
+  const myPlayer = players.find(player => player.is_me);
+  onlineIsReady = Boolean(myPlayer?.is_ready);
   $("onlineRoom").hidden = false;
   $("onlineRoomCodeText").textContent = room.code || onlineRoomCode;
   onlineRenderPlayers(players);
   const readyButton = $("onlineReady");
-  readyButton.hidden = true;
-  readyButton.disabled = true;
+  readyButton.hidden = room.status !== "waiting" || !myPlayer;
+  readyButton.disabled = room.status !== "waiting";
+  readyButton.textContent = onlineIsReady ? "ГОТОВ ✓" : "ГОТОВ";
   const hasTwoPlayers = players.length >= 2;
   const start = $("onlineStart");
   start.hidden = !onlineIsHost || room.status !== "waiting";
@@ -2926,7 +2928,6 @@ async function onlineRefreshRoom() {
   const freeButton = $("onlineFreeMode");
   const adButton = $("onlineAdMode");
   const modeStatus = $("onlineModeStatus");
-  const myPlayer = players.find(player => player.is_me);
   const myChoice = myPlayer?.mode_choice || "";
   const allChosen = hasTwoPlayers && players.every(player =>
     player.mode_choice === "free" || player.mode_choice === "ad"
@@ -2935,6 +2936,7 @@ async function onlineRefreshRoom() {
   const sharedMode = sameChoice ? players[0].mode_choice : "";
   const bothAdsConfirmed = sharedMode === "ad" && players.every(player => player.ad_rewarded === true);
   const modeReady = sameChoice && (sharedMode !== "ad" || bothAdsConfirmed);
+  const bothReady = hasTwoPlayers && players.every(player => player.is_ready === true);
 
   modePanel.hidden = !hasTwoPlayers || room.status !== "waiting";
   freeButton.disabled = onlineModeActionBusy || room.status !== "waiting" || !hasTwoPlayers;
@@ -2958,7 +2960,7 @@ async function onlineRefreshRoom() {
   } else {
     modeStatus.textContent = "Оба просмотра подтверждены. Победителю будет начислено 120 000 AC.";
   }
-  start.disabled = !modeReady;
+  start.disabled = !modeReady || !bothReady;
   if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive && !onlineCountdownPending) {
     onlineCountdownPending = true;
     const startedAt = Number(result.game?.startedAt || Date.now());
@@ -2989,8 +2991,9 @@ async function onlineRefreshRoom() {
     const ready = same && (choices[0] === "free" || adReady);
     onlineSetStatus(players.length + " из 2 игроков. " +
       (!hasTwoPlayers ? "Ожидаем второго игрока." :
-        !ready ? "Ожидаем одинаковый выбор режима и подтверждение рекламы." :
-          "Оба игрока выбрали режим. Создатель может начать гонку."));
+        !bothReady ? "Ожидаем, пока оба игрока нажмут «ГОТОВ»." :
+          !ready ? "Ожидаем одинаковый выбор режима и подтверждение рекламы." :
+            "Оба игрока готовы. Создатель может начать гонку."));
   } else {
     const done = players.filter(player => player.finish_time_ms != null).length;
     onlineSetStatus(done
