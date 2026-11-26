@@ -5362,9 +5362,9 @@ const responseText = await response.text();
   return result;
 }
 
-// ALLCOINS Racing rooms use the main ALLCOINS API so rewards change the same
-// wallet balance as the clicker. The separate Engine host remains responsible
-// for 3D assets and model delivery only.
+// Legacy room adapter kept for compatibility with older clients.
+// The current Racing client sends free-room requests directly to Engine
+// /api/drag-racing with Telegram initData; no editor AI request is involved.
 window.allcoinsRacingRoomsApi = Object.freeze({
   async post(path, body = {}) {
     const allowed = new Set([
