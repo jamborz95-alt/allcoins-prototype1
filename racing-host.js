@@ -88,7 +88,15 @@
     }
     const raw = await response.text();
     if (response.status === 429) {
-      throw new Error("Слишком много запросов к гоночному API (HTTP 429). Клиент автоматически сделает паузу и продолжит опрос.");
+      const retryHeader = response.headers.get("retry-after");
+      const retrySeconds = Number(retryHeader);
+      const retryDate = Date.parse(retryHeader || "");
+      const retryAfterMs = Number.isFinite(retrySeconds) && retryHeader
+        ? retrySeconds * 1000
+        : Number.isFinite(retryDate) ? Math.max(0, retryDate - Date.now()) : 15000;
+      const error = new Error("Сервер временно ограничил запросы к гоночному API (HTTP 429). Клиент сделает паузу и повторит подключение.");
+      error.retryAfterMs = retryAfterMs;
+      throw error;
     }
     let data = {};
     try {
@@ -910,7 +918,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261127-rate-limit-fix1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261127-rate-limit-fix2", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
