@@ -3116,6 +3116,7 @@ async function onlineConnectRoom(code) {
     const telemetry = onlineRaceStarted ? {
       speedKmh: Number(speed) || 0,
       distanceM: Number(distance) || 0,
+      progress: Math.max(0, Math.min(1, Number(distance) / RACE_DISTANCE_METERS)),
       gear: Number(gear) || 0
     } : null;
     onlineHostRequest("room:state", { code: onlineRoomCode, telemetry })
@@ -3131,7 +3132,8 @@ async function onlineConnectRoom(code) {
             gear: player.gear,
             progress: player.progress,
             updatedAt: player.updatedAt,
-            fresh: player.fresh
+            fresh: player.fresh,
+            receivedAt: performance.now()
           });
         }
         if (result.room?.status === "finished") {
@@ -3274,6 +3276,7 @@ function onlineSendState(now, force = false) {
     telemetry: {
       distanceM: Number(distance) || 0,
       speedKmh: Number(speed) || 0,
+      progress: Math.max(0, Math.min(1, Number(distance) / RACE_DISTANCE_METERS)),
       gear: Number(gear) || 0
     }
   }).then(result => {
@@ -3282,7 +3285,8 @@ function onlineSendState(now, force = false) {
       onlineRemoteStates.set(String(player.id), {
         userId: String(player.id), name: player.name, carId: player.carId,
         speedKmh: player.speedKmh, distanceM: player.distanceM, gear: player.gear,
-        progress: player.progress, updatedAt: player.updatedAt, fresh: player.fresh
+        progress: player.progress, updatedAt: player.updatedAt, fresh: player.fresh,
+        receivedAt: performance.now()
       });
     }
     if (result.room?.status === "finished") {
@@ -3383,6 +3387,17 @@ function acOnlineApplyLaneLayout(enabled) {
   }
 }
 
+function onlinePredictedOpponentDistance(state, now = performance.now()) {
+  const baseDistance = Number(state?.distanceM);
+  if (!Number.isFinite(baseDistance)) return 0;
+  const speedKmh = Math.max(0, Math.min(400, Number(state?.speedKmh) || 0));
+  const receivedAt = Number(state?.receivedAt);
+  const ageSeconds = Number.isFinite(receivedAt) && receivedAt > 0
+    ? Math.max(0, Math.min(0.9, (now - receivedAt) / 1000))
+    : 0;
+  return Math.max(0, Math.min(RACE_DISTANCE_METERS, baseDistance + speedKmh / 3.6 * ageSeconds));
+}
+
 function onlineUpdateRaceProgress() {
   const panel = $("raceProgress");
   if (!panel) return;
@@ -3395,7 +3410,7 @@ function onlineUpdateRaceProgress() {
   if (!show) return;
 
   const playerPercent = Math.max(0, Math.min(100, distance / RACE_DISTANCE_METERS * 100));
-  const opponentDistance = Number(opponents[0].distanceM) || 0;
+  const opponentDistance = onlinePredictedOpponentDistance(opponents[0], performance.now());
   const opponentPercent = Math.max(0, Math.min(100, opponentDistance / RACE_DISTANCE_METERS * 100));
   $("raceProgressFill").style.width = playerPercent.toFixed(2) + "%";
   $("opponentProgressFill").style.width = opponentPercent.toFixed(2) + "%";
@@ -3403,7 +3418,7 @@ function onlineUpdateRaceProgress() {
   $("opponentProgressValue").textContent = Math.round(opponentPercent) + "%";
 }
 
-function onlineUpdateOpponentCars(dt) {
+function onlineUpdateOpponentCars(dt, now = performance.now()) {
   const inGarage = document.body.classList.contains('garage-mode');
   // Progress-only test bots must not instantiate a cloned GLB vehicle.
   // Render a second car only for an actual remote participant.
@@ -3433,7 +3448,7 @@ function onlineUpdateOpponentCars(dt) {
 
   for (const [userId, state] of onlineRemoteStates) {
     if (userId === ONLINE_TEST_BOT_ID) continue;
-    const remoteDistance = Number(state.distanceM);
+    const remoteDistance = onlinePredictedOpponentDistance(state, now);
     if (!userId || !Number.isFinite(remoteDistance)) continue;
 
     active.add(userId);
@@ -10466,7 +10481,7 @@ if(distance>=RACE_DISTANCE_METERS){
   }
   if (acPerfBenchmark?.mode !== "render") {
     onlineUpdateTestBot();
-    onlineUpdateOpponentCars(dt);
+    onlineUpdateOpponentCars(dt, now);
   }
   if(acPerfBenchmark?.mode !== "render" && now>=acNextRaceProgressUpdateAt){
     onlineUpdateRaceProgress();
