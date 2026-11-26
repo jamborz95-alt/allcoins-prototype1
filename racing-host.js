@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  // 3D-модель и её передача загружаются с Amvera; комнаты и баланс идут через API ALLCOINS.
+  // 3D-модель и сетевые комнаты работают напрямую через Amvera Engine HTTP API.
   const RACING_API_BASE = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
   const CHUNK_SIZE = 4 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
@@ -741,7 +741,6 @@
         if (maxPlayers !== 2) throw new Error("В ALLCOINS Racing доступны комнаты строго на 2 игроков.");
         const payload = await dragRacingPost("/rooms/create", {
           maxPlayers: 2,
-          stake: data.stake,
           mode: data.mode || "quarter",
           carId: data.carId
         });
