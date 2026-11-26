@@ -88,8 +88,16 @@
     }
     const raw = await response.text();
     let data = {};
-    try { data = raw ? JSON.parse(raw) : {}; }
-    catch (_) { throw new Error("Сервер Amvera вернул не JSON. Проверь адрес API."); }
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      const contentType = response.headers.get("content-type") || "Content-Type не указан";
+      const preview = String(raw || "").replace(/\\s+/g, " ").trim().slice(0, 180);
+      throw new Error(
+        "Ответ API не JSON (HTTP " + response.status + "; " + contentType + "). " +
+        (preview ? "Ответ: " + preview : "Тело ответа пустое.")
+      );
+    }
     if (!response.ok || data.ok === false) {
       throw new Error(data.error || ("Ошибка гоночного сервера: HTTP " + response.status));
     }
