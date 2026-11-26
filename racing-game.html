@@ -2431,7 +2431,7 @@ border:1px solid #e8be6955;border-radius:12px;background:rgba(8,15,25,.94);box-s
       <select id="onlineMaxPlayers" aria-label="Количество игроков" disabled>
         <option value="2" selected>2 игрока · максимум</option>
       </select>
-      <span class="online-prize-note">Без взносов · в рекламном режиме приз победителю 120 000 AC</span>
+      <span class="online-prize-note">Бесплатная комната · без взносов и призовых</span>
       <button id="onlineCreate">СОЗДАТЬ КОМНАТУ</button>
     </div>
     <div class="online-row">
@@ -2885,16 +2885,12 @@ function onlineRenderPlayers(players) {
     const time = Number(player.finish_time_ms);
     const hasFinished = player.finish_time_ms != null && Number.isFinite(time);
 
-    let choiceText = " · РЕЖИМ НЕ ВЫБРАН";
-    if (player.mode_choice === "free") choiceText = " · БЕСПЛАТНО";
-    if (player.mode_choice === "ad") choiceText = player.ad_rewarded
-      ? " · РЕКЛАМА ПОДТВЕРЖДЕНА ✓"
-      : " · ОЖИДАЕТ РЕКЛАМУ";
+    const choiceText = " · БЕЗ ВЗНОСОВ";
 
     let stateText;
     if (hasFinished) {
       stateText = " · " + (++place) + " МЕСТО · ФИНИШ " + (time / 1000).toFixed(2) + " с";
-    } else if (onlineRoomStatus === "waiting") {
+    } else if (onlineRoomStatus === "waiting" || onlineRoomStatus === "ready") {
       stateText = player.is_ready ? " · ГОТОВ ✓" : " · НЕ ГОТОВ";
     } else {
       stateText = " · В ГОНКЕ";
@@ -2916,51 +2912,19 @@ async function onlineRefreshRoom() {
   $("onlineRoom").hidden = false;
   $("onlineRoomCodeText").textContent = room.code || onlineRoomCode;
   onlineRenderPlayers(players);
-  const readyButton = $("onlineReady");
-  readyButton.hidden = room.status !== "waiting" || !myPlayer;
-  readyButton.disabled = room.status !== "waiting";
-  readyButton.textContent = onlineIsReady ? "ГОТОВ ✓" : "ГОТОВ";
   const hasTwoPlayers = players.length >= 2;
+  const roomCanReady = room.status === "waiting" || room.status === "ready";
+  const readyButton = $("onlineReady");
+  readyButton.hidden = !roomCanReady || !hasTwoPlayers || !myPlayer;
+  readyButton.disabled = !roomCanReady;
+  readyButton.textContent = onlineIsReady ? "ГОТОВ ✓" : "ГОТОВ";
   const start = $("onlineStart");
-  start.hidden = !onlineIsHost || room.status !== "waiting";
+  start.hidden = !onlineIsHost || !roomCanReady;
 
   const modePanel = $("onlineEntryModePanel");
-  const freeButton = $("onlineFreeMode");
-  const adButton = $("onlineAdMode");
-  const modeStatus = $("onlineModeStatus");
-  const myChoice = myPlayer?.mode_choice || "";
-  const allChosen = hasTwoPlayers && players.every(player =>
-    player.mode_choice === "free" || player.mode_choice === "ad"
-  );
-  const sameChoice = allChosen && players.every(player => player.mode_choice === players[0].mode_choice);
-  const sharedMode = sameChoice ? players[0].mode_choice : "";
-  const bothAdsConfirmed = sharedMode === "ad" && players.every(player => player.ad_rewarded === true);
-  const modeReady = sameChoice && (sharedMode !== "ad" || bothAdsConfirmed);
+  if (modePanel) modePanel.hidden = true;
   const bothReady = hasTwoPlayers && players.every(player => player.is_ready === true);
-
-  modePanel.hidden = !hasTwoPlayers || room.status !== "waiting";
-  freeButton.disabled = onlineModeActionBusy || room.status !== "waiting" || !hasTwoPlayers;
-  adButton.disabled = onlineModeActionBusy || room.status !== "waiting" || !hasTwoPlayers;
-  freeButton.style.border = myChoice === "free" ? "2px solid #7de6b0" : "";
-  adButton.style.border = myChoice === "ad" ? "2px solid #7de6b0" : "";
-  adButton.textContent = myPlayer?.ad_rewarded
-    ? "✓ РЕКЛАМА ПРОСМОТРЕНА · 120 000 AC"
-    : "▶ РЕКЛАМА · 120 000 AC";
-
-  if (!hasTwoPlayers) {
-    modeStatus.textContent = "Ожидаем второго игрока.";
-  } else if (!allChosen) {
-    modeStatus.textContent = "Каждый игрок должен выбрать бесплатный режим или рекламный бонус.";
-  } else if (!sameChoice) {
-    modeStatus.textContent = "Выбраны разные режимы. Оба игрока должны выбрать один и тот же вариант.";
-  } else if (sharedMode === "free") {
-    modeStatus.textContent = "Оба выбрали бесплатный режим. Списаний и начислений AC не будет.";
-  } else if (!bothAdsConfirmed) {
-    modeStatus.textContent = "Оба выбрали рекламный режим. Каждый игрок должен завершить Rewarded-просмотр.";
-  } else {
-    modeStatus.textContent = "Оба просмотра подтверждены. Победителю будет начислено 120 000 AC.";
-  }
-  start.disabled = !modeReady || !bothReady;
+  start.disabled = !bothReady;
   if (room.status === "racing" && !onlineRaceStarted && !onlineTestBotActive && !onlineCountdownPending) {
     onlineCountdownPending = true;
     const startedAt = Number(result.game?.startedAt || Date.now());
@@ -2982,18 +2946,12 @@ async function onlineRefreshRoom() {
           " · " + (Number(winner.finish_time_ms) / 1000).toFixed(2) + " с" +
           (settlementMessage ? " · " + settlementMessage : "")
         : (settlementMessage || "Гонка завершена."));
-  } else if (room.status === "waiting") {
-    const choices = players.map(player => player.mode_choice);
-    const same = players.length === 2 && choices.every(choice =>
-      (choice === "free" || choice === "ad") && choice === choices[0]
-    );
-    const adReady = same && choices[0] === "ad" && players.every(player => player.ad_rewarded === true);
-    const ready = same && (choices[0] === "free" || adReady);
+  } else if (room.status === "waiting" || room.status === "ready") {
+    const readyCount = players.filter(player => player.is_ready === true).length;
     onlineSetStatus(players.length + " из 2 игроков. " +
       (!hasTwoPlayers ? "Ожидаем второго игрока." :
-        !bothReady ? "Ожидаем, пока оба игрока нажмут «ГОТОВ»." :
-          !ready ? "Ожидаем одинаковый выбор режима и подтверждение рекламы." :
-            "Оба игрока готовы. Создатель может начать гонку."));
+        !bothReady ? readyCount + " из 2 готовы. Ожидаем подтверждения обоих." :
+          "Оба игрока готовы. Создатель может начать гонку."));
   } else {
     const done = players.filter(player => player.finish_time_ms != null).length;
     onlineSetStatus(done
@@ -3268,7 +3226,7 @@ async function onlineToggleReady() {
     onlineSetStatus(error.message);
   } finally {
     button.disabled = false;
-    if (onlineRoomStatus !== "waiting") button.disabled = true;
+    if (onlineRoomStatus !== "waiting" && onlineRoomStatus !== "ready") button.disabled = true;
   }
 }
 
