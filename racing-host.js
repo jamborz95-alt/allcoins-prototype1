@@ -3,7 +3,7 @@
 
   // 3D-модель и сетевые комнаты работают напрямую через Amvera Engine HTTP API.
   const RACING_API_BASE = "https://allcoins-engine-a-allcoins95.msk1.amvera.tech";
-  const CHUNK_SIZE = 4 * 1024 * 1024;
+  const CHUNK_SIZE = 1 * 1024 * 1024;
   // Set by the allcoins-racing-amvera-api meta tag in index.html.
   // GLB-модель также загружается с Amvera через отдельную настройку ниже.
   const RACING_AMVERA_API_META = document.querySelector('meta[name="allcoins-racing-amvera-api"]');
@@ -455,7 +455,7 @@
         console.warn("ALLCOINS Racing: could not read cached model:", error);
       }
 
-      const chunks = [];
+      let assembled = null;
       let total = null;
       let fileName = "vaz-2107.glb";
       const useAmveraAsset = Boolean(RACING_AMVERA_API_BASE);
@@ -482,39 +482,40 @@
 
         for (let attempt = 1; attempt <= 5; attempt++) {
           const modelController = new AbortController();
-          const modelTimeout = setTimeout(() => modelController.abort(), 30000);
+          const modelTimeout = setTimeout(() => modelController.abort(), 60000);
+          let networkError = null;
           try {
             const modelHeaders = { Range: "bytes=" + start + "-" + end };
-            // The fixed VAZ-2107 game asset is read-only/public; Amvera does not need a PC tunnel token.
-            // Keep the bearer token only for backward compatibility with the legacy tunnel endpoint.
-            // Public Amvera GLB asset; no separate racing token is used.
+            // The fixed VAZ-2107 game asset is public and read-only on Amvera.
             response = await fetch(assetUrl, {
               method: "GET",
               headers: modelHeaders,
               cache: "no-store",
+              credentials: "omit",
               signal: modelController.signal
             });
           } catch (error) {
-            if (error && error.name === "AbortError") {
-              throw new Error(useAmveraAsset
-                ? "Amvera не передала файл автомобиля за 30 секунд. Проверь доступность приложения и хранилища."
-                : "ПК не передал файл автомобиля за 30 секунд. Проверь работу Engine и туннеля.");
-            }
-            if (attempt === 5) {
-              throw new Error(useAmveraAsset
-                ? "Не удалось связаться с хранилищем Amvera. Проверь доступность адреса модели и настройки CORS."
-                : "Сеть прервала загрузку 3D-модели.");
-            }
-            await new Promise(resolve => setTimeout(resolve, Math.min(10000, 1000 * 2 ** (attempt - 1))));
-            continue;
+            networkError = error;
           } finally {
             clearTimeout(modelTimeout);
           }
 
-          if ([429, 502, 503, 504].includes(response.status)) {
-            if (attempt === 5) throw new Error("Сервер временно не может передать 3D-модель. Повтори загрузку позже.");
+          if (networkError) {
+            if (attempt === 5) {
+              throw new Error(networkError.name === "AbortError"
+                ? "Amvera не передала очередной фрагмент ВАЗ-2107 за 60 секунд. Проверь соединение и повтори загрузку."
+                : "Соединение с хранилищем Amvera прервалось: " + String(networkError.message || networkError));
+            }
+            await new Promise(resolve => setTimeout(resolve, Math.min(12000, 1200 * 2 ** (attempt - 1))));
+            continue;
+          }
+
+          if ([429, 500, 502, 503, 504].includes(response.status)) {
+            if (attempt === 5) {
+              throw new Error("Хранилище Amvera временно не передаёт ВАЗ-2107 (HTTP " + response.status + ").");
+            }
             try { await response.body?.cancel(); } catch (_) {}
-            await new Promise(resolve => setTimeout(resolve, Math.min(15000, 1200 * 2 ** (attempt - 1))));
+            await new Promise(resolve => setTimeout(resolve, Math.min(12000, 1200 * 2 ** (attempt - 1))));
             continue;
           }
           break;
@@ -562,22 +563,23 @@
         if (buffer.byteLength !== rangeEnd - start + 1) {
           throw new Error("Получен неполный фрагмент GLB.");
         }
-        chunks.push(new Uint8Array(buffer));
+        if (!assembled) assembled = new Uint8Array(total);
+        if (buffer.byteLength !== rangeEnd - start + 1) {
+          throw new Error("Получен неполный фрагмент GLB.");
+        }
+        // Copy each small range straight into one final buffer. Keeping dozens of
+        // separate 4 MB buffers and then concatenating them doubles mobile RAM use.
+        assembled.set(new Uint8Array(buffer), start);
         start = rangeEnd + 1;
       }
 
-      if (!total) throw new Error("Сохранённая 3D-модель пуста.");
-      const combined = new Uint8Array(total);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.byteLength;
+      if (!total || !assembled || assembled.byteLength !== total) {
+        throw new Error("Получен неполный файл GLB.");
       }
-      if (offset !== total) throw new Error("Получен неполный файл GLB.");
-      if (!isValidGlbBuffer(combined.buffer)) {
+      if (!isValidGlbBuffer(assembled.buffer)) {
         throw new Error("Собранный файл из Amvera не прошёл проверку GLB 2.0.");
       }
-      const model = { buffer: combined.buffer, fileName, remoteVersion };
+      const model = { buffer: assembled.buffer, fileName, remoteVersion };
       await writeCachedModel(model);
       setModelProgress("Модель загружена и сохранена на устройстве", 100);
       setStatus("3D-модель сохранена на устройстве", false);
