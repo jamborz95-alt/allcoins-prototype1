@@ -9657,7 +9657,7 @@ window.addEventListener('message', async event => {
       remoteVersion: data.remoteVersion || null,
       chunkSize,
       totalChunks,
-      chunks: new Array(totalChunks),
+      buffer: new Uint8Array(byteLength),
       receivedChunks: 0,
       receivedBytes: 0
     };
@@ -9672,11 +9672,12 @@ window.addEventListener('message', async event => {
     const index = Number(data.index);
     const byteOffset = Number(data.byteOffset);
     const chunk = data.buffer;
-    if (!Number.isSafeInteger(index) || index < 0 || index >= pending.totalChunks ||
+    if (!Number.isSafeInteger(index) || index !== pending.receivedChunks ||
+        index < 0 || index >= pending.totalChunks ||
         byteOffset !== index * pending.chunkSize ||
-        !(chunk instanceof ArrayBuffer) || pending.chunks[index]) {
+        !(chunk instanceof ArrayBuffer)) {
       acPendingCarModelTransfer = null;
-      setMessage('Ошибка передачи GLB', 'Получен повреждённый или повторный фрагмент модели.', true);
+      setMessage('Ошибка передачи GLB', 'Получен повреждённый, повторный или непоследовательный фрагмент модели.', true);
       return;
     }
     const expectedLength = Math.min(pending.chunkSize, pending.byteLength - byteOffset);
@@ -9685,7 +9686,7 @@ window.addEventListener('message', async event => {
       setMessage('Ошибка передачи GLB', 'Размер одного из фрагментов модели не совпадает.', true);
       return;
     }
-    pending.chunks[index] = new Uint8Array(chunk);
+    pending.buffer.set(new Uint8Array(chunk), byteOffset);
     pending.receivedChunks++;
     pending.receivedBytes += chunk.byteLength;
 
@@ -9705,15 +9706,7 @@ window.addEventListener('message', async event => {
 
     const completed = pending;
     acPendingCarModelTransfer = null;
-    const combined = new Uint8Array(completed.byteLength);
-    for (let i = 0; i < completed.totalChunks; i++) {
-      if (!completed.chunks[i]) {
-        setMessage('Ошибка передачи GLB', 'Не получен фрагмент №' + (i + 1) + '.', true);
-        return;
-      }
-      combined.set(completed.chunks[i], i * completed.chunkSize);
-    }
-    await acInstallReceivedCarModel(combined.buffer, {
+    await acInstallReceivedCarModel(completed.buffer.buffer, {
       fileName: completed.fileName,
       byteLength: completed.byteLength,
       remoteVersion: completed.remoteVersion
