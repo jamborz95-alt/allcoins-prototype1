@@ -564,11 +564,8 @@
           throw new Error("Получен неполный фрагмент GLB.");
         }
         if (!assembled) assembled = new Uint8Array(total);
-        if (buffer.byteLength !== rangeEnd - start + 1) {
-          throw new Error("Получен неполный фрагмент GLB.");
-        }
-        // Copy each small range straight into one final buffer. Keeping dozens of
-        // separate 4 MB buffers and then concatenating them doubles mobile RAM use.
+        // Copy each 1 MB range straight into one final buffer, avoiding a second
+        // full-size copy when the model is assembled on Android.
         assembled.set(new Uint8Array(buffer), start);
         start = rangeEnd + 1;
       }
@@ -920,7 +917,7 @@
     // Do not connect to the PC tunnel on single-player launch.
     // Telegram authentication is requested only when the player opens online rooms.
     try {
-      const sceneUrl = new URL("./racing-game.html?v=20261127-android-glb-reliability1", document.baseURI);
+      const sceneUrl = new URL("./racing-game.html?v=20261127-android-glb-reliability2", document.baseURI);
       const launchParams = new URLSearchParams(window.location.search);
       const restoreFactoryRims = launchParams.get("restoreFactoryRims") === "1";
       const perfTestMode = launchParams.get("perfTest");
