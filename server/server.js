@@ -76,7 +76,13 @@ registerNeonMigrationRoute(app, pool);
  */
 async function settleDurakGamePayout(client, gameState, roomId) {
   const pot = gameState?.pot;
-  if (gameState?.status !== "finished" || !pot || pot.settled === true) {
+  const hasRecordedWinners = Array.isArray(pot?.settlement?.winners) &&
+    pot.settlement.winners.length > 0;
+  const missingWinnerPayout = pot?.settled === true &&
+    Number(pot?.payoutPool) > 0 &&
+    !hasRecordedWinners;
+  if (gameState?.status !== "finished" || !pot ||
+      (pot.settled === true && !missingWinnerPayout)) {
     return pot?.settlement || null;
   }
 
@@ -389,7 +395,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.5.2"
+      version: "1.5.3"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
@@ -1937,8 +1943,15 @@ app.post("/api/durak/game", async (req, res) => {
         if (latestState.rows.length) gameState = latestState.rows[0].game_state;
       }
     }
+    const potNeedsSettlementRecovery = Boolean(
+      gameState?.pot &&
+      (gameState.pot.settled !== true ||
+       (Number(gameState.pot.payoutPool) > 0 &&
+        (!Array.isArray(gameState.pot.settlement?.winners) ||
+         gameState.pot.settlement.winners.length === 0)))
+    );
     if (gameState?.status === "finished" &&
-        ((gameState?.pot && gameState.pot.settled !== true) ||
+        (potNeedsSettlementRecovery ||
          (gameState?.finishedReason === "timeout" && gameState?.timeoutBalanceSettled !== true))) {
       const payoutClient = await pool.connect();
       let payoutTransactionOpen = false;
