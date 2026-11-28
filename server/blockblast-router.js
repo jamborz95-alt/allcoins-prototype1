@@ -1,4 +1,5 @@
 import express from "express";
+import { configuredAdminTelegramId } from "./commission.js";
 
 const ENTRY_FEE = 1000;
 const COMMISSION_PERCENT = 5;
@@ -421,7 +422,203 @@ export function createBlockBlastRouter({ pool, verifyTelegram, recordGameCommiss
     }
   });
 
+
+  function requireBlockBlastAdmin(req, res) {
+    const user = requireTelegram(req, res, verifyTelegram);
+    if (!user) return null;
+    const adminId = configuredAdminTelegramId();
+    if (!adminId) {
+      res.status(503).json({ ok: false, error: "ADMIN_TELEGRAM_ID не настроен на сервере." });
+      return null;
+    }
+    if (String(user.id) !== adminId) {
+      res.status(403).json({ ok: false, error: "Доступ только для администратора." });
+      return null;
+    }
+    return user;
+  }
+
+  // AC списываются при создании заявки; при отказе возвращаются, при оплате остаются сожжёнными.
+  router.post("/redemption/request", async (req, res) => {
+    const user = requireTelegram(req, res, verifyTelegram);
+    if (!user) return;
+    const amount = Number(req.body && req.body.amount);
+    const method = String(req.body && req.body.method || "");
+    const details = String(req.body && req.body.details || "").trim();
+    const requestedReward = String(req.body && req.body.requestedReward || "").trim().slice(0, 100);
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000000) {
+      return res.status(400).json({ ok: false, error: "Укажи целое количество AC от 1 до 1 000 000 000." });
+    }
+    if (!["bank_card", "e_wallet"].includes(method)) {
+      return res.status(400).json({ ok: false, error: "Выбери банковскую карту или электронный кошелёк." });
+    }
+    if (details.length < 6 || details.length > 500) {
+      return res.status(400).json({ ok: false, error: "Проверь реквизиты: от 6 до 500 символов." });
+    }
+
+    let client;
+    let open = false;
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      open = true;
+      const telegramId = String(user.id);
+      await client.query(
+        "INSERT INTO players (telegram_id) VALUES ($1::BIGINT) ON CONFLICT (telegram_id) DO NOTHING",
+        [telegramId]
+      );
+      const wallet = await client.query(
+        "SELECT balance::TEXT AS balance FROM players WHERE telegram_id = $1::BIGINT FOR UPDATE",
+        [telegramId]
+      );
+      const balance = Number(wallet.rows[0] && wallet.rows[0].balance || 0);
+      if (balance < amount) {
+        await client.query("ROLLBACK");
+        open = false;
+        return res.status(400).json({ ok: false, error: "Недостаточно AC на балансе.", balance });
+      }
+      const displayName = safeDisplayName(user);
+      const inserted = await client.query(
+        "INSERT INTO block_blast_redemption_requests " +
+        "(telegram_id, display_name, username, amount_ac, payout_method, payout_details, requested_reward) " +
+        "VALUES ($1::BIGINT, $2, $3, $4::BIGINT, $5, $6, $7) RETURNING id::TEXT AS id, created_at",
+        [telegramId, displayName, user.username ? String(user.username).slice(0, 64) : null,
+          String(amount), method, details, requestedReward || null]
+      );
+      const charged = await client.query(
+        "UPDATE players SET balance = balance - $1::BIGINT, updated_at = NOW() " +
+        "WHERE telegram_id = $2::BIGINT RETURNING balance::TEXT AS balance",
+        [String(amount), telegramId]
+      );
+      await client.query("COMMIT");
+      open = false;
+      return res.json({
+        ok: true,
+        requestId: inserted.rows[0].id,
+        balance: Number(charged.rows[0].balance),
+        status: "pending",
+        message: "Заявка отправлена администратору. AC зарезервированы до решения."
+      });
+    } catch (error) {
+      if (client && open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Block Blast redemption request error:", error.message || error);
+      if (!res.headersSent) return res.status(500).json({ ok: false, error: "Не удалось отправить заявку. AC не должны быть списаны." });
+    } finally {
+      client?.release();
+    }
+  });
+
+  router.post("/redemption/mine", async (req, res) => {
+    const user = requireTelegram(req, res, verifyTelegram);
+    if (!user) return;
+    try {
+      const result = await pool.query(
+        "SELECT id::TEXT AS id, amount_ac::TEXT AS amount_ac, payout_method, requested_reward, status, " +
+        "admin_note, created_at, updated_at FROM block_blast_redemption_requests " +
+        "WHERE telegram_id = $1::BIGINT ORDER BY created_at DESC LIMIT 20",
+        [String(user.id)]
+      );
+      return res.json({ ok: true, requests: result.rows });
+    } catch (error) {
+      console.error("Block Blast redemption history error:", error.message || error);
+      return res.status(500).json({ ok: false, error: "Не удалось загрузить историю заявок." });
+    }
+  });
+
+  router.post("/admin/redemption-requests", async (req, res) => {
+    if (!requireBlockBlastAdmin(req, res)) return;
+    try {
+      const result = await pool.query(
+        "SELECT id::TEXT AS id, telegram_id::TEXT AS telegram_id, display_name, username, " +
+        "amount_ac::TEXT AS amount_ac, payout_method, payout_details, requested_reward, status, " +
+        "admin_note, created_at, updated_at FROM block_blast_redemption_requests " +
+        "ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, created_at DESC LIMIT 200"
+      );
+      return res.json({ ok: true, admin: true, requests: result.rows });
+    } catch (error) {
+      console.error("Block Blast admin redemption list error:", error.message || error);
+      return res.status(500).json({ ok: false, error: "Не удалось загрузить заявки." });
+    }
+  });
+
+  router.post("/admin/redemption-resolve", async (req, res) => {
+    if (!requireBlockBlastAdmin(req, res)) return;
+    const requestId = String(req.body && req.body.requestId || "");
+    const status = String(req.body && req.body.status || "");
+    const note = String(req.body && req.body.note || "").trim().slice(0, 500);
+    if (!/^\d+$/.test(requestId) || !["paid", "rejected"].includes(status)) {
+      return res.status(400).json({ ok: false, error: "Некорректное действие по заявке." });
+    }
+    let client;
+    let open = false;
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      open = true;
+      const request = await client.query(
+        "SELECT id, telegram_id::TEXT AS telegram_id, amount_ac::TEXT AS amount_ac, status " +
+        "FROM block_blast_redemption_requests WHERE id = $1::BIGINT FOR UPDATE",
+        [requestId]
+      );
+      if (!request.rows.length) {
+        await client.query("ROLLBACK"); open = false;
+        return res.status(404).json({ ok: false, error: "Заявка не найдена." });
+      }
+      const row = request.rows[0];
+      if (row.status !== "pending") {
+        await client.query("ROLLBACK"); open = false;
+        return res.status(409).json({ ok: false, error: "Эта заявка уже обработана." });
+      }
+      await client.query(
+        "UPDATE block_blast_redemption_requests SET status = $2, admin_note = $3, updated_at = NOW() WHERE id = $1::BIGINT",
+        [requestId, status, note || null]
+      );
+      let refunded = 0;
+      if (status === "rejected") {
+        const refund = await client.query(
+          "UPDATE players SET balance = balance + $1::BIGINT, updated_at = NOW() " +
+          "WHERE telegram_id = $2::BIGINT RETURNING balance::TEXT AS balance",
+          [row.amount_ac, row.telegram_id]
+        );
+        if (!refund.rows.length) throw new Error("Не удалось вернуть AC игроку после отклонения.");
+        refunded = Number(row.amount_ac);
+      }
+      await client.query("COMMIT");
+      open = false;
+      return res.json({ ok: true, status, refunded });
+    } catch (error) {
+      if (client && open) { try { await client.query("ROLLBACK"); } catch (_) {} }
+      console.error("Block Blast redemption resolve error:", error.message || error);
+      if (!res.headersSent) return res.status(500).json({ ok: false, error: "Не удалось обработать заявку." });
+    } finally {
+      client?.release();
+    }
+  });
+
   router.initialize = async function initialize() {
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS block_blast_redemption_requests (" +
+      "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
+      "telegram_id BIGINT NOT NULL REFERENCES players(telegram_id), " +
+      "display_name TEXT NOT NULL DEFAULT 'Игрок', " +
+      "username TEXT, " +
+      "amount_ac BIGINT NOT NULL CHECK (amount_ac > 0), " +
+      "payout_method TEXT NOT NULL CHECK (payout_method IN ('bank_card', 'e_wallet')), " +
+      "payout_details TEXT NOT NULL, " +
+      "requested_reward TEXT, " +
+      "status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'rejected')), " +
+      "admin_note TEXT, " +
+      "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
+    );
+    await pool.query(
+      "CREATE INDEX IF NOT EXISTS block_blast_redemption_player_idx " +
+      "ON block_blast_redemption_requests(telegram_id, created_at DESC)"
+    );
+    await pool.query(
+      "CREATE INDEX IF NOT EXISTS block_blast_redemption_status_idx " +
+      "ON block_blast_redemption_requests(status, created_at DESC)"
+    );
     await pool.query(
       "CREATE TABLE IF NOT EXISTS block_blast_tournament_entries (" +
       "week_start DATE NOT NULL, " +
