@@ -2006,8 +2006,17 @@ app.post("/api/durak/game", async (req, res) => {
       winners: payoutWinners
     } : null;
 
+    // Always return the authoritative wallet after settlement/recovery,
+    // so the client does not keep showing the pre-game balance.
+    const walletBalanceResult = await pool.query(
+      "SELECT balance::TEXT AS balance FROM players WHERE telegram_id = $1",
+      [String(user.id)]
+    );
+    const currentWalletBalance = Number(walletBalanceResult.rows[0]?.balance ?? 0);
+
     return res.json({
   ok: true,
+  balance: currentWalletBalance,
   roomId: String(roomId),
   mode: gameState.mode || "throw-in",
   hand: me.hand,
