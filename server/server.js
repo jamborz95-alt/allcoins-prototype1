@@ -42,9 +42,30 @@ app.use(express.json({ limit: "20kb" }));
 
 const useNeonDatabase = process.env.USE_NEON_DATABASE === "1" && Boolean(process.env.NEON_DATABASE_URL);
 const activeDatabaseUrl = useNeonDatabase ? process.env.NEON_DATABASE_URL : process.env.DATABASE_URL;
+
+// Amvera internal PostgreSQL domains (cnpg-...) use the private network without TLS.
+// External PostgreSQL domains use TLS. Strip URL SSL parameters so they cannot
+// override the explicit SSL configuration above (node-postgres parses them first).
+let poolConnectionString = activeDatabaseUrl;
+let poolSsl = { rejectUnauthorized: false };
+
+if (activeDatabaseUrl) {
+  const databaseUrl = new URL(activeDatabaseUrl);
+  const usesAmveraInternalDatabase = databaseUrl.hostname.toLowerCase().startsWith("cnpg-");
+
+  for (const parameter of ["ssl", "sslmode", "sslcert", "sslkey", "sslrootcert", "uselibpqcompat"]) {
+    databaseUrl.searchParams.delete(parameter);
+  }
+
+  poolConnectionString = databaseUrl.toString();
+  if (usesAmveraInternalDatabase) {
+    poolSsl = false;
+  }
+}
+
 const pool = new Pool({
-  connectionString: activeDatabaseUrl,
-  ssl: { rejectUnauthorized: false }
+  connectionString: poolConnectionString,
+  ssl: poolSsl
 });
 
 registerNeonMigrationRoute(app, pool);
