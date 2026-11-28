@@ -263,11 +263,28 @@ export function createUnoRouter({ pool, verifyTelegram }) {
     if (!result.rows.length) throw new UnoHttpError(403, "Сначала войди в эту комнату.");
   }
 
-  function normalizeGamePot(game) {
-    const stake = Math.max(0, Number(game.stake) || 0);
-    const humanCount = Array.isArray(game.players)
+  async function roomBankSnapshot(client, roomId) {
+    const result = await client.query(
+      "SELECT r.stake, COUNT(p.telegram_id)::INTEGER AS players_count " +
+      "FROM uno_rooms r LEFT JOIN uno_room_players p ON p.room_id = r.id " +
+      "WHERE r.id = $1 GROUP BY r.id",
+      [String(roomId)]
+    );
+    const row = result.rows[0];
+    return row ? {
+      stake: Math.max(0, Number(row.stake) || 0),
+      playersCount: Math.max(0, Number(row.players_count) || 0)
+    } : null;
+  }
+
+  function normalizeGamePot(game, roomBank = null) {
+    const stateStake = Math.max(0, Number(game.stake) || 0);
+    const stake = Math.max(0, Number(roomBank?.stake) || stateStake);
+    const stateHumanCount = Array.isArray(game.players)
       ? game.players.filter(player => !player.bot).length
       : 0;
+    const roomHumanCount = Math.max(0, Number(roomBank?.playersCount) || 0);
+    const humanCount = Math.max(stateHumanCount, roomHumanCount);
     const storedPot = Math.max(0, Number(game.pot) || 0);
     game.stake = stake;
     game.pot = game.mode === "bots"
@@ -276,8 +293,9 @@ export function createUnoRouter({ pool, verifyTelegram }) {
     return game.pot;
   }
 
-  async function saveGame(client, roomId, game) {
-    normalizeGamePot(game);
+  async function saveGame(client, roomId, game, roomBank = null) {
+    const bankSnapshot = roomBank || await roomBankSnapshot(client, roomId);
+    normalizeGamePot(game, bankSnapshot);
     if (game.status === "finished" && !game.settlementApplied) {
       if (game.mode === "online" && Number(game.pot) > 0) {
         const winner = game.players.find(player => player.id === String(game.winnerId));
@@ -461,10 +479,10 @@ export function createUnoRouter({ pool, verifyTelegram }) {
     } finally { client.release(); }
   });
 
-  function publicGame(game, userId) {
+  function publicGame(game, userId, roomBank = null) {
     const me = game.players.find(player => player.id === userId);
-    const pot = normalizeGamePot(game);
-    const stake = Math.max(0, Number(game.stake) || 0);
+    const pot = normalizeGamePot(game, roomBank);
+    const stake = Math.max(0, Number(roomBank?.stake) || Number(game.stake) || 0);
     return {
       status: game.status, mode: game.mode, stake, pot,
       players: game.players.map((player, index) => ({
@@ -494,6 +512,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
       const initial = await client.query("SELECT game_state FROM uno_games WHERE room_id = $1", [roomId]);
       if (!initial.rows.length) throw new UnoHttpError(404, "Партия ещё не подготовлена.");
       let game = initial.rows[0].game_state;
+      const roomBank = await roomBankSnapshot(client, roomId);
 
       // Only bot turns need a write lock. Re-read under the lock because another
       // request may have advanced the game while this request was waiting.
@@ -506,12 +525,12 @@ export function createUnoRouter({ pool, verifyTelegram }) {
         game = locked.rows[0].game_state;
         if (game.status === "playing" && currentPlayer(game)?.bot) {
           runBotTurn(game);
-          await saveGame(client, roomId, game);
+          await saveGame(client, roomId, game, roomBank);
         }
         await client.query("COMMIT");
         transactionOpen = false;
       }
-      return res.json({ ok: true, game: publicGame(game, user.id) });
+      return res.json({ ok: true, game: publicGame(game, user.id, roomBank) });
     } catch (error) {
       if (transactionOpen) { try { await client.query("ROLLBACK"); } catch {} }
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось обновить партию УНО." });
@@ -526,6 +545,7 @@ export function createUnoRouter({ pool, verifyTelegram }) {
       if (!/^\d+$/.test(roomId)) throw new UnoHttpError(400, "Неверный номер комнаты.");
       await client.query("BEGIN");
       await assertRoomMember(client, roomId, user.id);
+      const roomBank = await roomBankSnapshot(client, roomId);
       const result = await client.query("SELECT game_state FROM uno_games WHERE room_id = $1 FOR UPDATE", [roomId]);
       if (!result.rows.length) throw new UnoHttpError(404, "Партия ещё не подготовлена.");
       const game = result.rows[0].game_state;
@@ -553,9 +573,9 @@ export function createUnoRouter({ pool, verifyTelegram }) {
       } else {
         throw new UnoHttpError(400, "Неизвестное действие УНО.");
       }
-      await saveGame(client, roomId, game);
+      await saveGame(client, roomId, game, roomBank);
       await client.query("COMMIT");
-      return res.json({ ok: true, game: publicGame(game, user.id) });
+      return res.json({ ok: true, game: publicGame(game, user.id, roomBank) });
     } catch (error) {
       try { await client.query("ROLLBACK"); } catch {}
       return res.status(error.status || 500).json({ ok: false, error: error.message || "Не удалось выполнить ход УНО." });
