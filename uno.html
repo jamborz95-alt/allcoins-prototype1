@@ -1470,8 +1470,18 @@
         const nextSnapshot = unoRenderSnapshot(game);
 
         $("gameRoomLabel").textContent = (state.room ? state.room.name : "Комната УНО") + " · #" + (state.room ? state.room.id : "");
+        // Восстанавливаем отображение банка для старых игровых состояний с нулевым pot.
+        const roomStake = Math.max(0, Number(game.stake) || Number(state.room && state.room.stake) || 0);
+        const humanPlayers = Array.isArray(game.players)
+          ? game.players.filter(player => !player.bot).length
+          : (Array.isArray(state.players) ? state.players.length : 0);
+        const storedPot = Math.max(0, Number(game.pot) || 0);
+        const expectedPot = game.mode === "bots" ? 0 : roomStake * humanPlayers;
+        const roomPot = game.mode === "bots" ? 0 : Math.max(storedPot, expectedPot);
         $("bankCaption").textContent = game.mode === "bots" ? "ТРЕНИРОВКА" : "БАНК КОМНАТЫ";
-        $("bankValue").textContent = game.mode === "bots" ? "без списания Allcoins" : formatAmount(game.pot || game.stake) + " AC";
+        $("bankValue").textContent = game.mode === "bots"
+          ? "без списания Allcoins"
+          : formatAmount(roomPot || roomStake) + " AC";
         $("drawCount").textContent = formatAmount(game.drawCount || 0);
         renderOpponents();
 

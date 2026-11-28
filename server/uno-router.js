@@ -263,7 +263,21 @@ export function createUnoRouter({ pool, verifyTelegram }) {
     if (!result.rows.length) throw new UnoHttpError(403, "Сначала войди в эту комнату.");
   }
 
+  function normalizeGamePot(game) {
+    const stake = Math.max(0, Number(game.stake) || 0);
+    const humanCount = Array.isArray(game.players)
+      ? game.players.filter(player => !player.bot).length
+      : 0;
+    const storedPot = Math.max(0, Number(game.pot) || 0);
+    game.stake = stake;
+    game.pot = game.mode === "bots"
+      ? 0
+      : Math.max(storedPot, stake * humanCount);
+    return game.pot;
+  }
+
   async function saveGame(client, roomId, game) {
+    normalizeGamePot(game);
     if (game.status === "finished" && !game.settlementApplied) {
       if (game.mode === "online" && Number(game.pot) > 0) {
         const winner = game.players.find(player => player.id === String(game.winnerId));
@@ -449,8 +463,10 @@ export function createUnoRouter({ pool, verifyTelegram }) {
 
   function publicGame(game, userId) {
     const me = game.players.find(player => player.id === userId);
+    const pot = normalizeGamePot(game);
+    const stake = Math.max(0, Number(game.stake) || 0);
     return {
-      status: game.status, mode: game.mode, stake: game.stake, pot: game.pot,
+      status: game.status, mode: game.mode, stake, pot,
       players: game.players.map((player, index) => ({
         id: player.id, name: player.name, bot: Boolean(player.bot),
         handCount: player.hand.length, isCurrent: index === game.currentPlayerIndex && game.status === "playing",
