@@ -95,23 +95,43 @@ async function settleDurakGamePayout(client, gameState, roomId) {
   const burnedAmount = Math.min(grossPot, Math.max(0, Math.floor(Number(commission.amount) || 0)));
   const payoutPool = Math.max(0, grossPot - burnedAmount);
   const loserId = gameState.loserTelegramId == null ? "" : String(gameState.loserTelegramId);
+  const gamePlayers = Array.isArray(gameState.players) ? gameState.players : [];
+  const contributorIds = new Set(contributors);
 
-  let recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
-    contributors.includes(String(player.telegramId)) &&
-    String(player.telegramId) !== "0" &&
-    String(player.telegramId) !== loserId
-  );
-  if (!recipients.length) {
-    recipients = (Array.isArray(gameState.players) ? gameState.players : []).filter(player =>
-      contributors.includes(String(player.telegramId)) && String(player.telegramId) !== "0"
-    );
+  // Normal Durak finish: contributing players who have emptied their hands win.
+  // Timeout finish: all contributors except the player who timed out share the pot.
+  let recipientIds;
+  if (gameState.finishedReason === "timeout" && loserId) {
+    recipientIds = contributors.filter(id => id !== loserId);
+  } else {
+    recipientIds = gamePlayers
+      .filter(player =>
+        contributorIds.has(String(player.telegramId)) &&
+        String(player.telegramId) !== "0" &&
+        Array.isArray(player.hand) &&
+        player.hand.length === 0
+      )
+      .map(player => String(player.telegramId));
+
+    // Compatibility fallback for older saved game states without complete hand data.
+    if (!recipientIds.length && loserId) {
+      recipientIds = contributors.filter(id => id !== loserId);
+    }
+    if (!recipientIds.length) {
+      recipientIds = [...contributors];
+    }
+  }
+
+  const recipients = [...new Set(recipientIds)].filter(id => id && id !== "0");
+  if (payoutPool > 0 && recipients.length === 0) {
+    throw new Error("Не найден победитель Дурака для начисления общего банка");
   }
 
   const baseShare = recipients.length ? Math.floor(payoutPool / recipients.length) : 0;
   let remainder = recipients.length ? payoutPool % recipients.length : 0;
   const winners = [];
 
-  for (const player of recipients) {
+  for (const telegramId of recipients) {
     const amount = baseShare + (remainder > 0 ? 1 : 0);
     if (remainder > 0) remainder -= 1;
     if (amount > 0) {
@@ -120,12 +140,18 @@ async function settleDurakGamePayout(client, gameState, roomId) {
          SET balance = balance + $1,
              updated_at = NOW()
          WHERE telegram_id = $2
-         RETURNING balance`,
-        [amount, String(player.telegramId)]
+         RETURNING balance::TEXT AS balance`,
+        [amount, telegramId]
       );
       if (!credited.rows.length) throw new Error("Не найден баланс победителя для выплаты выигрыша");
+      winners.push({
+        telegramId,
+        amount,
+        balanceAfter: Number(credited.rows[0].balance)
+      });
+    } else {
+      winners.push({ telegramId, amount: 0 });
     }
-    winners.push({ telegramId: String(player.telegramId), amount });
   }
 
   pot.burnedAmount = burnedAmount;
@@ -363,7 +389,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.5.1"
+      version: "1.5.2"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
@@ -2758,6 +2784,20 @@ if (action === "beat") {
           break;
         }
         break;
+      }
+    }
+
+    // Final safety check: finish the game when the deck and table are empty
+    // and no more than one player still holds cards, regardless of which action branch ran.
+    if (game.status === "playing" &&
+        Array.isArray(game.deck) && game.deck.length === 0 &&
+        Array.isArray(game.table) && game.table.length === 0 &&
+        game.takePending !== true) {
+      const playersStillHoldingCards = game.players.filter(player =>
+        Array.isArray(player.hand) && player.hand.length > 0
+      );
+      if (playersStillHoldingCards.length <= 1) {
+        markGameFinished();
       }
     }
 
