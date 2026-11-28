@@ -395,7 +395,7 @@ app.get("/api/health", async (req, res) => {
       ok: true,
       app: "ALLCOINS",
       database: "connected",
-      version: "1.5.3"
+      version: "1.5.4"
     });
   } catch (error) {
     console.error("Health check failed:", error.message);
@@ -1875,6 +1875,39 @@ app.post("/api/durak/game", async (req, res) => {
     }
 
     let gameState = gameResult.rows[0].game_state;
+
+    // Recover older games that reached a terminal board state but were left
+    // marked as playing by a path that did not call finishIfNeeded().
+    if (gameState?.status === "playing" &&
+        Array.isArray(gameState.deck) && gameState.deck.length === 0 &&
+        Array.isArray(gameState.table) && gameState.table.length === 0 &&
+        gameState.takePending !== true) {
+      const remainingPlayers = (Array.isArray(gameState.players) ? gameState.players : [])
+        .filter(player => Array.isArray(player.hand) && player.hand.length > 0);
+      if (remainingPlayers.length <= 1) {
+        const previousState = JSON.stringify(gameState);
+        gameState.status = "finished";
+        gameState.phase = "finished";
+        gameState.finishedReason = gameState.finishedReason || "normal";
+        gameState.loserTelegramId = remainingPlayers.length === 1
+          ? String(remainingPlayers[0].telegramId)
+          : null;
+        const recoveredFinish = await pool.query(
+          `UPDATE durak_games
+           SET game_state = $1::jsonb, updated_at = NOW()
+           WHERE room_id = $2 AND game_state = $3::jsonb`,
+          [JSON.stringify(gameState), roomId, previousState]
+        );
+        if (recoveredFinish.rowCount !== 1) {
+          const latest = await pool.query(
+            "SELECT game_state FROM durak_games WHERE room_id = $1",
+            [roomId]
+          );
+          if (latest.rows.length) gameState = latest.rows[0].game_state;
+        }
+      }
+    }
+
     const stateBeforeTimeoutCheck = JSON.stringify(gameState);
     const timeoutCheck = expireDurakTurnIfNeeded(gameState);
     if (timeoutCheck.changed) {
