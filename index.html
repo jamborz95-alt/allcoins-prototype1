@@ -7621,6 +7621,17 @@ async function loadDurakGame(roomId) {
       return;
     }
 
+    // The Durak API returns the authoritative wallet after payout settlement.
+    // Refresh the app-wide balance so a winner sees credited AC immediately.
+    if (Number.isFinite(Number(game.balance))) {
+      const serverBalance = Number(game.balance);
+      if (serverBalance !== Number(state.balance)) {
+        state.balance = serverBalance;
+        saveGame();
+        render();
+      }
+    }
+
     durakLastGameStatus = game.status || null;
     durakLastGameWasTimeoutLoser = game.status === "finished" && game.finishedReason === "timeout" && game.isLoser === true;
     if (game.status === "finished") {
