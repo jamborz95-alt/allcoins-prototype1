@@ -4188,6 +4188,11 @@
         </form>
       </div>
     </div>
+    <div id="adminInboxCard" class="card hidden">
+      <div class="section-title">🛡 Администраторская почта ALLCOINS</div>
+      <button type="button" class="secondary full" id="adminInboxToggle">📩 Админская почта · сжигание AC и поддержка</button>
+      <div class="notice" id="adminInboxCounts" style="margin-top:10px">Загружаем входящие сообщения…</div>
+      <div id="adminInboxDetails" class="hidden" style="display:grid;gap:12px;margin-top:12px">
     <div id="adminSupportCard" class="card hidden">
       <div class="section-title">🛟 Поддержка игроков</div>
       <p class="muted">Обращения сохраняются на сервере. ALLCOINS ИИ подготавливает первичную диагностику. Отчёт можно скопировать и передать ChatGPT для помощи с исправлением кода.</p>
@@ -4216,6 +4221,8 @@
           <div id="adminBurnInboxList" style="display:grid;gap:9px;margin-top:10px"></div>
           <div class="status" id="adminBurnInboxStatus" role="status" aria-live="polite"></div>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   </section>
@@ -9316,6 +9323,24 @@ let adminSupportBusy = false;
 let adminSupportTicketCache = [];
 let adminBurnInboxBusy = false;
 let adminBurnInboxCache = [];
+let adminInboxSupportOpenCount = 0;
+let adminInboxBurnPendingCount = 0;
+
+function updateAdminInboxCounts() {
+  const supportCount = Math.max(0, Number(adminInboxSupportOpenCount) || 0);
+  const burnCount = Math.max(0, Number(adminInboxBurnPendingCount) || 0);
+  const total = supportCount + burnCount;
+  const counts = $("adminInboxCounts");
+  const toggle = $("adminInboxToggle");
+  if (counts) {
+    counts.textContent =
+      "Сжигание AC: " + burnCount + " ожидают решения · " +
+      "Поддержка: " + supportCount + " новых обращений";
+  }
+  if (toggle) {
+    toggle.textContent = "📩 Админская почта · " + total;
+  }
+}
 
 const supportStatusLabels = {
   open: "Новая",
@@ -9488,6 +9513,8 @@ async function refreshAdminSupportInbox(showErrors = false) {
     }
     $("adminSupportCard").classList.remove("hidden");
     const counts = result.counts || {};
+    adminInboxSupportOpenCount = Number(counts.open || 0);
+    updateAdminInboxCounts();
     $("adminSupportCounts").textContent =
       "Всего: " + Number(counts.total || 0) +
       " · Новые: " + Number(counts.open || 0) +
@@ -9516,6 +9543,8 @@ function renderAdminBurnInbox(requests) {
   root.textContent = "";
   const rows = Array.isArray(requests) ? requests : [];
   const pendingCount = rows.filter(item => item.status === "pending").length;
+  adminInboxBurnPendingCount = pendingCount;
+  updateAdminInboxCounts();
   $("adminBurnInboxCounts").textContent =
     "Всего сообщений: " + rows.length + " · Ожидают решения: " + pendingCount;
   $("adminBurnInboxToggle").textContent =
@@ -9641,9 +9670,12 @@ async function refreshAdminCommissionSummary(showErrors = false) {
     const result = await apiRequest("/api/admin/summary");
     adminCommissionVerified = result.admin === true;
     if (!adminCommissionVerified) {
+      $("adminInboxCard").classList.add("hidden");
+      $("adminSupportCard").classList.add("hidden");
       $("adminCommissionCard").classList.add("hidden");
       return false;
     }
+    $("adminInboxCard").classList.remove("hidden");
     $("adminCommissionCard").classList.remove("hidden");
     $("adminCommissionTotal").textContent = Number(result.totalCommission || 0).toLocaleString("ru-RU");
     $("adminGrossTotal").textContent = Number(result.totalGross || 0).toLocaleString("ru-RU");
@@ -9687,6 +9719,8 @@ async function refreshAdminCommissionSummary(showErrors = false) {
     const errorText = String(error?.message || error || "Не удалось загрузить комиссии");
     if (/HTTP (401|403|503)/.test(errorText)) {
       adminCommissionVerified = false;
+      $("adminInboxCard").classList.add("hidden");
+      $("adminSupportCard").classList.add("hidden");
       $("adminCommissionCard").classList.add("hidden");
     } else if (showErrors) {
       $("adminCommissionStatus").textContent = errorText;
@@ -10828,6 +10862,19 @@ $("supportForm").addEventListener("submit", async event => {
   }
 });
 
+$("adminInboxToggle").onclick = async () => {
+  const details = $("adminInboxDetails");
+  details.classList.toggle("hidden");
+  if (!details.classList.contains("hidden")) {
+    await refreshAdminCommissionSummary(true);
+    if (adminCommissionVerified) {
+      await Promise.all([
+        refreshAdminSupportInbox(true),
+        refreshAdminBurnInbox(true)
+      ]);
+    }
+  }
+};
 $("adminSupportRefresh").onclick = () => refreshAdminSupportInbox(true);
 
 $("adminCommissionToggle").onclick = async () => {
